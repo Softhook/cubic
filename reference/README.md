@@ -19,6 +19,15 @@ Note: the booklet uses a dice-pip font, so its text layer reads `G H I J K L` fo
 die faces 1–6 (and `A`–`F` in the player sheet). Use the rendered pages, not
 copy-paste.
 
+## `original-2013/`
+
+| File | Contents |
+|---|---|
+| `Quantum_rules_US.pdf` | Official 2013 FunForge English rulebook (16 pages): setup, basic maps for 2–4 players, actions, ship abilities, dominance, advance cards, sample game, FAQ. Same file as [BGG file 93188](https://boardgamegeek.com/filepage/93188/quantum-rules); downloaded 2026-10-02 from FunForge's site via the Wayback Machine (`funforge.fr/US/files/quantum/Quantum_rules_US.pdf`). |
+
+The rulebook doesn't cover Quantum Entanglement or void tiles. Board Game Arena's
+[rules help](https://en.doc.boardgamearena.com/Gamehelpquantum) covers both.
+
 ## Not mirrored here
 
 - [stolksdorf/quantum](https://github.com/stolksdorf/quantum) — the original CE
@@ -28,5 +37,3 @@ copy-paste.
   must **not** be reused.
 - [BGG files: map tiles](https://boardgamegeek.com/filepage/264629) — printable tiles
   used by WaterGoesRed.
-- Original 2013 rulebook — not yet obtained. Needed to settle some
-  [open questions](../docs/OPEN-QUESTIONS.md).

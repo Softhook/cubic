@@ -260,12 +260,12 @@ describe('modes', () => {
     expect(s.players.every((p) => p.missiles === 0 && p.skills.length === 0)).toBe(true);
   });
 
-  it('original: reconfigure only on the map, and only needs a different number', () => {
+  it('original: reconfigure on the map or in the scrapyard, and only needs a different number', () => {
     let s = quickStart(2, 3, 'original');
     s = arrange(s, { [`p${s.turn.player}d0`]: [0, 0, 4] });
     const me = s.turn.player;
     const scrapped = s.dice.find((d) => d.owner === me && d.loc.zone === 'scrapyard')!;
-    expect(() => apply(s, { type: 'reconfigure', die: scrapped.id })).toThrow(/on the map/);
+    expect(apply(s, { type: 'reconfigure', die: scrapped.id }).turn.actionsLeft).toBe(2);
     let t = s;
     for (let i = 0; i < 3; i++) {
       const before = t.dice.find((d) => d.id === `p${me}d0`)!.value;

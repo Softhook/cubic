@@ -14,6 +14,8 @@ import {
   isEmptySpace,
   key,
   moveOptions,
+  orbitals,
+  scrapyard,
   same,
   shipsOnBoard,
   type Action,
@@ -71,6 +73,9 @@ export function useController(game: GameState, dispatch: (a: Action) => boolean)
       switch (head.kind) {
         case 'placeStart':
           for (const p of game.board.planets) if (p.start && !p.cubes.length) h.planets.set(p.id, { tone: 'start', label: 'Start here' });
+          break;
+        case 'placeShips':
+          addCells(orbitals(game.board, game.board.planets[head.planet]).filter((p) => isEmptySpace(game, p)), 'deploy');
           break;
         case 'infamy':
           for (const p of infamyTargets(game, head.player)) h.planets.set(p.id, { tone: 'infamy', label: 'Seize' });
@@ -181,6 +186,12 @@ export function useController(game: GameState, dispatch: (a: Action) => boolean)
       if (!hl) return setSel(sel.kind === 'scrap' ? sel : { kind: 'none' });
       if (head?.kind === 'warpGate') return void dispatch({ type: 'warpGate', cell });
       if (head?.kind === 'placeExpansion') return void dispatch({ type: 'placeExpansion', to: cell });
+      if (head?.kind === 'placeShips') {
+        // Place the selected ship, or the next one in the scrapyard.
+        const d = sel.kind === 'scrap' ? sel.die : scrapyard(game, head.player)[0]?.id;
+        if (d && dispatch({ type: 'placeShip', die: d, to: cell })) sfx.move();
+        return setSel({ kind: 'none' });
+      }
       if (head?.kind === 'unveil' && sel.kind === 'scrap') {
         dispatch({ type: 'unveilDeploy', die: sel.die, to: cell });
         return setSel({ kind: 'none' });
@@ -240,7 +251,9 @@ export function hintFor(game: GameState, sel: Sel): string {
   if (head) {
     switch (head.kind) {
       case 'placeStart':
-        return 'Choose a glowing starting planet. Your three ships will take orbit around it.';
+        return 'Choose a glowing starting planet for your first quantum cube.';
+      case 'placeShips':
+        return 'Place your ships in orbit of your starting planet: pick a ship in your scrapyard (or take the next one), then a glowing space.';
       case 'infamy':
         return 'Infamy! Seize any planet that does not have your cube yet.';
       case 'takeCard':

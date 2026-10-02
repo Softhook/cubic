@@ -23,10 +23,10 @@ export function Rules({ onClose }: { onClose: () => void }) {
             <h3>Your turn</h3>
             <p>Take up to <b>3 actions</b>, in any order, repeating as you like:</p>
             <ul>
-              <li><b>Move / Attack</b> — move a ship up to its number in straight steps (no diagonals, not through planets or ships). Ending next to an enemy lets you attack it. Each ship moves once per turn.</li>
+              <li><b>Move / Attack</b> — move a ship up to its number in straight steps (no diagonals, not through planets or ships). To attack, use your last step to move into an enemy’s space. Each ship moves once per turn.</li>
               <li><b>Conquer</b> (2 actions) — if your ships orbiting a planet add up <i>exactly</i> to its number, place a cube there. The planet glows when you can.</li>
               <li><b>Deploy</b> — bring a ship from your scrapyard into orbit of a planet where you have a cube.</li>
-              <li><b>Reconfigure</b> — re-roll a ship to a new number.</li>
+              <li><b>Reconfigure</b> — re-roll a ship on the map or in your scrapyard to a new number.</li>
               <li><b>Research</b> — +1 research. Reaching 6 earns a card.</li>
             </ul>
             <p>Then take <b>one card per planet conquered</b>, plus one for a research breakthrough.</p>
@@ -54,8 +54,8 @@ export function Rules({ onClose }: { onClose: () => void }) {
 
         <h3>Modes</h3>
         <ul>
-          <li><b>Basic</b> — no cards, missiles or research. The best way to learn ships, combat and conquering.</li>
-          <li><b>Original</b> — the 2013 rules: Command cards (permanent) and Gambit cards (one-shot, including Expansion). Reconfigure re-rolls a ship on the map to a different number.</li>
+          <li><b>Basic</b> — the 2013 rules and maps without cards (so no research or missiles). The best way to learn ships, combat and conquering.</li>
+          <li><b>Original</b> — the 2013 rules: Command cards (permanent) and Gambit cards (one-shot, including Expansion). Uses the 2013 basic maps.</li>
           <li><b>Community</b> — the fan Community Edition: rebalanced Skills and Tactics, missiles, a starting skill, a separate Expansion pile and card peeking.</li>
         </ul>
 

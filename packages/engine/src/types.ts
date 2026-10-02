@@ -134,6 +134,8 @@ export type Pending =
   | { kind: 'setupRoll'; player: PlayerId; rerolled: boolean }
   | { kind: 'skillDraft'; player: PlayerId; options: string[] }
   | { kind: 'placeStart'; player: PlayerId }
+  /** Setup: place your starting ships, one at a time, in orbital positions of your starting planet. */
+  | { kind: 'placeShips'; player: PlayerId; planet: number }
   | CombatPending
   | { kind: 'advance'; player: PlayerId; die: string; to: Cell }
   | { kind: 'infamy'; player: PlayerId }
@@ -181,6 +183,7 @@ export type Action =
   | { type: 'setupReroll' }
   | { type: 'draftSkill'; skill: string }
   | { type: 'placeStart'; planet: number }
+  | { type: 'placeShip'; die: string; to: Cell }
   // phase 1 actions
   | { type: 'move'; die: string; to: Cell }
   | { type: 'attack'; die: string; target: string }

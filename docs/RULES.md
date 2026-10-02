@@ -7,6 +7,11 @@ This is the consolidated rules reference for this project. It is based on the
 on top of the original 2013 rules. Where those sources disagree, it is called out
 in [Ruleset divergences](#ruleset-divergences).
 
+The **Basic** and **Original** modes follow the official 2013 FunForge rulebook, mirrored in
+[`reference/original-2013/`](../reference/original-2013/). Every Basic-mode rule has a scenario
+test citing its rulebook page in
+[`packages/engine/test/basic.test.ts`](../packages/engine/test/basic.test.ts).
+
 Rule ambiguities that matter for a digital implementation are tracked separately
 in [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md). Card and map data are machine-readable
 in [`data/`](../data/).
@@ -20,14 +25,18 @@ The digital edition offers three rule sets, chosen when starting a game:
 | | Basic | Original (2013) | Community Edition |
 |---|---|---|---|
 | Purpose | Learning the core game | The published rules | Recommended; the rest of this document |
+| Rules source | 2013 rulebook, minus cards | 2013 rulebook | CE print booklet |
+| Maps | 2013 basic maps | 2013 basic maps | CE booklet maps |
 | Cards | None | 31 Command (permanent) + 22 Gambit (one-shot) | 35 Skills + 9 Tactics ×2 + Expansion pile |
 | Research action | — (it only earns cards) | ✓ | ✓ |
 | Missiles | — | — | 1 per player |
 | Starting skill | — | — | Draw 2, keep 1 |
 | Expansion | — | 8 Expansion cards in the Gambit deck | Separate pile, players + 1 |
 | Peek at oldest card | — | — | ✓ |
-| Reconfigure | Ship on the map; any different value | Ship on the map; any different value | Ship on the map **or** scrapyard; new value not seen this turn |
+| Reconfigure | Ship on the map or scrapyard; any different value | Ship on the map or scrapyard; any different value | Ship on the map or scrapyard; new value not seen this turn |
 | Infamy, Quantum Entanglement, void tiles | ✓ | ✓ | ✓ |
+
+Basic mode has no Research action: in the 2013 rules research only earns advance cards.
 
 Original card text is in [`data/cards.yaml`](../data/cards.yaml) under `original_command` / `original_gambit`.
 Cards whose behaviour matches a Community Edition card share its implementation (e.g. Cerebral ≙ Composed,
@@ -172,8 +181,9 @@ Ability rules:
 ### Deployment
 - The player with the **lowest total** of their 3 ships goes first (ties: roll off).
 - Starting with the first player and going clockwise, each player places one cube on
-  a **starting planet** (marked on the map) and places their 3 ships in orbital
-  positions around it.
+  a **starting planet** (marked on the map).
+- Then, in player order, each player places their 3 ships in orbital positions around
+  their starting planet, choosing which ship goes where (one position stays empty).
 
 ---
 
@@ -396,9 +406,10 @@ we decide otherwise (see [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)).
 | Infamy timing | Immediately at 6 (confirmed on BGG) | End of turn (End Phase) | Immediately at 6 |
 | Starting skill | None | Draw 2, keep 1 | Draw 2, keep 1 |
 | Starting fleet re-roll | One optional re-roll | Re-roll any of the dice once | Once, must re-roll all 3 |
-| Reconfigure | Ship on map | Ship on map | Ship on map **or scrapyard**; must show a value not yet seen this turn |
+| Reconfigure | Ship on map or scrapyard (rulebook p.5) | Ship on map | Ship on map or scrapyard; must show a value not yet seen this turn |
 | Tactic copies | Varies | All ×2 | All ×2 |
-| Quantum Entanglement | — | — | Added |
+| Quantum Entanglement | Not in the rulebook; in the official BGA implementation | — | Included |
+| Basic maps | Rulebook p.3 | — | 2p and 3p maps redrawn (Alpha, Beta); 4p unchanged |
 | 5 players | — | — | Added (maps only) |
 
 ---
@@ -406,6 +417,8 @@ we decide otherwise (see [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)).
 ## Sources
 
 - Original game: [BoardGameGeek #143519](https://boardgamegeek.com/boardgame/143519/quantum)
+- Original 2013 rulebook (FunForge, English): [BGG file 93188](https://boardgamegeek.com/filepage/93188/quantum-rules), mirrored in [`reference/original-2013/`](../reference/original-2013/)
+- Board Game Arena rules help (Quantum Entanglement, void tile, Infamy placement): [en.doc.boardgamearena.com/Gamehelpquantum](https://en.doc.boardgamearena.com/Gamehelpquantum)
 - Community Edition design notes: [github.com/stolksdorf/quantum](https://github.com/stolksdorf/quantum) (`New Rules.md`, `Cards.md`, `src/cards/*.yaml`)
 - Print-ready CE by WaterGoesRed: [BGG thread 3766725](https://boardgamegeek.com/thread/3766725/quantum-community-edition-ready-to-print) — PDFs mirrored in [`reference/community-edition-print/`](../reference/community-edition-print/)
 - Quantum (base game) is playable on [Board Game Arena](https://boardgamearena.com); CE rules are not, as BGA requires publisher endorsement for variants.

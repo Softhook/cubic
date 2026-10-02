@@ -1,9 +1,100 @@
 [
   {
+    "id": "original-basic-2",
+    "name": "Basic Map (2013)",
+    "players": 2,
+    "group": "basic",
+    "edition": "original",
+    "cubes": 5,
+    "stats": {
+      "slack": 1,
+      "shared": 1,
+      "planets": 7
+    },
+    "layout": [
+      [
+        "7",
+        "7",
+        "7*"
+      ],
+      [
+        "7",
+        "8",
+        "7"
+      ],
+      [
+        "7*",
+        "8",
+        "7"
+      ]
+    ]
+  },
+  {
+    "id": "original-basic-3",
+    "name": "Basic Map (2013)",
+    "players": 3,
+    "group": "basic",
+    "edition": "original",
+    "cubes": 5,
+    "stats": {
+      "slack": 1,
+      "shared": 5,
+      "planets": 6
+    },
+    "layout": [
+      [
+        "7*",
+        "8",
+        "7*"
+      ],
+      [
+        "8",
+        "9",
+        "8"
+      ],
+      [
+        "8",
+        "7*",
+        "8"
+      ]
+    ]
+  },
+  {
+    "id": "original-basic-4",
+    "name": "Basic Map (2013)",
+    "players": 4,
+    "group": "basic",
+    "edition": "original",
+    "cubes": 5,
+    "stats": {
+      "slack": 3,
+      "shared": 6,
+      "planets": 9
+    },
+    "layout": [
+      [
+        "8*",
+        "9",
+        "8*"
+      ],
+      [
+        "8",
+        "10",
+        "8"
+      ],
+      [
+        "9*",
+        "8",
+        "9*"
+      ]
+    ]
+  },
+  {
     "id": "alpha-sector",
     "name": "Alpha Sector",
     "players": 2,
     "group": "basic",
+    "edition": "community",
     "cubes": 5,
     "stats": {
       "slack": 0,
@@ -33,6 +124,7 @@
     "name": "Beta Sector",
     "players": 3,
     "group": "basic",
+    "edition": "community",
     "cubes": 5,
     "stats": {
       "slack": 4,
@@ -62,6 +154,7 @@
     "name": "Gamma Sector",
     "players": 4,
     "group": "basic",
+    "edition": "community",
     "cubes": 5,
     "stats": {
       "slack": 3,

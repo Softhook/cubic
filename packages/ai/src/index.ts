@@ -124,7 +124,7 @@ function playOutDecisions(state: GameState, me: PlayerId): GameState {
   let s = state;
   for (let i = 0; i < 12 && s.pending.length && s.phase !== 'over'; i++) {
     const head = s.pending[0];
-    if (head.kind === 'setupRoll' || head.kind === 'skillDraft' || head.kind === 'placeStart') break;
+    if (head.kind === 'setupRoll' || head.kind === 'skillDraft' || head.kind === 'placeStart' || head.kind === 'placeShips') break;
     const a = quickPolicy(s, me);
     const next = a && tryApply(s, a);
     if (!next) break;

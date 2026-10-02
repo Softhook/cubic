@@ -17,7 +17,7 @@ export interface CardDef {
 export type GameMode = 'basic' | 'original' | 'community';
 
 export const MODES: { id: GameMode; name: string; summary: string }[] = [
-  { id: 'basic', name: 'Basic', summary: 'No cards or missiles. Learn movement, combat and conquering.' },
+  { id: 'basic', name: 'Basic', summary: 'The 2013 rules without cards. Learn movement, combat and conquering.' },
   { id: 'original', name: 'Original', summary: 'The 2013 rules with Command and Gambit cards.' },
   { id: 'community', name: 'Community', summary: 'Rebalanced cards, missiles, a starting skill and card peeking.' },
 ];
@@ -27,6 +27,8 @@ export interface MapDef {
   name: string;
   players: number;
   group: string;
+  /** 'original' maps come from the 2013 rulebook, 'community' maps from the CE print booklet. */
+  edition: 'original' | 'community';
   cubes: number;
   stats: { slack: number; shared: number; planets: number };
   layout: string[][];
@@ -37,7 +39,19 @@ export const TACTICS: CardDef[] = cardsJson.tactics;
 export const EXPANSION: CardDef = cardsJson.expansion[0];
 export const ORIGINAL_COMMAND: CardDef[] = cardsJson.original_command;
 export const ORIGINAL_GAMBIT: CardDef[] = cardsJson.original_gambit;
-export const MAPS: MapDef[] = mapsJson;
+export const MAPS: MapDef[] = mapsJson as MapDef[];
+
+/** Maps that belong to a mode's edition: Basic and Original use the 2013 maps. */
+export function mapsFor(mode: GameMode): MapDef[] {
+  const edition = mode === 'community' ? 'community' : 'original';
+  return MAPS.filter((m) => m.edition === edition);
+}
+
+/** The basic map for a player count in a mode's edition. */
+export function defaultMap(mode: GameMode, players: number): MapDef | undefined {
+  const maps = mapsFor(mode);
+  return maps.find((m) => m.players === players && m.group === 'basic') ?? maps.find((m) => m.players === players);
+}
 
 const byId = new Map<string, CardDef>(
   [...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT].map((c) => [c.id, c]),

@@ -9,17 +9,60 @@
 #   .                no tile (empty gap, not part of the board)
 #   suffix *         starting planet
 #
+# edition: which rule set the map belongs to. "original" maps come from the 2013 FunForge
+# rulebook (used by the Basic and Original modes); "community" maps from the CE print booklet.
+#
 # Stats (from the CE print booklet), all derivable from layout + cubes + player count:
 #   slack   = total cube locations − players × cubes
 #   planets = planets that still have an empty location after setup
 #   shared  = how many of those must be shared if everyone placed all their cubes
-# Source: reference/community-edition-print/QCB-rules-booklet-A5.pdf
+# Sources: reference/original-2013/Quantum_rules_US.pdf (page 3, "Basic map for N players")
+#          reference/community-edition-print/QCB-rules-booklet-A5.pdf
 
 maps:
+  # --- 2013 rulebook basic maps. The CE booklet redrew the 2p and 3p maps; these are the originals.
+  - id: original-basic-2
+    name: Basic Map (2013)
+    players: 2
+    group: basic
+    edition: original
+    cubes: 5
+    stats: { slack: 1, shared: 1, planets: 7 }
+    layout:
+      - "7  7 7*"
+      - "7  8 7"
+      - "7* 8 7"
+
+  - id: original-basic-3
+    name: Basic Map (2013)
+    players: 3
+    group: basic
+    edition: original
+    cubes: 5
+    stats: { slack: 1, shared: 5, planets: 6 }
+    layout:
+      - "7* 8 7*"
+      - "8  9 8"
+      - "8  7* 8"
+
+  - id: original-basic-4
+    name: Basic Map (2013)
+    players: 4
+    group: basic
+    edition: original
+    cubes: 5
+    stats: { slack: 3, shared: 6, planets: 9 }
+    layout:
+      - "8* 9  8*"
+      - "8  10 8"
+      - "9* 8  9*"
+
+  # --- Community Edition print booklet basic maps.
   - id: alpha-sector
     name: Alpha Sector
     players: 2
     group: basic
+    edition: community
     cubes: 5
     stats: { slack: 0, shared: 1, planets: 7 }
     layout:
@@ -31,6 +74,7 @@ maps:
     name: Beta Sector
     players: 3
     group: basic
+    edition: community
     cubes: 5
     stats: { slack: 4, shared: 4, planets: 8 }
     layout:
@@ -42,6 +86,7 @@ maps:
     name: Gamma Sector
     players: 4
     group: basic
+    edition: community
     cubes: 5
     stats: { slack: 3, shared: 6, planets: 9 }
     layout:

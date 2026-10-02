@@ -5,7 +5,7 @@ item below needs a ruling before (or while) the engine implements it. The
 **Proposed ruling** is a default — change it, then record the decision in
 [RULES.md](RULES.md) and mark the item ✅.
 
-Legend: 🔴 blocks the core engine · 🟡 needed for a specific card/feature · 🟢 polish
+Legend: 🔴 blocks the core engine · 🟡 needed for a specific card/feature · 🟢 polish · ✅ settled by a source (cited)
 
 ---
 
@@ -13,30 +13,30 @@ Legend: 🔴 blocks the core engine · 🟡 needed for a specific card/feature �
 
 | # | | Question | Proposed ruling |
 |---|---|---|---|
-| 1 | 🔴 | **Conquer sum** — must *all* your ships in orbital positions be counted, or may you pick a subset? | All of your ships in the 4 orbital positions count. Enemy ships in orbit are ignored (they only take up space). |
-| 2 | 🔴 | **Infamy timing** — immediately on reaching 6 (print edition) or in the end phase (stolksdorf CE)? | Immediately. Resolves mid-turn, can win the game mid-turn. |
-| 3 | 🔴 | **Movement** — "up to N": must a ship move at least 1? Does the attacked space count as one of the N steps? | ≥1 step. The attack step counts toward N. Path is a sequence of orthogonal steps through empty spaces. |
-| 4 | 🔴 | **Repel** — "back to its last space" means the space it occupied immediately before the attack step? | Yes. |
-| 5 | 🔴 | **Per-die tracking** — "each die can move once / use one ability, even if it changes type". | Track `movedThisTurn`, `abilityUsedThisTurn`, `valuesSeenThisTurn` per die id, not per value. |
-| 6 | 🔴 | **Deployed ship** — can a ship deployed this turn also move this turn? | Yes (deploy is explicitly "not that ship's move"). |
+| 1 | ✅ | **Conquer sum** — must *all* your ships in orbital positions be counted, or may you pick a subset? | All of your ships in the 4 orbital positions count; enemy and diagonal ships are ignored. *2013 rulebook p.7: "If your ships in orbital positions add up to a higher or lower number, you cannot construct."* |
+| 2 | ✅ | **Infamy timing** — immediately on reaching 6 (print edition) or in the end phase (stolksdorf CE)? | Immediately; play continues, and it can win the game mid-turn. *2013 rulebook p.9: "Place the quantum cube immediately - do not wait until the end of your turn."* The CE print edition agrees. |
+| 3 | ✅ | **Movement** — "up to N": must a ship move at least 1? Does the attacked space count as one of the N steps? | At least 1 step. Entering the enemy's space costs a movement point (*2013 rulebook p.6*). A path is a sequence of orthogonal steps through empty spaces. |
+| 4 | ✅ | **Repel** — "back to its last space" means the space it occupied immediately before the attack step? | Yes: "moves back into the square from which it attacked" (*2013 rulebook p.6*). |
+| 5 | ✅ | **Per-die tracking** — "each die can move once / use one ability, even if it changes type". | Per die id, not per value: "Even if the number of a ship changes, a single ship die can only move/attack once per turn, and can only use one special ability per turn" (*2013 rulebook p.4*). |
+| 6 | ✅ | **Deployed ship** — can a ship deployed this turn also move this turn? | Yes: "you can deploy a ship and move it in the same turn" (*2013 rulebook p.5*). |
 | 7 | 🔴 | **Reconfigure history** — "until it shows a value it has not had this turn". Does the value it was rolled to on destruction count? | History starts at the value at the start of the turn (or when entering the scrapyard). |
 | 8 | 🔴 | **Card limits & empty decks** — what happens when the Skill/Tactic deck or face-up row runs out? | Reshuffle discards into a new deck; if still empty, fewer face-up cards. |
 | 9 | 🔴 | **Multiple cards in phase 2** — order of taking (conquer cards vs research card)? | Player chooses order; each refill happens before the next pick. |
 | 10 | 🔴 | **Combat roll pipeline** — order of *set* effects (Rational = 3, Plan Ahead = 1, Missile = 1, Brutal) vs *modifiers* (Ferocious −1, Strategic −2). Can a roll go below 1? | `roll (Brutal: min of 2)` → `set (Rational / Plan Ahead)` → `missile override` → `modifiers`. Rolls may go to 0 or below. |
-| 11 | 🔴 | **Planet capacity** — Infamy and Entanglement still require an empty cube location? | Yes. |
+| 11 | ✅ | **Planet capacity** — Infamy and Entanglement still require an empty cube location? | Yes. Infamy: "any empty cube location on a planet where you do NOT already have a cube" (*2013 rulebook p.9*). Entanglement: BGA rules help. |
 | 12 | 🟡 | **Quantum Entanglement** — target is `planet + 3 × your cubes there`. With Intelligent (±1) and Pioneering/Tyrannical? | Modifiers apply to the raised target. |
 | 13 | 🟡 | **Expansion with empty reserve** — can you take the card? | No — Expansion is not selectable with an empty reserve. |
-| 14 | 🟡 | **Starting planets** — what if a map has more starting planets than players? | First player picks first; any marked planet. |
+| 14 | ✅ | **Starting planets** — what if a map has more starting planets than players? | Players pick in turn order from any marked starting planet. All cubes are placed first, then each player arranges their ships in player order (*2013 rulebook p.3*). |
 | 15 | 🟢 | **Void tile research** — capped at 6? Triggers a card? | Capped at 6; card is taken in phase 2 as normal. |
 
 ## Ship abilities
 
 | # | | Question | Proposed ruling |
 |---|---|---|---|
-| 16 | 🔴 | **Battlestation Free Attack** — usable if the die already moved this turn? | Yes. It does not consume the die's move. If repelled, returns to its start space. |
+| 16 | ✅ | **Battlestation Free Attack** — usable if the die already moved this turn? | Yes. It does not use the die's move. "It is possible to move/attack normally and also use strike for a second attack on the same turn" (*2013 rulebook p.8*). |
 | 17 | 🔴 | **Flagship carry** — passenger picked from a surrounding space (diagonal OK). Can the passenger have already moved? Does it then still get its own move? | Passenger may be any of your ships; it may move afterwards only if it hasn't moved this turn. |
-| 18 | 🟡 | **Destroyer swap** — any distance? | Any of your ships on the map, any distance. |
-| 19 | 🟡 | **Frigate → 3/5** — can it then use the new type's ability (swap, or diagonal move)? | No — one ability per die per turn, and diagonal movement *is* the Interceptor ability. |
+| 18 | ✅ | **Destroyer swap** — any distance? | Any of your ships on the map, any distance. Warp does not count as the destroyer's move (*2013 rulebook p.8*). |
+| 19 | ✅ | **Frigate → 3/5** — can it then use the new type's ability (swap, or diagonal move)? | No: "After you modify, you can't use the ship's new ability this turn" (*2013 rulebook p.8*). |
 | 20 | 🟡 | **Interceptor diagonal** — may it squeeze diagonally between two blocking pieces? | Yes; only the destination square must be passable. |
 
 ## Interrupts (critical for online play)

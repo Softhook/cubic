@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react';
-import { MAPS, MODES, type GameMode, type PlayerConfig } from '@quantum/engine';
+import { defaultMap, MODES, type GameMode, type PlayerConfig } from '@quantum/engine';
 import { Die3D } from './Die3D';
 
 export const PLAYER_COLORS = ['#4cc9f0', '#f72585', '#ffb703', '#80ed99'];
@@ -27,7 +27,7 @@ export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void;
   const [seats, setSeats] = useState<PlayerConfig[]>(() =>
     PLAYER_COLORS.map((color, i) => ({ name: i === 0 ? 'Commander' : AI_NAMES[i], color, ai: i !== 0 })),
   );
-  const map = MAPS.find((m) => m.players === count && m.group === 'basic')!;
+  const map = defaultMap(mode, count)!;
 
   const update = (i: number, patch: Partial<PlayerConfig>) =>
     setSeats((s) => s.map((x, j) => (j === i ? { ...x, ...patch } : x)));

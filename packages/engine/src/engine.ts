@@ -1,7 +1,8 @@
-import { buildBoard, key, mapCentre, orbitals, planetFreeSlots, same } from './board';
+import { buildBoard, key, orbitals, planetFreeSlots, same } from './board';
 import {
   card,
   cardKind,
+  defaultMap,
   effectOf,
   IMPLEMENTED_EFFECTS,
   MAPS,
@@ -87,10 +88,10 @@ function emptyTurn(player: PlayerId, number: number): TurnState {
 export function createGame(opts: NewGameOptions): GameState {
   const n = opts.players.length;
   if (n < 2 || n > 5) throw new Error('Quantum needs 2–5 players');
-  const map = MAPS.find((m) => m.id === opts.mapId) ?? MAPS.find((m) => m.players === n);
-  if (!map) throw new Error(`No map for ${n} players`);
-  const seed = (opts.seed ?? Math.floor(Math.random() * 2 ** 31)) >>> 0;
   const mode = opts.mode ?? 'community';
+  const map = opts.mapId ? MAPS.find((m) => m.id === opts.mapId) : defaultMap(mode, n);
+  if (!map) throw new Error(opts.mapId ? `Unknown map ${opts.mapId}` : `No map for ${n} players`);
+  const seed = (opts.seed ?? Math.floor(Math.random() * 2 ** 31)) >>> 0;
 
   const state: GameState = {
     version: 1,
@@ -514,6 +515,16 @@ function settle(s: GameState) {
   for (let guard = 0; guard < 50; guard++) {
     if (s.phase === 'over') return;
     const head = s.pending[0];
+    if (head?.kind === 'placeShips' && (!scrapyard(s, head.player).length || !startSlots(s, head.planet).length)) {
+      log(s, `${name(s, head.player)} deploys around planet ${s.board.planets[head.planet].number}.`, head.player);
+      s.pending.shift();
+      if (!s.pending.length) {
+        s.phase = 'play';
+        s.turn.number = 0;
+        startTurn(s, s.turn.player, ACTIONS_PER_TURN, false);
+      }
+      continue;
+    }
     if (head?.kind === 'infamy' && !infamyTargets(s, head.player).length) {
       log(s, `${name(s, head.player)} has nowhere to place an Infamy cube.`, head.player);
       s.pending.shift();
@@ -533,6 +544,11 @@ function settle(s: GameState) {
     }
     return;
   }
+}
+
+/** Empty orbital positions of a starting planet. */
+function startSlots(s: GameState, planetId: number): Cell[] {
+  return orbitals(s.board, s.board.planets[planetId]).filter((p) => isEmptySpace(s, p));
 }
 
 function startDeployment(s: GameState) {
@@ -586,23 +602,18 @@ function handle(s: GameState, a: Action) {
       if (!planet?.start) fail('Choose a starting planet');
       if (planet.cubes.length) fail('That starting planet is taken');
       placeCube(s, head.player, planet.id);
-      const centre = mapCentre(s.board);
-      const slots = orbitals(s.board, planet).sort(
-        (x, y) =>
-          Math.hypot(x.r - centre.r, x.c - centre.c) - Math.hypot(y.r - centre.r, y.c - centre.c),
-      );
-      for (const d of scrapyard(s, head.player)) {
-        const slot = slots.find((p) => isEmptySpace(s, p));
-        if (slot) d.loc = { zone: 'board', ...slot };
-      }
-      log(s, `${name(s, head.player)} deploys around planet ${planet.number}.`, head.player);
+      log(s, `${name(s, head.player)} starts at planet ${planet.number}.`, head.player);
       s.pending.shift();
-      if (!s.pending.length) {
-        s.phase = 'play';
-        const first = s.turn.player;
-        s.turn.number = 0;
-        startTurn(s, first, ACTIONS_PER_TURN, false);
-      }
+      // 2013 rulebook: every player places a cube first, then ships are placed in player order.
+      s.pending.push({ kind: 'placeShips', player: head.player, planet: planet.id });
+      return;
+    }
+    case 'placeShip': {
+      if (head?.kind !== 'placeShips') fail('Not placing starting ships');
+      const d = die(s, a.die);
+      if (d.owner !== head.player || d.loc.zone !== 'scrapyard') fail('Choose one of your starting ships');
+      if (!startSlots(s, head.planet).some((p) => same(p, a.to))) fail('Place it in an empty orbital position of your starting planet');
+      d.loc = { zone: 'board', ...a.to };
       return;
     }
     case 'missile': {
@@ -797,7 +808,7 @@ function handle(s: GameState, a: Action) {
     }
     case 'reconfigure': {
       const d = ownShip(s, a.die);
-      if (!canReconfigure(s, d)) fail(s.mode === 'community' ? 'This ship cannot be reconfigured' : 'Only ships on the map can be reconfigured');
+      if (!canReconfigure(s, d)) fail('This ship cannot be reconfigured');
       spend(s, 1);
       rerollNew(s, d);
       return;
@@ -983,6 +994,10 @@ export function legalActions(s: GameState, opts: { includeCarry?: boolean } = {}
         break;
       case 'placeStart':
         for (const p of s.board.planets) if (p.start && !p.cubes.length) out.push({ type: 'placeStart', planet: p.id });
+        break;
+      case 'placeShips':
+        for (const d of scrapyard(s, head.player))
+          for (const to of startSlots(s, head.planet)) out.push({ type: 'placeShip', die: d.id, to });
         break;
       case 'combat':
         out.push({ type: 'resolveCombat' });

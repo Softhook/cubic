@@ -278,7 +278,9 @@ function PlayerCard({
   const scrap = scrapyard(game, p.id);
   const res = reserve(game, p.id);
   const totalCubes = p.cubesLeft + game.board.planets.reduce((a, pl) => a + pl.cubes.filter((x) => x === p.id).length, 0);
-  const canDeploy = (ctl.actionPhase && game.turn.player === p.id) || !!unveiling;
+  const head = game.pending[0];
+  const placingStart = head?.kind === 'placeShips' && head.player === p.id && ctl.human;
+  const canDeploy = (ctl.actionPhase && game.turn.player === p.id) || !!unveiling || placingStart;
 
   const clickScrap = (d: Die) => {
     if (!canDeploy) return;

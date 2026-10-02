@@ -21,7 +21,7 @@ so the card/tile pipeline later reuses it rather than duplicating it.
 
 - [ ] **Decide the ruleset baseline** — print edition (current proposal) vs stolksdorf CE. Record in [RULES.md](RULES.md).
 - [ ] **Work through 🔴 items in [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)** — these block the engine.
-- [ ] **Get the original 2013 rulebook** to resolve original-vs-CE questions (e.g. Infamy timing).
+- [x] **Get the original 2013 rulebook** — mirrored in `reference/original-2013/`; Basic mode audited against it.
 - [ ] **Name & IP check** — "Quantum" is the publisher's title; game mechanics aren't copyrightable but names, art and trade dress are. Pick a working title for anything public, and don't reuse original or found art.
 - [ ] **Contact stolksdorf and WaterGoesRed** — credit, permission to build on their text/maps, interest in collaborating.
 - [ ] **Choose a license** for our code (e.g. MIT) and content (e.g. CC BY-NC-SA).

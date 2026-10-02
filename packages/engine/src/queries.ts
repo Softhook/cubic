@@ -63,12 +63,13 @@ export function canUseAbility(state: GameState, d: Die): boolean {
   return !state.turn.abilityUsed[d.id] || cunningAvailable(state, d.owner);
 }
 
-/** Community Edition: ships on the map or in the scrapyard, to an unseen value. Otherwise: map only. */
+/**
+ * Reconfigure targets one of your ships on the map or in your scrapyard (2013 rulebook p.5).
+ * The Community Edition additionally requires a value the die has not shown this turn.
+ */
 export function canReconfigure(state: GameState, d: Die): boolean {
-  if (state.mode === 'community') {
-    return d.loc.zone !== 'reserve' && (state.turn.seen[d.id]?.length ?? 1) < 6;
-  }
-  return d.loc.zone === 'board';
+  if (d.loc.zone === 'reserve') return false;
+  return state.mode !== 'community' || (state.turn.seen[d.id]?.length ?? 1) < 6;
 }
 
 export function skillLimit(state: GameState, player: PlayerId): number {
