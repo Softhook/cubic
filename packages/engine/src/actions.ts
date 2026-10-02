@@ -13,6 +13,7 @@ import {
   requireActionPhase,
   rerollNew,
   spend,
+  spendMove,
   type Handlers,
 } from './core';
 import { canMoveDie, canReconfigure, conquerCheck, deployTargets, die, hasSkill, moveOptions } from './queries';
@@ -21,13 +22,12 @@ import { endTurn } from './turn';
 
 export const actionHandlers = {
   move(s, a) {
-    const t = requireActionPhase(s);
+    requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     if (!canMoveDie(s, d)) fail('This ship already moved this turn');
     const opt = moveOptions(s, d.id).moves.get(key(a.to));
     if (!opt) fail('Out of range');
-    if (t.freeMoves > 0) t.freeMoves--;
-    else spend(s, 1);
+    spendMove(s);
     if (opt.diagonal) markAbility(s, d); // Interceptor manoeuvre
     d.loc = { zone: 'board', ...a.to };
     markMoved(s, d);

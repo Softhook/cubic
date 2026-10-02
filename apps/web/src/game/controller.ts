@@ -32,9 +32,10 @@ export type Sel =
   | { kind: 'swap'; die: string }
   | { kind: 'freeAttack'; die: string }
   | { kind: 'tactical'; die: string }
-  | { kind: 'carryPassenger'; die: string }
-  | { kind: 'carryDest'; die: string; passenger: string }
-  | { kind: 'carryDrop'; die: string; passenger: string; to: Cell };
+  // `tactical`: a 1-space transport using the Tactical skill instead of a Move action.
+  | { kind: 'carryPassenger'; die: string; tactical?: boolean }
+  | { kind: 'carryDest'; die: string; passenger: string; tactical?: boolean }
+  | { kind: 'carryDrop'; die: string; passenger: string; to: Cell; tactical?: boolean };
 
 export type CellTone = 'move' | 'diagonal' | 'deploy' | 'gate' | 'drop';
 export type DieTone = 'attack' | 'swap' | 'target' | 'passenger';
@@ -107,6 +108,8 @@ export function useController(game: GameState, dispatch: (a: Action) => boolean)
     if (!actionPhase) return h;
 
     const me = game.turn.player;
+    // Attacking makes you pay for any Curious free moves already taken.
+    const canAttack = (cost: number) => game.turn.actionsLeft >= cost + game.turn.freeMovesUsed;
     if (game.turn.actionsLeft >= 2) {
       for (const p of game.board.planets) {
         const check = conquerCheck(game, me, p.id);
@@ -120,7 +123,7 @@ export function useController(game: GameState, dispatch: (a: Action) => boolean)
         if ((t.actionsLeft > 0 || t.freeMoves > 0) && canMoveDie(game, d)) {
           const opts = moveOptions(game, d.id);
           for (const m of opts.moves.values()) h.cells.set(key(m.cell), { cell: m.cell, tone: m.diagonal ? 'diagonal' : 'move' });
-          if (t.actionsLeft > 0) for (const id of opts.attacks.keys()) h.dice.set(id, 'attack');
+          if (canAttack(1)) for (const id of opts.attacks.keys()) h.dice.set(id, 'attack');
         }
         break;
       }
@@ -129,24 +132,24 @@ export function useController(game: GameState, dispatch: (a: Action) => boolean)
         break;
       case 'tactical': {
         const opts = tacticalOptions(game, sel.die);
-        addCells(opts.moves, 'move');
-        for (const d of opts.attacks) h.dice.set(d.id, 'attack');
+        for (const m of opts.moves) h.cells.set(key(m.cell), { cell: m.cell, tone: m.diagonal ? 'diagonal' : 'move' });
+        if (canAttack(0)) for (const x of opts.attacks) h.dice.set(x.die.id, 'attack');
         break;
       }
       case 'swap':
         for (const d of shipsOnBoard(game, me)) if (d.id !== sel.die) h.dice.set(d.id, 'swap');
         break;
       case 'freeAttack':
-        for (const d of freeAttackTargets(game, sel.die)) h.dice.set(d.id, 'attack');
+        if (canAttack(0)) for (const d of freeAttackTargets(game, sel.die)) h.dice.set(d.id, 'attack');
         break;
       case 'carryPassenger':
         for (const d of carryPassengers(game, sel.die)) h.dice.set(d.id, 'passenger');
         break;
       case 'carryDest':
-        addCells([...carryOptions(game, sel.die, sel.passenger).values()].map((x) => x.cell), 'move');
+        addCells([...carryOptions(game, sel.die, sel.passenger, sel.tactical ? 1 : undefined).values()].map((x) => x.cell), 'move');
         break;
       case 'carryDrop': {
-        const dest = carryOptions(game, sel.die, sel.passenger).get(key(sel.to));
+        const dest = carryOptions(game, sel.die, sel.passenger, sel.tactical ? 1 : undefined).get(key(sel.to));
         addCells((dest?.drops ?? []).filter((c) => !same(c, sel.to)), 'drop');
         break;
       }
@@ -170,7 +173,7 @@ export function useController(game: GameState, dispatch: (a: Action) => boolean)
       if (sel.kind === 'freeAttack' && tone === 'attack') return void dispatch({ type: 'freeAttack', die: sel.die, target: id });
       if (sel.kind === 'tactical' && tone === 'attack') return void dispatch({ type: 'tactical', die: sel.die, target: id });
       if (sel.kind === 'ship' && tone === 'attack') return void dispatch({ type: 'attack', die: sel.die, target: id });
-      if (sel.kind === 'carryPassenger' && tone === 'passenger') return select({ kind: 'carryDest', die: sel.die, passenger: id });
+      if (sel.kind === 'carryPassenger' && tone === 'passenger') return select({ kind: 'carryDest', die: sel.die, passenger: id, tactical: sel.tactical });
       if (sel.kind === 'carryDest' && id === sel.die) {
         // Out-and-back transport: the flagship ends where it started.
         const here = cellOf(getDie(game, id));
@@ -222,9 +225,9 @@ export function useController(game: GameState, dispatch: (a: Action) => boolean)
           }
           return;
         case 'carryDest':
-          return select({ kind: 'carryDrop', die: sel.die, passenger: sel.passenger, to: cell });
+          return select({ kind: 'carryDrop', die: sel.die, passenger: sel.passenger, to: cell, tactical: sel.tactical });
         case 'carryDrop':
-          if (dispatch({ type: 'carry', die: sel.die, passenger: sel.passenger, to: sel.to, drop: cell })) {
+          if (dispatch({ type: sel.tactical ? 'tactical' : 'carry', die: sel.die, passenger: sel.passenger, to: sel.to, drop: cell })) {
             sfx.move();
             setSel({ kind: 'none' });
           }
@@ -296,7 +299,7 @@ export function hintFor(game: GameState, sel: Sel): string {
     case 'carryPassenger':
       return 'Choose a ship next to your flagship to carry.';
     case 'carryDest':
-      return 'Choose where the flagship flies (its own space means out and back).';
+      return sel.tactical ? 'Tactical: choose the space the flagship moves to.' : 'Choose where the flagship flies (its own space means out and back).';
     case 'carryDrop':
       return 'Choose where to drop the passenger.';
   }

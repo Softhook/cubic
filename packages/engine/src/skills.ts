@@ -1,5 +1,5 @@
 /** Skills / Command cards a player activates as an action of their own. Passive skills apply where their rule does. */
-import { same } from './board';
+import { key, same } from './board';
 import { startCombat } from './combat';
 import {
   destroyShip,
@@ -8,6 +8,7 @@ import {
   gainResearch,
   log,
   loseDominance,
+  markAbility,
   markMoved,
   oncePerTurn,
   ownShip,
@@ -15,7 +16,7 @@ import {
   requireSkill,
   type Handlers,
 } from './core';
-import { canMoveDie, cellOf, hasSkill, tacticalOptions } from './queries';
+import { canMoveDie, carryOptions, carryPassengers, cellOf, die, hasSkill, tacticalOptions } from './queries';
 
 export const skillHandlers = {
   composed(s) {
@@ -64,19 +65,39 @@ export const skillHandlers = {
     if (!original) requireSkill(s, t.player, 'tactical');
     const d = ownShip(s, a.die, 'board');
     if (original && !canMoveDie(s, d)) fail('This ship already moved this turn');
-    const opts = tacticalOptions(s, d.id);
-    if (a.target) {
-      const target = opts.attacks.find((x) => x.id === a.target);
-      if (!target) fail('Target must be adjacent');
+    // Tactical moves the ship; the Original card counts it as the ship's one move for the turn.
+    const use = () => {
       oncePerTurn(s, 'tactical');
       if (original) markMoved(s, d);
-      startCombat(s, d, target, cellOf(d)!);
+    };
+    if (a.passenger) {
+      // Flagship Transport over the 1 space (forum consensus, BGG thread 1093051).
+      if (d.value !== 2) fail('Only a Flagship can transport');
+      if (!a.to || !a.drop) fail('Invalid carry');
+      if (!carryPassengers(s, d.id).some((x) => x.id === a.passenger)) fail('Passenger must be next to the flagship');
+      const dest = carryOptions(s, d.id, a.passenger, 1).get(key(a.to));
+      if (!dest || !dest.drops.some((p) => same(p, a.drop!))) fail('Invalid carry');
+      if (same(a.to, a.drop)) fail('Drop the passenger next to the flagship');
+      use();
+      markAbility(s, d);
+      d.loc = { zone: 'board', ...a.to };
+      die(s, a.passenger).loc = { zone: 'board', ...a.drop };
       return;
     }
-    if (!a.to || !opts.moves.some((p) => same(p, a.to!))) fail('Move one space to an empty space');
-    oncePerTurn(s, 'tactical');
-    if (original) markMoved(s, d);
-    d.loc = { zone: 'board', ...a.to };
+    const opts = tacticalOptions(s, d.id);
+    if (a.target) {
+      const opt = opts.attacks.find((x) => x.die.id === a.target);
+      if (!opt) fail('Target must be adjacent');
+      use();
+      if (opt.diagonal) markAbility(s, d); // Interceptor manoeuvre
+      startCombat(s, d, opt.die, cellOf(d)!);
+      return;
+    }
+    const opt = a.to && opts.moves.find((x) => same(x.cell, a.to!));
+    if (!opt) fail('Move one space to an empty space');
+    use();
+    if (opt.diagonal) markAbility(s, d);
+    d.loc = { zone: 'board', ...opt.cell };
   },
   resourceful(s, a) {
     const t = requireActionPhase(s);

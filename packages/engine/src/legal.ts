@@ -94,26 +94,33 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
   const t = s.turn;
   const out: Action[] = [{ type: 'endTurn' }];
   const actions = t.actionsLeft;
+  // Attacking makes you pay for any Curious free moves already taken (payForAttack).
+  const canAttack = (cost: number) => actions >= cost + t.freeMovesUsed;
   const pl = s.players[me];
 
   for (const d of shipsOnBoard(s, me)) {
     if ((actions > 0 || t.freeMoves > 0) && canMoveDie(s, d)) {
       const moves = moveOptions(s, d.id);
       for (const m of moves.moves.values()) out.push({ type: 'move', die: d.id, to: m.cell });
-      if (actions > 0) for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
+      if (canAttack(1)) for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
     }
     if (actions > 0 && canReconfigure(s, d)) out.push({ type: 'reconfigure', die: d.id });
     if ((hasSkill(s, me, 'tactical') || (hasSkill(s, me, 'tactical-original') && canMoveDie(s, d))) && !t.oncePerTurn.includes('tactical')) {
       const tac = tacticalOptions(s, d.id);
-      for (const to of tac.moves) out.push({ type: 'tactical', die: d.id, to });
-      for (const x of tac.attacks) out.push({ type: 'tactical', die: d.id, target: x.id });
+      for (const m of tac.moves) out.push({ type: 'tactical', die: d.id, to: m.cell });
+      if (canAttack(0)) for (const x of tac.attacks) out.push({ type: 'tactical', die: d.id, target: x.die.id });
+      if (d.value === 2 && opts.includeCarry && canUseAbility(s, d)) {
+        for (const p of carryPassengers(s, d.id))
+          for (const dest of carryOptions(s, d.id, p.id, 1).values())
+            for (const drop of dest.drops) out.push({ type: 'tactical', die: d.id, passenger: p.id, to: dest.cell, drop });
+      }
     }
     if (canUseAbility(s, d)) {
-      if (d.value === 1) for (const x of freeAttackTargets(s, d.id)) out.push({ type: 'freeAttack', die: d.id, target: x.id });
+      if (d.value === 1 && canAttack(0)) for (const x of freeAttackTargets(s, d.id)) out.push({ type: 'freeAttack', die: d.id, target: x.id });
       if (d.value === 3) for (const o of shipsOnBoard(s, me)) if (o.id !== d.id) out.push({ type: 'swap', die: d.id, other: o.id });
       if (d.value === 4) out.push({ type: 'change', die: d.id, value: 3 }, { type: 'change', die: d.id, value: 5 });
       if (d.value === 6) out.push({ type: 'freeReconfigure', die: d.id });
-      if (d.value === 2 && opts.includeCarry && actions > 0 && canMoveDie(s, d)) {
+      if (d.value === 2 && opts.includeCarry && (actions > 0 || t.freeMoves > 0) && canMoveDie(s, d)) {
         for (const p of carryPassengers(s, d.id))
           for (const dest of carryOptions(s, d.id, p.id).values())
             for (const drop of dest.drops) out.push({ type: 'carry', die: d.id, passenger: p.id, to: dest.cell, drop });

@@ -295,6 +295,122 @@ describe('modes', () => {
     expect(s.players[me].dominance).toBe(2);
     expect(s.players[me].research).toBe(4);
   });
+
+  describe('original Curious (2nd-printing errata: a free move on a turn without attacks)', () => {
+    /**
+     * Alpha Sector (planets at rows/cols 1, 4, 7). The current player has a Flagship at (2,2), a
+     * Destroyer at (3,3) and a Battlestation at (5,5) next to an enemy Scout at (5,6).
+     */
+    function curious(actionsLeft: number): GameState {
+      let s = createGame({ players: players(2), seed: 3, mode: 'original', mapId: 'alpha-sector' });
+      while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
+      const me = s.turn.player;
+      const foe = 1 - me;
+      s = arrange(s, { [`p${me}d0`]: [2, 2, 2], [`p${me}d1`]: [3, 3, 3], [`p${me}d2`]: [5, 5, 1], [`p${foe}d0`]: [5, 6, 6] });
+      s.players[me].skills = [{ id: 'o-curious', active: true }];
+      s.turn.actionsLeft = actionsLeft;
+      s.turn.freeMoves = 1;
+      return s;
+    }
+    const ids = (s: GameState) => ({ flag: `p${s.turn.player}d0`, destroyer: `p${s.turn.player}d1`, station: `p${s.turn.player}d2`, enemy: `p${1 - s.turn.player}d0` });
+
+    it('the free move can pay for a Transport (a move without an attack)', () => {
+      const s = curious(0);
+      const { flag, destroyer } = ids(s);
+      const carry: Action = { type: 'carry', die: flag, passenger: destroyer, to: { r: 2, c: 3 }, drop: { r: 3, c: 3 } };
+      expect(legalActions(s, { includeCarry: true })).toContainEqual(carry);
+      const after = apply(s, carry);
+      expect(after.turn.freeMoves).toBe(0);
+      expect(after.turn.actionsLeft).toBe(0);
+    });
+
+    it('attacking after the free move pays for it with an action', () => {
+      let s = curious(3);
+      const { destroyer, station, enemy } = ids(s);
+      s = apply(s, { type: 'move', die: destroyer, to: { r: 3, c: 2 } });
+      expect(s.turn.actionsLeft).toBe(3);
+      s = apply(s, { type: 'attack', die: station, target: enemy });
+      expect(s.turn.actionsLeft).toBe(1); // the attack, plus the move it can no longer get for free
+      expect(s.turn.freeMoves).toBe(0);
+    });
+
+    it('cannot attack (even with a free Strike) when the free move cannot be paid for', () => {
+      let s = curious(0);
+      const { destroyer, station, enemy } = ids(s);
+      s = apply(s, { type: 'move', die: destroyer, to: { r: 3, c: 2 } });
+      expect(() => apply(s, { type: 'freeAttack', die: station, target: enemy })).toThrow(/Curious/);
+      expect(legalActions(s).some((a) => a.type === 'freeAttack' || a.type === 'attack')).toBe(false);
+    });
+
+    it('attacking first forfeits the free move', () => {
+      let s = curious(3);
+      const { destroyer, station, enemy } = ids(s);
+      s = apply(s, { type: 'freeAttack', die: station, target: enemy });
+      s = apply(s, { type: 'resolveCombat' });
+      if (s.pending[0]?.kind === 'advance') s = apply(s, { type: 'advance', move: false });
+      expect(s.turn.freeMoves).toBe(0);
+      s = apply(s, { type: 'move', die: destroyer, to: { r: 3, c: 2 } });
+      expect(s.turn.actionsLeft).toBe(2);
+    });
+  });
+});
+
+describe('Tactical with ship abilities (forum consensus, BGG threads 1093051 and 2433096)', () => {
+  /**
+   * Alpha Sector (planets at rows/cols 1, 4, 7). The current player has a Flagship at (2,2), a
+   * Destroyer at (3,3) and an Interceptor at (5,5); an enemy Scout sits diagonally at (4,6).
+   */
+  function tactical(mode: GameMode, skill: string): GameState {
+    let s = createGame({ players: players(2), seed: 3, mode, mapId: 'alpha-sector' });
+    while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
+    const me = s.turn.player;
+    s = arrange(s, { [`p${me}d0`]: [2, 2, 2], [`p${me}d1`]: [3, 3, 3], [`p${me}d2`]: [5, 5, 5], [`p${1 - me}d0`]: [4, 6, 6] });
+    s.players[me].skills = [{ id: skill, active: true }];
+    s.turn.actionsLeft = 3;
+    return s;
+  }
+  const ids = (s: GameState) => ({ flag: `p${s.turn.player}d0`, destroyer: `p${s.turn.player}d1`, interceptor: `p${s.turn.player}d2`, enemy: `p${1 - s.turn.player}d0` });
+  const at = (s: GameState, id: string) => s.dice.find((d) => d.id === id)!.loc;
+
+  it('a Flagship can transport over the 1 space, using its ability (and, on the Original card, its move)', () => {
+    const s = tactical('original', 'o-tactical');
+    const { flag, destroyer } = ids(s);
+    const carry: Action = { type: 'tactical', die: flag, passenger: destroyer, to: { r: 2, c: 3 }, drop: { r: 3, c: 4 } };
+    expect(legalActions(s, { includeCarry: true })).toContainEqual(carry);
+    const after = apply(s, carry);
+    expect(at(after, flag)).toEqual({ zone: 'board', r: 2, c: 3 });
+    expect(at(after, destroyer)).toEqual({ zone: 'board', r: 3, c: 4 });
+    expect(after.turn.actionsLeft).toBe(3);
+    expect(after.turn.abilityUsed[flag]).toBe(true);
+    expect(() => apply(after, { type: 'move', die: flag, to: { r: 2, c: 4 } })).toThrow(/already moved/);
+    // Exactly 1 space: no 2-space flight, and no out-and-back.
+    expect(() => apply(s, { ...carry, to: { r: 2, c: 4 }, drop: { r: 3, c: 4 } })).toThrow(/Invalid carry/);
+    expect(() => apply(s, { ...carry, to: { r: 2, c: 2 }, drop: { r: 2, c: 3 } })).toThrow(/Invalid carry/);
+  });
+
+  it('a Flagship that already used its ability cannot transport with Tactical', () => {
+    const s = tactical('original', 'o-tactical');
+    const { flag, destroyer } = ids(s);
+    s.turn.abilityUsed[flag] = true;
+    expect(() => apply(s, { type: 'tactical', die: flag, passenger: destroyer, to: { r: 2, c: 3 }, drop: { r: 3, c: 4 } })).toThrow(/ability/);
+  });
+
+  it('an Interceptor can step or attack diagonally, using its ability', () => {
+    const s = tactical('community', 'tactical');
+    const { interceptor, enemy } = ids(s);
+    const step = apply(s, { type: 'tactical', die: interceptor, to: { r: 6, c: 6 } });
+    expect(at(step, interceptor)).toEqual({ zone: 'board', r: 6, c: 6 });
+    expect(step.turn.abilityUsed[interceptor]).toBe(true);
+    const strike = apply(s, { type: 'tactical', die: interceptor, target: enemy });
+    expect(strike.pending[0]?.kind).toBe('combat');
+    expect(strike.turn.abilityUsed[interceptor]).toBe(true);
+    // An orthogonal step leaves the ability unused.
+    expect(apply(s, { type: 'tactical', die: interceptor, to: { r: 5, c: 6 } }).turn.abilityUsed[interceptor]).toBeFalsy();
+    // Without its ability, no diagonals.
+    s.turn.abilityUsed[interceptor] = true;
+    expect(() => apply(s, { type: 'tactical', die: interceptor, to: { r: 6, c: 6 } })).toThrow(/one space/);
+    expect(() => apply(s, { type: 'tactical', die: interceptor, target: enemy })).toThrow(/adjacent/);
+  });
 });
 
 describe('undo', () => {

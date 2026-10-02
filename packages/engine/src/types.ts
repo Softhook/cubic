@@ -97,8 +97,10 @@ export interface TurnState {
   phase: 'actions' | 'cards';
   actionsLeft: number;
   freeDeploys: number;
-  /** Free non-attacking moves (original Curious). */
+  /** Free moves left (original Curious: only on a turn without attacks). */
   freeMoves: number;
+  /** Free moves taken so far; an attack later this turn must pay for them with actions. */
+  freeMovesUsed: number;
   moved: Record<string, number>;
   abilityUsed: Record<string, boolean>;
   /** Values each die has shown this turn (for Reconfigure). */
@@ -204,7 +206,8 @@ export type Action =
   | { type: 'flexible'; die: string; delta: 1 | -1 }
   | { type: 'resourceful'; die: string }
   | { type: 'tyrannical' }
-  | { type: 'tactical'; die: string; to?: Cell; target?: string }
+  /** Tactical's 1-space move (`to`) or attack (`target`); with `passenger` + `drop` it is a Flagship transport. */
+  | { type: 'tactical'; die: string; to?: Cell; target?: string; passenger?: string; drop?: Cell }
   // combat & decisions
   | { type: 'missile'; by: PlayerId; side: 'attacker' | 'defender' }
   | { type: 'resolveCombat' }

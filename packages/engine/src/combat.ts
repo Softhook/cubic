@@ -8,6 +8,7 @@ import {
   log,
   loseDominance,
   name,
+  payForAttack,
   placeCube,
   shipName,
   type Handlers,
@@ -19,6 +20,7 @@ import type { Cell, Die, GameState, PlayerId } from './types';
 
 /** The attacker has moved `from` next to the defender; both combat dice are rolled now. */
 export function startCombat(s: GameState, attacker: Die, defender: Die, from: Cell) {
+  if (attacker.owner === s.turn.player) payForAttack(s);
   const rollFor = (p: PlayerId) => (hasSkill(s, p, 'brutal') ? [d6(s), d6(s)] : [d6(s)]);
   const at = cellOf(defender)!;
   attacker.loc = { zone: 'board', r: from.r, c: from.c };

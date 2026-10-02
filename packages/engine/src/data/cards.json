@@ -494,11 +494,12 @@
       "id": "o-curious",
       "name": "Curious",
       "subtitle": "Bonus peaceful move",
-      "text": "Each turn, get 1 extra move action for free (you cannot use it to attack).",
+      "text": "Each turn, get 1 extra move action for free, as long as you do not attack any other player during your entire turn.",
       "category": "action",
       "effect": "curious-original",
       "ce_status": "original",
-      "count": 1
+      "count": 1,
+      "notes": "Second-printing errata (designer, BGG thread 1087563). First printing: 'Each turn, get 1 extra move action for free (you cannot use it to attack).'"
     },
     {
       "id": "o-dangerous",

@@ -157,15 +157,18 @@ export function moveOptions(state: GameState, dieId: string): MoveOptions {
   return result;
 }
 
-/** Destinations for a flagship carrying `passenger`, and where the passenger may be dropped. */
-export function carryOptions(state: GameState, flagshipId: string, passengerId: string) {
+/**
+ * Destinations for a flagship carrying `passenger`, and where the passenger may be dropped.
+ * `range` defaults to the flagship's movement; Tactical transports exactly 1 space.
+ */
+export function carryOptions(state: GameState, flagshipId: string, passengerId: string, range?: number) {
   const flag = die(state, flagshipId);
   const passenger = die(state, passengerId);
   const start = cellOf(flag);
   const pCell = cellOf(passenger);
   const result = new Map<string, { cell: Cell; drops: Cell[] }>();
   if (!start || !pCell) return result;
-  const range = movementRange(state, flag);
+  range ??= movementRange(state, flag);
   const reached = reach(state, start, range, false, [pCell]);
   for (const [k, info] of reached) {
     // The flagship must move, but may fly out and back to its own space (designer ruling,
@@ -296,16 +299,33 @@ export function infamyTargets(state: GameState, player: PlayerId): Planet[] {
   return fresh.length ? fresh : open;
 }
 
-/** Tactical: one step (or an attack on an adjacent enemy) for a single ship. */
-export function tacticalOptions(state: GameState, dieId: string): { moves: Cell[]; attacks: Die[] } {
+export interface TacticalOptions {
+  /** `diagonal` steps need the Interceptor's Maneuver ability. */
+  moves: { cell: Cell; diagonal: boolean }[];
+  attacks: { die: Die; diagonal: boolean }[];
+}
+
+/**
+ * Tactical: one step (or an attack on an adjacent enemy) for a single ship. An Interceptor that
+ * still has its ability may step or attack diagonally (forum consensus, BGG thread 2433096).
+ */
+export function tacticalOptions(state: GameState, dieId: string): TacticalOptions {
   const d = die(state, dieId);
   const start = cellOf(d);
-  if (!start) return { moves: [], attacks: [] };
-  const near = stepNeighbours(state, start, false);
-  return {
-    moves: near.filter((p) => isEmptySpace(state, p)),
-    attacks: near.map((p) => dieAt(state, p)).filter((x): x is Die => !!x && x.owner !== d.owner),
-  };
+  const result: TacticalOptions = { moves: [], attacks: [] };
+  if (!start) return result;
+  const straight = stepNeighbours(state, start, false);
+  const near = straight.map((cell) => ({ cell, diagonal: false }));
+  if (d.value === 5 && canUseAbility(state, d)) {
+    for (const cell of stepNeighbours(state, start, true))
+      if (!straight.some((p) => same(p, cell))) near.push({ cell, diagonal: true });
+  }
+  for (const { cell, diagonal } of near) {
+    const target = dieAt(state, cell);
+    if (!target && isEmptySpace(state, cell)) result.moves.push({ cell, diagonal });
+    else if (target && target.owner !== d.owner) result.attacks.push({ die: target, diagonal });
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------

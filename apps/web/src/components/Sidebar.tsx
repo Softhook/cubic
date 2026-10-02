@@ -48,7 +48,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
               <span key={i} className={i < t.actionsLeft ? 'on' : ''} />
             ))}
             {t.freeDeploys > 0 && <em title="Free deploy (Industrious)">+1 deploy</em>}
-            {t.freeMoves > 0 && <em title="Free move without attacking (Curious)">+1 move</em>}
+            {t.freeMoves > 0 && <em title="Free move (Curious) — only if you don't attack this turn; attacking afterwards costs an action for it">+1 move</em>}
           </div>
         )}
       </div>
@@ -167,7 +167,7 @@ function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Controller; 
     switch (d.value) {
       case 1:
         return (
-          <button className="btn" disabled={!freeAttackTargets(game, d.id).length} onClick={() => ctl.select({ kind: 'freeAttack', die: d.id })}>
+          <button className="btn" disabled={!freeAttackTargets(game, d.id).length || t.actionsLeft < t.freeMovesUsed} onClick={() => ctl.select({ kind: 'freeAttack', die: d.id })}>
             Free attack
           </button>
         );
@@ -175,7 +175,7 @@ function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Controller; 
         return (
           <button
             className="btn"
-            disabled={t.actionsLeft < 1 || !canMoveDie(game, d) || !carryPassengers(game, d.id).length}
+            disabled={(t.actionsLeft < 1 && t.freeMoves < 1) || !canMoveDie(game, d) || !carryPassengers(game, d.id).length}
             onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id })}
           >
             Carry &amp; move
@@ -220,6 +220,11 @@ function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Controller; 
         {tacticalReady && (
           <button className="btn" onClick={() => ctl.select({ kind: 'tactical', die: d.id })} title={card(tacticalId).text}>
             Tactical step
+          </button>
+        )}
+        {tacticalReady && d.value === 2 && !used && carryPassengers(game, d.id).length > 0 && (
+          <button className="btn" onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id, tactical: true })} title={`${card(tacticalId).text} The Flagship may transport a ship over that 1 space.`}>
+            Tactical carry
           </button>
         )}
         {onBoard && hasSkill(game, me, 'flexible') && !t.oncePerTurn.includes('flexible') && (

@@ -5,7 +5,7 @@
  */
 import { key, same } from './board';
 import { startCombat } from './combat';
-import { fail, markAbility, markMoved, ownShip, requireActionPhase, rerollNew, spend, type Handlers } from './core';
+import { fail, markAbility, markMoved, ownShip, requireActionPhase, rerollNew, spendMove, type Handlers } from './core';
 import { SHIP_NAMES } from './data';
 import { canMoveDie, carryOptions, carryPassengers, cellOf, die, freeAttackTargets } from './queries';
 import type { Die, GameState } from './types';
@@ -34,7 +34,7 @@ export const abilityHandlers = {
     const dest = carryOptions(s, d.id, a.passenger).get(key(a.to));
     if (!dest || !dest.drops.some((p) => same(p, a.drop))) fail('Invalid carry');
     if (same(a.to, a.drop)) fail('Drop the passenger next to the flagship');
-    spend(s, 1);
+    spendMove(s); // a Transport is a move without an attack, so Curious can pay for it
     useAbility(s, d, 2);
     d.loc = { zone: 'board', ...a.to };
     die(s, a.passenger).loc = { zone: 'board', ...a.drop };

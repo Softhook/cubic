@@ -85,6 +85,7 @@ export function emptyTurn(player: PlayerId, number: number): TurnState {
     actionsLeft: 0,
     freeDeploys: 0,
     freeMoves: 0,
+    freeMovesUsed: 0,
     moved: {},
     abilityUsed: {},
     seen: {},
@@ -107,6 +108,28 @@ export function requireActionPhase(s: GameState): TurnState {
 export function spend(s: GameState, n: number) {
   if (s.turn.actionsLeft < n) fail(n === 1 ? 'No actions left' : `Needs ${n} actions`);
   s.turn.actionsLeft -= n;
+}
+
+/** Pays for a move: a Curious free move if there is one, otherwise an action. */
+export function spendMove(s: GameState) {
+  const t = s.turn;
+  if (t.freeMoves > 0) {
+    t.freeMoves--;
+    t.freeMovesUsed++;
+  } else spend(s, 1);
+}
+
+/**
+ * Original Curious (2nd-printing errata, BGG thread 1087563): the free move is only allowed on a
+ * turn without attacks. Attacking forfeits it, and any free move already taken this turn is paid
+ * for with an action, as if it had been an ordinary move.
+ */
+export function payForAttack(s: GameState) {
+  const t = s.turn;
+  if (t.actionsLeft < t.freeMovesUsed) fail('Curious: you took a free move, so attacking this turn costs 1 more action');
+  t.actionsLeft -= t.freeMovesUsed;
+  t.freeMovesUsed = 0;
+  t.freeMoves = 0;
 }
 
 export function ownShip(s: GameState, id: string, zone?: Die['loc']['zone']): Die {
