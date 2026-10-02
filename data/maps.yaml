@@ -1,0 +1,69 @@
+# Quantum map layouts
+#
+# A map is a grid of tiles. Each tile is 3x3 board spaces with the planet in the centre,
+# so a map with R rows x C cols of tiles is a (3R) x (3C) board.
+#
+# Layout tokens (space-separated, one string per tile row):
+#   7 | 8 | 9 | 10   planet tile; number = conquer target and cube locations (7→1, 8→2, 9→3, 10→4)
+#   0                void tile: no planet; +1 research per own ship on it at start of turn
+#   .                no tile (empty gap, not part of the board)
+#   suffix *         starting planet
+#
+# Stats (from the CE print booklet), all derivable from layout + cubes + player count:
+#   slack   = total cube locations − players × cubes
+#   planets = planets that still have an empty location after setup
+#   shared  = how many of those must be shared if everyone placed all their cubes
+# Source: reference/community-edition-print/QCB-rules-booklet-A5.pdf
+
+maps:
+  - id: alpha-sector
+    name: Alpha Sector
+    players: 2
+    group: basic
+    cubes: 5
+    stats: { slack: 0, shared: 1, planets: 7 }
+    layout:
+      - "7* 7 7"
+      - "7  8 7"
+      - "7  7 7*"
+
+  - id: beta-sector
+    name: Beta Sector
+    players: 3
+    group: basic
+    cubes: 5
+    stats: { slack: 4, shared: 4, planets: 8 }
+    layout:
+      - "8* 9  8*"
+      - "8  9  8"
+      - "8  7* 8"
+
+  - id: gamma-sector
+    name: Gamma Sector
+    players: 4
+    group: basic
+    cubes: 5
+    stats: { slack: 3, shared: 6, planets: 9 }
+    layout:
+      - "8* 9  8*"
+      - "8  10 8"
+      - "9* 8  9*"
+
+# TODO(maps): transcribe from booklet pages 8–15. The PDF text layer drops the gaps
+# between tiles and the starting-planet markers, so read them off the rendered pages
+# and check each map's stats against its layout (a unit test can recompute slack/shared).
+#
+# 2p constant-contact: entanglement, axiomatic, asymptote, false-binary, terra-minor, precis
+# 2p shared-space:     null-hypothesis, non-sequitur, circular-logic, from-dust-to-dust, beyond, matter-and-antimatter
+# 2p open-frontier:    parallax, outer-fringe, the-great-plan, wave-function, rupture, terra-major
+# 3p constant-contact: gravitational-constant, quandary, the-empty-centre
+# 3p shared-space:     origin-of-thought, crux, pivot-point, string-theory, critical-density,
+#                      space-time-continuum, aperture, foundation, ouroboros
+# 3p open-frontier:    infamous, edge-of-oblivion, einstein-rosen-bridge, lattice, outer-reaches
+# 4p constant-contact: singularity, super-collider, spiral-nebula
+# 4p shared-space:     brownian-motion, doppler-effect, event-horizon, nexus
+# 4p open-frontier:    the-great-expanse, galactic-rotation, circumgyration, gordian-knot, helix, barren-empire
+# 5p constant-contact: omega-sector, ad-hominem, false-dilemma, reification, no-true-scotsman,
+#                      anecdotal, fallacy-fallacy, bandwagon
+# 5p shared-space:     appeal-to-authority, false-equivalence, special-pleading, false-dichotomy,
+#                      ambiguity, beg-the-question
