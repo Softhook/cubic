@@ -7,7 +7,8 @@ import { key, same } from './board';
 import { startCombat } from './combat';
 import { fail, markAbility, markMoved, ownShip, requireActionPhase, rerollNew, spendMove, type Handlers } from './core';
 import { SHIP_NAMES } from './data';
-import { canMoveDie, carryOptions, carryPassengers, cellOf, die, freeAttackTargets } from './queries';
+import { cellOf, die } from './lookups';
+import { canMoveDie, carryOptions, carryPassengers, freeAttackTargets } from './queries';
 import type { Cell, Die, GameState } from './types';
 
 function useAbility(s: GameState, d: Die, value: number) {

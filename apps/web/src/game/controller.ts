@@ -8,12 +8,12 @@ import {
   same,
   scrapyard,
   tacticalOptions,
-  type Action,
   type Cell,
   type GameState,
 } from '@quantum/engine';
 import { sfx } from '../sound';
 import { legalFor, NO_LEGAL } from './legal';
+import type { Dispatch } from './useGame';
 
 export type Sel =
   | { kind: 'none' }
@@ -37,7 +37,7 @@ export interface Highlights {
   planets: Map<number, { tone: PlanetTone; label: string }>;
 }
 
-export function useController(game: GameState, dispatch: (a: Action) => boolean) {
+export function useController(game: GameState, dispatch: Dispatch) {
   const [sel, setSel] = useState<Sel>({ kind: 'none' });
   const head = game.pending[0];
   const who = actor(game);

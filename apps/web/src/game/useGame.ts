@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { actor, apply, checkInvariants, isUndoable, RuleError, type Action, type GameState, type LogEntry } from '@quantum/engine';
+import { actor, apply, checkInvariants, isUndoable, RuleError, type Action, type GameState, type LogEntry, type LogEvent } from '@quantum/engine';
 import { chooseAction, chooseMissile } from '@quantum/ai';
 import { sfx } from '../sound';
+
+/** Applies an action; false (with an error shown) if the rules refuse it. */
+export type Dispatch = (a: Action) => boolean;
 
 export interface Toast {
   id: number;
@@ -20,25 +23,25 @@ function aiDelay(s: GameState): number {
   return 800;
 }
 
-function toneFor(text: string): Toast['tone'] | null {
-  if (/wins!|Infamy|seizes/.test(text)) return 'gold';
-  if (/conquers|wins the battle|holds firm/.test(text)) return 'good';
-  if (/repels|missile|destroys/.test(text)) return 'bad';
-  if (/takes the|plays|expands|breakthrough|discards/.test(text)) return 'info';
-  return null;
-}
+/** How the UI reacts to each logged event: a toast tone and a sound (either may be absent). */
+const REACTIONS: Record<LogEvent, { tone?: Toast['tone']; sound?: () => void }> = {
+  victory: { tone: 'gold', sound: () => sfx.win() },
+  infamy: { tone: 'gold' },
+  seize: { tone: 'gold', sound: () => sfx.cube() },
+  conquer: { tone: 'good', sound: () => sfx.cube() },
+  startPlanet: { sound: () => sfx.cube() },
+  battleWon: { tone: 'good', sound: () => sfx.hit() },
+  repelled: { tone: 'bad', sound: () => sfx.repel() },
+  missile: { tone: 'bad', sound: () => sfx.missile() },
+  shipDestroyed: { tone: 'bad', sound: () => sfx.hit() },
+  cardTaken: { tone: 'info', sound: () => sfx.card() },
+  cardPlayed: { tone: 'info', sound: () => sfx.card() },
+  expansion: { tone: 'info', sound: () => sfx.card() },
+  discard: { tone: 'info' },
+  breakthrough: { tone: 'info' },
+};
 
-function soundFor(entries: LogEntry[]) {
-  for (const e of entries) {
-    const t = e.text;
-    if (t.includes('wins!')) sfx.win();
-    else if (/conquers|seizes|deploys around/.test(t)) sfx.cube();
-    else if (/wins the battle|holds firm|destroys/.test(t)) sfx.hit();
-    else if (t.includes('repels')) sfx.repel();
-    else if (t.includes('missile')) sfx.missile();
-    else if (/takes the|plays|expands/.test(t)) sfx.card();
-  }
-}
+const reaction = (e: LogEntry) => (e.event ? REACTIONS[e.event] : {});
 
 /** Logs an engine bug with the state and action that trigger it (replay with window.__quantum.load). */
 function reportBug(what: string, state: GameState, action: Action, error?: unknown) {
@@ -64,9 +67,9 @@ export function useGame(initial: GameState) {
     ref.current = next;
     setGame(next);
     const fresh = next.log.filter((e) => e.id > (prev.log.at(-1)?.id ?? 0));
-    soundFor(fresh);
+    for (const e of fresh) reaction(e).sound?.();
     const shown = fresh
-      .map((e) => ({ e, tone: toneFor(e.text) }))
+      .map((e) => ({ e, tone: reaction(e).tone }))
       .filter((x): x is { e: LogEntry; tone: Toast['tone'] } => !!x.tone)
       .map(({ e, tone }) => ({ id: e.id, text: e.text, player: e.player, tone }));
     if (shown.length) {

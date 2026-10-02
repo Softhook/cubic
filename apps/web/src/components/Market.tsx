@@ -1,8 +1,9 @@
-import { EXPANSION, rulesOf, type Action, type DeckKind, type GameState } from '@quantum/engine';
+import { EXPANSION, rulesOf, type DeckKind, type GameState } from '@quantum/engine';
 import type { Legal } from '../game/legal';
+import type { Dispatch } from '../game/useGame';
 import { CardView } from './Card';
 
-export function Market({ game, dispatch, legal }: { game: GameState; dispatch: (a: Action) => boolean; legal: Legal }) {
+export function Market({ game, dispatch, legal }: { game: GameState; dispatch: Dispatch; legal: Legal }) {
   const picking = legal.can('takeCard');
   const m = game.market;
   const canTake = (deck: DeckKind | 'expansion', index: number) => legal.can('takeCard', (a) => a.deck === deck && a.index === index);

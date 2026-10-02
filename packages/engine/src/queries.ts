@@ -1,4 +1,6 @@
+/** Read-only questions about a state: movement, deploying, conquering, combat totals… */
 import {
+  adjacent,
   cellAt,
   diagonals,
   isDiagonalStep,
@@ -8,53 +10,17 @@ import {
   same,
   stepNeighbours,
   surrounding,
-  adjacent,
 } from './board';
-import { effectOf } from './data';
-import type { SkillEffect } from './effects';
+import { card } from './data';
+import { cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
 import { rulesOf } from './rules';
+import { activeSkills, anySkill, skillRules, type CombatPart } from './skillRules';
 import type { Cell, CombatPending, Die, GameState, OncePerTurn, Planet, PlayerId } from './types';
 
+export type { CombatPart } from './skillRules';
+
 // ---------------------------------------------------------------------------
-// Lookups
-
-export function die(state: GameState, id: string): Die {
-  const d = state.dice.find((x) => x.id === id);
-  if (!d) throw new Error(`Unknown die ${id}`);
-  return d;
-}
-
-export function dieAt(state: GameState, p: Cell): Die | undefined {
-  return state.dice.find((d) => d.loc.zone === 'board' && d.loc.r === p.r && d.loc.c === p.c);
-}
-
-export function cellOf(d: Die): Cell | null {
-  return d.loc.zone === 'board' ? { r: d.loc.r, c: d.loc.c } : null;
-}
-
-export function shipsOnBoard(state: GameState, player?: PlayerId): Die[] {
-  return state.dice.filter(
-    (d) => d.loc.zone === 'board' && (player === undefined || d.owner === player),
-  );
-}
-
-export function scrapyard(state: GameState, player: PlayerId): Die[] {
-  return state.dice.filter((d) => d.owner === player && d.loc.zone === 'scrapyard');
-}
-
-export function reserve(state: GameState, player: PlayerId): Die[] {
-  return state.dice.filter((d) => d.owner === player && d.loc.zone === 'reserve');
-}
-
-/** True when the player owns an active skill with this effect (e.g. Cerebral has the 'composed' effect). */
-export function hasSkill(state: GameState, player: PlayerId, effect: SkillEffect): boolean {
-  return state.players[player].skills.some((s) => s.active && effectOf(s.id) === effect);
-}
-
-/** The id of the player's card that provides an effect, for showing its name. */
-export function skillCard(state: GameState, player: PlayerId, effect: SkillEffect): string | undefined {
-  return state.players[player].skills.find((s) => s.active && effectOf(s.id) === effect)?.id;
-}
+// Turn limits
 
 /** Whether a once-per-turn effect has been used this turn. */
 export function usedThisTurn(state: GameState, tag: OncePerTurn): boolean {
@@ -63,7 +29,7 @@ export function usedThisTurn(state: GameState, tag: OncePerTurn): boolean {
 
 /** Cunning: one ship ability may be used a second time each turn. */
 export function cunningAvailable(state: GameState, player: PlayerId): boolean {
-  return hasSkill(state, player, 'cunning') && !usedThisTurn(state, 'cunning');
+  return anySkill(state, player, (r) => r.abilityTwice) && !usedThisTurn(state, 'cunning');
 }
 
 export function canUseAbility(state: GameState, d: Die): boolean {
@@ -80,19 +46,29 @@ export function canReconfigure(state: GameState, d: Die): boolean {
 }
 
 export function skillLimit(state: GameState, player: PlayerId): number {
-  return hasSkill(state, player, 'talented') ? 5 : 3;
+  return Math.max(3, ...skillRules(state, player).map((r) => r.skillLimit ?? 0));
 }
 
-export function isEmptySpace(state: GameState, p: Cell): boolean {
-  const cell = cellAt(state.board, p);
-  return !!cell && cell.kind === 'space' && !dieAt(state, p);
+/** Research needed for a breakthrough at the end of the turn. */
+export function breakthroughAt(state: GameState, player: PlayerId): number {
+  return Math.min(6, ...skillRules(state, player).map((r) => r.breakthroughAt ?? 6));
+}
+
+/** Whether the player can gain research at all. */
+export function canGainResearch(state: GameState, player: PlayerId): boolean {
+  return !anySkill(state, player, (r) => r.noResearch);
+}
+
+/** Whether deploying is free for the player. */
+export function deploysFree(state: GameState, player: PlayerId): boolean {
+  return anySkill(state, player, (r) => r.freeDeploy);
 }
 
 // ---------------------------------------------------------------------------
 // Movement
 
 export function movementRange(state: GameState, d: Die): number {
-  return d.value + (hasSkill(state, d.owner, 'agile') ? 1 : 0);
+  return d.value + skillRules(state, d.owner).reduce((n, r) => n + (r.movement ?? 0), 0);
 }
 
 export interface MoveOptions {
@@ -132,7 +108,7 @@ function reach(state: GameState, start: Cell, range: number, diagonal: boolean, 
 export function canMoveDie(state: GameState, d: Die): boolean {
   return (
     d.loc.zone === 'board' &&
-    ((state.turn.moved[d.id] ?? 0) === 0 || hasSkill(state, d.owner, 'steadfast'))
+    ((state.turn.moved[d.id] ?? 0) === 0 || anySkill(state, d.owner, (r) => r.moveRepeatedly))
   );
 }
 
@@ -235,7 +211,7 @@ export function deployTargets(state: GameState, player: PlayerId): Cell[] {
       if (isEmptySpace(state, p)) targets.set(key(p), p);
     }
   }
-  if (hasSkill(state, player, 'stealthy')) {
+  if (anySkill(state, player, (r) => r.deployIsolated)) {
     for (let r = 0; r < state.board.rows; r++) {
       for (let c = 0; c < state.board.cols; c++) {
         const p = { r, c };
@@ -281,20 +257,19 @@ export function conquerCheck(state: GameState, player: PlayerId, planetId: numbe
     target += 3 * own;
   }
 
+  const rules = skillRules(state, player).flatMap((r) => (r.conquer ? [r.conquer] : []));
   const spaces = [...orbitals(state.board, planet)];
-  if (hasSkill(state, player, 'ingenious')) spaces.push(...diagonals(state.board, planet));
+  if (rules.some((r) => r.diagonals)) spaces.push(...diagonals(state.board, planet));
   const ships = spaces.map((p) => dieAt(state, p)).filter((d): d is Die => !!d && d.owner === player);
   const sum = ships.reduce((a, d) => a + d.value, 0);
   if (!ships.length) return fail('No ships in orbit', ships, sum);
 
-  const sums = [sum];
   const p = state.players[player];
-  if (hasSkill(state, player, 'tyrannical')) sums.push(sum + p.dominance);
-  if (hasSkill(state, player, 'pioneering')) for (const d of ships) sums.push(sum - d.value + p.research);
-  const targets = [target];
-  if (hasSkill(state, player, 'intelligent')) targets.push(target - 1, target + 1);
+  const ctx = { sum, ships, dominance: p.dominance, research: p.research };
+  const sums = [sum, ...rules.flatMap((r) => r.sums?.(ctx) ?? [])];
+  const tolerance = Math.max(0, ...rules.map((r) => r.tolerance ?? 0));
 
-  const ok = sums.some((s) => targets.includes(s));
+  const ok = sums.some((s) => Math.abs(s - target) <= tolerance);
   return { ok, sum, target, ships, reason: ok ? undefined : `Orbit totals ${sum}, needs ${target}` };
 }
 
@@ -337,11 +312,6 @@ export function tacticalOptions(state: GameState, dieId: string): TacticalOption
 // ---------------------------------------------------------------------------
 // Combat
 
-export interface CombatPart {
-  label: string;
-  value: number;
-}
-
 export interface CombatTotal {
   roll: number;
   total: number;
@@ -355,12 +325,14 @@ export interface CombatTotal {
 export function combatTotal(state: GameState, combat: CombatPending, side: 'attacker' | 'defender'): CombatTotal {
   const s = combat[side];
   const p = state.players[s.player];
+  const skills = activeSkills(state, s.player).filter((a) => a.rule.combat);
   const parts: CombatPart[] = [];
   let roll = s.dice.length > 1 ? Math.min(...s.dice) : s.dice[0];
   let label = s.dice.length > 1 ? 'Brutal roll' : 'Roll';
-  if (hasSkill(state, s.player, 'rational')) {
-    roll = 3;
-    label = 'Rational';
+  for (const { card: id, rule } of skills) {
+    if (rule.combat!.roll === undefined) continue;
+    roll = rule.combat!.roll;
+    label = card(id).name;
   }
   if (p.planAhead > 0) {
     roll = 1;
@@ -372,16 +344,9 @@ export function combatTotal(state: GameState, combat: CombatPending, side: 'atta
   }
   parts.push({ label, value: roll });
   parts.push({ label: 'Ship', value: s.ship });
-  if (hasSkill(state, s.player, 'ferocious')) parts.push({ label: 'Ferocious', value: -1 });
-  if (hasSkill(state, s.player, 'strategic')) {
-    const spaces = side === 'attacker' ? [combat.from, combat.at] : [combat.at];
-    const supported = spaces.some((sp) =>
-      adjacent(state.board, sp).some((q) => {
-        const d = dieAt(state, q);
-        return d && d.owner === s.player && d.id !== s.die;
-      }),
-    );
-    if (supported) parts.push({ label: 'Strategic', value: -2 });
+  for (const { card: id, rule } of skills) {
+    const value = rule.combat!.modifier?.({ state, combat, side }) ?? 0;
+    if (value) parts.push({ label: card(id).name, value });
   }
   const total = parts.reduce((a, x) => a + x.value, 0);
   return { roll, total, parts };
@@ -391,9 +356,14 @@ export function combatOutcome(state: GameState, combat: CombatPending) {
   const a = combatTotal(state, combat, 'attacker');
   const d = combatTotal(state, combat, 'defender');
   const tie = a.total === d.total;
-  const stubborn = tie && hasSkill(state, combat.defender.player, 'stubborn');
+  const stubborn = tie && anySkill(state, combat.defender.player, (r) => r.combat?.winsDefendedTies);
   const attackerWins = a.total < d.total || (tie && !stubborn);
   return { attacker: a, defender: d, attackerWins, stubborn };
+}
+
+/** How many combat dice the player rolls (the lowest counts). */
+export function combatDice(state: GameState, player: PlayerId): number {
+  return Math.max(1, ...skillRules(state, player).map((r) => r.combat?.dice ?? 1));
 }
 
 /** Probability that an attacker ship of value `a` beats a defender of value `d` with plain dice. */

@@ -6,7 +6,7 @@
  * skill that silently never applies.
  */
 
-/** Skill / Command effects. Their rules live where they apply: search for `hasSkill(…, '<effect>')`. */
+/** Skill / Command effects. What each one does is its entry in SKILL_RULES (skillRules.ts). */
 export const SKILL_EFFECTS = [
   // shared / community skills
   'agile',

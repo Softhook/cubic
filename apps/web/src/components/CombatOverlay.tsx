@@ -1,10 +1,11 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { SHIP_NAMES, combatOutcome, tryApply, type Action, type CombatPending, type GameState, type PlayerState } from '@quantum/engine';
+import type { Dispatch } from '../game/useGame';
 import { Die3D } from './Die3D';
 
 const REVEAL_MS = 1250;
 
-export function CombatOverlay({ game, combat, dispatch }: { game: GameState; combat: CombatPending; dispatch: (a: Action) => boolean }) {
+export function CombatOverlay({ game, combat, dispatch }: { game: GameState; combat: CombatPending; dispatch: Dispatch }) {
   const [revealed, setRevealed] = useState(false);
   useEffect(() => {
     setRevealed(false);
@@ -119,7 +120,7 @@ function MissileButton({
   role: 'attacker' | 'defender';
   shooter: PlayerState;
   named: boolean;
-  dispatch: (a: Action) => boolean;
+  dispatch: Dispatch;
 }) {
   const side = combat[role];
   const fighting = shooter.id === combat.attacker.player || shooter.id === combat.defender.player;

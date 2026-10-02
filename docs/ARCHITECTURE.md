@@ -23,10 +23,12 @@ How the code is organised, and where to make the common changes.
 | `combat.ts` | Attacks, missiles, advancing, Infamy |
 | `cards.ts` | Card market, Tactic effects, card decisions |
 | `effects.ts` | The implemented Skill and Tactic effects, as types |
-| `skills.ts` | Skills a player activates |
+| `skillRules.ts` | What every skill does: one entry of hooks per skill (`SKILL_RULES`) |
+| `skillActions.ts` | Skills used as an action of their own |
 | `turn.ts` | Start/end of turn; `settle()` auto-resolves decisions after each action |
 | `legal.ts` | `legalActions()` |
 | `queries.ts` | Read-only questions: movement, conquer check, combat totals… |
+| `lookups.ts` | Where dice are, what is on a space; no rules |
 | `core.ts` | Shared helpers: errors, log, dice, dominance/research, cubes |
 | `invariants.ts` | `checkInvariants()`: consistency checks every state must pass |
 | `board.ts`, `mapStats.ts`, `data.ts`, `rng.ts`, `types.ts`, `undo.ts` | Board geometry, map stats, card/map data, RNG, types, undo policy |
@@ -39,7 +41,8 @@ Two ideas hold it together:
 - **Exhaustive registries.** `Handlers` (engine.ts) maps every `Action` type to one handler;
   `DECISION_CANDIDATES` (legal.ts) maps every `Pending` kind to its possible answers. Both are typed so
   that adding an action or a decision without handling it is a compile error. Skill effects, Tactic
-  effects and once-per-turn tags are union types too, so a misspelt name doesn't compile.
+  effects and once-per-turn tags are union types too, so a misspelt name doesn't compile, and
+  `SKILL_RULES` must have an entry for every skill effect.
 - **One source of truth for "may I?".** A handler decides whether an action is legal. `legalActions`
   lists the same actions for the AI and the UI; `consistency.test.ts` checks that the two agree in both
   directions. The UI never re-checks a rule, it asks `legalActions`.
@@ -68,10 +71,12 @@ and add its candidates to `DECISION_CANDIDATES`. If it can have no legal answer,
 then its implementation to `TACTIC_EFFECTS` in `cards.ts` (the compiler asks for it). It joins the deck
 automatically, and `data.test.ts` drops it from the not-yet-implemented list.
 
-**Add a Skill.** Add the card to `data/cards.yaml`, implement its rule where the rule applies (find a
-similar skill's `hasSkill(...)` check), and list it in `SKILL_EFFECTS` in `effects.ts`. *Next step for
-the engine: replace these scattered checks with a hook system (on combat roll, on destroy, on conquer
-check…) so a skill is defined in one place.*
+**Add a Skill.** Add the card to `data/cards.yaml` and its effect to `SKILL_EFFECTS` in `effects.ts`;
+the compiler then asks for its entry in `SKILL_RULES` (`skillRules.ts`). An entry is a set of hooks the
+rules read — `movement`, `conquer.sums`, `combat.modifier`, `startOfTurn`, `onDestroy`… — so a skill
+is defined in one place. If no hook fits, add one to `SkillRule` and read it where the rule lives
+(via `skillRules(state, player)`; rules never name a skill). A skill that is an action of its own
+sets `activated` and gets a handler in `skillActions.ts`.
 
 **Add a rule set** (e.g. our own edition). Add a `GameMode` and an entry in `RULESETS` (`rules.ts`). If
 the new rule set changes a rule rather than a parameter, add a field to `RuleSet` and read it where the

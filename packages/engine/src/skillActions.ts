@@ -1,4 +1,4 @@
-/** Skills / Command cards a player activates as an action of their own. Passive skills apply where their rule does. */
+/** Skills / Command cards used as an action of their own. What every skill does is in skillRules.ts. */
 import { transport } from './abilities';
 import { same } from './board';
 import { startCombat } from './combat';
@@ -17,7 +17,9 @@ import {
   requireSkill,
   type Handlers,
 } from './core';
-import { canMoveDie, cellOf, hasSkill, tacticalOptions } from './queries';
+import { cellOf } from './lookups';
+import { canMoveDie, tacticalOptions } from './queries';
+import { hasSkill } from './skillRules';
 
 export const skillHandlers = {
   composed(s) {

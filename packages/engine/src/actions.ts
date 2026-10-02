@@ -16,7 +16,8 @@ import {
   spendMove,
   type Handlers,
 } from './core';
-import { canMoveDie, canReconfigure, conquerCheck, deployTargets, die, hasSkill, moveOptions } from './queries';
+import { die } from './lookups';
+import { canGainResearch, canMoveDie, canReconfigure, conquerCheck, deployTargets, deploysFree, moveOptions } from './queries';
 import { rulesOf } from './rules';
 import { endTurn } from './turn';
 
@@ -47,7 +48,7 @@ export const actionHandlers = {
     const t = requireActionPhase(s);
     const d = ownShip(s, a.die, 'scrapyard');
     if (!deployTargets(s, t.player).some((p) => same(p, a.to))) fail('Deploy into orbit of a planet with your cube');
-    if (hasSkill(s, t.player, 'eager')) {
+    if (deploysFree(s, t.player)) {
       /* Eager: deploying is free */
     } else if (t.freeDeploys > 0) t.freeDeploys--;
     else spend(s, 1);
@@ -64,7 +65,7 @@ export const actionHandlers = {
     const t = requireActionPhase(s);
     if (!rulesOf(s).cards) fail('This mode has no research');
     if (s.players[t.player].research >= 6) fail('Research is already at 6');
-    if (hasSkill(s, t.player, 'righteous')) fail('Righteous: you cannot gain research');
+    if (!canGainResearch(s, t.player)) fail('You cannot gain research');
     spend(s, 1);
     gainResearch(s, t.player, 1);
   },
@@ -73,7 +74,7 @@ export const actionHandlers = {
     const check = conquerCheck(s, t.player, a.planet);
     if (!check.ok) fail(check.reason ?? 'Cannot conquer');
     spend(s, 2);
-    log(s, `${name(s, t.player)} conquers planet ${s.board.planets[a.planet].number}.`, t.player);
+    log(s, `${name(s, t.player)} conquers planet ${s.board.planets[a.planet].number}.`, t.player, 'conquer');
     placeCube(s, t.player, a.planet);
   },
   endTurn(s) {

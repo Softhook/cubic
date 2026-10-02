@@ -155,10 +155,28 @@ export type Pending =
   /** Unveil the Fleet (CE) or, with `reorganize`, Reorganization (original). */
   | { kind: 'unveil'; player: PlayerId; rerolled: string[]; reorganize?: boolean };
 
+/** What a log entry reports, so the UI can react (sounds, toasts) without parsing its text. */
+export type LogEvent =
+  | 'victory'
+  | 'infamy'
+  | 'seize'
+  | 'conquer'
+  | 'startPlanet'
+  | 'battleWon'
+  | 'repelled'
+  | 'missile'
+  | 'shipDestroyed'
+  | 'cardTaken'
+  | 'cardPlayed'
+  | 'expansion'
+  | 'discard'
+  | 'breakthrough';
+
 export interface LogEntry {
   id: number;
   player?: PlayerId;
   text: string;
+  event?: LogEvent;
 }
 
 export interface GameState {

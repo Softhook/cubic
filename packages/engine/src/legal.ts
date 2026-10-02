@@ -1,27 +1,26 @@
 /** Legal action enumeration, used by the AI and for UI hints. */
 import { tryApply } from './engine';
 import type { PendingOf } from './core';
+import { isEmptySpace, reserve, scrapyard, shipsOnBoard } from './lookups';
 import {
+  canGainResearch,
   canMoveDie,
   canReconfigure,
   canUseAbility,
   carryOptions,
   carryPassengers,
   conquerCheck,
+  deploysFree,
   deployTargets,
   freeAttackTargets,
-  hasSkill,
   infamyTargets,
-  isEmptySpace,
   moveOptions,
-  reserve,
-  scrapyard,
-  shipsOnBoard,
   startSlots,
   tacticalOptions,
   usedThisTurn,
 } from './queries';
 import { rulesOf } from './rules';
+import { hasSkill } from './skillRules';
 import type { Action, GameState, Pending } from './types';
 
 /**
@@ -135,13 +134,13 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
       out.push({ type: 'resourceful', die: d.id });
     }
   }
-  const eager = hasSkill(s, me, 'eager');
+  const freeDeploy = deploysFree(s, me);
   const targets = deployTargets(s, me);
   for (const d of scrapyard(s, me)) {
-    if (actions > 0 || t.freeDeploys > 0 || eager) for (const to of targets) out.push({ type: 'deploy', die: d.id, to });
+    if (actions > 0 || t.freeDeploys > 0 || freeDeploy) for (const to of targets) out.push({ type: 'deploy', die: d.id, to });
     if (actions > 0 && canReconfigure(s, d)) out.push({ type: 'reconfigure', die: d.id });
   }
-  if (rulesOf(s).cards && actions > 0 && pl.research < 6 && !hasSkill(s, me, 'righteous')) out.push({ type: 'research' });
+  if (rulesOf(s).cards && actions > 0 && pl.research < 6 && canGainResearch(s, me)) out.push({ type: 'research' });
   if (hasSkill(s, me, 'tyrannical-original') && !usedThisTurn(s, 'tyrannical') && pl.research > 1) out.push({ type: 'tyrannical' });
   if (actions >= 2) for (const p of s.board.planets) if (conquerCheck(s, me, p.id).ok) out.push({ type: 'conquer', planet: p.id });
   if (hasSkill(s, me, 'composed') && !usedThisTurn(s, 'composed')) out.push({ type: 'composed' });

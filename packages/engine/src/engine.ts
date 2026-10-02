@@ -10,12 +10,14 @@
  *   combat.ts     attacks, missiles, advancing, Infamy
  *   cards.ts      the card market, Tactic effects and their decisions
  *   effects.ts    the implemented Skill and Tactic effects, as types
- *   skills.ts     skills a player activates
+ *   skillRules.ts what every skill does, as hooks the rules read
+ *   skillActions.ts skills used as an action of their own
  *   turn.ts       start / end of turn, and auto-resolving decisions after each action
  *   legal.ts      legal action enumeration (AI, UI hints)
  *   rules.ts      what differs between rule sets (Basic, Original, Community)
  *   core.ts       shared helpers: errors, log, dice, tracks, cubes
  *   queries.ts    read-only questions about a state (movement, conquering, combat totals…)
+ *   lookups.ts    where dice are and what is on a space (no rules)
  *   invariants.ts consistency checks every state must pass (tests, dev builds)
  */
 import { abilityHandlers } from './abilities';
@@ -24,7 +26,7 @@ import { cardHandlers } from './cards';
 import { combatHandlers } from './combat';
 import type { Handlers } from './core';
 import { setupHandlers } from './setup';
-import { skillHandlers } from './skills';
+import { skillHandlers } from './skillActions';
 import { settle } from './turn';
 import { RuleError, type Action, type GameState, type Pending, type PlayerId } from './types';
 

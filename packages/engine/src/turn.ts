@@ -1,8 +1,23 @@
 /** Turn structure: start of turn, the end-of-turn card phase, and passing the turn on. */
 import { ACTIONS_PER_TURN, emptyTurn, gainResearch, log, name, type PendingOf } from './core';
-import { canTakeAnyCard, cellOf, hasSkill, infamyTargets, scrapyard, shipsOnBoard, startSlots } from './queries';
+import { cellOf, scrapyard, shipsOnBoard } from './lookups';
+import { breakthroughAt, canTakeAnyCard, infamyTargets, startSlots } from './queries';
 import { rulesOf } from './rules';
+import { skillRules, type TurnBonus } from './skillRules';
 import type { GameState, Pending, PlayerId } from './types';
+
+/** The start-of-turn bonuses of the player's skills, added up. */
+function startOfTurnBonus(s: GameState, player: PlayerId): Required<TurnBonus> {
+  const total = { actions: 0, freeDeploys: 0, freeMoves: 0, research: 0 };
+  for (const r of skillRules(s, player)) {
+    const b = r.startOfTurn?.(s, player) ?? {};
+    total.actions += b.actions ?? 0;
+    total.freeDeploys += b.freeDeploys ?? 0;
+    total.freeMoves += b.freeMoves ?? 0;
+    total.research += b.research ?? 0;
+  }
+  return total;
+}
 
 export function startTurn(s: GameState, player: PlayerId, actions: number, bonus: boolean) {
   const pl = s.players[player];
@@ -13,19 +28,13 @@ export function startTurn(s: GameState, player: PlayerId, actions: number, bonus
     n -= pl.actionPenalty;
     pl.actionPenalty = 0;
   }
-  s.turn.actionsLeft = Math.max(0, n);
-  s.turn.freeDeploys = hasSkill(s, player, 'industrious') ? 1 : 0;
-  s.turn.freeMoves = hasSkill(s, player, 'curious-original') ? 1 : 0;
-  const mine = shipsOnBoard(s, player);
-  if (hasSkill(s, player, 'arrogant') && s.players.every((o) => o.id === player || shipsOnBoard(s, o.id).length < mine.length)) {
-    s.turn.actionsLeft++;
-  }
-  if (hasSkill(s, player, 'conformist') && new Set(mine.map((d) => d.value)).size < mine.length) {
-    s.turn.actionsLeft++;
-  }
+  const extra = startOfTurnBonus(s, player);
+  s.turn.actionsLeft = Math.max(0, n) + extra.actions;
+  s.turn.freeDeploys = extra.freeDeploys;
+  s.turn.freeMoves = extra.freeMoves;
   for (const d of s.dice) if (d.owner === player) s.turn.seen[d.id] = [d.value];
 
-  if (hasSkill(s, player, 'brilliant')) gainResearch(s, player, 2);
+  if (extra.research) gainResearch(s, player, extra.research);
   // Void tiles: +1 research per own ship on one.
   const onVoid = shipsOnBoard(s, player).filter((d) => {
     const c = cellOf(d)!;
@@ -49,11 +58,10 @@ export function endTurn(s: GameState) {
   s.turn.phase = 'cards';
   if (!rulesOf(s).cards) return;
   let cards = s.turn.conquests;
-  const threshold = hasSkill(s, p, 'precocious') ? 4 : 6;
-  if (pl.research >= threshold) {
+  if (pl.research >= breakthroughAt(s, p)) {
     pl.research = 1;
     cards++;
-    log(s, `${pl.name} makes a research breakthrough.`, p);
+    log(s, `${pl.name} makes a research breakthrough.`, p, 'breakthrough');
   }
   if (cards > 0) s.pending.push({ kind: 'takeCard', player: p, count: cards });
 }
@@ -75,14 +83,14 @@ function finishTurn(s: GameState) {
 const AUTO_RESOLVE: { [K in Pending['kind']]?: (s: GameState, head: PendingOf<K>) => boolean } = {
   placeShips(s, head) {
     if (scrapyard(s, head.player).length && startSlots(s, head.planet).length) return false;
-    log(s, `${name(s, head.player)} deploys around planet ${s.board.planets[head.planet].number}.`, head.player);
+    log(s, `${name(s, head.player)} deploys around planet ${s.board.planets[head.planet].number}.`, head.player, 'startPlanet');
     s.pending.shift();
     if (!s.pending.length) beginPlay(s);
     return true;
   },
   infamy(s, head) {
     if (infamyTargets(s, head.player).length) return false;
-    log(s, `${name(s, head.player)} has nowhere to place an Infamy cube.`, head.player);
+    log(s, `${name(s, head.player)} has nowhere to place an Infamy cube.`, head.player, 'infamy');
     s.pending.shift();
     return true;
   },

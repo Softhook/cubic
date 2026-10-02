@@ -4,10 +4,12 @@
  */
 import { cardWithEffect, SHIP_NAMES } from './data';
 import type { SkillEffect } from './effects';
-import { canUseAbility, die, hasSkill, usedThisTurn } from './queries';
+import { die } from './lookups';
+import { canGainResearch, canUseAbility, usedThisTurn } from './queries';
 import { d6 } from './rng';
 import { rulesOf } from './rules';
-import { RuleError, type Action, type Die, type GameState, type OncePerTurn, type Pending, type PlayerId, type TurnState } from './types';
+import { hasSkill, skillRules } from './skillRules';
+import { RuleError, type Action, type Die, type GameState, type LogEvent, type OncePerTurn, type Pending, type PlayerId, type TurnState } from './types';
 
 export const ACTIONS_PER_TURN = 3;
 const LOG_LIMIT = 80;
@@ -28,8 +30,8 @@ export function fail(msg: string): never {
   throw new RuleError(msg);
 }
 
-export function log(s: GameState, text: string, player?: PlayerId) {
-  s.log.push({ id: ++s.logCounter, text, player });
+export function log(s: GameState, text: string, player?: PlayerId, event?: LogEvent) {
+  s.log.push(event ? { id: ++s.logCounter, text, player, event } : { id: ++s.logCounter, text, player });
   if (s.log.length > LOG_LIMIT) s.log.splice(0, s.log.length - LOG_LIMIT);
 }
 
@@ -164,7 +166,7 @@ export function requireSkill(s: GameState, p: PlayerId, skill: SkillEffect) {
 // Tracks and cubes
 
 export function gainResearch(s: GameState, p: PlayerId, n: number) {
-  if (hasSkill(s, p, 'righteous')) return;
+  if (!canGainResearch(s, p)) return;
   s.players[p].research = Math.min(6, s.players[p].research + n);
 }
 
@@ -174,14 +176,14 @@ export function gainDominance(s: GameState, p: PlayerId, n: number) {
   pl.dominance = Math.min(6, pl.dominance + n);
   if (pl.dominance >= 6) {
     pl.dominance = 1;
-    log(s, `${pl.name} achieves Infamy!`, p);
+    log(s, `${pl.name} achieves Infamy!`, p, 'infamy');
     s.pending.push({ kind: 'infamy', player: p });
   }
 }
 
 export function loseDominance(s: GameState, p: PlayerId, n: number, destroyed = false) {
-  if (hasSkill(s, p, 'righteous')) return;
-  if (destroyed && hasSkill(s, p, 'righteous-original')) return;
+  const keep = skillRules(s, p).map((r) => r.keepDominance);
+  if (keep.includes('always') || (destroyed && keep.includes('destroyed'))) return;
   const pl = s.players[p];
   pl.dominance = Math.max(1, pl.dominance - n);
 }
@@ -197,6 +199,6 @@ export function placeCube(s: GameState, p: PlayerId, planetId: number) {
     s.phase = 'over';
     s.winner = p;
     s.pending = [];
-    log(s, `${pl.name} places their final cube and wins!`, p);
+    log(s, `${pl.name} places their final cube and wins!`, p, 'victory');
   }
 }

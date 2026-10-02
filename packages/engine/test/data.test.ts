@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { IMPLEMENTED_EFFECTS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, EXPANSION, type CardDef } from '../src';
+import { IMPLEMENTED_EFFECTS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILL_RULES, SKILLS, TACTICS, EXPANSION, type CardDef } from '../src';
 
 const ALL: CardDef[] = [...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT];
 const effect = (c: CardDef) => c.effect ?? c.id;
@@ -19,6 +19,10 @@ describe('card data', () => {
   it('implements every effect except the known missing ones', () => {
     const missing = [...new Set(ALL.map(effect).filter((e) => !IMPLEMENTED_EFFECTS.has(e)))].sort();
     expect(missing).toEqual([...NOT_YET_IMPLEMENTED].sort());
+  });
+
+  it('gives every skill at least one hook (an empty rule would do nothing)', () => {
+    expect(Object.entries(SKILL_RULES).filter(([, rule]) => !Object.keys(rule).length).map(([e]) => e)).toEqual([]);
   });
 
   it('uses every implemented effect (catches a misspelt effect name)', () => {

@@ -1,10 +1,8 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { SHIP_NAMES, rulesOf, scrapyard, type Action, type GameState } from '@quantum/engine';
-import type { Toast } from '../game/useGame';
+import { SHIP_NAMES, rulesOf, scrapyard, type GameState } from '@quantum/engine';
+import type { Dispatch, Toast } from '../game/useGame';
 import { CardView } from './Card';
 import { Die3D } from './Die3D';
-
-type Dispatch = (a: Action) => boolean;
 
 /** Modal decisions for human players. Board-based decisions are handled by highlights instead. */
 export function DecisionOverlay({ game, dispatch, human }: { game: GameState; dispatch: Dispatch; human: boolean }) {

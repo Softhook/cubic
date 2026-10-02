@@ -9,7 +9,8 @@ import { same } from './board';
 import { destroyShip, fail, gainDominance, headOf, log, name, roll, shipName, type Handlers } from './core';
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
-import { deployTargets, die, reserve, shipsOnBoard, skillLimit } from './queries';
+import { die, reserve, shipsOnBoard } from './lookups';
+import { deployTargets, skillLimit } from './queries';
 import { shuffle } from './rng';
 import { rulesOf } from './rules';
 import type { DeckKind, GameState, PlayerId } from './types';
@@ -96,10 +97,10 @@ function gainCard(s: GameState, p: PlayerId, id: string) {
   const pl = s.players[p];
   if (cardKind(id) === 'skill') {
     pl.skills.push({ id, active: false });
-    log(s, `${pl.name} takes the ${def.name} ${rulesOf(s).cards?.terms.skill ?? 'skill'}.`, p);
+    log(s, `${pl.name} takes the ${def.name} ${rulesOf(s).cards?.terms.skill ?? 'skill'}.`, p, 'cardTaken');
     if (pl.skills.length > skillLimit(s, p)) s.pending.unshift({ kind: 'discardSkill', player: p, reason: 'limit' });
   } else {
-    log(s, `${pl.name} plays ${def.name}.`, p);
+    log(s, `${pl.name} plays ${def.name}.`, p, 'cardPlayed');
     s.market.tacticDiscard.push(id);
     const effect = TACTIC_EFFECTS[effectOf(id) as TacticEffect] as TacticEffectFn | undefined;
     if (!effect) throw new Error(`Unhandled tactic ${id}`);
@@ -127,7 +128,7 @@ export const cardHandlers = {
       s.market.expansions--;
       roll(s, res[0]);
       s.pending.unshift({ kind: 'placeExpansion', player: p, die: res[0].id });
-      log(s, `${name(s, p)} expands their fleet.`, p);
+      log(s, `${name(s, p)} expands their fleet.`, p, 'expansion');
       return;
     }
     const deck = a.deck === 'skill' ? s.market.skillDeck : s.market.tacticDeck;
@@ -157,7 +158,7 @@ export const cardHandlers = {
     pl.skills.splice(i, 1);
     s.market.skillDiscard.push(a.skill);
     s.pending.shift();
-    log(s, `${pl.name} discards ${card(a.skill).name}.`, head.player);
+    log(s, `${pl.name} discards ${card(a.skill).name}.`, head.player, 'discard');
     if (pl.skills.length > skillLimit(s, head.player)) s.pending.unshift({ ...head, reason: 'limit' });
   },
   placeExpansion(s, a) {
@@ -175,7 +176,7 @@ export const cardHandlers = {
     const d = die(s, a.die);
     if (d.loc.zone !== 'board') fail('Choose a ship on the map');
     s.pending.shift();
-    log(s, `${name(s, head.player)} destroys ${name(s, d.owner)}'s ${shipName(d)}.`, head.player);
+    log(s, `${name(s, head.player)} destroys ${name(s, d.owner)}'s ${shipName(d)}.`, head.player, 'shipDestroyed');
     destroyShip(s, d);
     gainDominance(s, head.player, 1);
   },
