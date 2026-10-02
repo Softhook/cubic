@@ -1,6 +1,6 @@
 /** Shared test helpers: players, a finished setup, and seeded AI-vs-AI games. */
-import { chooseAction, chooseMissile } from '../../ai/src';
-import { apply, createGame, legalActions, type Action, type GameMode, type GameState } from '../src';
+import { chooseAction, chooseMissile, type AiLevel } from '../../ai/src';
+import { actor, apply, createGame, legalActions, type Action, type GameMode, type GameState } from '../src';
 
 export const players = (n: number) => Array.from({ length: n }, (_, i) => ({ name: `P${i}`, color: '#fff', ai: true }));
 
@@ -24,6 +24,8 @@ export interface AiGame {
   seed: number;
   /** Seed of the AI's own randomness. */
   aiSeed: number;
+  /** AI level of each player (default 1, the level the golden tests replay). */
+  levels?: AiLevel[];
   /** Called with the state before each action, and the action about to be applied. */
   before?: (s: GameState, step: number) => void;
   /** Called with the state after each action. */
@@ -40,8 +42,9 @@ export function playAiGame(game: AiGame): { state: GameState; actions: Action[] 
     if (step >= 3000) throw new Error('no winner after 3000 actions');
     game.before?.(s, step);
     let action: Action | null = null;
-    if (s.pending[0]?.kind === 'combat') for (const p of s.players) action ??= chooseMissile(s, p.id);
-    action ??= chooseAction(s, { samples: 1, random });
+    const level = (p: number) => game.levels?.[p] ?? 1;
+    if (s.pending[0]?.kind === 'combat') for (const p of s.players) action ??= chooseMissile(s, p.id, { level: level(p.id), random });
+    action ??= chooseAction(s, { samples: 1, random, level: level(actor(s)) });
     if (!action) throw new Error(`no action at step ${step}`);
     actions.push(action);
     s = apply(s, action);

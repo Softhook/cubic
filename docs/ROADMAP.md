@@ -90,10 +90,15 @@ Package: `apps/web`
 Package: `packages/ai`
 
 - [x] **Level 0 — Random legal**: baseline + fuzzing the engine.
-- [x] **Level 1 — Greedy heuristic**: score positions (cubes placed, conquer opportunities, threat map, dominance/research progress, card value) and pick the best action sequence for this turn.
-- [ ] **Level 2 — Search**: Monte Carlo Tree Search over turns with chance nodes for dice; *determinization* (ISMCTS) for hidden deck order. Time-boxed per move.
+- [x] **Difficulty levels** — four levels, picked per seat in the lobby; see [AI.md](AI.md).
+  - [x] **1 Cadet** — greedy one-action heuristic (the original AI).
+  - [x] **2 Captain** — exact odds for re-rolls and combat; evaluation with whose turn is next, path-based reach and threats.
+  - [x] **3 Commodore** — expectimax over the whole turn, with an evaluation budget.
+  - [x] **4 Admiral** — wider turn search, Flagship transports, best plans checked against the opponent's reply.
+- [x] AI runs in a Web Worker; `npm run ai:match` benchmarks levels by self-play.
 - [x] Card-pick policy (which Skill/Tactic to take) and missile/Dangerous reaction policy.
-- [ ] Difficulty levels = search budget + heuristic noise.
+- [ ] **Tune the evaluation by self-play** (weights are hand-set) and rate cards individually.
+- [ ] **Search across turns**: Monte Carlo Tree Search with chance nodes for dice and *determinization* (ISMCTS) for hidden deck order. Time-boxed per move.
 - [ ] "Explain move" — AI shows why it did something (from the heuristic terms).
 - [ ] *Optional:* LLM-driven persona (taunts, commentary, post-game review) layered on top of the search AI — not used for move selection.
 

@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit -p packages/engine && tsc --noEmit -p packages/ai && tsc --noEmit -p apps/web && tsc -p tsconfig.test.json",
     "test": "npm run data && vitest run",
     "test:deep": "npm run data && DEEP=1 vitest run consistency",
-    "check": "npm run typecheck && npm test"
+    "check": "npm run typecheck && npm test",
+    "ai:match": "npm run data && vite-node scripts/ai-match.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

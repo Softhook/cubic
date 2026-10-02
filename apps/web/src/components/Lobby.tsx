@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
 import { defaultMap, MODES, type GameMode, type PlayerConfig } from '@quantum/engine';
 import { Die3D } from './Die3D';
 
@@ -9,6 +10,16 @@ export interface LobbyResult {
   players: PlayerConfig[];
   mapId: string;
   mode: GameMode;
+}
+
+function storedAiLevel(): number {
+  try {
+    const n = Number(localStorage.getItem('quantum.aiLevel'));
+    if (AI_LEVELS.some((l) => l.level === n)) return n;
+  } catch {
+    /* storage unavailable */
+  }
+  return DEFAULT_AI_LEVEL;
 }
 
 function storedMode(): GameMode {
@@ -25,7 +36,7 @@ export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void;
   const [count, setCount] = useState(2);
   const [mode, setMode] = useState<GameMode>(storedMode);
   const [seats, setSeats] = useState<PlayerConfig[]>(() =>
-    PLAYER_COLORS.map((color, i) => ({ name: i === 0 ? 'Commander' : AI_NAMES[i], color, ai: i !== 0 })),
+    PLAYER_COLORS.map((color, i) => ({ name: i === 0 ? 'Commander' : AI_NAMES[i], color, ai: i !== 0, aiLevel: storedAiLevel() })),
   );
   const map = defaultMap(count)!;
 
@@ -88,6 +99,29 @@ export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void;
                 <button className={!s.ai ? 'on' : ''} onClick={() => update(i, { ai: false })}>Human</button>
                 <button className={s.ai ? 'on' : ''} onClick={() => update(i, { ai: true })}>AI</button>
               </div>
+              {s.ai && (
+                <select
+                  className="ai-level"
+                  value={s.aiLevel ?? DEFAULT_AI_LEVEL}
+                  aria-label={`Player ${i + 1} AI level`}
+                  title={AI_LEVELS.find((l) => l.level === (s.aiLevel ?? DEFAULT_AI_LEVEL))?.summary}
+                  onChange={(e) => {
+                    const aiLevel = Number(e.target.value);
+                    update(i, { aiLevel });
+                    try {
+                      localStorage.setItem('quantum.aiLevel', String(aiLevel));
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                >
+                  {AI_LEVELS.map((l) => (
+                    <option key={l.level} value={l.level}>
+                      {l.level} · {l.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           ))}
         </div>

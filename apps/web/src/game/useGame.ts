@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { actor, apply, checkInvariants, isUndoable, RuleError, type Action, type GameState, type LogEntry, type LogEvent } from '@quantum/engine';
-import { chooseAction, chooseMissile } from '@quantum/ai';
+import { chooseMissile } from '@quantum/ai';
 import { sfx } from '../sound';
+import { aiLevelOf, think } from './aiClient';
 
 /** Applies an action; false (with an error shown) if the rules refuse it. */
 export type Dispatch = (a: Action) => boolean;
@@ -13,7 +14,7 @@ export interface Toast {
   tone: 'info' | 'good' | 'bad' | 'gold';
 }
 
-/** How long the AI waits before acting, so humans can follow along. */
+/** How long the AI waits before acting (thinking time included), so humans can follow along. */
 function aiDelay(s: GameState): number {
   const head = s.pending[0];
   if (s.phase === 'setup') return 650;
@@ -154,7 +155,7 @@ export function useGame(initial: GameState) {
       for (const p of game.players) {
         const k = `${head.id}:${p.id}`;
         if (!p.ai || p.missiles <= 0 || missileAsked.current.has(k)) continue;
-        const m = chooseMissile(game, p.id);
+        const m = chooseMissile(game, p.id, { level: aiLevelOf(p) });
         if (!m) {
           missileAsked.current.add(k);
           continue;
@@ -170,12 +171,19 @@ export function useGame(initial: GameState) {
       return () => window.clearTimeout(timer);
     }
 
-    if (!game.players[actor(game)].ai) return;
-    timer = window.setTimeout(() => {
-      const a = chooseAction(ref.current, { samples: 3 });
-      if (a) dispatch(a);
-    }, aiDelay(game));
-    return () => window.clearTimeout(timer);
+    const player = game.players[actor(game)];
+    if (!player.ai) return;
+    let cancelled = false;
+    const started = performance.now();
+    void think(game, aiLevelOf(player)).then((a) => {
+      if (cancelled || !a) return;
+      const wait = Math.max(0, aiDelay(game) - (performance.now() - started));
+      timer = window.setTimeout(() => dispatch(a), wait);
+    });
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [game, dispatch]);
 
   return { game, dispatch, reset, error, toasts, undo, canUndo: undoCount > 0 };

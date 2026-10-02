@@ -7,7 +7,7 @@ How the code is organised, and where to make the common changes.
 | Package | Role | Depends on |
 |---|---|---|
 | [`packages/engine`](../packages/engine) | The rules. A game is `apply(state, action) → state`: pure, deterministic (seeded RNG in the state), serialisable. | — |
-| [`packages/ai`](../packages/ai) | AI players. Chooses among `legalActions(state)`; never sees the real RNG. | engine |
+| [`packages/ai`](../packages/ai) | AI players in four levels ([AI.md](AI.md)). Chooses among `legalActions(state)`; never sees the real RNG or deck order. | engine |
 | [`apps/web`](../apps/web) | React UI. Renders a state, sends actions. Holds no rules of its own: buttons and highlights come from `legalActions` (`game/legal.ts`). | engine, ai |
 | [`data/`](../data) | Cards and maps as YAML, compiled to JSON by `npm run data`. | — |
 

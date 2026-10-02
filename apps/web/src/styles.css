@@ -710,6 +710,9 @@ input { font: inherit; }
 .seat { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid color-mix(in srgb, var(--pc) 25%, transparent); }
 .seat input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--text); font-weight: 600; outline: none; padding: 4px 0; }
 .seat input:focus { border-bottom: 1px solid var(--pc); }
+.ai-level { background: rgba(255,255,255,.05); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.ai-level option { background: #121a33; }
+@media (max-width: 420px) { .seat { flex-wrap: wrap; } .seat input { flex-basis: 100%; } }
 .map-preview { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid var(--line); }
 .map-preview > div:first-child { display: flex; flex-direction: column; gap: 2px; }
 .map-preview small { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
