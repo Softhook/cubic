@@ -83,7 +83,7 @@ Package: `apps/web`
 - [ ] Rules help in-context (hover a card or ship for its rule; link to RULES.md sections).
 - [x] Turn log panel; undo of deterministic moves within a turn (never past a roll, battle or card).
 - [x] Map picker with stats; player count 2–4 *(basic maps only so far)*.
-- [ ] Mobile-friendly layout.
+- [ ] Mobile-friendly layout — options and plan in [MOBILE.md](MOBILE.md).
 
 ## M3 — AI opponent
 
@@ -103,6 +103,8 @@ Package: `packages/ai`
 - [ ] *Optional:* LLM-driven persona (taunts, commentary, post-game review) layered on top of the search AI — not used for move selection.
 
 ## M4 — Online multiplayer
+
+Options and plan: [MULTIPLAYER.md](MULTIPLAYER.md).
 
 - [ ] Authoritative game server; clients send actions, server validates with the engine.
 - [ ] Hidden information: deck order and starting-skill draft never sent to clients.
