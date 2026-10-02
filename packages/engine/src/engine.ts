@@ -28,7 +28,7 @@ import type { Handlers } from './core';
 import { setupHandlers } from './setup';
 import { skillHandlers } from './skillActions';
 import { settle } from './turn';
-import { RuleError, type Action, type GameState, type Pending, type PlayerId } from './types';
+import { RuleError, type Action, type GameState, type PlayerId } from './types';
 
 const HANDLERS: Handlers = {
   ...setupHandlers,
@@ -66,8 +66,4 @@ export function actor(state: GameState): PlayerId {
   if (!head) return state.turn.player;
   if (head.kind === 'combat') return head.attacker.player;
   return head.player;
-}
-
-export function currentPending(state: GameState): Pending | undefined {
-  return state.pending[0];
 }

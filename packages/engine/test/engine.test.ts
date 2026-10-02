@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   apply,
-  checkInvariants,
   combatOutcome,
   conquerCheck,
   createGame,
@@ -14,17 +13,7 @@ import {
   ORIGINAL_COMMAND,
   ORIGINAL_GAMBIT,
 } from '../src';
-import { chooseAction, chooseMissile } from '../../ai/src';
-
-const players = (n: number) =>
-  Array.from({ length: n }, (_, i) => ({ name: `P${i}`, color: '#fff', ai: true }));
-
-/** Runs setup with the first legal choice for every decision. */
-function quickStart(n = 2, seed = 1, mode: GameMode = 'community'): GameState {
-  let s = createGame({ players: players(n), seed, mode });
-  while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
-  return s;
-}
+import { players, quickStart } from './helpers';
 
 /** Empties the map and places dice at given cells for focused rule tests. */
 function arrange(s: GameState, placements: Record<string, [number, number, number]>): GameState {
@@ -137,32 +126,6 @@ describe('combat', () => {
     s = apply(s, { type: 'resolveCombat' });
     expect(s.dice.find((d) => d.id === 'p0d0')!.loc).toEqual({ zone: 'board', r: 0, c: 0 });
   });
-});
-
-describe('full games', () => {
-  for (const mode of ['basic', 'original', 'community'] as const)
-  for (const n of [2, 3, 4]) {
-    it(`${mode}: AI vs AI with ${n} players plays to completion without breaking invariants`, () => {
-      let s = createGame({ players: players(n), seed: 100 + n, mode });
-      let rng = 1234 + n;
-      const random = () => ((rng = (rng * 1103515245 + 12345) % 2147483648) / 2147483648);
-      let steps = 0;
-      while (s.phase !== 'over' && steps < 3000) {
-        const head = s.pending[0];
-        let action: Action | null = null;
-        if (head?.kind === 'combat') {
-          for (const p of s.players) action ??= chooseMissile(s, p.id);
-        }
-        action ??= chooseAction(s, { samples: 1, random });
-        expect(action, `no action at step ${steps}`).not.toBeNull();
-        s = apply(s, action!);
-        expect(checkInvariants(s), `after step ${steps}: ${JSON.stringify(action)}`).toEqual([]);
-        steps++;
-      }
-      expect(s.phase).toBe('over');
-      expect(s.winner).not.toBeNull();
-    }, 60_000);
-  }
 });
 
 describe('missiles', () => {

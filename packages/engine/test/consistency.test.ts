@@ -10,18 +10,8 @@
  * player could not make, or one the engine would refuse.
  */
 import { describe, expect, it } from 'vitest';
-import {
-  apply,
-  checkInvariants,
-  createGame,
-  legalActions,
-  tryApply,
-  type Action,
-  type Cell,
-  type GameMode,
-  type GameState,
-} from '../src';
-import { chooseAction, chooseMissile } from '../../ai/src';
+import { checkInvariants, legalActions, tryApply, type Action, type Cell, type GameMode, type GameState } from '../src';
+import { playAiGame, quickStart } from './helpers';
 
 const DEEP = !!process.env.DEEP;
 
@@ -76,32 +66,28 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
 }
 
 function playChecked(mode: GameMode, players: number, seed: number) {
-  let s = createGame({ players: Array.from({ length: players }, (_, i) => ({ name: `P${i}`, color: '#fff', ai: true })), seed, mode });
-  let rng = seed * 31;
-  const random = () => (rng = (rng * 1103515245 + 12345) % 2147483648) / 2147483648;
-  for (let step = 0; s.phase !== 'over' && step < 3000; step++) {
-    const where = `step ${step}`;
-    const legal = legalActions(s, { includeCarry: true });
-    for (const a of legal) expect(tryApply(s, a), `${where}: legal but refused: ${keyOf(a)}`).not.toBeNull();
+  playAiGame({
+    mode,
+    players,
+    seed,
+    aiSeed: seed * 31,
+    before: (s, step) => {
+      const where = `step ${step}`;
+      const legal = legalActions(s, { includeCarry: true });
+      for (const a of legal) expect(tryApply(s, a), `${where}: legal but refused: ${keyOf(a)}`).not.toBeNull();
 
-    // Brute force is slow, so it samples states (`DEEP=1 npx vitest run consistency` checks every state of more games).
-    const actionPhase = s.phase === 'play' && !s.pending.length && s.turn.phase === 'actions';
-    if (actionPhase && (DEEP || step % 4 === 0)) {
-      const offered = new Set(legal.map(keyOf));
-      for (const a of bruteForce(s, DEEP || step % 20 === 0)) {
-        if (offered.has(keyOf(a))) continue;
-        expect(tryApply(s, a), `${where}: accepted but not offered: ${keyOf(a)}`).toBeNull();
+      // Brute force is slow, so it samples states (`DEEP=1 npx vitest run consistency` checks every state of more games).
+      const actionPhase = s.phase === 'play' && !s.pending.length && s.turn.phase === 'actions';
+      if (actionPhase && (DEEP || step % 4 === 0)) {
+        const offered = new Set(legal.map(keyOf));
+        for (const a of bruteForce(s, DEEP || step % 20 === 0)) {
+          if (offered.has(keyOf(a))) continue;
+          expect(tryApply(s, a), `${where}: accepted but not offered: ${keyOf(a)}`).toBeNull();
+        }
       }
-    }
-
-    let action: Action | null = null;
-    if (s.pending[0]?.kind === 'combat') for (const p of s.players) action ??= chooseMissile(s, p.id);
-    action ??= chooseAction(s, { samples: 1, random });
-    expect(action, `${where}: no action`).not.toBeNull();
-    s = apply(s, action!);
-    expect(checkInvariants(s), `${where}: after ${keyOf(action!)}`).toEqual([]);
-  }
-  expect(s.phase).toBe('over');
+    },
+    after: (s, action, step) => expect(checkInvariants(s), `step ${step}: after ${keyOf(action)}`).toEqual([]),
+  });
 }
 
 describe('legal actions agree with the engine', () => {
@@ -111,11 +97,7 @@ describe('legal actions agree with the engine', () => {
 });
 
 describe('invariant checker', () => {
-  const fresh = () => {
-    let s = createGame({ players: [{ name: 'A', color: '#fff', ai: true }, { name: 'B', color: '#fff', ai: true }], seed: 5, mode: 'community' });
-    while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
-    return s;
-  };
+  const fresh = () => quickStart(2, 5);
 
   it('accepts a fresh game', () => {
     expect(checkInvariants(fresh())).toEqual([]);

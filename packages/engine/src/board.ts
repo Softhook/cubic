@@ -106,7 +106,3 @@ export function diagonals(board: Board, planet: Planet): Cell[] {
 export function planetFreeSlots(planet: Planet): number {
   return planet.capacity - planet.cubes.length;
 }
-
-export function mapCentre(board: Board): { r: number; c: number } {
-  return { r: (board.rows - 1) / 2, c: (board.cols - 1) / 2 };
-}

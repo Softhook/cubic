@@ -91,10 +91,11 @@ from the layout and fails if they disagree. Official layouts are in
 | Test | Guards |
 |---|---|
 | `basic.test.ts` | Every official rule in Basic mode, one scenario each, citing its source |
-| `engine.test.ts` | Card effects, modes, missiles, undo, full AI-vs-AI games with invariant checks |
+| `engine.test.ts` | Card effects, modes, missiles, undo |
 | `consistency.test.ts` | `legalActions` and `apply` agree (every offered action is accepted; brute force: every accepted action is offered); invariants after every action |
 | `data.test.ts` | Card ids unique; every card effect implemented or on the known-missing list |
-| `golden.test.ts` | Exact replay of seeded AI-vs-AI games in every mode. Fails on *any* behaviour change. After an intended change, review and run `npx vitest run -u`. |
+| `golden.test.ts` | Exact replay of seeded AI-vs-AI games in every mode, with invariants checked after every action. Fails on *any* behaviour change. After an intended change, review and run `npx vitest run -u`. |
 | `maps.test.ts` | Map stats match layouts |
 
-`npm run check` typechecks everything (tests included) and runs the tests.
+Shared helpers (`quickStart`, `playAiGame`…) are in `test/helpers.ts`. `npm run check` typechecks
+everything (tests included) and runs the tests.

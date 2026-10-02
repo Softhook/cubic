@@ -22,16 +22,9 @@ import {
   type Cell,
   type GameState,
 } from '../src';
+import { players, quickStart } from './helpers';
 
-const players = (n: number) => Array.from({ length: n }, (_, i) => ({ name: `P${i}`, color: '#fff', ai: true }));
-
-function quickStart(n = 2, seed = 1): GameState {
-  let s = createGame({ players: players(n), seed, mode: 'basic' });
-  while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
-  return s;
-}
-
-const BASE = quickStart();
+const BASE = quickStart(2, 1, 'basic');
 
 /**
  * A focused position: player 0 to act with 3 fresh actions, only the listed ships on the map
