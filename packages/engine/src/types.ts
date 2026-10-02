@@ -1,0 +1,221 @@
+import type { GameMode } from './data';
+
+export type PlayerId = number;
+
+export interface Cell {
+  r: number;
+  c: number;
+}
+
+export type CellKind = 'off' | 'space' | 'planet';
+
+export interface BoardCell {
+  kind: CellKind;
+  /** Index of the tile this cell belongs to, -1 when off-board. */
+  tile: number;
+  planet?: number;
+  void?: boolean;
+}
+
+export interface Planet {
+  id: number;
+  number: number;
+  capacity: number;
+  /** Owners of the cubes on this planet, in placement order. */
+  cubes: PlayerId[];
+  start: boolean;
+  r: number;
+  c: number;
+}
+
+export interface Board {
+  mapId: string;
+  mapName: string;
+  rows: number;
+  cols: number;
+  cells: BoardCell[][];
+  planets: Planet[];
+}
+
+export type DieLoc =
+  | { zone: 'board'; r: number; c: number }
+  | { zone: 'scrapyard' }
+  | { zone: 'reserve' };
+
+export interface Die {
+  id: string;
+  owner: PlayerId;
+  value: number;
+  loc: DieLoc;
+  /** Increments every time the die is rolled; the UI animates a tumble on change. */
+  rolls: number;
+}
+
+export interface OwnedSkill {
+  id: string;
+  /** Skills taken during your turn only take effect from the next player's turn. */
+  active: boolean;
+}
+
+export interface PlayerConfig {
+  name: string;
+  color: string;
+  ai: boolean;
+}
+
+export interface PlayerState extends PlayerConfig {
+  id: PlayerId;
+  dominance: number;
+  research: number;
+  missiles: number;
+  cubesLeft: number;
+  skills: OwnedSkill[];
+  ambitionTokens: number;
+  /** Actions lost on the next turn (Sabotage). */
+  actionPenalty: number;
+  /** Plan Ahead: counts down at the end of each of the owner's turns while > 0. */
+  planAhead: number;
+  /** Momentum: bonus turns queued (number of actions each). */
+  bonusTurns: number[];
+}
+
+export type DeckKind = 'skill' | 'tactic';
+
+export interface Market {
+  skillDeck: string[];
+  skillRow: string[];
+  skillDiscard: string[];
+  tacticDeck: string[];
+  tacticRow: string[];
+  tacticDiscard: string[];
+  expansions: number;
+}
+
+export interface TurnState {
+  player: PlayerId;
+  number: number;
+  phase: 'actions' | 'cards';
+  actionsLeft: number;
+  freeDeploys: number;
+  /** Free non-attacking moves (original Curious). */
+  freeMoves: number;
+  moved: Record<string, number>;
+  abilityUsed: Record<string, boolean>;
+  /** Values each die has shown this turn (for Reconfigure). */
+  seen: Record<string, number[]>;
+  conquests: number;
+  attacked: boolean;
+  /** Players who have already destroyed an enemy ship this turn ("first time each turn" triggers). */
+  destroyedBy: PlayerId[];
+  oncePerTurn: string[];
+  bonus: boolean;
+}
+
+export interface CombatSide {
+  player: PlayerId;
+  die: string;
+  ship: number;
+  dice: number[];
+  missile: boolean;
+}
+
+export interface CombatPending {
+  kind: 'combat';
+  id: number;
+  attacker: CombatSide;
+  defender: CombatSide;
+  /** Where the attacker returns if repelled (the space it attacked from). */
+  from: Cell;
+  /** The defender's space. */
+  at: Cell;
+}
+
+export type Pending =
+  | { kind: 'setupRoll'; player: PlayerId; rerolled: boolean }
+  | { kind: 'skillDraft'; player: PlayerId; options: string[] }
+  | { kind: 'placeStart'; player: PlayerId }
+  | CombatPending
+  | { kind: 'advance'; player: PlayerId; die: string; to: Cell }
+  | { kind: 'infamy'; player: PlayerId }
+  | { kind: 'takeCard'; player: PlayerId; count: number }
+  | { kind: 'peek'; player: PlayerId; deck: DeckKind; top: string }
+  | { kind: 'discardSkill'; player: PlayerId; reason?: 'limit' | 'sabotage' }
+  | { kind: 'placeExpansion'; player: PlayerId; die: string }
+  | { kind: 'showOfForce'; player: PlayerId }
+  | { kind: 'warpGate'; player: PlayerId; placed: Cell[] }
+  | { kind: 'changeOfHeart'; player: PlayerId }
+  /** Unveil the Fleet (CE) or, with `reorganize`, Reorganization (original). */
+  | { kind: 'unveil'; player: PlayerId; rerolled: string[]; reorganize?: boolean };
+
+export interface LogEntry {
+  id: number;
+  player?: PlayerId;
+  text: string;
+}
+
+export interface GameState {
+  version: 1;
+  mode: GameMode;
+  seed: number;
+  rng: number;
+  board: Board;
+  players: PlayerState[];
+  dice: Die[];
+  market: Market;
+  gates: Cell[];
+  turn: TurnState;
+  /** Decisions waiting to be made; the head is the current one. */
+  pending: Pending[];
+  phase: 'setup' | 'play' | 'over';
+  winner: PlayerId | null;
+  combatCounter: number;
+  log: LogEntry[];
+  logCounter: number;
+}
+
+export type ShipAbility = 'freeAttack' | 'carry' | 'swap' | 'change' | 'freeReconfigure';
+
+export type Action =
+  // setup
+  | { type: 'setupKeep' }
+  | { type: 'setupReroll' }
+  | { type: 'draftSkill'; skill: string }
+  | { type: 'placeStart'; planet: number }
+  // phase 1 actions
+  | { type: 'move'; die: string; to: Cell }
+  | { type: 'attack'; die: string; target: string }
+  | { type: 'deploy'; die: string; to: Cell }
+  | { type: 'reconfigure'; die: string }
+  | { type: 'research' }
+  | { type: 'conquer'; planet: number }
+  | { type: 'endTurn' }
+  // ship abilities
+  | { type: 'freeAttack'; die: string; target: string }
+  | { type: 'carry'; die: string; passenger: string; to: Cell; drop: Cell }
+  | { type: 'swap'; die: string; other: string }
+  | { type: 'change'; die: string; value: 3 | 5 }
+  | { type: 'freeReconfigure'; die: string }
+  // activated skills
+  | { type: 'composed' }
+  | { type: 'ambitious' }
+  | { type: 'flexible'; die: string; delta: 1 | -1 }
+  | { type: 'resourceful'; die: string }
+  | { type: 'tyrannical' }
+  | { type: 'tactical'; die: string; to?: Cell; target?: string }
+  // combat & decisions
+  | { type: 'missile'; by: PlayerId; side: 'attacker' | 'defender' }
+  | { type: 'resolveCombat' }
+  | { type: 'advance'; move: boolean }
+  | { type: 'infamy'; planet: number }
+  | { type: 'takeCard'; deck: DeckKind | 'expansion'; index: number }
+  | { type: 'peekChoice'; takeTop: boolean }
+  | { type: 'discardSkill'; skill: string }
+  | { type: 'placeExpansion'; to: Cell | null }
+  | { type: 'showOfForce'; die: string }
+  | { type: 'warpGate'; cell: Cell }
+  | { type: 'changeOfHeart'; skill: string }
+  | { type: 'unveilReroll'; die: string }
+  | { type: 'unveilDeploy'; die: string; to: Cell }
+  | { type: 'unveilDone' };
+
+export class RuleError extends Error {}

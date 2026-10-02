@@ -1,0 +1,21 @@
+{
+  "name": "quantum",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "data": "node scripts/build-data.mjs",
+    "dev": "npm run data && npm run dev -w @quantum/web",
+    "build": "npm run data && npm run typecheck && npm run build -w @quantum/web",
+    "typecheck": "tsc --noEmit -p apps/web && tsc --noEmit -p packages/ai",
+    "test": "npm run data && vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "yaml": "^2.6.0"
+  }
+}

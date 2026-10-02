@@ -13,6 +13,32 @@ in [`data/`](../data/).
 
 ---
 
+## Game modes
+
+The digital edition offers three rule sets, chosen when starting a game:
+
+| | Basic | Original (2013) | Community Edition |
+|---|---|---|---|
+| Purpose | Learning the core game | The published rules | Recommended; the rest of this document |
+| Cards | None | 31 Command (permanent) + 22 Gambit (one-shot) | 35 Skills + 9 Tactics ×2 + Expansion pile |
+| Research action | — (it only earns cards) | ✓ | ✓ |
+| Missiles | — | — | 1 per player |
+| Starting skill | — | — | Draw 2, keep 1 |
+| Expansion | — | 8 Expansion cards in the Gambit deck | Separate pile, players + 1 |
+| Peek at oldest card | — | — | ✓ |
+| Reconfigure | Ship on the map; any different value | Ship on the map; any different value | Ship on the map **or** scrapyard; new value not seen this turn |
+| Infamy, Quantum Entanglement, void tiles | ✓ | ✓ | ✓ |
+
+Original card text is in [`data/cards.yaml`](../data/cards.yaml) under `original_command` / `original_gambit`.
+Cards whose behaviour matches a Community Edition card share its implementation (e.g. Cerebral ≙ Composed,
+Energetic ≙ Steadfast, Warlike ≙ Hostile).
+
+Not yet implemented (left out of the decks until they are): Original — Clever, Cruel, Dangerous, Nomadic,
+Relentless, Scrappy, Relocation. Community — Calculating, Clever, Curious, Dangerous, Devious, Patient,
+Prideful, Profiteering, Ruthless.
+
+---
+
 ## 1. About the game
 
 | | |
@@ -367,7 +393,7 @@ we decide otherwise (see [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)).
 | Expansion | 8 Gambit cards | Separate pool of reserve dice | Separate deck, players + 1 cards |
 | Black Market | — | "Gain 1/2 Missiles" (yaml says 1, Cards.md says 2) | Gain 2 Missiles |
 | Warp/Hypernet Gate | — | Only players who played it may use the link | **Any** player may use it |
-| Infamy timing | *unverified — need original rulebook* | End of turn (End Phase) | Immediately at 6 |
+| Infamy timing | Immediately at 6 (confirmed on BGG) | End of turn (End Phase) | Immediately at 6 |
 | Starting skill | None | Draw 2, keep 1 | Draw 2, keep 1 |
 | Starting fleet re-roll | One optional re-roll | Re-roll any of the dice once | Once, must re-roll all 3 |
 | Reconfigure | Ship on map | Ship on map | Ship on map **or scrapyard**; must show a value not yet seen this turn |

@@ -26,7 +26,8 @@ so the card/tile pipeline later reuses it rather than duplicating it.
 - [ ] **Contact stolksdorf and WaterGoesRed** — credit, permission to build on their text/maps, interest in collaborating.
 - [ ] **Choose a license** for our code (e.g. MIT) and content (e.g. CC BY-NC-SA).
 - [ ] **Tech stack decision** (proposal below).
-- [ ] Set up the monorepo, CI (lint, typecheck, tests), and a GitHub remote. Turn this backlog into issues.
+- [x] Set up the monorepo (npm workspaces), typecheck and tests.
+- [ ] CI, a GitHub remote, and this backlog as issues.
 
 ### Proposed stack
 
@@ -50,46 +51,48 @@ if wanted.
 
 Package: `packages/engine`
 
-- [ ] **Data loading** — typed loaders + validation for `cards.yaml` and `maps.yaml`.
-- [ ] **Board model** — tiles → grid of spaces; planets, void, gaps; adjacency (orthogonal / surrounding / Warp Gate links).
-- [ ] **Game state** — players (dice with ids, dominance, research, skills, missiles, reserve, scrapyard), cubes on planets, decks, face-up rows, turn/phase, per-die per-turn flags.
-- [ ] **Seeded RNG** — all dice and shuffles through one RNG in the state.
-- [ ] **Setup** — map, decks, starting skill draft, fleet roll + one re-roll, first player, deployment.
-- [ ] **Actions** — Move/Attack (pathfinding), Deploy, Reconfigure, Research, Conquer (sum check, capacity).
-- [ ] **Combat** — attack/defence roll pipeline (see open question #10), repel/destroy, dominance, scrapyard re-roll.
-- [ ] **Ship abilities** — all six, with once-per-die tracking.
-- [ ] **Infamy, Quantum Entanglement, Void research, win check.**
-- [ ] **Phase 2** — conqueror/researcher cards, card protocol, slide & refill, Peek.
-- [ ] **Decisions / interrupts** — model "pending decision" states (choose card, missile window, Dangerous prompt, Prideful steal, discard-down-to-limit) so UI and AI use the same mechanism.
-- [ ] **Skills** — implement all 35 via a hook/trigger system (start of turn, on destroy, on combat roll, on conquer check, on scrapyard, movement modifiers, action-count modifiers).
-- [ ] **Tactics** — all 9; Expansion.
-- [ ] **Legal action generator** — `legalActions(state)`; required by the UI (highlighting) and AI.
-- [ ] **Event log + replay** — every state change emits events; replaying seed + actions reproduces the game.
-- [ ] **Tests** — a scenario test per rule and per card; property tests (random legal play never crashes, invariants hold: dice count = 7, cubes ≤ capacity, tracks in 1–6).
+- [x] **Data loading** — typed loaders + validation for `cards.yaml` and `maps.yaml`.
+- [x] **Board model** — tiles → grid of spaces; planets, void, gaps; adjacency (orthogonal / surrounding / Warp Gate links).
+- [x] **Game state** — players (dice with ids, dominance, research, skills, missiles, reserve, scrapyard), cubes on planets, decks, face-up rows, turn/phase, per-die per-turn flags.
+- [x] **Seeded RNG** — all dice and shuffles through one RNG in the state.
+- [x] **Setup** — map, decks, starting skill draft, fleet roll + one re-roll, first player, deployment.
+- [x] **Actions** — Move/Attack (pathfinding), Deploy, Reconfigure, Research, Conquer (sum check, capacity).
+- [x] **Combat** — attack/defence roll pipeline (see open question #10), repel/destroy, dominance, scrapyard re-roll.
+- [x] **Ship abilities** — all six, with once-per-die tracking.
+- [x] **Infamy, Quantum Entanglement, Void research, win check.**
+- [x] **Phase 2** — conqueror/researcher cards, card protocol, slide & refill, Peek.
+- [x] **Decisions / interrupts** — model "pending decision" states (choose card, missile window, Dangerous prompt, Prideful steal, discard-down-to-limit) so UI and AI use the same mechanism.
+- [x] **Game modes** — Basic (no cards), Original (2013), Community Edition.
+- [ ] **Original cards** — *25 of 31 Command and 5 of 6 Gambit done; remaining: Clever, Cruel, Dangerous, Nomadic, Relentless, Scrappy, Relocation.*
+- [ ] **Skills** — *26 of 35 done; remaining: Calculating, Clever, Curious, Dangerous, Devious, Patient, Prideful, Profiteering, Ruthless.* Implement all 35 via a hook/trigger system (start of turn, on destroy, on combat roll, on conquer check, on scrapyard, movement modifiers, action-count modifiers).
+- [x] **Tactics** — all 9; Expansion.
+- [x] **Legal action generator** — `legalActions(state)`; required by the UI (highlighting) and AI.
+- [ ] **Event log + replay** — *a text log exists; structured events + replay viewer still to do.* — every state change emits events; replaying seed + actions reproduces the game.
+- [ ] **Tests** — *basic movement/conquer/combat tests and AI-vs-AI fuzz games exist; per-card scenario tests still to do.* a scenario test per rule and per card; property tests (random legal play never crashes, invariants hold: dice count = 7, cubes ≤ capacity, tracks in 1–6).
 - [ ] **Map stat check** — compute slack/shared from layouts and assert they match the booklet.
 
 ## M2 — Local play (hot-seat)
 
 Package: `apps/web`
 
-- [ ] Board renderer (SVG): tiles, planets with cube slots, dice as ships with clear type icons, void, gates.
-- [ ] Player panel: dominance/research tracks, skills, missiles, scrapyard, reserve.
-- [ ] Card rows (Skill / Tactic / Expansion) with Peek interaction.
-- [ ] Action UX: click ship → highlight legal moves/attacks; conquer button lights up when a sum matches.
-- [ ] Combat UX: dice roll animation, missile window, result.
+- [x] Board renderer (SVG): tiles, planets with cube slots, dice as ships with clear type icons, void, gates.
+- [x] Player panel: dominance/research tracks, skills, missiles, scrapyard, reserve.
+- [x] Card rows (Skill / Tactic / Expansion) with Peek interaction.
+- [x] Action UX: click ship → highlight legal moves/attacks; conquer button lights up when a sum matches.
+- [x] Combat UX: dice roll animation, missile window, result.
 - [ ] Rules help in-context (hover a card or ship for its rule; link to RULES.md sections).
-- [ ] Turn log / history panel; undo within the current action (before randomness).
-- [ ] Map picker with stats; player count 2–5.
+- [x] Turn log panel; undo of deterministic moves within a turn (never past a roll, battle or card).
+- [x] Map picker with stats; player count 2–4 *(basic maps only so far)*.
 - [ ] Mobile-friendly layout.
 
 ## M3 — AI opponent
 
 Package: `packages/ai`
 
-- [ ] **Level 0 — Random legal**: baseline + fuzzing the engine.
-- [ ] **Level 1 — Greedy heuristic**: score positions (cubes placed, conquer opportunities, threat map, dominance/research progress, card value) and pick the best action sequence for this turn.
+- [x] **Level 0 — Random legal**: baseline + fuzzing the engine.
+- [x] **Level 1 — Greedy heuristic**: score positions (cubes placed, conquer opportunities, threat map, dominance/research progress, card value) and pick the best action sequence for this turn.
 - [ ] **Level 2 — Search**: Monte Carlo Tree Search over turns with chance nodes for dice; *determinization* (ISMCTS) for hidden deck order. Time-boxed per move.
-- [ ] Card-pick policy (which Skill/Tactic to take) and missile/Dangerous reaction policy.
+- [x] Card-pick policy (which Skill/Tactic to take) and missile/Dangerous reaction policy.
 - [ ] Difficulty levels = search budget + heuristic noise.
 - [ ] "Explain move" — AI shows why it did something (from the heuristic terms).
 - [ ] *Optional:* LLM-driven persona (taunts, commentary, post-game review) layered on top of the search AI — not used for move selection.
@@ -132,6 +135,6 @@ them **generated from data** with a consistent visual language.
 
 ## Next three things to do
 
-1. Answer the 🔴 open questions (an hour with this doc and the booklet).
-2. Scaffold the TS monorepo with `packages/engine` and load `cards.yaml` / `maps.yaml`.
-3. Implement board model + movement + combat with tests — the core everything else stands on.
+1. Play a few games and note anything that feels wrong — that's the fastest way to settle the 🔴 open questions.
+2. Implement the remaining 11 skills (Dangerous and Calculating need new interrupt prompts).
+3. Transcribe the advanced maps and add a map picker.
