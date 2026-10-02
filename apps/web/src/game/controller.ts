@@ -1,29 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   actor,
-  canMoveDie,
-  carryOptions,
-  carryPassengers,
   cellOf,
-  conquerCheck,
-  deployTargets,
   die as getDie,
-  freeAttackTargets,
-  hasSkill,
-  tacticalOptions,
-  infamyTargets,
-  isEmptySpace,
   key,
   moveOptions,
-  orbitals,
-  scrapyard,
   same,
-  shipsOnBoard,
+  scrapyard,
+  tacticalOptions,
   type Action,
   type Cell,
   type GameState,
 } from '@quantum/engine';
 import { sfx } from '../sound';
+import { legalFor, NO_LEGAL } from './legal';
 
 export type Sel =
   | { kind: 'none' }
@@ -66,6 +56,9 @@ export function useController(game: GameState, dispatch: (a: Action) => boolean)
     else if (sel.kind !== 'scrap' && d.loc.zone !== 'board') setSel({ kind: 'none' });
   }, [game, sel]);
 
+  // Everything the human may do now. Highlights and buttons are derived from it, never from rules.
+  const legal = useMemo(() => (human ? legalFor(game) : NO_LEGAL), [game, human]);
+
   const highlights = useMemo<Highlights>(() => {
     const h: Highlights = { cells: new Map(), dice: new Map(), planets: new Map() };
     const addCells = (cells: Cell[], tone: CellTone) => cells.forEach((c) => h.cells.set(key(c), { cell: c, tone }));
@@ -74,32 +67,29 @@ export function useController(game: GameState, dispatch: (a: Action) => boolean)
     if (head) {
       switch (head.kind) {
         case 'placeStart':
-          for (const p of game.board.planets) if (p.start && !p.cubes.length) h.planets.set(p.id, { tone: 'start', label: 'Start here' });
+          for (const a of legal.of('placeStart')) h.planets.set(a.planet, { tone: 'start', label: 'Start here' });
           break;
-        case 'placeShips':
-          addCells(orbitals(game.board, game.board.planets[head.planet]).filter((p) => isEmptySpace(game, p)), 'deploy');
-          break;
-        case 'infamy':
-          for (const p of infamyTargets(game, head.player)) h.planets.set(p.id, { tone: 'infamy', label: 'Seize' });
-          break;
-        case 'placeExpansion':
-          addCells(deployTargets(game, head.player), 'deploy');
-          break;
-        case 'showOfForce':
-          for (const d of shipsOnBoard(game)) h.dice.set(d.id, 'target');
-          break;
-        case 'warpGate': {
-          const cells: Cell[] = [];
-          for (let r = 0; r < game.board.rows; r++)
-            for (let c = 0; c < game.board.cols; c++)
-              if (isEmptySpace(game, { r, c }) && !head.placed.some((p) => same(p, { r, c }))) cells.push({ r, c });
-          addCells(cells, 'gate');
+        case 'placeShips': {
+          const die = sel.kind === 'scrap' ? sel.die : scrapyard(game, head.player)[0]?.id;
+          addCells(legal.of('placeShip', (a) => a.die === die).map((a) => a.to), 'deploy');
           break;
         }
+        case 'infamy':
+          for (const a of legal.of('infamy')) h.planets.set(a.planet, { tone: 'infamy', label: 'Seize' });
+          break;
+        case 'placeExpansion':
+          addCells(legal.of('placeExpansion').flatMap((a) => (a.to ? [a.to] : [])), 'deploy');
+          break;
+        case 'showOfForce':
+          for (const a of legal.of('showOfForce')) h.dice.set(a.die, 'target');
+          break;
+        case 'warpGate':
+          addCells(legal.of('warpGate').map((a) => a.cell), 'gate');
+          break;
         case 'unveil':
-          if (sel.kind === 'scrap') addCells(deployTargets(game, head.player), 'deploy');
+          if (sel.kind === 'scrap') addCells(legal.of('unveilDeploy', (a) => a.die === sel.die).map((a) => a.to), 'deploy');
           if (head.reorganize) {
-            for (const d of shipsOnBoard(game, head.player)) if (!head.rerolled.includes(d.id)) h.dice.set(d.id, 'swap');
+            for (const a of legal.of('unveilReroll')) if (getDie(game, a.die).loc.zone === 'board') h.dice.set(a.die, 'swap');
           }
           break;
       }
@@ -107,55 +97,54 @@ export function useController(game: GameState, dispatch: (a: Action) => boolean)
     }
     if (!actionPhase) return h;
 
-    const me = game.turn.player;
-    // Attacking makes you pay for any Curious free moves already taken.
-    const canAttack = (cost: number) => game.turn.actionsLeft >= cost + game.turn.freeMovesUsed;
-    if (game.turn.actionsLeft >= 2) {
-      for (const p of game.board.planets) {
-        const check = conquerCheck(game, me, p.id);
-        if (check.ok) h.planets.set(p.id, { tone: 'conquer', label: 'Conquer' });
-      }
-    }
+    for (const a of legal.of('conquer')) h.planets.set(a.planet, { tone: 'conquer', label: 'Conquer' });
+    const transports = (die: string, tactical?: boolean) =>
+      tactical
+        ? legal.of('tactical', (a) => a.die === die && !!a.passenger).map((a) => ({ passenger: a.passenger!, to: a.to!, drop: a.drop! }))
+        : legal.of('carry', (a) => a.die === die);
     switch (sel.kind) {
       case 'ship': {
-        const d = getDie(game, sel.die);
-        const t = game.turn;
-        if ((t.actionsLeft > 0 || t.freeMoves > 0) && canMoveDie(game, d)) {
-          const opts = moveOptions(game, d.id);
-          for (const m of opts.moves.values()) h.cells.set(key(m.cell), { cell: m.cell, tone: m.diagonal ? 'diagonal' : 'move' });
-          if (canAttack(1)) for (const id of opts.attacks.keys()) h.dice.set(id, 'attack');
+        const diagonal = moveOptions(game, sel.die).moves;
+        for (const a of legal.of('move', (a) => a.die === sel.die)) {
+          h.cells.set(key(a.to), { cell: a.to, tone: diagonal.get(key(a.to))?.diagonal ? 'diagonal' : 'move' });
         }
+        for (const a of legal.of('attack', (a) => a.die === sel.die)) h.dice.set(a.target, 'attack');
         break;
       }
       case 'scrap':
-        if (game.turn.actionsLeft > 0 || game.turn.freeDeploys > 0 || hasSkill(game, me, 'eager')) addCells(deployTargets(game, me), 'deploy');
+        addCells(legal.of('deploy', (a) => a.die === sel.die).map((a) => a.to), 'deploy');
         break;
       case 'tactical': {
-        const opts = tacticalOptions(game, sel.die);
-        for (const m of opts.moves) h.cells.set(key(m.cell), { cell: m.cell, tone: m.diagonal ? 'diagonal' : 'move' });
-        if (canAttack(0)) for (const x of opts.attacks) h.dice.set(x.die.id, 'attack');
+        const steps = tacticalOptions(game, sel.die).moves;
+        for (const a of legal.of('tactical', (a) => a.die === sel.die && !a.passenger)) {
+          if (a.target) h.dice.set(a.target, 'attack');
+          else if (a.to) h.cells.set(key(a.to), { cell: a.to, tone: steps.find((m) => same(m.cell, a.to!))?.diagonal ? 'diagonal' : 'move' });
+        }
         break;
       }
       case 'swap':
-        for (const d of shipsOnBoard(game, me)) if (d.id !== sel.die) h.dice.set(d.id, 'swap');
+        for (const a of legal.of('swap', (a) => a.die === sel.die)) h.dice.set(a.other, 'swap');
         break;
       case 'freeAttack':
-        if (canAttack(0)) for (const d of freeAttackTargets(game, sel.die)) h.dice.set(d.id, 'attack');
+        for (const a of legal.of('freeAttack', (a) => a.die === sel.die)) h.dice.set(a.target, 'attack');
         break;
       case 'carryPassenger':
-        for (const d of carryPassengers(game, sel.die)) h.dice.set(d.id, 'passenger');
+        for (const t of transports(sel.die, sel.tactical)) h.dice.set(t.passenger, 'passenger');
         break;
       case 'carryDest':
-        addCells([...carryOptions(game, sel.die, sel.passenger, sel.tactical ? 1 : undefined).values()].map((x) => x.cell), 'move');
+        addCells(transports(sel.die, sel.tactical).filter((t) => t.passenger === sel.passenger).map((t) => t.to), 'move');
         break;
-      case 'carryDrop': {
-        const dest = carryOptions(game, sel.die, sel.passenger, sel.tactical ? 1 : undefined).get(key(sel.to));
-        addCells((dest?.drops ?? []).filter((c) => !same(c, sel.to)), 'drop');
+      case 'carryDrop':
+        addCells(
+          transports(sel.die, sel.tactical)
+            .filter((t) => t.passenger === sel.passenger && same(t.to, sel.to))
+            .map((t) => t.drop),
+          'drop',
+        );
         break;
-      }
     }
     return h;
-  }, [game, sel, human, head, actionPhase]);
+  }, [game, sel, human, head, actionPhase, legal]);
 
   const select = useCallback((s: Sel) => {
     if (s.kind !== 'none') sfx.select();
@@ -249,7 +238,7 @@ export function useController(game: GameState, dispatch: (a: Action) => boolean)
     [human, highlights, dispatch],
   );
 
-  return { sel, select, highlights, onDie, onCell, onPlanet, human, actionPhase };
+  return { sel, select, highlights, legal, onDie, onCell, onPlanet, human, actionPhase };
 }
 
 export type Controller = ReturnType<typeof useController>;

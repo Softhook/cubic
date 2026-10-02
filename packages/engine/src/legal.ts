@@ -19,6 +19,7 @@ import {
   shipsOnBoard,
   startSlots,
   tacticalOptions,
+  usedThisTurn,
 } from './queries';
 import { rulesOf } from './rules';
 import type { Action, GameState, Pending } from './types';
@@ -105,7 +106,7 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
       if (canAttack(1)) for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
     }
     if (actions > 0 && canReconfigure(s, d)) out.push({ type: 'reconfigure', die: d.id });
-    if ((hasSkill(s, me, 'tactical') || (hasSkill(s, me, 'tactical-original') && canMoveDie(s, d))) && !t.oncePerTurn.includes('tactical')) {
+    if ((hasSkill(s, me, 'tactical') || (hasSkill(s, me, 'tactical-original') && canMoveDie(s, d))) && !usedThisTurn(s, 'tactical')) {
       const tac = tacticalOptions(s, d.id);
       for (const m of tac.moves) out.push({ type: 'tactical', die: d.id, to: m.cell });
       if (canAttack(0)) for (const x of tac.attacks) out.push({ type: 'tactical', die: d.id, target: x.die.id });
@@ -126,10 +127,11 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
             for (const drop of dest.drops) out.push({ type: 'carry', die: d.id, passenger: p.id, to: dest.cell, drop });
       }
     }
-    if (hasSkill(s, me, 'flexible') && !t.oncePerTurn.includes('flexible')) {
-      out.push({ type: 'flexible', die: d.id, delta: 1 }, { type: 'flexible', die: d.id, delta: -1 });
+    if (hasSkill(s, me, 'flexible') && !usedThisTurn(s, 'flexible')) {
+      if (d.value < 6) out.push({ type: 'flexible', die: d.id, delta: 1 });
+      if (d.value > 1) out.push({ type: 'flexible', die: d.id, delta: -1 });
     }
-    if (hasSkill(s, me, 'resourceful') && !t.oncePerTurn.includes('resourceful')) {
+    if (hasSkill(s, me, 'resourceful') && !usedThisTurn(s, 'resourceful')) {
       out.push({ type: 'resourceful', die: d.id });
     }
   }
@@ -140,10 +142,10 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
     if (actions > 0 && canReconfigure(s, d)) out.push({ type: 'reconfigure', die: d.id });
   }
   if (rulesOf(s).cards && actions > 0 && pl.research < 6 && !hasSkill(s, me, 'righteous')) out.push({ type: 'research' });
-  if (hasSkill(s, me, 'tyrannical-original') && !t.oncePerTurn.includes('tyrannical') && pl.research > 1) out.push({ type: 'tyrannical' });
+  if (hasSkill(s, me, 'tyrannical-original') && !usedThisTurn(s, 'tyrannical') && pl.research > 1) out.push({ type: 'tyrannical' });
   if (actions >= 2) for (const p of s.board.planets) if (conquerCheck(s, me, p.id).ok) out.push({ type: 'conquer', planet: p.id });
-  if (hasSkill(s, me, 'composed') && !t.oncePerTurn.includes('composed')) out.push({ type: 'composed' });
-  if (hasSkill(s, me, 'ambitious') && !t.oncePerTurn.includes('ambitious')) out.push({ type: 'ambitious' });
+  if (hasSkill(s, me, 'composed') && !usedThisTurn(s, 'composed')) out.push({ type: 'composed' });
+  if (hasSkill(s, me, 'ambitious') && !usedThisTurn(s, 'ambitious')) out.push({ type: 'ambitious' });
   return out;
 }
 

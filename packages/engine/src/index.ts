@@ -8,5 +8,6 @@ export type { NewGameOptions } from './setup';
 export { apply, tryApply, actor, currentPending } from './engine';
 export { legalActions } from './legal';
 export { isUndoable } from './undo';
-export { IMPLEMENTED_EFFECTS } from './cards';
+export { checkInvariants } from './invariants';
+export { IMPLEMENTED_EFFECTS, SKILL_EFFECTS, TACTIC_EFFECT_IDS, type SkillEffect, type TacticEffect } from './effects';
 export { mapStats, type MapStats } from './mapStats';

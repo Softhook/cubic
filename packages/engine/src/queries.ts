@@ -11,8 +11,9 @@ import {
   adjacent,
 } from './board';
 import { effectOf } from './data';
+import type { SkillEffect } from './effects';
 import { rulesOf } from './rules';
-import type { Cell, CombatPending, Die, GameState, Planet, PlayerId } from './types';
+import type { Cell, CombatPending, Die, GameState, OncePerTurn, Planet, PlayerId } from './types';
 
 // ---------------------------------------------------------------------------
 // Lookups
@@ -46,18 +47,23 @@ export function reserve(state: GameState, player: PlayerId): Die[] {
 }
 
 /** True when the player owns an active skill with this effect (e.g. Cerebral has the 'composed' effect). */
-export function hasSkill(state: GameState, player: PlayerId, effect: string): boolean {
+export function hasSkill(state: GameState, player: PlayerId, effect: SkillEffect): boolean {
   return state.players[player].skills.some((s) => s.active && effectOf(s.id) === effect);
 }
 
 /** The id of the player's card that provides an effect, for showing its name. */
-export function skillCard(state: GameState, player: PlayerId, effect: string): string | undefined {
+export function skillCard(state: GameState, player: PlayerId, effect: SkillEffect): string | undefined {
   return state.players[player].skills.find((s) => s.active && effectOf(s.id) === effect)?.id;
+}
+
+/** Whether a once-per-turn effect has been used this turn. */
+export function usedThisTurn(state: GameState, tag: OncePerTurn): boolean {
+  return state.turn.oncePerTurn.includes(tag);
 }
 
 /** Cunning: one ship ability may be used a second time each turn. */
 export function cunningAvailable(state: GameState, player: PlayerId): boolean {
-  return hasSkill(state, player, 'cunning') && !state.turn.oncePerTurn.includes('cunning');
+  return hasSkill(state, player, 'cunning') && !usedThisTurn(state, 'cunning');
 }
 
 export function canUseAbility(state: GameState, d: Die): boolean {

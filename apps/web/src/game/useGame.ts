@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { actor, apply, isUndoable, RuleError, type Action, type GameState, type LogEntry } from '@quantum/engine';
+import { actor, apply, checkInvariants, isUndoable, RuleError, type Action, type GameState, type LogEntry } from '@quantum/engine';
 import { chooseAction, chooseMissile } from '@quantum/ai';
 import { sfx } from '../sound';
 
@@ -40,6 +40,11 @@ function soundFor(entries: LogEntry[]) {
   }
 }
 
+/** Logs an engine bug with the state and action that trigger it (replay with window.__quantum.load). */
+function reportBug(what: string, state: GameState, action: Action, error?: unknown) {
+  console.error(`[quantum] ${what}`, { action, error, state: JSON.stringify(state) });
+}
+
 export function useGame(initial: GameState) {
   const [game, setGame] = useState(initial);
   const [error, setError] = useState<{ id: number; text: string } | null>(null);
@@ -72,21 +77,29 @@ export function useGame(initial: GameState) {
 
   const dispatch = useCallback(
     (a: Action): boolean => {
+      const prev = ref.current;
+      let next: GameState;
       try {
-        const prev = ref.current;
-        const next = apply(prev, a);
-        const human = !prev.players[actor(prev)].ai;
-        setHistory(human && isUndoable(prev, a, next) ? [...history.current, prev] : []);
-        commit(next);
-        return true;
+        next = apply(prev, a);
       } catch (e) {
+        sfx.error();
         if (e instanceof RuleError) {
-          sfx.error();
           setError({ id: Date.now(), text: e.message });
-          return false;
+        } else {
+          // An engine bug. Keep the game running and log what is needed to reproduce it.
+          reportBug('apply threw', prev, a, e);
+          setError({ id: Date.now(), text: `Engine error: ${(e as Error).message} (details in the console)` });
         }
-        throw e;
+        return false;
       }
+      if (import.meta.env.DEV) {
+        const broken = checkInvariants(next);
+        if (broken.length) reportBug(`invariants broken: ${broken.join('; ')}`, prev, a);
+      }
+      const human = !prev.players[actor(prev)].ai;
+      setHistory(human && isUndoable(prev, a, next) ? [...history.current, prev] : []);
+      commit(next);
+      return true;
     },
     [commit],
   );

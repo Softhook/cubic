@@ -1,9 +1,9 @@
 import {
   actor,
-  apply,
   attackOdds,
   cellOf,
   conquerCheck,
+  die,
   dieAt,
   isEmptySpace,
   legalActions,
@@ -108,15 +108,11 @@ function withRandomSeed(state: GameState, rand: () => number): GameState {
   return { ...state, rng: Math.floor(rand() * 2 ** 32) >>> 0 };
 }
 
+/** Scores the position after `a`. An illegal action scores -Infinity; an engine crash propagates. */
 function scoreAfter(state: GameState, me: PlayerId, a: Action): number {
-  let s: GameState;
-  try {
-    s = apply(state, a);
-  } catch {
-    return -Infinity;
-  }
-  s = playOutDecisions(s, me);
-  return score(s, me);
+  const s = tryApply(state, a);
+  if (!s) return -Infinity;
+  return score(playOutDecisions(s, me), me);
 }
 
 /** Resolves follow-up decisions with a quick default policy so the position can be scored. */
@@ -139,7 +135,7 @@ function quickPolicy(s: GameState, me: PlayerId): Action | null {
   if (head.kind === 'combat') return { type: 'resolveCombat' };
   const options = legalActions(s);
   if (head.kind === 'showOfForce') {
-    const enemy = options.find((a) => a.type === 'showOfForce' && !a.die.startsWith(`p${me}d`));
+    const enemy = options.find((a) => a.type === 'showOfForce' && die(s, a.die).owner !== me);
     return enemy ?? options[0] ?? null;
   }
   if (head.kind === 'takeCard') {

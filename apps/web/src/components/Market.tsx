@@ -1,11 +1,12 @@
-import { EXPANSION, reserve, rulesOf, type Action, type DeckKind, type GameState } from '@quantum/engine';
+import { EXPANSION, rulesOf, type Action, type DeckKind, type GameState } from '@quantum/engine';
+import type { Legal } from '../game/legal';
 import { CardView } from './Card';
 
-export function Market({ game, dispatch, human }: { game: GameState; dispatch: (a: Action) => boolean; human: boolean }) {
-  const head = game.pending[0];
-  const picking = human && head?.kind === 'takeCard';
+export function Market({ game, dispatch, legal }: { game: GameState; dispatch: (a: Action) => boolean; legal: Legal }) {
+  const picking = legal.can('takeCard');
   const m = game.market;
-  const canExpand = picking && m.expansions > 0 && reserve(game, head.player).length > 0;
+  const canTake = (deck: DeckKind | 'expansion', index: number) => legal.can('takeCard', (a) => a.deck === deck && a.index === index);
+  const canExpand = canTake('expansion', 0);
   const cardRules = rulesOf(game).cards!;
   const peek = cardRules.peek;
 
@@ -23,7 +24,7 @@ export function Market({ game, dispatch, human }: { game: GameState; dispatch: (
           size="sm"
           className="market-card"
           badge={peek && index === cards.length - 1 && cards.length === 3 && deckSize > 0 ? 'Peek' : undefined}
-          onClick={picking ? () => dispatch({ type: 'takeCard', deck, index }) : undefined}
+          onClick={canTake(deck, index) ? () => dispatch({ type: 'takeCard', deck, index }) : undefined}
         />
       ))}
     </div>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   apply,
+  checkInvariants,
   combatOutcome,
   conquerCheck,
   createGame,
@@ -38,25 +39,6 @@ function arrange(s: GameState, placements: Record<string, [number, number, numbe
   return t;
 }
 
-function checkInvariants(s: GameState) {
-  for (const p of s.players) {
-    expect(s.dice.filter((d) => d.owner === p.id)).toHaveLength(5);
-    expect(p.dominance).toBeGreaterThanOrEqual(1);
-    expect(p.dominance).toBeLessThanOrEqual(6);
-    expect(p.research).toBeGreaterThanOrEqual(1);
-    expect(p.research).toBeLessThanOrEqual(6);
-    expect(p.missiles).toBeGreaterThanOrEqual(0);
-  }
-  for (const pl of s.board.planets) expect(pl.cubes.length).toBeLessThanOrEqual(pl.capacity);
-  const occupied = new Set<string>();
-  for (const d of s.dice) {
-    if (d.loc.zone !== 'board') continue;
-    const k = `${d.loc.r},${d.loc.c}`;
-    expect(occupied.has(k), `two ships on ${k}`).toBe(false);
-    occupied.add(k);
-    expect(s.board.cells[d.loc.r][d.loc.c].kind).toBe('space');
-  }
-}
 
 describe('setup', () => {
   it('ends with every player on a starting planet with 3 ships', () => {
@@ -174,7 +156,7 @@ describe('full games', () => {
         action ??= chooseAction(s, { samples: 1, random });
         expect(action, `no action at step ${steps}`).not.toBeNull();
         s = apply(s, action!);
-        checkInvariants(s);
+        expect(checkInvariants(s), `after step ${steps}: ${JSON.stringify(action)}`).toEqual([]);
         steps++;
       }
       expect(s.phase).toBe('over');

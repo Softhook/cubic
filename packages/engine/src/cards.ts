@@ -2,64 +2,25 @@
  * Advance cards: the market (taking, peeking, refilling), one-shot Tactic / Gambit effects and
  * the decisions they open, and the skill limit.
  *
- * To add a Tactic: add its effect to TACTIC_EFFECTS. To add a Skill: implement its rule where it
- * applies (search for an existing `hasSkill(...)` of a similar skill) and list it in SKILL_EFFECTS.
- * Cards whose effect is in neither list are left out of the decks.
+ * To add a Tactic: list its effect in TACTIC_EFFECT_IDS (effects.ts); the compiler then asks for
+ * its entry in TACTIC_EFFECTS. Skills are listed in SKILL_EFFECTS (effects.ts).
  */
 import { same } from './board';
 import { destroyShip, fail, gainDominance, headOf, log, name, roll, shipName, type Handlers } from './core';
 import { card, cardKind, effectOf } from './data';
+import type { TacticEffect } from './effects';
 import { deployTargets, die, reserve, shipsOnBoard, skillLimit } from './queries';
 import { shuffle } from './rng';
 import { rulesOf } from './rules';
 import type { DeckKind, GameState, PlayerId } from './types';
 
 // ---------------------------------------------------------------------------
-// Implemented effects
+// Tactic effects
 
-/** Skill / Command effects the engine implements (their rules live where they apply). */
-const SKILL_EFFECTS = [
-  // shared / community skills
-  'agile',
-  'ambitious',
-  'brilliant',
-  'brutal',
-  'composed',
-  'ferocious',
-  'flexible',
-  'hostile',
-  'industrious',
-  'ingenious',
-  'intelligent',
-  'pioneering',
-  'plundering',
-  'precocious',
-  'rational',
-  'ravenous',
-  'resourceful',
-  'righteous',
-  'steadfast',
-  'stealthy',
-  'strategic',
-  'stubborn',
-  'talented',
-  'tyrannical',
-  'cunning',
-  'tactical',
-  // original command cards
-  'arrogant',
-  'conformist',
-  'curious-original',
-  'eager',
-  'plundering-original',
-  'ravenous-original',
-  'righteous-original',
-  'tactical-original',
-  'tyrannical-original',
-];
+type TacticEffectFn = (s: GameState, p: PlayerId) => void;
 
 /** What each Tactic / Gambit does when taken. Effects that need a choice push a pending decision. */
-const TACTIC_EFFECTS: Record<string, (s: GameState, p: PlayerId) => void> = {
+const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
   aggression: (s, p) => gainDominance(s, p, 2),
   'black-market': (s, p) => {
     s.players[p].missiles += 2;
@@ -105,13 +66,6 @@ const TACTIC_EFFECTS: Record<string, (s: GameState, p: PlayerId) => void> = {
   },
 };
 
-/** Card effects the engine implements. Only cards with these effects are shuffled into the decks. */
-export const IMPLEMENTED_EFFECTS = new Set([...SKILL_EFFECTS, ...Object.keys(TACTIC_EFFECTS)]);
-
-export function isImplemented(effect: string): boolean {
-  return IMPLEMENTED_EFFECTS.has(effect);
-}
-
 // ---------------------------------------------------------------------------
 // Market
 
@@ -147,7 +101,7 @@ function gainCard(s: GameState, p: PlayerId, id: string) {
   } else {
     log(s, `${pl.name} plays ${def.name}.`, p);
     s.market.tacticDiscard.push(id);
-    const effect = TACTIC_EFFECTS[effectOf(id)];
+    const effect = TACTIC_EFFECTS[effectOf(id) as TacticEffect] as TacticEffectFn | undefined;
     if (!effect) throw new Error(`Unhandled tactic ${id}`);
     effect(s, p);
   }

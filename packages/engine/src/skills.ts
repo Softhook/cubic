@@ -1,5 +1,6 @@
 /** Skills / Command cards a player activates as an action of their own. Passive skills apply where their rule does. */
-import { key, same } from './board';
+import { transport } from './abilities';
+import { same } from './board';
 import { startCombat } from './combat';
 import {
   destroyShip,
@@ -16,7 +17,7 @@ import {
   requireSkill,
   type Handlers,
 } from './core';
-import { canMoveDie, carryOptions, carryPassengers, cellOf, die, hasSkill, tacticalOptions } from './queries';
+import { canMoveDie, cellOf, hasSkill, tacticalOptions } from './queries';
 
 export const skillHandlers = {
   composed(s) {
@@ -74,14 +75,10 @@ export const skillHandlers = {
       // Flagship Transport over the 1 space (forum consensus, BGG thread 1093051).
       if (d.value !== 2) fail('Only a Flagship can transport');
       if (!a.to || !a.drop) fail('Invalid carry');
-      if (!carryPassengers(s, d.id).some((x) => x.id === a.passenger)) fail('Passenger must be next to the flagship');
-      const dest = carryOptions(s, d.id, a.passenger, 1).get(key(a.to));
-      if (!dest || !dest.drops.some((p) => same(p, a.drop!))) fail('Invalid carry');
-      if (same(a.to, a.drop)) fail('Drop the passenger next to the flagship');
+      const fly = transport(s, d, a.passenger, a.to, a.drop, 1);
       use();
       markAbility(s, d);
-      d.loc = { zone: 'board', ...a.to };
-      die(s, a.passenger).loc = { zone: 'board', ...a.drop };
+      fly();
       return;
     }
     const opts = tacticalOptions(s, d.id);

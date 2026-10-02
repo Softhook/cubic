@@ -2,11 +2,12 @@
  * Shared building blocks for the rule modules: errors, the log, dice, actions and the
  * dominance / research / cube bookkeeping that many rules touch.
  */
-import { card, SHIP_NAMES } from './data';
-import { canUseAbility, die, hasSkill } from './queries';
+import { cardWithEffect, SHIP_NAMES } from './data';
+import type { SkillEffect } from './effects';
+import { canUseAbility, die, hasSkill, usedThisTurn } from './queries';
 import { d6 } from './rng';
 import { rulesOf } from './rules';
-import { RuleError, type Action, type Die, type GameState, type Pending, type PlayerId, type TurnState } from './types';
+import { RuleError, type Action, type Die, type GameState, type OncePerTurn, type Pending, type PlayerId, type TurnState } from './types';
 
 export const ACTIONS_PER_TURN = 3;
 const LOG_LIMIT = 80;
@@ -150,13 +151,13 @@ export function markAbility(s: GameState, d: Die) {
   s.turn.abilityUsed[d.id] = true;
 }
 
-export function oncePerTurn(s: GameState, tag: string) {
-  if (s.turn.oncePerTurn.includes(tag)) fail('Already used this turn');
+export function oncePerTurn(s: GameState, tag: OncePerTurn) {
+  if (usedThisTurn(s, tag)) fail('Already used this turn');
   s.turn.oncePerTurn.push(tag);
 }
 
-export function requireSkill(s: GameState, p: PlayerId, skill: string) {
-  if (!hasSkill(s, p, skill)) fail(`Requires the ${card(skill).name} skill`);
+export function requireSkill(s: GameState, p: PlayerId, skill: SkillEffect) {
+  if (!hasSkill(s, p, skill)) fail(`Requires the ${cardWithEffect(skill)?.name ?? skill} card`);
 }
 
 // ---------------------------------------------------------------------------

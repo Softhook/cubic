@@ -1,6 +1,6 @@
 /** Game creation and the setup decisions: fleet roll, starting skill, starting planet and ships. */
 import { buildBoard, same } from './board';
-import { isImplemented } from './cards';
+import { isImplemented } from './effects';
 import { emptyTurn, fail, headOf, log, name, placeCube, roll, type Handlers } from './core';
 import { defaultMap, effectOf, MAPS, type CardDef, type GameMode } from './data';
 import { die, scrapyard, startSlots } from './queries';

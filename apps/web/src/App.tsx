@@ -66,7 +66,7 @@ function Game({ initial, onQuit, onRules }: { initial: GameState; onQuit: () => 
           <PlayerList game={game} ctl={ctl} dispatch={dispatch} />
           <Log game={game} />
         </aside>
-        {rulesOf(game).cards && <Market game={game} dispatch={dispatch} human={ctl.human} />}
+        {rulesOf(game).cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} />}
       </main>
 
       {head?.kind === 'combat' && <CombatOverlay key={head.id} game={game} combat={head} dispatch={dispatch} />}

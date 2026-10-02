@@ -9,12 +9,14 @@
  *   abilities.ts  ship abilities 1–6
  *   combat.ts     attacks, missiles, advancing, Infamy
  *   cards.ts      the card market, Tactic effects and their decisions
+ *   effects.ts    the implemented Skill and Tactic effects, as types
  *   skills.ts     skills a player activates
  *   turn.ts       start / end of turn, and auto-resolving decisions after each action
  *   legal.ts      legal action enumeration (AI, UI hints)
  *   rules.ts      what differs between rule sets (Basic, Original, Community)
  *   core.ts       shared helpers: errors, log, dice, tracks, cubes
  *   queries.ts    read-only questions about a state (movement, conquering, combat totals…)
+ *   invariants.ts consistency checks every state must pass (tests, dev builds)
  */
 import { abilityHandlers } from './abilities';
 import { actionHandlers } from './actions';

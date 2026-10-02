@@ -8,12 +8,28 @@ import { startCombat } from './combat';
 import { fail, markAbility, markMoved, ownShip, requireActionPhase, rerollNew, spendMove, type Handlers } from './core';
 import { SHIP_NAMES } from './data';
 import { canMoveDie, carryOptions, carryPassengers, cellOf, die, freeAttackTargets } from './queries';
-import type { Die, GameState } from './types';
+import type { Cell, Die, GameState } from './types';
 
 function useAbility(s: GameState, d: Die, value: number) {
   if (d.loc.zone !== 'board') fail('Only ships on the map can use abilities');
   if (d.value !== value) fail(`Only a ${SHIP_NAMES[value]} can do that`);
   markAbility(s, d);
+}
+
+/**
+ * Flagship Transport: picks up `passenger` from a surrounding space, flies to `to` (within `range`,
+ * default the flagship's movement) and drops it at `drop`, next to the flagship. Validates first;
+ * the caller pays for it.
+ */
+export function transport(s: GameState, flagship: Die, passenger: string, to: Cell, drop: Cell, range?: number) {
+  if (!carryPassengers(s, flagship.id).some((x) => x.id === passenger)) fail('Passenger must be next to the flagship');
+  const dest = carryOptions(s, flagship.id, passenger, range).get(key(to));
+  if (!dest || !dest.drops.some((p) => same(p, drop))) fail('Invalid carry');
+  if (same(to, drop)) fail('Drop the passenger next to the flagship');
+  return () => {
+    flagship.loc = { zone: 'board', ...to };
+    die(s, passenger).loc = { zone: 'board', ...drop };
+  };
 }
 
 export const abilityHandlers = {
@@ -30,14 +46,10 @@ export const abilityHandlers = {
     requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     if (!canMoveDie(s, d)) fail('This ship already moved this turn');
-    if (!carryPassengers(s, d.id).some((x) => x.id === a.passenger)) fail('Passenger must be next to the flagship');
-    const dest = carryOptions(s, d.id, a.passenger).get(key(a.to));
-    if (!dest || !dest.drops.some((p) => same(p, a.drop))) fail('Invalid carry');
-    if (same(a.to, a.drop)) fail('Drop the passenger next to the flagship');
+    const fly = transport(s, d, a.passenger, a.to, a.drop);
     spendMove(s); // a Transport is a move without an attack, so Curious can pay for it
     useAbility(s, d, 2);
-    d.loc = { zone: 'board', ...a.to };
-    die(s, a.passenger).loc = { zone: 'board', ...a.drop };
+    fly();
     markMoved(s, d);
   },
   /** 3 Destroyer — Warp: swap places with another of your ships on the map; not its move. */

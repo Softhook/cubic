@@ -3,11 +3,8 @@ import {
   SHIP_ABILITIES,
   SHIP_NAMES,
   canMoveDie,
-  canReconfigure,
   canUseAbility,
   card,
-  carryPassengers,
-  freeAttackTargets,
   hasSkill,
   movementRange,
   reserve,
@@ -17,6 +14,7 @@ import {
   type Die,
   type GameState,
   type PlayerState,
+  type SkillEffect,
   rulesOf,
 } from '@quantum/engine';
 import { hintFor, type Controller } from '../game/controller';
@@ -29,7 +27,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
   const t = game.turn;
   const p = game.players[t.player];
   const head = game.pending[0];
-  const me = t.player;
+  const { legal } = ctl;
   const canAct = ctl.actionPhase;
   const hint = ctl.human ? hintFor(game, ctl.sel) : '';
   const waitingOn = head && head.kind !== 'combat' ? game.players[head.player] : null;
@@ -65,25 +63,16 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
           {rulesOf(game).cards && (
             <button
               className="btn"
-              disabled={!canAct || t.actionsLeft < 1 || p.research >= 6 || hasSkill(game, me, 'righteous')}
+              disabled={!legal.can('research')}
               onClick={() => dispatch({ type: 'research' })}
               title="+1 research. At 6 you gain a card at the end of your turn."
             >
               <CategoryIcon category="research" /> Research
             </button>
           )}
-          <SkillButton game={game} effect="composed" disabled={!canAct || t.oncePerTurn.includes('composed')} onClick={() => dispatch({ type: 'composed' })} />
-          <SkillButton
-            game={game}
-            effect="tyrannical-original"
-            disabled={!canAct || t.oncePerTurn.includes('tyrannical') || p.research <= 1}
-            onClick={() => dispatch({ type: 'tyrannical' })}
-          />
-          {hasSkill(game, me, 'ambitious') && (
-            <button className="btn" disabled={!canAct || t.oncePerTurn.includes('ambitious')} onClick={() => dispatch({ type: 'ambitious' })} title={card('ambitious').text}>
-              Ambitious +1
-            </button>
-          )}
+          <SkillButton game={game} effect="composed" disabled={!legal.can('composed')} onClick={() => dispatch({ type: 'composed' })} />
+          <SkillButton game={game} effect="tyrannical-original" disabled={!legal.can('tyrannical')} onClick={() => dispatch({ type: 'tyrannical' })} />
+          <SkillButton game={game} effect="ambitious" label="Ambitious +1" disabled={!legal.can('ambitious')} onClick={() => dispatch({ type: 'ambitious' })} />
           <button
             className="btn btn-ghost undo-btn"
             disabled={!canAct || !undo}
@@ -101,7 +90,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
           </button>
           <button
             className={`btn btn-primary ${canAct && t.actionsLeft === 0 ? 'pulse' : ''}`}
-            disabled={!canAct}
+            disabled={!legal.can('endTurn')}
             onClick={() => dispatch({ type: 'endTurn' })}
           >
             End turn
@@ -131,19 +120,20 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
   );
 }
 
-function SkillButton({ game, effect, disabled, onClick }: { game: GameState; effect: string; disabled: boolean; onClick: () => void }) {
+/** A button for a skill the current player activates; hidden unless they have it. */
+function SkillButton({ game, effect, label, disabled, onClick }: { game: GameState; effect: SkillEffect; label?: string; disabled: boolean; onClick: () => void }) {
   const id = skillCard(game, game.turn.player, effect);
   if (!id) return null;
   const def = card(id);
   return (
     <button className="btn" disabled={disabled} onClick={onClick} title={def.text}>
-      {def.name}
+      {label ?? def.name}
     </button>
   );
 }
 
 function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Controller; dispatch: Dispatch }) {
-  const sel = ctl.sel;
+  const { sel, legal } = ctl;
   if (sel.kind === 'none' || !ctl.actionPhase) return null;
   const d = game.dice.find((x) => x.id === sel.die);
   if (!d) return null;
@@ -152,13 +142,8 @@ function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Controller; 
   const onBoard = d.loc.zone === 'board';
   const used = !canUseAbility(game, d);
   const secondUse = !used && !!t.abilityUsed[d.id];
-  const seen = t.seen[d.id]?.length ?? 1;
   const tacticalId = skillCard(game, me, 'tactical') ?? skillCard(game, me, 'tactical-original');
-  const tacticalReady =
-    !!tacticalId &&
-    onBoard &&
-    !t.oncePerTurn.includes('tactical') &&
-    (hasSkill(game, me, 'tactical') || canMoveDie(game, d));
+  const mine = (a: { die: string }) => a.die === d.id;
   const ability = SHIP_ABILITIES[d.value];
   const cancel = () => ctl.select({ kind: 'none' });
 
@@ -167,31 +152,34 @@ function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Controller; 
     switch (d.value) {
       case 1:
         return (
-          <button className="btn" disabled={!freeAttackTargets(game, d.id).length || t.actionsLeft < t.freeMovesUsed} onClick={() => ctl.select({ kind: 'freeAttack', die: d.id })}>
+          <button className="btn" disabled={!legal.can('freeAttack', mine)} onClick={() => ctl.select({ kind: 'freeAttack', die: d.id })}>
             Free attack
           </button>
         );
       case 2:
         return (
-          <button
-            className="btn"
-            disabled={(t.actionsLeft < 1 && t.freeMoves < 1) || !canMoveDie(game, d) || !carryPassengers(game, d.id).length}
-            onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id })}
-          >
+          <button className="btn" disabled={!legal.can('carry', mine)} onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id })}>
             Carry &amp; move
           </button>
         );
       case 3:
-        return <button className="btn" onClick={() => ctl.select({ kind: 'swap', die: d.id })}>Switch places</button>;
-      case 4:
         return (
-          <>
-            <button className="btn" onClick={() => dispatch({ type: 'change', die: d.id, value: 3 })}>Become 3</button>
-            <button className="btn" onClick={() => dispatch({ type: 'change', die: d.id, value: 5 })}>Become 5</button>
-          </>
+          <button className="btn" disabled={!legal.can('swap', mine)} onClick={() => ctl.select({ kind: 'swap', die: d.id })}>
+            Switch places
+          </button>
         );
+      case 4:
+        return ([3, 5] as const).map((value) => (
+          <button key={value} className="btn" disabled={!legal.can('change', (a) => mine(a) && a.value === value)} onClick={() => dispatch({ type: 'change', die: d.id, value })}>
+            Become {value}
+          </button>
+        ));
       case 6:
-        return <button className="btn" disabled={rulesOf(game).reconfigure === 'unseen' && seen >= 6} onClick={() => dispatch({ type: 'freeReconfigure', die: d.id })}>Free re-roll</button>;
+        return (
+          <button className="btn" disabled={!legal.can('freeReconfigure', mine)} onClick={() => dispatch({ type: 'freeReconfigure', die: d.id })}>
+            Free re-roll
+          </button>
+        );
     }
     return null;
   };
@@ -214,26 +202,26 @@ function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Controller; 
       </p>
       <div className="turn-actions">
         {abilityButton()}
-        <button className="btn" disabled={t.actionsLeft < 1 || !canReconfigure(game, d)} onClick={() => dispatch({ type: 'reconfigure', die: d.id })} title="Spend 1 action to re-roll this ship to a new number.">
+        <button className="btn" disabled={!legal.can('reconfigure', mine)} onClick={() => dispatch({ type: 'reconfigure', die: d.id })} title="Spend 1 action to re-roll this ship to a new number.">
           Reconfigure
         </button>
-        {tacticalReady && (
+        {tacticalId && legal.can('tactical', (a) => mine(a) && !a.passenger) && (
           <button className="btn" onClick={() => ctl.select({ kind: 'tactical', die: d.id })} title={card(tacticalId).text}>
             Tactical step
           </button>
         )}
-        {tacticalReady && d.value === 2 && !used && carryPassengers(game, d.id).length > 0 && (
+        {tacticalId && legal.can('tactical', (a) => mine(a) && !!a.passenger) && (
           <button className="btn" onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id, tactical: true })} title={`${card(tacticalId).text} The Flagship may transport a ship over that 1 space.`}>
             Tactical carry
           </button>
         )}
-        {onBoard && hasSkill(game, me, 'flexible') && !t.oncePerTurn.includes('flexible') && (
+        {onBoard && hasSkill(game, me, 'flexible') && (
           <>
-            <button className="btn" disabled={d.value <= 1} onClick={() => dispatch({ type: 'flexible', die: d.id, delta: -1 })}>−1</button>
-            <button className="btn" disabled={d.value >= 6} onClick={() => dispatch({ type: 'flexible', die: d.id, delta: 1 })}>+1</button>
+            <button className="btn" disabled={!legal.can('flexible', (a) => mine(a) && a.delta === -1)} onClick={() => dispatch({ type: 'flexible', die: d.id, delta: -1 })}>−1</button>
+            <button className="btn" disabled={!legal.can('flexible', (a) => mine(a) && a.delta === 1)} onClick={() => dispatch({ type: 'flexible', die: d.id, delta: 1 })}>+1</button>
           </>
         )}
-        {onBoard && hasSkill(game, me, 'resourceful') && !t.oncePerTurn.includes('resourceful') && (
+        {legal.can('resourceful', mine) && (
           <button className="btn" onClick={() => dispatch({ type: 'resourceful', die: d.id })} title={card('resourceful').text}>
             Sacrifice +1 action
           </button>

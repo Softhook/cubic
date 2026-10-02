@@ -55,6 +55,11 @@ export function effectOf(id: string): string {
   return card(id).effect ?? id;
 }
 
+/** A card with this effect, for naming it (several editions' cards may share one effect). */
+export function cardWithEffect(effect: string): CardDef | undefined {
+  return byId.get(effect) ?? [...byId.values()].find((c) => c.effect === effect);
+}
+
 /** Skill (CE) / Command (original) cards are permanent; everything else is one-shot. */
 export function cardKind(id: string): 'skill' | 'tactic' | 'expansion' {
   if (id === EXPANSION.id) return 'expansion';

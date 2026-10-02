@@ -109,9 +109,13 @@ export interface TurnState {
   attacked: boolean;
   /** Players who have already destroyed an enemy ship this turn ("first time each turn" triggers). */
   destroyedBy: PlayerId[];
-  oncePerTurn: string[];
+  /** Once-per-turn effects already used. */
+  oncePerTurn: OncePerTurn[];
   bonus: boolean;
 }
+
+/** Effects limited to once per turn. 'cunning' is the second use of a ship ability. */
+export type OncePerTurn = 'composed' | 'ambitious' | 'flexible' | 'resourceful' | 'tyrannical' | 'tactical' | 'cunning';
 
 export interface CombatSide {
   player: PlayerId;
