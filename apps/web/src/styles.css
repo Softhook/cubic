@@ -355,6 +355,56 @@ input { font: inherit; }
 .ship-swap, .ship-passenger { cursor: pointer; }
 .ship.fighting { z-index: 5; }
 .ship.fighting .ship-ring { opacity: 1; box-shadow: 0 0 20px var(--pc); }
+.explosion {
+  position: absolute;
+  left: 0; top: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+.explosion > span { position: absolute; left: 50%; top: 50%; border-radius: 50%; }
+.boom-flash {
+  width: 90%; height: 90%;
+  margin: -45% 0 0 -45%;
+  background: radial-gradient(circle, #fff 0%, #fff6c8 22%, #ffb347 45%, var(--pc) 65%, transparent 72%);
+  animation: boom-flash .7s ease-out forwards;
+}
+@keyframes boom-flash {
+  0% { transform: scale(.2); opacity: 1; }
+  25% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.boom-wave {
+  width: 100%; height: 100%;
+  margin: -50% 0 0 -50%;
+  border: 3px solid #ffd27a;
+  box-shadow: 0 0 14px var(--pc), inset 0 0 10px var(--pc);
+  animation: boom-wave .8s ease-out forwards;
+}
+.boom-wave.late { border-color: var(--pc); animation-delay: .14s; opacity: 0; }
+@keyframes boom-wave {
+  0% { transform: scale(.15); opacity: 1; }
+  100% { transform: scale(2.3); opacity: 0; border-width: 1px; }
+}
+.boom-spark {
+  width: 7%; height: 7%;
+  min-width: 4px; min-height: 4px;
+  margin: -3.5% 0 0 -3.5%;
+  background: #fff3c4;
+  box-shadow: 0 0 6px 2px var(--pc);
+  transform: rotate(var(--a)) translateX(0);
+  animation: boom-spark .9s cubic-bezier(.15,.7,.3,1) forwards;
+}
+@keyframes boom-spark {
+  0% { transform: rotate(var(--a)) translateX(0) scale(1.4); opacity: 1; }
+  100% { transform: rotate(var(--a)) translateX(calc(var(--cell) * var(--d) * 1.6)) scale(.3); opacity: 0; }
+}
+.board:has(.explosion) { animation: boom-shake .35s linear; }
+@keyframes boom-shake {
+  20% { translate: -3px 2px; }
+  40% { translate: 3px -2px; }
+  60% { translate: -2px -1px; }
+  80% { translate: 2px 1px; }
+}
 .ship-badge {
   position: absolute;
   right: 8%; top: 6%;
