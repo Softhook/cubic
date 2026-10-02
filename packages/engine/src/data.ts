@@ -16,19 +16,12 @@ export interface CardDef {
 
 export type GameMode = 'basic' | 'original' | 'community';
 
-export const MODES: { id: GameMode; name: string; summary: string }[] = [
-  { id: 'basic', name: 'Basic', summary: 'The 2013 rules without cards. Learn movement, combat and conquering.' },
-  { id: 'original', name: 'Original', summary: 'The 2013 rules with Command and Gambit cards.' },
-  { id: 'community', name: 'Community', summary: 'Rebalanced cards, missiles, a starting skill and card peeking.' },
-];
 
 export interface MapDef {
   id: string;
   name: string;
   players: number;
   group: string;
-  /** 'original' maps come from the 2013 rulebook, 'community' maps from the CE print booklet. */
-  edition: 'original' | 'community';
   cubes: number;
   stats: { slack: number; shared: number; planets: number };
   layout: string[][];
@@ -39,18 +32,11 @@ export const TACTICS: CardDef[] = cardsJson.tactics;
 export const EXPANSION: CardDef = cardsJson.expansion[0];
 export const ORIGINAL_COMMAND: CardDef[] = cardsJson.original_command;
 export const ORIGINAL_GAMBIT: CardDef[] = cardsJson.original_gambit;
-export const MAPS: MapDef[] = mapsJson as MapDef[];
+export const MAPS: MapDef[] = mapsJson;
 
-/** Maps that belong to a mode's edition: Basic and Original use the 2013 maps. */
-export function mapsFor(mode: GameMode): MapDef[] {
-  const edition = mode === 'community' ? 'community' : 'original';
-  return MAPS.filter((m) => m.edition === edition);
-}
-
-/** The basic map for a player count in a mode's edition. */
-export function defaultMap(mode: GameMode, players: number): MapDef | undefined {
-  const maps = mapsFor(mode);
-  return maps.find((m) => m.players === players && m.group === 'basic') ?? maps.find((m) => m.players === players);
+/** The basic map for a player count. */
+export function defaultMap(players: number): MapDef | undefined {
+  return MAPS.find((m) => m.players === players && m.group === 'basic') ?? MAPS.find((m) => m.players === players);
 }
 
 const byId = new Map<string, CardDef>(
@@ -79,62 +65,6 @@ export function isOriginalCard(id: string): boolean {
   return originalIds.has(id);
 }
 
-/**
- * Card effects the engine implements so far. Only cards with these effects are shuffled
- * into the decks, so every card a player can draw actually works.
- */
-export const IMPLEMENTED_EFFECTS = new Set([
-  // shared / community skills
-  'agile',
-  'ambitious',
-  'brilliant',
-  'brutal',
-  'composed',
-  'ferocious',
-  'flexible',
-  'hostile',
-  'industrious',
-  'ingenious',
-  'intelligent',
-  'pioneering',
-  'plundering',
-  'precocious',
-  'rational',
-  'ravenous',
-  'resourceful',
-  'righteous',
-  'steadfast',
-  'stealthy',
-  'strategic',
-  'stubborn',
-  'talented',
-  'tyrannical',
-  'cunning',
-  'tactical',
-  // original command cards
-  'arrogant',
-  'conformist',
-  'curious-original',
-  'eager',
-  'plundering-original',
-  'ravenous-original',
-  'righteous-original',
-  'tactical-original',
-  'tyrannical-original',
-  // tactics / gambits
-  'aggression',
-  'black-market',
-  'change-of-heart',
-  'momentum',
-  'plan-ahead',
-  'sabotage',
-  'show-of-force',
-  'unveil-the-fleet',
-  'warp-gate',
-  'expansion',
-  'reorganization',
-  'sabotage-original',
-]);
 
 export const SHIP_NAMES: Record<number, string> = {
   1: 'Battlestation',

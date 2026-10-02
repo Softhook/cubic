@@ -69,7 +69,7 @@ Package: `packages/engine`
 - [x] **Legal action generator** — `legalActions(state)`; required by the UI (highlighting) and AI.
 - [ ] **Event log + replay** — *a text log exists; structured events + replay viewer still to do.* — every state change emits events; replaying seed + actions reproduces the game.
 - [ ] **Tests** — *basic movement/conquer/combat tests and AI-vs-AI fuzz games exist; per-card scenario tests still to do.* a scenario test per rule and per card; property tests (random legal play never crashes, invariants hold: dice count = 7, cubes ≤ capacity, tracks in 1–6).
-- [ ] **Map stat check** — compute slack/shared from layouts and assert they match the booklet.
+- [x] **Map stat check** — `mapStats()` recomputes slack/shared from layouts; `maps.test.ts` checks every map.
 
 ## M2 — Local play (hot-seat)
 

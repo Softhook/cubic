@@ -1,0 +1,82 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`golden master > basic, 2 players, seed 11 1`] = `
+{
+  "actions": "cf729247ef0a81cb",
+  "state": "a36425972778fb0b",
+  "steps": 101,
+  "winner": 0,
+}
+`;
+
+exports[`golden master > basic, 3 players, seed 12 1`] = `
+{
+  "actions": "c1b4cb9ad15dad10",
+  "state": "ad88fb615cda2f7b",
+  "steps": 195,
+  "winner": 2,
+}
+`;
+
+exports[`golden master > basic, 4 players, seed 13 1`] = `
+{
+  "actions": "18d82bd575d2a7fc",
+  "state": "5aac9f32246ae45f",
+  "steps": 329,
+  "winner": 2,
+}
+`;
+
+exports[`golden master > community, 2 players, seed 11 1`] = `
+{
+  "actions": "bca3f514e003b881",
+  "state": "1323b7aaab6a8402",
+  "steps": 164,
+  "winner": 0,
+}
+`;
+
+exports[`golden master > community, 3 players, seed 12 1`] = `
+{
+  "actions": "2bb37b644e25ae37",
+  "state": "54e572b5552c087f",
+  "steps": 184,
+  "winner": 0,
+}
+`;
+
+exports[`golden master > community, 4 players, seed 13 1`] = `
+{
+  "actions": "124f15c3dc931835",
+  "state": "463ae359053ac289",
+  "steps": 508,
+  "winner": 2,
+}
+`;
+
+exports[`golden master > original, 2 players, seed 11 1`] = `
+{
+  "actions": "4aabda9f1aecddea",
+  "state": "9fa02412d39426a7",
+  "steps": 82,
+  "winner": 0,
+}
+`;
+
+exports[`golden master > original, 3 players, seed 12 1`] = `
+{
+  "actions": "7ca4716c64ec132f",
+  "state": "446b3e49d74c5535",
+  "steps": 137,
+  "winner": 1,
+}
+`;
+
+exports[`golden master > original, 4 players, seed 13 1`] = `
+{
+  "actions": "cbdca485a2c8848a",
+  "state": "44b9cfad0ac54237",
+  "steps": 251,
+  "winner": 1,
+}
+`;

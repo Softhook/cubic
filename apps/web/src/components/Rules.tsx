@@ -54,8 +54,8 @@ export function Rules({ onClose }: { onClose: () => void }) {
 
         <h3>Modes</h3>
         <ul>
-          <li><b>Basic</b> — the 2013 rules and maps without cards (so no research or missiles). The best way to learn ships, combat and conquering.</li>
-          <li><b>Original</b> — the 2013 rules: Command cards (permanent) and Gambit cards (one-shot, including Expansion). Uses the 2013 basic maps.</li>
+          <li><b>Basic</b> — the official rules without cards (so no research or missiles). The best way to learn ships, combat and conquering.</li>
+          <li><b>Original</b> — the 2013 rules: Command cards (permanent) and Gambit cards (one-shot, including Expansion).</li>
           <li><b>Community</b> — the fan Community Edition: rebalanced Skills and Tactics, missiles, a starting skill, a separate Expansion pile and card peeking.</li>
         </ul>
 

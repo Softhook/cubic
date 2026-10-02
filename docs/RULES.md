@@ -7,9 +7,12 @@ This is the consolidated rules reference for this project. It is based on the
 on top of the original 2013 rules. Where those sources disagree, it is called out
 in [Ruleset divergences](#ruleset-divergences).
 
-The **Basic** and **Original** modes follow the official 2013 FunForge rulebook, mirrored in
-[`reference/original-2013/`](../reference/original-2013/). Every Basic-mode rule has a scenario
-test citing its rulebook page in
+The **Basic** and **Original** modes follow the official rules: the 2013 FunForge rulebook
+(first printing, mirrored in [`reference/original-2013/`](../reference/original-2013/)) plus the
+designer's errata for the second printing ([BGG thread 1087563](https://boardgamegeek.com/thread/1087563)),
+which corrects the 2p and 3p basic maps, adds Quantum Entanglement and changes Curious. Board
+Game Arena implements this second printing. Every Basic-mode rule has a scenario test citing its
+source in
 [`packages/engine/test/basic.test.ts`](../packages/engine/test/basic.test.ts).
 
 Rule ambiguities that matter for a digital implementation are tracked separately
@@ -25,8 +28,7 @@ The digital edition offers three rule sets, chosen when starting a game:
 | | Basic | Original (2013) | Community Edition |
 |---|---|---|---|
 | Purpose | Learning the core game | The published rules | Recommended; the rest of this document |
-| Rules source | 2013 rulebook, minus cards | 2013 rulebook | CE print booklet |
-| Maps | 2013 basic maps | 2013 basic maps | CE booklet maps |
+| Rules source | Official rules + errata, minus cards | Official rules + errata | CE print booklet |
 | Cards | None | 31 Command (permanent) + 22 Gambit (one-shot) | 35 Skills + 9 Tactics ×2 + Expansion pile |
 | Research action | — (it only earns cards) | ✓ | ✓ |
 | Missiles | — | — | 1 per player |
@@ -408,8 +410,7 @@ we decide otherwise (see [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)).
 | Starting fleet re-roll | One optional re-roll | Re-roll any of the dice once | Once, must re-roll all 3 |
 | Reconfigure | Ship on map or scrapyard (rulebook p.5) | Ship on map | Ship on map or scrapyard; must show a value not yet seen this turn |
 | Tactic copies | Varies | All ×2 | All ×2 |
-| Quantum Entanglement | Not in the rulebook; in the official BGA implementation | — | Included |
-| Basic maps | Rulebook p.3 | — | 2p and 3p maps redrawn (Alpha, Beta); 4p unchanged |
+| Quantum Entanglement | Added in the second printing (designer errata) | — | Included |
 | 5 players | — | — | Added (maps only) |
 
 ---
@@ -418,7 +419,9 @@ we decide otherwise (see [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)).
 
 - Original game: [BoardGameGeek #143519](https://boardgamegeek.com/boardgame/143519/quantum)
 - Original 2013 rulebook (FunForge, English): [BGG file 93188](https://boardgamegeek.com/filepage/93188/quantum-rules), mirrored in [`reference/original-2013/`](../reference/original-2013/)
-- Board Game Arena rules help (Quantum Entanglement, void tile, Infamy placement): [en.doc.boardgamearena.com/Gamehelpquantum](https://en.doc.boardgamearena.com/Gamehelpquantum)
+- Designer's errata for the second printing (maps, Quantum Entanglement, Curious): [BGG thread 1087563](https://boardgamegeek.com/thread/1087563)
+- Designer rulings on the BGG rules forum, e.g. Flagship transport ([1074052](https://boardgamegeek.com/thread/1074052), [1113798](https://boardgamegeek.com/thread/1113798))
+- Board Game Arena rules help (void tile, Entanglement): [en.doc.boardgamearena.com/Gamehelpquantum](https://en.doc.boardgamearena.com/Gamehelpquantum); all official maps as BGA implements them: [`reference/bga/maps.json`](../reference/bga/maps.json)
 - Community Edition design notes: [github.com/stolksdorf/quantum](https://github.com/stolksdorf/quantum) (`New Rules.md`, `Cards.md`, `src/cards/*.yaml`)
 - Print-ready CE by WaterGoesRed: [BGG thread 3766725](https://boardgamegeek.com/thread/3766725/quantum-community-edition-ready-to-print) — PDFs mirrored in [`reference/community-edition-print/`](../reference/community-edition-print/)
 - Quantum (base game) is playable on [Board Game Arena](https://boardgamearena.com); CE rules are not, as BGA requires publisher endorsement for variants.

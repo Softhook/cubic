@@ -3,15 +3,16 @@
  * (reference/original-2013/Quantum_rules_US.pdf). Page numbers are the printed ones.
  * Basic mode is those rules with the advance cards left out.
  *
- * Scenarios run on the 2013 basic map for 2 players (9×9 spaces). Planets, by id:
+ * Scenarios run on Alpha Sector, the basic map for 2 players (9×9 spaces). Planets, by id:
  *
- *    id0 (1,1) 7    id1 (1,4) 7    id2 (1,7) 7*
+ *    id0 (1,1) 7*   id1 (1,4) 7    id2 (1,7) 7
  *    id3 (4,1) 7    id4 (4,4) 8    id5 (4,7) 7
- *    id6 (7,1) 7*   id7 (7,4) 8    id8 (7,7) 7
+ *    id6 (7,1) 7    id7 (7,4) 7    id8 (7,7) 7*
  */
 import { describe, expect, it } from 'vitest';
 import {
   apply,
+  carryOptions,
   conquerCheck,
   createGame,
   infamyTargets,
@@ -76,15 +77,12 @@ const resolve = (s: GameState) => apply(s, { type: 'resolveCombat' });
 // ---------------------------------------------------------------------------
 
 describe('setup (p.3)', () => {
-  it('uses the 2013 basic maps, not the redrawn CE ones', () => {
+  it('uses the official second-printing basic maps (designer errata, BGG thread 1087563)', () => {
     const numbers = (s: GameState) => s.board.planets.map((p) => (p.start ? `${p.number}*` : `${p.number}`)).join(' ');
     const game = (n: number) => createGame({ players: players(n), seed: 1, mode: 'basic' });
-    expect(game(2).board.mapId).toBe('original-basic-2');
-    expect(numbers(game(2))).toBe('7 7 7* 7 8 7 7* 8 7');
-    expect(numbers(game(3))).toBe('7* 8 7* 8 9 8 8 7* 8');
+    expect(numbers(game(2))).toBe('7* 7 7 7 8 7 7 7 7*');
+    expect(numbers(game(3))).toBe('8* 9 8* 8 9 8 8 7* 8');
     expect(numbers(game(4))).toBe('8* 9 8* 8 10 8 9* 8 9*');
-    expect(createGame({ players: players(2), seed: 1, mode: 'original' }).board.mapId).toBe('original-basic-2');
-    expect(createGame({ players: players(2), seed: 1, mode: 'community' }).board.mapId).toBe('alpha-sector');
   });
 
   it('gives each player 5 cubes, dominance and research at 1, 3 ships and 2 expansion ships, no cards or missiles', () => {
@@ -120,26 +118,26 @@ describe('setup (p.3)', () => {
     s = apply(apply(s, { type: 'setupKeep' }), { type: 'setupKeep' });
     const first = s.turn.player;
     const other = 1 - first;
-    s = apply(s, { type: 'placeStart', planet: 2 });
+    s = apply(s, { type: 'placeStart', planet: 0 });
     expect(s.pending.map((p) => p.kind)).toEqual(['placeStart', 'placeShips']);
-    expect(() => apply(s, { type: 'placeStart', planet: 2 })).toThrow(/taken/);
+    expect(() => apply(s, { type: 'placeStart', planet: 0 })).toThrow(/taken/);
     expect(() => apply(s, { type: 'placeStart', planet: 4 })).toThrow(/starting planet/);
-    s = apply(s, { type: 'placeStart', planet: 6 });
+    s = apply(s, { type: 'placeStart', planet: 8 });
     expect(s.pending.map((p) => p.kind === 'placeShips' && p.player)).toEqual([first, other]);
 
     const [a, b, c] = s.dice.filter((d) => d.owner === first && d.loc.zone === 'scrapyard').map((d) => d.id);
     const reserveDie = s.dice.find((d) => d.owner === first && d.loc.zone === 'reserve')!.id;
-    // Planet id2 is at (1,7): its orbital positions are (0,7), (2,7), (1,6) and (1,8).
-    expect(() => apply(s, { type: 'placeShip', die: a, to: { r: 0, c: 6 } })).toThrow(/orbital/); // diagonal
-    expect(() => apply(s, { type: 'placeShip', die: a, to: { r: 6, c: 1 } })).toThrow(/orbital/); // opponent's planet
-    expect(() => apply(s, { type: 'placeShip', die: reserveDie, to: { r: 0, c: 7 } })).toThrow(/starting ships/);
-    s = apply(s, { type: 'placeShip', die: c, to: { r: 1, c: 8 } });
-    s = apply(s, { type: 'placeShip', die: a, to: { r: 1, c: 6 } });
+    // Planet id0 is at (1,1): its orbital positions are (0,1), (2,1), (1,0) and (1,2).
+    expect(() => apply(s, { type: 'placeShip', die: a, to: { r: 0, c: 0 } })).toThrow(/orbital/); // diagonal
+    expect(() => apply(s, { type: 'placeShip', die: a, to: { r: 6, c: 7 } })).toThrow(/orbital/); // opponent's planet
+    expect(() => apply(s, { type: 'placeShip', die: reserveDie, to: { r: 0, c: 1 } })).toThrow(/starting ships/);
+    s = apply(s, { type: 'placeShip', die: c, to: { r: 1, c: 0 } });
+    s = apply(s, { type: 'placeShip', die: a, to: { r: 1, c: 2 } });
     expect(s.pending[0]).toMatchObject({ kind: 'placeShips', player: first });
-    s = apply(s, { type: 'placeShip', die: b, to: { r: 2, c: 7 } });
-    expect(loc(s, a)).toEqual(board(1, 6));
-    expect(loc(s, b)).toEqual(board(2, 7));
-    expect(loc(s, c)).toEqual(board(1, 8));
+    s = apply(s, { type: 'placeShip', die: b, to: { r: 2, c: 1 } });
+    expect(loc(s, a)).toEqual(board(1, 2));
+    expect(loc(s, b)).toEqual(board(2, 1));
+    expect(loc(s, c)).toEqual(board(1, 0));
     expect(s.pending[0]).toMatchObject({ kind: 'placeShips', player: other });
 
     while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
@@ -421,6 +419,17 @@ describe('ship abilities (p.8)', () => {
     expect(loc(s, 'p0d1')).toEqual(board(3, 6));
   });
 
+  it('2 Flagship — Transport may fly out and back, ending where it started (designer, BGG thread 1074052)', () => {
+    const s = scenario({ p0d0: [2, 2, 2], p0d1: [3, 3, 5] });
+    const back = apply(s, { type: 'carry', die: 'p0d0', passenger: 'p0d1', to: { r: 2, c: 2 }, drop: { r: 1, c: 3 } });
+    expect(loc(back, 'p0d0')).toEqual(board(2, 2));
+    expect(loc(back, 'p0d1')).toEqual(board(1, 3));
+    expect(back.turn.actionsLeft).toBe(2);
+    // Boxed in: (2,0)'s neighbours are all occupied, so it cannot move at all and cannot transport.
+    const boxed = scenario({ p0d0: [2, 0, 2], p0d1: [3, 1, 5], p0d2: [1, 0, 6], p1d0: [3, 0, 6], p1d1: [2, 1, 6] });
+    expect(carryOptions(boxed, 'p0d0', 'p0d1').size).toBe(0);
+  });
+
   it('3 Destroyer — Warp: swap with any of your ships; not the destroyer’s move', () => {
     let s = scenario({ p0d0: [0, 0, 3], p0d1: [8, 8, 6] });
     s = apply(s, { type: 'swap', die: 'p0d0', other: 'p0d1' });
@@ -487,9 +496,9 @@ describe('dominance and infamy (p.9)', () => {
   });
 });
 
-describe('quantum entanglement (BGA rules help)', () => {
-  // Every planet with room already holds player 0's cube: planets 4 and 7 (size 8) have one free location each.
-  const full = { 0: [1], 1: [1], 2: [0], 3: [1], 4: [0], 5: [1], 6: [1], 7: [0], 8: [1] };
+describe('quantum entanglement (designer errata, BGG thread 1087563)', () => {
+  // Every planet with room already holds player 0's cube: planet 4 (size 8) has one free location.
+  const full = { 0: [1], 1: [1], 2: [0], 3: [1], 4: [0], 5: [1], 6: [1], 7: [1], 8: [1] };
 
   it('lets you build on your own planet only when nothing else is open, at +3 per cube you have there', () => {
     expect(conquerCheck(scenario({ p0d0: [3, 4, 6], p0d1: [5, 4, 5] }, full), 0, 4)).toMatchObject({ ok: true, target: 11 });
@@ -499,7 +508,7 @@ describe('quantum entanglement (BGA rules help)', () => {
   });
 
   it('applies to Infamy too', () => {
-    expect(infamyTargets(scenario({}, full), 0).map((p) => p.id)).toEqual([4, 7]);
+    expect(infamyTargets(scenario({}, full), 0).map((p) => p.id)).toEqual([4]);
   });
 });
 

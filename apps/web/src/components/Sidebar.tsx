@@ -17,6 +17,7 @@ import {
   type Die,
   type GameState,
   type PlayerState,
+  rulesOf,
 } from '@quantum/engine';
 import { hintFor, type Controller } from '../game/controller';
 import { CategoryIcon } from './Card';
@@ -61,7 +62,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
 
       {game.phase === 'play' && !p.ai && (
         <div className="turn-actions">
-          {game.mode !== 'basic' && (
+          {rulesOf(game).cards && (
             <button
               className="btn"
               disabled={!canAct || t.actionsLeft < 1 || p.research >= 6 || hasSkill(game, me, 'righteous')}
@@ -190,7 +191,7 @@ function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Controller; 
           </>
         );
       case 6:
-        return <button className="btn" disabled={game.mode === 'community' && seen >= 6} onClick={() => dispatch({ type: 'freeReconfigure', die: d.id })}>Free re-roll</button>;
+        return <button className="btn" disabled={rulesOf(game).reconfigure === 'unseen' && seen >= 6} onClick={() => dispatch({ type: 'freeReconfigure', die: d.id })}>Free re-roll</button>;
     }
     return null;
   };
@@ -301,14 +302,14 @@ function PlayerCard({
       </div>
       <div className="player-tracks">
         <Track label="Dominance" value={p.dominance} tone="dom" />
-        {game.mode !== 'basic' && <Track label="Research" value={p.research} tone="res" />}
+        {rulesOf(game).cards && <Track label="Research" value={p.research} tone="res" />}
       </div>
       <div className="player-row">
-        {game.mode === 'community' && <span className="stat" title="Missiles: set any combat roll to 1">🚀 {p.missiles}</span>}
+        {rulesOf(game).startingMissiles > 0 && <span className="stat" title="Missiles: set any combat roll to 1">🚀 {p.missiles}</span>}
         {p.planAhead > 0 && <span className="stat gold" title="Plan Ahead: all your combat rolls are 1">Plan Ahead</span>}
         {p.actionPenalty > 0 && <span className="stat bad" title="Sabotaged: fewer actions next turn">−{p.actionPenalty} action</span>}
         {p.ambitionTokens > 0 && <span className="stat" title="Ambition tokens">Ambition {p.ambitionTokens}/3</span>}
-        {game.mode !== 'basic' && <span className="stat muted" title="Reserve ships (brought in by Expansion cards)">Reserve {res.length}</span>}
+        {rulesOf(game).cards && <span className="stat muted" title="Reserve ships (brought in by Expansion cards)">Reserve {res.length}</span>}
       </div>
       {scrap.length > 0 && (
         <div className="scrapyard">

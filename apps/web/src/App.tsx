@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MODES, createGame, type GameState } from '@quantum/engine';
+import { createGame, rulesOf, type GameState } from '@quantum/engine';
 import { useGame } from './game/useGame';
 import { useController } from './game/controller';
 import { Board } from './components/Board';
@@ -41,7 +41,7 @@ function Game({ initial, onQuit, onRules }: { initial: GameState; onQuit: () => 
       <header className="topbar">
         <div className="brand">Quantum</div>
         <div className="topbar-map">
-          <span className={`mode-badge mode-${game.mode}`}>{MODES.find((m) => m.id === game.mode)?.name}</span>
+          <span className={`mode-badge mode-${game.mode}`}>{rulesOf(game).name}</span>
           {game.board.mapName}
         </div>
         <div className="topbar-actions">
@@ -66,7 +66,7 @@ function Game({ initial, onQuit, onRules }: { initial: GameState; onQuit: () => 
           <PlayerList game={game} ctl={ctl} dispatch={dispatch} />
           <Log game={game} />
         </aside>
-        {game.mode !== 'basic' && <Market game={game} dispatch={dispatch} human={ctl.human} />}
+        {rulesOf(game).cards && <Market game={game} dispatch={dispatch} human={ctl.human} />}
       </main>
 
       {head?.kind === 'combat' && <CombatOverlay key={head.id} game={game} combat={head} dispatch={dispatch} />}

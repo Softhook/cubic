@@ -25,8 +25,18 @@ copy-paste.
 |---|---|
 | `Quantum_rules_US.pdf` | Official 2013 FunForge English rulebook (16 pages): setup, basic maps for 2–4 players, actions, ship abilities, dominance, advance cards, sample game, FAQ. Same file as [BGG file 93188](https://boardgamegeek.com/filepage/93188/quantum-rules); downloaded 2026-10-02 from FunForge's site via the Wayback Machine (`funforge.fr/US/files/quantum/Quantum_rules_US.pdf`). |
 
-The rulebook doesn't cover Quantum Entanglement or void tiles. Board Game Arena's
-[rules help](https://en.doc.boardgamearena.com/Gamehelpquantum) covers both.
+This is the **first printing**. The designer's errata for the second printing
+([BGG thread 1087563](https://boardgamegeek.com/thread/1087563)) corrects its 2p basic map
+(to Alpha Sector) and 3p basic map (to Beta Sector), tweaks Nexus, changes Curious and adds
+Quantum Entanglement. FunForge never posted an updated PDF. Board Game Arena implements the
+second printing.
+
+## `bga/maps.json`
+
+All 71 maps as Board Game Arena implements them, parsed from BGA's public
+[maps page](https://x.boardgamearena.net/data/themereleases/current/games/quantum/200826-0854/img/maps_page.html)
+on 2026-10-02. Same layout tokens as `data/maps.yaml`. `bga_addition: true` marks maps BGA added
+beyond the box. This is the easiest source for transcribing the advanced maps.
 
 ## Not mirrored here
 

@@ -11,6 +11,7 @@ import {
   adjacent,
 } from './board';
 import { effectOf } from './data';
+import { rulesOf } from './rules';
 import type { Cell, CombatPending, Die, GameState, Planet, PlayerId } from './types';
 
 // ---------------------------------------------------------------------------
@@ -69,7 +70,7 @@ export function canUseAbility(state: GameState, d: Die): boolean {
  */
 export function canReconfigure(state: GameState, d: Die): boolean {
   if (d.loc.zone === 'reserve') return false;
-  return state.mode !== 'community' || (state.turn.seen[d.id]?.length ?? 1) < 6;
+  return rulesOf(state).reconfigure === 'different' || (state.turn.seen[d.id]?.length ?? 1) < 6;
 }
 
 export function skillLimit(state: GameState, player: PlayerId): number {
@@ -164,9 +165,12 @@ export function carryOptions(state: GameState, flagshipId: string, passengerId: 
   const pCell = cellOf(passenger);
   const result = new Map<string, { cell: Cell; drops: Cell[] }>();
   if (!start || !pCell) return result;
-  const reached = reach(state, start, movementRange(state, flag), false, [pCell]);
+  const range = movementRange(state, flag);
+  const reached = reach(state, start, range, false, [pCell]);
   for (const [k, info] of reached) {
-    if (info.steps === 0) continue;
+    // The flagship must move, but may fly out and back to its own space (designer ruling,
+    // BGG thread 1074052): that needs 2 movement and one free neighbouring space.
+    if (info.steps === 0 && (range < 2 || reached.size < 2)) continue;
     const drops = surrounding(state.board, info.cell).filter((q) => {
       const cell = cellAt(state.board, q);
       if (!cell || cell.kind !== 'space') return false;
@@ -195,6 +199,20 @@ export function freeAttackTargets(state: GameState, dieId: string): Die[] {
   return stepNeighbours(state, start, false)
     .map((p) => dieAt(state, p))
     .filter((x): x is Die => !!x && x.owner !== d.owner);
+}
+
+// ---------------------------------------------------------------------------
+// Setup and cards
+
+/** Empty orbital positions of a starting planet. */
+export function startSlots(state: GameState, planetId: number): Cell[] {
+  return orbitals(state.board, state.board.planets[planetId]).filter((p) => isEmptySpace(state, p));
+}
+
+/** Whether there is any card the player could take from the market. */
+export function canTakeAnyCard(state: GameState, player: PlayerId): boolean {
+  const m = state.market;
+  return m.skillRow.length > 0 || m.tacticRow.length > 0 || (m.expansions > 0 && reserve(state, player).length > 0);
 }
 
 // ---------------------------------------------------------------------------

@@ -23,7 +23,7 @@ Legend: 🔴 blocks the core engine · 🟡 needed for a specific card/feature �
 | 8 | 🔴 | **Card limits & empty decks** — what happens when the Skill/Tactic deck or face-up row runs out? | Reshuffle discards into a new deck; if still empty, fewer face-up cards. |
 | 9 | 🔴 | **Multiple cards in phase 2** — order of taking (conquer cards vs research card)? | Player chooses order; each refill happens before the next pick. |
 | 10 | 🔴 | **Combat roll pipeline** — order of *set* effects (Rational = 3, Plan Ahead = 1, Missile = 1, Brutal) vs *modifiers* (Ferocious −1, Strategic −2). Can a roll go below 1? | `roll (Brutal: min of 2)` → `set (Rational / Plan Ahead)` → `missile override` → `modifiers`. Rolls may go to 0 or below. |
-| 11 | ✅ | **Planet capacity** — Infamy and Entanglement still require an empty cube location? | Yes. Infamy: "any empty cube location on a planet where you do NOT already have a cube" (*2013 rulebook p.9*). Entanglement: BGA rules help. |
+| 11 | ✅ | **Planet capacity** — Infamy and Entanglement still require an empty cube location? | Yes. Infamy: "any empty cube location on a planet where you do NOT already have a cube" (*2013 rulebook p.9*). Entanglement: designer errata (BGG thread 1087563). |
 | 12 | 🟡 | **Quantum Entanglement** — target is `planet + 3 × your cubes there`. With Intelligent (±1) and Pioneering/Tyrannical? | Modifiers apply to the raised target. |
 | 13 | 🟡 | **Expansion with empty reserve** — can you take the card? | No — Expansion is not selectable with an empty reserve. |
 | 14 | ✅ | **Starting planets** — what if a map has more starting planets than players? | Players pick in turn order from any marked starting planet. All cubes are placed first, then each player arranges their ships in player order (*2013 rulebook p.3*). |
@@ -34,10 +34,10 @@ Legend: 🔴 blocks the core engine · 🟡 needed for a specific card/feature �
 | # | | Question | Proposed ruling |
 |---|---|---|---|
 | 16 | ✅ | **Battlestation Free Attack** — usable if the die already moved this turn? | Yes. It does not use the die's move. "It is possible to move/attack normally and also use strike for a second attack on the same turn" (*2013 rulebook p.8*). |
-| 17 | 🔴 | **Flagship carry** — passenger picked from a surrounding space (diagonal OK). Can the passenger have already moved? Does it then still get its own move? | Passenger may be any of your ships; it may move afterwards only if it hasn't moved this turn. |
+| 17 | ✅ | **Flagship carry** — passenger picked from a surrounding space (diagonal OK). Can the passenger have already moved? Does it then still get its own move? | Being carried is not the passenger's move: it may be carried whether or not it has moved, and may still move afterwards if it hasn't. A carried ship may be carried again, and a carried flagship may then transport another ship ("triple-Flagship slingshot", designer, [BGG 1113798](https://boardgamegeek.com/thread/1113798)). Pickup happens before the move, drop-off after; no pickups en route. The flagship may fly out and back to its own space ("zero move" transport, designer, [BGG 1074052](https://boardgamegeek.com/thread/1074052)). |
 | 18 | ✅ | **Destroyer swap** — any distance? | Any of your ships on the map, any distance. Warp does not count as the destroyer's move (*2013 rulebook p.8*). |
 | 19 | ✅ | **Frigate → 3/5** — can it then use the new type's ability (swap, or diagonal move)? | No: "After you modify, you can't use the ship's new ability this turn" (*2013 rulebook p.8*). |
-| 20 | 🟡 | **Interceptor diagonal** — may it squeeze diagonally between two blocking pieces? | Yes; only the destination square must be passable. |
+| 20 | ✅ | **Interceptor diagonal** — may it squeeze diagonally between two blocking pieces? | Yes; only the destination square must be empty, including diagonal steps past a planet's corner. It may mix diagonal and orthogonal steps in one move. Forum consensus, no designer post ([BGG 1286057](https://boardgamegeek.com/thread/1286057), [1558524](https://boardgamegeek.com/thread/1558524)). |
 
 ## Interrupts (critical for online play)
 

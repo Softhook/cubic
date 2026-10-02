@@ -4,6 +4,7 @@ import {
   canMoveDie,
   carryOptions,
   carryPassengers,
+  cellOf,
   conquerCheck,
   deployTargets,
   die as getDie,
@@ -170,6 +171,11 @@ export function useController(game: GameState, dispatch: (a: Action) => boolean)
       if (sel.kind === 'tactical' && tone === 'attack') return void dispatch({ type: 'tactical', die: sel.die, target: id });
       if (sel.kind === 'ship' && tone === 'attack') return void dispatch({ type: 'attack', die: sel.die, target: id });
       if (sel.kind === 'carryPassenger' && tone === 'passenger') return select({ kind: 'carryDest', die: sel.die, passenger: id });
+      if (sel.kind === 'carryDest' && id === sel.die) {
+        // Out-and-back transport: the flagship ends where it started.
+        const here = cellOf(getDie(game, id));
+        if (here && highlights.cells.has(key(here))) return select({ kind: 'carryDrop', die: sel.die, passenger: sel.passenger, to: here });
+      }
       const d = getDie(game, id);
       if (actionPhase && d.owner === game.turn.player) {
         return select(sel.kind === 'ship' && sel.die === id ? { kind: 'none' } : { kind: 'ship', die: id });
@@ -290,7 +296,7 @@ export function hintFor(game: GameState, sel: Sel): string {
     case 'carryPassenger':
       return 'Choose a ship next to your flagship to carry.';
     case 'carryDest':
-      return 'Choose where the flagship flies.';
+      return 'Choose where the flagship flies (its own space means out and back).';
     case 'carryDrop':
       return 'Choose where to drop the passenger.';
   }

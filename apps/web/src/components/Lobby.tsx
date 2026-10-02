@@ -27,7 +27,7 @@ export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void;
   const [seats, setSeats] = useState<PlayerConfig[]>(() =>
     PLAYER_COLORS.map((color, i) => ({ name: i === 0 ? 'Commander' : AI_NAMES[i], color, ai: i !== 0 })),
   );
-  const map = defaultMap(mode, count)!;
+  const map = defaultMap(count)!;
 
   const update = (i: number, patch: Partial<PlayerConfig>) =>
     setSeats((s) => s.map((x, j) => (j === i ? { ...x, ...patch } : x)));

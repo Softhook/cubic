@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { SHIP_NAMES, scrapyard, type Action, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, rulesOf, scrapyard, type Action, type GameState } from '@quantum/engine';
 import type { Toast } from '../game/useGame';
 import { CardView } from './Card';
 import { Die3D } from './Die3D';
@@ -46,7 +46,7 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
       const p = game.players[head.player];
       return (
         <Modal
-          title={head.reason === 'sabotage' ? 'Sabotage!' : game.mode === 'original' ? 'Too many Command cards' : 'Too many skills'}
+          title={head.reason === 'sabotage' ? 'Sabotage!' : `Too many ${rulesOf(game).cards?.terms.skills ?? 'skills'}`}
           subtitle={`${p.name}, choose a card to discard.`}
           pc={p.color}
         >

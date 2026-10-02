@@ -1,6 +1,12 @@
 export * from './types';
 export * from './data';
+export * from './rules';
 export * from './board';
 export * from './queries';
-export { createGame, apply, tryApply, actor, currentPending, legalActions, isUndoable } from './engine';
-export type { NewGameOptions } from './engine';
+export { createGame } from './setup';
+export type { NewGameOptions } from './setup';
+export { apply, tryApply, actor, currentPending } from './engine';
+export { legalActions } from './legal';
+export { isUndoable } from './undo';
+export { IMPLEMENTED_EFFECTS } from './cards';
+export { mapStats, type MapStats } from './mapStats';

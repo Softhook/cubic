@@ -1,4 +1,4 @@
-import { EXPANSION, reserve, type Action, type DeckKind, type GameState } from '@quantum/engine';
+import { EXPANSION, reserve, rulesOf, type Action, type DeckKind, type GameState } from '@quantum/engine';
 import { CardView } from './Card';
 
 export function Market({ game, dispatch, human }: { game: GameState; dispatch: (a: Action) => boolean; human: boolean }) {
@@ -6,14 +6,14 @@ export function Market({ game, dispatch, human }: { game: GameState; dispatch: (
   const picking = human && head?.kind === 'takeCard';
   const m = game.market;
   const canExpand = picking && m.expansions > 0 && reserve(game, head.player).length > 0;
-  const original = game.mode === 'original';
-  const peek = game.mode === 'community';
+  const cardRules = rulesOf(game).cards!;
+  const peek = cardRules.peek;
 
   const row = (deck: DeckKind, cards: string[], deckSize: number) => (
     <div className={`market-row market-${deck}`}>
       <div className={`deck deck-${deck}`} title={`${deckSize} cards left in the ${deck} deck`}>
         <div className="deck-stack" />
-        <span className="deck-label">{deck === 'skill' ? (original ? 'Command' : 'Skills') : original ? 'Gambit' : 'Tactics'}</span>
+        <span className="deck-label">{deck === 'skill' ? cardRules.terms.skillDeck : cardRules.terms.tacticDeck}</span>
         <span className="deck-count">{deckSize}</span>
       </div>
       {cards.map((id, index) => (
@@ -33,7 +33,7 @@ export function Market({ game, dispatch, human }: { game: GameState; dispatch: (
     <section className={`market ${picking ? 'picking' : ''}`}>
       {row('skill', m.skillRow, m.skillDeck.length)}
       {row('tactic', m.tacticRow, m.tacticDeck.length)}
-      {!original && (
+      {cardRules.expansionPile && (
       <div className="market-row market-expansion">
         <CardView
           id={EXPANSION.id}

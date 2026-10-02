@@ -41,6 +41,7 @@ Unimplemented cards are left out of the decks. Only the three basic maps are ava
 | [`apps/web`](apps/web) | React + Vite client: SVG board, CSS 3D dice with roll animations, synthesized sound |
 | [`docs/RULES.md`](docs/RULES.md) | The game and the full rules (CE baseline), cards, maps, divergences between versions |
 | [`docs/OPEN-QUESTIONS.md`](docs/OPEN-QUESTIONS.md) | Rules ambiguities that need a ruling before the engine can implement them |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the code is organised and how to add actions, cards, rule sets and maps |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Milestones and backlog: engine → local play → AI → online → balance lab; design system |
 | [`data/cards.yaml`](data/cards.yaml) | All 35 Skills, 9 Tactics, Expansion — canonical card data |
 | [`data/maps.yaml`](data/maps.yaml) | Map layouts (basic maps done; advanced maps to transcribe) |

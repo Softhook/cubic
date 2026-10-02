@@ -15,7 +15,6 @@ const parsed = maps.map((m) => ({
   name: m.name,
   players: m.players,
   group: m.group,
-  edition: m.edition,
   cubes: m.cubes,
   stats: m.stats,
   layout: m.layout.map((row) => row.trim().split(/\s+/)),
