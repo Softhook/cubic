@@ -93,8 +93,8 @@ export interface SkillRule {
     roll?: number;
     /** A modifier added to the total, if it applies. */
     modifier?: (ctx: CombatContext) => number;
-    /** A tie when defending destroys the attacker. */
-    winsDefendedTies?: boolean;
+    /** When defending, ties go to the player, and winning destroys the attacker. */
+    stubborn?: boolean;
   };
   /** Bonuses at the start of each of the player's turns. */
   startOfTurn?: (state: GameState, player: PlayerId) => TurnBonus;
@@ -146,7 +146,7 @@ export const SKILL_RULES: Record<SkillEffect, SkillRule> = {
       },
     },
   },
-  stubborn: { combat: { winsDefendedTies: true } },
+  stubborn: { combat: { stubborn: true } },
   talented: { skillLimit: 5 },
   tyrannical: { conquer: { sums: (c) => [c.sum + c.dominance] } },
   cunning: { abilityTwice: true },

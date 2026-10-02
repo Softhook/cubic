@@ -35,6 +35,7 @@ The digital edition offers three rule sets, chosen when starting a game:
 | Starting skill | — | — | Draw 2, keep 1 |
 | Expansion | — | 8 Expansion cards in the Gambit deck | Separate pile, players + 1 |
 | Peek at oldest card | — | — | ✓ |
+| Spend a card pick to deal 6 new face-up cards | — | ✓ (rulebook p.9) | — |
 | Reconfigure | Ship on the map or scrapyard; any different value | Ship on the map or scrapyard; any different value | Ship on the map or scrapyard; new value not seen this turn |
 | Infamy, Quantum Entanglement, void tiles | ✓ | ✓ | ✓ |
 
@@ -96,7 +97,7 @@ Along the way you collect **Skill** cards (permanent abilities) and **Tactic** c
 | Skill deck (light) | 35 cards, 1 of each | [`data/cards.yaml`](../data/cards.yaml) |
 | Tactic deck (dark) | 9 cards × 2 copies = 18 | |
 | Expansion deck | Players + 1 cards (print set has 6) | Always face-up |
-| Missile tokens | 1 per player at start (~8 total) | Tradeable resource |
+| Missile tokens | 1 per player at start (~8 total) | |
 | Warp Gate tokens | 2 | Used by *Warp Gate* tactic |
 | Ambition tokens | 3 | Used by *Ambitious* skill |
 | Player board | Dominance track, research track, skill slots, scrapyard | |
@@ -252,6 +253,14 @@ new card into the slot **next to the deck** (card order = age).
 **Peek:** if you pick the face-up Skill/Tactic **farthest from its deck** (the oldest),
 you may first peek at the top card of that deck and take that instead.
 
+**Empty decks:** when a deck runs out, shuffle its discards into a new deck (2013 rulebook p.9;
+the CE booklet doesn't say otherwise).
+
+*Original mode only:* instead of taking a card, you may spend the pick to discard all six
+face-up cards and deal six new ones ("each time you do this, you draw one card fewer that
+turn", 2013 rulebook p.9). An Expansion card can't be taken once both reserve ships are in play
+(p.9, p.15).
+
 ---
 
 ## 6. Winning
@@ -265,7 +274,8 @@ conquering, Infamy, or a card effect.
 
 - Each player starts with **1 missile**.
 - Spend a missile **at any time** to change **any** player's combat roll to **1**.
-- Missiles may be **traded** between players (deal-making is intended).
+- The CE print booklet has no missile trading. Trading comes from the stolksdorf CE and is
+  not implemented (see [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) #23).
 - Extra missiles come from *Black Market* (tactic) and *Profiteering* (skill).
 
 ---
@@ -410,6 +420,8 @@ we decide otherwise (see [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)).
 | Starting fleet re-roll | One optional re-roll | Re-roll any of the dice once | Once, must re-roll all 3 |
 | Reconfigure | Ship on map or scrapyard (rulebook p.5) | Ship on map | Ship on map or scrapyard; must show a value not yet seen this turn |
 | Tactic copies | Varies | All ×2 | All ×2 |
+| Deal 6 new face-up cards for a pick | ✓ (rulebook p.9) | — | — (Peek instead) |
+| Missile trading | — | ✓ | — |
 | Quantum Entanglement | Added in the second printing (designer errata) | — | Included |
 | 5 players | — | — | Added (maps only) |
 

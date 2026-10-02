@@ -25,6 +25,7 @@ export const skillHandlers = {
   composed(s) {
     const t = requireActionPhase(s);
     requireSkill(s, t.player, 'composed');
+    if (s.players[t.player].dominance <= 1) fail('No dominance to lose');
     oncePerTurn(s, 'composed');
     loseDominance(s, t.player, 1);
     gainResearch(s, t.player, 3);

@@ -5,6 +5,7 @@ import {
   die as getDie,
   key,
   moveOptions,
+  rulesOf,
   same,
   scrapyard,
   tacticalOptions,
@@ -255,7 +256,7 @@ export function hintFor(game: GameState, sel: Sel): string {
       case 'infamy':
         return 'Infamy! Seize any planet that does not have your cube yet.';
       case 'takeCard':
-        return `Take ${head.count} card${head.count > 1 ? 's' : ''} from the market below.`;
+        return `Take ${head.count} card${head.count > 1 ? 's' : ''} from the market below${rulesOf(game).cards?.refresh ? ', or spend a pick on dealing new cards' : ''}.`;
       case 'placeExpansion':
         return 'Place your new ship in orbit of one of your planets, or send it to your scrapyard.';
       case 'showOfForce':

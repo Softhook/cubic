@@ -237,6 +237,7 @@ export type Action =
   | { type: 'infamy'; planet: number }
   | { type: 'takeCard'; deck: DeckKind | 'expansion'; index: number }
   | { type: 'peekChoice'; takeTop: boolean }
+  | { type: 'refreshMarket' }
   | { type: 'discardSkill'; skill: string }
   | { type: 'placeExpansion'; to: Cell | null }
   | { type: 'showOfForce'; die: string }

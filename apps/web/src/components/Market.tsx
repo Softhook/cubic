@@ -47,6 +47,11 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
         />
       </div>
       )}
+      {legal.can('refreshMarket') && (
+        <button className="btn btn-ghost market-refresh" title="Costs one of this turn's card picks" onClick={() => dispatch({ type: 'refreshMarket' })}>
+          Discard all face-up cards and deal new ones
+        </button>
+      )}
     </section>
   );
 }

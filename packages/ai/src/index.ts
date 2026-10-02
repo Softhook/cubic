@@ -31,6 +31,7 @@ const RANDOM_ACTIONS = new Set<Action['type']>([
   'resourceful',
   'takeCard',
   'peekChoice',
+  'refreshMarket',
 ]);
 
 export interface AiOptions {

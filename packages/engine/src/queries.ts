@@ -11,7 +11,7 @@ import {
   stepNeighbours,
   surrounding,
 } from './board';
-import { card } from './data';
+import { card, effectOf } from './data';
 import { cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
 import { rulesOf } from './rules';
 import { activeSkills, anySkill, skillRules, type CombatPart } from './skillRules';
@@ -194,10 +194,29 @@ export function startSlots(state: GameState, planetId: number): Cell[] {
   return orbitals(state.board, state.board.planets[planetId]).filter((p) => isEmptySpace(state, p));
 }
 
-/** Whether there is any card the player could take from the market. */
+/**
+ * Whether the player may take this face-up card. An Expansion needs a ship in the reserve:
+ * "If you already have both of your expansion ships in the game, you cannot use EXPANSION
+ * cards" (2013 rulebook p.9).
+ */
+export function canTakeCard(state: GameState, player: PlayerId, id: string): boolean {
+  return effectOf(id) !== 'expansion' || reserve(state, player).length > 0;
+}
+
+/** Whether the player may spend a card pick on dealing new face-up cards (Original). */
+export function canRefreshMarket(state: GameState): boolean {
+  const m = state.market;
+  return !!rulesOf(state).cards?.refresh && m.skillRow.length + m.tacticRow.length > 0;
+}
+
+/** Whether there is anything the player could do with a card pick. */
 export function canTakeAnyCard(state: GameState, player: PlayerId): boolean {
   const m = state.market;
-  return m.skillRow.length > 0 || m.tacticRow.length > 0 || (m.expansions > 0 && reserve(state, player).length > 0);
+  return (
+    [...m.skillRow, ...m.tacticRow].some((id) => canTakeCard(state, player, id)) ||
+    (m.expansions > 0 && reserve(state, player).length > 0) ||
+    canRefreshMarket(state)
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -356,8 +375,10 @@ export function combatOutcome(state: GameState, combat: CombatPending) {
   const a = combatTotal(state, combat, 'attacker');
   const d = combatTotal(state, combat, 'defender');
   const tie = a.total === d.total;
-  const stubborn = tie && anySkill(state, combat.defender.player, (r) => r.combat?.winsDefendedTies);
-  const attackerWins = a.total < d.total || (tie && !stubborn);
+  const stubbornDefence = anySkill(state, combat.defender.player, (r) => r.combat?.stubborn);
+  const attackerWins = a.total < d.total || (tie && !stubbornDefence);
+  // Stubborn: when the defender wins (ties included), the attacker is destroyed.
+  const stubborn = stubbornDefence && !attackerWins;
   return { attacker: a, defender: d, attackerWins, stubborn };
 }
 

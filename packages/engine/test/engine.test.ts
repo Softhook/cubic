@@ -377,3 +377,94 @@ describe('undo', () => {
     expect(isUndoable(s, end, apply(s, end))).toBe(false);
   });
 });
+
+describe('Stubborn (2013 card text and CE card sheet)', () => {
+  /** Player 0's Scout attacks player 1's Battlestation, which has Stubborn; the combat rolls are fixed. */
+  function stubbornCombat(attackRoll: number, defenceRoll: number): GameState {
+    let s = quickStart();
+    s.turn.player = 0;
+    s = arrange(s, { p0d0: [0, 0, 6], p1d0: [0, 1, 1] });
+    s.players[1].skills = [{ id: 'stubborn', active: true }];
+    s.players[0].dominance = 3;
+    s.players[1].dominance = 3;
+    s = apply(s, { type: 'attack', die: 'p0d0', target: 'p1d0' });
+    if (s.pending[0].kind !== 'combat') throw new Error();
+    s.pending[0].attacker.dice = [attackRoll];
+    s.pending[0].defender.dice = [defenceRoll];
+    return apply(s, { type: 'resolveCombat' });
+  }
+
+  it('destroys the attacker when the defender wins outright', () => {
+    const s = stubbornCombat(6, 1); // 12 vs 2
+    expect(s.dice.find((d) => d.id === 'p0d0')!.loc.zone).toBe('scrapyard');
+    expect(s.players[1].dominance).toBe(4);
+    expect(s.players[0].dominance).toBe(2);
+  });
+
+  it('wins ties and destroys the attacker', () => {
+    const s = stubbornCombat(1, 6); // 7 vs 7
+    expect(s.dice.find((d) => d.id === 'p0d0')!.loc.zone).toBe('scrapyard');
+    expect(s.dice.find((d) => d.id === 'p1d0')!.loc.zone).toBe('board');
+  });
+
+  it('loses normally when the attacker has the lower total', () => {
+    let s = quickStart();
+    s.turn.player = 0;
+    s = arrange(s, { p0d0: [0, 0, 1], p1d0: [0, 1, 6] });
+    s.players[1].skills = [{ id: 'stubborn', active: true }];
+    s = apply(s, { type: 'attack', die: 'p0d0', target: 'p1d0' });
+    if (s.pending[0].kind !== 'combat') throw new Error();
+    s.pending[0].attacker.dice = [1];
+    s.pending[0].defender.dice = [1];
+    s = apply(s, { type: 'resolveCombat' });
+    expect(s.dice.find((d) => d.id === 'p1d0')!.loc.zone).toBe('scrapyard');
+  });
+});
+
+describe('Composed / Cerebral', () => {
+  it('needs dominance to lose ("reduce your dominance by 1")', () => {
+    for (const [mode, id] of [['community', 'composed'], ['original', 'o-cerebral']] as const) {
+      const s = quickStart(2, 3, mode);
+      const me = s.turn.player;
+      s.players[me].skills = [{ id, active: true }];
+      s.players[me].dominance = 1;
+      expect(legalActions(s).some((a) => a.type === 'composed')).toBe(false);
+      expect(() => apply(s, { type: 'composed' })).toThrow('No dominance to lose');
+    }
+  });
+});
+
+describe('Original card market (2013 rulebook p.9)', () => {
+  function picking(mode: GameMode = 'original'): GameState {
+    let s = quickStart(2, 3, mode);
+    s = apply(s, { type: 'endTurn' });
+    s.pending = [{ kind: 'takeCard', player: s.turn.player, count: 2 }];
+    return s;
+  }
+
+  it('a card pick may be spent on discarding all six face-up cards and dealing six new ones', () => {
+    const s = picking();
+    const before = [...s.market.skillRow, ...s.market.tacticRow];
+    const next = apply(s, { type: 'refreshMarket' });
+    expect(next.market.skillRow).toHaveLength(3);
+    expect(next.market.tacticRow).toHaveLength(3);
+    expect(next.market.skillDiscard).toEqual(s.market.skillRow);
+    expect(next.market.tacticDiscard).toEqual(s.market.tacticRow);
+    expect([...next.market.skillRow, ...next.market.tacticRow]).not.toEqual(before);
+    expect(next.pending[0]).toMatchObject({ kind: 'takeCard', count: 1 });
+  });
+
+  it('the Community Edition has no refresh', () => {
+    const s = picking('community');
+    expect(legalActions(s).some((a) => a.type === 'refreshMarket')).toBe(false);
+    expect(() => apply(s, { type: 'refreshMarket' })).toThrow();
+  });
+
+  it('an Expansion cannot be taken once both expansion ships are in the game', () => {
+    const s = picking();
+    s.market.tacticRow[0] = 'o-expansion';
+    for (const d of s.dice) if (d.owner === s.turn.player && d.loc.zone === 'reserve') d.loc = { zone: 'scrapyard' };
+    expect(legalActions(s).some((a) => a.type === 'takeCard' && a.deck === 'tactic' && a.index === 0)).toBe(false);
+    expect(() => apply(s, { type: 'takeCard', deck: 'tactic', index: 0 })).toThrow('Your reserve is empty');
+  });
+});

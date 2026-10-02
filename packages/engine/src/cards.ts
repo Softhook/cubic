@@ -10,7 +10,7 @@ import { destroyShip, fail, gainDominance, headOf, log, name, roll, shipName, ty
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
 import { die, reserve, shipsOnBoard } from './lookups';
-import { deployTargets, skillLimit } from './queries';
+import { canRefreshMarket, canTakeCard, deployTargets, skillLimit } from './queries';
 import { shuffle } from './rng';
 import { rulesOf } from './rules';
 import type { DeckKind, GameState, PlayerId } from './types';
@@ -133,6 +133,7 @@ export const cardHandlers = {
     }
     const deck = a.deck === 'skill' ? s.market.skillDeck : s.market.tacticDeck;
     const row = a.deck === 'skill' ? s.market.skillRow : s.market.tacticRow;
+    if (row[a.index] !== undefined && !canTakeCard(s, p, row[a.index])) fail('Your reserve is empty');
     // Peek: taking the oldest card lets you look at the top of the deck first.
     if (rulesOf(s).cards?.peek && a.index === row.length - 1 && row.length === 3 && deck.length) {
       s.pending.unshift({ kind: 'peek', player: p, deck: a.deck, top: deck[0] });
@@ -149,6 +150,22 @@ export const cardHandlers = {
       ? (head.deck === 'skill' ? s.market.skillDeck : s.market.tacticDeck).shift()!
       : takeFromRow(s, head.deck, 2);
     gainCard(s, head.player, id);
+  },
+  /** Original (2013 rulebook p.9): spend a card pick to discard all face-up cards and deal new ones. */
+  refreshMarket(s) {
+    const head = headOf(s, 'takeCard', 'Not taking a card');
+    if (!canRefreshMarket(s)) fail('You cannot deal new cards');
+    const m = s.market;
+    m.skillDiscard.push(...m.skillRow.splice(0));
+    m.tacticDiscard.push(...m.tacticRow.splice(0));
+    for (let i = 0; i < 3; i++) {
+      const skill = draw(s, 'skill');
+      if (skill) m.skillRow.push(skill);
+      const tactic = draw(s, 'tactic');
+      if (tactic) m.tacticRow.push(tactic);
+    }
+    consumeCardPick(s);
+    log(s, `${name(s, head.player)} discards the face-up cards and deals new ones.`, head.player, 'discard');
   },
   discardSkill(s, a) {
     const head = headOf(s, 'discardSkill', 'Not discarding');

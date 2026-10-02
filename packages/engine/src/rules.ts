@@ -35,6 +35,8 @@ export interface CardRules {
   peek: boolean;
   /** Expansion cards form a separate face-up pile of players + 1 (otherwise they are Gambit cards). */
   expansionPile: boolean;
+  /** A card pick may be spent to discard every face-up card and deal new ones (2013 rulebook p.9). */
+  refresh: boolean;
   terms: {
     skill: string;
     skills: string;
@@ -64,6 +66,7 @@ export const RULESETS: Record<GameMode, RuleSet> = {
       startingSkillDraft: false,
       peek: false,
       expansionPile: false,
+      refresh: true,
       terms: { skill: 'Command card', skills: 'Command cards', skillDeck: 'Command', tacticDeck: 'Gambit' },
     },
     startingMissiles: 0,
@@ -80,6 +83,7 @@ export const RULESETS: Record<GameMode, RuleSet> = {
       startingSkillDraft: true,
       peek: true,
       expansionPile: true,
+      refresh: false,
       terms: { skill: 'skill', skills: 'skills', skillDeck: 'Skills', tacticDeck: 'Tactics' },
     },
     startingMissiles: 1,

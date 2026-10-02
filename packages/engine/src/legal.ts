@@ -53,6 +53,7 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     m.skillRow.forEach((_, index) => out.push({ type: 'takeCard', deck: 'skill', index }));
     m.tacticRow.forEach((_, index) => out.push({ type: 'takeCard', deck: 'tactic', index }));
     if (m.expansions > 0 && reserve(s, head.player).length) out.push({ type: 'takeCard', deck: 'expansion', index: 0 });
+    out.push({ type: 'refreshMarket' });
     return out;
   },
   peek: () => [
@@ -143,7 +144,7 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
   if (rulesOf(s).cards && actions > 0 && pl.research < 6 && canGainResearch(s, me)) out.push({ type: 'research' });
   if (hasSkill(s, me, 'tyrannical-original') && !usedThisTurn(s, 'tyrannical') && pl.research > 1) out.push({ type: 'tyrannical' });
   if (actions >= 2) for (const p of s.board.planets) if (conquerCheck(s, me, p.id).ok) out.push({ type: 'conquer', planet: p.id });
-  if (hasSkill(s, me, 'composed') && !usedThisTurn(s, 'composed')) out.push({ type: 'composed' });
+  if (hasSkill(s, me, 'composed') && !usedThisTurn(s, 'composed') && pl.dominance > 1) out.push({ type: 'composed' });
   if (hasSkill(s, me, 'ambitious') && !usedThisTurn(s, 'ambitious')) out.push({ type: 'ambitious' });
   return out;
 }

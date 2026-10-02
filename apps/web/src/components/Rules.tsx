@@ -47,7 +47,8 @@ export function Rules({ onClose }: { onClose: () => void }) {
               <li><b>Skills</b> are permanent (max 3) and start working from the next player’s turn.</li>
               <li><b>Tactics</b> happen immediately.</li>
               <li><b>Expansion</b> adds a sixth or seventh ship to your fleet.</li>
-              <li>Taking the oldest card (farthest from the deck) lets you <b>peek</b> at the top card instead.</li>
+              <li>Community: taking the oldest card (farthest from the deck) lets you <b>peek</b> at the top card instead.</li>
+              <li>Original: you may spend a card pick to discard all six face-up cards and deal six new ones.</li>
             </ul>
           </section>
         </div>

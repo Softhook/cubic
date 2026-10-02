@@ -20,12 +20,12 @@ Legend: 🔴 blocks the core engine · 🟡 needed for a specific card/feature �
 | 5 | ✅ | **Per-die tracking** — "each die can move once / use one ability, even if it changes type". | Per die id, not per value: "Even if the number of a ship changes, a single ship die can only move/attack once per turn, and can only use one special ability per turn" (*2013 rulebook p.4*). |
 | 6 | ✅ | **Deployed ship** — can a ship deployed this turn also move this turn? | Yes: "you can deploy a ship and move it in the same turn" (*2013 rulebook p.5*). |
 | 7 | 🔴 | **Reconfigure history** — "until it shows a value it has not had this turn". Does the value it was rolled to on destruction count? | History starts at the value at the start of the turn (or when entering the scrapyard). |
-| 8 | 🔴 | **Card limits & empty decks** — what happens when the Skill/Tactic deck or face-up row runs out? | Reshuffle discards into a new deck; if still empty, fewer face-up cards. |
+| 8 | ✅ | **Card limits & empty decks** — what happens when the Skill/Tactic deck or face-up row runs out? | Reshuffle discards into a new deck; if still empty, fewer face-up cards. *2013 rulebook p.9: "If there are no more cards in a deck, shuffle the discards and make a new deck."* |
 | 9 | 🔴 | **Multiple cards in phase 2** — order of taking (conquer cards vs research card)? | Player chooses order; each refill happens before the next pick. |
 | 10 | 🔴 | **Combat roll pipeline** — order of *set* effects (Rational = 3, Plan Ahead = 1, Missile = 1, Brutal) vs *modifiers* (Ferocious −1, Strategic −2). Can a roll go below 1? | `roll (Brutal: min of 2)` → `set (Rational / Plan Ahead)` → `missile override` → `modifiers`. Rolls may go to 0 or below. |
 | 11 | ✅ | **Planet capacity** — Infamy and Entanglement still require an empty cube location? | Yes. Infamy: "any empty cube location on a planet where you do NOT already have a cube" (*2013 rulebook p.9*). Entanglement: designer errata (BGG thread 1087563). |
 | 12 | 🟡 | **Quantum Entanglement** — target is `planet + 3 × your cubes there`. With Intelligent (±1) and Pioneering/Tyrannical? | Modifiers apply to the raised target. |
-| 13 | 🟡 | **Expansion with empty reserve** — can you take the card? | No — Expansion is not selectable with an empty reserve. |
+| 13 | ✅ | **Expansion with empty reserve** — can you take the card? | No — Expansion is not selectable with an empty reserve, in the Gambit row (Original) or the Expansion pile (CE). *2013 rulebook p.9: "If you already have both of your expansion ships in the game, you cannot use EXPANSION cards."* |
 | 14 | ✅ | **Starting planets** — what if a map has more starting planets than players? | Players pick in turn order from any marked starting planet. All cubes are placed first, then each player arranges their ships in player order (*2013 rulebook p.3*). |
 | 15 | 🟢 | **Void tile research** — capped at 6? Triggers a card? | Capped at 6; card is taken in phase 2 as normal. |
 
@@ -45,7 +45,7 @@ Legend: 🔴 blocks the core engine · 🟡 needed for a specific card/feature �
 |---|---|---|---|
 | 21 | 🔴 | **Missiles "at any time"** — online, we need explicit priority windows. When exactly? | One window after both combat dice are rolled and before resolution. Every player (in turn order from attacker) may respond; window repeats until all pass. Configurable timer. |
 | 22 | 🟡 | **Dangerous** — defender decides before the roll, on the opponent's turn. | Prompt defender after attack declared, before dice. |
-| 23 | 🟡 | **Missile trading** — free-form deals online? | v1: "give missile" action at any time; no binding contracts. |
+| 23 | 🟡 | **Missile trading** — free-form deals online? | Only the stolksdorf CE allows trading; the print booklet doesn't mention it. Not implemented. If added: a "give missile" action at any time, no binding contracts. |
 
 ## Cards
 
@@ -58,7 +58,7 @@ Legend: 🔴 blocks the core engine · 🟡 needed for a specific card/feature �
 | 28 | 🟡 | Momentum | Does the bonus turn get a phase 2? Do once-per-turn effects reset? | Yes and yes — a full new turn with 2 actions. |
 | 29 | 🟡 | Sabotage | Stacks with multiple copies? Applies to Momentum turns? | Stacks; applies to each opponent's next *regular* turn. |
 | 30 | 🟡 | Warp Gate | Is the link usable for attack and deploy-adjacency? Can a ship stand on a gate? | Movement/attack adjacency only. Ships may stand on gates. |
-| 31 | 🟡 | Precocious / Prideful | Is reset at 4/5 optional? | Optional — player chooses at end of turn. |
+| 31 | 🟡 | Precocious / Prideful | Is reset at 4/5 optional? | Optional — player chooses at end of turn. *Engine today: CE Precocious always resets at 4 (as the Original card does).* |
 | 32 | 🟡 | Prideful | When taken by another player, does it count against their skill limit? | Yes; they discard down if over. |
 | 33 | 🟡 | Righteous | Blocks all research gain including Brilliant, Void, Composed? | Yes. |
 | 34 | 🟡 | Tyrannical vs Pioneering | Tyrannical *adds* dominance as an extra ship; Pioneering *replaces* one ship. Confirm. | Confirmed per card text. |
@@ -74,3 +74,8 @@ Legend: 🔴 blocks the core engine · 🟡 needed for a specific card/feature �
 | 44 | ✅ | Tactical (Original) | "Once per turn as a free action, move a ship a total of 1 space." Can that ship also make its normal move this turn? | No. It costs no action, but it is that ship's one move for the turn, so the ship can't have moved already or move again afterwards (only Energetic allows that). Forum consensus, no designer post ([BGG 1166414](https://boardgamegeek.com/thread/1166414), [1137478](https://boardgamegeek.com/thread/1137478), [1093051](https://boardgamegeek.com/thread/1093051)). Agile does not lengthen it ([BGG 2433096](https://boardgamegeek.com/thread/2433096)). |
 | 45 | ✅ | Tactical (Original + CE) | Can the 1-space Tactical move use Transport (Flagship) or Maneuver (Interceptor, diagonal step)? | Yes, per forum consensus and BGA ([BGG 1093051](https://boardgamegeek.com/thread/1093051), [2433096](https://boardgamegeek.com/thread/2433096)). A Tactical Transport can't fly out and back, because that needs 2 spaces. Either way the ship uses its ability for the turn; an Interceptor only does if it actually steps or attacks diagonally. |
 | 46 | 🟢 | Tactical (CE) | The CE text ("Once per turn, you may move/attack 1 space with a ship even if it's already moved") drops "as a free action". Does it now cost an action? | No, it stays free (current engine). No source rules on it, but the CE removed "as a free action" from every card that had it (Composed, Cunning, Flexible, Tyrannical; stolksdorf `Cards.md`) without changing what they cost. The CE turn wording also lists card abilities separately from the 3 actions. |
+| 47 | ✅ | Composed / Cerebral | Can it be used at dominance 1, gaining 3 research without losing anything? | No. The card says "lose 1 Dominance" (CE) / "reduce your dominance by 1" (2013), so it needs dominance 2+. |
+| 48 | ✅ | Stubborn | Does the attacker die only on a tie, or whenever the defender wins? | Whenever the defender wins: "ties go in your favor **and** you destroy your attacker if you win (and gain dominance)" (2013 and CE card text). |
+| 49 | 🟡 | Talented | Taken as your 4th skill, it isn't active until the next player's turn. Must you discard down to 3 at once? | Engine today: yes (literal reading of "if you have more than 3, immediately discard one"). Many groups would let Talented count itself. |
+| 50 | 🟢 | Reconfigure (CE) | The booklet says you *may* continue re-rolling until the die shows a new value. May you stop on a value it already showed? | Engine: no, it always re-rolls to a value not yet seen this turn. Stopping early is almost never useful. |
+| 51 | 🟢 | Peek (CE) | The deck is empty but the discard pile isn't. Can you peek? | Engine today: no peek. Arguably the discards should be reshuffled first so the peek is possible. |
