@@ -58,12 +58,26 @@ export function endTurn(s: GameState) {
   s.turn.phase = 'cards';
   if (!rulesOf(s).cards) return;
   let cards = s.turn.conquests;
+  if (pl.carriedPicks) {
+    cards += pl.carriedPicks;
+    delete pl.carriedPicks;
+  }
   if (pl.research >= breakthroughAt(s, p)) {
     pl.research = 1;
     cards++;
     log(s, `${pl.name} makes a research breakthrough.`, p, 'breakthrough');
   }
   if (cards > 0) s.pending.push({ kind: 'takeCard', player: p, count: cards });
+  // A cube placed on someone else's turn earns its card in this card phase, after the active
+  // player, in turn order (designer, BGG thread 1087563).
+  const off = s.turn.offTurnCubes ?? [];
+  for (let i = 1; i < s.players.length; i++) {
+    const o = (p + i) % s.players.length;
+    const other = s.players[o];
+    const count = off.filter((x) => x === o).length + (other.carriedPicks ?? 0);
+    delete other.carriedPicks;
+    if (count) s.pending.push({ kind: 'takeCard', player: o, count });
+  }
 }
 
 function finishTurn(s: GameState) {

@@ -575,7 +575,7 @@
       "id": "o-nomadic",
       "name": "Nomadic",
       "subtitle": "Transport between neighboring planets",
-      "text": "Once per turn, spend an action to relocate one of your ships in orbital position – put it in orbital position around a planet that is next to its current planet.",
+      "text": "Once per turn, spend an action to relocate one of your ships in orbital position to another orbital position on a directly adjacent planet.",
       "category": "movement",
       "effect": "nomadic",
       "ce_status": "original",
@@ -675,12 +675,12 @@
       "id": "o-strategic",
       "name": "Strategic",
       "subtitle": "Combat support bonus",
-      "text": "Any of your ships next to another one of your ships gets a -2 to every weapons or defenses combat roll (you can consider an attacker to be in either square).",
+      "text": "Any of your ships directly adjacent to another one of your ships receives a -2 to every combat roll.",
       "category": "combat",
-      "effect": "strategic",
+      "effect": "strategic-original",
       "ce_status": "original",
       "count": 1,
-      "notes": "Fan rules summary v1 (BGG file 101664) rewords the bracket: when attacking, the bonus applies if a friendly ship is orthogonally adjacent to your attacker or the defender."
+      "notes": "Revised-edition text (as on Board Game Arena). The 1st printing added \"(you can consider an attacker to be in either square)\"; the revision dropped it, so an attacker counts only from the square it attacked from (BGG thread 2774280)."
     },
     {
       "id": "o-stubborn",
@@ -764,7 +764,7 @@
       "id": "o-relocation",
       "name": "Relocation",
       "subtitle": "Immediately move a quantum cube",
-      "text": "Move another player’s quantum cube to a planet without one of their cubes (the new planet cannot have a higher planet number).",
+      "text": "Move another player’s quantum cube to a planet without one of their cubes.",
       "effect": "relocation",
       "ce_status": "original",
       "count": 2

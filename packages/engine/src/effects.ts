@@ -49,6 +49,7 @@ export const SKILL_EFFECTS = [
   'relentless',
   'righteous-original',
   'scrappy',
+  'strategic-original',
   'tactical-original',
   'tyrannical-original',
 ] as const;

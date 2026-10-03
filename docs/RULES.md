@@ -10,8 +10,11 @@ in [Ruleset divergences](#ruleset-divergences).
 The **Basic** and **Original** modes follow the official rules: the 2013 FunForge rulebook
 (first printing, mirrored in [`reference/original-2013/`](../reference/original-2013/)) plus the
 designer's errata for the second printing ([BGG thread 1087563](https://boardgamegeek.com/thread/1087563)),
-which corrects the 2p and 3p basic maps, adds Quantum Entanglement and changes Curious. Board
-Game Arena implements this second printing. Every Basic-mode rule has a scenario test citing its
+which corrects the 2p and 3p basic maps, adds Quantum Entanglement and changes Curious. Card
+text follows the revised edition (the second printing, as Board Game Arena implements it), so
+Relocation has no planet-number limit and Strategic drops "you can consider an attacker to be in
+either square". The first-printing PDF is only mirrored because FunForge never posted a revised
+one; where the two differ, the revision, then designer rulings on BGG, win. Every Basic-mode rule has a scenario test citing its
 source in
 [`packages/engine/test/basic.test.ts`](../packages/engine/test/basic.test.ts).
 
@@ -236,6 +239,12 @@ each of your cubes already there**.
 
 - **Conqueror:** take 1 card for **each planet conquered this turn** (including via Infamy).
 - **Researcher:** if your research is at **6**, reset it to **1** and take 1 card.
+- Take the cards one at a time; each pick's slot is refilled before the next. A Tactic / Gambit
+  resolves as soon as it's taken, so a Momentum turn is played at once and any picks still owed
+  are taken in its card phase (designer, [BGG 1068669](https://boardgamegeek.com/thread/1068669)).
+- A player who placed a cube through Infamy on **someone else's turn** takes its card in that
+  turn's card phase, after the active player; several such players pick in turn order (designer,
+  [BGG 1087563](https://boardgamegeek.com/thread/1087563)).
 
 ### Card protocol
 
@@ -432,6 +441,7 @@ we decide otherwise (see [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)).
 - Original game: [BoardGameGeek #143519](https://boardgamegeek.com/boardgame/143519/quantum)
 - Original 2013 rulebook (FunForge, English): [BGG file 93188](https://boardgamegeek.com/filepage/93188/quantum-rules), mirrored in [`reference/original-2013/`](../reference/original-2013/)
 - Designer's errata for the second printing (maps, Quantum Entanglement, Curious): [BGG thread 1087563](https://boardgamegeek.com/thread/1087563)
+- Revised-edition card text, as on Board Game Arena: [card sheet](https://x.boardgamearena.net/data/themereleases/current/games/quantum/200826-0854/img/cards.jpg)
 - Designer rulings on the BGG rules forum, e.g. Flagship transport ([1074052](https://boardgamegeek.com/thread/1074052), [1113798](https://boardgamegeek.com/thread/1113798))
 - Board Game Arena rules help (void tile, Entanglement): [en.doc.boardgamearena.com/Gamehelpquantum](https://en.doc.boardgamearena.com/Gamehelpquantum); all official maps as BGA implements them: [`reference/bga/maps.json`](../reference/bga/maps.json)
 - Community Edition design notes: [github.com/stolksdorf/quantum](https://github.com/stolksdorf/quantum) (`New Rules.md`, `Cards.md`, `src/cards/*.yaml`)

@@ -18,6 +18,7 @@ import { card } from './data';
 import { cellOf, die, dieAt } from './lookups';
 import { combatDice, combatOutcome, combatReroll, combatTotal, infamyTargets } from './queries';
 import { d6 } from './rng';
+import { rulesOf } from './rules';
 import { anySkill, skillRules } from './skillRules';
 import type { Cell, Die, GameState, PlayerId } from './types';
 
@@ -145,9 +146,13 @@ export const combatHandlers = {
     s.players[head.player].dominance = 1;
     log(s, `${name(s, head.player)} seizes planet ${s.board.planets[a.planet].number} through Infamy.`, head.player, 'seize');
     placeCube(s, head.player, a.planet);
+    if (s.phase !== 'play') return;
     // Infamy during the card phase still earns a card for the cube.
-    if (s.phase === 'play' && s.turn.phase === 'cards' && head.player === s.turn.player) {
-      s.pending.unshift({ kind: 'takeCard', player: head.player, count: 1 });
-    }
+    if (head.player === s.turn.player) {
+      if (s.turn.phase === 'cards') s.pending.unshift({ kind: 'takeCard', player: head.player, count: 1 });
+    } else if (s.turn.phase === 'cards') {
+      // On another player's turn: picked after the active player (designer, BGG thread 1087563).
+      if (rulesOf(s).cards) s.pending.push({ kind: 'takeCard', player: head.player, count: 1 });
+    } else (s.turn.offTurnCubes ??= []).push(head.player);
   },
 } satisfies Partial<Handlers>;

@@ -79,6 +79,8 @@ export interface PlayerState extends PlayerConfig {
   planAhead: number;
   /** Momentum: bonus turns queued (number of actions each). */
   bonusTurns: number[];
+  /** Card picks still owed when Momentum interrupted the card phase; taken in the bonus turn's. */
+  carriedPicks?: number;
 }
 
 export type DeckKind = 'skill' | 'tactic';
@@ -114,6 +116,8 @@ export interface TurnState {
   /** Once-per-turn effects already used. */
   oncePerTurn: OncePerTurn[];
   bonus: boolean;
+  /** Other players who placed a cube through Infamy during this turn (one entry per cube). */
+  offTurnCubes?: PlayerId[];
   /**
    * Scrappy: the player's ship rolled by the last action, which they may re-roll once. `avoid` is
    * the number a Reconfigure started from (the re-roll must still show a new number).

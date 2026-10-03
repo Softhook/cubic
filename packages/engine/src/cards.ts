@@ -30,7 +30,18 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
     if (s.market.skillDeck.length) s.pending.unshift({ kind: 'changeOfHeart', player: p });
   },
   momentum: (s, p) => {
-    s.players[p].bonusTurns.push(2);
+    const pl = s.players[p];
+    pl.bonusTurns.push(2);
+    // Gambits resolve at once (designer, BGG thread 1068669): the bonus turn comes before any
+    // picks still owed, which are taken in its card phase (as on Board Game Arena).
+    // Other players' off-turn picks still come after all of the active player's (designer, BGG
+    // thread 1087563), so they move to the bonus turn's card phase too.
+    s.pending = s.pending.filter((x) => {
+      if (x.kind !== 'takeCard') return true;
+      const owner = s.players[x.player];
+      owner.carriedPicks = (owner.carriedPicks ?? 0) + x.count;
+      return false;
+    });
   },
   'plan-ahead': (s, p) => {
     s.players[p].planAhead = 2;

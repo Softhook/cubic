@@ -184,7 +184,7 @@ describe('Nomadic (relocate a ship to an orbit of a planet on a neighbouring til
   });
 });
 
-describe('Relocation (move another player’s cube to a planet without theirs, no higher number)', () => {
+describe('Relocation (revised card: move another player’s cube to any planet without theirs)', () => {
   function relocation(): GameState {
     const s = game();
     const { foe } = ids(s);
@@ -196,7 +196,7 @@ describe('Relocation (move another player’s cube to a planet without theirs, n
     return apply(s, { type: 'takeCard', deck: 'tactic', index: 0 });
   }
 
-  it('offers only lower-or-equal planets without the owner’s cube', () => {
+  it('offers any planet with room and without the owner’s cube, larger ones included', () => {
     const s = relocation();
     const { foe } = ids(s);
     expect(s.pending[0].kind).toBe('relocation');
@@ -204,12 +204,13 @@ describe('Relocation (move another player’s cube to a planet without theirs, n
     expect(moves.length).toBeGreaterThan(0);
     for (const m of moves) {
       expect(m.owner).toBe(foe);
-      expect(s.board.planets[m.to].number).toBeLessThanOrEqual(s.board.planets[m.planet].number);
       expect(s.board.planets[m.to].cubes).not.toContain(foe);
     }
-    // The foe's starting 7 can't go to the 8.
+    // The 1st printing barred a larger planet; the revised card lets the foe's 7 go to the 8.
+    const centre = s.board.planets.find((p) => p.number === 8)!;
+    centre.cubes = centre.cubes.filter((c) => c !== foe);
     const start = s.board.planets.find((p) => p.number === 7 && p.cubes.includes(foe))!;
-    expect(moves.some((m) => m.planet === start.id && s.board.planets[m.to].number === 8)).toBe(false);
+    expect(legalActions(s)).toContainEqual({ type: 'relocate', planet: start.id, owner: foe, to: centre.id });
   });
 
   it('moves the cube; the owner keeps the same number of cubes on the map', () => {

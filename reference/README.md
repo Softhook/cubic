@@ -47,8 +47,9 @@ beyond the box. This is the easiest source for transcribing the advanced maps.
   with Expansion and Reorganization; Strategic's bracketed text is replaced by "when attacking,
   the bonus applies if a friendly ship is orthogonally adjacent to your attacker or the
   defender"; a Stubborn-destroyed attacker loses 1 dominance; Tactical can't move a ship that
-  has already moved. It is a fan summary, not an official source, and agrees with the engine on
-  every point.
+  has already moved. It is a fan summary, not an official source. It agrees with the engine on every point except
+  Strategic: Original mode now uses the revised card, where an attacker is supported only from
+  its own square.
 
 - [stolksdorf/quantum](https://github.com/stolksdorf/quantum) — the original CE
   design repo (2019): `New Rules.md`, `Cards.md`, `src/cards/*.yaml` with design

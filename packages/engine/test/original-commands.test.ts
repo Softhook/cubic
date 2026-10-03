@@ -206,14 +206,15 @@ describe('combat', () => {
     return [o.attacker.total, o.defender.total];
   };
 
-  it('Strategic: an attacker is supported by a ship orthogonally next to the defender, not diagonally (rules summary)', () => {
-    expect(battle({ me: ['o-strategic'] }, [[3, 3, 2]])).toEqual([7, 6]); // (3,3) is next to the defender only
-    expect(battle({ me: ['o-strategic'] }, [[3, 4, 2]])).toEqual([9, 6]); // (3,4) is diagonal to the defender
+  it('Strategic (revised card): an attacker is supported only from the square it attacks from', () => {
+    expect(battle({ me: ['o-strategic'] }, [[3, 2, 2]])).toEqual([7, 6]); // (3,2) is next to the attacker
+    expect(battle({ me: ['o-strategic'] }, [[3, 3, 2]])).toEqual([9, 6]); // (3,3) is next to the defender only
+    expect(battle({ me: ['o-strategic'] }, [[3, 1, 2]])).toEqual([9, 6]); // (3,1) is diagonal to the attacker
   });
 
-  it('Ferocious and Strategic can take a roll below 1 (rules summary)', () => {
+  it('Ferocious and Strategic can take a roll below 1 (designer, BGG thread 1069897)', () => {
     // Roll 1, Ferocious −1, Strategic −2: the roll counts as −2.
-    expect(battle({ me: ['o-ferocious', 'o-strategic'] }, [[3, 3, 2]], [1, 3])).toEqual([6 + 1 - 1 - 2, 6]);
+    expect(battle({ me: ['o-ferocious', 'o-strategic'] }, [[3, 2, 2]], [1, 3])).toEqual([6 + 1 - 1 - 2, 6]);
   });
 });
 
@@ -235,6 +236,22 @@ describe('destroying ships', () => {
     const s = fight(battleground({ foe: ['o-stubborn'] }), [6, 1]);
     expect(at(s, ship(ids(s).me, 0)).loc.zone).toBe('scrapyard');
     expect([s.players[ids(s).me].dominance, s.players[ids(s).foe].dominance]).toEqual([2, 4]);
+  });
+
+  it('Infamy on another player’s turn earns a card, picked after the active player (designer, BGG thread 1087563)', () => {
+    let s = battleground({ foe: ['o-stubborn'] });
+    const { me, foe } = ids(s);
+    s.players[foe].dominance = 5;
+    s = fight(s, [6, 1]);
+    expect(s.pending[0]).toMatchObject({ kind: 'infamy', player: foe });
+    s = apply(s, legalActions(s).find((a) => a.type === 'infamy')!);
+    expect(s.pending).toEqual([]);
+    s.players[me].research = 6;
+    s = apply(s, { type: 'endTurn' });
+    expect(s.pending).toEqual([
+      { kind: 'takeCard', player: me, count: 1 },
+      { kind: 'takeCard', player: foe, count: 1 },
+    ]);
   });
 
   // Rules summary: the ±2 is instead of the usual ±1, not on top of it.
@@ -312,6 +329,36 @@ describe('Gambit cards', () => {
     expect(s.players[me].skills).toContainEqual({ id: 'o-eager', active: true });
     s = apply(s, legalActions(s).find((a) => a.type === 'deploy')!);
     expect(s.turn.actionsLeft).toBe(2);
+  });
+
+  it('Momentum interrupts the card phase: picks still owed are taken in the bonus turn’s (designer, BGG thread 1068669)', () => {
+    let s = game();
+    const { me } = ids(s);
+    s.turn.phase = 'cards';
+    s.pending = [{ kind: 'takeCard', player: me, count: 2 }];
+    s.market.tacticRow[0] = 'o-momentum';
+    s = apply(s, { type: 'takeCard', deck: 'tactic', index: 0 });
+    expect(s.turn).toMatchObject({ player: me, actionsLeft: 2, bonus: true, phase: 'actions' });
+    s = apply(s, { type: 'endTurn' });
+    expect(s.pending).toEqual([{ kind: 'takeCard', player: me, count: 1 }]);
+  });
+
+  it('Momentum: another player’s off-turn pick waits until after all of the active player’s', () => {
+    let s = game();
+    const { me, foe } = ids(s);
+    s.turn.phase = 'cards';
+    s.pending = [
+      { kind: 'takeCard', player: me, count: 2 },
+      { kind: 'takeCard', player: foe, count: 1 },
+    ];
+    s.market.tacticRow[0] = 'o-momentum';
+    s = apply(s, { type: 'takeCard', deck: 'tactic', index: 0 });
+    expect(s.turn).toMatchObject({ player: me, bonus: true, phase: 'actions' });
+    s = apply(s, { type: 'endTurn' });
+    expect(s.pending).toEqual([
+      { kind: 'takeCard', player: me, count: 1 },
+      { kind: 'takeCard', player: foe, count: 1 },
+    ]);
   });
 
   it('Expansion: with Stealthy the new ship may go anywhere no ship is next to (rules summary)', () => {

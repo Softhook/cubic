@@ -315,7 +315,8 @@ export interface RelocationOption {
 
 /**
  * Relocation (Original): move another player's cube to a planet with room and none of their
- * cubes, whose number is not higher than the planet it leaves (1st-printing card text).
+ * cubes. Revised-edition text: the 1st printing's "cannot have a higher planet number" was
+ * dropped (BGG thread 2465215).
  */
 export function relocationOptions(state: GameState, player: PlayerId): RelocationOption[] {
   const out: RelocationOption[] = [];
@@ -335,7 +336,7 @@ export function canRelocate(state: GameState, player: PlayerId, { planet, owner,
   const from = state.board.planets[planet];
   const dest = state.board.planets[to];
   if (!from || !dest || owner === player || to === planet || !from.cubes.includes(owner)) return false;
-  return dest.number <= from.number && planetFreeSlots(dest) > 0 && !dest.cubes.includes(owner);
+  return planetFreeSlots(dest) > 0 && !dest.cubes.includes(owner);
 }
 
 /**

@@ -154,6 +154,17 @@ export const SKILL_RULES: Record<SkillEffect, SkillRule> = {
       },
     },
   },
+  // Revised-edition card: the attacker counts from the square it attacked from, never the
+  // defender's (Board Game Arena, BGG thread 2774280). The 1st printing's "you can consider an
+  // attacker to be in either square" was dropped in the revision.
+  'strategic-original': {
+    combat: {
+      modifier: ({ state, combat, side }) => {
+        const s = combat[side];
+        return supported(state, s.player, s.die, [side === 'attacker' ? combat.from : combat.at]) ? -2 : 0;
+      },
+    },
+  },
   stubborn: { combat: { stubborn: true } },
   talented: { skillLimit: 5 },
   tyrannical: { conquer: { sums: (c) => [c.sum + c.dominance] } },
