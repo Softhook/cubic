@@ -121,6 +121,7 @@ Options and plan: [MULTIPLAYER.md](MULTIPLAYER.md).
 - [ ] Reports: win rate by seat, by map, by skill held, by tactic taken; game length.
 - [ ] Use it to settle CE "playtesting" cards (Devious, Patient, Prideful, Profiteering, Ruthless, Tyrannical, Show of Force, Black Market) and Aggression keep/remove.
 - [ ] Validate map stats and find degenerate maps.
+- [ ] **Intelligent (CE) looks overpowered.** "Add or subtract 1 from the planet number" means a single 6 ship conquers any 7 planet on its own (7 − 1 = 6), and every planet gets two extra targets. Measure its win rate; candidate nerfs: once per turn, or only add/subtract when two or more ships are in orbit. (Noted 2026-10-03.)
 
 ## M6 — Design system: cards, tiles, boards, print
 

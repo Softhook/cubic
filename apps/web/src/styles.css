@@ -531,7 +531,9 @@ input { font: inherit; }
 .qcard-badge { font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--cat); color: #fff; }
 .qcard-name { font-family: var(--display); font-weight: 700; font-size: 14px; letter-spacing: .03em; margin-top: 6px; line-height: 1.15; }
 .qcard-sub { font-size: 10.5px; font-weight: 600; opacity: .6; margin-top: 2px; }
-.qcard-text { font-size: 11px; line-height: 1.38; margin-top: 7px; }
+.qcard-text { font-size: 11px; line-height: 1.38; margin-top: 7px; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+/* Text that would overflow the card is clipped and fades out over the last line; the full text is in the tooltip and card viewer. */
+.qcard-text { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 1.3em), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 1.3em), transparent); }
 .qcard-sm { width: 114px; height: 160px; padding: 8px 9px; }
 .qcard-sm .qcard-name { font-size: 12.5px; }
 .qcard-sm .qcard-text { font-size: 10px; margin-top: 5px; }
