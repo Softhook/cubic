@@ -1,5 +1,5 @@
 /** Shared test helpers: players, a finished setup, and seeded AI-vs-AI games. */
-import { chooseAction, chooseMissile, type AiLevel } from '../../ai/src';
+import { chooseAction, chooseCombatResponse, type AiLevel } from '../../ai/src';
 import { actor, apply, createGame, legalActions, type Action, type GameMode, type GameState } from '../src';
 
 export const players = (n: number) => Array.from({ length: n }, (_, i) => ({ name: `P${i}`, color: '#fff', ai: true }));
@@ -9,6 +9,19 @@ export function quickStart(n = 2, seed = 1, mode: GameMode = 'community'): GameS
   let s = createGame({ players: players(n), seed, mode });
   while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
   return s;
+}
+
+/** Empties the map and places dice at given cells, as [row, col, value], for focused rule tests. */
+export function arrange(s: GameState, placements: Record<string, [number, number, number]>): GameState {
+  const t = structuredClone(s);
+  for (const d of t.dice) if (d.loc.zone === 'board') d.loc = { zone: 'scrapyard' };
+  for (const [id, [r, c, value]] of Object.entries(placements)) {
+    const d = t.dice.find((x) => x.id === id)!;
+    d.loc = { zone: 'board', r, c };
+    d.value = value;
+    t.turn.seen[id] = [value];
+  }
+  return t;
 }
 
 /** A seeded random number generator in [0, 1), independent of the game's own RNG. */
@@ -32,7 +45,7 @@ export interface AiGame {
   after?: (s: GameState, action: Action, step: number) => void;
 }
 
-/** Plays AI against AI to the end (any missile first, as the web app does), or throws if it gets stuck. */
+/** Plays AI against AI to the end (any re-roll or missile first, as the web app does), or throws if it gets stuck. */
 export function playAiGame(game: AiGame): { state: GameState; actions: Action[] } {
   let s = createGame({ players: players(game.players), seed: game.seed, mode: game.mode });
   const random = seededRandom(game.aiSeed);
@@ -43,7 +56,7 @@ export function playAiGame(game: AiGame): { state: GameState; actions: Action[] 
     game.before?.(s, step);
     let action: Action | null = null;
     const level = (p: number) => game.levels?.[p] ?? 1;
-    if (s.pending[0]?.kind === 'combat') for (const p of s.players) action ??= chooseMissile(s, p.id, { level: level(p.id), random });
+    if (s.pending[0]?.kind === 'combat') for (const p of s.players) action ??= chooseCombatResponse(s, p.id, { level: level(p.id), random });
     action ??= chooseAction(s, { samples: 1, random, level: level(actor(s)) });
     if (!action) throw new Error(`no action at step ${step}`);
     actions.push(action);

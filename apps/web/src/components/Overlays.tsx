@@ -66,6 +66,46 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
           </div>
         </Modal>
       );
+    case 'dangerous': {
+      const p = game.players[head.player];
+      const att = game.dice.find((d) => d.id === head.attacker)!;
+      const def = game.dice.find((d) => d.id === head.defender)!;
+      return (
+        <Modal
+          title="Dangerous"
+          subtitle={`${game.players[att.owner].name}'s ${SHIP_NAMES[att.value]} attacks your ${SHIP_NAMES[def.value]}. Before the dice are rolled, you may destroy both ships (no dominance change).`}
+          pc={p.color}
+        >
+          <div className="modal-actions">
+            <button className="btn" onClick={() => dispatch({ type: 'dangerous', destroy: false })}>Fight</button>
+            <button className="btn btn-primary" onClick={() => dispatch({ type: 'dangerous', destroy: true })}>Destroy both ships</button>
+          </div>
+        </Modal>
+      );
+    }
+    case 'clever': {
+      const p = game.players[head.player];
+      const d = game.dice.find((x) => x.id === head.die)!;
+      return (
+        <Modal title="Clever" subtitle={`${p.name}, choose this ship’s number instead of rolling it.`} pc={p.color}>
+          <div className="fleet-roll clever-row">
+            {[1, 2, 3, 4, 5, 6].map((value) => (
+              <button
+                key={value}
+                className="fleet-die clever-choice"
+                disabled={value === head.avoid}
+                title={value === head.avoid ? 'A reconfigured ship must change its number' : undefined}
+                onClick={() => dispatch({ type: 'clever', value })}
+              >
+                <Die3D value={value} size={54} color={p.color} sound={false} />
+                <span className="show">{SHIP_NAMES[value]}</span>
+              </button>
+            ))}
+          </div>
+          {d.loc.zone === 'scrapyard' && <p className="modal-sub">The ship goes to your scrapyard.</p>}
+        </Modal>
+      );
+    }
     default:
       return null;
   }

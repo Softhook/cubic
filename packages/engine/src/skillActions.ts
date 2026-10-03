@@ -7,18 +7,22 @@ import {
   fail,
   gainDominance,
   gainResearch,
+  headOf,
   log,
   loseDominance,
   markAbility,
   markMoved,
+  name,
   oncePerTurn,
   ownShip,
   requireActionPhase,
   requireSkill,
+  rollAvoiding,
+  spend,
   type Handlers,
 } from './core';
-import { cellOf } from './lookups';
-import { canMoveDie, tacticalOptions } from './queries';
+import { cellOf, die } from './lookups';
+import { canMoveDie, canScrappy, nomadicTargets, tacticalOptions } from './queries';
 import { hasSkill } from './skillRules';
 
 export const skillHandlers = {
@@ -98,6 +102,34 @@ export const skillHandlers = {
     use();
     if (opt.diagonal) markAbility(s, d);
     d.loc = { zone: 'board', ...opt.cell };
+  },
+  nomadic(s, a) {
+    const t = requireActionPhase(s);
+    requireSkill(s, t.player, 'nomadic');
+    const d = ownShip(s, a.die, 'board');
+    if (!nomadicTargets(s, d.id).some((p) => same(p, a.to))) fail('Relocate to an empty orbital position of a neighbouring planet');
+    oncePerTurn(s, 'nomadic');
+    spend(s, 1);
+    // A relocation, not a move: the ship may still move this turn (forum consensus, BGG thread 1636855).
+    d.loc = { zone: 'board', ...a.to };
+  },
+  scrappy(s) {
+    if (!canScrappy(s)) fail('Nothing to re-roll');
+    const { die: id, avoid } = s.turn.scrappy!;
+    delete s.turn.scrappy;
+    const d = die(s, id);
+    rollAvoiding(s, d, avoid);
+    (s.turn.seen[d.id] ??= []).push(d.value);
+    log(s, `${name(s, d.owner)} re-rolls their ship (Scrappy): ${d.value}.`, d.owner);
+  },
+  clever(s, a) {
+    const head = headOf(s, 'clever', 'No ship number to choose');
+    if (!Number.isInteger(a.value) || a.value < 1 || a.value > 6) fail('Ship numbers range from 1 to 6');
+    if (a.value === head.avoid) fail('A reconfigured ship must change its number');
+    s.pending.shift();
+    const d = die(s, head.die);
+    d.value = a.value;
+    (s.turn.seen[d.id] ??= []).push(a.value);
   },
   resourceful(s, a) {
     const t = requireActionPhase(s);

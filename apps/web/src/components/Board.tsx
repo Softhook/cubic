@@ -239,7 +239,7 @@ export function Board({ game, ctl }: { game: GameState; ctl: Controller }) {
             if (!at) return null;
             const { r, c } = at;
             const tone = ctl.highlights.dice.get(d.id);
-            const selected = ctl.sel.kind !== 'none' && ctl.sel.die === d.id;
+            const selected = 'die' in ctl.sel && ctl.sel.die === d.id;
             const mine = d.owner === me && game.phase === 'play' && !head;
             const spent = mine && (game.turn.moved[d.id] ?? 0) > 0;
             const abilityUsed = mine && game.turn.abilityUsed[d.id];

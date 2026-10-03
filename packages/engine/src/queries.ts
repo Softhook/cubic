@@ -14,6 +14,7 @@ import {
 import { card, effectOf } from './data';
 import { cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
 import { rulesOf } from './rules';
+import type { SkillEffect } from './effects';
 import { activeSkills, anySkill, skillRules, type CombatPart } from './skillRules';
 import type { Cell, CombatPending, Die, GameState, OncePerTurn, Planet, PlayerId } from './types';
 
@@ -299,6 +300,51 @@ export function infamyTargets(state: GameState, player: PlayerId): Planet[] {
   return fresh.length ? fresh : open;
 }
 
+export interface RelocationOption {
+  /** The planet the cube leaves. */
+  planet: number;
+  owner: PlayerId;
+  to: number;
+}
+
+/**
+ * Relocation (Original): move another player's cube to a planet with room and none of their
+ * cubes, whose number is not higher than the planet it leaves (1st-printing card text).
+ */
+export function relocationOptions(state: GameState, player: PlayerId): RelocationOption[] {
+  const out: RelocationOption[] = [];
+  for (const from of state.board.planets) {
+    for (const owner of new Set(from.cubes)) {
+      if (owner === player) continue;
+      for (const to of state.board.planets) {
+        if (to.id === from.id || to.number > from.number || planetFreeSlots(to) <= 0 || to.cubes.includes(owner)) continue;
+        out.push({ planet: from.id, owner, to: to.id });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Nomadic (Original): empty orbital positions of the planets on the tiles next to the planet the
+ * ship orbits. "Next to" means the 4 orthogonally adjacent tiles (designer, BGG thread 1182319).
+ */
+export function nomadicTargets(state: GameState, dieId: string): Cell[] {
+  const at = cellOf(die(state, dieId));
+  if (!at) return [];
+  const home = state.board.planets.find((p) => orbitals(state.board, p).some((q) => same(q, at)));
+  if (!home) return [];
+  // Planets sit at the centre of their 3×3 tile, so planets on neighbouring tiles are 3 spaces away.
+  const near = state.board.planets.filter((p) => Math.abs(p.r - home.r) + Math.abs(p.c - home.c) === 3 && (p.r === home.r || p.c === home.c));
+  return near.flatMap((p) => orbitals(state.board, p).filter((q) => isEmptySpace(state, q)));
+}
+
+/** Scrappy: whether the player whose turn it is may re-roll the ship rolled by the last action. */
+export function canScrappy(state: GameState): boolean {
+  const t = state.turn.scrappy;
+  return state.phase === 'play' && !!t && die(state, t.die).owner === state.turn.player;
+}
+
 export interface TacticalOptions {
   /** `diagonal` steps need the Interceptor's Maneuver ability. */
   moves: { cell: Cell; diagonal: boolean }[];
@@ -380,6 +426,29 @@ export function combatOutcome(state: GameState, combat: CombatPending) {
   // Stubborn: when the defender wins (ties included), the attacker is destroyed.
   const stubborn = stubbornDefence && !attackerWins;
   return { attacker: a, defender: d, attackerWins, stubborn };
+}
+
+/** Whether a side's combat roll is set by a missile, Plan Ahead or Rational, so re-rolling can't change it. */
+export function rollIsFixed(state: GameState, combat: CombatPending, side: 'attacker' | 'defender'): boolean {
+  const s = combat[side];
+  return s.missile || state.players[s.player].planAhead > 0 || anySkill(state, s.player, (r) => r.combat?.roll !== undefined);
+}
+
+/**
+ * The skill effect that lets `by` re-roll `side`'s combat dice now, if any: their own (Relentless;
+ * Scrappy on their turn) or their opponent's (Cruel). Each is usable once per battle.
+ */
+export function combatReroll(state: GameState, combat: CombatPending, by: PlayerId, side: 'attacker' | 'defender'): SkillEffect | undefined {
+  const target = combat[side].player;
+  const opponent = side === 'attacker' ? combat.defender.player : combat.attacker.player;
+  if (by !== target && by !== opponent) return undefined;
+  if (rollIsFixed(state, combat, side)) return undefined;
+  return activeSkills(state, by).find(({ effect, rule }) => {
+    const r = rule.combat?.reroll;
+    if (!r || combat.rerolls.includes(effect)) return false;
+    if (r.ownTurnOnly && by !== state.turn.player) return false;
+    return r.whose === 'own' ? by === target : by === opponent;
+  })?.effect;
 }
 
 /** How many combat dice the player rolls (the lowest counts). */

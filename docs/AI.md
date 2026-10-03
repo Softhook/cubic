@@ -64,7 +64,7 @@ researched about 27 times a game. The causes were assumptions built into its des
 
 | File | Contents |
 |---|---|
-| [`packages/ai/src/index.ts`](../packages/ai/src/index.ts) | Public API (`chooseAction`, `chooseMissile`), the level table and each level's search settings |
+| [`packages/ai/src/index.ts`](../packages/ai/src/index.ts) | Public API (`chooseAction`, `chooseCombatResponse`), the level table and each level's search settings |
 | [`packages/ai/src/greedy.ts`](../packages/ai/src/greedy.ts) | Level 1, unchanged (the golden tests replay it) |
 | [`packages/ai/src/evaluate.ts`](../packages/ai/src/evaluate.ts) | Position evaluation for levels 2+ |
 | [`packages/ai/src/chance.ts`](../packages/ai/src/chance.ts) | The outcomes of an action, with probabilities |

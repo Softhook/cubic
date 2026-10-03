@@ -68,6 +68,10 @@ export interface SkillRule {
   skillLimit?: number;
   /** Research needed for a breakthrough. */
   breakthroughAt?: number;
+  /** Whenever one of the player's ships is rolled, they choose its number instead. */
+  chooseShipNumbers?: boolean;
+  /** On their own turn, the player may re-roll each roll of one of their ships once. */
+  rerollShips?: boolean;
   /** Deploying costs no action. */
   freeDeploy?: boolean;
   /** Ships may also deploy to any empty space with no ship next to it. */
@@ -95,6 +99,10 @@ export interface SkillRule {
     modifier?: (ctx: CombatContext) => number;
     /** When defending, ties go to the player, and winning destroys the attacker. */
     stubborn?: boolean;
+    /** When defending, before the dice are rolled, the player may destroy both ships. */
+    destroyBoth?: boolean;
+    /** Once per battle, re-roll the player's own dice or make the opponent re-roll theirs. */
+    reroll?: { whose: 'own' | 'opponent'; ownTurnOnly?: boolean };
   };
   /** Bonuses at the start of each of the player's turns. */
   startOfTurn?: (state: GameState, player: PlayerId) => TurnBonus;
@@ -166,11 +174,18 @@ export const SKILL_RULES: Record<SkillEffect, SkillRule> = {
       return new Set(mine.map((d) => d.value)).size < mine.length ? { actions: 1 } : {};
     },
   },
+  'clever-original': { chooseShipNumbers: true },
+  cruel: { combat: { reroll: { whose: 'opponent' } } },
   'curious-original': { startOfTurn: () => ({ freeMoves: 1 }) },
+  dangerous: { combat: { destroyBoth: true } },
   eager: { freeDeploy: true },
+  nomadic: { activated: 'nomadic' },
   'plundering-original': { onDestroy: (c) => (c.first && c.ownTurn ? { research: 3 } : {}) },
   'ravenous-original': { dominanceStakes: 2 },
+  relentless: { combat: { reroll: { whose: 'own' } } },
   'righteous-original': { keepDominance: 'destroyed' },
+  // Scrappy re-rolls ship rolls (core.ts rollShip) and, as here, combat rolls on the player's turn.
+  scrappy: { rerollShips: true, combat: { reroll: { whose: 'own', ownTurnOnly: true } } },
   'tactical-original': { activated: 'tactical' },
   'tyrannical-original': { activated: 'tyrannical' },
 };

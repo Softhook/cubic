@@ -114,10 +114,15 @@ export interface TurnState {
   /** Once-per-turn effects already used. */
   oncePerTurn: OncePerTurn[];
   bonus: boolean;
+  /**
+   * Scrappy: the player's ship rolled by the last action, which they may re-roll once. `avoid` is
+   * the number a Reconfigure started from (the re-roll must still show a new number).
+   */
+  scrappy?: { die: string; avoid?: number };
 }
 
 /** Effects limited to once per turn. 'cunning' is the second use of a ship ability. */
-export type OncePerTurn = 'composed' | 'ambitious' | 'flexible' | 'resourceful' | 'tyrannical' | 'tactical' | 'cunning';
+export type OncePerTurn = 'composed' | 'ambitious' | 'flexible' | 'resourceful' | 'tyrannical' | 'tactical' | 'cunning' | 'nomadic';
 
 export interface CombatSide {
   player: PlayerId;
@@ -136,6 +141,8 @@ export interface CombatPending {
   from: Cell;
   /** The defender's space. */
   at: Cell;
+  /** Re-roll effects already used in this battle (Cruel, Relentless, Scrappy: once each). */
+  rerolls: string[];
 }
 
 export type Pending =
@@ -145,6 +152,12 @@ export type Pending =
   /** Setup: place your starting ships, one at a time, in orbital positions of your starting planet. */
   | { kind: 'placeShips'; player: PlayerId; planet: number }
   | CombatPending
+  /** Dangerous: before the dice are rolled, the defender may destroy both ships. */
+  | { kind: 'dangerous'; player: PlayerId; attacker: string; defender: string; from: Cell }
+  /** Clever: the player chooses the number of a ship that was just rolled (not `avoid`, for a Reconfigure). */
+  | { kind: 'clever'; player: PlayerId; die: string; avoid?: number }
+  /** Relocation: move another player's cube. */
+  | { kind: 'relocation'; player: PlayerId }
   | { kind: 'advance'; player: PlayerId; die: string; to: Cell }
   | { kind: 'infamy'; player: PlayerId }
   | { kind: 'takeCard'; player: PlayerId; count: number }
@@ -230,10 +243,19 @@ export type Action =
   | { type: 'flexible'; die: string; delta: 1 | -1 }
   | { type: 'resourceful'; die: string }
   | { type: 'tyrannical' }
+  /** Nomadic: relocate a ship from one planet's orbit to an orbital position of a neighbouring planet. */
+  | { type: 'nomadic'; die: string; to: Cell }
+  /** Scrappy: re-roll the ship rolled by the last action. */
+  | { type: 'scrappy' }
   /** Tactical's 1-space move (`to`) or attack (`target`); with `passenger` + `drop` it is a Flagship transport. */
   | { type: 'tactical'; die: string; to?: Cell; target?: string; passenger?: string; drop?: Cell }
   // combat & decisions
   | { type: 'missile'; by: PlayerId; side: 'attacker' | 'defender' }
+  /** Cruel, Relentless or Scrappy: re-roll one side's combat dice. */
+  | { type: 'reroll'; by: PlayerId; side: 'attacker' | 'defender' }
+  | { type: 'dangerous'; destroy: boolean }
+  | { type: 'clever'; value: number }
+  | { type: 'relocate'; planet: number; owner: PlayerId; to: number }
   | { type: 'resolveCombat' }
   | { type: 'advance'; move: boolean }
   | { type: 'infamy'; planet: number }

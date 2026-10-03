@@ -1,20 +1,24 @@
 /** Legal action enumeration, used by the AI and for UI hints. */
-import { tryApply } from './engine';
+import { actor, tryApply } from './engine';
 import type { PendingOf } from './core';
 import { isEmptySpace, reserve, scrapyard, shipsOnBoard } from './lookups';
 import {
   canGainResearch,
   canMoveDie,
   canReconfigure,
+  canScrappy,
   canUseAbility,
   carryOptions,
   carryPassengers,
+  combatReroll,
   conquerCheck,
   deploysFree,
   deployTargets,
   freeAttackTargets,
   infamyTargets,
   moveOptions,
+  nomadicTargets,
+  relocationOptions,
   startSlots,
   tacticalOptions,
   usedThisTurn,
@@ -40,8 +44,17 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
       if (!head.attacker.missile) out.push({ type: 'missile', by: pl.id, side: 'attacker' });
       if (!head.defender.missile) out.push({ type: 'missile', by: pl.id, side: 'defender' });
     }
+    for (const by of [head.attacker.player, head.defender.player]) {
+      for (const side of ['attacker', 'defender'] as const) if (combatReroll(s, head, by, side)) out.push({ type: 'reroll', by, side });
+    }
     return out;
   },
+  dangerous: () => [
+    { type: 'dangerous', destroy: false },
+    { type: 'dangerous', destroy: true },
+  ],
+  clever: () => [1, 2, 3, 4, 5, 6].map((value) => ({ type: 'clever', value })),
+  relocation: (s, head) => relocationOptions(s, head.player).map((o) => ({ type: 'relocate', ...o })),
   advance: () => [
     { type: 'advance', move: true },
     { type: 'advance', move: false },
@@ -134,6 +147,9 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
     if (hasSkill(s, me, 'resourceful') && !usedThisTurn(s, 'resourceful')) {
       out.push({ type: 'resourceful', die: d.id });
     }
+    if (actions > 0 && hasSkill(s, me, 'nomadic') && !usedThisTurn(s, 'nomadic')) {
+      for (const to of nomadicTargets(s, d.id)) out.push({ type: 'nomadic', die: d.id, to });
+    }
   }
   const freeDeploy = deploysFree(s, me);
   const targets = deployTargets(s, me);
@@ -152,10 +168,12 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
 export function legalActions(s: GameState, opts: { includeCarry?: boolean } = {}): Action[] {
   if (s.phase === 'over') return [];
   const head = s.pending[0];
+  // Scrappy's re-roll is open to the player whose turn it is, whatever they are deciding.
+  const scrappy: Action[] = canScrappy(s) && actor(s) === s.turn.player ? [{ type: 'scrappy' }] : [];
   if (head) {
     const candidates = (DECISION_CANDIDATES[head.kind] as (s: GameState, h: Pending) => Action[])(s, head);
-    return candidates.filter((a) => tryApply(s, a) !== null);
+    return [...candidates.filter((a) => tryApply(s, a) !== null), ...scrappy];
   }
   if (s.phase !== 'play' || s.turn.phase !== 'actions') return [];
-  return actionPhaseOptions(s, opts);
+  return [...actionPhaseOptions(s, opts), ...scrappy];
 }

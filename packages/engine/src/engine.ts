@@ -45,6 +45,8 @@ export function apply(prev: GameState, action: Action): GameState {
   const handler = HANDLERS[action.type] as ((s: GameState, a: Action) => void) | undefined;
   if (!handler) throw new RuleError(`Unknown action ${action.type}`);
   const s = structuredClone(prev);
+  // Scrappy's re-roll must come right after the roll: any other action gives it up.
+  if (action.type !== 'scrappy') delete s.turn.scrappy;
   handler(s, action);
   settle(s);
   return s;

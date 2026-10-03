@@ -13,21 +13,7 @@ import {
   ORIGINAL_COMMAND,
   ORIGINAL_GAMBIT,
 } from '../src';
-import { players, quickStart } from './helpers';
-
-/** Empties the map and places dice at given cells for focused rule tests. */
-function arrange(s: GameState, placements: Record<string, [number, number, number]>): GameState {
-  const t = structuredClone(s);
-  for (const d of t.dice) if (d.loc.zone === 'board') d.loc = { zone: 'scrapyard' };
-  for (const [id, [r, c, value]] of Object.entries(placements)) {
-    const d = t.dice.find((x) => x.id === id)!;
-    d.loc = { zone: 'board', r, c };
-    d.value = value;
-    t.turn.seen[id] = [value];
-  }
-  return t;
-}
-
+import { arrange, players, quickStart } from './helpers';
 
 describe('setup', () => {
   it('ends with every player on a starting planet with 3 ships', () => {

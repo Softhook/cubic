@@ -2,6 +2,8 @@ import {
   actor,
   attackOdds,
   cellOf,
+  combatOutcome,
+  combatReroll,
   conquerCheck,
   die,
   dieAt,
@@ -33,6 +35,7 @@ const RANDOM_ACTIONS = new Set<Action['type']>([
   'reconfigure',
   'freeReconfigure',
   'resourceful',
+  'scrappy',
   'takeCard',
   'peekChoice',
   'refreshMarket',
@@ -56,8 +59,25 @@ export function chooseAction(state: GameState, opts: GreedyOptions = {}): Action
   return best(state, me, candidates, opts);
 }
 
-/** Should `player` fire a missile into the current combat? Dice are already rolled, so this is exact. */
-export function chooseMissile(state: GameState, player: PlayerId): Action | null {
+/**
+ * A free combat re-roll (Cruel, Relentless, Scrappy) for `player`, if they are losing the battle.
+ * Re-rolling can turn a lost battle into a won one but never the reverse, so this is exact.
+ */
+export function chooseReroll(state: GameState, player: PlayerId): Action | null {
+  const head = state.pending[0];
+  if (head?.kind !== 'combat') return null;
+  const mine = head.attacker.player === player ? 'attacker' : head.defender.player === player ? 'defender' : null;
+  if (!mine || (mine === 'attacker') === combatOutcome(state, head).attackerWins) return null;
+  for (const side of ['attacker', 'defender'] as const) {
+    if (combatReroll(state, head, player, side)) return { type: 'reroll', by: player, side };
+  }
+  return null;
+}
+
+/** Should `player` re-roll or fire a missile in the current combat? Dice are already rolled, so this is exact. */
+export function chooseCombatResponse(state: GameState, player: PlayerId): Action | null {
+  const reroll = chooseReroll(state, player);
+  if (reroll) return reroll;
   const head = state.pending[0];
   if (head?.kind !== 'combat' || state.players[player].missiles <= 0) return null;
   const options: Action[] = [

@@ -63,8 +63,8 @@ Package: `packages/engine`
 - [x] **Phase 2** — conqueror/researcher cards, card protocol, slide & refill, Peek.
 - [x] **Decisions / interrupts** — model "pending decision" states (choose card, missile window, Dangerous prompt, Prideful steal, discard-down-to-limit) so UI and AI use the same mechanism.
 - [x] **Game modes** — Basic (no cards), Original (2013), Community Edition.
-- [ ] **Original cards** — *25 of 31 Command and 5 of 6 Gambit done; remaining: Clever, Cruel, Dangerous, Nomadic, Relentless, Scrappy, Relocation.*
-- [ ] **Skills** — *26 of 35 done; remaining: Calculating, Clever, Curious, Dangerous, Devious, Patient, Prideful, Profiteering, Ruthless.* Implement all 35 via a hook/trigger system (start of turn, on destroy, on combat roll, on conquer check, on scrapyard, movement modifiers, action-count modifiers).
+- [x] **Original cards** — all 31 Command and 6 Gambit cards.
+- [ ] **Skills** — *27 of 35 done; remaining: Calculating, Clever, Curious, Devious, Patient, Prideful, Profiteering, Ruthless.* Implement all 35 via a hook/trigger system (start of turn, on destroy, on combat roll, on conquer check, on scrapyard, movement modifiers, action-count modifiers).
 - [x] **Tactics** — all 9; Expansion.
 - [x] **Legal action generator** — `legalActions(state)`; required by the UI (highlighting) and AI.
 - [ ] **Event log + replay** — *a text log exists; structured events + replay viewer still to do.* — every state change emits events; replaying seed + actions reproduces the game.
@@ -143,5 +143,5 @@ them **generated from data** with a consistent visual language.
 ## Next three things to do
 
 1. Play a few games and note anything that feels wrong — that's the fastest way to settle the 🔴 open questions.
-2. Implement the remaining 11 skills (Dangerous and Calculating need new interrupt prompts).
+2. Implement the remaining 8 skills (Calculating needs a new interrupt prompt).
 3. Transcribe the CE booklet's fan and 5-player maps (most 2–4p ones are already in from BGA).

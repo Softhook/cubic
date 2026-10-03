@@ -6,7 +6,7 @@
  * Seats alternate between games and each pair of games shares a map seed, so neither level
  * gets the better start. With more than 2 players, level A plays seat 0 and level B the rest.
  */
-import { chooseAction, chooseMissile, type AiLevel } from '../packages/ai/src';
+import { chooseAction, chooseCombatResponse, type AiLevel } from '../packages/ai/src';
 import { actor, apply, createGame, type Action, type GameMode, type GameState } from '../packages/engine/src';
 
 const [a = '1', b = '3', games = '20', mode = 'basic', players = '2'] = process.argv.slice(2);
@@ -39,7 +39,7 @@ for (let g = 0; g < n; g++) {
   for (let step = 0; s.phase !== 'over' && step < 3000; step++) {
     let action: Action | null = null;
     if (s.pending[0]?.kind === 'combat') {
-      for (const p of s.players) action ??= chooseMissile(s, p.id, { level: levels[side(p.id)], random });
+      for (const p of s.players) action ??= chooseCombatResponse(s, p.id, { level: levels[side(p.id)], random });
     }
     const who = side(actor(s));
     const t = performance.now();

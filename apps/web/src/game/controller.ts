@@ -23,6 +23,9 @@ export type Sel =
   | { kind: 'swap'; die: string }
   | { kind: 'freeAttack'; die: string }
   | { kind: 'tactical'; die: string }
+  | { kind: 'nomadic'; die: string }
+  // Relocation: the cube chosen to move (planet it leaves, and its owner).
+  | { kind: 'relocate'; planet: number; owner: number }
   // `tactical`: a 1-space transport using the Tactical skill instead of a Move action.
   | { kind: 'carryPassenger'; die: string; tactical?: boolean }
   | { kind: 'carryDest'; die: string; passenger: string; tactical?: boolean }
@@ -50,7 +53,7 @@ export function useController(game: GameState, dispatch: Dispatch) {
   useEffect(() => setSel({ kind: 'none' }), [pendingSig]);
   // Drop a selection that is no longer valid (ship destroyed, already moved…).
   useEffect(() => {
-    if (sel.kind === 'none') return;
+    if (sel.kind === 'none' || sel.kind === 'relocate') return;
     const d = game.dice.find((x) => x.id === sel.die);
     if (!d) setSel({ kind: 'none' });
     else if (sel.kind === 'scrap' && d.loc.zone !== 'scrapyard') setSel({ kind: 'none' });
@@ -87,6 +90,14 @@ export function useController(game: GameState, dispatch: Dispatch) {
         case 'warpGate':
           addCells(legal.of('warpGate').map((a) => a.cell), 'gate');
           break;
+        case 'relocation': {
+          const moves = legal.of('relocate');
+          if (sel.kind === 'relocate') {
+            h.planets.set(sel.planet, { tone: 'infamy', label: `${game.players[sel.owner].name}'s cube` });
+            for (const a of moves) if (a.planet === sel.planet && a.owner === sel.owner) h.planets.set(a.to, { tone: 'conquer', label: 'Move here' });
+          } else for (const a of moves) h.planets.set(a.planet, { tone: 'infamy', label: 'Move cube' });
+          break;
+        }
         case 'unveil':
           if (sel.kind === 'scrap') addCells(legal.of('unveilDeploy', (a) => a.die === sel.die).map((a) => a.to), 'deploy');
           if (head.reorganize) {
@@ -125,6 +136,9 @@ export function useController(game: GameState, dispatch: Dispatch) {
       }
       case 'swap':
         for (const a of legal.of('swap', (a) => a.die === sel.die)) h.dice.set(a.other, 'swap');
+        break;
+      case 'nomadic':
+        addCells(legal.of('nomadic', (a) => a.die === sel.die).map((a) => a.to), 'deploy');
         break;
       case 'freeAttack':
         for (const a of legal.of('freeAttack', (a) => a.die === sel.die)) h.dice.set(a.target, 'attack');
@@ -214,6 +228,12 @@ export function useController(game: GameState, dispatch: Dispatch) {
             setSel({ kind: 'none' });
           }
           return;
+        case 'nomadic':
+          if (dispatch({ type: 'nomadic', die: sel.die, to: cell })) {
+            sfx.move();
+            setSel({ kind: 'none' });
+          }
+          return;
         case 'carryDest':
           return select({ kind: 'carryDrop', die: sel.die, passenger: sel.passenger, to: cell, tactical: sel.tactical });
         case 'carryDrop':
@@ -232,11 +252,18 @@ export function useController(game: GameState, dispatch: Dispatch) {
       if (!human) return;
       const hl = highlights.planets.get(id);
       if (!hl) return;
+      if (head?.kind === 'relocation') {
+        if (sel.kind === 'relocate' && id !== sel.planet) return void dispatch({ type: 'relocate', planet: sel.planet, owner: sel.owner, to: id });
+        // Choose the cube; clicking its planet again picks another player's cube there, if any.
+        const owners = [...new Set(legal.of('relocate', (a) => a.planet === id).map((a) => a.owner))];
+        const next = sel.kind === 'relocate' && sel.planet === id ? owners[(owners.indexOf(sel.owner) + 1) % owners.length] : owners[0];
+        return select({ kind: 'relocate', planet: id, owner: next });
+      }
       if (hl.tone === 'start') dispatch({ type: 'placeStart', planet: id });
       else if (hl.tone === 'infamy') dispatch({ type: 'infamy', planet: id });
       else if (hl.tone === 'conquer') dispatch({ type: 'conquer', planet: id });
     },
-    [human, highlights, dispatch],
+    [human, highlights, head, sel, legal, dispatch, select],
   );
 
   return { sel, select, highlights, legal, onDie, onCell, onPlanet, human, actionPhase };
@@ -271,6 +298,10 @@ export function hintFor(game: GameState, sel: Sel): string {
         return head.reason === 'sabotage' ? 'Sabotage! Choose a card to discard.' : 'Choose a card to discard.';
       case 'advance':
         return 'Victory! Advance into the destroyed ship’s space, or hold your position.';
+      case 'relocation':
+        return sel.kind === 'relocate'
+          ? 'Relocation: choose the planet to move the cube to (click its planet again for another player’s cube there).'
+          : 'Relocation: choose a planet with another player’s cube to move.';
       default:
         return '';
     }
@@ -286,6 +317,8 @@ export function hintFor(game: GameState, sel: Sel): string {
       return 'Choose an adjacent enemy to attack for free.';
     case 'tactical':
       return 'Tactical: move one space, or attack an adjacent enemy.';
+    case 'nomadic':
+      return 'Nomadic: choose an orbital position of a neighbouring planet.';
     case 'carryPassenger':
       return 'Choose a ship next to your flagship to carry.';
     case 'carryDest':

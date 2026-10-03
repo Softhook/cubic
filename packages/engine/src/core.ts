@@ -8,7 +8,7 @@ import { die } from './lookups';
 import { canGainResearch, canUseAbility, usedThisTurn } from './queries';
 import { d6 } from './rng';
 import { rulesOf } from './rules';
-import { hasSkill, skillRules } from './skillRules';
+import { anySkill, hasSkill, skillRules } from './skillRules';
 import { RuleError, type Action, type Die, type GameState, type LogEvent, type OncePerTurn, type Pending, type PlayerId, type TurnState } from './types';
 
 export const ACTIONS_PER_TURN = 3;
@@ -53,13 +53,29 @@ export function roll(s: GameState, d: Die) {
   d.rolls++;
 }
 
+/** Rolls a die, re-rolling until it shows a number other than `avoid`. */
+export function rollAvoiding(s: GameState, d: Die, avoid?: number) {
+  do d.value = d6(s);
+  while (d.value === avoid);
+  d.rolls++;
+}
+
+/**
+ * Rolls one of a player's ships during play (Reconfigure, a destroyed ship, an expansion ship…).
+ * Clever then lets the owner choose the number instead; Scrappy lets the player whose turn it is
+ * re-roll it once, right away. `avoid` is the number a Reconfigure must move away from.
+ */
+export function rollShip(s: GameState, d: Die, avoid?: number) {
+  rollAvoiding(s, d, avoid);
+  if (s.phase !== 'play') return;
+  if (anySkill(s, d.owner, (r) => r.chooseShipNumbers)) s.pending.unshift({ kind: 'clever', player: d.owner, die: d.id, avoid });
+  else if (d.owner === s.turn.player && anySkill(s, d.owner, (r) => r.rerollShips)) s.turn.scrappy = { die: d.id, avoid };
+}
+
 /** Reconfigure: re-roll until the number changes (see RuleSet.reconfigure). */
 export function rerollNew(s: GameState, d: Die) {
   if (rulesOf(s).reconfigure === 'different') {
-    const old = d.value;
-    do d.value = d6(s);
-    while (d.value === old);
-    d.rolls++;
+    rollShip(s, d, d.value);
     return;
   }
   const seen = (s.turn.seen[d.id] ??= [d.value]);
@@ -73,7 +89,7 @@ export function rerollNew(s: GameState, d: Die) {
 /** A destroyed ship is re-rolled and goes to its owner's scrapyard. */
 export function destroyShip(s: GameState, d: Die) {
   d.loc = { zone: 'scrapyard' };
-  roll(s, d);
+  rollShip(s, d);
   s.turn.seen[d.id] = [d.value];
 }
 

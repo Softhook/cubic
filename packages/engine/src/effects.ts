@@ -37,12 +37,18 @@ export const SKILL_EFFECTS = [
   'tactical',
   // original command cards
   'arrogant',
+  'clever-original',
   'conformist',
+  'cruel',
   'curious-original',
+  'dangerous',
   'eager',
+  'nomadic',
   'plundering-original',
   'ravenous-original',
+  'relentless',
   'righteous-original',
+  'scrappy',
   'tactical-original',
   'tyrannical-original',
 ] as const;
@@ -62,6 +68,7 @@ export const TACTIC_EFFECT_IDS = [
   'warp-gate',
   'expansion',
   'reorganization',
+  'relocation',
   'sabotage-original',
 ] as const;
 

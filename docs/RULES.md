@@ -46,9 +46,8 @@ Original card text is in [`data/cards.yaml`](../data/cards.yaml) under `original
 Cards whose behaviour matches a Community Edition card share its implementation (e.g. Cerebral ≙ Composed,
 Energetic ≙ Steadfast, Warlike ≙ Hostile).
 
-Not yet implemented (left out of the decks until they are): Original — Clever, Cruel, Dangerous, Nomadic,
-Relentless, Scrappy, Relocation. Community — Calculating, Clever, Curious, Dangerous, Devious, Patient,
-Prideful, Profiteering, Ruthless.
+Every Original card is implemented. Not yet implemented in the Community Edition (left out of the deck until
+they are): Calculating, Clever, Curious, Devious, Patient, Prideful, Profiteering, Ruthless.
 
 ---
 

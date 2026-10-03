@@ -6,11 +6,11 @@
  * its entry in TACTIC_EFFECTS. Skills are listed in SKILL_EFFECTS (effects.ts).
  */
 import { same } from './board';
-import { destroyShip, fail, gainDominance, headOf, log, name, roll, shipName, type Handlers } from './core';
+import { destroyShip, fail, gainDominance, headOf, log, name, rollShip, shipName, type Handlers } from './core';
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
 import { die, reserve, shipsOnBoard } from './lookups';
-import { canRefreshMarket, canTakeCard, deployTargets, skillLimit } from './queries';
+import { canRefreshMarket, canTakeCard, deployTargets, relocationOptions, skillLimit } from './queries';
 import { shuffle } from './rng';
 import { rulesOf } from './rules';
 import type { DeckKind, GameState, PlayerId } from './types';
@@ -54,8 +54,12 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
       log(s, `${s.players[p].name} has no reserve ships left.`, p);
       return;
     }
-    roll(s, res[0]);
+    // Placed after the roll is final (a Clever choice comes first).
     s.pending.unshift({ kind: 'placeExpansion', player: p, die: res[0].id });
+    rollShip(s, res[0]);
+  },
+  relocation: (s, p) => {
+    if (relocationOptions(s, p).length) s.pending.unshift({ kind: 'relocation', player: p });
   },
   reorganization: (s, p) => {
     s.pending.unshift({ kind: 'unveil', player: p, rerolled: [], reorganize: true });
@@ -126,8 +130,8 @@ export const cardHandlers = {
       if (!res.length) fail('Your reserve is empty');
       consumeCardPick(s);
       s.market.expansions--;
-      roll(s, res[0]);
       s.pending.unshift({ kind: 'placeExpansion', player: p, die: res[0].id });
+      rollShip(s, res[0]);
       log(s, `${name(s, p)} expands their fleet.`, p, 'expansion');
       return;
     }
@@ -217,6 +221,18 @@ export const cardHandlers = {
     s.pending.shift();
     gainCard(s, head.player, a.skill);
   },
+  relocate(s, a) {
+    const head = headOf(s, 'relocation', 'No Relocation to resolve');
+    if (!relocationOptions(s, head.player).some((o) => o.planet === a.planet && o.owner === a.owner && o.to === a.to)) {
+      fail("Move another player's cube to a planet without one of their cubes, with no higher number");
+    }
+    s.pending.shift();
+    const from = s.board.planets[a.planet];
+    const to = s.board.planets[a.to];
+    from.cubes.splice(from.cubes.lastIndexOf(a.owner), 1);
+    to.cubes.push(a.owner);
+    log(s, `${name(s, head.player)} relocates ${name(s, a.owner)}'s cube from planet ${from.number} to planet ${to.number}.`, head.player);
+  },
   unveilReroll(s, a) {
     const head = headOf(s, 'unveil', 'Not unveiling');
     const d = die(s, a.die);
@@ -226,7 +242,7 @@ export const cardHandlers = {
     head.rerolled.push(d.id);
     // Reorganization: a re-rolled ship leaves the map and is placed again (or scrapped).
     if (head.reorganize) d.loc = { zone: 'scrapyard' };
-    roll(s, d);
+    rollShip(s, d);
   },
   unveilDeploy(s, a) {
     const head = headOf(s, 'unveil', 'Not unveiling');

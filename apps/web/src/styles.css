@@ -616,6 +616,10 @@ input { font: inherit; }
 .fleet-die > span, .fleet-sum { opacity: 0; transform: translateY(4px); transition: all .3s; }
 .fleet-die > span { font-size: 12px; color: var(--muted); }
 .fleet-die > span.show, .fleet-sum.show { opacity: 1; transform: none; }
+.clever-row { flex-wrap: wrap; gap: 10px; }
+.clever-choice { gap: 10px; padding: 8px; border: 0; border-radius: 12px; background: none; color: inherit; font: inherit; cursor: pointer; }
+.clever-choice:hover:not(:disabled) { background: rgba(255,255,255,.06); }
+.clever-choice:disabled { opacity: .35; cursor: not-allowed; }
 .fleet-sum { text-align: center; margin: 10px 0 0; color: var(--muted); }
 .fleet-sum b { font-weight: 800; color: var(--text); font-size: 20px; margin-left: 6px; }
 

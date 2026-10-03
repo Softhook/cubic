@@ -6,7 +6,7 @@ import { Die3D } from './Die3D';
 /** Actions for the selected ship: its ability, Reconfigure, and skills that act on one ship. */
 export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Controller; dispatch: Dispatch }) {
   const { sel, legal } = ctl;
-  if (sel.kind === 'none' || !ctl.actionPhase) return null;
+  if (!('die' in sel) || !ctl.actionPhase) return null;
   const d = game.dice.find((x) => x.id === sel.die);
   if (!d) return null;
   const t = game.turn;
@@ -92,6 +92,11 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
             <button className="btn" disabled={!legal.can('flexible', (a) => mine(a) && a.delta === -1)} onClick={() => dispatch({ type: 'flexible', die: d.id, delta: -1 })}>−1</button>
             <button className="btn" disabled={!legal.can('flexible', (a) => mine(a) && a.delta === 1)} onClick={() => dispatch({ type: 'flexible', die: d.id, delta: 1 })}>+1</button>
           </>
+        )}
+        {legal.can('nomadic', mine) && (
+          <button className="btn" onClick={() => ctl.select({ kind: 'nomadic', die: d.id })} title={card(skillCard(game, me, 'nomadic')!).text}>
+            Nomadic
+          </button>
         )}
         {legal.can('resourceful', mine) && (
           <button className="btn" onClick={() => dispatch({ type: 'resourceful', die: d.id })} title={card('resourceful').text}>
