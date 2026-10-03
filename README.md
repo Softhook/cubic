@@ -28,9 +28,11 @@ so changing a ruling later is a small edit.
 missiles, starting skill, peek). See [Game modes](docs/RULES.md#game-modes).
 
 **What works:** setup, all five actions, all six ship abilities, combat (with missiles in
-CE), Infamy, Quantum Entanglement, void tiles, the card market, and most cards: 26 of 35
-CE Skills, all 9 CE Tactics, 25 of 31 original Command cards and 5 of 6 Gambit types.
-Unimplemented cards are left out of the decks. Only the three basic maps are available.
+CE), Infamy, Quantum Entanglement, void tiles, the card market, and most cards: 27 of 35
+CE Skills, all 9 CE Tactics and every Original Command and Gambit card.
+Unimplemented cards are left out of the decks. 70 maps for 2–4 players (3 basic, 37 advanced
+from the print booklet, 6 from the 2014 add-on pack, 24 from Board Game Arena); the print
+edition's 5-player maps are not transcribed yet, so games are limited to 4 players.
 
 ## Repository
 

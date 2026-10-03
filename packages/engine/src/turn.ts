@@ -3,7 +3,7 @@ import { ACTIONS_PER_TURN, emptyTurn, gainResearch, log, name, type PendingOf } 
 import { cellOf, scrapyard, shipsOnBoard } from './lookups';
 import { breakthroughAt, canTakeAnyCard, infamyTargets, startSlots } from './queries';
 import { rulesOf } from './rules';
-import { skillRules, type TurnBonus } from './skillRules';
+import { askBrilliant, skillRules, type TurnBonus } from './skillRules';
 import type { GameState, Pending, PlayerId } from './types';
 
 /** The start-of-turn bonuses of the player's skills, added up. */
@@ -41,6 +41,7 @@ export function startTurn(s: GameState, player: PlayerId, actions: number, bonus
     return s.board.cells[c.r][c.c].void;
   }).length;
   if (onVoid) gainResearch(s, player, onVoid);
+  if (askBrilliant(s, player)) s.pending.push({ kind: 'brilliant', player });
   log(s, bonus ? `${pl.name} takes a bonus turn.` : `${pl.name}'s turn.`, player);
 }
 
@@ -82,12 +83,24 @@ export function endTurn(s: GameState) {
 
 function finishTurn(s: GameState) {
   const p = s.turn.player;
+  const n = s.players.length;
+  const resume = s.turn.resume ?? (p + 1) % n;
+  // Skills taken this turn, by anyone (off-turn picks too), work from now on.
+  for (const o of s.players) for (const sk of o.skills) sk.active = true;
   const pl = s.players[p];
-  for (const sk of pl.skills) sk.active = true;
   if (pl.planAhead > 0) pl.planAhead--;
-  const bonus = pl.bonusTurns.shift();
-  if (bonus !== undefined) startTurn(s, p, bonus, true);
-  else startTurn(s, (p + 1) % s.players.length, ACTIONS_PER_TURN, false);
+  // Momentum turns: the active player's first, then those earned on this turn by other players
+  // (taken off-turn, so "immediately" means right after this turn), in turn order. Then the
+  // regular turn order picks up where it left off.
+  for (let i = 0; i < n; i++) {
+    const o = (p + i) % n;
+    const bonus = s.players[o].bonusTurns.shift();
+    if (bonus === undefined) continue;
+    startTurn(s, o, bonus, true);
+    s.turn.resume = resume;
+    return;
+  }
+  startTurn(s, resume, ACTIONS_PER_TURN, false);
 }
 
 /**

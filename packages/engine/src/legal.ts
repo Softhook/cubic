@@ -1,7 +1,7 @@
 /** Legal action enumeration, used by the AI and for UI hints. */
 import { actor, tryApply } from './engine';
 import type { PendingOf } from './core';
-import { isEmptySpace, reserve, scrapyard, shipsOnBoard } from './lookups';
+import { reserve, scrapyard, shipsOnBoard } from './lookups';
 import {
   canGainResearch,
   canMoveDie,
@@ -53,6 +53,10 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     { type: 'dangerous', destroy: false },
     { type: 'dangerous', destroy: true },
   ],
+  brilliant: () => [
+    { type: 'brilliant', gain: true },
+    { type: 'brilliant', gain: false },
+  ],
   clever: (_, head) => [1, 2, 3, 4, 5, 6].filter((v) => v !== head.avoid).map((value) => ({ type: 'clever', value })),
   relocation: (s, head) => relocationOptions(s, head.player).map((o) => ({ type: 'relocate', ...o })),
   advance: () => [
@@ -83,7 +87,7 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     const out: Action[] = [];
     for (let r = 0; r < s.board.rows; r++)
       for (let c = 0; c < s.board.cols; c++)
-        if (isEmptySpace(s, { r, c }) && !head.placed.some((p) => p.r === r && p.c === c)) out.push({ type: 'warpGate', cell: { r, c } });
+        if (s.board.cells[r][c].kind === 'space' && !head.placed.some((p) => p.r === r && p.c === c)) out.push({ type: 'warpGate', cell: { r, c } });
     return out;
   },
   changeOfHeart: (s) => [...new Set(s.market.skillDeck)].map((skill) => ({ type: 'changeOfHeart', skill })),

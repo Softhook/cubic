@@ -27,11 +27,27 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
     s.players[p].missiles += 2;
   },
   'change-of-heart': (s, p) => {
-    if (s.market.skillDeck.length) s.pending.unshift({ kind: 'changeOfHeart', player: p });
+    const m = s.market;
+    // Like a draw: an empty deck is first refilled from its discards.
+    if (!m.skillDeck.length && m.skillDiscard.length) {
+      m.skillDeck.push(...shuffle(s, m.skillDiscard));
+      m.skillDiscard.length = 0;
+    }
+    if (m.skillDeck.length) s.pending.unshift({ kind: 'changeOfHeart', player: p });
   },
   momentum: (s, p) => {
     const pl = s.players[p];
     pl.bonusTurns.push(2);
+    if (p !== s.turn.player) {
+      // Taken on someone else's turn: the bonus turn follows this one (see finishTurn), and the
+      // player's remaining picks are taken in its card phase. Other picks go on as before.
+      s.pending = s.pending.filter((x) => {
+        if (x.kind !== 'takeCard' || x.player !== p) return true;
+        pl.carriedPicks = (pl.carriedPicks ?? 0) + x.count;
+        return false;
+      });
+      return;
+    }
     // Gambits resolve at once (designer, BGG thread 1068669): the bonus turn comes before any
     // picks still owed, which are taken in its card phase (as on Board Game Arena).
     // Other players' off-turn picks still come after all of the active player's (designer, BGG
@@ -44,7 +60,8 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
     });
   },
   'plan-ahead': (s, p) => {
-    s.players[p].planAhead = 2;
+    // "Until the end of your next turn": taken off-turn, that is the player's coming turn.
+    s.players[p].planAhead = p === s.turn.player ? 2 : 1;
   },
   sabotage: (s, p) => {
     for (const o of s.players) if (o.id !== p) o.actionPenalty++;
@@ -188,6 +205,7 @@ export const cardHandlers = {
     const i = pl.skills.findIndex((x) => x.id === a.skill);
     if (i < 0) fail('You do not have that skill');
     pl.skills.splice(i, 1);
+    if (effectOf(a.skill) === 'ambitious') pl.ambitionTokens = 0;
     s.market.skillDiscard.push(a.skill);
     s.pending.shift();
     log(s, `${pl.name} discards ${card(a.skill).name}.`, head.player, 'discard');
@@ -215,7 +233,7 @@ export const cardHandlers = {
   warpGate(s, a) {
     const head = headOf(s, 'warpGate', 'No Warp Gate to place');
     const cell = s.board.cells[a.cell.r]?.[a.cell.c];
-    if (!cell || cell.kind !== 'space') fail('Gates go on empty spaces');
+    if (!cell || cell.kind !== 'space') fail('Gates go on spaces, not planets');
     if (head.placed.some((p) => same(p, a.cell))) fail('Choose a different space');
     head.placed.push(a.cell);
     if (head.placed.length === 2) {

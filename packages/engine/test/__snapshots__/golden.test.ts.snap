@@ -30,7 +30,7 @@ exports[`golden master > basic, 4 players, seed 13 1`] = `
 exports[`golden master > community, 2 players, seed 11 1`] = `
 {
   "actions": "1fa70682babbf332",
-  "state": "b28bfec95114db5b",
+  "state": "8c759d9f760b893d",
   "steps": 118,
   "winner": 0,
 }
@@ -38,9 +38,9 @@ exports[`golden master > community, 2 players, seed 11 1`] = `
 
 exports[`golden master > community, 3 players, seed 12 1`] = `
 {
-  "actions": "d9a6fac318c43c40",
-  "state": "96e9450e50db20fa",
-  "steps": 253,
+  "actions": "2187fc339912d80d",
+  "state": "95387c545ea0c449",
+  "steps": 297,
   "winner": 1,
 }
 `;

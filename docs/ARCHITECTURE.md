@@ -8,7 +8,7 @@ How the code is organised, and where to make the common changes.
 |---|---|---|
 | [`packages/engine`](../packages/engine) | The rules. A game is `apply(state, action) → state`: pure, deterministic (seeded RNG in the state), serialisable. | — |
 | [`packages/ai`](../packages/ai) | AI players in four levels ([AI.md](AI.md)). Chooses among `legalActions(state)`; never sees the real RNG or deck order. | engine |
-| [`apps/web`](../apps/web) | React UI. Renders a state, sends actions. Holds no rules of its own: buttons and highlights come from `legalActions` (`game/legal.ts`). | engine, ai |
+| [`apps/web`](../apps/web) | React UI. Renders a state, sends actions. Holds no rules of its own: buttons and highlights come from `legalActions` ([`game/legal.ts`](../apps/web/src/game/legal.ts)). | engine, ai |
 | [`data/`](../data) | Cards and maps as YAML, compiled to JSON by `npm run data`. | — |
 
 ## Engine modules
@@ -82,7 +82,7 @@ sets `activated` and gets a handler in `skillActions.ts`.
 the new rule set changes a rule rather than a parameter, add a field to `RuleSet` and read it where the
 rule lives. Don't compare `state.mode` to a name anywhere else.
 
-**Add a map.** Add it to `data/maps.yaml` with its published stats (or `mapStats()`'s, if none are published); `maps.test.ts` recomputes the stats
+**Add a map.** Add it to `data/maps.yaml` with its published stats (or `mapStats()`'s, if none are published); [`maps.test.ts`](../packages/engine/test/maps.test.ts) recomputes the stats
 from the layout and fails if they disagree. Official layouts are in
 [`reference/bga/maps.json`](../reference/bga/maps.json).
 
@@ -90,12 +90,15 @@ from the layout and fails if they disagree. Official layouts are in
 
 | Test | Guards |
 |---|---|
-| `basic.test.ts` | Every official rule in Basic mode, one scenario each, citing its source |
-| `engine.test.ts` | Card effects, modes, missiles, undo |
-| `consistency.test.ts` | `legalActions` and `apply` agree (every offered action is accepted; brute force: every accepted action is offered); invariants after every action |
-| `data.test.ts` | Card ids unique; every card effect implemented or on the known-missing list |
-| `golden.test.ts` | Exact replay of seeded AI-vs-AI games in every mode, with invariants checked after every action. Fails on *any* behaviour change. After an intended change, review and run `npx vitest run -u`. |
-| `maps.test.ts` | Map stats match layouts |
+| [`basic.test.ts`](../packages/engine/test/basic.test.ts) | Every official rule in Basic mode, one scenario each, citing its source |
+| [`engine.test.ts`](../packages/engine/test/engine.test.ts) | Card effects, modes, missiles, undo |
+| [`consistency.test.ts`](../packages/engine/test/consistency.test.ts) | `legalActions` and `apply` agree (every offered action is accepted; brute force: every accepted action is offered); invariants after every action |
+| [`data.test.ts`](../packages/engine/test/data.test.ts) | Card ids unique; every card effect implemented or on the known-missing list |
+| [`golden.test.ts`](../packages/engine/test/golden.test.ts) | Exact replay of seeded AI-vs-AI games in every mode, with invariants checked after every action. Fails on *any* behaviour change. After an intended change, review and run `npx vitest run -u`. |
+| [`maps.test.ts`](../packages/engine/test/maps.test.ts) | Map stats match layouts |
+| [`original-cards.test.ts`](../packages/engine/test/original-cards.test.ts) | Original cards that open decisions of their own (combat re-rolls, Dangerous, Clever, Nomadic, Relocation) |
+| [`original-commands.test.ts`](../packages/engine/test/original-commands.test.ts) | Original Command and Gambit cards that hook into existing rules, citing the 2013 FAQ |
+| [`off-turn.test.ts`](../packages/engine/test/off-turn.test.ts) | Cards taken on someone else's turn (skills, Plan Ahead, Momentum); Warp Gate, Change of Heart and Ambitious edge cases; when CE Brilliant asks |
 
-Shared helpers (`quickStart`, `playAiGame`…) are in `test/helpers.ts`. `npm run check` typechecks
+Shared helpers (`quickStart`, `playAiGame`…) are in [`test/helpers.ts`](../packages/engine/test/helpers.ts). `npm run check` typechecks
 everything (tests included) and runs the tests.

@@ -64,7 +64,7 @@ they are): Calculating, Clever, Curious, Devious, Patient, Prideful, Profiteerin
 | **Original title** | Quantum ([BGG #143519](https://boardgamegeek.com/boardgame/143519/quantum)) |
 | **Designer** | Eric Zimmerman |
 | **Publisher** | FunForge (2013), with regional partners; now out of print |
-| **Players** | 2–4 (CE print edition adds 5-player maps) |
+| **Players** | 2–4 (CE print edition adds 5-player maps, not yet transcribed here) |
 | **Play time** | ~60 minutes |
 | **Genre** | Light 4X / area control, dice-as-units, modular grid board |
 
@@ -304,7 +304,7 @@ Full data (with categories, CE status and design notes) lives in
 |---|---|---|
 | Agile | Movement bonus | All of your ships have +1 movement. |
 | Ambitious | 3 extra actions | Once per turn you may take an additional action, then put a token on this card. If this card has three tokens on it, discard it. |
-| Brilliant | Research bonus | At the start of your turn, you may gain 2 Research. |
+| Brilliant | Research bonus | At the start of your turn, you may gain 2 Research. Engine: asked only with Pioneering, where the exact research number matters; otherwise gained automatically. |
 | Brutal | Combat with advantage | For Combat rolls, roll twice and use the lower number. |
 | Calculating | Controlled scrapping | When a ship is placed in your scrapyard, choose its ship number. |
 | Clever | Flexible modification | After reconfiguring, you may increase or decrease the ship number by 1. |
@@ -350,7 +350,7 @@ Full data (with categories, CE status and design notes) lives in
 | Sabotage | Limit enemy action | Every opponent's next turn has 1 fewer action. |
 | Show of Force | Target destroyed | Destroy any one ship. Gain 1 Dominance. |
 | Unveil the Fleet | Destroy & reroll ships | Destroy all your ships. You may reroll any ships in your scrapyard once. Deploy any number of ships. |
-| Warp Gate | Teleportation system | Place the Warp Gate tokens on two different spaces on the board. Any player may consider those spaces adjacent. |
+| Warp Gate | Teleportation system | Place the Warp Gate tokens on two different spaces on the board. Any player may consider those spaces adjacent. Engine: for movement and attacks only, not for deploying, Flagship carry or Strategic support ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #30). |
 
 ### Expansion (players + 1 in play; 6 printed)
 
@@ -396,9 +396,9 @@ The print booklet contains ~60 maps grouped by player count and style:
 | 5 | Omega Sector, Ad Hominem, False Dilemma, Reification, No True Scotsman, Anecdotal, Fallacy Fallacy, Bandwagon | Appeal to Authority, False Equivalence, Special Pleading, False Dichotomy, Ambiguity, Beg the Question | — |
 
 Layouts are in the [rules booklet PDF](../reference/community-edition-print/QCB-rules-booklet-A5.pdf)
-(pages 8–15). Transcribing them into [`data/maps.yaml`](../data/maps.yaml) is a
-roadmap task — the PDF's text layer loses the gaps, so they must be read from the
-rendered pages.
+(pages 8–15). The 2–4 player maps are transcribed in [`data/maps.yaml`](../data/maps.yaml)
+(group `advanced`), alongside the add-on pack's (`addon`) and Board Game Arena's (`bga`).
+The 5-player maps are not transcribed yet, so the engine allows at most 4 players.
 
 ---
 

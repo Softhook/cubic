@@ -126,7 +126,7 @@ export const SKILL_RULES: Record<SkillEffect, SkillRule> = {
   // shared / community skills
   agile: { movement: 1 },
   ambitious: { activated: 'ambitious' },
-  brilliant: { startOfTurn: () => ({ research: 2 }) },
+  brilliant: { startOfTurn: (s, p) => (askBrilliant(s, p) ? {} : { research: 2 }) },
   brutal: { combat: { dice: 2 } },
   composed: { activated: 'composed' },
   ferocious: { combat: { modifier: () => -1 } },
@@ -229,6 +229,20 @@ export function anySkill(state: GameState, player: PlayerId, test: (r: SkillRule
 /** True when the player owns an active skill with this effect (e.g. Cerebral has the 'composed' effect). */
 export function hasSkill(state: GameState, player: PlayerId, effect: SkillEffect): boolean {
   return state.players[player].skills.some((s) => s.active && effectOf(s.id) === effect);
+}
+
+/**
+ * CE Brilliant reads "you may gain 2 Research" (the Original card: "automatically"). Research only
+ * matters as an exact number with Pioneering, so the player is asked then (see startTurn) and
+ * otherwise simply gains it.
+ */
+export function askBrilliant(state: GameState, player: PlayerId): boolean {
+  return (
+    skillCard(state, player, 'brilliant') === 'brilliant' &&
+    hasSkill(state, player, 'pioneering') &&
+    state.players[player].research < 6 &&
+    !anySkill(state, player, (r) => r.noResearch)
+  );
 }
 
 /** The id of the player's card that provides an effect, for showing its name. */

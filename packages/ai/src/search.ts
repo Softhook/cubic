@@ -95,8 +95,8 @@ export class Search {
     let top = after(root) + 10;
     for (const side of ['attacker', 'defender'] as const) {
       const a: Action = { type: 'missile', by: player, side };
-      const fired = legalActions(root).some((x) => x.type === 'missile' && x.by === player && x.side === side);
-      if (!fired) continue;
+      const available = legalActions(root).some((x) => x.type === 'missile' && x.by === player && x.side === side);
+      if (!available) continue;
       const v = after(apply(root, a));
       if (v > top) {
         top = v;
@@ -265,8 +265,21 @@ function signature(s: GameState): string {
     t.seen,
     t.oncePerTurn,
     t.conquests,
-    s.players.map((p) => [p.dominance, p.research, p.cubesLeft, p.missiles, p.skills.length]),
+    t.freeMovesUsed,
+    t.attacked,
+    t.destroyedBy,
+    t.scrappy,
+    s.players.map((p) => [
+      p.dominance,
+      p.research,
+      p.cubesLeft,
+      p.missiles,
+      p.skills.map((k) => (k.active ? k.id : `-${k.id}`)),
+      p.ambitionTokens,
+      p.planAhead,
+    ]),
     s.board.planets.map((p) => p.cubes),
     s.gates,
+    s.pending,
   ]);
 }

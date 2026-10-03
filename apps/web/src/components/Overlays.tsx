@@ -83,6 +83,23 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
         </Modal>
       );
     }
+    case 'brilliant': {
+      const p = game.players[head.player];
+      return (
+        <Modal
+          title="Brilliant"
+          subtitle={`${p.name}, you may gain 2 Research (now ${p.research}). With Pioneering you may want to keep the number you have.`}
+          pc={p.color}
+        >
+          <div className="modal-actions">
+            <button className="btn" onClick={() => dispatch({ type: 'brilliant', gain: false })}>Keep {p.research}</button>
+            <button className="btn btn-primary" onClick={() => dispatch({ type: 'brilliant', gain: true })}>
+              Gain 2 → {Math.min(6, p.research + 2)}
+            </button>
+          </div>
+        </Modal>
+      );
+    }
     case 'clever': {
       const p = game.players[head.player];
       const d = die(game, head.die);

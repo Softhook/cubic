@@ -132,6 +132,12 @@ export const skillHandlers = {
     d.value = a.value;
     markSeen(s, d);
   },
+  brilliant(s, a) {
+    const head = headOf(s, 'brilliant', 'No Brilliant research to take');
+    s.pending.shift();
+    if (a.gain) gainResearch(s, head.player, 2);
+    else log(s, `${name(s, head.player)} declines Brilliant's research.`, head.player);
+  },
   resourceful(s, a) {
     const t = requireActionPhase(s);
     requireSkill(s, t.player, 'resourceful');

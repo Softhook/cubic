@@ -116,6 +116,11 @@ export interface TurnState {
   /** Once-per-turn effects already used. */
   oncePerTurn: OncePerTurn[];
   bonus: boolean;
+  /**
+   * Who plays the next regular turn, when this turn is a bonus turn that interrupted the turn
+   * order (Momentum taken on someone else's turn).
+   */
+  resume?: PlayerId;
   /** Other players who placed a cube through Infamy during this turn (one entry per cube). */
   offTurnCubes?: PlayerId[];
   /**
@@ -171,6 +176,8 @@ export type Pending =
   | { kind: 'showOfForce'; player: PlayerId }
   | { kind: 'warpGate'; player: PlayerId; placed: Cell[] }
   | { kind: 'changeOfHeart'; player: PlayerId }
+  /** CE Brilliant, at the start of the turn: gain 2 research or not (asked only with Pioneering). */
+  | { kind: 'brilliant'; player: PlayerId }
   /** Unveil the Fleet (CE) or, with `reorganize`, Reorganization (original). */
   | { kind: 'unveil'; player: PlayerId; rerolled: string[]; reorganize?: boolean };
 
@@ -259,6 +266,7 @@ export type Action =
   | { type: 'reroll'; by: PlayerId; side: 'attacker' | 'defender' }
   | { type: 'dangerous'; destroy: boolean }
   | { type: 'clever'; value: number }
+  | { type: 'brilliant'; gain: boolean }
   | { type: 'relocate'; planet: number; owner: PlayerId; to: number }
   | { type: 'resolveCombat' }
   | { type: 'advance'; move: boolean }
