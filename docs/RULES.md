@@ -222,9 +222,9 @@ After spending all 3 actions you may still use ship abilities and card effects.
 
 ### Infamy
 
-When your dominance reaches **6**, reset it to **1** and **immediately conquer any
-planet** that doesn't have your cube (ignore orbital positions; there must still be an
-empty cube location).
+When your dominance reaches **6**, **immediately conquer any planet** that doesn't have
+your cube (ignore orbital positions; there must still be an empty cube location), then
+reset dominance to **1**. If there is nowhere to place the cube, dominance stays at 6.
 
 ### Quantum Entanglement
 

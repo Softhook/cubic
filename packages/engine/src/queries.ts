@@ -277,19 +277,26 @@ export function conquerCheck(state: GameState, player: PlayerId, planetId: numbe
   }
 
   const rules = skillRules(state, player).flatMap((r) => (r.conquer ? [r.conquer] : []));
-  const spaces = [...orbitals(state.board, planet)];
-  if (rules.some((r) => r.diagonals)) spaces.push(...diagonals(state.board, planet));
-  const ships = spaces.map((p) => dieAt(state, p)).filter((d): d is Die => !!d && d.owner === player);
-  const sum = ships.reduce((a, d) => a + d.value, 0);
-  if (!ships.length) return fail('No ships in orbit', ships, sum);
+  const mine = (spaces: Cell[]) => spaces.map((p) => dieAt(state, p)).filter((d): d is Die => !!d && d.owner === player);
+  const orbit = mine(orbitals(state.board, planet));
+  const corners = rules.some((r) => r.diagonals) ? mine(diagonals(state.board, planet)) : [];
+  const all = [...orbit, ...corners];
+  const total = (ships: Die[]) => ships.reduce((a, d) => a + d.value, 0);
+  if (!all.length) return fail('No ships in orbit', all, 0);
 
   const p = state.players[player];
-  const ctx = { sum, ships, dominance: p.dominance, research: p.research };
-  const sums = [sum, ...rules.flatMap((r) => r.sums?.(ctx) ?? [])];
   const tolerance = Math.max(0, ...rules.map((r) => r.tolerance ?? 0));
-
-  const ok = sums.some((s) => Math.abs(s - target) <= tolerance);
-  return { ok, sum, target, ships, reason: ok ? undefined : `Orbit totals ${sum}, needs ${target}` };
+  // Every orbital ship counts; Ingenious lets each diagonal ship count or not ("may be counted").
+  for (let mask = 0; mask < 1 << corners.length; mask++) {
+    const ships = [...orbit, ...corners.filter((_, i) => mask & (1 << i))];
+    if (!ships.length) continue;
+    const sum = total(ships);
+    const ctx = { sum, ships, dominance: p.dominance, research: p.research };
+    const sums = [sum, ...rules.flatMap((r) => r.sums?.(ctx) ?? [])];
+    if (sums.some((s) => Math.abs(s - target) <= tolerance)) return { ok: true, sum, target, ships };
+  }
+  const sum = total(all);
+  return fail(`Orbit totals ${sum}, needs ${target}`, all, sum);
 }
 
 /** Any planet without your cube; if none has room, Quantum Entanglement allows your own planets. */

@@ -186,12 +186,15 @@ export function gainResearch(s: GameState, p: PlayerId, n: number) {
   s.players[p].research = Math.min(6, s.players[p].research + n);
 }
 
-/** Dominance reaching 6 triggers Infamy: reset to 1 and place a cube (a pending decision). */
+/**
+ * Dominance reaching 6 triggers Infamy: place a cube (a pending decision), then reset to 1. With
+ * nowhere to place it, dominance stays at 6 (2013 rulebook p.9: reset "after you have placed your
+ * quantum cube").
+ */
 export function gainDominance(s: GameState, p: PlayerId, n: number) {
   const pl = s.players[p];
   pl.dominance = Math.min(6, pl.dominance + n);
-  if (pl.dominance >= 6) {
-    pl.dominance = 1;
+  if (pl.dominance >= 6 && !s.pending.some((x) => x.kind === 'infamy' && x.player === p)) {
     log(s, `${pl.name} achieves Infamy!`, p, 'infamy');
     s.pending.push({ kind: 'infamy', player: p });
   }

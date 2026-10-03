@@ -159,6 +159,15 @@ describe('conquering (the centre 8)', () => {
     expect(conquers([], ships)).toBe(false);
   });
 
+  it('Ingenious: each diagonal ship may be left out of the total', () => {
+    // Orbit 5 + 3 = 8 on its own; the diagonal 2 would make 10.
+    const ships: [number, number, number][] = [[3, 4, 5], [4, 3, 3], [3, 3, 2]];
+    expect(conquers([], ships)).toBe(true);
+    expect(conquers(['o-ingenious'], ships)).toBe(true);
+    // Orbit 5 + diagonals 2 and 1: only 5 + 2 + 1 = 8 works, so both diagonals count.
+    expect(conquers(['o-ingenious'], [[3, 4, 5], [3, 3, 2], [5, 5, 1]])).toBe(true);
+  });
+
   it('Intelligent: the total may be 1 higher or lower', () => {
     const totals = (skills: string[]) => [[3, 4], [4, 5], [5, 5]].map(([a, b]) => conquers(skills, [[3, 4, a], [5, 4, b]]));
     expect(totals(['o-intelligent'])).toEqual([true, true, false]); // 7, 9, 10

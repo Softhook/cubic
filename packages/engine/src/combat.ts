@@ -142,6 +142,7 @@ export const combatHandlers = {
     const head = headOf(s, 'infamy', 'No Infamy to resolve');
     if (!infamyTargets(s, head.player).some((p) => p.id === a.planet)) fail('Choose a planet without your cube');
     s.pending.shift();
+    s.players[head.player].dominance = 1;
     log(s, `${name(s, head.player)} seizes planet ${s.board.planets[a.planet].number} through Infamy.`, head.player, 'seize');
     placeCube(s, head.player, a.planet);
     // Infamy during the card phase still earns a card for the cube.

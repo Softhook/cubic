@@ -472,14 +472,24 @@ describe('dominance and infamy (p.9)', () => {
   it('places a cube immediately at 6 — on any planet without your cube, no ship needed — then resets to 1', () => {
     let s = infamous();
     expect(s.pending[0]).toMatchObject({ kind: 'infamy', player: 0 });
-    expect(s.players[0].dominance).toBe(1);
+    expect(s.players[0].dominance).toBe(6);
     expect(infamyTargets(s, 0).map((p) => p.id)).toEqual([0, 1, 3, 4, 5, 7, 8]); // planet 6 is a full 7
     expect(() => apply(s, { type: 'infamy', planet: 2 })).toThrow(/without your cube/);
     s = apply(s, { type: 'infamy', planet: 8 });
     expect(s.board.planets[8].cubes).toEqual([0]);
     expect(s.players[0].cubesLeft).toBe(3);
+    expect(s.players[0].dominance).toBe(1);
     // The turn goes on.
     expect(s.turn).toMatchObject({ player: 0, phase: 'actions', actionsLeft: 2 });
+  });
+
+  it('resets only once the cube is placed: with nowhere to place it, dominance stays at 6', () => {
+    let s = scenario({ p0d0: [0, 0, 1], p1d0: [0, 1, 6] });
+    for (const p of s.board.planets) p.cubes = Array(p.capacity).fill(1);
+    s.players[0].dominance = 5;
+    s = apply(resolve(attack(s, { type: 'attack', die: 'p0d0', target: 'p1d0' }, 1, 6)), { type: 'advance', move: false });
+    expect(s.pending).toEqual([]);
+    expect(s.players[0].dominance).toBe(6);
   });
 
   it('cannot place on a full planet', () => {
