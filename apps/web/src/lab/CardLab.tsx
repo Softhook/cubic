@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CARD, CARD_CATEGORIES, cardBackSvg, cardCategory, cardMotif, cardSvg, deckInfo, type CardDeck, type CardFace } from '@quantum/art';
+import { CARD, CARD_CATEGORIES, cardBackSvg, cardCategory, cardIllustration, cardSvg, deckInfo, type CardDeck, type CardFace } from '@quantum/art';
 import { DECKS, cardFontCss, measure, type Deck } from './cards';
 import { download, svgToPng, zip } from './export';
 import { LabHeader } from './LabHeader';
@@ -147,7 +147,7 @@ export function CardLab() {
           <p className="lab-note">
             {item.face ? (
               <>
-                {info.label} ({info.kind.toLowerCase()}) · {CARD_CATEGORIES[cardCategory(item.face)]?.label} · illustration: {cardMotif(item.face)}
+                {info.label} ({info.kind.toLowerCase()}) · {CARD_CATEGORIES[cardCategory(item.face)]?.label} · {cardIllustration(item.face)}
                 {item.face.copies && item.face.copies > 1 ? ` · ${item.face.copies} copies` : ''}
               </>
             ) : (

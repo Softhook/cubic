@@ -251,11 +251,18 @@ exported in the Art Lab (`#lab/cards`).
   deck · kind and `CUBIC CE 07/35`.
 - **Colour = category** (movement cyan, action amber, combat red, conquer green, research violet,
   ship blue, cards orange, expansion teal). Tactics and Gambits get a category from `THEMES` in card.ts.
-- **Illustration = motif per category**, varied per card from a seed of its id: thrust (movement),
-  duel (combat), conquest (ships in orbit adding up to the planet), research (orbits + research
-  track), reconfigure (tumbling die), surge (action), cards (fan), plus missile, portal, fleet and
-  transfer for cards whose effect deserves its own picture. Ships are isometric dice with real pip
-  layouts; planets and skies come from the tile generators.
+- **Illustration = one scene per card**, showing what the card does: Agile's ship flies a fourth,
+  glowing space; Brutal rolls two combat dice and strikes out the higher; Sabotage shorts out one of
+  an opponent's action chips. Scenes live in `packages/art/src/scenes/` (skills, tactics + expansion,
+  original), keyed by card id; each has a one-line caption the Art Lab shows under the card. Original
+  cards that do the same as a CE card get a different picture of the same idea. A test checks that
+  every card has a scene and no two draw the same.
+- **One drawing kit** (`cardkit.ts`) keeps the set consistent: ships are isometric dice with real pip
+  layouts, cubes are plain dice, the board is an isometric holo-grid the dice stand on, planets and
+  skies come from the tile generators. Rules quantities are flat HUD readouts over the scene, always
+  drawn the same way: research (violet) and dominance (red-orange) tracks, hexagonal action chips,
+  white combat dice, small cards. Numbers in the art are numerals only (`+1`, `×2`, `−2`), so the
+  art needs no translation.
 - **Text is SVG**, not HTML as first planned, so one file per card goes to PNG/ZIP and to print
   services. Wrapping uses widths measured with the page's fonts (canvas `measureText`), and the same
   fonts are embedded in each SVG as data URLs, so the layout matches what was measured. Text shrinks in

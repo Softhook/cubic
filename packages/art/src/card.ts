@@ -1,8 +1,8 @@
-import { hash, rng, type Rng } from './rng';
-import { planet } from './planet';
+import { hash, rng } from './rng';
 import { starfield, type Box } from './starfield';
-import { PLANET_FAMILY } from './tokens';
 import { document, hsl, join, n, type Fragment } from './svg';
+import { die, esc, glow, icon, SHIP_HUES } from './cardkit';
+import { ILLUSTRATIONS } from './illustrations';
 
 /**
  * Advance cards, poker size (63.5 × 88.9 mm), for print and the Art Lab. See docs/GRAPHICS.md §2, Cards.
@@ -28,8 +28,6 @@ export const CARD = {
 } as const;
 
 export type CardDeck = 'skill' | 'tactic' | 'expansion' | 'command' | 'gambit';
-
-export type Motif = 'thrust' | 'duel' | 'conquest' | 'research' | 'reconfigure' | 'surge' | 'cards' | 'missile' | 'portal' | 'fleet' | 'transfer';
 
 /** Everything printed on a card face. */
 export interface CardFace {
@@ -83,48 +81,30 @@ export const CARD_CATEGORIES: Record<string, { hue: number; label: string }> = {
   expansion: { hue: 172, label: 'Expansion' },
 };
 
-const DEFAULT_MOTIF: Record<string, Motif> = {
-  movement: 'thrust',
-  action: 'surge',
-  combat: 'duel',
-  conquer: 'conquest',
-  research: 'research',
-  ship: 'reconfigure',
-  card: 'cards',
-  expansion: 'fleet',
+/** Tactics and Gambits have no category in the data: this gives them one, for colour and icon. Keyed by id without the original's `o-`. */
+const THEMES: Record<string, string> = {
+  aggression: 'combat',
+  'black-market': 'combat',
+  'change-of-heart': 'card',
+  momentum: 'action',
+  'plan-ahead': 'combat',
+  sabotage: 'action',
+  'show-of-force': 'combat',
+  'unveil-the-fleet': 'ship',
+  'warp-gate': 'movement',
+  expansion: 'expansion',
+  reorganization: 'ship',
+  relocation: 'conquer',
 };
-
-/**
- * Tactics and Gambits have no category in the data: these give them one (for colour and icon), and
- * pick a more telling motif for some cards of every kind. Keyed by id without the original's `o-`.
- */
-const THEMES: Record<string, { category?: string; motif?: Motif }> = {
-  aggression: { category: 'combat', motif: 'duel' },
-  'black-market': { category: 'combat', motif: 'missile' },
-  'change-of-heart': { category: 'card', motif: 'cards' },
-  momentum: { category: 'action', motif: 'thrust' },
-  'plan-ahead': { category: 'combat', motif: 'missile' },
-  sabotage: { category: 'action', motif: 'surge' },
-  'show-of-force': { category: 'combat', motif: 'duel' },
-  'unveil-the-fleet': { category: 'ship', motif: 'fleet' },
-  'warp-gate': { category: 'movement', motif: 'portal' },
-  expansion: { category: 'expansion', motif: 'fleet' },
-  reorganization: { category: 'ship', motif: 'reconfigure' },
-  relocation: { category: 'conquer', motif: 'transfer' },
-  profiteering: { motif: 'missile' },
-  nomadic: { motif: 'portal' },
-  talented: { motif: 'cards' },
-};
-
-const themeOf = (f: CardFace) => THEMES[f.id.replace(/^o-/, '')] ?? {};
 
 /** The category a card is shown under (its accent colour and icon). */
 export function cardCategory(f: CardFace): string {
-  return f.category ?? themeOf(f).category ?? (f.deck === 'expansion' ? 'expansion' : 'action');
+  return f.category ?? THEMES[f.id.replace(/^o-/, '')] ?? (f.deck === 'expansion' ? 'expansion' : 'action');
 }
 
-export function cardMotif(f: CardFace): Motif {
-  return themeOf(f).motif ?? DEFAULT_MOTIF[cardCategory(f)] ?? 'surge';
+/** What a card's illustration shows, for art direction (the Art Lab prints it under the card). */
+export function cardIllustration(f: CardFace): string {
+  return ILLUSTRATIONS[f.id]?.caption ?? 'no illustration yet';
 }
 
 const DECK_INFO: Record<CardDeck, { label: string; kind: string; light: boolean; edition: string }> = {
@@ -136,402 +116,6 @@ const DECK_INFO: Record<CardDeck, { label: string; kind: string; light: boolean;
 };
 
 export const deckInfo = (d: CardDeck) => DECK_INFO[d];
-
-/** Category icons, drawn on a 24-unit grid with a 2-unit stroke (the same set the game UI uses). */
-const ICONS: Record<string, string> = {
-  movement: '<path d="M5 12h14M13 6l6 6-6 6"/>',
-  action: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
-  combat: '<circle cx="12" cy="12" r="7"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',
-  conquer: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
-  research: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/>',
-  ship: '<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/>',
-  card: '<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M3 7v12a2 2 0 0 0 2 2"/>',
-  expansion: '<path d="M12 5v14M5 12h14"/>',
-};
-
-const icon = (category: string, cx: number, cy: number, size: number, colour: string) =>
-  `<g transform="translate(${n(cx - size / 2)} ${n(cy - size / 2)}) scale(${n(size / 24)})" fill="none" stroke="${colour}" color="${colour}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICONS[category] ?? ICONS.action}</g>`;
-
-const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-// ---------------------------------------------------------------------------
-// Ships: isometric dice
-
-/** Player colours (hues) for ships in the illustrations, as in the game. */
-const SHIP_HUES = [196, 328, 42, 140];
-
-/** Pip positions on a unit face. */
-const PIPS: Record<number, [number, number][]> = {
-  1: [[0.5, 0.5]],
-  2: [[0.27, 0.27], [0.73, 0.73]],
-  3: [[0.25, 0.25], [0.5, 0.5], [0.75, 0.75]],
-  4: [[0.27, 0.27], [0.73, 0.27], [0.27, 0.73], [0.73, 0.73]],
-  5: [[0.25, 0.25], [0.75, 0.25], [0.5, 0.5], [0.25, 0.75], [0.75, 0.75]],
-  6: [[0.27, 0.23], [0.73, 0.23], [0.27, 0.5], [0.73, 0.5], [0.27, 0.77], [0.73, 0.77]],
-};
-
-/** Two faces that can sit beside `top` on a real die (opposite faces add up to 7). */
-function sideFaces(top: number): [number, number] {
-  const free = [1, 2, 3, 4, 5, 6].filter((v) => v !== top && v !== 7 - top);
-  const left = free[0];
-  return [left, free.find((v) => v !== left && v !== 7 - left)!];
-}
-
-/**
- * A die-ship as an isometric cube centred on (cx, cy), `s` mm along an edge. Each face is a unit
- * square mapped onto the cube by a transform, so its rounded corners and pips foreshorten correctly.
- */
-function die(cx: number, cy: number, s: number, value: number, hue: number, o: { opacity?: number; rotate?: number; pips?: boolean } = {}): string {
-  const k = 0.866 * s;
-  const h = s / 2;
-  const [left, right] = sideFaces(value);
-  const face = (m: number[], light: number, v: number) =>
-    `<g transform="matrix(${m.map(n).join(' ')})">` +
-    `<rect x=".05" y=".05" width=".9" height=".9" rx=".16" fill="${hsl(hue, 62, light)}"/>` +
-    (o.pips === false ? [] : PIPS[v]).map(([x, y]) => `<circle cx="${x}" cy="${y}" r=".085" fill="${hsl(hue, 70, light < 40 ? 88 : 12)}" opacity=".9"/>`).join('') +
-    `</g>`;
-  const base = `M${n(cx)} ${n(cy - s)}L${n(cx + k)} ${n(cy - h)}L${n(cx + k)} ${n(cy + h)}L${n(cx)} ${n(cy + s)}L${n(cx - k)} ${n(cy + h)}L${n(cx - k)} ${n(cy - h)}Z`;
-  const attrs = (o.opacity !== undefined ? ` opacity="${n(o.opacity)}"` : '') + (o.rotate ? ` transform="rotate(${n(o.rotate)} ${n(cx)} ${n(cy)})"` : '');
-  return (
-    `<g${attrs}>` +
-    `<path d="${base}" fill="${hsl(hue, 60, 10)}" stroke="${hsl(hue, 60, 10)}" stroke-width="${n(s * 0.08)}" stroke-linejoin="round"/>` +
-    face([k, h, -k, h, cx, cy - s], 64, value) +
-    face([k, h, 0, s, cx - k, cy - h], 46, left) +
-    face([k, -h, 0, s, cx, cy], 30, right) +
-    `</g>`
-  );
-}
-
-/** A soft glow, e.g. under a ship or at an impact. */
-const glow = (id: string, cx: number, cy: number, rx: number, ry: number, hue: number, a = 0.6, light = 62): Fragment => ({
-  defs: `<radialGradient id="${id}"><stop offset="0" stop-color="${hsl(hue, 90, light)}" stop-opacity="${n(a)}"/><stop offset="1" stop-color="${hsl(hue, 90, light)}" stop-opacity="0"/></radialGradient>`,
-  body: `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(rx)}" ry="${n(ry)}" fill="url(#${id})"/>`,
-});
-
-/** A ship with its engine glow. */
-const ship = (id: string, cx: number, cy: number, s: number, value: number, hue: number, o: { opacity?: number; rotate?: number } = {}): Fragment => {
-  const g = glow(id, cx, cy + s * 0.9, s * 1.5, s * 0.55, hue, 0.55 * (o.opacity ?? 1));
-  return { defs: g.defs, body: g.body + die(cx, cy, s, value, hue, o) };
-};
-
-const line = (x1: number, y1: number, x2: number, y2: number, stroke: string, w: number, extra = '') =>
-  `<line x1="${n(x1)}" y1="${n(y1)}" x2="${n(x2)}" y2="${n(y2)}" stroke="${stroke}" stroke-width="${n(w)}" stroke-linecap="round"${extra}/>`;
-
-/** A line fading from `colour` at its end to nothing at its start: trails and beams. */
-function streak(id: string, x1: number, y1: number, x2: number, y2: number, colour: string, w: number, a = 1): Fragment {
-  return {
-    defs: `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n(x1)}" y1="${n(y1)}" x2="${n(x2)}" y2="${n(y2)}"><stop offset="0" stop-color="${colour}" stop-opacity="0"/><stop offset="1" stop-color="${colour}" stop-opacity="${n(a)}"/></linearGradient>`,
-    body: line(x1, y1, x2, y2, `url(#${id})`, w),
-  };
-}
-
-/** A many-pointed burst: impacts and flares. */
-function burst(id: string, cx: number, cy: number, r: number, hue: number, points: number, r2: Rng): Fragment {
-  let d = '';
-  for (let i = 0; i < points * 2; i++) {
-    const a = (i / (points * 2)) * Math.PI * 2;
-    const rr = i % 2 ? r * r2.range(0.18, 0.32) : r * r2.range(0.6, 1);
-    d += `${i ? 'L' : 'M'}${n(cx + Math.cos(a) * rr)} ${n(cy + Math.sin(a) * rr)}`;
-  }
-  return {
-    defs:
-      `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}">` +
-      `<stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="${hsl(hue, 100, 75)}"/><stop offset="1" stop-color="${hsl(hue, 100, 55)}" stop-opacity="0"/></radialGradient>`,
-    body: `<path d="${d}Z" fill="url(#${id})"/>`,
-  };
-}
-
-/** A planet from the tile artwork, with a seeded number and type. */
-function world(id: string, r2: Rng, cx: number, cy: number, r: number, number?: number): Fragment {
-  const num = number ?? r2.pick([7, 8, 9, 10]);
-  return planet({ rng: r2.fork('planet'), id, cx, cy, r, number: num, type: r2.pick(PLANET_FAMILY[num].types) });
-}
-
-// ---------------------------------------------------------------------------
-// Motifs: one illustration per kind of card. All work in the art box (trim coordinates).
-
-interface Scene {
-  id: string;
-  r: Rng;
-  hue: number;
-  /** Art box: the visible window. */
-  box: Box;
-  /** Two player hues for ships, different for every card. */
-  p1: number;
-  p2: number;
-}
-
-const value = (r: Rng) => r.int(1, 6);
-
-const MOTIFS: Record<Motif, (s: Scene) => Fragment[]> = {
-  thrust: ({ id, r, hue, box, p1 }) => {
-    const cx = box.x + box.w * 0.62;
-    const cy = box.y + box.h * 0.5;
-    const out: Fragment[] = [];
-    // Board grid in perspective, under the ship.
-    let grid = '';
-    const vy = box.y - 10;
-    for (let i = -6; i <= 6; i++) grid += line(cx + i * 3, vy, cx + i * 22, box.y + box.h + 6, hsl(hue, 80, 70), 0.15, ' opacity=".45"');
-    for (let j = 0; j < 5; j++) {
-      const y = cy + 6 + j * j * 2.2;
-      grid += line(box.x, y, box.x + box.w, y, hsl(hue, 80, 70), 0.15, ` opacity="${n(0.15 + j * 0.08)}"`);
-    }
-    out.push({ defs: '', body: grid });
-    if (r.chance(0.7)) out.push(world(`${id}-w`, r.fork('w'), box.x + r.range(8, 16), box.y + r.range(8, 13), r.range(4.5, 7)));
-    for (let i = 0; i < 7; i++) {
-      const y = cy + r.range(-5.5, 5.5);
-      out.push(streak(`${id}-t${i}`, box.x - 2, y, cx - r.range(4, 9), y, hsl(hue, 90, 72), r.range(0.25, 0.9), r.range(0.5, 1)));
-    }
-    out.push(ship(`${id}-s`, cx, cy, 7, value(r), p1));
-    return out;
-  },
-
-  duel: ({ id, r, hue, box, p1, p2 }) => {
-    const ax = box.x + box.w * 0.24;
-    const ay = box.y + box.h * 0.66;
-    const bx = box.x + box.w * 0.74;
-    const by = box.y + box.h * 0.38;
-    const out: Fragment[] = [];
-    if (r.chance(0.6)) out.push(world(`${id}-w`, r.fork('w'), box.x + box.w - r.range(7, 11), box.y + box.h - r.range(6, 9), r.range(4, 6)));
-    out.push(ship(`${id}-a`, ax, ay, 6, value(r), p1));
-    const hx = bx - 4.5;
-    const hy = by + 2.2;
-    out.push(streak(`${id}-beam`, ax + 3, ay - 3, hx, hy, hsl(hue, 100, 70), 1.6));
-    out.push({ defs: '', body: line(ax + 3, ay - 3, hx, hy, '#fff', 0.35, ' opacity=".85"') });
-    out.push(ship(`${id}-b`, bx, by, 6, value(r), p2));
-    out.push(burst(`${id}-x`, hx, hy, 8, hue, 9, r));
-    let debris = '';
-    for (let i = 0; i < 9; i++) {
-      const a = r.range(0, Math.PI * 2);
-      const d = r.range(4, 11);
-      debris += `<circle cx="${n(hx + Math.cos(a) * d)}" cy="${n(hy + Math.sin(a) * d)}" r="${n(r.range(0.15, 0.45))}" fill="${hsl(hue, 100, 80)}"/>`;
-    }
-    out.push({ defs: '', body: debris });
-    return out;
-  },
-
-  conquest: ({ id, r, box, p1, hue }) => {
-    const cx = box.x + box.w / 2;
-    const cy = box.y + box.h * 0.5;
-    const num = r.pick([7, 8, 9, 10]);
-    const pr = 8 + (num - 7) * 1.2;
-    const out: Fragment[] = [];
-    const d = pr + 7.5;
-    out.push({ defs: '', body: `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(d)}" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".25" stroke-dasharray="1 1.2" opacity=".6"/>` });
-    out.push(world(`${id}-w`, r.fork('w'), cx, cy, pr, num));
-    // Ships in orbit whose numbers add up to the planet's: the Conquer action itself.
-    const a = r.int(1, 6);
-    const b = Math.min(6, Math.max(1, num - a - r.int(1, 4)));
-    const c = num - a - b;
-    const values = c >= 1 && c <= 6 ? [a, b, c] : [a, num - a].filter((v) => v >= 1 && v <= 6);
-    // Not below the planet: the emblem covers that orbit.
-    const spots = [[-d, 0], [0, -d], [d, 0]];
-    const start = values.length === 3 ? 0 : r.int(0, 2);
-    values.forEach((v, i) => {
-      const [dx, dy] = spots[(start + i) % 3];
-      out.push(ship(`${id}-s${i}`, cx + dx, cy + dy * 0.82, 4, v, p1));
-    });
-    out.push({ defs: '', body: die(cx + pr * 0.45, cy - pr * 0.55, 1.8, 1, p1, { pips: false }) });
-    return out;
-  },
-
-  research: ({ id, r, hue, box }) => {
-    const cx = box.x + box.w / 2;
-    const cy = box.y + box.h * 0.5;
-    const out: Fragment[] = [world(`${id}-w`, r.fork('w'), cx, cy, 7.5)];
-    const tilts = [r.range(-30, -10), r.range(15, 35), r.range(70, 110)];
-    let rings = '';
-    tilts.forEach((t, i) => {
-      const rx = 17 + i * 2.5;
-      const ry = 5 + i;
-      rings += `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(rx)}" ry="${n(ry)}" fill="none" stroke="${hsl(hue, 85, 72)}" stroke-width=".3" opacity=".7" transform="rotate(${n(t)} ${n(cx)} ${n(cy)})"/>`;
-      const a = r.range(0, Math.PI * 2);
-      const x = Math.cos(a) * rx;
-      const y = Math.sin(a) * ry;
-      const rad = (t * Math.PI) / 180;
-      rings += `<circle cx="${n(cx + x * Math.cos(rad) - y * Math.sin(rad))}" cy="${n(cy + x * Math.sin(rad) + y * Math.cos(rad))}" r="1" fill="#fff"/>`;
-    });
-    out.push({ defs: '', body: rings });
-    // The research track: six steps, some lit.
-    const lit = r.int(2, 5);
-    let track = '';
-    for (let i = 0; i < 6; i++) {
-      const x = cx + (i - 2.5) * 5;
-      const y = box.y + box.h - 5;
-      track += `<rect x="${n(x - 1.6)}" y="${n(y - 1.6)}" width="3.2" height="3.2" rx=".7" fill="${i < lit ? hsl(hue, 90, 70) : 'none'}" stroke="${hsl(hue, 90, 70)}" stroke-width=".3" opacity="${i < lit ? 1 : 0.6}"/>`;
-    }
-    out.push({ defs: '', body: track });
-    return out;
-  },
-
-  reconfigure: ({ id, r, hue, box, p1 }) => {
-    const cy = box.y + box.h * 0.55;
-    const xs = [0.2, 0.47, 0.76].map((f) => box.x + box.w * f);
-    const out: Fragment[] = [];
-    out.push({
-      defs: `<marker id="${id}-arrow" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L6 3L0 6z" fill="${hsl(hue, 80, 75)}"/></marker>`,
-      body: `<path d="M${n(xs[0])} ${n(cy - 10)}Q${n(xs[1])} ${n(cy - 24)} ${n(xs[2] - 2)} ${n(cy - 12)}" fill="none" stroke="${hsl(hue, 80, 75)}" stroke-width=".4" stroke-dasharray="1.2 1" marker-end="url(#${id}-arrow)" opacity=".8"/>`,
-    });
-    const values = [value(r), value(r), value(r)];
-    if (values[2] === values[1]) values[2] = (values[2] % 6) + 1;
-    out.push(ship(`${id}-a`, xs[0], cy, 4.2, values[0], p1, { opacity: 0.3, rotate: r.range(-35, -15) }));
-    out.push(ship(`${id}-b`, xs[1], cy - 3, 5, values[1], p1, { opacity: 0.55, rotate: r.range(10, 30) }));
-    out.push(ship(`${id}-c`, xs[2], cy, 6.5, values[2], p1));
-    let sparks = '';
-    for (let i = 0; i < 6; i++) {
-      const a = r.range(0, Math.PI * 2);
-      const d = r.range(8, 12);
-      sparks += `<path d="M0 -1L.25 -.25L1 0L.25 .25L0 1L-.25 .25L-1 0L-.25 -.25Z" fill="#fff" transform="translate(${n(xs[2] + Math.cos(a) * d)} ${n(cy + Math.sin(a) * d)}) scale(${n(r.range(0.6, 1.3))})"/>`;
-    }
-    out.push({ defs: '', body: sparks });
-    return out;
-  },
-
-  surge: ({ id, r, hue, box, p1 }) => {
-    const cx = box.x + box.w / 2;
-    const cy = box.y + box.h * 0.5;
-    const out: Fragment[] = [];
-    let rings = '';
-    for (let i = 1; i <= 3; i++) rings += `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(6 + i * 4.5)}" fill="none" stroke="${hsl(hue, 95, 65)}" stroke-width="${n(0.6 - i * 0.12)}" opacity="${n(0.9 - i * 0.22)}"/>`;
-    out.push({ defs: '', body: rings });
-    out.push(glow(`${id}-core`, cx, cy, 15, 15, hue, 0.45, 60));
-    let bolts = '';
-    const count = r.int(3, 5);
-    for (let i = 0; i < count; i++) {
-      const a = (i / count) * Math.PI * 2 + r.range(-0.3, 0.3);
-      let d = `M${n(cx + Math.cos(a) * 9)} ${n(cy + Math.sin(a) * 9)}`;
-      for (let step = 1; step <= 4; step++) {
-        const rr = 9 + step * 4;
-        const aa = a + r.range(-0.18, 0.18);
-        d += `L${n(cx + Math.cos(aa) * rr)} ${n(cy + Math.sin(aa) * rr)}`;
-      }
-      bolts += `<path d="${d}" fill="none" stroke="${hsl(hue, 100, 80)}" stroke-width=".55" stroke-linejoin="round" stroke-linecap="round"/>`;
-    }
-    out.push({ defs: '', body: bolts });
-    out.push(ship(`${id}-s`, cx, cy, 6.5, value(r), p1));
-    return out;
-  },
-
-  cards: ({ id, r, hue, box }) => {
-    const cx = box.x + box.w / 2;
-    const by = box.y + box.h * 0.92;
-    const out: Fragment[] = [];
-    if (r.chance(0.6)) out.push(world(`${id}-w`, r.fork('w'), box.x + r.range(9, 14), box.y + r.range(9, 12), r.range(4, 6)));
-    const count = r.int(3, 5);
-    const spread = 14;
-    let fan = `<linearGradient id="${id}-holo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${hsl(hue, 80, 70)}" stop-opacity=".55"/><stop offset="1" stop-color="${hsl(hue + 40, 80, 40)}" stop-opacity=".25"/></linearGradient>`;
-    let body = '';
-    for (let i = 0; i < count; i++) {
-      const a = (i - (count - 1) / 2) * spread;
-      const top = i === Math.floor(count / 2);
-      body +=
-        `<g transform="rotate(${n(a)} ${n(cx)} ${n(by)})">` +
-        `<rect x="${n(cx - 7.5)}" y="${n(by - 30)}" width="15" height="21" rx="1.6" fill="url(#${id}-holo)" stroke="${hsl(hue, 90, top ? 85 : 70)}" stroke-width="${top ? 0.5 : 0.3}"/>` +
-        `<rect x="${n(cx - 5.5)}" y="${n(by - 28)}" width="11" height="8" rx=".8" fill="${hsl(hue, 80, 80)}" opacity="${top ? 0.5 : 0.2}"/>` +
-        `<path d="M${n(cx - 5)} ${n(by - 17)}h10M${n(cx - 5)} ${n(by - 15)}h8M${n(cx - 5)} ${n(by - 13)}h9" stroke="${hsl(hue, 80, 85)}" stroke-width=".35" opacity=".7"/>` +
-        `</g>`;
-    }
-    out.push(glow(`${id}-g`, cx, by - 20, 18, 14, hue, 0.4));
-    out.push({ defs: fan, body });
-    return out;
-  },
-
-  missile: ({ id, r, hue, box, p2 }) => {
-    const sx = box.x + 2;
-    const sy = box.y + box.h - 4;
-    const tx = box.x + box.w * 0.72;
-    const ty = box.y + box.h * 0.36;
-    const qx = box.x + box.w * 0.3;
-    const qy = box.y + box.h * 0.15;
-    const out: Fragment[] = [];
-    out.push(ship(`${id}-t`, tx + 6, ty + 2, 5.5, value(r), p2));
-    // Crosshair on the target.
-    out.push({
-      defs: '',
-      body:
-        `<circle cx="${n(tx + 6)}" cy="${n(ty + 2)}" r="9" fill="none" stroke="${hsl(hue, 100, 70)}" stroke-width=".35" stroke-dasharray="3 1.5"/>` +
-        line(tx + 6, ty - 9, tx + 6, ty - 5, hsl(hue, 100, 70), 0.35) +
-        line(tx + 6, ty + 9, tx + 6, ty + 13, hsl(hue, 100, 70), 0.35),
-    });
-    // Trail along a curve: short segments, fading towards the launch point.
-    const pt = (t: number) => [(1 - t) ** 2 * sx + 2 * (1 - t) * t * qx + t * t * tx, (1 - t) ** 2 * sy + 2 * (1 - t) * t * qy + t * t * ty];
-    let trail = '';
-    const end = 0.82;
-    for (let i = 0; i < 24; i++) {
-      const [x1, y1] = pt((i / 24) * end);
-      const [x2, y2] = pt(((i + 1) / 24) * end);
-      trail += line(x1, y1, x2, y2, hsl(28, 100, 70), 0.2 + (i / 24) * 1.4, ` opacity="${n((i / 24) ** 1.5)}"`);
-    }
-    let puffs = '';
-    for (let i = 0; i < 10; i++) {
-      const [x, y] = pt(r.range(0.05, 0.7));
-      puffs += `<circle cx="${n(x + r.range(-1.5, 1.5))}" cy="${n(y + r.range(-1.5, 1.5))}" r="${n(r.range(0.6, 1.8))}" fill="${hsl(220, 20, 80)}" opacity="${n(r.range(0.08, 0.2))}"/>`;
-    }
-    const [mx, my] = pt(end);
-    const [px, py] = pt(end - 0.02);
-    const ang = (Math.atan2(my - py, mx - px) * 180) / Math.PI;
-    const missile =
-      `<g transform="translate(${n(mx)} ${n(my)}) rotate(${n(ang)})">` +
-      `<path d="M3 0L1.2 -.9H-2.6L-3.6 -2V2L-2.6 .9H1.2Z" fill="${hsl(220, 15, 88)}" stroke="${hsl(220, 30, 20)}" stroke-width=".2"/>` +
-      `<path d="M3 0L1.6 -.75V.75Z" fill="${hsl(hue, 100, 60)}"/></g>`;
-    out.push({ defs: '', body: puffs + trail + missile });
-    out.push(burst(`${id}-fl`, mx - Math.cos((ang * Math.PI) / 180) * 3.8, my - Math.sin((ang * Math.PI) / 180) * 3.8, 3, 30, 6, r));
-    return out;
-  },
-
-  portal: ({ id, r, hue, box, p1 }) => {
-    const y = box.y + box.h * 0.52;
-    const ax = box.x + box.w * 0.2;
-    const bx = box.x + box.w * 0.8;
-    const out: Fragment[] = [];
-    const gate = (x: number, s: number, k: string) => {
-      let rings = '';
-      for (let i = 0; i < 5; i++) {
-        rings += `<ellipse cx="${n(x)}" cy="${n(y)}" rx="${n((4.5 - i * 0.7) * s)}" ry="${n((10 - i * 1.6) * s)}" fill="none" stroke="${hsl(hue + i * 12, 95, 60 + i * 6)}" stroke-width="${n(0.5 - i * 0.06)}" stroke-dasharray="${n(3 + i)} ${n(1 + i * 0.5)}" transform="rotate(${n(r.range(-8, 8))} ${n(x)} ${n(y)})"/>`;
-      }
-      out.push(glow(`${id}-${k}`, x, y, 7 * s, 12 * s, hue, 0.55, 60));
-      out.push({ defs: '', body: rings });
-    };
-    gate(ax, 0.85, 'ga');
-    gate(bx, 1, 'gb');
-    out.push({ defs: '', body: `<path d="M${n(ax)} ${n(y)}Q${n((ax + bx) / 2)} ${n(y - 16)} ${n(bx)} ${n(y)}" fill="none" stroke="${hsl(hue, 90, 80)}" stroke-width=".35" stroke-dasharray=".6 1.2"/>` });
-    out.push(ship(`${id}-s`, bx - 1, y, 4.5, value(r), p1));
-    return out;
-  },
-
-  fleet: ({ id, r, hue, box, p1 }) => {
-    const out: Fragment[] = [];
-    const count = r.int(3, 5);
-    const lead = { x: box.x + box.w * 0.66, y: box.y + box.h * 0.42 };
-    const places = [lead, { x: lead.x - 12, y: lead.y + 7 }, { x: lead.x - 4, y: lead.y + 14 }, { x: lead.x - 22, y: lead.y + 2 }, { x: lead.x - 14, y: lead.y + 18 }];
-    places.slice(0, count).forEach((p, i) => {
-      out.push(streak(`${id}-t${i}`, p.x - 26, p.y - 8, p.x - 4, p.y - 1, hsl(hue, 90, 75), 0.7));
-    });
-    places
-      .slice(0, count)
-      .reverse()
-      .forEach((p, i) => out.push(ship(`${id}-s${i}`, p.x, p.y, i === count - 1 ? 5.5 : 4.2, value(r), p1)));
-    // The newcomer: a flare where a new ship warps in.
-    const nx = lead.x + 12;
-    const ny = lead.y + 12;
-    out.push(burst(`${id}-new`, nx, ny, 6, hue, 4, r));
-    out.push({ defs: '', body: icon('expansion', nx, ny, 3.4, '#fff') });
-    return out;
-  },
-
-  transfer: ({ id, r, hue, box, p1 }) => {
-    const y = box.y + box.h * 0.52;
-    const ax = box.x + box.w * 0.24;
-    const bx = box.x + box.w * 0.76;
-    const out: Fragment[] = [world(`${id}-a`, r.fork('a'), ax, y + 4, 7), world(`${id}-b`, r.fork('b'), bx, y - 2, 9)];
-    out.push({
-      defs: `<marker id="${id}-arrow" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L6 3L0 6z" fill="${hsl(hue, 80, 75)}"/></marker>`,
-      body: `<path d="M${n(ax + 2)} ${n(y - 5)}Q${n((ax + bx) / 2)} ${n(y - 22)} ${n(bx - 3)} ${n(y - 12)}" fill="none" stroke="${hsl(hue, 80, 75)}" stroke-width=".45" stroke-dasharray="1.4 1" marker-end="url(#${id}-arrow)"/>`,
-    });
-    out.push({ defs: '', body: die((ax + bx) / 2, y - 14, 2.4, 1, p1, { pips: false }) });
-    return out;
-  },
-};
 
 // ---------------------------------------------------------------------------
 // Text
@@ -612,7 +196,7 @@ export function cardSvg(face: CardFace, o: CardOptions = {}): string {
     hues: [cat.hue + r.range(-15, 15), cat.hue + r.range(30, 60)],
     nebula: r.range(0.45, 0.6),
   });
-  const scene = join(...MOTIFS[cardMotif(face)]({ id: `${id}-m`, r: r.fork('motif'), hue: cat.hue, box: view, p1, p2 }));
+  const scene = join(...(ILLUSTRATIONS[face.id]?.draw({ id: `${id}-m`, r: r.fork('motif'), hue: cat.hue, box: view, p1, p2 }) ?? []));
   // Darken the art towards the panel so the emblem and title sit on calm ground.
   const shade =
     `<linearGradient id="${id}-shade" x1="0" y1="0" x2="0" y2="1"><stop offset=".6" stop-color="${p.paper}" stop-opacity="0"/><stop offset="1" stop-color="${info.light ? hsl(228, 45, 8) : p.paper}" stop-opacity=".85"/></linearGradient>`;
