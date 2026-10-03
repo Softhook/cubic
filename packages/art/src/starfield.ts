@@ -1,5 +1,5 @@
 import type { Rng } from './rng';
-import { SPACE_BASE } from './tokens';
+import { NEBULA_HUES, SPACE_BASE } from './tokens';
 import { hsl, hslToRgb, n, type Fragment } from './svg';
 
 export interface Box {
@@ -23,6 +23,8 @@ export interface StarfieldOptions {
   nebula?: number;
   /** Where a bright star may go; the tile keeps them in the gutters, away from the planet. */
   brightAllowed?: (x: number, y: number) => boolean;
+  /** Where a faint star may go; the tile keeps them off its small print. */
+  faintAllowed?: (x: number, y: number) => boolean;
 }
 
 /** Star colours by temperature, with how common each is. */
@@ -93,20 +95,6 @@ function cloud(o: CloudOptions): Fragment {
   };
 }
 
-/**
- * Nebula colour schemes: a main hue and a companion. Mostly cool blues, teals and violets, so planets
- * (which carry the bright colour) stand out; now and then a warm accent.
- */
-const NEBULA_HUES: [number, number][] = [
-  [215, 250],
-  [200, 170],
-  [250, 290],
-  [275, 320],
-  [190, 230],
-  [230, 280],
-  [300, 260],
-  [175, 205],
-];
 
 /** A soft square mask: opaque in the middle, fading to nothing towards the frame's edge. */
 export function edgeFade(id: string, area: Box, frame: Box, inset: number, softness: number): string {
@@ -128,17 +116,23 @@ export function starfield(o: StarfieldOptions): Fragment {
   const neb = o.rng.fork('nebula');
   const stars = o.rng.fork('stars');
   const bright = o.rng.fork('bright');
-  const strength = o.nebula ?? neb.range(0.5, 0.85);
-  const scheme = neb.pick(NEBULA_HUES);
-  const h1 = o.hues?.[0] ?? scheme[0] + neb.range(-8, 8);
-  // A warm accent on about one tile in five.
-  const h2 = o.hues?.[1] ?? (neb.chance(0.2) ? neb.pick([28, 40, 350]) : scheme[1] + neb.range(-8, 8));
+  // Visible but behind the planet: the planet carries the colour.
+  const strength = o.nebula ?? neb.range(0.34, 0.5);
+  const jitter = neb.range(-6, 6);
+  const [lo, hi] = NEBULA_HUES;
+  const h1 = o.hues ? o.hues[0] + jitter : neb.range(lo, hi);
+  // The second colour moves towards the middle of the range, so it never leaves it.
+  const h2 = o.hues ? o.hues[1] + jitter : h1 + (h1 < (lo + hi) / 2 ? 1 : -1) * neb.range(25, 55);
   const scale = frame.w / 96;
   const f = (x: number) => n(x / scale);
+  // Blue looks darker than pink at the same lightness, so blue clouds get lifted and thickened.
+  const blueness = (h: number) => Math.min(1, Math.max(0, (275 - h) / 55));
+  const lift = (h: number) => 18 * blueness(h);
+  const boost = (h: number) => 1 + 0.35 * blueness(h);
 
   const layers = [
-    cloud({ id: `${id}-n1`, area, freq: f(neb.range(0.016, 0.026)), octaves: 5, seed: neb.noiseSeed(), colour: [h1, 62, 38], strength: strength * 0.8, cut: neb.range(0.4, 0.47), soft: 0.3, warp: 14 * scale, warpSeed: neb.noiseSeed(), filaments: 0.35 }),
-    cloud({ id: `${id}-n2`, area, freq: f(neb.range(0.026, 0.04)), octaves: 4, seed: neb.noiseSeed(), colour: [h2, 68, 50], strength: strength * 0.5, cut: neb.range(0.48, 0.54), soft: 0.22, warp: 10 * scale, warpSeed: neb.noiseSeed() }),
+    cloud({ id: `${id}-n1`, area, freq: f(neb.range(0.016, 0.026)), octaves: 5, seed: neb.noiseSeed(), colour: [h1, 70, 46 + lift(h1)], strength: Math.min(1, strength * 0.8 * boost(h1)), cut: neb.range(0.4, 0.47), soft: 0.3, warp: 14 * scale, warpSeed: neb.noiseSeed(), filaments: 0.35 }),
+    cloud({ id: `${id}-n2`, area, freq: f(neb.range(0.026, 0.04)), octaves: 4, seed: neb.noiseSeed(), colour: [h2, 75, 58 + lift(h2)], strength: Math.min(1, strength * 0.5 * boost(h2)), cut: neb.range(0.48, 0.54), soft: 0.22, warp: 10 * scale, warpSeed: neb.noiseSeed() }),
     cloud({ id: `${id}-dust`, area, freq: `${f(0.045)} ${f(0.03)}`, octaves: 5, seed: neb.noiseSeed(), colour: [SPACE_BASE[0], 40, 3], strength: 0.8, cut: 0.5, soft: 0.2, warp: 8 * scale, warpSeed: neb.noiseSeed() }),
   ];
 
@@ -151,6 +145,8 @@ export function starfield(o: StarfieldOptions): Fragment {
     const r = (0.09 + 0.3 * u ** 6) * scale;
     const [h, s, l] = STAR_COLOURS[starColour(stars)].c;
     const a = 0.25 + 0.75 * stars.next() ** 1.5;
+    // Skipped only after every draw, so the other stars stay where they were.
+    if (o.faintAllowed && !o.faintAllowed(x - frame.x, y - frame.y)) continue;
     starMarks += `<circle cx="${n(x)}" cy="${n(y)}" r="${n(r)}" fill="${hsl(h, s, l)}" opacity="${n(a)}"/>`;
   }
 
@@ -175,13 +171,6 @@ export function starfield(o: StarfieldOptions): Fragment {
     const ci = starColour(bright);
     const size = bright.range(2.2, 4.5) * scale;
     brightMarks += `<circle cx="${n(x)}" cy="${n(y)}" r="${n(size)}" fill="url(#${id}-g${ci})"/>`;
-    if (bright.chance(0.6)) {
-      const L = size * bright.range(1.2, 1.9);
-      const w = 0.16 * scale;
-      const spike = (dx: number, dy: number) =>
-        `<polygon points="${n(x - dx)},${n(y - dy)} ${n(x - dy * w)},${n(y + dx * w)} ${n(x + dx)},${n(y + dy)} ${n(x + dy * w)},${n(y - dx * w)}" fill="#fff" opacity=".55"/>`;
-      brightMarks += spike(L, 0) + spike(0, L * 0.8);
-    }
     brightMarks += `<circle cx="${n(x)}" cy="${n(y)}" r="${n(0.35 * scale)}" fill="#fff"/>`;
   }
 

@@ -236,9 +236,9 @@ input { font: inherit; }
   font-family: var(--body);
   font-weight: 800;
   fill: #fff;
+  letter-spacing: -.03em;
   paint-order: stroke;
-  stroke: rgba(0,0,0,.45);
-  stroke-width: 3px;
+  stroke-linejoin: round;
   pointer-events: none;
 }
 .cube { filter: drop-shadow(0 0 3px rgba(255,255,255,.6)); animation: cube-in .5s cubic-bezier(.3,1.6,.5,1); transform-box: fill-box; transform-origin: center; }

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import { SHIP_ABILITIES, SHIP_NAMES, cellOf, key, type Board as BoardModel, type GameState } from '@quantum/engine';
-import { PLANET_DIAMETER, TILE, assignTiles, dataUrl, tileSpec, tileSvg } from '@quantum/art';
+import { CUBE_PAD, PLANET_DIAMETER, PLANET_FAMILY, TILE, assignTiles, cubePadCentres } from '@quantum/art';
+import { tileImage } from '../art/tileImages';
 import type { Controller } from '../game/controller';
 import { Die3D } from './Die3D';
 
@@ -8,11 +9,11 @@ interface TileArt {
   r: number;
   c: number;
   void: boolean;
-  /** The tile's artwork (starfield and planet) as an SVG image. */
-  url: string;
+  /** The physical tile whose artwork (starfield and planet) goes here. */
+  id: string;
 }
 
-/** Each 3×3 tile of the map, with its physical tile's artwork (packages/art). */
+/** Each 3×3 tile of the map, with the physical tile it uses (packages/art). */
 function tileArt(board: BoardModel): TileArt[] {
   const tiles = new Map<number, { r: number; c: number; void: boolean; number: number }>();
   board.cells.forEach((row, r) =>
@@ -23,7 +24,7 @@ function tileArt(board: BoardModel): TileArt[] {
   );
   for (const p of board.planets) tiles.get(board.cells[p.r][p.c].tile)!.number = p.number;
   const ids = assignTiles([...tiles].map(([index, t]) => ({ index, number: t.number })));
-  return [...tiles].map(([index, t]) => ({ ...t, url: dataUrl(tileSvg(tileSpec(ids.get(index)!), { rounded: true })) }));
+  return [...tiles].map(([index, t]) => ({ ...t, id: ids.get(index)! }));
 }
 
 /** Where each ship on the map is drawn, in cell units (an attacker sits part-way into its target). */
@@ -84,8 +85,16 @@ export function Board({ game, ctl }: { game: GameState; ctl: Controller }) {
   const [cell, setCell] = useState(64);
   const booms = useExplosions(game);
   const { rows, cols, cells, planets } = game.board;
-  // Tile art depends only on the map; rendering it is the slow part, so do it once per map.
   const tiles = useMemo(() => tileArt(game.board), [game.board.mapId]);
+  // Tile images arrive as they're ready (at once, once they've been drawn before); a plain tile shows meanwhile.
+  const [images, setImages] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let live = true;
+    for (const t of tiles) tileImage(t.id).then((url) => live && setImages((m) => (m[t.id] === url ? m : { ...m, [t.id]: url })));
+    return () => {
+      live = false;
+    };
+  }, [tiles]);
 
   useLayoutEffect(() => {
     const el = wrap.current;
@@ -124,14 +133,14 @@ export function Board({ game, ctl }: { game: GameState; ctl: Controller }) {
 
           {tiles.map((t) => (
             <g key={`${t.r},${t.c}`}>
-              <image href={t.url} x={t.c * cell + 1} y={t.r * cell + 1} width={cell * 3 - 2} height={cell * 3 - 2} />
+              {images[t.id] && <image href={images[t.id]} x={t.c * cell + 1} y={t.r * cell + 1} width={cell * 3 - 2} height={cell * 3 - 2} />}
               <rect
                 x={t.c * cell + 1}
                 y={t.r * cell + 1}
                 width={cell * 3 - 2}
                 height={cell * 3 - 2}
                 rx={(cell * 3 * 4) / TILE.size}
-                fill="none"
+                fill={images[t.id] ? 'none' : '#0b1124'}
                 stroke={t.void ? 'rgba(197,155,255,.35)' : 'rgba(127,178,255,.16)'}
               />
             </g>
@@ -166,24 +175,37 @@ export function Board({ game, ctl }: { game: GameState; ctl: Controller }) {
             const cy = (p.r + 0.5) * cell;
             // The planet itself is part of the tile art; this layer adds the live number and cubes.
             const R = (PLANET_DIAMETER[p.number] / 2 / TILE.cell) * cell;
-            const slot = cell * 0.13;
-            const gap = cell * 0.035;
-            const rowW = p.capacity * slot + (p.capacity - 1) * gap;
+            // Cube slots in the printed pads' pattern, centred, but sized for the screen.
+            const slot = cell * 0.15;
+            const step = (slot + cell * 0.035) / (CUBE_PAD.size + CUBE_PAD.gap);
+            const slots = cubePadCentres(p.capacity, 0, 0).map((q) => ({ x: cx + q.x * step, y: cy + q.y * step }));
+            // The number is drawn on the planet towards its bottom right, as on the printed tile, clear of the cubes.
+            const off = R * 0.55;
+            const hue = PLANET_FAMILY[p.number].hue;
             return (
               <g key={p.id}>
                 {p.start && game.phase === 'setup' && (
                   <circle cx={cx} cy={cy} r={R * 1.12} fill="none" stroke="#fff" strokeOpacity={0.5} strokeDasharray="3 4" />
                 )}
-                <text x={cx} y={cy - cell * 0.02} className="planet-num" fontSize={cell * 0.3} textAnchor="middle" dominantBaseline="middle">
+                <text
+                  x={cx + off}
+                  y={cy + off + cell * 0.015}
+                  className="planet-num"
+                  fontSize={cell * (p.number === 10 ? 0.32 : 0.38)}
+                  stroke={`hsl(${hue} 50% 7%)`}
+                  strokeWidth={cell * 0.045}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                >
                   {p.number}
                 </text>
-                {Array.from({ length: p.capacity }, (_, i) => {
+                {slots.map((q, i) => {
                   const owner = p.cubes[i];
                   return (
                     <rect
                       key={i}
-                      x={cx - rowW / 2 + i * (slot + gap)}
-                      y={cy + cell * 0.17}
+                      x={q.x - slot / 2}
+                      y={q.y - slot / 2}
                       width={slot}
                       height={slot}
                       rx={slot * 0.2}

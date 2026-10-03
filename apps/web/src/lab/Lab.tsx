@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { TILE, TILE_SET, dataUrl, tileSvg, type PlanetType, type TileSpec } from '@quantum/art';
+import { TILE, TILE_SET, dataUrl, editableTileSvg, tileSvg, type PlanetType, type TileSpec } from '@quantum/art';
 
 /**
  * Art Lab (open with #lab): every tile of the physical set, with controls to explore seeds and
@@ -30,6 +30,14 @@ async function svgToPng(svg: string, mm: number, dpi: number): Promise<Blob> {
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('PNG export failed'))), 'image/png'));
 }
 
+const blobToDataUrl = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
+
 export function Lab() {
   const [overrides, setOverrides] = useState<Record<string, Override>>({});
   const [selected, setSelected] = useState(TILE_SET[0].id);
@@ -49,6 +57,17 @@ export function Lab() {
     setBusy(true);
     try {
       download(`${name}-${dpi}dpi.png`, await svgToPng(svg, mm, dpi));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Illustrator can't render SVG filters, so the art goes in as a 600 dpi bitmap with vector markings on top. */
+  const exportEditable = async () => {
+    setBusy(true);
+    try {
+      const art = await blobToDataUrl(await svgToPng(tileSvg(spec, { only: 'art', bleed }), mm, 600));
+      download(`${name}-illustrator.svg`, new Blob([editableTileSvg(spec, art, { bleed, markings })], { type: 'image/svg+xml' }));
     } finally {
       setBusy(false);
     }
@@ -100,7 +119,8 @@ export function Lab() {
             {overrides[spec.id] && <button className="btn btn-ghost" onClick={() => setOverrides(({ [spec.id]: _, ...rest }) => rest)}>Reset</button>}
           </div>
           <div className="lab-controls">
-            <button className="btn" onClick={() => download(`${name}.svg`, new Blob([svg], { type: 'image/svg+xml' }))}>Download SVG</button>
+            <button className="btn" disabled={busy} onClick={exportEditable} title="Art as a 600 dpi image, markings as editable vectors">SVG for Illustrator</button>
+            <button className="btn btn-ghost" onClick={() => download(`${name}.svg`, new Blob([svg], { type: 'image/svg+xml' }))} title="Live SVG filters: renders in browsers only">SVG (browser only)</button>
             <button className="btn" disabled={busy} onClick={() => exportPng(300)}>PNG 300 dpi</button>
             <button className="btn" disabled={busy} onClick={() => exportPng(600)}>PNG 600 dpi</button>
           </div>

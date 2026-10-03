@@ -82,7 +82,7 @@ Layered, seeded, vector:
 
 - **Far stars**: hundreds of tiny circles, size and brightness drawn from a power-law distribution
   (lots of faint stars, a few bright ones), slight colour temperature variation (blue-white to amber).
-- **Near stars**: a handful of bright stars with soft glow and optional 4-point diffraction spikes.
+- **Near stars**: a handful of bright stars with a soft glow (no diffraction spikes).
 - **Nebula**: soft colour clouds. Two techniques:
   - *Vector*: a few large blurred blobs (`feGaussianBlur` on ellipses/paths) in the palette's
     colours. Cheap, predictable, prints well.
@@ -104,11 +104,22 @@ A `Planet` component with seeded parameters:
 | Terminator shadow | Offset circle mask to give a crescent of night side |
 | Atmosphere | Thin outer glow ring with the planet's colour |
 | Rings / moons | Optional, seeded |
-| Gameplay overlay | Planet number badge and cube pads: drawn **on top** and kept high-contrast so the game stays readable (layout in §2a) |
+| Gameplay overlay | Planet number and cube pads: drawn **on top** and kept high-contrast so the game stays readable (layout in §2a) |
 
-Planet **number** (7–10) sets the colour family, as now, and also the **size** (7 smallest, 10
-largest), so the number reads from colour, size and the badge, which also helps colour-blind players.
-**Type and surface** come from the seed, so every planet is distinct.
+**The planet carries the number.** Each number is its own kind of world in its own colours, distinct
+in hue *and* lightness (`PLANET_FAMILY` in tokens):
+
+| Number | World | Colours |
+|---|---|---|
+| 7 | Earth-like: blue sea and green land (temperate, jungle or tundra), more or less cloud, sometimes polar caps | green and blue |
+| 8 | Ice: white glaciers, frozen seas, turquoise or blue ice; pale cyan, turquoise or blue ice giants | pale, tinted cyan to blue (lightest) |
+| 9 | Banded gas giants (Jupiter-gold, Saturn-cream, amber or rust), often with storms or rings | gold and amber |
+| 10 | Molten lava worlds: black crust, from thin red cracks to wide orange magma rivers | black and red (darkest) |
+
+No planet is blue-violet, so none blends into the nebula. The number also sets the **size**, in big
+steps (7: 22 mm up to 10: 42 mm, nearly twice as wide). So a planet's number reads from its look,
+its size and the numeral, which also helps colour-blind players. Within a number, the seed picks the
+variant and surface, so every planet is distinct.
 
 **Every physical planet is unique.** A set that plays every map in `maps.yaml` needs 25 tiles (see
 §2a), so we design 25 individual planets: each tile has a fixed id (`p7-01` … `p10-04`, `void`), a
@@ -124,10 +135,19 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
   layer above. The tile art itself is the same as print (planet up to 1.19 cells), so the screen
   and the table look alike. **The live layer is sized for the screen, not the table:** the number and
   the cube slots on screen stay small and don't copy the printed 11 mm cube pads, which would crowd
-  the board.
+  the board. They follow the print layout, though: cubes centred on the planet, the number drawn on it
+  towards the bottom right, white with a dark outline.
+- **Loading.** Drawing a tile's noise filters takes ~45 ms (~1.1 s for a 25-tile map), so the game
+  draws each tile once to a 576 px image and keeps it in the browser's IndexedDB
+  ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)). Tiles are drawn in the background while
+  the lobby is open; later games and window resizes reuse the stored images (all 25 shown ~0.3 s after
+  Launch). Each stored image carries a hash of its SVG, so changing the artwork redraws only what
+  changed.
 
 **Star backgrounds per tile.** Each of the 25 tiles gets its own seeded starfield and nebula, so a
-map never looks like a repeated pattern. Because tiles are rearranged for every map, backgrounds
+map never looks like a repeated pattern. Nebula colours are random but kept between blue and pink-purple
+(`NEBULA_HUES`, 215–330°) so the set looks consistent (blue clouds are lifted, since blue looks darker), and kept **behind the planet**, so the sky stays in the background and the planet's colour is what tells tiles apart. (The
+Void tile keeps a stronger magenta nebula around its rift.) Because tiles are rearranged for every map, backgrounds
 can't line up across edges; instead every tile follows the same edge rules so any two tiles sit
 together cleanly:
 
@@ -148,37 +168,48 @@ Designed for **19 mm dice**. All numbers live in tokens so they can change after
 | Die | 19 mm | Chosen dice |
 | Cell (space) | **32 mm** | Die + 6.5 mm each side: 13 mm between neighbouring dice, enough for fingers; ≈ 1.7× die |
 | Space pad | 24 mm rounded square, centred | Shows where a die sits; 2.5 mm clear around the die |
+| Attack rings | Two faint rings (5.2 and 8.4 mm across) in the four spaces beside the planet | Where dice go to conquer it; hidden once a die sits there |
 | Tile (trim) | **96 × 96 mm** (3 × 3 cells) | |
 | Bleed | 3 mm → 102 × 102 mm artwork | |
 | Corner radius | 2 mm | Kind to die-cutting; the small gap where four tiles meet doesn't matter |
 | Cube | **assumed ≤ 10 mm** (measure ours) | Standard wooden cubes are 8 or 10 mm; pads are sized for 10 |
-| Planet diameter | 7: 30 mm · 8: 33 mm · 9: 36 mm · 10: 38 mm | Bigger than the cell is fine (below) |
+| Planet diameter | 7: 22 mm · 8: 28 mm · 9: 35 mm · 10: 42 mm | Big steps so size alone tells numbers apart; bigger than the cell is fine (below) |
 | Cube pad | 11 mm square outline, 1.5 mm apart | 10 mm cube + tolerance |
-| Number badge | ~9 mm, on the planet's upper rim | Never covered by cubes |
+| Planet number | **14 mm** type (12.5 mm for "10"), white with a dark outline, no disc | Where the spaces meet at the planet's bottom right; large and never covered by cubes or dice |
+| Flavour label | 1.7 mm name, 1.2 mm monospace lines, inside the 8 mm strip between space pads | Where the spaces meet at the planet's top left; made-up survey data, not meant to be read in play |
 
 **Why the planet can be bigger than its cell.** Ships can't enter a planet's space, so only the dice
 in the eight surrounding spaces limit its size. A die in the space next to the planet starts
 32/2 + 6.5 = 22.5 mm from the planet's centre; a diagonal die's nearest corner is ~31.8 mm away. A
-38 mm planet (radius 19 mm) keeps 3.5 mm clear of the nearest die and still looks big on the tile.
+42 mm planet (radius 21 mm) keeps 1.5 mm clear of the nearest die. The 9 and 10 can't go below
+33.2 mm, or their cube pads would stick out past the planet's edge.
 
-**Cube pads on the planet** (capacity 7→1, 8→2, 9→3, 10→4), as a cluster centred slightly below the
-middle, with the number badge above:
+**Cube pads and number.** Cube pads (capacity 7→1, 8→2, 9→3, 10→4) form a cluster centred on the
+planet. The number is centred on the **corner where the four spaces meet at the planet's bottom
+right** (16 mm right and down from the centre), white with a dark outline so it reads on any surface.
+Dice never reach that corner, so it is the one place a big numeral is always visible. The 10's four
+pads reach into it, so its number moves 1.2 mm further out along the same diagonal
+(`numberPlacement()`; a test keeps every number on the diagonal).
+
+**Flavour label.** The opposite corner, at the planet's top left, holds a tiny star-atlas label: a
+made-up name, catalogue number, class and orbit, and a few measurements to suit the kind of world
+(`planetFlavour()`), with a thin leader line to the planet. It stays inside the strip between the
+space pads above and below, and no stars are drawn under it. It is seeded like the art, so each tile
+always gets the same text. On the Illustrator export it is its own vector layer, `label`.
 
 ```
-     7 (1)          8 (2)           9 (3)            10 (4)
-    ╭─────╮       ╭───────╮      ╭─────────╮      ╭──────────╮
-   │  (7)  │     │  (8)    │    │   (9)     │    │   (10)     │
-   │  [ ]  │     │ [ ] [ ] │    │  [ ] [ ]  │    │  [ ] [ ]   │
-   │       │     │         │    │    [ ]    │    │  [ ] [ ]   │
-    ╰─────╯       ╰───────╯      ╰─────────╯      ╰──────────╯
-     30 mm          33 mm          36 mm            38 mm
+  NAME ·                 NAME ·              NAME ·              NAME ·
+  data  ╲                data ╲              data ╲              data ╲
+         ╭───╮               ╭─────╮           ╭───────╮          ╭─────────╮
+         │[ ]│              │[ ] [ ]│         │ [ ] [ ] │        │ [ ] [ ]  │
+         ╰───╯               ╰─────╯          │   [ ]   │        │ [ ] [ ]  │
+               7                     8         ╰───────╯          ╰─────────╯
+                                                         9                    10
+       7: 22 mm               8: 28 mm          9: 35 mm           10: 42 mm
 ```
 
-Check for the tightest case, 10 with four 10 mm cubes: two 11 mm pads plus a 1.5 mm gap make a
-23.5 × 23.5 mm cluster. Centred 2 mm below the middle, its outer corners are ~18.1 mm from the centre,
-inside the 19 mm radius, and its top edge is 9.75 mm above the centre, leaving the top ~9 mm of the
-planet for the badge (the planet is still ~25 mm wide there). With a 2 mm gap the corners would poke
-past the rim, so the pad gap is 1.5 mm.
+A test checks every number's box against the cube pads and against 19 mm dice in the spaces beside,
+below and diagonal to the planet.
 
 Printed pads are visible outlines, so a planet's capacity is clear on the
 table without remembering the rule. The pad area keeps a calm, darker surface so cubes in any player
@@ -252,6 +283,11 @@ A dev-only route in the web app, e.g. `/#/lab`:
 - **Export buttons**: SVG (direct), PNG at chosen dpi (rasterise in the browser via canvas), and
   "Pin": writes the chosen seed/parameters into `data/art.yaml` (copy-paste YAML at first; a dev
   server endpoint later).
+- **SVG for Illustrator**: the art is built from SVG filters (noise, displacement, colour ramps),
+  which only browsers render; Illustrator drops them and also doesn't read `hsl()` colours. This export
+  embeds the art as a 600 dpi PNG (layer `art`) with the markings on top as plain vectors (layer
+  `markings`: hex colours, no `paint-order`), so it opens looking the same and the markings stay
+  editable. The plain SVG export is for browsers only.
 - **Print preview**: CMYK-ish soft-proof toggle (a rough simulation, see §4) and bleed/safe-zone
   overlay.
 
@@ -259,7 +295,7 @@ A dev-only route in the web app, e.g. `/#/lab`:
 
 ```yaml
 planets:            # keyed by map + planet, or by number for defaults
-  default: { 7: { palette: teal }, 8: { palette: blue }, 9: { palette: violet }, 10: { palette: ember } }
+  default: { 7: { palette: green }, 8: { palette: ice }, 9: { palette: gold }, 10: { palette: magma } }
   overrides:
     - { map: alpha-sector, planet: p3, seed: 81723, type: gas, rings: true }
 cards:
@@ -353,19 +389,19 @@ Each phase leaves the game working and better-looking.
 - [ ] PDF and text-fit checks.
 
 **Phase 3 — Art Lab**
-- [x] Lab route (`#lab`): all 25 tiles, seed/type/rings controls, SVG and PNG (300/600 dpi) export.
+- [x] Lab route (`#lab`): all 25 tiles, seed/type/rings controls, SVG, SVG for Illustrator and PNG (300/600 dpi) export.
 - [ ] Context view (tile vs. card vs. in-game size) and starfield/planet-only views.
 - [ ] `data/art.yaml` and pinning.
 
 **Phase 4 — The new look**
 - [ ] Art direction: mood board, palette (tested for colour-blind players and for CMYK), type.
 - [ ] Icon set (ships 1–6 first).
-- [x] First pass: seeded starfield with warped-noise nebula, filaments and dust; five planet types (gas, rocky, ice, lava, ocean) from noise with sphere shading, atmosphere and rings; Void rift.
+- [x] First pass: seeded starfield with warped-noise nebula, filaments and dust; five planet types (gas, rocky, ice, lava, ocean), each planet number its own kind of world from noise with sphere shading, atmosphere and rings; Void rift.
 - [ ] Iterate on the look in the lab; card frames and backs.
 - [x] The game maps each planet to a tile id (`assignTiles`), so a tile looks the same on every map.
 - [ ] Pin the chosen seeds for all 25 tiles in `art.yaml` (the lab shows each spec to copy).
 - [ ] Print one test tile at 100 % and check it with real 19 mm dice and cubes before the full set.
-- [x] In-game tiles render once per map as images.
+- [x] In-game tiles are drawn once to images and cached in IndexedDB; drawn in the background in the lobby.
 - [ ] Pre-rendered PNG backgrounds for print (filters rasterise at an uncontrolled resolution in PDFs).
 - [ ] App background uses the same starfield.
 

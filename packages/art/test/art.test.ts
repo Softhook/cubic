@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { PLANET_DIAMETER, SET_COUNTS, TILE_SET, assignTiles, cubePadCentres, tileSpec, tileSvg } from '../src';
+import { PLANET_DIAMETER, SET_COUNTS, TILE_SET, TILE, assignTiles, editableTileSvg, numberPlacement, cubePadCentres, tileSpec, tileSvg } from '../src';
 import { CUBE_PAD } from '../src/tokens';
 import maps from '../../engine/src/data/maps.json';
+
+/** Gap between a box (centre, half-width, half-height) and a square (centre, half-size). */
+const boxGap = (cx: number, cy: number, hw: number, hh: number, x: number, y: number, h: number) =>
+  Math.hypot(Math.max(0, Math.abs(cx - x) - hw - h), Math.max(0, Math.abs(cy - y) - hh - h));
+const DIE = 19;
 
 describe('tile art', () => {
   it('is the same every time for the same tile', () => {
@@ -19,6 +24,15 @@ describe('tile art', () => {
         expect(svg).not.toMatch(/NaN|undefined|Infinity/);
         expect(svg.startsWith('<svg')).toBe(true);
       }
+    }
+  });
+
+  it('exports for Illustrator with nothing it can\'t read: art as one image, markings as plain vectors', () => {
+    for (const t of TILE_SET) {
+      const svg = editableTileSvg(t, 'data:image/png;base64,AAAA', { markings: true, bleed: true });
+      expect(svg).not.toMatch(/<filter|<mask|clip-path|hsl\(|paint-order|dominant-baseline|NaN|undefined/);
+      expect(svg).toContain('xlink:href="data:image/png');
+      expect(svg).toContain('<g id="markings">');
     }
   });
 
@@ -51,6 +65,29 @@ describe('cube pads', () => {
       for (const p of cubePadCentres(num - 6, 0, 0)) {
         const far = Math.hypot(Math.abs(p.x) + h, Math.abs(p.y) + h);
         expect(far, `planet ${num}`).toBeLessThan(R);
+      }
+    }
+  });
+});
+
+describe('planet number', () => {
+  it('sits on the bottom-right diagonal, at the corner where the spaces meet unless its pads push it out', () => {
+    for (const num of [7, 8, 9, 10]) {
+      const at = numberPlacement(num);
+      expect(at.x, `planet ${num}`).toBe(at.y);
+      expect(at.x, `planet ${num}`).toBeGreaterThanOrEqual(TILE.cell / 2);
+      expect(at.x, `planet ${num}`).toBeLessThan(TILE.cell / 2 + 1.5);
+    }
+  });
+
+  it('stays clear of the cube pads and of 19 mm dice in the spaces around the planet', () => {
+    for (const num of [7, 8, 9, 10]) {
+      const at = numberPlacement(num);
+      for (const p of cubePadCentres(num - 6, 0, 0)) {
+        expect(boxGap(at.x, at.y, at.halfW, at.halfH, p.x, p.y, CUBE_PAD.size / 2), `planet ${num} pad`).toBeGreaterThan(0.5);
+      }
+      for (const [dx, dy] of [[1, 0], [0, 1], [1, 1]]) {
+        expect(boxGap(at.x, at.y, at.halfW, at.halfH, dx * TILE.cell, dy * TILE.cell, DIE / 2), `planet ${num} die`).toBeGreaterThan(0);
       }
     }
   });

@@ -12,8 +12,12 @@ export const TILE = {
   pad: 24,
 } as const;
 
-/** Printed planet diameter per planet number: bigger numbers hold more cubes. */
-export const PLANET_DIAMETER: Record<number, number> = { 7: 30, 8: 33, 9: 36, 10: 38 };
+/**
+ * Printed planet diameter per planet number: bigger numbers hold more cubes. Steps are large so the
+ * number reads from size alone. Limits: 9 and 10 need > 33.2 mm for their cube pads; 10 stays under
+ * 45 mm so it clears a die in the next space (docs/GRAPHICS.md §2a).
+ */
+export const PLANET_DIAMETER: Record<number, number> = { 7: 22, 8: 28, 9: 35, 10: 42 };
 
 /** Cube pads printed on planets (physical cubes up to 10 mm). The on-screen cubes are smaller. */
 export const CUBE_PAD = { size: 11, gap: 1.5 } as const;
@@ -24,16 +28,34 @@ export const SPACE_BASE: [number, number, number] = [228, 52, 6];
 export type PlanetType = 'gas' | 'rocky' | 'ice' | 'lava' | 'ocean';
 
 export interface PlanetFamily {
-  /** Base hue; each planet varies it a little. */
+  /** Signature hue: atmosphere, glow and the number's outline. Each planet varies it a little. */
   hue: number;
   /** Planet types this number comes in; a full set cycles through them. */
   types: PlanetType[];
 }
 
-/** Planet number → colour family. Keeps the current game's colours: 7 teal, 8 blue, 9 violet, 10 ember. */
+/**
+ * Planet number → look. The planet carries the number's identity, so each number has its own kind of
+ * world and its own colours, far apart in hue *and* lightness so they also differ for colour-blind
+ * players: 7 small green-and-blue Earth-like worlds, 8 white ice worlds and pale ice giants (the
+ * lightest), 9 golden banded gas giants, 10 big black-and-red molten worlds (the darkest). None is
+ * blue-violet, so no planet blends into the nebula.
+ */
 export const PLANET_FAMILY: Record<number, PlanetFamily> = {
-  7: { hue: 168, types: ['ocean', 'rocky', 'ice', 'gas'] },
-  8: { hue: 218, types: ['gas', 'ocean', 'ice', 'rocky'] },
-  9: { hue: 272, types: ['gas', 'ice', 'rocky'] },
-  10: { hue: 20, types: ['lava', 'gas', 'rocky'] },
+  7: { hue: 150, types: ['ocean'] },
+  8: { hue: 195, types: ['ice', 'gas'] },
+  9: { hue: 38, types: ['gas'] },
+  10: { hue: 6, types: ['lava'] },
 };
+
+/** Nebula hues stay between blue and pink-purple, so every tile's sky belongs to one set. */
+export const NEBULA_HUES: [number, number] = [215, 330];
+
+/** The Void tile's nebula colours (planet tiles get random, subtle ones). */
+export const VOID_NEBULA_HUES: [number, number] = [316, 336];
+
+/** The printed planet number (font size, mm), drawn where the spaces meet at the planet's bottom right. */
+export const NUMBER_TEXT = { size: 14, sizeTwoDigits: 12.5 } as const;
+
+/** The flavour label at the planet's top left (font sizes, mm): tiny, like a star atlas. */
+export const LABEL_TEXT = { name: 1.7, line: 1.2, font: "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace" } as const;
