@@ -128,6 +128,7 @@ export const skillHandlers = {
   clever(s, a) {
     const head = headOf(s, 'clever', 'No ship number to choose');
     if (!Number.isInteger(a.value) || a.value < 1 || a.value > 6) fail('Ship numbers range from 1 to 6');
+    if (head.options && !head.options.includes(a.value)) fail('Clever changes the number by at most 1');
     if (a.value === head.avoid) fail('A reconfigured ship must change its number');
     s.pending.shift();
     const d = die(s, head.die);

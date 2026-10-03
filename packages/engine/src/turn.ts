@@ -1,7 +1,7 @@
 /** Turn structure: start of turn, the end-of-turn card phase, and passing the turn on. */
 import { ACTIONS_PER_TURN, emptyTurn, gainResearch, log, name, type PendingOf } from './core';
 import { cellOf, scrapyard, shipsOnBoard } from './lookups';
-import { breakthroughAt, canTakeAnyCard, infamyTargets, startSlots } from './queries';
+import { breakthroughAt, canProfiteer, canTakeAnyCard, infamyTargets, startSlots } from './queries';
 import { rulesOf } from './rules';
 import { askBrilliant, skillRules, type TurnBonus } from './skillRules';
 import type { GameState, Pending, PlayerId } from './types';
@@ -58,17 +58,16 @@ export function endTurn(s: GameState) {
   const pl = s.players[p];
   s.turn.phase = 'cards';
   if (!rulesOf(s).cards) return;
-  let cards = s.turn.conquests;
-  if (pl.carriedPicks) {
-    cards += pl.carriedPicks;
-    delete pl.carriedPicks;
-  }
+  let cards = s.turn.conquests + (pl.carriedPicks ?? 0);
+  const conquer = (s.turn.conquered ?? 0) + (pl.carriedConquerPicks ?? 0);
+  delete pl.carriedPicks;
+  delete pl.carriedConquerPicks;
   if (pl.research >= breakthroughAt(s, p)) {
     pl.research = 1;
     cards++;
     log(s, `${pl.name} makes a research breakthrough.`, p, 'breakthrough');
   }
-  if (cards > 0) s.pending.push({ kind: 'takeCard', player: p, count: cards });
+  if (cards > 0) s.pending.push({ kind: 'takeCard', player: p, count: cards, ...(conquer && { conquer }) });
   // A cube placed on someone else's turn earns its card in this card phase, after the active
   // player, in turn order (designer, BGG thread 1087563).
   const off = s.turn.offTurnCubes ?? [];
@@ -76,8 +75,10 @@ export function endTurn(s: GameState) {
     const o = (p + i) % s.players.length;
     const other = s.players[o];
     const count = off.filter((x) => x === o).length + (other.carriedPicks ?? 0);
+    const conquer = other.carriedConquerPicks ?? 0;
     delete other.carriedPicks;
-    if (count) s.pending.push({ kind: 'takeCard', player: o, count });
+    delete other.carriedConquerPicks;
+    if (count) s.pending.push({ kind: 'takeCard', player: o, count, ...(conquer && { conquer }) });
   }
 }
 
@@ -127,7 +128,7 @@ const AUTO_RESOLVE: { [K in Pending['kind']]?: (s: GameState, head: PendingOf<K>
     return true;
   },
   takeCard(s, head) {
-    if (canTakeAnyCard(s, head.player)) return false;
+    if (canTakeAnyCard(s, head.player) || canProfiteer(s)) return false;
     s.pending.shift();
     return true;
   },

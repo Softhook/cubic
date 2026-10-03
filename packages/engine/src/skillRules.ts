@@ -70,6 +70,12 @@ export interface SkillRule {
   breakthroughAt?: number;
   /** Whenever one of the player's ships is rolled, they choose its number instead. */
   chooseShipNumbers?: boolean;
+  /** After reconfiguring, the player may raise or lower the ship's number by 1. */
+  adjustReconfigure?: boolean;
+  /** Normal moves may pass through enemy ships; those spaces cost no movement. */
+  moveThroughEnemies?: boolean;
+  /** A card pick earned by a Conquer action may be taken as 1 missile instead. */
+  missileForConquest?: boolean;
   /** On their own turn, the player may re-roll each roll of one of their ships once. */
   rerollShips?: boolean;
   /** Deploying costs no action. */
@@ -128,7 +134,9 @@ export const SKILL_RULES: Record<SkillEffect, SkillRule> = {
   ambitious: { activated: 'ambitious' },
   brilliant: { startOfTurn: (s, p) => (askBrilliant(s, p) ? {} : { research: 2 }) },
   brutal: { combat: { dice: 2 } },
+  clever: { adjustReconfigure: true },
   composed: { activated: 'composed' },
+  devious: { moveThroughEnemies: true },
   ferocious: { combat: { modifier: () => -1 } },
   flexible: { activated: 'flexible' },
   hostile: { onDestroy: (c) => (c.first && c.ownActionPhase ? { actions: 1 } : {}) },
@@ -138,6 +146,7 @@ export const SKILL_RULES: Record<SkillEffect, SkillRule> = {
   pioneering: { conquer: { sums: (c) => c.ships.map((d) => c.sum - d.value + c.research) } },
   plundering: { onDestroy: (c) => (c.first ? { research: 3 } : {}) },
   precocious: { breakthroughAt: 4 },
+  profiteering: { missileForConquest: true },
   rational: { combat: { roll: 3 } },
   ravenous: { onDestroy: (c) => (c.first ? { dominance: 1 } : {}) },
   resourceful: { activated: 'resourceful' },

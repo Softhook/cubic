@@ -81,6 +81,8 @@ export interface PlayerState extends PlayerConfig {
   bonusTurns: number[];
   /** Card picks still owed when Momentum interrupted the card phase; taken in the bonus turn's. */
   carriedPicks?: number;
+  /** How many of the carried picks were earned by Conquer actions (Profiteering). */
+  carriedConquerPicks?: number;
 }
 
 export type DeckKind = 'skill' | 'tactic';
@@ -110,6 +112,8 @@ export interface TurnState {
   /** Values each die has shown this turn (for Reconfigure). */
   seen: Record<string, number[]>;
   conquests: number;
+  /** Conquer actions taken this turn; unlike `conquests`, Infamy cubes don't count (Profiteering). */
+  conquered?: number;
   attacked: boolean;
   /** Players who have already destroyed an enemy ship this turn ("first time each turn" triggers). */
   destroyedBy: PlayerId[];
@@ -163,13 +167,17 @@ export type Pending =
   | CombatPending
   /** Dangerous: before the dice are rolled, the defender may destroy both ships. */
   | { kind: 'dangerous'; player: PlayerId; attacker: string; defender: string; from: Cell }
-  /** Clever: the player chooses the number of a ship that was just rolled (not `avoid`, for a Reconfigure). */
-  | { kind: 'clever'; player: PlayerId; die: string; avoid?: number }
+  /**
+   * Clever: the player chooses the number of a ship that was just rolled (Original: any but `avoid`,
+   * for a Reconfigure; Community Edition: one of `options`, the reconfigured number ± 1).
+   */
+  | { kind: 'clever'; player: PlayerId; die: string; avoid?: number; options?: number[] }
   /** Relocation: move another player's cube. */
   | { kind: 'relocation'; player: PlayerId }
   | { kind: 'advance'; player: PlayerId; die: string; to: Cell }
   | { kind: 'infamy'; player: PlayerId }
-  | { kind: 'takeCard'; player: PlayerId; count: number }
+  /** `conquer`: how many of the picks were earned by Conquer actions (Profiteering may take a missile instead). */
+  | { kind: 'takeCard'; player: PlayerId; count: number; conquer?: number }
   | { kind: 'peek'; player: PlayerId; deck: DeckKind; top: string }
   | { kind: 'discardSkill'; player: PlayerId; reason?: 'limit' | 'sabotage' }
   | { kind: 'placeExpansion'; player: PlayerId; die: string }
@@ -274,6 +282,8 @@ export type Action =
   | { type: 'takeCard'; deck: DeckKind | 'expansion'; index: number }
   | { type: 'peekChoice'; takeTop: boolean }
   | { type: 'refreshMarket' }
+  /** Profiteering: take 1 missile instead of a card earned by conquering. */
+  | { type: 'profiteer' }
   | { type: 'discardSkill'; skill: string }
   | { type: 'placeExpansion'; to: Cell | null }
   | { type: 'showOfForce'; die: string }

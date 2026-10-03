@@ -57,7 +57,7 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     { type: 'brilliant', gain: true },
     { type: 'brilliant', gain: false },
   ],
-  clever: (_, head) => [1, 2, 3, 4, 5, 6].filter((v) => v !== head.avoid).map((value) => ({ type: 'clever', value })),
+  clever: (_, head) => (head.options ?? [1, 2, 3, 4, 5, 6].filter((v) => v !== head.avoid)).map((value) => ({ type: 'clever', value })),
   relocation: (s, head) => relocationOptions(s, head.player).map((o) => ({ type: 'relocate', ...o })),
   advance: () => [
     { type: 'advance', move: true },
@@ -70,7 +70,7 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     m.skillRow.forEach((_, index) => out.push({ type: 'takeCard', deck: 'skill', index }));
     m.tacticRow.forEach((_, index) => out.push({ type: 'takeCard', deck: 'tactic', index }));
     if (m.expansions > 0 && reserve(s, head.player).length) out.push({ type: 'takeCard', deck: 'expansion', index: 0 });
-    out.push({ type: 'refreshMarket' });
+    out.push({ type: 'refreshMarket' }, { type: 'profiteer' });
     return out;
   },
   peek: () => [

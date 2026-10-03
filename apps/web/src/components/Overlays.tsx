@@ -103,10 +103,13 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
     case 'clever': {
       const p = game.players[head.player];
       const d = die(game, head.die);
+      const subtitle = head.options
+        ? `${p.name}, keep this ship’s number or change it by 1.`
+        : `${p.name}, choose this ship’s number instead of rolling it.`;
       return (
-        <Modal title="Clever" subtitle={`${p.name}, choose this ship’s number instead of rolling it.`} pc={p.color}>
+        <Modal title="Clever" subtitle={subtitle} pc={p.color}>
           <div className="fleet-roll clever-row">
-            {[1, 2, 3, 4, 5, 6].map((value) => (
+            {(head.options ?? [1, 2, 3, 4, 5, 6]).map((value) => (
               <button
                 key={value}
                 className="fleet-die clever-choice"

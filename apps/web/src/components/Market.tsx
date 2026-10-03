@@ -47,6 +47,11 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
         />
       </div>
       )}
+      {legal.can('profiteer') && (
+        <button className="btn btn-ghost market-refresh" title="Profiteering: a card earned by a Conquer action" onClick={() => dispatch({ type: 'profiteer' })}>
+          Take 1 missile instead of a card
+        </button>
+      )}
       {legal.can('refreshMarket') && (
         <button className="btn btn-ghost market-refresh" title="Costs one of this turn's card picks" onClick={() => dispatch({ type: 'refreshMarket' })}>
           Discard all face-up cards and deal new ones

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   actor,
+  canProfiteer,
   cellOf,
   die as getDie,
   key,
@@ -283,7 +284,7 @@ export function hintFor(game: GameState, sel: Sel): string {
       case 'infamy':
         return 'Infamy! Seize any planet that does not have your cube yet.';
       case 'takeCard':
-        return `Take ${head.count} card${head.count > 1 ? 's' : ''} from the market below${rulesOf(game).cards?.refresh ? ', or spend a pick on dealing new cards' : ''}.`;
+        return `Take ${head.count} card${head.count > 1 ? 's' : ''} from the market below${rulesOf(game).cards?.refresh ? ', or spend a pick on dealing new cards' : ''}${canProfiteer(game) ? ', or take a missile instead of a card earned by conquering (Profiteering)' : ''}.`;
       case 'placeExpansion':
         return 'Place your new ship in orbit of one of your planets, or send it to your scrapyard.';
       case 'showOfForce':

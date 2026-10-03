@@ -53,7 +53,7 @@ Cards whose behaviour matches a Community Edition card share its implementation 
 Energetic ≙ Steadfast, Warlike ≙ Hostile).
 
 Every Original card is implemented. Not yet implemented in the Community Edition (left out of the deck until
-they are): Calculating, Clever, Curious, Devious, Patient, Prideful, Profiteering, Ruthless.
+they are): Calculating, Curious, Patient, Prideful, Ruthless.
 
 ---
 
@@ -307,12 +307,12 @@ Full data (with categories, CE status and design notes) lives in
 | Brilliant | Research bonus | At the start of your turn, you may gain 2 Research. Engine: asked only with Pioneering, where the exact research number matters; otherwise gained automatically. |
 | Brutal | Combat with advantage | For Combat rolls, roll twice and use the lower number. |
 | Calculating | Controlled scrapping | When a ship is placed in your scrapyard, choose its ship number. |
-| Clever | Flexible modification | After reconfiguring, you may increase or decrease the ship number by 1. |
+| Clever | Flexible modification | After reconfiguring, you may increase or decrease the ship number by 1. Engine: even onto a number already shown; no wrap ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #63). |
 | Composed | Reduce dominance for research | Once per turn, you may lose 1 Dominance and gain 3 Research. Engine: not usable under Righteous, where neither half has an effect ([RULE-SUGGESTIONS](RULE-SUGGESTIONS.md) #33). |
 | Cunning | Extra ship ability | Once per turn, you may use one ship ability a second time. |
 | Curious | Bonus peaceful move | At the end of your turn, if you did not Attack or Conquer, gain an additional Move or Research action. |
 | Dangerous | Destroy your attacker | When you defend, before players roll combat dice, you can decide to destroy both ships (there is no dominance effect). |
-| Devious | Slingshot past enemies | You may move your ships through enemy ships. These spaces do not count towards your movement. |
+| Devious | Slingshot past enemies | You may move your ships through enemy ships. These spaces do not count towards your movement. Engine: normal moves only, not Transport or Tactical ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #65). |
 | Ferocious | Combat bonus | −1 to your Combat rolls. |
 | Flexible | Adjust a ship | Once per turn, you may increase or decrease one of your ship numbers by 1. |
 | Hostile | Extra action for destruction | The first time you destroy an enemy ship each turn, gain 1 action. |
@@ -324,7 +324,7 @@ Full data (with categories, CE status and design notes) lives in
 | Plundering | Destruction is research | The first time you destroy an enemy ship each turn, gain 3 Research. |
 | Precocious | Accelerated breakthrough | Your Research resets at 4, 5, or 6. |
 | Prideful | Accelerated domination | Your Dominance resets at 4, 5, or 6. When a player destroys one of your ships, they may take this card from you. |
-| Profiteering | Missiles from conquering | When you take a card for Conquering, you may instead gain 1 Missile. |
+| Profiteering | Missiles from conquering | When you take a card for Conquering, you may instead gain 1 Missile. Engine: Conquer-action picks only, not Infamy ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #64). |
 | Rational | Fixed combat | Your Combat rolls are 3. |
 | Ravenous | Dominance amplification | The first time you destroy an enemy ship each turn, gain 1 additional Dominance. |
 | Resourceful | Sacrifice for action | Once per turn, you may destroy one of your ships and gain 1 Action. |

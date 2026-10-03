@@ -57,7 +57,8 @@ export function roll(s: GameState, d: Die, avoid?: number) {
 
 /** Records the die's current number among those it has shown this turn (for Reconfigure). */
 export function markSeen(s: GameState, d: Die) {
-  (s.turn.seen[d.id] ??= []).push(d.value);
+  const seen = (s.turn.seen[d.id] ??= []);
+  if (!seen.includes(d.value)) seen.push(d.value);
 }
 
 /**
@@ -74,16 +75,21 @@ export function rollShip(s: GameState, d: Die, avoid?: number) {
 
 /** Reconfigure: re-roll until the number changes (see RuleSet.reconfigure). */
 export function rerollNew(s: GameState, d: Die) {
-  if (rulesOf(s).reconfigure === 'different') {
-    rollShip(s, d, d.value);
-    return;
+  if (rulesOf(s).reconfigure === 'different') rollShip(s, d, d.value);
+  else {
+    const seen = (s.turn.seen[d.id] ??= [d.value]);
+    if (seen.length >= 6) fail('This ship has already shown every value this turn');
+    do d.value = d6(s);
+    while (seen.includes(d.value));
+    seen.push(d.value);
+    d.rolls++;
   }
-  const seen = (s.turn.seen[d.id] ??= [d.value]);
-  if (seen.length >= 6) fail('This ship has already shown every value this turn');
-  do d.value = d6(s);
-  while (seen.includes(d.value));
-  seen.push(d.value);
-  d.rolls++;
+  // CE Clever: the result may be shifted by 1, even onto a number already shown this turn; no wrap
+  // between 1 and 6, as with Flexible (decided 2026-10-03, OPEN-QUESTIONS #63).
+  if (anySkill(s, d.owner, (r) => r.adjustReconfigure)) {
+    const options = [d.value - 1, d.value, d.value + 1].filter((v) => v >= 1 && v <= 6);
+    s.pending.unshift({ kind: 'clever', player: d.owner, die: d.id, options });
+  }
 }
 
 /** A destroyed ship is re-rolled and goes to its owner's scrapyard. */

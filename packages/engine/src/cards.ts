@@ -6,14 +6,14 @@
  * its entry in TACTIC_EFFECTS. Skills are listed in SKILL_EFFECTS (effects.ts).
  */
 import { same } from './board';
-import { destroyedEnemyShip, destroyShip, fail, gainDominance, headOf, log, name, rollShip, shipName, type Handlers } from './core';
+import { destroyedEnemyShip, destroyShip, fail, gainDominance, headOf, log, name, rollShip, shipName, type Handlers, type PendingOf } from './core';
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
 import { die, reserve, shipsOnBoard } from './lookups';
-import { canRefreshMarket, canRelocate, canTakeCard, deployTargets, relocationOptions, skillLimit } from './queries';
+import { canProfiteer, canRefreshMarket, canRelocate, canTakeCard, deployTargets, relocationOptions, skillLimit } from './queries';
 import { shuffle } from './rng';
 import { rulesOf } from './rules';
-import type { DeckKind, GameState, PlayerId } from './types';
+import type { DeckKind, GameState, PlayerId, PlayerState } from './types';
 
 // ---------------------------------------------------------------------------
 // Tactic effects
@@ -43,7 +43,7 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
       // player's remaining picks are taken in its card phase. Other picks go on as before.
       s.pending = s.pending.filter((x) => {
         if (x.kind !== 'takeCard' || x.player !== p) return true;
-        pl.carriedPicks = (pl.carriedPicks ?? 0) + x.count;
+        carryPicks(pl, x);
         return false;
       });
       return;
@@ -55,7 +55,7 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
     s.pending = s.pending.filter((x) => {
       if (x.kind !== 'takeCard') return true;
       const owner = s.players[x.player];
-      owner.carriedPicks = (owner.carriedPicks ?? 0) + x.count;
+      carryPicks(owner, x);
       return false;
     });
   },
@@ -140,11 +140,19 @@ function gainCard(s: GameState, p: PlayerId, id: string) {
   }
 }
 
+/** Moves a player's remaining picks to the Momentum turn's card phase. */
+function carryPicks(pl: PlayerState, x: PendingOf<'takeCard'>) {
+  pl.carriedPicks = (pl.carriedPicks ?? 0) + x.count;
+  if (x.conquer) pl.carriedConquerPicks = (pl.carriedConquerPicks ?? 0) + x.conquer;
+}
+
 /** Counts one card taken from the current takeCard decision. */
 function consumeCardPick(s: GameState) {
   const head = s.pending[0];
   if (head?.kind !== 'takeCard') return;
   head.count--;
+  // A card can come from any pick, so the picks a Profiteering missile can replace are used last.
+  if (head.conquer) head.conquer = Math.min(head.conquer, head.count);
   if (head.count <= 0) s.pending.shift();
 }
 
@@ -182,6 +190,15 @@ export const cardHandlers = {
       ? (head.deck === 'skill' ? s.market.skillDeck : s.market.tacticDeck).shift()!
       : takeFromRow(s, head.deck, 2);
     gainCard(s, head.player, id);
+  },
+  /** Profiteering: a pick earned by a Conquer action (not by Infamy; OPEN-QUESTIONS #64) becomes 1 missile. */
+  profiteer(s) {
+    const head = headOf(s, 'takeCard', 'Not taking a card');
+    if (!canProfiteer(s)) fail('No card for conquering to trade');
+    head.conquer!--;
+    s.players[head.player].missiles++;
+    log(s, `${name(s, head.player)} takes a missile instead of a card (Profiteering).`, head.player);
+    consumeCardPick(s);
   },
   /** Original (2013 rulebook p.9): spend a card pick to discard all face-up cards and deal new ones. */
   refreshMarket(s) {

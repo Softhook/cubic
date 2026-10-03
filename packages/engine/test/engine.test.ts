@@ -605,3 +605,113 @@ describe('RULE-SUGGESTIONS §5.3', () => {
     });
   });
 });
+
+describe('Clever (CE): after reconfiguring, ±1 (OPEN-QUESTIONS #63)', () => {
+  function reconfigured(start: number): GameState {
+    let s = quickStart(2, 3);
+    const me = s.turn.player;
+    s = arrange(s, { [`p${me}d0`]: [0, 0, start] });
+    s.players[me].skills = [{ id: 'clever', active: true }];
+    s.turn.actionsLeft = 3;
+    return apply(s, { type: 'reconfigure', die: `p${me}d0` });
+  }
+
+  it('offers the new number and its neighbours, without wrapping, even a number already shown', () => {
+    for (let start = 1; start <= 6; start++) {
+      const s = reconfigured(start);
+      const head = s.pending[0];
+      if (head?.kind !== 'clever') throw new Error('no Clever prompt');
+      const v = s.dice.find((d) => d.id === head.die)!.value;
+      expect(head.options).toEqual([v - 1, v, v + 1].filter((x) => x >= 1 && x <= 6));
+      expect(legalActions(s).map((a) => (a.type === 'clever' ? a.value : null))).toEqual(head.options);
+      if (Math.abs(v - start) === 1) expect(apply(s, { type: 'clever', value: start }).dice.find((d) => d.id === head.die)!.value).toBe(start);
+    }
+  });
+
+  it('refuses a change of more than 1', () => {
+    const s = reconfigured(3);
+    const head = s.pending[0];
+    if (head?.kind !== 'clever') throw new Error();
+    const v = s.dice.find((d) => d.id === head.die)!.value;
+    const far = v <= 3 ? v + 2 : v - 2;
+    expect(() => apply(s, { type: 'clever', value: far })).toThrow('at most 1');
+  });
+
+  it('also follows the Scout’s Free Reconfigure', () => {
+    let s = quickStart(2, 3);
+    const me = s.turn.player;
+    s = arrange(s, { [`p${me}d0`]: [0, 0, 6] });
+    s.players[me].skills = [{ id: 'clever', active: true }];
+    s = apply(s, { type: 'freeReconfigure', die: `p${me}d0` });
+    expect(s.pending[0]?.kind).toBe('clever');
+  });
+});
+
+describe('Devious: through enemy ships, normal moves only (OPEN-QUESTIONS #65)', () => {
+  function devious(skill: boolean, blockers: 'enemy' | 'own' = 'enemy'): GameState {
+    let s = quickStart();
+    s.turn.player = 0;
+    const b = blockers === 'enemy' ? 'p1' : 'p0';
+    s = arrange(s, { p0d0: [0, 0, 1], [`${b}d1`]: [0, 1, 4], [`${b}d2`]: [0, 2, 4] });
+    s.players[0].skills = skill ? [{ id: 'devious', active: true }] : [];
+    return s;
+  }
+
+  it('passes through enemy ships at no cost, but can’t stop on them', () => {
+    const moves = moveOptions(devious(true), 'p0d0').moves;
+    expect(moves.has('0,3')).toBe(true); // 2 enemy spaces free + 1 step
+    expect(moves.has('0,1')).toBe(false);
+    expect(moves.has('0,2')).toBe(false);
+    expect(moveOptions(devious(false), 'p0d0').moves.has('0,3')).toBe(false);
+  });
+
+  it('does not pass through your own ships', () => {
+    expect(moveOptions(devious(true, 'own'), 'p0d0').moves.has('0,3')).toBe(false);
+  });
+
+  it('can attack an enemy beyond the ones it passes through', () => {
+    let s = devious(true);
+    s = arrange(s, { p0d0: [0, 0, 2], p1d1: [0, 1, 4], p1d2: [0, 2, 4], p1d0: [0, 4, 4] });
+    s.players[0].skills = [{ id: 'devious', active: true }];
+    expect(moveOptions(s, 'p0d0').attacks.get('p1d0')?.from).toEqual({ r: 0, c: 3 });
+    expect(moveOptions(s, 'p0d0').attacks.has('p1d1')).toBe(true); // still attackable directly
+  });
+});
+
+describe('Profiteering: a card for a Conquer action may be 1 missile (OPEN-QUESTIONS #64)', () => {
+  /** Ends a turn with `conquered` Conquer actions and `infamy` Infamy cubes; `breakthrough` adds a research pick. */
+  function cardPhase(opts: { conquered: number; infamy?: number; breakthrough?: boolean; skill?: boolean }): GameState {
+    let s = quickStart(2, 3);
+    const me = s.turn.player;
+    s.players[me].skills = opts.skill === false ? [] : [{ id: 'profiteering', active: true }];
+    s.turn.conquered = opts.conquered;
+    s.turn.conquests = opts.conquered + (opts.infamy ?? 0);
+    if (opts.breakthrough) s.players[me].research = 6;
+    return apply(s, { type: 'endTurn' });
+  }
+  const offered = (s: GameState) => legalActions(s).some((a) => a.type === 'profiteer');
+
+  it('trades a conquest pick for a missile', () => {
+    const s = cardPhase({ conquered: 1 });
+    const me = s.turn.player;
+    expect(offered(s)).toBe(true);
+    const next = apply(s, { type: 'profiteer' });
+    expect(next.players[me].missiles).toBe(s.players[me].missiles + 1);
+    expect(next.pending.some((x) => x.kind === 'takeCard' && x.player === me)).toBe(false);
+  });
+
+  it('not for an Infamy cube, or without the skill', () => {
+    expect(offered(cardPhase({ conquered: 0, infamy: 1 }))).toBe(false);
+    expect(offered(cardPhase({ conquered: 1, skill: false }))).toBe(false);
+  });
+
+  it('a card taken first uses the breakthrough pick, keeping the conquest pick tradeable', () => {
+    let s = cardPhase({ conquered: 1, breakthrough: true });
+    expect(s.pending[0]).toMatchObject({ kind: 'takeCard', count: 2, conquer: 1 });
+    s = apply(s, { type: 'takeCard', deck: 'skill', index: 0 });
+    expect(s.pending[0]).toMatchObject({ kind: 'takeCard', count: 1, conquer: 1 });
+    expect(offered(s)).toBe(true);
+    s = apply(s, { type: 'profiteer' });
+    expect(offered(s)).toBe(false);
+  });
+});

@@ -58,6 +58,12 @@ export function breakthroughAt(state: GameState, player: PlayerId): number {
   return Math.min(6, ...skillRules(state, player).map((r) => r.breakthroughAt ?? 6));
 }
 
+/** Profiteering: whether the current card pick may be taken as a missile instead. */
+export function canProfiteer(state: GameState): boolean {
+  const head = state.pending[0];
+  return head?.kind === 'takeCard' && (head.conquer ?? 0) > 0 && anySkill(state, head.player, (r) => r.missileForConquest);
+}
+
 /** Whether the player can gain research at all. */
 export function canGainResearch(state: GameState, player: PlayerId): boolean {
   return !anySkill(state, player, (r) => r.noResearch);
@@ -82,28 +88,37 @@ export interface MoveOptions {
   attacks: Map<string, { from: Cell; at: Cell; diagonal: boolean }>;
 }
 
-function reach(state: GameState, start: Cell, range: number, diagonal: boolean, ignore: Cell[] = []) {
-  const steps = new Map<string, { cell: Cell; steps: number; usedDiagonal: boolean }>();
-  steps.set(key(start), { cell: start, steps: 0, usedDiagonal: false });
+/**
+ * Spaces a ship can reach within `range` steps, with the fewest steps to each. `ignore` lists
+ * occupied spaces treated as empty. With `through` (Devious), the ship may pass through that
+ * player's enemies' ships at no cost; such spaces are marked `through`, as it can't stop there.
+ */
+function reach(state: GameState, start: Cell, range: number, diagonal: boolean, ignore: Cell[] = [], through?: PlayerId) {
+  const steps = new Map<string, { cell: Cell; steps: number; usedDiagonal: boolean; through: boolean }>();
+  steps.set(key(start), { cell: start, steps: 0, usedDiagonal: false, through: false });
   const queue: Cell[] = [start];
-  const passable = (p: Cell) => {
+  const entry = (p: Cell): 'free' | 'through' | null => {
     const cell = cellAt(state.board, p);
-    if (!cell || cell.kind !== 'space') return false;
-    if (ignore.some((x) => same(x, p))) return true;
-    return !dieAt(state, p);
+    if (!cell || cell.kind !== 'space') return null;
+    if (ignore.some((x) => same(x, p))) return 'free';
+    const d = dieAt(state, p);
+    if (!d) return 'free';
+    return through !== undefined && d.owner !== through ? 'through' : null;
   };
+  // 0-1 breadth-first search: free passes go to the front of the queue. Without them it is a plain BFS.
   while (queue.length) {
     const cur = queue.shift()!;
     const info = steps.get(key(cur))!;
     if (info.steps >= range) continue;
     for (const nb of stepNeighbours(state, cur, diagonal)) {
-      if (steps.has(key(nb)) || !passable(nb)) continue;
-      steps.set(key(nb), {
-        cell: nb,
-        steps: info.steps + 1,
-        usedDiagonal: info.usedDiagonal || isDiagonalStep(cur, nb),
-      });
-      queue.push(nb);
+      const kind = entry(nb);
+      if (!kind) continue;
+      const cost = info.steps + (kind === 'through' ? 0 : 1);
+      const old = steps.get(key(nb));
+      if (old && old.steps <= cost) continue;
+      steps.set(key(nb), { cell: nb, steps: cost, usedDiagonal: info.usedDiagonal || isDiagonalStep(cur, nb), through: kind === 'through' });
+      if (kind === 'through') queue.unshift(nb);
+      else queue.push(nb);
     }
   }
   return steps;
@@ -125,14 +140,16 @@ export function moveOptions(state: GameState, dieId: string): MoveOptions {
   const passes: boolean[] = [false];
   if (d.value === 5 && canUseAbility(state, d)) passes.push(true);
 
+  // Devious: normal moves only, not Transport or the Tactical step (decided 2026-10-03, OPEN-QUESTIONS #65).
+  const through = anySkill(state, d.owner, (r) => r.moveThroughEnemies) ? d.owner : undefined;
   for (const diagonal of passes) {
-    const reached = reach(state, start, range, diagonal);
+    const reached = reach(state, start, range, diagonal, [], through);
     for (const [k, info] of reached) {
-      if (info.steps === 0 || result.moves.has(k)) continue;
+      if (info.steps === 0 || info.through || result.moves.has(k)) continue;
       result.moves.set(k, { cell: info.cell, steps: info.steps, diagonal });
     }
     for (const info of reached.values()) {
-      if (info.steps >= range) continue;
+      if (info.steps >= range || info.through) continue;
       for (const nb of stepNeighbours(state, info.cell, diagonal)) {
         const target = dieAt(state, nb);
         if (!target || target.owner === d.owner || result.attacks.has(target.id)) continue;
