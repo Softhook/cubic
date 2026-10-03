@@ -15,7 +15,7 @@ export interface Outcome {
 }
 
 /** Actions with a random result that is not enumerated exactly. */
-const SAMPLED = new Set<Action['type']>(['takeCard', 'peekChoice', 'refreshMarket', 'resourceful', 'unveilReroll', 'scrappy', 'reroll']);
+const SAMPLED = new Set<Action['type']>(['takeCard', 'peekChoice', 'refreshMarket', 'resourceful', 'unveilReroll', 'scrappy']);
 
 /** Outcomes of `a` in `s`, or null if it is illegal. `seeds` are used for sampled actions. */
 export function outcomes(s: GameState, a: Action, seeds: number[]): Outcome[] | null {
@@ -30,7 +30,8 @@ export function outcomes(s: GameState, a: Action, seeds: number[]): Outcome[] | 
   }
   const next = tryApply(s, a);
   if (!next) return null;
-  if (a.type === 'reconfigure' || a.type === 'freeReconfigure') return rerolls(s, next, a.die);
+  // Under Clever the rolled number is replaced by the player's choice, so the roll doesn't branch.
+  if ((a.type === 'reconfigure' || a.type === 'freeReconfigure') && next.pending[0]?.kind !== 'clever') return rerolls(s, next, a.die);
   if (next.pending[0]?.kind === 'combat' && s.pending[0]?.kind !== 'combat') return battles(next, next.pending[0]);
   return [{ state: next, p: 1 }];
 }

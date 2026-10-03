@@ -211,7 +211,8 @@ export function skillRules(state: GameState, player: PlayerId): SkillRule[] {
 
 /** Whether any of the player's active skills has this property. */
 export function anySkill(state: GameState, player: PlayerId, test: (r: SkillRule) => unknown): boolean {
-  return skillRules(state, player).some(test);
+  // Called on hot paths (every roll, attack and combat total): no list is built.
+  return state.players[player].skills.some((s) => s.active && test(SKILL_RULES[effectOf(s.id) as SkillEffect] ?? {}));
 }
 
 /** True when the player owns an active skill with this effect (e.g. Cerebral has the 'composed' effect). */

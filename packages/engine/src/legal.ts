@@ -10,7 +10,7 @@ import {
   canUseAbility,
   carryOptions,
   carryPassengers,
-  combatReroll,
+  combatRerolls,
   conquerCheck,
   deploysFree,
   deployTargets,
@@ -45,7 +45,7 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
       if (!head.defender.missile) out.push({ type: 'missile', by: pl.id, side: 'defender' });
     }
     for (const by of [head.attacker.player, head.defender.player]) {
-      for (const side of ['attacker', 'defender'] as const) if (combatReroll(s, head, by, side)) out.push({ type: 'reroll', by, side });
+      for (const { side } of combatRerolls(s, head, by)) out.push({ type: 'reroll', by, side });
     }
     return out;
   },
@@ -53,7 +53,7 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     { type: 'dangerous', destroy: false },
     { type: 'dangerous', destroy: true },
   ],
-  clever: () => [1, 2, 3, 4, 5, 6].map((value) => ({ type: 'clever', value })),
+  clever: (_, head) => [1, 2, 3, 4, 5, 6].filter((v) => v !== head.avoid).map((value) => ({ type: 'clever', value })),
   relocation: (s, head) => relocationOptions(s, head.player).map((o) => ({ type: 'relocate', ...o })),
   advance: () => [
     { type: 'advance', move: true },
@@ -111,6 +111,7 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
   // Attacking makes you pay for any Curious free moves already taken (payForAttack).
   const canAttack = (cost: number) => actions >= cost + t.freeMovesUsed;
   const pl = s.players[me];
+  const nomadic = actions > 0 && hasSkill(s, me, 'nomadic') && !usedThisTurn(s, 'nomadic');
 
   for (const d of shipsOnBoard(s, me)) {
     if ((actions > 0 || t.freeMoves > 0) && canMoveDie(s, d)) {
@@ -147,9 +148,7 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
     if (hasSkill(s, me, 'resourceful') && !usedThisTurn(s, 'resourceful')) {
       out.push({ type: 'resourceful', die: d.id });
     }
-    if (actions > 0 && hasSkill(s, me, 'nomadic') && !usedThisTurn(s, 'nomadic')) {
-      for (const to of nomadicTargets(s, d.id)) out.push({ type: 'nomadic', die: d.id, to });
-    }
+    if (nomadic) for (const to of nomadicTargets(s, d.id)) out.push({ type: 'nomadic', die: d.id, to });
   }
   const freeDeploy = deploysFree(s, me);
   const targets = deployTargets(s, me);
@@ -168,12 +167,13 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
 export function legalActions(s: GameState, opts: { includeCarry?: boolean } = {}): Action[] {
   if (s.phase === 'over') return [];
   const head = s.pending[0];
-  // Scrappy's re-roll is open to the player whose turn it is, whatever they are deciding.
-  const scrappy: Action[] = canScrappy(s) && actor(s) === s.turn.player ? [{ type: 'scrappy' }] : [];
+  let out: Action[];
   if (head) {
     const candidates = (DECISION_CANDIDATES[head.kind] as (s: GameState, h: Pending) => Action[])(s, head);
-    return [...candidates.filter((a) => tryApply(s, a) !== null), ...scrappy];
-  }
-  if (s.phase !== 'play' || s.turn.phase !== 'actions') return [];
-  return [...actionPhaseOptions(s, opts), ...scrappy];
+    out = candidates.filter((a) => tryApply(s, a) !== null);
+  } else if (s.phase === 'play' && s.turn.phase === 'actions') out = actionPhaseOptions(s, opts);
+  else return [];
+  // Scrappy's re-roll is open to the player whose turn it is, whatever they are deciding.
+  if (canScrappy(s) && actor(s) === s.turn.player) out.push({ type: 'scrappy' });
+  return out;
 }

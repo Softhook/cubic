@@ -10,7 +10,7 @@ import { destroyShip, fail, gainDominance, headOf, log, name, rollShip, shipName
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
 import { die, reserve, shipsOnBoard } from './lookups';
-import { canRefreshMarket, canTakeCard, deployTargets, relocationOptions, skillLimit } from './queries';
+import { canRefreshMarket, canRelocate, canTakeCard, deployTargets, relocationOptions, skillLimit } from './queries';
 import { shuffle } from './rng';
 import { rulesOf } from './rules';
 import type { DeckKind, GameState, PlayerId } from './types';
@@ -223,9 +223,7 @@ export const cardHandlers = {
   },
   relocate(s, a) {
     const head = headOf(s, 'relocation', 'No Relocation to resolve');
-    if (!relocationOptions(s, head.player).some((o) => o.planet === a.planet && o.owner === a.owner && o.to === a.to)) {
-      fail("Move another player's cube to a planet without one of their cubes, with no higher number");
-    }
+    if (!canRelocate(s, head.player, a)) fail("Move another player's cube to a planet without one of their cubes, with no higher number");
     s.pending.shift();
     const from = s.board.planets[a.planet];
     const to = s.board.planets[a.to];

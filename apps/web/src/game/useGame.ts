@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { actor, apply, checkInvariants, combatReroll, isUndoable, RuleError, type Action, type GameState, type LogEntry, type LogEvent, type PlayerState } from '@quantum/engine';
+import { actor, apply, canRespondToCombat, checkInvariants, isUndoable, RuleError, type Action, type GameState, type LogEntry, type LogEvent } from '@quantum/engine';
 import { chooseCombatResponse } from '@quantum/ai';
 import { sfx } from '../sound';
 import { aiLevelOf, think } from './aiClient';
@@ -152,14 +152,11 @@ export function useGame(initial: GameState) {
     let timer: number | undefined;
 
     if (head?.kind === 'combat') {
-      // A player can respond with a missile, or with a re-roll card (Cruel, Relentless, Scrappy).
-      const canRespond = (p: PlayerState) =>
-        p.missiles > 0 || (['attacker', 'defender'] as const).some((side) => combatReroll(game, head, p.id, side));
       // Asked again after anything changes the battle (a re-roll or a missile).
       const stage = `${head.id}:${head.rerolls.length}:${+head.attacker.missile}${+head.defender.missile}`;
       for (const p of game.players) {
         const k = `${stage}:${p.id}`;
-        if (!p.ai || !canRespond(p) || missileAsked.current.has(k)) continue;
+        if (!p.ai || !canRespondToCombat(game, head, p.id) || missileAsked.current.has(k)) continue;
         const m = chooseCombatResponse(game, p.id, { level: aiLevelOf(p) });
         if (!m) {
           missileAsked.current.add(k);
@@ -171,7 +168,7 @@ export function useGame(initial: GameState) {
         }, 1700);
         return () => window.clearTimeout(timer);
       }
-      const humanMayRespond = game.players.some((p) => !p.ai && canRespond(p));
+      const humanMayRespond = game.players.some((p) => !p.ai && canRespondToCombat(game, head, p.id));
       if (!humanMayRespond) timer = window.setTimeout(() => dispatch({ type: 'resolveCombat' }), 2600);
       return () => window.clearTimeout(timer);
     }

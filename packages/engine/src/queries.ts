@@ -14,8 +14,7 @@ import {
 import { card, effectOf } from './data';
 import { cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
 import { rulesOf } from './rules';
-import type { SkillEffect } from './effects';
-import { activeSkills, anySkill, skillRules, type CombatPart } from './skillRules';
+import { activeSkills, anySkill, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
 import type { Cell, CombatPending, Die, GameState, OncePerTurn, Planet, PlayerId } from './types';
 
 export type { CombatPart } from './skillRules';
@@ -315,14 +314,21 @@ export function relocationOptions(state: GameState, player: PlayerId): Relocatio
   const out: RelocationOption[] = [];
   for (const from of state.board.planets) {
     for (const owner of new Set(from.cubes)) {
-      if (owner === player) continue;
       for (const to of state.board.planets) {
-        if (to.id === from.id || to.number > from.number || planetFreeSlots(to) <= 0 || to.cubes.includes(owner)) continue;
-        out.push({ planet: from.id, owner, to: to.id });
+        const option = { planet: from.id, owner, to: to.id };
+        if (canRelocate(state, player, option)) out.push(option);
       }
     }
   }
   return out;
+}
+
+/** Whether `player` may make this Relocation move. */
+export function canRelocate(state: GameState, player: PlayerId, { planet, owner, to }: RelocationOption): boolean {
+  const from = state.board.planets[planet];
+  const dest = state.board.planets[to];
+  if (!from || !dest || owner === player || to === planet || !from.cubes.includes(owner)) return false;
+  return dest.number <= from.number && planetFreeSlots(dest) > 0 && !dest.cubes.includes(owner);
 }
 
 /**
@@ -339,10 +345,9 @@ export function nomadicTargets(state: GameState, dieId: string): Cell[] {
   return near.flatMap((p) => orbitals(state.board, p).filter((q) => isEmptySpace(state, q)));
 }
 
-/** Scrappy: whether the player whose turn it is may re-roll the ship rolled by the last action. */
+/** Scrappy: whether the player whose turn it is may re-roll the ship rolled by the last action (core.ts rollShip). */
 export function canScrappy(state: GameState): boolean {
-  const t = state.turn.scrappy;
-  return state.phase === 'play' && !!t && die(state, t.die).owner === state.turn.player;
+  return !!state.turn.scrappy;
 }
 
 export interface TacticalOptions {
@@ -383,31 +388,26 @@ export interface CombatTotal {
   parts: CombatPart[];
 }
 
+/** The value a side's combat roll is set to, overriding the dice: a missile, Plan Ahead or Rational (in that priority). */
+function rollOverride(state: GameState, combat: CombatPending, side: 'attacker' | 'defender'): CombatPart | undefined {
+  const s = combat[side];
+  if (s.missile) return { label: 'Missile', value: 1 };
+  if (state.players[s.player].planAhead > 0) return { label: 'Plan Ahead', value: 1 };
+  const fixed = activeSkills(state, s.player).filter((a) => a.rule.combat?.roll !== undefined).pop();
+  return fixed && { label: card(fixed.card).name, value: fixed.rule.combat!.roll! };
+}
+
 /**
  * Combat roll pipeline (see docs/OPEN-QUESTIONS.md #10):
  * roll (Brutal: lower of two) → set effects (Rational 3, Plan Ahead 1) → missile (1) → modifiers.
  */
 export function combatTotal(state: GameState, combat: CombatPending, side: 'attacker' | 'defender'): CombatTotal {
   const s = combat[side];
-  const p = state.players[s.player];
   const skills = activeSkills(state, s.player).filter((a) => a.rule.combat);
   const parts: CombatPart[] = [];
-  let roll = s.dice.length > 1 ? Math.min(...s.dice) : s.dice[0];
-  let label = s.dice.length > 1 ? 'Brutal roll' : 'Roll';
-  for (const { card: id, rule } of skills) {
-    if (rule.combat!.roll === undefined) continue;
-    roll = rule.combat!.roll;
-    label = card(id).name;
-  }
-  if (p.planAhead > 0) {
-    roll = 1;
-    label = 'Plan Ahead';
-  }
-  if (s.missile) {
-    roll = 1;
-    label = 'Missile';
-  }
-  parts.push({ label, value: roll });
+  const set = rollOverride(state, combat, side);
+  const roll = set?.value ?? (s.dice.length > 1 ? Math.min(...s.dice) : s.dice[0]);
+  parts.push({ label: set?.label ?? (s.dice.length > 1 ? 'Brutal roll' : 'Roll'), value: roll });
   parts.push({ label: 'Ship', value: s.ship });
   for (const { card: id, rule } of skills) {
     const value = rule.combat!.modifier?.({ state, combat, side }) ?? 0;
@@ -428,27 +428,35 @@ export function combatOutcome(state: GameState, combat: CombatPending) {
   return { attacker: a, defender: d, attackerWins, stubborn };
 }
 
-/** Whether a side's combat roll is set by a missile, Plan Ahead or Rational, so re-rolling can't change it. */
-export function rollIsFixed(state: GameState, combat: CombatPending, side: 'attacker' | 'defender'): boolean {
-  const s = combat[side];
-  return s.missile || state.players[s.player].planAhead > 0 || anySkill(state, s.player, (r) => r.combat?.roll !== undefined);
-}
-
 /**
- * The skill effect that lets `by` re-roll `side`'s combat dice now, if any: their own (Relentless;
- * Scrappy on their turn) or their opponent's (Cruel). Each is usable once per battle.
+ * The skill that lets `by` re-roll `side`'s combat dice now, if any: their own (Relentless;
+ * Scrappy on their turn) or their opponent's (Cruel). Each is usable once per battle, and not on a
+ * roll a missile, Plan Ahead or Rational has set.
  */
-export function combatReroll(state: GameState, combat: CombatPending, by: PlayerId, side: 'attacker' | 'defender'): SkillEffect | undefined {
+export function combatReroll(state: GameState, combat: CombatPending, by: PlayerId, side: 'attacker' | 'defender'): ActiveSkill | undefined {
   const target = combat[side].player;
   const opponent = side === 'attacker' ? combat.defender.player : combat.attacker.player;
   if (by !== target && by !== opponent) return undefined;
-  if (rollIsFixed(state, combat, side)) return undefined;
+  if (rollOverride(state, combat, side)) return undefined;
   return activeSkills(state, by).find(({ effect, rule }) => {
     const r = rule.combat?.reroll;
     if (!r || combat.rerolls.includes(effect)) return false;
     if (r.ownTurnOnly && by !== state.turn.player) return false;
     return r.whose === 'own' ? by === target : by === opponent;
-  })?.effect;
+  });
+}
+
+/** Every combat re-roll `by` could make now, on either side. */
+export function combatRerolls(state: GameState, combat: CombatPending, by: PlayerId): { side: 'attacker' | 'defender'; skill: ActiveSkill }[] {
+  return (['attacker', 'defender'] as const).flatMap((side) => {
+    const skill = combatReroll(state, combat, by, side);
+    return skill ? [{ side, skill }] : [];
+  });
+}
+
+/** Whether `player` can still respond to the battle: a missile, or a re-roll card. */
+export function canRespondToCombat(state: GameState, combat: CombatPending, player: PlayerId): boolean {
+  return state.players[player].missiles > 0 || combatRerolls(state, combat, player).length > 0;
 }
 
 /** How many combat dice the player rolls (the lowest counts). */

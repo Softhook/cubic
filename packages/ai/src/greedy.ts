@@ -3,7 +3,7 @@ import {
   attackOdds,
   cellOf,
   combatOutcome,
-  combatReroll,
+  combatRerolls,
   conquerCheck,
   die,
   dieAt,
@@ -68,16 +68,12 @@ export function chooseReroll(state: GameState, player: PlayerId): Action | null 
   if (head?.kind !== 'combat') return null;
   const mine = head.attacker.player === player ? 'attacker' : head.defender.player === player ? 'defender' : null;
   if (!mine || (mine === 'attacker') === combatOutcome(state, head).attackerWins) return null;
-  for (const side of ['attacker', 'defender'] as const) {
-    if (combatReroll(state, head, player, side)) return { type: 'reroll', by: player, side };
-  }
-  return null;
+  const [first] = combatRerolls(state, head, player);
+  return first ? { type: 'reroll', by: player, side: first.side } : null;
 }
 
-/** Should `player` re-roll or fire a missile in the current combat? Dice are already rolled, so this is exact. */
-export function chooseCombatResponse(state: GameState, player: PlayerId): Action | null {
-  const reroll = chooseReroll(state, player);
-  if (reroll) return reroll;
+/** Should `player` fire a missile into the current combat? Dice are already rolled, so this is exact. */
+export function chooseMissile(state: GameState, player: PlayerId): Action | null {
   const head = state.pending[0];
   if (head?.kind !== 'combat' || state.players[player].missiles <= 0) return null;
   const options: Action[] = [

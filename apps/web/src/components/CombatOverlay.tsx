@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { SHIP_NAMES, card, combatOutcome, combatReroll, skillCard, tryApply, type Action, type CombatPending, type GameState, type PlayerState } from '@quantum/engine';
+import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, tryApply, type Action, type CombatPending, type GameState, type PlayerState } from '@quantum/engine';
 import type { Dispatch } from '../game/useGame';
 import { Die3D } from './Die3D';
 
@@ -18,8 +18,7 @@ export function CombatOverlay({ game, combat, dispatch }: { game: GameState; com
   const D = game.players[combat.defender.player];
   const humans = game.players.filter((p) => !p.ai);
   const shooters = humans.filter((p) => p.missiles > 0);
-  const rerollers = humans.filter((p) => (['attacker', 'defender'] as const).some((side) => combatReroll(game, combat, p.id, side)));
-  const autoResolve = shooters.length === 0 && rerollers.length === 0;
+  const autoResolve = !humans.some((p) => canRespondToCombat(game, combat, p.id));
   const leader = out.attackerWins ? A : D;
 
   const side = (role: 'attacker' | 'defender') => {
@@ -62,7 +61,7 @@ export function CombatOverlay({ game, combat, dispatch }: { game: GameState; com
           {s.dice.length > 1 && <li className="muted">Brutal: rolled {s.dice.join(' & ')}</li>}
         </ul>
         <div className={`combat-total ${revealed ? 'show' : ''}`}>{revealed ? total.total : '?'}</div>
-        {revealed && rerollers.map((p) => <RerollButton key={p.id} game={game} combat={combat} role={role} by={p} named={humans.length > 1} dispatch={dispatch} />)}
+        {revealed && humans.map((p) => <RerollButton key={p.id} game={game} combat={combat} role={role} by={p} named={humans.length > 1} dispatch={dispatch} />)}
         {revealed && shooters.map((sh) => <MissileButton key={sh.id} game={game} combat={combat} role={role} shooter={sh} named={humans.length > 1} dispatch={dispatch} />)}
         {revealed && !s.missile && total.roll === 1 && shooters.some((sh) => sh.id === s.player) && (
           <p className="missile-note">Roll is already 1 — a missile can’t help.</p>
@@ -120,9 +119,9 @@ function RerollButton({
   named: boolean;
   dispatch: Dispatch;
 }) {
-  const effect = combatReroll(game, combat, by.id, role);
-  if (!effect) return null;
-  const via = card(skillCard(game, by.id, effect)!).name;
+  const skill = combatReroll(game, combat, by.id, role);
+  if (!skill) return null;
+  const via = card(skill.card).name;
   const own = combat[role].player === by.id;
   return (
     <button className="btn btn-missile" onClick={() => dispatch({ type: 'reroll', by: by.id, side: role })}>

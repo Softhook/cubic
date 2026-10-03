@@ -1,7 +1,7 @@
 /** Turn structure: start of turn, the end-of-turn card phase, and passing the turn on. */
 import { ACTIONS_PER_TURN, emptyTurn, gainResearch, log, name, type PendingOf } from './core';
 import { cellOf, scrapyard, shipsOnBoard } from './lookups';
-import { breakthroughAt, canTakeAnyCard, infamyTargets, relocationOptions, startSlots } from './queries';
+import { breakthroughAt, canTakeAnyCard, infamyTargets, startSlots } from './queries';
 import { rulesOf } from './rules';
 import { skillRules, type TurnBonus } from './skillRules';
 import type { GameState, Pending, PlayerId } from './types';
@@ -91,11 +91,6 @@ const AUTO_RESOLVE: { [K in Pending['kind']]?: (s: GameState, head: PendingOf<K>
   infamy(s, head) {
     if (infamyTargets(s, head.player).length) return false;
     log(s, `${name(s, head.player)} has nowhere to place an Infamy cube.`, head.player, 'infamy');
-    s.pending.shift();
-    return true;
-  },
-  relocation(s, head) {
-    if (relocationOptions(s, head.player).length) return false;
     s.pending.shift();
     return true;
   },

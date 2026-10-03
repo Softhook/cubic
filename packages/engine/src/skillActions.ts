@@ -12,12 +12,13 @@ import {
   loseDominance,
   markAbility,
   markMoved,
+  markSeen,
   name,
   oncePerTurn,
   ownShip,
   requireActionPhase,
   requireSkill,
-  rollAvoiding,
+  roll,
   spend,
   type Handlers,
 } from './core';
@@ -56,7 +57,7 @@ export const skillHandlers = {
     if (v < 1 || v > 6) fail('Ship numbers range from 1 to 6');
     oncePerTurn(s, 'flexible');
     d.value = v;
-    (t.seen[d.id] ??= []).push(v);
+    markSeen(s, d);
   },
   tyrannical(s) {
     const t = requireActionPhase(s);
@@ -118,8 +119,8 @@ export const skillHandlers = {
     const { die: id, avoid } = s.turn.scrappy!;
     delete s.turn.scrappy;
     const d = die(s, id);
-    rollAvoiding(s, d, avoid);
-    (s.turn.seen[d.id] ??= []).push(d.value);
+    roll(s, d, avoid);
+    markSeen(s, d);
     log(s, `${name(s, d.owner)} re-rolls their ship (Scrappy): ${d.value}.`, d.owner);
   },
   clever(s, a) {
@@ -129,7 +130,7 @@ export const skillHandlers = {
     s.pending.shift();
     const d = die(s, head.die);
     d.value = a.value;
-    (s.turn.seen[d.id] ??= []).push(a.value);
+    markSeen(s, d);
   },
   resourceful(s, a) {
     const t = requireActionPhase(s);

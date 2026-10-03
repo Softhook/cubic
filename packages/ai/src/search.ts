@@ -1,6 +1,5 @@
 import { actor, apply, legalActions, type Action, type GameState, type PlayerId } from '@quantum/engine';
 import { outcomes } from './chance';
-import { chooseReroll } from './greedy';
 import { evaluate } from './evaluate';
 
 /**
@@ -85,10 +84,8 @@ export class Search {
     return scored[0].a;
   }
 
-  /** Should `player` re-roll or fire a missile in the current combat? The dice are known, so this is exact. */
-  combatResponse(state: GameState, player: PlayerId): Action | null {
-    const reroll = chooseReroll(state, player);
-    if (reroll) return reroll;
+  /** Should `player` fire a missile into the current combat? The dice are known, so this is exact. */
+  missile(state: GameState, player: PlayerId): Action | null {
     const head = state.pending[0];
     if (head?.kind !== 'combat' || state.players[player].missiles <= 0) return null;
     const root = hideUnknowns(state, this.random);

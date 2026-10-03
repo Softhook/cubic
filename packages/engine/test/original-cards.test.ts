@@ -3,36 +3,19 @@
  * Relentless, Scrappy), Dangerous, Clever, Scrappy ship re-rolls, Nomadic and Relocation.
  */
 import { describe, expect, it } from 'vitest';
-import { apply, createGame, legalActions, type Action, type GameState, type PlayerId } from '../src';
-import { arrange, players } from './helpers';
-
-/**
- * An Original game on Alpha Sector, setup done (planets at rows/cols 1, 4, 7: the centre is an 8,
- * the others 7s). The current player ("me") has a Scout at (0,0) next to the enemy's Destroyer at
- * (0,1); `skills` are given to each side, active.
- */
-function game(skills: { me?: string[]; foe?: string[] } = {}): GameState {
-  let s = createGame({ players: players(2), seed: 3, mode: 'original', mapId: 'alpha-sector' });
-  while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
-  const me = s.turn.player;
-  const foe = 1 - me;
-  s = arrange(s, { [`p${me}d0`]: [0, 0, 6], [`p${foe}d0`]: [0, 1, 3] });
-  s.players[me].skills = (skills.me ?? []).map((id) => ({ id, active: true }));
-  s.players[foe].skills = (skills.foe ?? []).map((id) => ({ id, active: true }));
-  s.players[me].dominance = 3;
-  s.players[foe].dominance = 3;
-  s.turn.actionsLeft = 3;
-  return s;
-}
+import { apply, legalActions, type Action, type GameState, type PlayerId } from '../src';
+import { arrange, originalGame as game } from './helpers';
 
 const ids = (s: GameState) => ({ me: s.turn.player, foe: 1 - s.turn.player, scout: `p${s.turn.player}d0`, enemy: `p${1 - s.turn.player}d0` });
 const at = (s: GameState, id: string) => s.dice.find((d) => d.id === id)!;
 const can = (s: GameState, match: (a: Action) => boolean) => legalActions(s).some(match);
 
+/** My Scout attacks the enemy Destroyer. */
+const attack = (s: GameState): GameState => apply(s, { type: 'attack', die: ids(s).scout, target: ids(s).enemy });
+
 /** My Scout attacks; the combat dice are set to `rolls` (attacker, defender). */
 function battle(s: GameState, rolls: [number, number]): GameState {
-  const { scout, enemy } = ids(s);
-  s = apply(s, { type: 'attack', die: scout, target: enemy });
+  s = attack(s);
   const head = s.pending[0];
   if (head.kind !== 'combat') throw new Error(`expected a battle, got ${head.kind}`);
   head.attacker.dice = [rolls[0]];
@@ -86,7 +69,7 @@ describe('combat re-rolls (2013 rulebook FAQ: after both have rolled; the new ro
 
 describe('Dangerous (destroy both ships before the dice are rolled; designer, BGG thread 1070690)', () => {
   it('asks the defender before any combat dice are rolled', () => {
-    const s = apply(game({ foe: ['o-dangerous'] }), { type: 'attack', die: ids(game()).scout, target: ids(game()).enemy });
+    const s = attack(game({ foe: ['o-dangerous'] }));
     expect(s.pending[0]).toMatchObject({ kind: 'dangerous', player: ids(s).foe });
     expect(s.pending.some((p) => p.kind === 'combat')).toBe(false);
   });
@@ -94,7 +77,7 @@ describe('Dangerous (destroy both ships before the dice are rolled; designer, BG
   it('destroys both ships, with no dominance change and no "when you destroy" bonus', () => {
     let s = game({ me: ['o-warlike', 'o-ravenous'], foe: ['o-dangerous'] });
     const { me, foe, scout, enemy } = ids(s);
-    s = apply(s, { type: 'attack', die: scout, target: enemy });
+    s = attack(s);
     s = apply(s, { type: 'dangerous', destroy: true });
     expect(at(s, scout).loc.zone).toBe('scrapyard');
     expect(at(s, enemy).loc.zone).toBe('scrapyard');
@@ -105,7 +88,7 @@ describe('Dangerous (destroy both ships before the dice are rolled; designer, BG
   });
 
   it('declining rolls the dice and the battle goes ahead', () => {
-    let s = apply(game({ foe: ['o-dangerous'] }), { type: 'attack', die: ids(game()).scout, target: ids(game()).enemy });
+    let s = attack(game({ foe: ['o-dangerous'] }));
     s = apply(s, { type: 'dangerous', destroy: false });
     expect(s.pending[0].kind).toBe('combat');
   });
@@ -217,17 +200,16 @@ describe('Relocation (move another player’s cube to a planet without theirs, n
     const s = relocation();
     const { foe } = ids(s);
     expect(s.pending[0].kind).toBe('relocation');
-    const moves = legalActions(s).filter((a) => a.type === 'relocate');
+    const moves = legalActions(s).filter((a): a is Extract<Action, { type: 'relocate' }> => a.type === 'relocate');
     expect(moves.length).toBeGreaterThan(0);
     for (const m of moves) {
-      if (m.type !== 'relocate') continue;
       expect(m.owner).toBe(foe);
       expect(s.board.planets[m.to].number).toBeLessThanOrEqual(s.board.planets[m.planet].number);
       expect(s.board.planets[m.to].cubes).not.toContain(foe);
     }
     // The foe's starting 7 can't go to the 8.
     const start = s.board.planets.find((p) => p.number === 7 && p.cubes.includes(foe))!;
-    expect(moves.some((m) => m.type === 'relocate' && m.planet === start.id && s.board.planets[m.to].number === 8)).toBe(false);
+    expect(moves.some((m) => m.planet === start.id && s.board.planets[m.to].number === 8)).toBe(false);
   });
 
   it('moves the cube; the owner keeps the same number of cubes on the map', () => {

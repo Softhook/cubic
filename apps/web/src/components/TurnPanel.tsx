@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { SHIP_NAMES, card, rulesOf, skillCard, type GameState, type SkillEffect } from '@quantum/engine';
+import { SHIP_NAMES, card, die, rulesOf, skillCard, type GameState, type SkillEffect } from '@quantum/engine';
 import { hintFor, type Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
 import { CategoryIcon } from './Card';
@@ -56,7 +56,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
           <SkillButton game={game} effect="tyrannical-original" disabled={!legal.can('tyrannical')} onClick={() => dispatch({ type: 'tyrannical' })} />
           <SkillButton game={game} effect="ambitious" label="Ambitious +1" disabled={!legal.can('ambitious')} onClick={() => dispatch({ type: 'ambitious' })} />
           {legal.can('scrappy') && (
-            <SkillButton game={game} effect="scrappy" label={`Re-roll ${scrappyShip(game)} (Scrappy)`} disabled={false} onClick={() => dispatch({ type: 'scrappy' })} />
+            <SkillButton game={game} effect="scrappy" label={`Re-roll ${SHIP_NAMES[die(game, game.turn.scrappy!.die).value]} (Scrappy)`} disabled={false} onClick={() => dispatch({ type: 'scrappy' })} />
           )}
           <button
             className="btn btn-ghost undo-btn"
@@ -103,13 +103,6 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
       <ShipPanel game={game} ctl={ctl} dispatch={dispatch} />
     </section>
   );
-}
-
-/** The ship Scrappy would re-roll, by name. */
-function scrappyShip(game: GameState): string {
-  const id = game.turn.scrappy?.die;
-  const d = id ? game.dice.find((x) => x.id === id) : undefined;
-  return d ? SHIP_NAMES[d.value] : 'ship';
 }
 
 /** A button for a skill the current player activates; hidden unless they have it. */

@@ -18,7 +18,7 @@ import { card } from './data';
 import { cellOf, die, dieAt } from './lookups';
 import { combatDice, combatOutcome, combatReroll, combatTotal, infamyTargets } from './queries';
 import { d6 } from './rng';
-import { anySkill, skillCard, skillRules } from './skillRules';
+import { anySkill, skillRules } from './skillRules';
 import type { Cell, Die, GameState, PlayerId } from './types';
 
 /**
@@ -109,12 +109,12 @@ export const combatHandlers = {
   },
   reroll(s, a) {
     const head = headOf(s, 'combat', 'No combat to re-roll');
-    const effect = combatReroll(s, head, a.by, a.side);
-    if (!effect) fail('No re-roll available');
-    head.rerolls.push(effect);
+    const skill = combatReroll(s, head, a.by, a.side);
+    if (!skill) fail('No re-roll available');
+    head.rerolls.push(skill.effect);
     const side = head[a.side];
     side.dice = side.dice.map(() => d6(s));
-    const via = card(skillCard(s, a.by, effect)!).name;
+    const via = card(skill.card).name;
     const whose = a.by === side.player ? `re-rolls` : `makes ${name(s, side.player)} re-roll`;
     log(s, `${name(s, a.by)} ${whose} (${via}): ${side.dice.join(' & ')}.`, a.by);
   },

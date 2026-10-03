@@ -5,7 +5,7 @@
  */
 import { key, same } from './board';
 import { startCombat } from './combat';
-import { fail, markAbility, markMoved, ownShip, requireActionPhase, rerollNew, spendMove, type Handlers } from './core';
+import { fail, markAbility, markMoved, markSeen, ownShip, requireActionPhase, rerollNew, spendMove, type Handlers } from './core';
 import { SHIP_NAMES } from './data';
 import { cellOf, die } from './lookups';
 import { canMoveDie, carryOptions, carryPassengers, freeAttackTargets } from './queries';
@@ -64,12 +64,12 @@ export const abilityHandlers = {
   },
   /** 4 Frigate — Modify: become a 3 or a 5 (and so can't use the new ship's ability this turn). */
   change(s, a) {
-    const t = requireActionPhase(s);
+    requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     if (a.value !== 3 && a.value !== 5) fail('A frigate becomes a 3 or a 5');
     useAbility(s, d, 4);
     d.value = a.value;
-    (t.seen[d.id] ??= []).push(a.value);
+    markSeen(s, d);
   },
   /** 6 Scout — Free Reconfigure. */
   freeReconfigure(s, a) {

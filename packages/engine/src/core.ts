@@ -48,16 +48,16 @@ export function headOf<K extends Pending['kind']>(s: GameState, kind: K, message
 // ---------------------------------------------------------------------------
 // Dice
 
-export function roll(s: GameState, d: Die) {
-  d.value = d6(s);
-  d.rolls++;
-}
-
-/** Rolls a die, re-rolling until it shows a number other than `avoid`. */
-export function rollAvoiding(s: GameState, d: Die, avoid?: number) {
+/** Rolls a die, re-rolling until it shows a number other than `avoid` (if given). */
+export function roll(s: GameState, d: Die, avoid?: number) {
   do d.value = d6(s);
   while (d.value === avoid);
   d.rolls++;
+}
+
+/** Records the die's current number among those it has shown this turn (for Reconfigure). */
+export function markSeen(s: GameState, d: Die) {
+  (s.turn.seen[d.id] ??= []).push(d.value);
 }
 
 /**
@@ -66,7 +66,7 @@ export function rollAvoiding(s: GameState, d: Die, avoid?: number) {
  * re-roll it once, right away. `avoid` is the number a Reconfigure must move away from.
  */
 export function rollShip(s: GameState, d: Die, avoid?: number) {
-  rollAvoiding(s, d, avoid);
+  roll(s, d, avoid);
   if (s.phase !== 'play') return;
   if (anySkill(s, d.owner, (r) => r.chooseShipNumbers)) s.pending.unshift({ kind: 'clever', player: d.owner, die: d.id, avoid });
   else if (d.owner === s.turn.player && anySkill(s, d.owner, (r) => r.rerollShips)) s.turn.scrappy = { die: d.id, avoid };

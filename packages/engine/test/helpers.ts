@@ -24,6 +24,25 @@ export function arrange(s: GameState, placements: Record<string, [number, number
   return t;
 }
 
+/**
+ * An Original game on Alpha Sector, setup done (planets at rows/cols 1, 4, 7: the centre is an 8,
+ * the others 7s). The current player ("me") has a Scout at (0,0) next to the enemy's Destroyer at
+ * (0,1); `skills` are given to each side, active.
+ */
+export function originalGame(skills: { me?: string[]; foe?: string[] } = {}): GameState {
+  let s = createGame({ players: players(2), seed: 3, mode: 'original', mapId: 'alpha-sector' });
+  while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
+  const me = s.turn.player;
+  const foe = 1 - me;
+  s = arrange(s, { [`p${me}d0`]: [0, 0, 6], [`p${foe}d0`]: [0, 1, 3] });
+  s.players[me].skills = (skills.me ?? []).map((id) => ({ id, active: true }));
+  s.players[foe].skills = (skills.foe ?? []).map((id) => ({ id, active: true }));
+  s.players[me].dominance = 3;
+  s.players[foe].dominance = 3;
+  s.turn.actionsLeft = 3;
+  return s;
+}
+
 /** A seeded random number generator in [0, 1), independent of the game's own RNG. */
 export function seededRandom(seed: number): () => number {
   let x = seed;

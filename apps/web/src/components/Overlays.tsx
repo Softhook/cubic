@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { SHIP_NAMES, rulesOf, scrapyard, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, die, rulesOf, scrapyard, type GameState } from '@quantum/engine';
 import type { Dispatch, Toast } from '../game/useGame';
 import { CardView } from './Card';
 import { Die3D } from './Die3D';
@@ -68,8 +68,8 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
       );
     case 'dangerous': {
       const p = game.players[head.player];
-      const att = game.dice.find((d) => d.id === head.attacker)!;
-      const def = game.dice.find((d) => d.id === head.defender)!;
+      const att = die(game, head.attacker);
+      const def = die(game, head.defender);
       return (
         <Modal
           title="Dangerous"
@@ -85,7 +85,7 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
     }
     case 'clever': {
       const p = game.players[head.player];
-      const d = game.dice.find((x) => x.id === head.die)!;
+      const d = die(game, head.die);
       return (
         <Modal title="Clever" subtitle={`${p.name}, choose this ship’s number instead of rolling it.`} pc={p.color}>
           <div className="fleet-roll clever-row">
