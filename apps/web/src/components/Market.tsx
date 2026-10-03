@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { EXPANSION, rulesOf, type DeckKind, type GameState } from '@quantum/engine';
 import type { Legal } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
 import { CardView } from './Card';
+import { CardViewer } from './CardViewer';
 
 export function Market({ game, dispatch, legal }: { game: GameState; dispatch: Dispatch; legal: Legal }) {
   const picking = legal.can('takeCard');
@@ -10,21 +12,26 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   const canExpand = canTake('expansion', 0);
   const cardRules = rulesOf(game).cards!;
   const peek = cardRules.peek;
+  const [viewing, setViewing] = useState<DeckKind | null>(null);
+  const decks: Record<DeckKind, { name: string; cards: string[] }> = {
+    skill: { name: cardRules.terms.skillDeck, cards: m.skillDeck },
+    tactic: { name: cardRules.terms.tacticDeck, cards: m.tacticDeck },
+  };
 
-  const row = (deck: DeckKind, cards: string[], deckSize: number) => (
+  const row = (deck: DeckKind, cards: string[]) => (
     <div className={`market-row market-${deck}`}>
-      <div className={`deck deck-${deck}`} title={`${deckSize} cards left in the ${deck} deck`}>
+      <button type="button" className={`deck deck-${deck}`} title={`${cardsLeft(decks[deck].cards.length)} in the ${decks[deck].name} deck — click to view them`} onClick={() => setViewing(deck)}>
         <div className="deck-stack" />
-        <span className="deck-label">{deck === 'skill' ? cardRules.terms.skillDeck : cardRules.terms.tacticDeck}</span>
-        <span className="deck-count">{deckSize}</span>
-      </div>
+        <span className="deck-label">{decks[deck].name}</span>
+        <span className="deck-count">{decks[deck].cards.length}</span>
+      </button>
       {cards.map((id, index) => (
         <CardView
           key={`${id}#${cards.slice(0, index).filter((x) => x === id).length}`}
           id={id}
           size="sm"
           className="market-card"
-          badge={peek && index === cards.length - 1 && cards.length === 3 && deckSize > 0 ? 'Peek' : undefined}
+          badge={peek && index === cards.length - 1 && cards.length === 3 && decks[deck].cards.length > 0 ? 'Peek' : undefined}
           onClick={canTake(deck, index) ? () => dispatch({ type: 'takeCard', deck, index }) : undefined}
         />
       ))}
@@ -33,8 +40,8 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
 
   return (
     <section className={`market ${picking ? 'picking' : ''}`}>
-      {row('skill', m.skillRow, m.skillDeck.length)}
-      {row('tactic', m.tacticRow, m.tacticDeck.length)}
+      {row('skill', m.skillRow)}
+      {row('tactic', m.tacticRow)}
       {cardRules.expansionPile && (
       <div className="market-row market-expansion">
         <CardView
@@ -57,6 +64,16 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
           Discard all face-up cards and deal new ones
         </button>
       )}
+      {viewing && (
+        <CardViewer
+          title={`${decks[viewing].name} deck`}
+          subtitle={decks[viewing].cards.length ? `${cardsLeft(decks[viewing].cards.length)}, shown alphabetically (draw order stays hidden).` : 'The deck is empty.'}
+          cards={decks[viewing].cards}
+          onClose={() => setViewing(null)}
+        />
+      )}
     </section>
   );
 }
+
+const cardsLeft = (n: number) => `${n} card${n === 1 ? '' : 's'} left`;

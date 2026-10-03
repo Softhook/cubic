@@ -123,6 +123,7 @@ export function useGame(initial: GameState) {
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
         const el = e.target as HTMLElement | null;
         if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
+        if (document.querySelector('[aria-modal="true"]')) return; // a Dialog is open over the board
         e.preventDefault();
         undo();
       }
