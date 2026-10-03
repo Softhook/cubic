@@ -1,10 +1,10 @@
 /** Read-only questions about a state: movement, deploying, conquering, combat totals… */
 import {
-  adjacent,
   cellAt,
   diagonals,
   isDiagonalStep,
   key,
+  linked,
   orbitals,
   planetFreeSlots,
   same,
@@ -14,7 +14,7 @@ import {
 import { card, effectOf } from './data';
 import { cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
 import { rulesOf } from './rules';
-import { activeSkills, anySkill, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
+import { activeSkills, anySkill, ruleOf, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
 import type { Cell, CombatPending, Die, GameState, OncePerTurn, Planet, PlayerId } from './types';
 
 export type { CombatPart } from './skillRules';
@@ -45,8 +45,12 @@ export function canReconfigure(state: GameState, d: Die): boolean {
   return rulesOf(state).reconfigure === 'different' || (state.turn.seen[d.id]?.length ?? 1) < 6;
 }
 
+/**
+ * Unlike other skills, a held Talented raises the limit at once, before it becomes active at the end
+ * of the turn, so taking it as a 4th skill forces no discard (RULE-SUGGESTIONS #49).
+ */
 export function skillLimit(state: GameState, player: PlayerId): number {
-  return Math.max(3, ...skillRules(state, player).map((r) => r.skillLimit ?? 0));
+  return Math.max(3, ...state.players[player].skills.map((s) => ruleOf(s.id).skillLimit ?? 0));
 }
 
 /** Research needed for a breakthrough at the end of the turn. */
@@ -235,7 +239,7 @@ export function deployTargets(state: GameState, player: PlayerId): Cell[] {
       for (let c = 0; c < state.board.cols; c++) {
         const p = { r, c };
         if (!isEmptySpace(state, p)) continue;
-        if (adjacent(state.board, p).some((q) => dieAt(state, q))) continue;
+        if (linked(state, p).some((q) => dieAt(state, q))) continue;
         targets.set(key(p), p);
       }
     }

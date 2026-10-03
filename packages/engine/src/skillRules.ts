@@ -10,7 +10,7 @@
  * To add a skill: list its effect in SKILL_EFFECTS (effects.ts), then add its entry here (the
  * compiler asks for it). If no hook fits, add one to SkillRule and read it where the rule lives.
  */
-import { adjacent } from './board';
+import { linked } from './board';
 import { effectOf } from './data';
 import { SKILL_EFFECTS, type SkillEffect } from './effects';
 import { dieAt, shipsOnBoard } from './lookups';
@@ -115,7 +115,7 @@ export interface SkillRule {
 /** Whether a friendly ship (other than `self`) is next to any of `spaces`. */
 function supported(state: GameState, player: PlayerId, self: string, spaces: Cell[]): boolean {
   return spaces.some((sp) =>
-    adjacent(state.board, sp).some((q) => {
+    linked(state, sp).some((q) => {
       const d = dieAt(state, q);
       return !!d && d.owner === player && d.id !== self;
     }),
@@ -220,10 +220,15 @@ export function skillRules(state: GameState, player: PlayerId): SkillRule[] {
   return activeSkills(state, player).map((a) => a.rule);
 }
 
+/** The rule of a skill card, whether or not it is active yet. */
+export function ruleOf(skillId: string): SkillRule {
+  return SKILL_RULES[effectOf(skillId) as SkillEffect] ?? {};
+}
+
 /** Whether any of the player's active skills has this property. */
 export function anySkill(state: GameState, player: PlayerId, test: (r: SkillRule) => unknown): boolean {
   // Called on hot paths (every roll, attack and combat total): no list is built.
-  return state.players[player].skills.some((s) => s.active && test(SKILL_RULES[effectOf(s.id) as SkillEffect] ?? {}));
+  return state.players[player].skills.some((s) => s.active && test(ruleOf(s.id)));
 }
 
 /** True when the player owns an active skill with this effect (e.g. Cerebral has the 'composed' effect). */

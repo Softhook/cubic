@@ -4,6 +4,7 @@ import {
   combatOutcome,
   conquerCheck,
   createGame,
+  deployTargets,
   legalActions,
   isUndoable,
   moveOptions,
@@ -510,5 +511,97 @@ describe('Original card market (2013 rulebook p.9)', () => {
     for (const d of s.dice) if (d.owner === s.turn.player && d.loc.zone === 'reserve') d.loc = { zone: 'scrapyard' };
     expect(legalActions(s).some((a) => a.type === 'takeCard' && a.deck === 'tactic' && a.index === 0)).toBe(false);
     expect(() => apply(s, { type: 'takeCard', deck: 'tactic', index: 0 })).toThrow('Your reserve is empty');
+  });
+});
+
+describe('RULE-SUGGESTIONS §5.3', () => {
+  it('#49: a held Talented raises the skill limit at once, so taking it as a 4th skill forces no discard', () => {
+    for (const [taken, discard] of [['talented', false], ['stealthy', true]] as const) {
+      let s = quickStart(2, 3);
+      s = apply(s, { type: 'endTurn' });
+      const me = s.turn.player;
+      s.players[me].skills = ['agile', 'ferocious', 'brutal'].map((id) => ({ id, active: true }));
+      s.market.skillRow[0] = taken;
+      s.pending = [{ kind: 'takeCard', player: me, count: 1 }];
+      s = apply(s, { type: 'takeCard', deck: 'skill', index: 0 });
+      expect(s.players[me].skills).toHaveLength(4);
+      expect(s.pending[0]?.kind === 'discardSkill').toBe(discard);
+    }
+  });
+
+  it('#49: discarding Talented while over 3 skills asks for another discard', () => {
+    let s = quickStart(2, 3);
+    const me = s.turn.player;
+    s.players[me].skills = ['agile', 'ferocious', 'brutal', 'stealthy', 'talented'].map((id) => ({ id, active: true }));
+    s.pending = [{ kind: 'discardSkill', player: me, reason: 'limit' }];
+    s = apply(s, { type: 'discardSkill', skill: 'talented' });
+    expect(s.pending[0]).toMatchObject({ kind: 'discardSkill', player: me });
+  });
+
+  it('#30: the two Warp Gate spaces are adjacent for Strategic support', () => {
+    const attackerTotal = (gates: boolean) => {
+      let s = quickStart();
+      s.turn.player = 0;
+      // The supporting ship sits on the far gate, adjacent to the attacker's space only through the link.
+      s = arrange(s, { p0d0: [0, 0, 3], p1d0: [0, 1, 3], p0d1: [8, 8, 2] });
+      s.players[0].skills = [{ id: 'strategic', active: true }];
+      s.gates = gates ? [{ r: 0, c: 0 }, { r: 8, c: 8 }] : [];
+      s = apply(s, { type: 'attack', die: 'p0d0', target: 'p1d0' });
+      if (s.pending[0].kind !== 'combat') throw new Error();
+      s.pending[0].attacker.dice = [4];
+      s.pending[0].defender.dice = [4];
+      return combatOutcome(s, s.pending[0]).attacker.total;
+    };
+    expect(attackerTotal(true)).toBe(attackerTotal(false) - 2);
+  });
+
+  it('#30: the two Warp Gate spaces are adjacent for Stealthy deploys', () => {
+    const isolated = (gates: boolean) => {
+      let s = quickStart();
+      s = arrange(s, { p1d0: [8, 8, 3] });
+      s.players[0].skills = [{ id: 'stealthy', active: true }];
+      s.gates = gates ? [{ r: 0, c: 0 }, { r: 8, c: 8 }] : [];
+      return deployTargets(s, 0).some((c) => c.r === 0 && c.c === 0);
+    };
+    expect(isolated(false)).toBe(true);
+    expect(isolated(true)).toBe(false);
+  });
+
+  it('#33: Composed is not offered under Righteous, where it could do nothing', () => {
+    const s = quickStart(2, 3);
+    const me = s.turn.player;
+    s.players[me].skills = ['composed', 'righteous'].map((id) => ({ id, active: true }));
+    s.players[me].dominance = 3;
+    expect(legalActions(s).some((a) => a.type === 'composed')).toBe(false);
+    expect(() => apply(s, { type: 'composed' })).toThrow('You cannot gain research');
+  });
+
+  describe('#26: Show of Force fires "destroy" skills, with no dominance loss for the victim', () => {
+    function showOfForce(target: 'enemy' | 'own'): { s: GameState; me: number; foe: number } {
+      let s = quickStart(2, 3);
+      const me = s.turn.player;
+      const foe = 1 - me;
+      s = arrange(s, { [`p${me}d0`]: [0, 0, 3], [`p${foe}d0`]: [8, 8, 3] });
+      s.players[me].skills = ['plundering', 'ravenous'].map((id) => ({ id, active: true }));
+      s.players[me].dominance = 3;
+      s.players[me].research = 1;
+      s.players[foe].dominance = 3;
+      s.pending = [{ kind: 'showOfForce', player: me }];
+      s = apply(s, { type: 'showOfForce', die: target === 'enemy' ? `p${foe}d0` : `p${me}d0` });
+      return { s, me, foe };
+    }
+
+    it('on an enemy ship: Plundering and Ravenous trigger; the victim keeps their dominance', () => {
+      const { s, me, foe } = showOfForce('enemy');
+      expect(s.players[me].research).toBe(4);
+      expect(s.players[me].dominance).toBe(5); // +1 card text, +1 Ravenous
+      expect(s.players[foe].dominance).toBe(3);
+    });
+
+    it('on your own ship: only the card text applies', () => {
+      const { s, me } = showOfForce('own');
+      expect(s.players[me].research).toBe(1);
+      expect(s.players[me].dominance).toBe(4);
+    });
   });
 });

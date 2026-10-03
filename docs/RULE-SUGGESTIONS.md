@@ -36,7 +36,7 @@ Proposed rulings for the questions in [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) tha
 
 | # | Question | Suggestion | Confidence / impact |
 |---|---|---|---|
-| 10 | Combat pipeline | **Keep the current order** (roll → Rational / Plan Ahead → missile → modifiers). The designer says modifiers apply to the combat number, not the die face, and a missile changes the die face. Lower totals win, so applying the missile last would cancel Ferocious and Strategic and let a missile *worsen* an opponent already below 1. Needs a source for the designer claim ([§5.2](#52-item-level-findings)). | Medium / High |
+| 10 | Combat pipeline | **Keep the current order** (roll → Rational / Plan Ahead → missile → modifiers). The designer says modifiers apply to the combat number, not the die face, and a missile changes the die face. Lower totals win, so applying the missile last would cancel Ferocious and Strategic and let a missile *worsen* an opponent already below 1. Designer: [BGG 1069897](https://boardgamegeek.com/thread/1069897). | Medium / High |
 | 10 | Rational (3) and Plan Ahead (1) both active | The **lower** wins. Plan Ahead is a temporary self-buff, so a player would never choose the worse number. | Medium / Low |
 | 21 | Missile window | Keep the proposal: one window after both dice are rolled, repeating until all pass. No pre-roll window: Tactics resolve when taken, so Plan Ahead is never played mid-combat, and Dangerous already has its own prompt (#22). | Medium / High |
 | 23 | Missile trading | Remove the item. The print baseline has no trading, and an engine can't enforce deals. | Medium / Low |
@@ -86,7 +86,7 @@ A second, critical pass over §1–§4 **and over the first draft of this sectio
 | 29 | The engine already stacks (`actionPenalty++`) and exempts bonus turns (`startTurn`). Its floor is 0, but with 2 Sabotage copies the most a turn can lose is 2 actions, leaving 1, so a floor at 1 can never come into play. | Document what the engine does; **delete the invented floor**. |
 | 49 | The engine forces a discard on pickup today: new skills are inactive until end of turn, and `skillLimit` counts only active skills, so taking Talented as a 4th skill prompts a discard to 3. The §3 proposal fixes a real weakening of the card. The exploit worry in the first draft is moot if the limit is simply "5 while Talented is held", rechecked on every discard. | **Adopt.** Small code change in `skillLimit`. |
 | 33 | Agree on gains. Two gaps: (a) `legal.ts` still offers Composed under Righteous as a no-op that burns its once-per-turn use; (b) the reset-isn't-a-loss logic should also say that the Infamy dominance reset is not a "loss" for Righteous. The engine already does (b): `combat.ts` sets dominance to 1 directly. | Adopt; hide Composed under Righteous and state (b). |
-| 10 | Sound argument, but "the designer says modifiers apply to the combat number" carries no link, unlike every other designer citation here. The booklet uses "combat roll" for both the missile and Ferocious, so the text alone doesn't settle the order. | Keep; **add the source or label it a suggestion**. |
+| 10 | Sound argument. The designer quote is [BGG 1069897](https://boardgamegeek.com/thread/1069897) (cited in OPEN-QUESTIONS #10). The booklet uses "combat roll" for both the missile and Ferocious, so the text alone doesn't settle the order. | Keep. |
 | 10 (Rational / Plan Ahead) | Already the engine: `rollOverride` checks Plan Ahead before Rational. | Close. |
 | 7, 21, 23, 25 | Correct and already engine behaviour. | Promote to RULES.md. |
 | 34, 38, 46 | Literal card text; Ambitious and Tactical are already implemented this way. | Promote to RULES.md. |
@@ -99,7 +99,7 @@ A second, critical pass over §1–§4 **and over the first draft of this sectio
 3. **#33 Righteous:** don't offer Composed when it can't do anything.
 4. **#26 triggers** (optional): fire Plundering and Ravenous from Show of Force on enemy ships, with no victim dominance loss.
 
-Each change needs a scenario test that cites this section. Nothing else needs engine work; the remaining items are doc promotions or wait for their card.
+**Done** (2026-10-03), with scenario tests in `engine.test.ts` ("RULE-SUGGESTIONS §5.3") and engine notes in [RULES.md](RULES.md). Nothing else needs engine work; the remaining items are doc promotions or wait for their card.
 
 ### 5.4 Retractions from the first draft
 

@@ -1,9 +1,8 @@
 /** Combat: starting an attack, missiles, resolution, advancing, and Infamy. */
 import {
+  destroyedEnemyShip,
   destroyShip,
   fail,
-  gainDominance,
-  gainResearch,
   headOf,
   log,
   loseDominance,
@@ -56,23 +55,8 @@ function dominanceStakes(s: GameState, p: PlayerId): number {
 
 /** Effects of `winner` destroying one of `loser`'s ships in combat. */
 function onDestroy(s: GameState, winner: PlayerId, loser: PlayerId) {
-  const first = !s.turn.destroyedBy.includes(winner);
-  if (first) s.turn.destroyedBy.push(winner);
   loseDominance(s, loser, dominanceStakes(s, loser), true);
-  const ownTurn = winner === s.turn.player;
-  const ctx = { first, ownTurn, ownActionPhase: ownTurn && s.turn.phase === 'actions' };
-  let research = 0;
-  let actions = 0;
-  let dominance = dominanceStakes(s, winner);
-  for (const r of skillRules(s, winner)) {
-    const b = r.onDestroy?.(ctx) ?? {};
-    research += b.research ?? 0;
-    actions += b.actions ?? 0;
-    dominance += b.dominance ?? 0;
-  }
-  if (research) gainResearch(s, winner, research);
-  s.turn.actionsLeft += actions;
-  gainDominance(s, winner, dominance);
+  destroyedEnemyShip(s, winner, dominanceStakes(s, winner));
 }
 
 function resolveCombat(s: GameState, combat: PendingOf<'combat'>) {

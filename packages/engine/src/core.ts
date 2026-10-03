@@ -200,6 +200,26 @@ export function gainDominance(s: GameState, p: PlayerId, n: number) {
   }
 }
 
+/**
+ * `winner` destroyed an enemy ship, in combat or with a card such as Show of Force: gains `dominance`
+ * plus the bonuses of their "destroy" skills (Hostile, Plundering, Ravenous; RULE-SUGGESTIONS #26).
+ */
+export function destroyedEnemyShip(s: GameState, winner: PlayerId, dominance: number) {
+  const first = !s.turn.destroyedBy.includes(winner);
+  if (first) s.turn.destroyedBy.push(winner);
+  const ownTurn = winner === s.turn.player;
+  const ctx = { first, ownTurn, ownActionPhase: ownTurn && s.turn.phase === 'actions' };
+  let research = 0;
+  for (const r of skillRules(s, winner)) {
+    const b = r.onDestroy?.(ctx) ?? {};
+    research += b.research ?? 0;
+    s.turn.actionsLeft += b.actions ?? 0;
+    dominance += b.dominance ?? 0;
+  }
+  if (research) gainResearch(s, winner, research);
+  gainDominance(s, winner, dominance);
+}
+
 export function loseDominance(s: GameState, p: PlayerId, n: number, destroyed = false) {
   const keep = skillRules(s, p).map((r) => r.keepDominance);
   if (keep.includes('always') || (destroyed && keep.includes('destroyed'))) return;

@@ -73,6 +73,11 @@ export function adjacent(board: Board, p: Cell): Cell[] {
   return offsets(p, ORTHO).filter((q) => onBoard(board, q));
 }
 
+/** The orthogonal neighbours of p plus its Warp Gate partner: the two gate spaces count as adjacent (RULE-SUGGESTIONS #30). */
+export function linked(state: GameState, p: Cell): Cell[] {
+  return [...adjacent(state.board, p), ...gatePartner(state, p)];
+}
+
 /** The 8 surrounding spaces of p that are on the board. */
 export function surrounding(board: Board, p: Cell): Cell[] {
   return offsets(p, [...ORTHO, ...DIAG]).filter((q) => onBoard(board, q));
@@ -83,12 +88,14 @@ export function stepNeighbours(state: GameState, p: Cell, diagonal: boolean): Ce
   const result = offsets(p, diagonal ? [...ORTHO, ...DIAG] : ORTHO).filter((q) =>
     onBoard(state.board, q),
   );
-  if (state.gates.length === 2) {
-    const [a, b] = state.gates;
-    if (same(p, a)) result.push(b);
-    else if (same(p, b)) result.push(a);
-  }
-  return result;
+  return [...result, ...gatePartner(state, p)];
+}
+
+/** The other Warp Gate space, when p is one of two placed gates. */
+function gatePartner(state: GameState, p: Cell): Cell[] {
+  if (state.gates.length !== 2) return [];
+  const [a, b] = state.gates;
+  return same(p, a) ? [b] : same(p, b) ? [a] : [];
 }
 
 export function isDiagonalStep(a: Cell, b: Cell): boolean {

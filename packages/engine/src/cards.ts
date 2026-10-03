@@ -6,7 +6,7 @@
  * its entry in TACTIC_EFFECTS. Skills are listed in SKILL_EFFECTS (effects.ts).
  */
 import { same } from './board';
-import { destroyShip, fail, gainDominance, headOf, log, name, rollShip, shipName, type Handlers } from './core';
+import { destroyedEnemyShip, destroyShip, fail, gainDominance, headOf, log, name, rollShip, shipName, type Handlers } from './core';
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
 import { die, reserve, shipsOnBoard } from './lookups';
@@ -228,7 +228,9 @@ export const cardHandlers = {
     s.pending.shift();
     log(s, `${name(s, head.player)} destroys ${name(s, d.owner)}'s ${shipName(d)}.`, head.player, 'shipDestroyed');
     destroyShip(s, d);
-    gainDominance(s, head.player, 1);
+    // The victim loses no dominance: only the attack protocol or card text changes it (RULE-SUGGESTIONS #26).
+    if (d.owner === head.player) gainDominance(s, head.player, 1);
+    else destroyedEnemyShip(s, head.player, 1);
   },
   warpGate(s, a) {
     const head = headOf(s, 'warpGate', 'No Warp Gate to place');

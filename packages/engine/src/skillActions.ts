@@ -23,7 +23,7 @@ import {
   type Handlers,
 } from './core';
 import { cellOf, die } from './lookups';
-import { canMoveDie, canScrappy, nomadicTargets, tacticalOptions } from './queries';
+import { canGainResearch, canMoveDie, canScrappy, nomadicTargets, tacticalOptions } from './queries';
 import { hasSkill } from './skillRules';
 
 export const skillHandlers = {
@@ -31,6 +31,8 @@ export const skillHandlers = {
     const t = requireActionPhase(s);
     requireSkill(s, t.player, 'composed');
     if (s.players[t.player].dominance <= 1) fail('No dominance to lose');
+    // Under Righteous both halves would do nothing (RULE-SUGGESTIONS #33).
+    if (!canGainResearch(s, t.player)) fail('You cannot gain research');
     oncePerTurn(s, 'composed');
     loseDominance(s, t.player, 1);
     gainResearch(s, t.player, 3);

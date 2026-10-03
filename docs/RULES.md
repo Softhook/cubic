@@ -308,7 +308,7 @@ Full data (with categories, CE status and design notes) lives in
 | Brutal | Combat with advantage | For Combat rolls, roll twice and use the lower number. |
 | Calculating | Controlled scrapping | When a ship is placed in your scrapyard, choose its ship number. |
 | Clever | Flexible modification | After reconfiguring, you may increase or decrease the ship number by 1. |
-| Composed | Reduce dominance for research | Once per turn, you may lose 1 Dominance and gain 3 Research. |
+| Composed | Reduce dominance for research | Once per turn, you may lose 1 Dominance and gain 3 Research. Engine: not usable under Righteous, where neither half has an effect ([RULE-SUGGESTIONS](RULE-SUGGESTIONS.md) #33). |
 | Cunning | Extra ship ability | Once per turn, you may use one ship ability a second time. |
 | Curious | Bonus peaceful move | At the end of your turn, if you did not Attack or Conquer, gain an additional Move or Research action. |
 | Dangerous | Destroy your attacker | When you defend, before players roll combat dice, you can decide to destroy both ships (there is no dominance effect). |
@@ -335,7 +335,7 @@ Full data (with categories, CE status and design notes) lives in
 | Strategic | Combat support bonus | During combat, if your ship is adjacent to one or more friendly ships, −2 to your Combat roll. |
 | Stubborn | Strong defence | When you are attacked, ties go in your favour and you destroy your attacker if you win (and gain dominance). |
 | Tactical | Bonus short move | Once per turn, you may move/attack 1 space with a ship even if it's already moved. |
-| Talented | Get more skills | You can have up to 5 Skills. |
+| Talented | Get more skills | You can have up to 5 Skills. Engine: the limit rises as soon as Talented is taken, so it never forces a discard on pickup ([RULE-SUGGESTIONS](RULE-SUGGESTIONS.md) #49). |
 | Tyrannical | Conquer with dominance | You may use your Dominance number as an additional ship number when Conquering. |
 
 ### Tactics (9 × 2 copies = 18) — one-shot
@@ -348,9 +348,9 @@ Full data (with categories, CE status and design notes) lives in
 | Momentum | Take a bonus turn | Immediately take another turn, but with 2 actions instead of 3 (treat it as a brand-new turn). |
 | Plan Ahead | Become the missile | Until the end of your next turn, all your combat rolls are 1. |
 | Sabotage | Limit enemy action | Every opponent's next turn has 1 fewer action. |
-| Show of Force | Target destroyed | Destroy any one ship. Gain 1 Dominance. |
+| Show of Force | Target destroyed | Destroy any one ship. Gain 1 Dominance. Engine: on an enemy ship it fires "destroy" skills (Hostile, Plundering, Ravenous); the victim loses no dominance ([RULE-SUGGESTIONS](RULE-SUGGESTIONS.md) §5.2 #26). |
 | Unveil the Fleet | Destroy & reroll ships | Destroy all your ships. You may reroll any ships in your scrapyard once. Deploy any number of ships. |
-| Warp Gate | Teleportation system | Place the Warp Gate tokens on two different spaces on the board. Any player may consider those spaces adjacent. Engine: for movement and attacks only, not for deploying, Flagship carry or Strategic support ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #30). |
+| Warp Gate | Teleportation system | Place the Warp Gate tokens on two different spaces on the board. Any player may consider those spaces adjacent. Engine: for movement, attacks, Strategic support and Stealthy's isolation test. Deploy targets, Flagship carry and Conquer are unaffected, since gates link spaces, not planets ([RULE-SUGGESTIONS](RULE-SUGGESTIONS.md) §5.2 #30). |
 
 ### Expansion (players + 1 in play; 6 printed)
 
