@@ -52,33 +52,38 @@ export function beginPlay(s: GameState) {
   startTurn(s, s.turn.player, ACTIONS_PER_TURN, false);
 }
 
+/**
+ * Queues a player's card picks for this card phase: `count` earned this turn (`conquer` of them by
+ * Conquer actions) plus any carried over by Momentum (see carryPicks in cards.ts).
+ */
+function queuePicks(s: GameState, player: PlayerId, count: number, conquer: number) {
+  const pl = s.players[player];
+  count += pl.carriedPicks ?? 0;
+  conquer += pl.carriedConquerPicks ?? 0;
+  delete pl.carriedPicks;
+  delete pl.carriedConquerPicks;
+  if (count > 0) s.pending.push({ kind: 'takeCard', player, count, ...(conquer && { conquer }) });
+}
+
 /** Phase 2: one card per cube placed this turn, plus one for a research breakthrough. */
 export function endTurn(s: GameState) {
   const p = s.turn.player;
   const pl = s.players[p];
   s.turn.phase = 'cards';
   if (!rulesOf(s).cards) return;
-  let cards = s.turn.conquests + (pl.carriedPicks ?? 0);
-  const conquer = (s.turn.conquered ?? 0) + (pl.carriedConquerPicks ?? 0);
-  delete pl.carriedPicks;
-  delete pl.carriedConquerPicks;
+  let cards = s.turn.conquests;
   if (pl.research >= breakthroughAt(s, p)) {
     pl.research = 1;
     cards++;
     log(s, `${pl.name} makes a research breakthrough.`, p, 'breakthrough');
   }
-  if (cards > 0) s.pending.push({ kind: 'takeCard', player: p, count: cards, ...(conquer && { conquer }) });
+  queuePicks(s, p, cards, s.turn.conquered ?? 0);
   // A cube placed on someone else's turn earns its card in this card phase, after the active
   // player, in turn order (designer, BGG thread 1087563).
   const off = s.turn.offTurnCubes ?? [];
   for (let i = 1; i < s.players.length; i++) {
     const o = (p + i) % s.players.length;
-    const other = s.players[o];
-    const count = off.filter((x) => x === o).length + (other.carriedPicks ?? 0);
-    const conquer = other.carriedConquerPicks ?? 0;
-    delete other.carriedPicks;
-    delete other.carriedConquerPicks;
-    if (count) s.pending.push({ kind: 'takeCard', player: o, count, ...(conquer && { conquer }) });
+    queuePicks(s, o, off.filter((x) => x === o).length, 0);
   }
 }
 

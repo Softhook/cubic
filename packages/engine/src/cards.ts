@@ -36,26 +36,17 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
     if (m.skillDeck.length) s.pending.unshift({ kind: 'changeOfHeart', player: p });
   },
   momentum: (s, p) => {
-    const pl = s.players[p];
-    pl.bonusTurns.push(2);
-    if (p !== s.turn.player) {
-      // Taken on someone else's turn: the bonus turn follows this one (see finishTurn), and the
-      // player's remaining picks are taken in its card phase. Other picks go on as before.
-      s.pending = s.pending.filter((x) => {
-        if (x.kind !== 'takeCard' || x.player !== p) return true;
-        carryPicks(pl, x);
-        return false;
-      });
-      return;
-    }
+    s.players[p].bonusTurns.push(2);
     // Gambits resolve at once (designer, BGG thread 1068669): the bonus turn comes before any
     // picks still owed, which are taken in its card phase (as on Board Game Arena).
-    // Other players' off-turn picks still come after all of the active player's (designer, BGG
-    // thread 1087563), so they move to the bonus turn's card phase too.
+    // On the player's own turn, other players' off-turn picks still come after all of theirs
+    // (designer, BGG thread 1087563), so they move to the bonus turn's card phase too. Taken on
+    // someone else's turn, the bonus turn follows this one (see finishTurn) and only the player's
+    // own picks move; the others go on as before.
+    const ownTurn = p === s.turn.player;
     s.pending = s.pending.filter((x) => {
-      if (x.kind !== 'takeCard') return true;
-      const owner = s.players[x.player];
-      carryPicks(owner, x);
+      if (x.kind !== 'takeCard' || (!ownTurn && x.player !== p)) return true;
+      carryPicks(s.players[x.player], x);
       return false;
     });
   },

@@ -1,4 +1,5 @@
 /** Legal action enumeration, used by the AI and for UI hints. */
+import { same } from './board';
 import { actor, tryApply } from './engine';
 import type { PendingOf } from './core';
 import { reserve, scrapyard, shipsOnBoard } from './lookups';
@@ -87,7 +88,7 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     const out: Action[] = [];
     for (let r = 0; r < s.board.rows; r++)
       for (let c = 0; c < s.board.cols; c++)
-        if (s.board.cells[r][c].kind === 'space' && !head.placed.some((p) => p.r === r && p.c === c)) out.push({ type: 'warpGate', cell: { r, c } });
+        if (s.board.cells[r][c].kind === 'space' && !head.placed.some((p) => same(p, { r, c }))) out.push({ type: 'warpGate', cell: { r, c } });
     return out;
   },
   changeOfHeart: (s) => [...new Set(s.market.skillDeck)].map((skill) => ({ type: 'changeOfHeart', skill })),

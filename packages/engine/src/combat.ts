@@ -130,13 +130,18 @@ export const combatHandlers = {
     s.players[head.player].dominance = 1;
     log(s, `${name(s, head.player)} seizes planet ${s.board.planets[a.planet].number} through Infamy.`, head.player, 'seize');
     placeCube(s, head.player, a.planet);
-    if (s.phase !== 'play') return;
-    // Infamy during the card phase still earns a card for the cube.
-    if (head.player === s.turn.player) {
-      if (s.turn.phase === 'cards') s.pending.unshift({ kind: 'takeCard', player: head.player, count: 1 });
-    } else if (s.turn.phase === 'cards') {
-      // On another player's turn: picked after the active player (designer, BGG thread 1087563).
-      if (rulesOf(s).cards) s.pending.push({ kind: 'takeCard', player: head.player, count: 1 });
-    } else (s.turn.offTurnCubes ??= []).push(head.player);
+    if (s.phase !== 'play' || !rulesOf(s).cards) return;
+    const ownTurn = head.player === s.turn.player;
+    if (s.turn.phase === 'cards') {
+      // Infamy during the card phase still earns a card for the cube: at once on the player's own
+      // turn, otherwise after the active player's picks (designer, BGG thread 1087563).
+      const pick: PendingOf<'takeCard'> = { kind: 'takeCard', player: head.player, count: 1 };
+      if (ownTurn) s.pending.unshift(pick);
+      else s.pending.push(pick);
+    } else if (!ownTurn) {
+      // In the action phase the active player's cube counts in turn.conquests; another player's
+      // is remembered for this turn's card phase (see endTurn).
+      (s.turn.offTurnCubes ??= []).push(head.player);
+    }
   },
 } satisfies Partial<Handlers>;
