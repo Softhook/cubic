@@ -11,6 +11,7 @@ import { CombatOverlay } from './components/CombatOverlay';
 import { DecisionOverlay, ErrorToast, GameOver, Toasts } from './components/Overlays';
 import { Lobby, type LobbyResult } from './components/Lobby';
 import { Rules } from './components/Rules';
+import { FullscreenButton } from './components/FullscreenButton';
 import { setSoundEnabled, soundEnabled } from './sound';
 
 export function App() {
@@ -54,6 +55,7 @@ function Game({ initial, onQuit, onRules }: { initial: GameState; onQuit: () => 
           <button className="btn btn-ghost" onClick={() => { if (game.phase === 'over' || confirm('Abandon this game?')) onQuit(); }}>
             New game
           </button>
+          <FullscreenButton />
         </div>
       </header>
 
