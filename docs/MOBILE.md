@@ -161,7 +161,7 @@ P2 in detail:
 
 ```
 ┌──────────────────────────┐
-│ QUANTUM   ⓘ  🔊  ☰       │  compact top bar
+│ CUBIC     ⓘ  🔊  ☰       │  compact top bar
 ├──────────────────────────┤
 │                          │
 │          board           │  pinch / pan, Fit button in a corner

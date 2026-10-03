@@ -403,7 +403,7 @@
       "id": "expansion",
       "name": "Expansion",
       "subtitle": "Expand your fleet",
-      "text": "Immediately roll a reserve ship and put it in orbital position on a planet with one of your quantum cubes or in your scrapyard.",
+      "text": "Immediately roll a reserve ship and put it in orbital position on a planet with one of your cubes or in your scrapyard.",
       "ce_status": "changed",
       "notes": "Original: 8 cards shuffled into the Gambit deck. CE: separate deck sized to player count.",
       "count": 6
@@ -737,7 +737,7 @@
       "id": "o-expansion",
       "name": "Expansion",
       "subtitle": "Add a ship to your fleet",
-      "text": "Immediately roll an expansion ship and put it in orbital position on a planet with one of your quantum cubes or in your scrapyard.",
+      "text": "Immediately roll an expansion ship and put it in orbital position on a planet with one of your cubes or in your scrapyard.",
       "effect": "expansion",
       "ce_status": "original",
       "count": 8
@@ -755,7 +755,7 @@
       "id": "o-reorganization",
       "name": "Reorganization",
       "subtitle": "Immediately reroll any or all of your ships",
-      "text": "Place each rerolled ship either in orbital position on a planet that has one of your quantum cubes, or in your scrapyard.",
+      "text": "Place each rerolled ship either in orbital position on a planet that has one of your cubes, or in your scrapyard.",
       "effect": "reorganization",
       "ce_status": "original",
       "count": 2
@@ -763,8 +763,8 @@
     {
       "id": "o-relocation",
       "name": "Relocation",
-      "subtitle": "Immediately move a quantum cube",
-      "text": "Move another player’s quantum cube to a planet without one of their cubes.",
+      "subtitle": "Immediately move a cube",
+      "text": "Move another player’s cube to a planet without one of their cubes.",
       "effect": "relocation",
       "ce_status": "original",
       "count": 2

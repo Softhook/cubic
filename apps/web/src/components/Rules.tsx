@@ -6,7 +6,7 @@ export function Rules({ onClose }: { onClose: () => void }) {
   return (
     <Dialog title="How to play" wide className="rules" onClose={onClose}>
       <p className="modal-sub">
-        Win by placing all your quantum cubes. Each die is a starship: its number is how far it moves and how strong it
+        Win by placing all your cubes. Each die is a starship: its number is how far it moves and how strong it
         fights — <b>lower is stronger</b>.
       </p>
 
@@ -65,7 +65,7 @@ export function Rules({ onClose }: { onClose: () => void }) {
         ))}
       </div>
       <p className="muted small">
-        This digital edition follows the Quantum Community Edition. Rulings on ambiguous rules are provisional — see
+        Cubic is a reimagining of Quantum and its Community Edition, whose rules it follows. Rulings on ambiguous rules are provisional — see
         docs/OPEN-QUESTIONS.md in the repository.
       </p>
     </Dialog>

@@ -41,7 +41,7 @@ function Game({ initial, onQuit, onRules }: { initial: GameState; onQuit: () => 
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">Quantum</div>
+        <div className="brand">Cubic</div>
         <div className="topbar-map">
           <span className={`mode-badge mode-${game.mode}`}>{rulesOf(game).name}</span>
           {game.board.mapName}

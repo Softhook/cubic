@@ -8,6 +8,7 @@
   --text: #e8edff;
   --muted: #8b96b9;
   --accent: #7aa2ff;
+  --pc: var(--accent);
   --good: #5ef0b0;
   --bad: #ff5d73;
   --gold: #ffc857;

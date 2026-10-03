@@ -101,7 +101,7 @@ export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void;
             <Die3D key={v} value={v} size={46} color={PLAYER_COLORS[i]} tumbleOnMount delay={i * 0.15} sound={false} />
           ))}
         </div>
-        <h1>Quantum</h1>
+        <h1>Cubic</h1>
         <p className="tagline">Every die is a starship. Low numbers hit hard, high numbers fly fast. Place all your cubes to conquer the sector.</p>
       </div>
 
@@ -234,7 +234,7 @@ export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void;
         </div>
       </div>
       <p className="credits">
-        Based on Quantum by Eric Zimmerman and the fan-made Community Edition. Non-commercial fan project.
+        Cubic is a reimagining of Quantum by Eric Zimmerman and its fan-made Community Edition. Non-commercial fan project.
       </p>
     </div>
   );

@@ -278,7 +278,7 @@ export function hintFor(game: GameState, sel: Sel): string {
   if (head) {
     switch (head.kind) {
       case 'placeStart':
-        return 'Choose a glowing starting planet for your first quantum cube.';
+        return 'Choose a glowing starting planet for your first cube.';
       case 'placeShips':
         return 'Place your ships in orbit of your starting planet: pick a ship in your scrapyard (or take the next one), then a glowing space.';
       case 'infamy':
