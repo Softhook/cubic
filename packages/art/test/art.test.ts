@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { PLANET_DIAMETER, SET_COUNTS, TILE_SET, TILE, assignTiles, editableTileSvg, numberPlacement, cubePadCentres, tileSpec, tileSvg } from '../src';
 import { CUBE_PAD } from '../src/tokens';
 import maps from '../../engine/src/data/maps.json';
+import cards from '../../engine/src/data/cards.json';
+import { cardBackSvg, cardCategory, cardSvg, CARD_CATEGORIES, type CardDeck } from '../src/card';
 
 /** Gap between a box (centre, half-width, half-height) and a square (centre, half-size). */
 const boxGap = (cx: number, cy: number, hw: number, hh: number, x: number, y: number, h: number) =>
@@ -90,5 +92,42 @@ describe('planet number', () => {
         expect(boxGap(at.x, at.y, at.halfW, at.halfH, dx * TILE.cell, dy * TILE.cell, DIE / 2), `planet ${num} die`).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe('card art', () => {
+  type Def = { id: string; name: string; subtitle: string; text: string; category?: string; count: number };
+  const decks: [CardDeck, Def[]][] = [
+    ['skill', cards.skills],
+    ['tactic', cards.tactics],
+    ['expansion', cards.expansion],
+    ['command', cards.original_command],
+    ['gambit', cards.original_gambit],
+  ];
+  const faces = decks.flatMap(([deck, list]) => list.map((c, i) => ({ ...c, deck, copies: c.count, index: i + 1, deckSize: list.length })));
+
+  it('renders every card and back without bad numbers', () => {
+    for (const f of faces) {
+      for (const svg of [cardSvg(f, { bleed: true }), cardSvg(f, { rounded: true })]) {
+        expect(svg, f.id).not.toMatch(/NaN|undefined|Infinity/);
+        expect(svg.startsWith('<svg')).toBe(true);
+      }
+    }
+    for (const [deck] of decks) expect(cardBackSvg(deck, { bleed: true })).not.toMatch(/NaN|undefined|Infinity/);
+  });
+
+  it('is the same every time for the same card, and differs between cards', () => {
+    const [a, b] = faces;
+    expect(cardSvg(a)).toBe(cardSvg({ ...a }));
+    expect(cardSvg(a)).not.toBe(cardSvg(b));
+  });
+
+  it('gives every card a known category, so it has a colour and an icon', () => {
+    for (const f of faces) expect(CARD_CATEGORIES[cardCategory(f)], f.id).toBeDefined();
+  });
+
+  it('is poker size, with bleed when asked', () => {
+    expect(cardSvg(faces[0])).toContain('width="63.5mm" height="88.9mm"');
+    expect(cardSvg(faces[0], { bleed: true })).toContain('width="69.5mm" height="94.9mm"');
   });
 });

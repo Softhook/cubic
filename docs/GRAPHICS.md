@@ -239,15 +239,30 @@ tile.
 
 ### Cards
 
-- **Card face**: frame, category icon + label, name, subtitle, rules text, **art window**, deck
-  marker (Skill / Tactic / Command / Gambit), set + edition code, small credit line.
-- **Card back** per deck.
-- **Text layout stays HTML/CSS**, not SVG: SVG has no automatic line wrapping, and HTML text prints
-  as crisp, selectable vector text from Chromium. The card is a fixed-size box in `mm`, its internal
-  sizes in container query units (`cqw`), so the same component scales in the game's card rows and
-  prints at 63.5 × 88.9 mm. Art and icons inside it are SVG (or a raster image, see below).
-- Long text gets a fitting step (shrink the text size in fixed steps until it fits) rather than the
-  current `long` class guess, and a test that flags any card that still overflows.
+Built: `cardSvg` / `cardBackSvg` in [`packages/art/src/card.ts`](../packages/art/src/card.ts), shown and
+exported in the Art Lab (`#lab/cards`).
+
+- **Size**: poker, 63.5 × 88.9 mm, 3 mm bleed (69.5 × 94.9 mm), 3 mm corner, 3.5 mm safe zone.
+- **Two looks by deck**: permanent cards (CE Skills, original Commands) are light with the art in a
+  framed window; one-shot cards (Tactics, Gambits, Expansion) are dark with full-bleed art. The decks
+  tell apart across the table and face down, like the physical game's light and dark decks.
+- **Face**: illustration (top ~half), HUD label with the category and ×copies, a category emblem
+  straddling art and panel, name (Orbitron), subtitle, rules text with game terms in bold, footer with
+  deck · kind and `CUBIC CE 07/35`.
+- **Colour = category** (movement cyan, action amber, combat red, conquer green, research violet,
+  ship blue, cards orange, expansion teal). Tactics and Gambits get a category from `THEMES` in card.ts.
+- **Illustration = motif per category**, varied per card from a seed of its id: thrust (movement),
+  duel (combat), conquest (ships in orbit adding up to the planet), research (orbits + research
+  track), reconfigure (tumbling die), surge (action), cards (fan), plus missile, portal, fleet and
+  transfer for cards whose effect deserves its own picture. Ships are isometric dice with real pip
+  layouts; planets and skies come from the tile generators.
+- **Text is SVG**, not HTML as first planned, so one file per card goes to PNG/ZIP and to print
+  services. Wrapping uses widths measured with the page's fonts (canvas `measureText`), and the same
+  fonts are embedded in each SVG as data URLs, so the layout matches what was measured. Text shrinks in
+  0.1 mm steps until it fits. Without the fonts (offline), cards fall back to system fonts.
+- **Exports**: one card as PNG 300/600 dpi or SVG; the whole set as a ZIP of 300 dpi PNGs, one folder
+  per deck with its back; print sheets, 3 × 3 per A4/Letter page at trim size with crop marks,
+  optionally all copies and duplex backs (mirrored columns), printed to PDF from the browser.
 
 ### Card art
 

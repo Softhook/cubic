@@ -233,6 +233,10 @@ export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void;
           </button>
         </div>
       </div>
+      <nav className="lobby-links">
+        <a href="#rulebook">Rulebook (PDF)</a>
+        <a href="#lab/cards">Art Lab: cards &amp; tiles</a>
+      </nav>
       <p className="credits">
         Cubic is a reimagining of Quantum by Eric Zimmerman and its fan-made Community Edition. Non-commercial fan project.
       </p>

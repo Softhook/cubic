@@ -64,6 +64,9 @@ export function Rules({ onClose }: { onClose: () => void }) {
           </div>
         ))}
       </div>
+      <p className="small">
+        <a href="#rulebook">Full rulebook</a>: every rule and card, ready to print or save as PDF.
+      </p>
       <p className="muted small">
         Cubic is a reimagining of Quantum and its Community Edition, whose rules it follows. Rulings on ambiguous rules are provisional — see
         docs/OPEN-QUESTIONS.md in the repository.

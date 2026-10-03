@@ -1,0 +1,88 @@
+/* The printable rulebook. Imported as text so the downloaded HTML carries the same styles. */
+.rb-screen {
+  --rb-ink: #141a2e;
+  --rb-muted: #5a6380;
+  --rb-line: #d9deea;
+  --rb-accent: #3b5bdb;
+  --rb-paper: #fbfcff;
+  height: 100%;
+  overflow: auto;
+  position: relative;
+  z-index: 1;
+  padding: 0 16px 48px;
+}
+.rb-toolbar { position: sticky; top: 0; z-index: 2; display: flex; gap: 10px; align-items: center; max-width: 820px; margin: 0 auto; padding: 12px 0; }
+.rb-toolbar a { text-decoration: none; }
+.rb-spacer { flex: 1; }
+
+.rb-page {
+  --rb-ink: #141a2e;
+  --rb-muted: #5a6380;
+  --rb-line: #d9deea;
+  --rb-accent: #3b5bdb;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 56px 64px;
+  background: #fbfcff;
+  color: var(--rb-ink);
+  border-radius: 6px;
+  font: 15px/1.55 Inter, 'Helvetica Neue', Arial, sans-serif;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+.rb-page a { color: var(--rb-accent); }
+.rb-page h1, .rb-page h2, .rb-page h3 { font-family: Orbitron, Inter, sans-serif; letter-spacing: .03em; color: var(--rb-ink); }
+.rb-page h2 { font-size: 19px; margin: 34px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--rb-ink); text-transform: uppercase; }
+.rb-page h3 { font-size: 14px; margin: 20px 0 6px; text-transform: uppercase; }
+.rb-page p, .rb-page ul, .rb-page ol { margin: 8px 0; }
+.rb-page li { margin: 4px 0; }
+.rb-page table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14px; }
+.rb-page th, .rb-page td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--rb-line); }
+.rb-page thead th { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--rb-muted); }
+.rb-page small { color: var(--rb-muted); }
+
+.rb-cover { text-align: center; padding: 28px 0 22px; margin-bottom: 8px; border-bottom: 1px solid var(--rb-line); }
+.rb-cover h1 { font-size: 64px; font-weight: 900; margin: 4px 0; letter-spacing: .14em; }
+.rb-kicker { font-size: 12px; text-transform: uppercase; letter-spacing: .3em; color: var(--rb-muted); margin: 0; }
+.rb-tagline { color: var(--rb-muted); margin: 0; }
+
+.rb-cols { columns: 2; column-gap: 32px; padding-left: 18px; }
+.rb-cols li { break-inside: avoid; }
+.rb-terms { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 10px 0; }
+.rb-terms dt { font-weight: 700; }
+.rb-terms dd { margin: 0; }
+
+.rb-die { width: 34px; font: 900 16px Orbitron, sans-serif; text-align: center !important; }
+.rb-ships td:nth-child(2) { width: 120px; }
+.rb-actions th { width: 120px; }
+.rb-cost { width: 30px; text-align: center !important; font-weight: 700; }
+
+.rb-callout { padding: 12px 16px; border-left: 4px solid var(--rb-accent); background: #eef2ff; font-weight: 600; }
+.rb-note { color: var(--rb-muted); font-size: 13px; }
+.rb-cards th { width: 180px; font-weight: 700; }
+.rb-cards th small { display: block; font-weight: 400; font-style: italic; }
+.rb-count { color: var(--rb-muted); font-weight: 400; }
+.rb-credits { margin-top: 40px; padding-top: 12px; border-top: 1px solid var(--rb-line); font-size: 12px; color: var(--rb-muted); }
+
+body.rb-standalone { margin: 0; padding: 24px 12px; background: #e8ebf3; }
+
+@media (max-width: 700px) {
+  .rb-page { padding: 32px 20px; font-size: 14px; }
+  .rb-cols { columns: 1; }
+  .rb-cards th { width: 120px; }
+}
+
+@media print {
+  @page { size: A4; margin: 16mm 15mm; }
+  :root { color-scheme: light; }
+  html, body, #root { height: auto !important; overflow: visible !important; background: #fff !important; }
+  body::before, body::after { display: none !important; }
+  .rb-screen { height: auto; overflow: visible; padding: 0; }
+  .rb-toolbar { display: none; }
+  body.rb-standalone { padding: 0; background: #fff; }
+  .rb-page { max-width: none; padding: 0; box-shadow: none; background: #fff; font-size: 10.5pt; }
+  .rb-page h2 { break-after: avoid; }
+  .rb-page h3 { break-after: avoid; }
+  .rb-page tr, .rb-callout, .rb-terms { break-inside: avoid; }
+  .rb-reference { break-before: page; }
+  .rb-cover { padding-top: 40mm; }
+}
