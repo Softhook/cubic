@@ -126,7 +126,8 @@ Options and plan: [MULTIPLAYER.md](MULTIPLAYER.md).
 ## M6 — Design system: cards, tiles, boards, print
 
 The reason the existing fan cards look poor is that each was made by hand. We'll make
-them **generated from data** with a consistent visual language.
+them **generated from data** with a consistent visual language. Plan for shared in-game and
+print rendering: [GRAPHICS.md](GRAPHICS.md).
 
 - [ ] **Art direction** — mood board, palette, typography (replace the dice-pip font approach with proper icons), faction identities (4–5 factions, colours that work for colour-blind players).
 - [ ] **Iconography** — ship types 1–6, actions, dominance, research, missile, cube, card categories (movement / action / combat / conquer / research / ship / card).

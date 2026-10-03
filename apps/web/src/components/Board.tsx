@@ -1,14 +1,30 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
-import { SHIP_ABILITIES, SHIP_NAMES, cellOf, key, type GameState } from '@quantum/engine';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
+import { SHIP_ABILITIES, SHIP_NAMES, cellOf, key, type Board as BoardModel, type GameState } from '@quantum/engine';
+import { PLANET_DIAMETER, TILE, assignTiles, dataUrl, tileSpec, tileSvg } from '@quantum/art';
 import type { Controller } from '../game/controller';
 import { Die3D } from './Die3D';
 
-const PLANET_COLORS: Record<number, [string, string]> = {
-  7: ['#7ef0d0', '#127a6a'],
-  8: ['#7fb2ff', '#22408f'],
-  9: ['#c59bff', '#55288f'],
-  10: ['#ffb27a', '#8f3f22'],
-};
+interface TileArt {
+  r: number;
+  c: number;
+  void: boolean;
+  /** The tile's artwork (starfield and planet) as an SVG image. */
+  url: string;
+}
+
+/** Each 3×3 tile of the map, with its physical tile's artwork (packages/art). */
+function tileArt(board: BoardModel): TileArt[] {
+  const tiles = new Map<number, { r: number; c: number; void: boolean; number: number }>();
+  board.cells.forEach((row, r) =>
+    row.forEach((x, c) => {
+      if (x.kind === 'off' || tiles.has(x.tile)) return;
+      tiles.set(x.tile, { r, c, void: !!x.void, number: 0 });
+    }),
+  );
+  for (const p of board.planets) tiles.get(board.cells[p.r][p.c].tile)!.number = p.number;
+  const ids = assignTiles([...tiles].map(([index, t]) => ({ index, number: t.number })));
+  return [...tiles].map(([index, t]) => ({ ...t, url: dataUrl(tileSvg(tileSpec(ids.get(index)!), { rounded: true })) }));
+}
 
 /** Where each ship on the map is drawn, in cell units (an attacker sits part-way into its target). */
 function shipSpots(game: GameState): Map<string, { r: number; c: number }> {
@@ -68,6 +84,8 @@ export function Board({ game, ctl }: { game: GameState; ctl: Controller }) {
   const [cell, setCell] = useState(64);
   const booms = useExplosions(game);
   const { rows, cols, cells, planets } = game.board;
+  // Tile art depends only on the map; rendering it is the slow part, so do it once per map.
+  const tiles = useMemo(() => tileArt(game.board), [game.board.mapId]);
 
   useLayoutEffect(() => {
     const el = wrap.current;
@@ -88,15 +106,6 @@ export function Board({ game, ctl }: { game: GameState; ctl: Controller }) {
   const me = game.turn.player;
   const spots = shipSpots(game);
 
-  // Tiles: one rounded panel per 3×3 tile.
-  const tiles = new Map<number, { r: number; c: number; void: boolean }>();
-  cells.forEach((row, r) =>
-    row.forEach((x, c) => {
-      if (x.kind === 'off' || tiles.has(x.tile)) return;
-      tiles.set(x.tile, { r, c, void: !!x.void });
-    }),
-  );
-
   const onBoardClick = (e: MouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -108,38 +117,24 @@ export function Board({ game, ctl }: { game: GameState; ctl: Controller }) {
       <div className="board" style={{ width: W, height: H, '--cell': `${cell}px` } as CSSProperties}>
         <svg className="board-svg" width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
           <defs>
-            <radialGradient id="tile" cx="50%" cy="40%" r="75%">
-              <stop offset="0%" stopColor="#18223f" />
-              <stop offset="100%" stopColor="#0c1226" />
-            </radialGradient>
-            <radialGradient id="void" cx="50%" cy="50%" r="60%">
-              <stop offset="0%" stopColor="#3a1d5c" />
-              <stop offset="60%" stopColor="#170c2c" />
-              <stop offset="100%" stopColor="#0b0818" />
-            </radialGradient>
-            {Object.entries(PLANET_COLORS).map(([n, [a, b]]) => (
-              <radialGradient key={n} id={`planet${n}`} cx="35%" cy="30%" r="75%">
-                <stop offset="0%" stopColor={a} />
-                <stop offset="55%" stopColor={b} />
-                <stop offset="100%" stopColor="#060a18" />
-              </radialGradient>
-            ))}
             <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation={cell * 0.08} />
             </filter>
           </defs>
 
-          {[...tiles.values()].map((t) => (
-            <rect
-              key={`${t.r},${t.c}`}
-              x={t.c * cell + 2}
-              y={t.r * cell + 2}
-              width={cell * 3 - 4}
-              height={cell * 3 - 4}
-              rx={cell * 0.28}
-              fill={t.void ? 'url(#void)' : 'url(#tile)'}
-              stroke={t.void ? 'rgba(197,155,255,.35)' : 'rgba(127,178,255,.16)'}
-            />
+          {tiles.map((t) => (
+            <g key={`${t.r},${t.c}`}>
+              <image href={t.url} x={t.c * cell + 1} y={t.r * cell + 1} width={cell * 3 - 2} height={cell * 3 - 2} />
+              <rect
+                x={t.c * cell + 1}
+                y={t.r * cell + 1}
+                width={cell * 3 - 2}
+                height={cell * 3 - 2}
+                rx={(cell * 3 * 4) / TILE.size}
+                fill="none"
+                stroke={t.void ? 'rgba(197,155,255,.35)' : 'rgba(127,178,255,.16)'}
+              />
+            </g>
           ))}
 
           {cells.flatMap((row, r) =>
@@ -169,14 +164,13 @@ export function Board({ game, ctl }: { game: GameState; ctl: Controller }) {
           {planets.map((p) => {
             const cx = (p.c + 0.5) * cell;
             const cy = (p.r + 0.5) * cell;
-            const R = cell * 0.43;
+            // The planet itself is part of the tile art; this layer adds the live number and cubes.
+            const R = (PLANET_DIAMETER[p.number] / 2 / TILE.cell) * cell;
             const slot = cell * 0.13;
             const gap = cell * 0.035;
             const rowW = p.capacity * slot + (p.capacity - 1) * gap;
             return (
               <g key={p.id}>
-                <circle cx={cx} cy={cy} r={R * 1.18} fill={PLANET_COLORS[p.number]?.[0] ?? '#fff'} opacity={0.12} filter="url(#glow)" />
-                <circle cx={cx} cy={cy} r={R} fill={`url(#planet${p.number})`} />
                 {p.start && game.phase === 'setup' && (
                   <circle cx={cx} cy={cy} r={R * 1.12} fill="none" stroke="#fff" strokeOpacity={0.5} strokeDasharray="3 4" />
                 )}

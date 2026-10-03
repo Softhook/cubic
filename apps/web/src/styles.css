@@ -806,6 +806,27 @@ input { font: inherit; }
 .ship-row { display: flex; gap: 12px; align-items: flex-start; }
 .ship-row p { margin: 2px 0 0; font-size: 12.5px; }
 
+/* ------------------------------------------------------------------ art lab */
+.lab { height: 100%; overflow: auto; position: relative; z-index: 1; }
+.lab-head { display: flex; align-items: center; gap: 18px; padding: 12px 20px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.lab-head h1 { font-family: var(--display); font-size: 16px; margin: 0 auto 0 0; letter-spacing: .04em; }
+.lab-head a { text-decoration: none; }
+.lab-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 520px); gap: 20px; padding: 20px; align-items: start; }
+.lab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.lab-thumb { display: flex; flex-direction: column; gap: 4px; padding: 4px; border: 1px solid transparent; border-radius: 10px; background: none; cursor: pointer; font-size: 11px; color: var(--muted); }
+.lab-thumb img { width: 100%; aspect-ratio: 1; display: block; }
+.lab-thumb:hover { border-color: var(--line-2); }
+.lab-thumb.on { border-color: var(--accent); color: var(--text); }
+.lab-detail { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 12px; }
+.lab-detail > img { width: 100%; aspect-ratio: 1; display: block; border-radius: 6px; }
+.lab-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px; }
+.lab-controls label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.lab-controls input, .lab-controls select { background: var(--panel-solid); color: var(--text); border: 1px solid var(--line-2); border-radius: 6px; padding: 4px 6px; }
+.lab-controls input[type=number] { width: 120px; }
+.lab-note { margin: 0; font-size: 12px; color: var(--muted); }
+.lab-spec { margin: 0; padding: 8px 10px; font-size: 11.5px; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 6px; white-space: pre-wrap; word-break: break-all; }
+@media (max-width: 800px) { .lab-body { grid-template-columns: 1fr; } .lab-detail { position: static; order: -1; } }
+
 /* ------------------------------------------------------------------ responsive */
 
 @media (max-width: 980px) {
