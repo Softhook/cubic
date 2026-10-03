@@ -1,7 +1,8 @@
 /**
  * The Original Command and Gambit cards that play like a hook on the existing rules (extra
  * actions, movement, conquering, combat, destroying ships, cards). Rulings quoted from the 2013
- * rulebook FAQ (p.14) are tested where they apply.
+ * rulebook FAQ (p.14) are tested where they apply, as are card notes from the fan "Quantum rules
+ * summary v1" (BGG file 101664, "rules summary"; see reference/README.md).
  */
 import { describe, expect, it } from 'vitest';
 import { apply, combatOutcome, conquerCheck, legalActions, movementRange, type Action, type GameState } from '../src';
@@ -192,6 +193,28 @@ describe('combat', () => {
     expect(totals({ me: ['o-strategic'] })).toEqual([7, 6]);
     expect(totals({ foe: ['o-strategic'] })).toEqual([9, 4]);
   });
+
+  /** Combat totals [attacker, defender] for my 6 at (2,2) attacking the enemy 3 at (2,3), both rolling `rolls`. */
+  const battle = (skills: { me?: string[]; foe?: string[] }, friends: [number, number, number][] = [], rolls: [number, number] = [3, 3]) => {
+    let s = place(game(skills), [[2, 2, 6], ...friends], [[2, 3, 3]]);
+    const { me, foe } = ids(s);
+    s = apply(s, { type: 'attack', die: ship(me, 0), target: ship(foe, 0) });
+    const head = s.pending[0];
+    if (head.kind !== 'combat') throw new Error('no battle');
+    [head.attacker.dice, head.defender.dice] = [[rolls[0]], [rolls[1]]];
+    const o = combatOutcome(s, head);
+    return [o.attacker.total, o.defender.total];
+  };
+
+  it('Strategic: an attacker is supported by a ship orthogonally next to the defender, not diagonally (rules summary)', () => {
+    expect(battle({ me: ['o-strategic'] }, [[3, 3, 2]])).toEqual([7, 6]); // (3,3) is next to the defender only
+    expect(battle({ me: ['o-strategic'] }, [[3, 4, 2]])).toEqual([9, 6]); // (3,4) is diagonal to the defender
+  });
+
+  it('Ferocious and Strategic can take a roll below 1 (rules summary)', () => {
+    // Roll 1, Ferocious −1, Strategic −2: the roll counts as −2.
+    expect(battle({ me: ['o-ferocious', 'o-strategic'] }, [[3, 3, 2]], [1, 3])).toEqual([6 + 1 - 1 - 2, 6]);
+  });
 });
 
 describe('destroying ships', () => {
@@ -208,6 +231,13 @@ describe('destroying ships', () => {
     expect(s.players[ids(s).foe].research).toBe(1);
   });
 
+  it('Stubborn: the destroyed attacker loses 1 dominance, as if the defender had attacked (FAQ, rules summary)', () => {
+    const s = fight(battleground({ foe: ['o-stubborn'] }), [6, 1]);
+    expect(at(s, ship(ids(s).me, 0)).loc.zone).toBe('scrapyard');
+    expect([s.players[ids(s).me].dominance, s.players[ids(s).foe].dominance]).toEqual([2, 4]);
+  });
+
+  // Rules summary: the ±2 is instead of the usual ±1, not on top of it.
   it('Ravenous: dominance +2 for a kill, −2 for a loss', () => {
     const winner = fight(battleground({ me: ['o-ravenous'] }), [1, 6]);
     expect([winner.players[ids(winner).me].dominance, winner.players[ids(winner).foe].dominance]).toEqual([5, 2]);
@@ -282,6 +312,17 @@ describe('Gambit cards', () => {
     expect(s.players[me].skills).toContainEqual({ id: 'o-eager', active: true });
     s = apply(s, legalActions(s).find((a) => a.type === 'deploy')!);
     expect(s.turn.actionsLeft).toBe(2);
+  });
+
+  it('Expansion: with Stealthy the new ship may go anywhere no ship is next to (rules summary)', () => {
+    let s = place(game({ me: ['o-stealthy'] }), [[0, 0, 6]], [[0, 1, 3]]);
+    const { me } = ids(s);
+    s = take(s, { gambit: 'o-expansion' });
+    const head = s.pending[0];
+    if (head.kind !== 'placeExpansion') throw new Error(`expected an expansion ship, got ${head.kind}`);
+    s = apply(s, { type: 'placeExpansion', to: { r: 5, c: 0 } });
+    expect(at(s, head.die).loc).toEqual({ zone: 'board', r: 5, c: 0 });
+    expect(at(s, head.die).owner).toBe(me);
   });
 
   it('Reorganization: re-rolled ships are placed again; with Stealthy anywhere no ship is next to (FAQ)', () => {

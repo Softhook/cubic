@@ -679,7 +679,8 @@
       "category": "combat",
       "effect": "strategic",
       "ce_status": "original",
-      "count": 1
+      "count": 1,
+      "notes": "Fan rules summary v1 (BGG file 101664) rewords the bracket: when attacking, the bonus applies if a friendly ship is orthogonally adjacent to your attacker or the defender."
     },
     {
       "id": "o-stubborn",

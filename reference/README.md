@@ -40,6 +40,16 @@ beyond the box. This is the easiest source for transcribing the advanced maps.
 
 ## Not mirrored here
 
+- **Quantum rules summary v1** ([BGG file 101664](https://boardgamegeek.com/filepage/101664/quantum-rules-summary), a fan file). Its card notes
+  are tested in `packages/engine/test/original-commands.test.ts` as "rules summary": Cruel and
+  Relentless re-roll after both players have rolled; Dangerous triggers no other cards;
+  Ferocious and Strategic can take a roll below 1; Ravenous ±2 is instead of ±1; Stealthy works
+  with Expansion and Reorganization; Strategic's bracketed text is replaced by "when attacking,
+  the bonus applies if a friendly ship is orthogonally adjacent to your attacker or the
+  defender"; a Stubborn-destroyed attacker loses 1 dominance; Tactical can't move a ship that
+  has already moved. It is a fan summary, not an official source, and agrees with the engine on
+  every point.
+
 - [stolksdorf/quantum](https://github.com/stolksdorf/quantum) — the original CE
   design repo (2019): `New Rules.md`, `Cards.md`, `src/cards/*.yaml` with design
   notes for every card change, and `reference/cards.original.md` with the 2013
