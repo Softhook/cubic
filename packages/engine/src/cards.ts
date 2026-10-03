@@ -234,7 +234,7 @@ export const cardHandlers = {
   },
   relocate(s, a) {
     const head = headOf(s, 'relocation', 'No Relocation to resolve');
-    if (!canRelocate(s, head.player, a)) fail("Move another player's cube to a planet without one of their cubes, with no higher number");
+    if (!canRelocate(s, head.player, a)) fail("Move another player's cube to a planet without one of their cubes");
     s.pending.shift();
     const from = s.board.planets[a.planet];
     const to = s.board.planets[a.to];

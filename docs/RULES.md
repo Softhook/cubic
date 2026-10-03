@@ -14,7 +14,10 @@ which corrects the 2p and 3p basic maps, adds Quantum Entanglement and changes C
 text follows the revised edition (the second printing, as Board Game Arena implements it), so
 Relocation has no planet-number limit and Strategic drops "you can consider an attacker to be in
 either square". The first-printing PDF is only mirrored because FunForge never posted a revised
-one; where the two differ, the revision, then designer rulings on BGG, win. Every Basic-mode rule has a scenario test citing its
+one; where the two differ, the revision, then designer rulings on BGG, win. The official 2014
+add-on pack (French edition, transcribed in [`reference/addon-pack-2014/`](../reference/addon-pack-2014/TRANSCRIPT.md))
+prints the Entanglement rules, the revised Curious and an expert FAQ, and ranks with the
+revision. Every Basic-mode rule has a scenario test citing its
 source in
 [`packages/engine/test/basic.test.ts`](../packages/engine/test/basic.test.ts).
 
@@ -233,7 +236,8 @@ reset dominance to **1**. If there is nowhere to place the cube, dominance stays
 
 If **every** planet with an empty cube location already has one of your cubes, you may
 conquer planets that already have your cubes, but the target number rises by **+3 for
-each of your cubes already there**.
+each of your cubes already there**. Infamy may place a cube there too, on the same condition
+(add-on pack, [`reference/addon-pack-2014/`](../reference/addon-pack-2014/TRANSCRIPT.md)).
 
 ### Phase 2 — Take cards
 
@@ -441,6 +445,7 @@ we decide otherwise (see [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)).
 - Original game: [BoardGameGeek #143519](https://boardgamegeek.com/boardgame/143519/quantum)
 - Original 2013 rulebook (FunForge, English): [BGG file 93188](https://boardgamegeek.com/filepage/93188/quantum-rules), mirrored in [`reference/original-2013/`](../reference/original-2013/)
 - Designer's errata for the second printing (maps, Quantum Entanglement, Curious): [BGG thread 1087563](https://boardgamegeek.com/thread/1087563)
+- Official add-on pack (FunForge, 2014), French edition: Entanglement rules, expert FAQ, command card tips, add-on maps, revised Curious. Scans and translation in [`reference/addon-pack-2014/`](../reference/addon-pack-2014/TRANSCRIPT.md)
 - Revised-edition card text, as on Board Game Arena: [card sheet](https://x.boardgamearena.net/data/themereleases/current/games/quantum/200826-0854/img/cards.jpg)
 - Designer rulings on the BGG rules forum, e.g. Flagship transport ([1074052](https://boardgamegeek.com/thread/1074052), [1113798](https://boardgamegeek.com/thread/1113798))
 - Board Game Arena rules help (void tile, Entanglement): [en.doc.boardgamearena.com/Gamehelpquantum](https://en.doc.boardgamearena.com/Gamehelpquantum); all official maps as BGA implements them: [`reference/bga/maps.json`](../reference/bga/maps.json)

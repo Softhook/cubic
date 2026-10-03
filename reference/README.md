@@ -31,6 +31,15 @@ This is the **first printing**. The designer's errata for the second printing
 Quantum Entanglement. FunForge never posted an updated PDF. Board Game Arena implements the
 second printing.
 
+## `addon-pack-2014/`
+
+Scans of the official **Quantum Add-on Pack** (FunForge, 2014), French edition (*Quantum
+Surcharge Add-on Pack*), supplied by the user on 2026-10-03. `TRANSCRIPT.md` holds the French
+text with an English translation. Contents: the Quantum Entanglement rules (which say Infamy may
+use it too), an expert FAQ, command card tips, the add-on maps (all already in `bga/maps.json`)
+and the revised Curious card. It is an official publisher source, so it outranks designer forum
+posts, BGA and the fan rules summary.
+
 ## `bga/maps.json`
 
 All 71 maps as Board Game Arena implements them, parsed from BGA's public
