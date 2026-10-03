@@ -24,6 +24,8 @@ export function createGame(opts: NewGameOptions): GameState {
   const rules = RULESETS[mode];
   const map = opts.mapId ? MAPS.find((m) => m.id === opts.mapId) : defaultMap(n);
   if (!map) throw new Error(opts.mapId ? `Unknown map ${opts.mapId}` : `No map for ${n} players`);
+  if (map.players !== n) throw new Error(`${map.name} is a ${map.players}-player map`);
+  if (!rules.mapGroups.includes(map.group)) throw new Error(`${map.name} isn't played with the ${rules.name} rules`);
   const seed = (opts.seed ?? Math.floor(Math.random() * 2 ** 31)) >>> 0;
 
   const state: GameState = {

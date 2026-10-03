@@ -82,7 +82,7 @@ Package: `apps/web`
 - [x] Combat UX: dice roll animation, missile window, result.
 - [ ] Rules help in-context (hover a card or ship for its rule; link to RULES.md sections).
 - [x] Turn log panel; undo of deterministic moves within a turn (never past a roll, battle or card).
-- [x] Map picker with stats; player count 2–4 *(basic maps only so far)*.
+- [x] Map picker with stats; player count 2–4. All 70 official, add-on and BGA maps *(the CE booklet's fan and 5-player maps not yet)*.
 - [ ] Mobile-friendly layout — options and plan in [MOBILE.md](MOBILE.md).
 
 ## M3 — AI opponent
@@ -144,4 +144,4 @@ them **generated from data** with a consistent visual language.
 
 1. Play a few games and note anything that feels wrong — that's the fastest way to settle the 🔴 open questions.
 2. Implement the remaining 11 skills (Dangerous and Calculating need new interrupt prompts).
-3. Transcribe the advanced maps and add a map picker.
+3. Transcribe the CE booklet's fan and 5-player maps (most 2–4p ones are already in from BGA).

@@ -22,6 +22,8 @@ export interface RuleSet {
    * (official rules) — or `unseen` — a number it has not shown this turn (Community Edition).
    */
   reconfigure: 'different' | 'unseen';
+  /** Map groups (data/maps.yaml) this mode can be played on. */
+  mapGroups: string[];
 }
 
 export interface CardRules {
@@ -45,6 +47,9 @@ export interface CardRules {
   };
 }
 
+/** Maps published for the boxed game: the box, the 2013 rulebook, and the add-on pack. */
+const OFFICIAL_MAPS = ['basic', 'advanced', 'addon'];
+
 export const RULESETS: Record<GameMode, RuleSet> = {
   basic: {
     id: 'basic',
@@ -54,6 +59,7 @@ export const RULESETS: Record<GameMode, RuleSet> = {
     cards: null,
     startingMissiles: 0,
     reconfigure: 'different',
+    mapGroups: OFFICIAL_MAPS,
   },
   original: {
     id: 'original',
@@ -71,6 +77,7 @@ export const RULESETS: Record<GameMode, RuleSet> = {
     },
     startingMissiles: 0,
     reconfigure: 'different',
+    mapGroups: OFFICIAL_MAPS,
   },
   community: {
     id: 'community',
@@ -88,6 +95,7 @@ export const RULESETS: Record<GameMode, RuleSet> = {
     },
     startingMissiles: 1,
     reconfigure: 'unseen',
+    mapGroups: [...OFFICIAL_MAPS, 'bga'],
   },
 };
 

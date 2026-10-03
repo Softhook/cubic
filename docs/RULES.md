@@ -38,6 +38,7 @@ The digital edition offers three rule sets, chosen when starting a game:
 | Spend a card pick to deal 6 new face-up cards | — | ✓ (rulebook p.9) | — |
 | Reconfigure | Ship on the map or scrapyard; any different value | Ship on the map or scrapyard; any different value | Ship on the map or scrapyard; new value not seen this turn |
 | Infamy, Quantum Entanglement, void tiles | ✓ | ✓ | ✓ |
+| Maps | Published (basic, advanced, add-on pack) | Published | Published + Board Game Arena's |
 
 Basic mode has no Research action: in the 2013 rules research only earns advance cards.
 

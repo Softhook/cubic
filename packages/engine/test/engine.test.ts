@@ -358,6 +358,64 @@ describe('Tactical with ship abilities (forum consensus, BGG threads 1093051 and
   });
 });
 
+describe('void tiles (The Void maps; BGA rules help)', () => {
+  // Axiomatic: the void tile is tile row 1, col 1, so board rows and cols 3–5.
+  const start = (mode: GameMode) => {
+    let s = createGame({ players: players(2), seed: 5, mode, mapId: 'axiomatic' });
+    while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
+    for (const p of s.players) p.skills = [];
+    return s;
+  };
+
+  it('is a tile of empty spaces with no planet', () => {
+    const s = start('community');
+    for (let r = 3; r < 6; r++) for (let c = 3; c < 6; c++) expect(s.board.cells[r][c]).toMatchObject({ kind: 'space', void: true });
+    expect(s.board.planets.some((p) => p.r >= 3 && p.r < 6 && p.c >= 3 && p.c < 6)).toBe(false);
+  });
+
+  for (const mode of ['original', 'community'] as GameMode[])
+    it(`${mode}: +1 research per own ship on it at the start of your turn`, () => {
+      const s0 = start(mode);
+      const me = s0.turn.player;
+      const next = 1 - me;
+      let s = arrange(s0, {
+        [`p${next}d0`]: [3, 3, 4],
+        [`p${next}d1`]: [5, 5, 4],
+        [`p${next}d2`]: [0, 4, 4], // next to the void, not on it
+        [`p${me}d0`]: [4, 4, 4],
+      });
+      s.players[me].research = 1;
+      s.players[next].research = 1;
+      s = apply(s, { type: 'endTurn' });
+      expect(s.turn.player).toBe(next);
+      expect(s.players[next].research).toBe(3);
+      expect(s.players[me].research).toBe(1); // only gained at the start of your own turn
+    });
+
+  it('research gained this way is capped at 6', () => {
+    const s0 = start('community');
+    const me = s0.turn.player;
+    const next = 1 - me;
+    let s = arrange(s0, { [`p${next}d0`]: [3, 3, 4], [`p${next}d1`]: [5, 5, 4], [`p${me}d0`]: [0, 4, 4] });
+    s.players[next].research = 5;
+    s = apply(s, { type: 'endTurn' });
+    expect(s.players[next].research).toBe(6);
+  });
+});
+
+describe('maps per rule set', () => {
+  it('Basic and Original are played only on published maps; Community also on the BGA maps', () => {
+    expect(() => createGame({ players: players(2), mode: 'basic', mapId: 'precis' })).toThrow(/isn't played with the Basic rules/);
+    expect(() => createGame({ players: players(2), mode: 'original', mapId: 'precis' })).toThrow(/Original/);
+    expect(createGame({ players: players(2), mode: 'community', mapId: 'precis' }).board.mapId).toBe('precis');
+    expect(createGame({ players: players(2), mode: 'basic', mapId: 'axiomatic' }).board.mapId).toBe('axiomatic');
+  });
+
+  it('rejects a map for a different player count', () => {
+    expect(() => createGame({ players: players(3), mapId: 'alpha-sector' })).toThrow(/2-player map/);
+  });
+});
+
 describe('undo', () => {
   it('allows deterministic moves and forbids anything random', () => {
     let s = quickStart();

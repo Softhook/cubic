@@ -82,7 +82,7 @@ sets `activated` and gets a handler in `skillActions.ts`.
 the new rule set changes a rule rather than a parameter, add a field to `RuleSet` and read it where the
 rule lives. Don't compare `state.mode` to a name anywhere else.
 
-**Add a map.** Add it to `data/maps.yaml` with its published stats; `maps.test.ts` recomputes the stats
+**Add a map.** Add it to `data/maps.yaml` with its published stats (or `mapStats()`'s, if none are published); `maps.test.ts` recomputes the stats
 from the layout and fails if they disagree. Official layouts are in
 [`reference/bga/maps.json`](../reference/bga/maps.json).
 

@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
-import { defaultMap, MODES, type GameMode, type PlayerConfig } from '@quantum/engine';
+import { defaultMap, MAPS, MODES, RULESETS, type GameMode, type MapDef, type PlayerConfig } from '@quantum/engine';
 import { Die3D } from './Die3D';
 
 export const PLAYER_COLORS = ['#4cc9f0', '#f72585', '#ffb703', '#80ed99'];
@@ -32,13 +32,63 @@ function storedMode(): GameMode {
   return 'community';
 }
 
+const MAP_GROUPS: { id: string; name: string }[] = [
+  { id: 'basic', name: 'Basic' },
+  { id: 'advanced', name: 'Advanced' },
+  { id: 'addon', name: 'Add-on pack' },
+  { id: 'bga', name: 'Board Game Arena' },
+];
+
+function storedMap(players: number): string {
+  try {
+    const id = localStorage.getItem(`quantum.map.${players}`);
+    if (MAPS.some((m) => m.id === id && m.players === players)) return id!;
+  } catch {
+    /* storage unavailable */
+  }
+  return defaultMap(players)!.id;
+}
+
+function MiniMap({ map }: { map: MapDef }) {
+  const cols = Math.max(...map.layout.map((r) => r.length));
+  const size = Math.min(26, Math.floor(150 / Math.max(cols, map.layout.length)));
+  return (
+    <div className="mini-map" style={{ gridTemplateColumns: `repeat(${cols}, ${size}px)`, '--tile': `${size}px` } as CSSProperties}>
+      {map.layout.flatMap((row, r) =>
+        Array.from({ length: cols }, (_, c) => {
+          const t = row[c] ?? '.';
+          const n = t.replace('*', '');
+          if (t === '.') return <span key={`${r},${c}`} className="mini-tile gap" />;
+          return (
+            <span key={`${r},${c}`} className={`mini-tile n${n} ${t.endsWith('*') ? 'start' : ''}`}>
+              {n === '0' ? '' : n}
+            </span>
+          );
+        }),
+      )}
+    </div>
+  );
+}
+
 export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void; onRules: () => void }) {
   const [count, setCount] = useState(2);
   const [mode, setMode] = useState<GameMode>(storedMode);
   const [seats, setSeats] = useState<PlayerConfig[]>(() =>
     PLAYER_COLORS.map((color, i) => ({ name: i === 0 ? 'Commander' : AI_NAMES[i], color, ai: i !== 0, aiLevel: storedAiLevel() })),
   );
-  const map = defaultMap(count)!;
+  const [mapIds, setMapIds] = useState<Record<number, string>>(() => ({ 2: storedMap(2), 3: storedMap(3), 4: storedMap(4) }));
+  const choices = MAPS.filter((m) => m.players === count && RULESETS[mode].mapGroups.includes(m.group));
+  // A remembered map the chosen rules don't use falls back to the basic map (it stays remembered).
+  const map = choices.find((m) => m.id === mapIds[count]) ?? defaultMap(count)!;
+
+  const chooseMap = (id: string) => {
+    setMapIds((ids) => ({ ...ids, [count]: id }));
+    try {
+      localStorage.setItem(`quantum.map.${count}`, id);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const update = (i: number, patch: Partial<PlayerConfig>) =>
     setSeats((s) => s.map((x, j) => (j === i ? { ...x, ...patch } : x)));
@@ -127,18 +177,44 @@ export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void;
         </div>
 
         <div className="map-preview">
-          <div>
+          <div className="map-info">
             <small>Map</small>
-            <strong>{map.name}</strong>
-            <span className="muted">{map.cubes} cubes each · {map.stats.shared}/{map.stats.planets} planets shared</span>
+            <div className="map-select">
+              <select value={map.id} aria-label="Map" onChange={(e) => chooseMap(e.target.value)}>
+                {MAP_GROUPS.map((g) => {
+                  const maps = choices.filter((m) => m.group === g.id);
+                  return (
+                    maps.length > 0 && (
+                      <optgroup key={g.id} label={g.name}>
+                        {maps.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )
+                  );
+                })}
+              </select>
+              <button
+                className="btn btn-icon"
+                title="Random map"
+                aria-label="Random map"
+                onClick={() => {
+                  const others = choices.filter((m) => m.id !== map.id);
+                  chooseMap(others[Math.floor(Math.random() * others.length)].id);
+                }}
+              >
+                ⚄
+              </button>
+            </div>
+            <span className="muted">
+              {map.cubes} cubes each ·{' '}
+              {map.stats.shared === null ? 'too few spaces for every cube' : `${map.stats.shared}/${map.stats.planets} planets shared`}
+              {map.layout.flat().includes('0') && ' · void'}
+            </span>
           </div>
-          <div className="mini-map" style={{ gridTemplateColumns: `repeat(${map.layout[0].length}, 1fr)` } as CSSProperties}>
-            {map.layout.flat().map((t, i) => (
-              <span key={i} className={`mini-tile n${t.replace('*', '')} ${t.endsWith('*') ? 'start' : ''}`}>
-                {t.replace('*', '')}
-              </span>
-            ))}
-          </div>
+          <MiniMap map={map} />
         </div>
 
         <div className="modal-actions">

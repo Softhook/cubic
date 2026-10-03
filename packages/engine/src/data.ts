@@ -23,7 +23,7 @@ export interface MapDef {
   players: number;
   group: string;
   cubes: number;
-  stats: { slack: number; shared: number; planets: number };
+  stats: { slack: number; shared: number | null; planets: number };
   layout: string[][];
 }
 
