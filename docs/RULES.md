@@ -348,7 +348,7 @@ Full data (with categories, CE status and design notes) lives in
 | Momentum | Take a bonus turn | Immediately take another turn, but with 2 actions instead of 3 (treat it as a brand-new turn). |
 | Plan Ahead | Become the missile | Until the end of your next turn, all your combat rolls are 1. |
 | Sabotage | Limit enemy action | Every opponent's next turn has 1 fewer action. |
-| Show of Force | Target destroyed | Destroy any one ship. Gain 1 Dominance. Engine: on an enemy ship it fires "destroy" skills (Hostile, Plundering, Ravenous); the victim loses no dominance ([RULE-SUGGESTIONS](RULE-SUGGESTIONS.md) §5.2 #26). |
+| Show of Force | Target destroyed | Destroy any one ship. Gain 1 Dominance. Engine: on an enemy ship it fires "destroy" skills (Hostile, Plundering, Ravenous, so +2 dominance with Ravenous); the victim loses no dominance ([RULE-SUGGESTIONS](RULE-SUGGESTIONS.md) §5.2 #26). |
 | Unveil the Fleet | Destroy & reroll ships | Destroy all your ships. You may reroll any ships in your scrapyard once. Deploy any number of ships. |
 | Warp Gate | Teleportation system | Place the Warp Gate tokens on two different spaces on the board. Any player may consider those spaces adjacent. Engine: for movement, attacks, Strategic support and Stealthy's isolation test. Deploy targets, Flagship carry and Conquer are unaffected, since gates link spaces, not planets ([RULE-SUGGESTIONS](RULE-SUGGESTIONS.md) §5.2 #30). |
 
