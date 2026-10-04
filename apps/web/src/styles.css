@@ -327,6 +327,7 @@ input { font: inherit; }
   transition: transform .6s cubic-bezier(.22,.9,.24,1);
   z-index: 3;
 }
+.board.resizing .ship { transition: none; }
 .ship-ring {
   position: absolute;
   inset: 10%;
@@ -563,6 +564,40 @@ input { font: inherit; }
 .market-row { display: flex; gap: 8px; align-items: flex-end; }
 .market-card.empty { opacity: .3; }
 .market-refresh { align-self: center; max-width: 140px; font-size: 12px; white-space: normal; }
+.market .qcard-sub { display: none; } /* the name and rules text are what matter when choosing */
+.market-toggle {
+  align-self: stretch; flex: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  width: 30px; padding: 0; margin: -10px 0 -14px -16px;
+  border: 0; border-right: 1px solid var(--line); background: rgba(5,8,19,.35);
+  color: var(--muted); font: inherit; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+  cursor: pointer; transition: color .15s, background .15s;
+}
+.market-toggle span { writing-mode: vertical-rl; transform: rotate(180deg); }
+.market-toggle svg { transform: rotate(180deg); transition: transform .2s; }
+.market-toggle:hover, .market-toggle:focus-visible { color: var(--text); background: rgba(122,162,255,.1); outline: none; }
+.market.collapsed { align-items: center; gap: 12px; padding-top: 0; padding-bottom: 0; height: 40px; }
+.market.collapsed .market-toggle { flex-direction: row; width: auto; padding: 0 12px; margin: 0 0 0 -16px; }
+.market.collapsed .market-toggle span { writing-mode: initial; transform: none; }
+.market.collapsed .market-toggle svg { transform: none; }
+.market.collapsed.picking .market-toggle { color: var(--accent); animation: togglepulse 1.6s ease-in-out infinite; }
+@keyframes togglepulse { 50% { background: rgba(122,162,255,.2); } }
+.market-strip-group { display: flex; align-items: center; gap: 5px; flex: none; }
+.market-strip-deck { border: 0; background: none; color: var(--muted); font: inherit; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; cursor: pointer; padding: 0 2px; white-space: nowrap; }
+.market-strip-deck b { color: var(--text); font-size: 12px; letter-spacing: 0; }
+.market-strip-deck:hover { color: var(--text); }
+.market-chip {
+  --cat: #7aa2ff;
+  max-width: 130px; padding: 3px 9px 3px 7px; border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.2); border-left: 3px solid var(--cat);
+  font: inherit; font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer; transition: transform .15s, box-shadow .15s;
+}
+.market-chip-skill { background: #e6ebf7; color: #111830; }
+.market-chip-tactic { background: #22183a; color: #f1eaff; border-color: rgba(185,140,255,.3); border-left-color: var(--cat); }
+.market-chip-expansion { background: #0f3b3a; color: #dffcf4; border-color: rgba(94,240,176,.35); border-left-color: var(--good); }
+.market-chip:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px var(--cat); }
+.market-chip.takeable { box-shadow: 0 0 0 1px var(--accent); }
 .deck { position: relative; width: 50px; height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; padding-bottom: 8px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
 .deck-stack {
   position: absolute; inset: 0 0 40px;
@@ -865,6 +900,8 @@ input { font: inherit; }
   .topbar .btn { padding: 6px 8px; }
   .brand { letter-spacing: .18em; }
   .market { padding: 8px; }
+  .market-toggle { margin: -8px 0 -8px -8px; }
+  .market.collapsed .market-toggle { margin: 0 0 0 -8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

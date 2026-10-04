@@ -6,21 +6,32 @@ import { Explosions } from './board/Explosions';
 import { shipSpots } from './board/geometry';
 import { Die3D } from './Die3D';
 
-/** The size of a board space in pixels: as large as fits the container, within limits. */
-function useCellSize(wrap: RefObject<HTMLDivElement>, rows: number, cols: number): number {
+/**
+ * The size of a board space in pixels: as large as fits the container, within limits. `resizing` stays
+ * true until the size has settled, so ships jump to their new spots with the map instead of gliding there.
+ */
+function useCellSize(wrap: RefObject<HTMLDivElement>, rows: number, cols: number): { cell: number; resizing: boolean } {
   const [cell, setCell] = useState(64);
+  const [resizing, setResizing] = useState(false);
   useLayoutEffect(() => {
     const el = wrap.current;
     if (!el) return;
+    let settle: ReturnType<typeof setTimeout> | undefined;
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       const size = Math.floor(Math.min(width / cols, height / rows));
       setCell(Math.max(34, Math.min(92, size)));
+      setResizing(true);
+      clearTimeout(settle);
+      settle = setTimeout(() => setResizing(false), 200);
     });
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      clearTimeout(settle);
+    };
   }, [wrap, rows, cols]);
-  return cell;
+  return { cell, resizing };
 }
 
 /**
@@ -30,7 +41,7 @@ function useCellSize(wrap: RefObject<HTMLDivElement>, rows: number, cols: number
 export function Board({ game, ctl }: { game: GameState; ctl: Controller }) {
   const wrap = useRef<HTMLDivElement>(null);
   const { rows, cols, planets } = game.board;
-  const cell = useCellSize(wrap, rows, cols);
+  const { cell, resizing } = useCellSize(wrap, rows, cols);
 
   // A click on empty board (no highlight there) still reaches the controller, to clear a selection.
   const onBoardClick = (e: MouseEvent<HTMLDivElement>) => {
@@ -41,7 +52,7 @@ export function Board({ game, ctl }: { game: GameState; ctl: Controller }) {
 
   return (
     <div className="board-wrap" ref={wrap}>
-      <div className="board" style={{ width: cols * cell, height: rows * cell, '--cell': `${cell}px` } as CSSProperties}>
+      <div className={`board ${resizing ? 'resizing' : ''}`} style={{ width: cols * cell, height: rows * cell, '--cell': `${cell}px` } as CSSProperties}>
         <BoardArt game={game} cell={cell} />
 
         <div className="board-layer" onClick={onBoardClick}>
