@@ -114,7 +114,7 @@ export function CardLab() {
         <div className="segmented small">
           {(['all', 'community', 'original'] as Edition[]).map((e) => (
             <button key={e} className={e === edition ? 'on' : ''} onClick={() => setEdition(e)}>
-              {e === 'all' ? 'All' : e === 'community' ? 'Community' : 'Original'}
+              {e === 'all' ? 'All' : e === 'community' ? 'Community' : 'Classic'}
             </button>
           ))}
         </div>
@@ -125,7 +125,7 @@ export function CardLab() {
           {decks.map((d) => (
             <section key={d.id} className="lab-deck">
               <h2>
-                {d.name} <span className="muted">· {d.edition === 'community' ? 'Community Edition' : 'Original 2013'} · {d.cards.length} cards
+                {d.name} <span className="muted">· {d.edition === 'community' ? 'Community Edition' : 'Classic'} · {d.cards.length} cards
                 {d.cards.some((c) => (c.copies ?? 1) > 1) && `, ${d.cards.reduce((s, c) => s + (c.copies ?? 1), 0)} with copies`}</span>
               </h2>
               <div className="lab-grid cards">
@@ -163,7 +163,7 @@ export function CardLab() {
             Poker size, {CARD.w} × {CARD.h} mm{bleed ? `; with ${CARD.bleed} mm bleed ${size(true).w} × ${size(true).h} mm, as print services want it` : ' (trim)'}.
           </p>
 
-          <h3 className="lab-sub">Whole set{edition !== 'all' && ` (${edition === 'community' ? 'Community' : 'Original'})`}</h3>
+          <h3 className="lab-sub">Whole set{edition !== 'all' && ` (${edition === 'community' ? 'Community' : 'Classic'})`}</h3>
           <div className="lab-controls">
             <button className="btn btn-primary" disabled={!ready} onClick={exportZip}>All cards · ZIP</button>
             <span className="lab-note">PNG 300 dpi, one folder per deck with its back{bleed ? ', with bleed' : ''}.</span>

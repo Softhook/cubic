@@ -9,7 +9,7 @@ import { ILLUSTRATIONS } from './illustrations';
 /**
  * Advance cards, poker size (63.5 × 88.9 mm), for print and the Art Lab. See docs/GRAPHICS.md §2, Cards.
  *
- * Permanent cards (CE Skills, original Commands) are light; one-shot cards (Tactics, Gambits, Expansion)
+ * Permanent cards (CE Skills, Classic Commands) are light; one-shot cards (Tactics, Gambits, Expansion)
  * are dark, so the two read apart across the table, as the light and dark decks of the physical game do.
  * Skills frame their art; the other decks run it to the edges. The illustration shows what the card does
  * (illustrations.ts); the accent colour and icon are its category's (data/cards.yaml, tokens.ts).
@@ -293,7 +293,7 @@ export function cardBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure'> = {}
   let orbits = '';
   for (let i = 0; i < 3; i++) orbits += `<ellipse cx="${n(cx)}" cy="${n(cy + 1)}" rx="${n(16 + i * 5)}" ry="${n(5 + i * 1.6)}" fill="none" stroke="${hsl(hue, 80, 75)}" stroke-width=".3" opacity="${n(0.6 - i * 0.15)}" transform="rotate(-18 ${n(cx)} ${n(cy)})"/>`;
   const title = `<text x="${n(cx)}" y="${n(H * 0.72)}" font-family="${FONTS.title}" font-weight="900" font-size="7" letter-spacing="1.4" fill="#fff" text-anchor="middle">CUBIC</text>`;
-  const sub = `<text x="${n(cx)}" y="${n(H * 0.72 + 6)}" font-family="${FONTS.body}" font-weight="700" font-size="2.4" letter-spacing=".9" fill="${hsl(hue, 90, 78)}" text-anchor="middle">${esc(info.label.toUpperCase())}${info.edition === 'Classic' ? ' · ORIGINAL' : ''}</text>`;
+  const sub = `<text x="${n(cx)}" y="${n(H * 0.72 + 6)}" font-family="${FONTS.body}" font-weight="700" font-size="2.4" letter-spacing=".9" fill="${hsl(hue, 90, 78)}" text-anchor="middle">${esc(info.label.toUpperCase())}${info.edition === 'Classic' ? ' · CLASSIC' : ''}</text>`;
   const border = info.light
     ? rect(win, `rx="2.6" fill="none" stroke="${p.accent}" stroke-width=".4"`)
     : `<rect x="3" y="3" width="${n(W - 6)}" height="${n(H - 6)}" rx="1.6" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".3" opacity=".5"/>`;

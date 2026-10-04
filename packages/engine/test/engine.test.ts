@@ -393,7 +393,7 @@ describe('void tiles (The Void maps; BGA rules help)', () => {
 describe('maps per rule set', () => {
   it('Basic and Original are played only on published maps; Community also on the BGA maps', () => {
     expect(() => createGame({ players: players(2), mode: 'basic', mapId: 'precis' })).toThrow(/isn't played with the Basic rules/);
-    expect(() => createGame({ players: players(2), mode: 'original', mapId: 'precis' })).toThrow(/Original/);
+    expect(() => createGame({ players: players(2), mode: 'original', mapId: 'precis' })).toThrow(/Classic/);
     expect(createGame({ players: players(2), mode: 'community', mapId: 'precis' }).board.mapId).toBe('precis');
     expect(createGame({ players: players(2), mode: 'basic', mapId: 'axiomatic' }).board.mapId).toBe('axiomatic');
   });

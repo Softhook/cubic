@@ -77,7 +77,7 @@ export function Rulebook() {
             up exactly to the planet’s number (<i>conquering</i>), or by destroying enough enemy ships to become infamous.
           </p>
           <p>
-            These rules are the <b>Community</b> rules, the recommended way to play. <b>Basic</b> and <b>Original</b> change a few things; see{' '}
+            These rules are the <b>Community</b> rules, the recommended way to play. <b>Basic</b> and <b>Classic</b> change a few things; see{' '}
             <a href="#rb-modes">Rule sets</a>.
           </p>
         </section>
@@ -271,7 +271,7 @@ export function Rulebook() {
           <h2>Rule sets</h2>
           <h3>Basic: learn the game</h3>
           <p>No cards, so no Research action and no missiles. Everything else is as above. Play this first to learn ships, combat and conquering.</p>
-          <h3>Original: the 2013 rules</h3>
+          <h3>Classic: the 2013 rules</h3>
           <ul>
             <li>Command cards (permanent, like Skills) and Gambit cards (one-shot, like Tactics) replace the Community decks. Expansion is a Gambit card.</li>
             <li>No starting card, no missiles and no peeking.</li>
@@ -289,7 +289,7 @@ export function Rulebook() {
         </section>
 
         <section className="rb-reference">
-          <h2>Card reference: Original</h2>
+          <h2>Card reference: Classic</h2>
           <CardTable title="Command" note="Permanent; hold up to 3." cards={ORIGINAL_COMMAND} />
           <CardTable title="Gambit" note="One-shot." cards={ORIGINAL_GAMBIT} />
         </section>

@@ -57,7 +57,7 @@ exports[`golden master > community, 4 players, seed 13 1`] = `
 exports[`golden master > original, 2 players, seed 11 1`] = `
 {
   "actions": "54222b172019a996",
-  "state": "5a4baeb6a55ce536",
+  "state": "0717227456cec309",
   "steps": 76,
   "winner": 1,
 }

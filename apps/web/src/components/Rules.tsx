@@ -40,7 +40,7 @@ export function Rules({ onClose }: { onClose: () => void }) {
             <li><b>Tactics</b> happen immediately.</li>
             <li><b>Expansion</b> adds a sixth or seventh ship to your fleet.</li>
             <li>Community: taking the oldest card (farthest from the deck) lets you <b>peek</b> at the top card instead.</li>
-            <li>Original: you may spend a card pick to discard all six face-up cards and deal six new ones.</li>
+            <li>Classic: you may spend a card pick to discard all six face-up cards and deal six new ones.</li>
           </ul>
         </section>
       </div>
@@ -48,7 +48,7 @@ export function Rules({ onClose }: { onClose: () => void }) {
       <h3>Modes</h3>
       <ul>
         <li><b>Basic</b> — the official rules without cards (so no research or missiles). The best way to learn ships, combat and conquering.</li>
-        <li><b>Original</b> — the 2013 rules: Command cards (permanent) and Gambit cards (one-shot, including Expansion).</li>
+        <li><b>Classic</b> — the 2013 rules: Command cards (permanent) and Gambit cards (one-shot, including Expansion).</li>
         <li><b>Community</b> — the fan Community Edition: rebalanced Skills and Tactics, missiles, a starting skill, a separate Expansion pile and card peeking.</li>
       </ul>
 

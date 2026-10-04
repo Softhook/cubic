@@ -63,8 +63,8 @@ export const RULESETS: Record<GameMode, RuleSet> = {
   },
   original: {
     id: 'original',
-    name: 'Original',
-    title: 'Original',
+    name: 'Classic',
+    title: 'Classic',
     summary: 'The 2013 rules with Command and Gambit cards.',
     cards: {
       skills: ORIGINAL_COMMAND,
