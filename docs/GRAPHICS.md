@@ -244,12 +244,12 @@ Built: `cardSvg` / `cardBackSvg` in [`packages/art/src/card.ts`](../packages/art
 exported in the Art Lab (`#lab/cards`).
 
 - **Size**: poker, 63.5 × 88.9 mm, 3 mm bleed (69.5 × 94.9 mm), 3 mm corner, 3.5 mm safe zone.
-- **Two looks by deck**: permanent cards (CE Skills, original Commands) are light with the art in a
-  framed window; one-shot cards (Tactics, Gambits, Expansion) are dark with full-bleed art. The decks
+- **Two looks by deck**: permanent cards (CE Skills, Classic Commands) are light; one-shot cards
+  (Tactics, Gambits, Expansion) are dark. Every card runs its art to the top and side edges. The decks
   tell apart across the table and face down, like the physical game's light and dark decks.
 - **Face**: illustration (top ~half), HUD label with the category and ×copies, a category emblem
-  straddling art and panel, name (Orbitron), subtitle, rules text with game terms in bold, footer with
-  deck · kind and `CUBIC CE 07/35`.
+  straddling art and panel, name (Orbitron), subtitle, rules text with game terms in bold, small footer in
+  the bottom corners: `07/35` left, the set (`CE` or `CLASSIC`) right.
 - **Colour = category** (movement cyan, action amber, combat red, conquer green, research violet,
   ship blue, cards orange, expansion teal). Every card has a `category` in `data/cards.yaml` (Tactics
   and Gambits take their effect's); hues and labels are `CARD_CATEGORIES` in tokens.ts, icons

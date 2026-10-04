@@ -11,7 +11,7 @@ import { ILLUSTRATIONS } from './illustrations';
  *
  * Permanent cards (CE Skills, Classic Commands) are light; one-shot cards (Tactics, Gambits, Expansion)
  * are dark, so the two read apart across the table, as the light and dark decks of the physical game do.
- * Skills frame their art; the other decks run it to the edges. The illustration shows what the card does
+ * The art runs to the top and side edges on every card. The illustration shows what the card does
  * (illustrations.ts); the accent colour and icon are its category's (data/cards.yaml, tokens.ts).
  */
 
@@ -25,8 +25,6 @@ export const CARD = {
   safe: 3.5,
   /** Where the illustration ends and the text panel starts. */
   artBottom: 43,
-  /** Light frame width on permanent cards. */
-  frame: 2.8,
 } as const;
 
 export type CardDeck = 'skill' | 'tactic' | 'expansion' | 'command' | 'gambit';
@@ -71,12 +69,12 @@ export function cardIllustration(f: CardFace): string {
   return ILLUSTRATIONS[f.id]?.caption ?? 'no illustration yet';
 }
 
-const DECK_INFO: Record<CardDeck, { label: string; kind: string; light: boolean; framed: boolean; edition: string; backHue: number }> = {
-  skill: { label: 'Skill', kind: 'Permanent', light: true, framed: true, edition: 'CE', backHue: 222 },
-  tactic: { label: 'Tactic', kind: 'One-shot', light: false, framed: false, edition: 'CE', backHue: 222 },
-  expansion: { label: 'Expansion', kind: 'One-shot', light: false, framed: false, edition: 'CE', backHue: CARD_CATEGORIES.expansion.hue },
-  command: { label: 'Command', kind: 'Permanent', light: true, framed: false, edition: 'Classic', backHue: 38 },
-  gambit: { label: 'Gambit', kind: 'One-shot', light: false, framed: false, edition: 'Classic', backHue: 38 },
+const DECK_INFO: Record<CardDeck, { label: string; kind: string; light: boolean; edition: string; backHue: number }> = {
+  skill: { label: 'Skill', kind: 'Permanent', light: true, edition: 'CE', backHue: 222 },
+  tactic: { label: 'Tactic', kind: 'One-shot', light: false, edition: 'CE', backHue: 222 },
+  expansion: { label: 'Expansion', kind: 'One-shot', light: false, edition: 'CE', backHue: CARD_CATEGORIES.expansion.hue },
+  command: { label: 'Command', kind: 'Permanent', light: true, edition: 'Classic', backHue: 38 },
+  gambit: { label: 'Gambit', kind: 'One-shot', light: false, edition: 'Classic', backHue: 38 },
 };
 
 export const deckInfo = (d: CardDeck) => DECK_INFO[d];
@@ -162,32 +160,17 @@ const tspans = (line: Word[], boldColour: string) =>
 // ---------------------------------------------------------------------------
 // Faces
 
-/** Where things go on a face: framed cards inset the art, the others run it to the edges. */
-interface Layout {
-  light: boolean;
-  framed: boolean;
-  /** The art window, clipped. */
-  win: Box;
-  /** The part of the window that's visible on the trimmed card: illustrations compose to this. */
-  view: Box;
-  /** The window's corner radius (0: square, it runs into the bleed). */
-  winRadius: number;
-  /** Baseline and inset of the labels over the art. */
-  hud: { x: number; y: number };
-}
-
-function layout(light: boolean, framed: boolean): Layout {
-  const { w: W, artBottom: AB, frame: F, bleed: B } = CARD;
-  if (framed) {
-    const win = { x: F, y: F, w: W - 2 * F, h: AB - F };
-    return { light, framed, win, view: win, winRadius: 2.2, hud: { x: F + 2.6, y: F + 4.6 } };
-  }
-  return { light, framed, win: { x: -B, y: -B, w: W + 2 * B, h: AB + B }, view: { x: 0, y: 0, w: W, h: AB }, winRadius: 0, hud: { x: CARD.safe + 0.6, y: 5.6 } };
-}
+/** The art window, clipped: it runs into the bleed at the top and sides. */
+const ART_WIN: Box = { x: -CARD.bleed, y: -CARD.bleed, w: CARD.w + 2 * CARD.bleed, h: CARD.artBottom + CARD.bleed };
+/** The part of the art that's visible on the trimmed card: illustrations compose to this. */
+const ART_VIEW: Box = { x: 0, y: 0, w: CARD.w, h: CARD.artBottom };
+/** Baseline and inset of the labels over the art. */
+const HUD = { x: CARD.safe + 0.6, y: 5.6 };
 
 /** The illustration over a starfield in the category's colours, shaded towards the text panel. */
-function art(face: CardFace, id: string, hue: number, L: Layout, p: CardPalette, r: Rng): Fragment {
-  const { win, view } = L;
+function art(face: CardFace, id: string, hue: number, p: CardPalette, r: Rng): Fragment {
+  const win = ART_WIN;
+  const view = ART_VIEW;
   const players = [...PLAYER_HUES];
   const p1 = players.splice(r.int(0, players.length - 1), 1)[0];
   const p2 = players[r.int(0, players.length - 1)];
@@ -203,27 +186,25 @@ function art(face: CardFace, id: string, hue: number, L: Layout, p: CardPalette,
   // Darken the art towards the panel so the emblem and title sit on calm ground.
   const shade = `<linearGradient id="${id}-shade" x1="0" y1="0" x2="0" y2="1"><stop offset=".6" stop-color="${p.paper}" stop-opacity="0"/><stop offset="1" stop-color="${INK}" stop-opacity=".85"/></linearGradient>`;
   return {
-    defs: sky.defs + scene.defs + shade + clipRect(`${id}-win`, win, L.winRadius),
-    body:
-      `<g clip-path="url(#${id}-win)">${sky.body}${scene.body}${rect(win, `fill="url(#${id}-shade)"`)}</g>` +
-      (L.framed ? rect(win, `rx="${n(L.winRadius)}" fill="none" stroke="${p.accent}" stroke-width=".35"`) : ''),
+    defs: sky.defs + scene.defs + shade + clipRect(`${id}-win`, win),
+    body: `<g clip-path="url(#${id}-win)">${sky.body}${scene.body}${rect(win, `fill="url(#${id}-shade)"`)}</g>`,
   };
 }
 
 /** Labels over the art: the category and the number of copies. */
-function hud(face: CardFace, label: string, L: Layout): string {
-  const { x, y } = L.hud;
+function hud(face: CardFace, label: string): string {
+  const { x, y } = HUD;
   const text = (tx: number, s: string, anchor: string) =>
     `<text x="${n(tx)}" y="${n(y)}" font-family="${FONTS.body}" font-size="1.9" font-weight="700" letter-spacing=".22" fill="#fff" text-anchor="${anchor}" opacity=".92">${esc(s.toUpperCase())}</text>`;
   return text(x, label, 'start') + (face.copies && face.copies > 1 ? text(CARD.w - x, `×${face.copies}`, 'end') : '');
 }
 
 /** The text panel: the category emblem, name, subtitle, rules text and footer. */
-function textPanel(face: CardFace, category: string, area: Box, L: Layout, p: CardPalette, measure: Measure): string {
+function textPanel(face: CardFace, category: string, area: Box, p: CardPalette, measure: Measure): string {
   const { w: W, h: H, artBottom: top, safe } = CARD;
   const info = DECK_INFO[face.deck];
-  // Full-bleed art gets a panel below it, edged in the accent; framed cards are paper already.
-  let out = L.framed ? '' : rect({ x: area.x, y: top, w: area.w, h: area.y + area.h - top }, `fill="${p.paper}"`) + rect({ x: area.x, y: top - 0.2, w: area.w, h: 0.4 }, `fill="${p.accent}"`);
+  // The panel below the art, edged in the accent.
+  let out = rect({ x: area.x, y: top, w: area.w, h: area.y + area.h - top }, `fill="${p.paper}"`) + rect({ x: area.x, y: top - 0.2, w: area.w, h: 0.4 }, `fill="${p.accent}"`);
 
   // Emblem straddling art and panel.
   out +=
@@ -267,12 +248,11 @@ function textPanel(face: CardFace, category: string, area: Box, L: Layout, p: Ca
 export function cardSvg(face: CardFace, o: CardOptions = {}): string {
   const id = o.idPrefix ?? `card-${face.id}`;
   const cat = categoryOf(face);
-  const L = layout(DECK_INFO[face.deck].light, DECK_INFO[face.deck].framed);
-  const p = cardPalette(L.light, cat.hue);
+  const p = cardPalette(DECK_INFO[face.deck].light, cat.hue);
   const area = pageArea(o.bleed);
   const base: Fragment = { defs: fontStyle(o), body: rect(area, `fill="${p.paper}"`) };
-  const front: Fragment = { defs: '', body: hud(face, cat.label, L) + textPanel(face, cat.name, area, L, p, o.measure ?? estimateWidth) };
-  return finish(join(base, art(face, id, cat.hue, L, p, rng(hash(`card:${face.id}`))), front), area, id, o.rounded);
+  const front: Fragment = { defs: '', body: hud(face, cat.label) + textPanel(face, cat.name, area, p, o.measure ?? estimateWidth) };
+  return finish(join(base, art(face, id, cat.hue, p, rng(hash(`card:${face.id}`))), front), area, id, o.rounded);
 }
 
 /** The back of a deck's cards. */
