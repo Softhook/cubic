@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { TILE, TILE_SET, dataUrl, editableTileSvg, tileSvg, type PlanetType, type TileSpec } from '@quantum/art';
-import { blobToDataUrl, download, svgToPng } from './export';
+import { blobToDataUrl, download } from '../files';
+import { svgToPng } from './export';
 import { LabHeader } from './LabHeader';
 
 /**

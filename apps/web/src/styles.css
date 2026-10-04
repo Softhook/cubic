@@ -486,6 +486,7 @@ input { font: inherit; }
   padding: 3px 8px; border-radius: 6px;
   background: rgba(232, 237, 255, .9); color: #121a33;
   border: 0; font-family: inherit;
+  box-shadow: inset 3px 0 0 var(--cat);
   cursor: pointer;
 }
 .skill-chip:hover { background: #fff; }
@@ -516,16 +517,9 @@ input { font: inherit; }
 @keyframes deal { from { transform: translateY(-14px) rotate(-3deg); opacity: 0; } }
 .qcard::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--cat); }
 .qcard-skill { background: linear-gradient(180deg, #f5f7fd, #dfe5f5); color: #111830; }
-.qcard-tactic { background: linear-gradient(180deg, #241a3d, #130d24); color: #f1eaff; border-color: rgba(185,140,255,.3); --cat: #ff5ca8; }
-.qcard-expansion { background: linear-gradient(180deg, #0f3b3a, #082222); color: #dffcf4; border-color: rgba(94,240,176,.35); --cat: var(--good); }
-.cat-movement { --cat: #3ab0ff; }
-.cat-action { --cat: #ffb020; }
-.cat-combat { --cat: #ff4d6d; }
-.cat-conquer { --cat: #22c58b; }
-.cat-research { --cat: #8b6bff; }
-.cat-ship { --cat: #00b4c8; }
-.cat-card { --cat: #9aa3b8; }
-.skill-chip.cat-movement, .skill-chip.cat-action, .skill-chip.cat-combat, .skill-chip.cat-conquer, .skill-chip.cat-research, .skill-chip.cat-ship, .skill-chip.cat-card { box-shadow: inset 3px 0 0 var(--cat); }
+.qcard-tactic { background: linear-gradient(180deg, #241a3d, #130d24); color: #f1eaff; border-color: rgba(185,140,255,.3); }
+.qcard-expansion { background: linear-gradient(180deg, #0f3b3a, #082222); color: #dffcf4; border-color: rgba(94,240,176,.35); }
+/* --cat, the category's accent, is set per card from @quantum/art (categoryStyle in Card.tsx). */
 .qcard-top { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 .qcard-cat { display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--cat); }
 .qcard-skill .qcard-cat { filter: brightness(.8); }

@@ -59,3 +59,34 @@ export const NUMBER_TEXT = { size: 14, sizeTwoDigits: 12.5 } as const;
 
 /** The flavour label at the planet's top left (font sizes, mm): tiny, like a star atlas. */
 export const LABEL_TEXT = { name: 1.7, line: 1.2, font: "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace" } as const;
+
+/** Display and text faces for cards and illustrations (the game UI loads the same two, index.html). */
+export const FONTS = {
+  title: "Orbitron, 'Arial Black', sans-serif",
+  body: "Inter, 'Helvetica Neue', Arial, sans-serif",
+} as const;
+
+/** Near-black ink: dark card paper, outlines behind big numerals, glyphs on lit chips. */
+export const INK = 'hsl(228 45% 8%)';
+
+/** Hues of the two tracks every player has: research violet, dominance red-orange. */
+export const RESEARCH = 268;
+export const DOMINANCE = 12;
+
+/** Player hues for ships in the card illustrations, close to the game's default player colours (Lobby). */
+export const PLAYER_HUES = [196, 328, 42, 140];
+
+/**
+ * Card categories (data/cards.yaml `category`): accent hue and label, in the game and in print. Hues are
+ * far apart so cards sort by colour at a glance. Each has an icon of the same name (icons.ts).
+ */
+export const CARD_CATEGORIES: Record<string, { hue: number; label: string }> = {
+  movement: { hue: 192, label: 'Movement' },
+  action: { hue: 42, label: 'Action' },
+  combat: { hue: 352, label: 'Combat' },
+  conquer: { hue: 138, label: 'Conquer' },
+  research: { hue: RESEARCH, label: 'Research' },
+  ship: { hue: 218, label: 'Ship' },
+  card: { hue: 24, label: 'Cards' },
+  expansion: { hue: 172, label: 'Expansion' },
+};

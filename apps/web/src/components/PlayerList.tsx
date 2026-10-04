@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { SHIP_NAMES, card, reserve, rulesOf, scrapyard, type Die, type GameState, type PlayerState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
-import { CategoryIcon } from './Card';
+import { CategoryIcon, categoryStyle } from './Card';
 import { CardViewer } from './CardViewer';
 import { Die3D } from './Die3D';
 
@@ -100,8 +100,8 @@ function PlayerCard({
           {p.skills.map((s, i) => {
             const def = card(s.id);
             return (
-              <button type="button" key={`${s.id}${i}`} onClick={() => setViewing(s.id)} className={`skill-chip cat-${def.category} ${s.active ? '' : 'pending'}`} title={`${def.name}: ${def.text}${s.active ? '' : '\n(Takes effect from the next player’s turn)'}`}>
-                <CategoryIcon category={def.category ?? 'card'} size={11} />
+              <button type="button" key={`${s.id}${i}`} onClick={() => setViewing(s.id)} className={`skill-chip ${s.active ? '' : 'pending'}`} style={categoryStyle(def.category, true)} title={`${def.name}: ${def.text}${s.active ? '' : '\n(Takes effect from the next player’s turn)'}`}>
+                <CategoryIcon category={def.category} size={11} />
                 {def.name}
               </button>
             );

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CARD, CARD_CATEGORIES, cardBackSvg, cardCategory, cardIllustration, cardSvg, deckInfo, type CardDeck, type CardFace } from '@quantum/art';
+import { CARD, CARD_CATEGORIES, cardBackSvg, cardIllustration, cardSvg, deckInfo, type CardDeck, type CardFace } from '@quantum/art';
 import { DECKS, cardFontCss, measure, type Deck } from './cards';
-import { download, svgToPng, zip } from './export';
+import { download } from '../files';
+import { svgToPng, zip } from './export';
+import { PAPER, printDocument, sheetsHtml, type Paper } from './print';
 import { LabHeader } from './LabHeader';
 
 /**
@@ -10,7 +12,6 @@ import { LabHeader } from './LabHeader';
  */
 
 type Edition = 'all' | 'community' | 'original';
-type Paper = 'a4' | 'letter';
 
 /** One printable thing: a card front, or a deck's back. */
 interface Item {
@@ -20,11 +21,6 @@ interface Item {
 }
 
 const itemsOf = (d: Deck): Item[] => [{ key: `${d.id}:back`, deck: d.id }, ...d.cards.map((c) => ({ key: `${d.id}:${c.id}`, deck: d.id, face: c }))];
-
-const PAPER: Record<Paper, { w: number; h: number; name: string }> = {
-  a4: { w: 210, h: 297, name: 'A4' },
-  letter: { w: 215.9, h: 279.4, name: 'US Letter' },
-};
 
 export function CardLab() {
   const [edition, setEdition] = useState<Edition>('all');
@@ -105,7 +101,8 @@ export function CardLab() {
         images.set(i.key, URL.createObjectURL(await svgToPng(svgOf(i), CARD.w, CARD.h, 300)));
       }
       setProgress('Opening print dialog…');
-      await printDocument(sheetsHtml(fronts, images, PAPER[paper], backs), () => images.forEach((u) => URL.revokeObjectURL(u)));
+      const cards = fronts.map((i) => ({ front: images.get(i.key)!, back: images.get(`${i.deck}:back`) ?? '' }));
+      await printDocument(sheetsHtml(cards, paper, backs), () => images.forEach((u) => URL.revokeObjectURL(u)));
     });
 
   const info = deckInfo(item.deck);
@@ -147,7 +144,7 @@ export function CardLab() {
           <p className="lab-note">
             {item.face ? (
               <>
-                {info.label} ({info.kind.toLowerCase()}) · {CARD_CATEGORIES[cardCategory(item.face)]?.label} · {cardIllustration(item.face)}
+                {info.label} ({info.kind.toLowerCase()}) · {CARD_CATEGORIES[item.face.category]?.label} · {cardIllustration(item.face)}
                 {item.face.copies && item.face.copies > 1 ? ` · ${item.face.copies} copies` : ''}
               </>
             ) : (
@@ -174,8 +171,9 @@ export function CardLab() {
           <div className="lab-controls">
             <button className="btn btn-primary" disabled={!ready} onClick={printSheets}>Print sheets · PDF</button>
             <select value={paper} onChange={(e) => setPaper(e.target.value as Paper)} aria-label="Paper">
-              <option value="a4">A4</option>
-              <option value="letter">US Letter</option>
+              {Object.entries(PAPER).map(([id, p]) => (
+                <option key={id} value={id}>{p.name}</option>
+              ))}
             </select>
             <label><input type="checkbox" checked={copies} onChange={(e) => setCopies(e.target.checked)} /> All copies</label>
             <label><input type="checkbox" checked={backs} onChange={(e) => setBacks(e.target.checked)} /> Backs (duplex)</label>
@@ -189,57 +187,4 @@ export function CardLab() {
       </div>
     </div>
   );
-}
-
-/**
- * Print sheets: 3 × 3 cards at trim size, butted together so one cut serves two cards, with crop
- * marks in the margin. With backs, each page of fronts is followed by its backs, columns mirrored
- * so they land behind their fronts when printed double-sided on the long edge.
- */
-function sheetsHtml(fronts: Item[], images: Map<string, string>, paper: { w: number; h: number }, withBacks: boolean): string {
-  const { w, h } = CARD;
-  const x0 = (paper.w - 3 * w) / 2;
-  const y0 = (paper.h - 3 * h) / 2;
-  const mark = Math.min(5, y0 - 1.5);
-  let marks = '';
-  for (let i = 0; i <= 3; i++) {
-    const x = x0 + i * w;
-    const y = y0 + i * h;
-    marks += `<i style="left:${x}mm;top:${y0 - mark - 1}mm;width:.2mm;height:${mark}mm"></i><i style="left:${x}mm;top:${y0 + 3 * h + 1}mm;width:.2mm;height:${mark}mm"></i>`;
-    marks += `<i style="top:${y}mm;left:${x0 - 6}mm;height:.2mm;width:5mm"></i><i style="top:${y}mm;left:${x0 + 3 * w + 1}mm;height:.2mm;width:5mm"></i>`;
-  }
-  const page = (cells: { src: string; col: number; row: number }[]) =>
-    `<section class="sheet">${cells.map((c) => `<img src="${c.src}" style="left:${x0 + c.col * w}mm;top:${y0 + c.row * h}mm">`).join('')}${marks}</section>`;
-  let html = '';
-  for (let p = 0; p < fronts.length; p += 9) {
-    const chunk = fronts.slice(p, p + 9);
-    html += page(chunk.map((i, k) => ({ src: images.get(i.key)!, col: k % 3, row: Math.floor(k / 3) })));
-    if (withBacks) html += page(chunk.map((i, k) => ({ src: images.get(`${i.deck}:back`)!, col: 2 - (k % 3), row: Math.floor(k / 3) })));
-  }
-  return (
-    `<!doctype html><html><head><meta charset="utf-8"><title>Cubic cards</title><style>` +
-    `@page{size:${paper.w}mm ${paper.h}mm;margin:0}html,body{margin:0}` +
-    `.sheet{position:relative;width:${paper.w}mm;height:${paper.h}mm;overflow:hidden;break-after:page}` +
-    `.sheet img{position:absolute;width:${w}mm;height:${h}mm}.sheet i{position:absolute;background:#000}` +
-    `</style></head><body>${html}</body></html>`
-  );
-}
-
-/** Prints an HTML document from a hidden frame, once its images have loaded. */
-async function printDocument(html: string, cleanup: () => void): Promise<void> {
-  const frame = document.createElement('iframe');
-  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
-  document.body.appendChild(frame);
-  const doc = frame.contentDocument!;
-  doc.open();
-  doc.write(html);
-  doc.close();
-  await Promise.all([...doc.images].map((img) => img.decode().catch(() => undefined)));
-  frame.contentWindow!.focus();
-  frame.contentWindow!.print();
-  // print() blocks until the dialog closes in most browsers; keep the frame a while for those where it doesn't.
-  setTimeout(() => {
-    frame.remove();
-    cleanup();
-  }, 60_000);
 }

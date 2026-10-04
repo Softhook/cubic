@@ -3,7 +3,9 @@ import { PLANET_DIAMETER, SET_COUNTS, TILE_SET, TILE, assignTiles, editableTileS
 import { CUBE_PAD } from '../src/tokens';
 import maps from '../../engine/src/data/maps.json';
 import cards from '../../engine/src/data/cards.json';
-import { cardBackSvg, cardCategory, cardSvg, CARD_CATEGORIES, type CardDeck } from '../src/card';
+import { cardBackSvg, cardSvg, type CardDeck } from '../src/card';
+import { ICONS } from '../src/icons';
+import { CARD_CATEGORIES } from '../src/tokens';
 import { ILLUSTRATIONS } from '../src/illustrations';
 import { rng } from '../src/rng';
 
@@ -98,7 +100,7 @@ describe('planet number', () => {
 });
 
 describe('card art', () => {
-  type Def = { id: string; name: string; subtitle: string; text: string; category?: string; count: number };
+  type Def = { id: string; name: string; subtitle: string; text: string; category: string; count: number };
   const decks: [CardDeck, Def[]][] = [
     ['skill', cards.skills],
     ['tactic', cards.tactics],
@@ -140,7 +142,8 @@ describe('card art', () => {
   });
 
   it('gives every card a known category, so it has a colour and an icon', () => {
-    for (const f of faces) expect(CARD_CATEGORIES[cardCategory(f)], f.id).toBeDefined();
+    for (const f of faces) expect(CARD_CATEGORIES[f.category], f.id).toBeDefined();
+    for (const c of Object.keys(CARD_CATEGORIES)) expect(ICONS[c], c).toBeDefined();
   });
 
   it('is poker size, with bleed when asked', () => {

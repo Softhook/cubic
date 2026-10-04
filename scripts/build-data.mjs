@@ -7,6 +7,9 @@ const out = new URL('packages/engine/src/data/', root);
 mkdirSync(out, { recursive: true });
 
 const cards = parse(readFileSync(new URL('data/cards.yaml', root), 'utf8'));
+for (const [deck, list] of Object.entries(cards)) {
+  for (const c of list) if (!c.category) throw new Error(`data/cards.yaml: ${deck} card ${c.id} has no category`);
+}
 writeFileSync(new URL('cards.json', out), JSON.stringify(cards, null, 2) + '\n');
 
 const { maps } = parse(readFileSync(new URL('data/maps.yaml', root), 'utf8'));

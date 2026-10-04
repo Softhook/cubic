@@ -56,17 +56,18 @@ data/cards.yaml  data/maps.yaml  data/art.yaml (new: seeds, palettes, art credit
 2. **No browser measuring, no app state.** Options in, SVG text out: plain TypeScript functions, no
    React. The same call runs in Node (print scripts, tests) and in the browser. The game shows the
    result as an `<image>` (a `data:` URL), so the browser rasterises each tile's noise filters once
-   instead of on every repaint; that is also the "baked" mode §4 needs. Cards, whose text needs HTML
-   layout, will be the exception.
+   instead of on every repaint; that is also the "baked" mode §4 needs. Cards wrap their text with a
+   `measure` function the caller passes in (the browser measures with its fonts; Node estimates).
 3. **Deterministic.** Anything random (star positions, planet surface, nebula shape) comes from a
    seeded RNG keyed by a stable string, e.g. `planet:<mapId>:<planetId>` or `card:<cardId>`. The
    same planet looks identical in every game, in the lab and in print. (A small hash + mulberry32
    inside `packages/art`; it must not share the engine's game RNG.)
 4. **Scoped ids.** Gradients, filters, clip paths and patterns get ids from a prefix option
    (the tile id by default) so any number of drawings can share a page.
-5. **Design tokens in one place.** `packages/art/src/tokens.ts` holds the palette, player colours,
-   planet colours, type scale and physical sizes. The web app's CSS variables are generated from it,
-   so the game UI and the printed components share colours.
+5. **Design tokens in one place.** `packages/art/src/tokens.ts` holds the palette, planet colours,
+   card categories, fonts and physical sizes; `icons.ts` the icon set. The game imports what it shares
+   with print (category colours and icons on its cards) rather than copying it. Still separate: the
+   game's player colours (Lobby) and the rest of its CSS palette.
 6. **Art vs. chrome.** Things that only exist on screen (highlights, hover rings, explosions, the 3D
    dice, the animated gate spin) stay in `apps/web`. If it could be printed, it lives in `packages/art`.
 
@@ -250,14 +251,17 @@ exported in the Art Lab (`#lab/cards`).
   straddling art and panel, name (Orbitron), subtitle, rules text with game terms in bold, footer with
   deck · kind and `CUBIC CE 07/35`.
 - **Colour = category** (movement cyan, action amber, combat red, conquer green, research violet,
-  ship blue, cards orange, expansion teal). Tactics and Gambits get a category from `THEMES` in card.ts.
+  ship blue, cards orange, expansion teal). Every card has a `category` in `data/cards.yaml` (Tactics
+  and Gambits take their effect's); hues and labels are `CARD_CATEGORIES` in tokens.ts, icons
+  `ICONS` in icons.ts. The game's on-screen cards use the same accent colours (`cardPalette`) and
+  icons, so a card looks the same colour on screen and in print.
 - **Illustration = one scene per card**, showing what the card does: Agile's ship flies a fourth,
   glowing space; Brutal rolls two combat dice and strikes out the higher; Sabotage shorts out one of
   an opponent's action chips. Scenes live in `packages/art/src/scenes/` (skills, tactics + expansion,
   original), keyed by card id; each has a one-line caption the Art Lab shows under the card. Original
   cards that do the same as a CE card get a different picture of the same idea. A test checks that
   every card has a scene and no two draw the same.
-- **One drawing kit** (`cardkit.ts`) keeps the set consistent: ships are isometric dice with real pip
+- **One drawing kit** (`packages/art/src/kit/`: ships, board, hud, effects) keeps the set consistent: ships are isometric dice with real pip
   layouts, cubes are plain dice, the board is an isometric holo-grid the dice stand on, planets and
   skies come from the tile generators. Rules quantities are flat HUD readouts over the scene, always
   drawn the same way: research (violet) and dominance (red-orange) tracks, hexagonal action chips,

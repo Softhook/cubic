@@ -1,4 +1,5 @@
 import { TILE_SET, dataUrl, hash, tileSpec, tileSvg } from '@quantum/art';
+import { rasterise } from '../files';
 
 /**
  * Tile artwork as ready-drawn images. Drawing a tile's SVG (its noise filters) takes ~45 ms, so each
@@ -48,16 +49,8 @@ async function dbPut(id: string, value: Stored): Promise<void> {
   });
 }
 
-async function draw(svg: string): Promise<Blob> {
-  const img = new Image();
-  img.src = dataUrl(svg);
-  await img.decode();
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = SIZE;
-  canvas.getContext('2d')!.drawImage(img, 0, 0, SIZE, SIZE);
-  // WebP keeps the stored tiles small; browsers that can't encode it give PNG instead.
-  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('tile draw failed'))), 'image/webp', 0.92));
-}
+// WebP keeps the stored tiles small; browsers that can't encode it give PNG instead.
+const draw = (svg: string) => rasterise(svg, SIZE, SIZE, 'image/webp', 0.92);
 
 async function load(id: string, svg: string): Promise<string> {
   const key = `${hash(svg)}:${SIZE}`;

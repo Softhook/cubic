@@ -2,7 +2,7 @@ import { hsl, n } from '../svg';
 import {
   arrowPath, at, burst, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard, missile,
   panel, scrapyard, ship, shipOn, space, sparkles, streak, track, trackSlot, trails, world, wreck,
-} from '../cardkit';
+} from '../kit';
 import type { Illustration } from '../illustrations';
 
 /** Gate rings standing on the board: the Warp Gate tokens. */
@@ -53,7 +53,7 @@ export const TACTIC_SCENES: Record<string, Illustration> = {
         f(crate),
         glow(`${id}-m`, cx + 2, cy - s - 6, 12, 8, hue, 0.4),
         f(missile(cx + 9, cy - s - 9, -35, hue, 1.6) + missile(cx + 12, cy - s - 2, -15, hue, 1.6)),
-        f(glyph(at(box, 0.84, 0.3)[0], at(box, 0.84, 0.3)[1], '+2', 6, hsl(hue, 100, 80))),
+        f(glyph(...at(box, 0.84, 0.3), '+2', 6, hsl(hue, 100, 80))),
         f(sparkles(r.fork('sp'), cx + 6, cy - s - 4, 8, 13, 4)),
       ];
     },
@@ -71,7 +71,7 @@ export const TACTIC_SCENES: Record<string, Illustration> = {
         const lift = i === 4 ? 6 : 0;
         out.push(miniCard(`${id}-c${i}`, cx + Math.sin(t) * (34 + lift), cy - Math.cos(t) * (34 + lift), 9, hues[i], { rot: a, icon: ['movement', 'combat', 'conquer', 'research', 'action', 'ship', 'card'][i], state: i === 4 ? 'glow' : 'normal' }));
       }
-      out.push(loop(`${id}-l`, at(box, 0.12, 0.72)[0], at(box, 0.12, 0.72)[1], 4, hsl(hue, 90, 80), 0.45));
+      out.push(loop(`${id}-l`, ...at(box, 0.12, 0.72), 4, hsl(hue, 90, 80), 0.45));
       out.push(f(sparkles(r.fork('sp'), cx + Math.sin(0.91) * 40, cy - Math.cos(0.91) * 40, 5, 9, 4)));
       return out;
     },
@@ -131,7 +131,7 @@ export const TACTIC_SCENES: Record<string, Illustration> = {
         f(bolt),
         burst(`${id}-x`, cx + 8, cy - 1, 6, hue, 8, r),
         f(sparkles(r.fork('sp'), cx + 8, cy, 4, 9, 6, hsl(hue, 100, 80))),
-        f(die(at(box, 0.2, 0.78)[0], at(box, 0.2, 0.78)[1], 3, 5, p2, { opacity: 0.6 }) + die(at(box, 0.82, 0.8)[0], at(box, 0.82, 0.8)[1], 3, 2, p2, { opacity: 0.6 })),
+        f(die(...at(box, 0.2, 0.78), 3, 5, p2, { opacity: 0.6 }) + die(...at(box, 0.82, 0.8), 3, 2, p2, { opacity: 0.6 })),
         f(glyph(cx, cy + 11, '−1', 4.6, hsl(hue, 100, 80))),
       ];
     },

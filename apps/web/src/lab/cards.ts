@@ -1,5 +1,6 @@
-import { CARD_FONTS, type CardDeck, type CardFace, type Measure } from '@quantum/art';
+import { FONTS, type CardDeck, type CardFace, type Measure } from '@quantum/art';
 import { EXPANSION, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef } from '@quantum/engine';
+import { blobToDataUrl } from '../files';
 
 /** Every printed card, by deck, from the game's card data. */
 
@@ -30,7 +31,7 @@ let ctx: CanvasRenderingContext2D | null = null;
 export const measure: Measure = (text, size, font) => {
   ctx ??= document.createElement('canvas').getContext('2d')!;
   const [weight, family] = FAMILIES[font];
-  ctx.font = `${weight} 100px ${family}, ${font === 'title' ? CARD_FONTS.title : CARD_FONTS.body}`;
+  ctx.font = `${weight} 100px ${family}, ${font === 'title' ? FONTS.title : FONTS.body}`;
   return (ctx.measureText(text).width / 100) * size;
 };
 
@@ -50,21 +51,7 @@ export function cardFontCss(): Promise<string> {
       const blocks = [...css.matchAll(/\/\* latin \*\/\s*(@font-face\s*\{[^}]*\})/g)].map((m) => m[1]);
       const files = new Map<string, Promise<string>>();
       const inline = (url: string) => {
-        if (!files.has(url)) {
-          files.set(
-            url,
-            fetch(url)
-              .then((r) => r.blob())
-              .then(
-                (b) =>
-                  new Promise<string>((resolve) => {
-                    const fr = new FileReader();
-                    fr.onload = () => resolve(fr.result as string);
-                    fr.readAsDataURL(b);
-                  }),
-              ),
-          );
-        }
+        if (!files.has(url)) files.set(url, fetch(url).then((r) => r.blob()).then(blobToDataUrl));
         return files.get(url)!;
       };
       const out = await Promise.all(

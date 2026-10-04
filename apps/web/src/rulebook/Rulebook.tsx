@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { EXPANSION, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef } from '@quantum/engine';
+import { download } from '../files';
 import css from './rulebook.css?raw';
 
 /**
@@ -45,11 +46,7 @@ export function Rulebook() {
 
   const downloadHtml = () => {
     const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Cubic — Rulebook</title><style>${css}</style></head><body class="rb-standalone">${page.current!.outerHTML}</body></html>`;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-    a.download = 'cubic-rulebook.html';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    download('cubic-rulebook.html', new Blob([html], { type: 'text/html' }));
   };
 
   return (

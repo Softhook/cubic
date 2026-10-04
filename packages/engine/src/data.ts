@@ -6,7 +6,8 @@ export interface CardDef {
   name: string;
   subtitle: string;
   text: string;
-  category?: string;
+  /** Sets the card's accent colour and icon (data/cards.yaml). */
+  category: string;
   ce_status: string;
   count: number;
   notes?: string;

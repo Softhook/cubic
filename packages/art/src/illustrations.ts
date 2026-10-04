@@ -1,4 +1,4 @@
-import type { Draw } from './cardkit';
+import type { Draw } from './kit';
 import { ORIGINAL_SCENES } from './scenes/original';
 import { SKILL_SCENES } from './scenes/skills';
 import { TACTIC_SCENES } from './scenes/tactics';

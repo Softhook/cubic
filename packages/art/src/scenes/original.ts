@@ -2,7 +2,7 @@ import { hsl, n, type Fragment } from '../svg';
 import {
   arrowPath, at, beam, burst, chip, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard,
   panel, RESEARCH, route, scrapyard, shield, ship, shipOn, slash, space, sparkles, track, trackSlot, trails, world, worldOn, wreck,
-} from '../cardkit';
+} from '../kit';
 import type { Illustration } from '../illustrations';
 
 /**
@@ -39,9 +39,9 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       const theirs = [[0.8, 0.6], [0.9, 0.76]];
       const [kx, ky] = at(box, 0.6, 0.3);
       return [
-        ...theirs.map(([a, b], k) => ship(`${id}-e${k}`, at(box, a, b)[0], at(box, a, b)[1], 3, k + 2, p2, { opacity: 0.75 })),
-        ...mine.map(([a, b], k) => ship(`${id}-m${k}`, at(box, a, b)[0], at(box, a, b)[1], 3.4, [6, 4, 5, 3, 2][k], p1)),
-        f(glyph(at(box, 0.48, 0.66)[0], at(box, 0.48, 0.66)[1], '>', 6, hsl(hue, 100, 85))),
+        ...theirs.map(([a, b], k) => ship(`${id}-e${k}`, ...at(box, a, b), 3, k + 2, p2, { opacity: 0.75 })),
+        ...mine.map(([a, b], k) => ship(`${id}-m${k}`, ...at(box, a, b), 3.4, [6, 4, 5, 3, 2][k], p1)),
+        f(glyph(...at(box, 0.48, 0.66), '>', 6, hsl(hue, 100, 85))),
         glow(`${id}-cg`, kx, ky, 9, 9, hue, 0.5),
         f(chip(kx, ky, 4.4, hue, 'new') + glyph(kx + 9, ky, '+1', 4, hsl(hue, 100, 85))),
       ];
@@ -158,7 +158,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         f(die(bx, by, 5, 3, hue, { opacity: 0.55 }) + die(bx, by, 5, 3, hue, { ghost: true })),
         f(`<path d="M${n(ax)} ${n(ay - 8)}l${n(4.33)} 2.5l${n(-4.33)} 2.5l${n(-4.33)} -2.5z" fill="${hsl(hue, 90, 70, 0.25)}" stroke="${hsl(hue, 90, 80)}" stroke-width=".25" transform="translate(0 -3)"/>`),
         f(`<path d="M${n(bx)} ${n(by - 8)}l${n(4.33)} 2.5l${n(-4.33)} 2.5l${n(-4.33)} -2.5z" fill="${hsl(hue, 90, 70, 0.25)}" stroke="${hsl(hue, 90, 80)}" stroke-width=".25" transform="translate(0 -3)"/>`),
-        f(glyph(at(box, 0.85, 0.22)[0], at(box, 0.85, 0.22)[1], '×2', 5.6, hsl(hue, 100, 85))),
+        f(glyph(...at(box, 0.85, 0.22), '×2', 5.6, hsl(hue, 100, 85))),
       ];
     },
   },
@@ -174,7 +174,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         f(path.slice(1).map(([i, j]) => space(g, i, j, hue, { a: 0.18, stroke: false })).join('')),
         route(`${id}-r`, g, path, hsl(hue, 90, 80), { dash: true, lift: 0.8 }),
         shipOn(`${id}-s`, g, -1, -2, 3.6, 1, p1),
-        f(chip(at(box, 0.8, 0.3)[0], at(box, 0.8, 0.3)[1], 3.6, hue, 'new') + slash(at(box, 0.2, 0.3)[0], at(box, 0.2, 0.3)[1], 3.6) + icon('combat', at(box, 0.2, 0.3)[0], at(box, 0.2, 0.3)[1], 3.6, hsl(0, 60, 70))),
+        f(chip(...at(box, 0.8, 0.3), 3.6, hue, 'new') + slash(...at(box, 0.2, 0.3), 3.6) + icon('combat', ...at(box, 0.2, 0.3), 3.6, hsl(0, 60, 70))),
       ];
     },
   },
@@ -372,7 +372,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       const [ax, ay] = at(box, 0.25, 0.55);
       const [bx, by] = at(box, 0.75, 0.55);
       return [
-        f(line(at(box, 0.5, 0.15)[0], at(box, 0.5, 0.15)[1], at(box, 0.5, 0.85)[0], at(box, 0.5, 0.85)[1], hsl(DOMINANCE, 60, 70), 0.25, ' stroke-dasharray="1 1"')),
+        f(line(...at(box, 0.5, 0.15), ...at(box, 0.5, 0.85), hsl(DOMINANCE, 60, 70), 0.25, ' stroke-dasharray="1 1"')),
         ...wreck(`${id}-a`, ax, ay, 7, p2, DOMINANCE, r.fork('a')),
         f(die(ax, ay, 3.2, 4, p2, { opacity: 0.45 })),
         ...wreck(`${id}-b`, bx, by, 7, p1, 0, r.fork('b')),
@@ -423,7 +423,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       const [wx, wy] = at(box, 0.24, 0.62);
       const [tx, ty] = at(box, 0.36, 0.32);
       return [
-        ...beam(`${id}-b`, at(box, 0.05, 0.9)[0], at(box, 0.05, 0.9)[1], wx, wy, p2, 0.9),
+        ...beam(`${id}-b`, ...at(box, 0.05, 0.9), wx, wy, p2, 0.9),
         ...wreck(`${id}-w`, wx, wy, 8, p1, 20, r.fork('w')),
         f(die(wx, wy, 3.2, 6, p1, { opacity: 0.45, rotate: -20 })),
         shield(`${id}-sh`, trackSlot(tx, 3.5), ty, 16, 5.5, 200),
@@ -454,7 +454,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       let ripples = '';
       for (let i = 1; i <= 4; i++) ripples += `<ellipse cx="${n(cx)}" cy="${n(cy + 2)}" rx="${n(4 + i * 3)}" ry="${n(2 + i * 1.6)}" fill="none" stroke="${hsl(hue, 90, 75)}" stroke-width="${n(0.4 - i * 0.07)}" opacity="${n(1 - i * 0.2)}" stroke-dasharray="${n(i * 1.5)} ${n(i)}"/>`;
       return [
-        f(die(at(box, 0.12, 0.75)[0], at(box, 0.12, 0.75)[1], 2, 3, p2, { opacity: 0.55 }) + die(at(box, 0.2, 0.85)[0], at(box, 0.2, 0.85)[1], 2, 1, p2, { opacity: 0.55 })),
+        f(die(...at(box, 0.12, 0.75), 2, 3, p2, { opacity: 0.55 }) + die(...at(box, 0.2, 0.85), 2, 1, p2, { opacity: 0.55 })),
         glow(`${id}-g`, cx, cy, 12, 9, hue, 0.4),
         f(ripples),
         {
@@ -477,7 +477,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         f(cells.map(([i, j]) => space(g, i, j, hue, { a: 0.3 })).join('')),
         shield(`${id}-sh`, g.x(0.33, 0.33), g.y(0.33, 0.33) - 3, 13, 8, p1),
         ...cells.map(([i, j], k) => shipOn(`${id}-s${k}`, g, i, j, 3.4, [3, 5, 1][k], p1)),
-        f(combatDie(at(box, 0.82, 0.32)[0], at(box, 0.82, 0.32)[1], 6.5, 1, hue, { glow: true, rot: 8 }) + glyph(at(box, 0.82, 0.32)[0], at(box, 0.82, 0.32)[1] + 8.5, '−2', 4.2, hsl(hue, 100, 80))),
+        f(combatDie(...at(box, 0.82, 0.32), 6.5, 1, hue, { glow: true, rot: 8 }) + glyph(at(box, 0.82, 0.32)[0], at(box, 0.82, 0.32)[1] + 8.5, '−2', 4.2, hsl(hue, 100, 80))),
       ];
     },
   },
@@ -514,7 +514,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         burst(`${id}-x`, g.x(1, 0), g.y(1, 0) - 2.5, 6, 352, 7, r),
         shipOn(`${id}-s`, g, 0, 0, 3.8, 6, p1),
         arrowPath(`${id}-a`, `M${n(g.x(0, 0) + 2)} ${n(g.y(0, 0) - 8)}Q${n((g.x(0, 0) + g.x(1, 0)) / 2 + 1)} ${n(g.y(0, 0) - 11)} ${n(g.x(1, 0))} ${n(g.y(1, 0) - 7)}`, hsl(hue, 100, 85), { w: 0.55 }),
-        f(chip(at(box, 0.15, 0.3)[0], at(box, 0.15, 0.3)[1], 3.2, hue, 'spent') + glyph(at(box, 0.15, 0.3)[0], at(box, 0.15, 0.3)[1] + 6.5, '0', 3.2, hsl(hue, 100, 85))),
+        f(chip(...at(box, 0.15, 0.3), 3.2, hue, 'spent') + glyph(at(box, 0.15, 0.3)[0], at(box, 0.15, 0.3)[1] + 6.5, '0', 3.2, hsl(hue, 100, 85))),
       ];
     },
   },
@@ -563,10 +563,10 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       const fy = py - 8;
       return [
         world(`${id}-w`, r.fork('w'), px, py, 10, 10),
-        ...fleet.map(([a, b], k) => ship(`${id}-s${k}`, at(box, a, b)[0], at(box, a, b)[1], 3.6, [5, 3, 6][k], p1)),
+        ...fleet.map(([a, b], k) => ship(`${id}-s${k}`, ...at(box, a, b), 3.6, [5, 3, 6][k], p1)),
         glow(`${id}-fg`, fx + 5, fy - 7, 10, 9, DOMINANCE, 0.55),
         f(line(fx, fy + 2, fx, fy - 13, hsl(DOMINANCE, 30, 90), 0.5) + `<path d="M${n(fx)} ${n(fy - 13)}h10l-2.5 3.5 2.5 3.5H${n(fx)}z" fill="${hsl(DOMINANCE, 95, 60)}" stroke="${hsl(DOMINANCE, 100, 82)}" stroke-width=".3"/>`),
-        f(glyph(at(box, 0.3, 0.34)[0], at(box, 0.3, 0.34)[1], '+2', 7, hsl(DOMINANCE, 100, 75))),
+        f(glyph(...at(box, 0.3, 0.34), '+2', 7, hsl(DOMINANCE, 100, 75))),
         f(sparkles(r.fork('sp'), fx + 5, fy - 7, 6, 12, 4)),
       ];
     },

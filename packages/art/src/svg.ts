@@ -14,6 +14,9 @@ export const join = (...parts: Fragment[]): Fragment => ({
   body: parts.map((p) => p.body).join(''),
 });
 
+/** Escapes text for use inside SVG markup. */
+export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 /** A colour as an `hsl()` string. */
 export const hsl = (h: number, s: number, l: number, a = 1) =>
   a === 1 ? `hsl(${n(h)} ${n(s)}% ${n(l)}%)` : `hsl(${n(h)} ${n(s)}% ${n(l)}% / ${n(a)})`;

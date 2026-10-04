@@ -325,6 +325,7 @@
       "name": "Aggression",
       "subtitle": "Add dominance",
       "text": "Immediately add 2 to dominance.",
+      "category": "combat",
       "ce_status": "original",
       "count": 2,
       "notes": "Removed in stolksdorf CE (replaced by Show of Force); kept in the print edition."
@@ -334,6 +335,7 @@
       "name": "Black Market",
       "subtitle": "Gain missiles",
       "text": "Gain 2 Missiles.",
+      "category": "combat",
       "ce_status": "playtesting",
       "count": 2,
       "notes": "stolksdorf name: Black Market Cache. Its yaml says 1 missile, Cards.md and print edition say 2."
@@ -343,6 +345,7 @@
       "name": "Change of Heart",
       "subtitle": "Choose a skill",
       "text": "Search the Skill deck and take a card of your choosing, then shuffle the deck.",
+      "category": "card",
       "ce_status": "new",
       "count": 2
     },
@@ -351,6 +354,7 @@
       "name": "Momentum",
       "subtitle": "Take a bonus turn",
       "text": "Immediately take another turn, but with 2 actions instead of 3 (treat it as a brand-new turn).",
+      "category": "action",
       "ce_status": "original",
       "count": 2
     },
@@ -359,6 +363,7 @@
       "name": "Plan Ahead",
       "subtitle": "Become the missile",
       "text": "Until the end of your next turn, all your combat rolls are 1.",
+      "category": "combat",
       "ce_status": "new",
       "count": 2
     },
@@ -367,6 +372,7 @@
       "name": "Sabotage",
       "subtitle": "Limit enemy action",
       "text": "Every opponent's next turn has 1 fewer action.",
+      "category": "action",
       "ce_status": "changed",
       "count": 2,
       "notes": "Original: all other players discard a Command card."
@@ -376,6 +382,7 @@
       "name": "Show of Force",
       "subtitle": "Target destroyed",
       "text": "Destroy any one ship. Gain 1 Dominance.",
+      "category": "combat",
       "ce_status": "playtesting",
       "count": 2
     },
@@ -384,6 +391,7 @@
       "name": "Unveil the Fleet",
       "subtitle": "Destroy & reroll ships",
       "text": "Destroy all your ships. You may reroll any ships in your scrapyard once. Deploy any number of ships.",
+      "category": "ship",
       "ce_status": "new",
       "count": 2,
       "notes": "Replaces Reorganization."
@@ -393,6 +401,7 @@
       "name": "Warp Gate",
       "subtitle": "Teleportation system",
       "text": "Place the Warp Gate tokens on two different spaces on the board. Any player may consider those spaces adjacent.",
+      "category": "movement",
       "ce_status": "new",
       "count": 2,
       "notes": "stolksdorf name: Hypernet Gate, where only players who played it may use the link."
@@ -404,6 +413,7 @@
       "name": "Expansion",
       "subtitle": "Expand your fleet",
       "text": "Immediately roll a reserve ship and put it in orbital position on a planet with one of your cubes or in your scrapyard.",
+      "category": "expansion",
       "ce_status": "changed",
       "notes": "Original: 8 cards shuffled into the Gambit deck. CE: separate deck sized to player count.",
       "count": 6
@@ -729,6 +739,7 @@
       "name": "Aggression",
       "subtitle": "Add dominance",
       "text": "Immediately add 2 to dominance.",
+      "category": "combat",
       "effect": "aggression",
       "ce_status": "original",
       "count": 4
@@ -738,6 +749,7 @@
       "name": "Expansion",
       "subtitle": "Add a ship to your fleet",
       "text": "Immediately roll an expansion ship and put it in orbital position on a planet with one of your cubes or in your scrapyard.",
+      "category": "expansion",
       "effect": "expansion",
       "ce_status": "original",
       "count": 8
@@ -747,6 +759,7 @@
       "name": "Momentum",
       "subtitle": "Take a bonus 2 action turn",
       "text": "Immediately take another turn, but with 2 actions instead of 3 (treat it as a brand-new turn).",
+      "category": "action",
       "effect": "momentum",
       "ce_status": "original",
       "count": 4
@@ -756,6 +769,7 @@
       "name": "Reorganization",
       "subtitle": "Immediately reroll any or all of your ships",
       "text": "Place each rerolled ship either in orbital position on a planet that has one of your cubes, or in your scrapyard.",
+      "category": "ship",
       "effect": "reorganization",
       "ce_status": "original",
       "count": 2
@@ -765,6 +779,7 @@
       "name": "Relocation",
       "subtitle": "Immediately move a cube",
       "text": "Move another player’s cube to a planet without one of their cubes.",
+      "category": "conquer",
       "effect": "relocation",
       "ce_status": "original",
       "count": 2
@@ -774,6 +789,7 @@
       "name": "Sabotage",
       "subtitle": "Remove command cards",
       "text": "All other players must immediately choose and discard one of their command cards.",
+      "category": "action",
       "effect": "sabotage-original",
       "ce_status": "original",
       "count": 2

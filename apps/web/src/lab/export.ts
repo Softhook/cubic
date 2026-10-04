@@ -1,35 +1,12 @@
-import { dataUrl } from '@quantum/art';
+import { rasterise } from '../files';
 
-/** File export helpers shared by the Art Lab's pages. */
-
-export function download(name: string, blob: Blob) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
+/** Print exports for the Art Lab: bitmaps at print resolution, and ZIP archives. */
 
 /** Rasterises an SVG document of `w` × `h` mm at a print resolution. */
-export async function svgToPng(svg: string, w: number, h: number, dpi: number): Promise<Blob> {
+export function svgToPng(svg: string, w: number, h: number, dpi: number): Promise<Blob> {
   const px = (mm: number) => Math.round((mm / 25.4) * dpi);
-  const img = new Image();
-  img.src = dataUrl(svg);
-  await img.decode();
-  const canvas = document.createElement('canvas');
-  canvas.width = px(w);
-  canvas.height = px(h);
-  canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
-  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('PNG export failed'))), 'image/png'));
+  return rasterise(svg, px(w), px(h));
 }
-
-export const blobToDataUrl = (blob: Blob) =>
-  new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(blob);
-  });
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, i) => {
   let c = i;

@@ -2,7 +2,7 @@ import { hsl, n } from '../svg';
 import {
   arrowPath, at, beam, burst, chip, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard,
   reticle, RESEARCH, route, scrapyard, shield, ship, shipOn, slash, space, sparkles, track, trackSlot, trails, world, worldOn, wreck, missile,
-} from '../cardkit';
+} from '../kit';
 import type { Illustration } from '../illustrations';
 
 /** Community Edition Skills: one scene per card, showing what the card does. */
@@ -38,7 +38,8 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       return [
         card,
         f(tokens),
-        f(cube(pads[2][0] + 1, pads[2][1] - 7, 1.6, p1, { opacity: 0.85 }) + arrowPath(`${id}-drop`, `M${n(pads[2][0] + 1)} ${n(pads[2][1] - 4.5)}V${n(pads[2][1] - 2.2)}`, hsl(hue, 90, 80), { w: 0.3 }).body, arrowPath(`${id}-drop`, '', hsl(hue, 90, 80), { w: 0.3 }).defs),
+        f(cube(pads[2][0] + 1, pads[2][1] - 7, 1.6, p1, { opacity: 0.85 })),
+        arrowPath(`${id}-drop`, `M${n(pads[2][0] + 1)} ${n(pads[2][1] - 4.5)}V${n(pads[2][1] - 2.2)}`, hsl(hue, 90, 80), { w: 0.3 }),
         glow(`${id}-glow`, tx, ty, 11, 11, hue, 0.45),
         f(chip(tx, ty, 6, hue, 'new') + glyph(tx, ty + 11, '+1', 4.4, hsl(hue, 100, 85))),
         f(sparkles(r.fork('sp'), tx, ty, 9, 12, 4)),
@@ -153,7 +154,7 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         f(echo),
         ship(`${id}-s`, cx, cy, 5.2, 5, p1),
         loop(`${id}-l`, cx, cy - 2, 12, hsl(hue, 90, 80), 0.45, -150, 280),
-        f(glyph(at(box, 0.8, 0.4)[0], at(box, 0.8, 0.4)[1], '×2', 6.5, hsl(hue, 100, 85))),
+        f(glyph(...at(box, 0.8, 0.4), '×2', 6.5, hsl(hue, 100, 85))),
         f(sparkles(r.fork('sp'), cx, cy - 10, 6, 11, 4)),
       ];
     },
@@ -169,7 +170,7 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         world(`${id}-w`, r.fork('w'), px + 2, py, 10, 7),
         ship(`${id}-s`, sx, sy, 4.6, 2, p1),
         f(`<g opacity=".9">${reticle(sx - 1, sy + 9, 2, hsl(0, 70, 70))}${slash(sx - 1, sy + 9, 3)}</g>`),
-        f(chips(at(box, 0.24, 0.28)[0], at(box, 0.24, 0.28)[1], 2.8, hue, ['new']) + icon('movement', at(box, 0.24, 0.28)[0] - 7, at(box, 0.24, 0.28)[1], 3.4, hsl(hue, 90, 80)) + icon('research', at(box, 0.24, 0.28)[0] + 7, at(box, 0.24, 0.28)[1], 3.4, hsl(RESEARCH, 90, 80))),
+        f(chips(...at(box, 0.24, 0.28), 2.8, hue, ['new']) + icon('movement', at(box, 0.24, 0.28)[0] - 7, at(box, 0.24, 0.28)[1], 3.4, hsl(hue, 90, 80)) + icon('research', at(box, 0.24, 0.28)[0] + 7, at(box, 0.24, 0.28)[1], 3.4, hsl(RESEARCH, 90, 80))),
       ];
     },
   },
@@ -281,7 +282,7 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         out.push(shipOn(`${id}-s${k}`, g, i, j, 3.8, k ? 4 : 1, p1, k ? { opacity: 0.75 } : {}));
         out.push(f(sparkles(r.fork(`sp${k}`), x, y - 5, 3, 7, 3)));
       });
-      out.push(f(glyph(at(box, 0.5, 0.2)[0], at(box, 0.5, 0.2)[1], '×2', 5, hsl(hue, 100, 85))));
+      out.push(f(glyph(...at(box, 0.5, 0.2), '×2', 5, hsl(hue, 100, 85))));
       return out;
     },
   },
@@ -314,8 +315,8 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         ship(`${id}-a`, cx + pts[0][0], cy + pts[0][1], 4, 4, p1),
         ship(`${id}-b`, cx + pts[1][0], cy + pts[1][1], 4, 6, p1),
         f(glyph(cx, cy + 0.5, '9', 6, '#fff')),
-        f(`<g>${glyph(at(box, 0.84, 0.36)[0], at(box, 0.84, 0.36)[1], '±1', 7, hsl(hue, 100, 80))}</g>`),
-        f(glyph(at(box, 0.84, 0.62)[0], at(box, 0.84, 0.62)[1], '4+6', 3, hsl(hue, 80, 85))),
+        f(`<g>${glyph(...at(box, 0.84, 0.36), '±1', 7, hsl(hue, 100, 80))}</g>`),
+        f(glyph(...at(box, 0.84, 0.62), '4+6', 3, hsl(hue, 80, 85))),
       ];
     },
   },
@@ -576,7 +577,7 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         ...beam(`${id}-bm`, g.x(0, 0) + 2, g.y(0, 0) - 4, ex - 2.5, ey + 1.5, hue, 1),
         ship(`${id}-e`, ex, ey, 3.6, 4, p2),
         burst(`${id}-x`, ex - 2.5, ey + 1.5, 5, hue, 7, r),
-        f(combatDie(at(box, 0.82, 0.68)[0], at(box, 0.82, 0.68)[1], 6.4, 2, hue, { glow: true, rot: 8 }) + glyph(at(box, 0.82, 0.68)[0] - 9, at(box, 0.82, 0.68)[1], '−2', 4.4, hsl(hue, 100, 80))),
+        f(combatDie(...at(box, 0.82, 0.68), 6.4, 2, hue, { glow: true, rot: 8 }) + glyph(at(box, 0.82, 0.68)[0] - 9, at(box, 0.82, 0.68)[1], '−2', 4.4, hsl(hue, 100, 80))),
       ];
     },
   },
@@ -631,8 +632,8 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         const y = cy - Math.cos(t) * 30;
         out.push(miniCard(`${id}-c${i}`, x, y, 11, hues[i], { rot: a, icon: ['movement', 'combat', 'conquer', 'card', 'card'][i], state: i >= 3 ? 'glow' : 'normal' }));
       }
-      out.push(f(glyph(at(box, 0.88, 0.2)[0], at(box, 0.88, 0.2)[1], '5', 7, hsl(hue, 100, 85))));
-      out.push(f(sparkles(r.fork('sp'), at(box, 0.75, 0.35)[0], at(box, 0.75, 0.35)[1], 2, 8, 4)));
+      out.push(f(glyph(...at(box, 0.88, 0.2), '5', 7, hsl(hue, 100, 85))));
+      out.push(f(sparkles(r.fork('sp'), ...at(box, 0.75, 0.35), 2, 8, 4)));
       return out;
     },
   },
