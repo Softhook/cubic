@@ -9,9 +9,9 @@ import { ILLUSTRATIONS } from './illustrations';
 /**
  * Advance cards, poker size (63.5 × 88.9 mm), for print and the Art Lab. See docs/GRAPHICS.md §2, Cards.
  *
- * Permanent cards (CE Skills, original Commands) have a light frame around the art; one-shot cards
- * (Tactics, Gambits, Expansion) are dark and full-bleed, so the two read apart across the table, as the
- * light and dark decks of the physical game do. The illustration shows what the card does
+ * Permanent cards (CE Skills, original Commands) are light; one-shot cards (Tactics, Gambits, Expansion)
+ * are dark, so the two read apart across the table, as the light and dark decks of the physical game do.
+ * Skills frame their art; the other decks run it to the edges. The illustration shows what the card does
  * (illustrations.ts); the accent colour and icon are its category's (data/cards.yaml, tokens.ts).
  */
 
@@ -71,12 +71,12 @@ export function cardIllustration(f: CardFace): string {
   return ILLUSTRATIONS[f.id]?.caption ?? 'no illustration yet';
 }
 
-const DECK_INFO: Record<CardDeck, { label: string; kind: string; light: boolean; edition: string; backHue: number }> = {
-  skill: { label: 'Skill', kind: 'Permanent', light: true, edition: 'CE', backHue: 222 },
-  tactic: { label: 'Tactic', kind: 'One-shot', light: false, edition: 'CE', backHue: 222 },
-  expansion: { label: 'Expansion', kind: 'One-shot', light: false, edition: 'CE', backHue: CARD_CATEGORIES.expansion.hue },
-  command: { label: 'Command', kind: 'Permanent', light: true, edition: '2013', backHue: 38 },
-  gambit: { label: 'Gambit', kind: 'One-shot', light: false, edition: '2013', backHue: 38 },
+const DECK_INFO: Record<CardDeck, { label: string; kind: string; light: boolean; framed: boolean; edition: string; backHue: number }> = {
+  skill: { label: 'Skill', kind: 'Permanent', light: true, framed: true, edition: 'CE', backHue: 222 },
+  tactic: { label: 'Tactic', kind: 'One-shot', light: false, framed: false, edition: 'CE', backHue: 222 },
+  expansion: { label: 'Expansion', kind: 'One-shot', light: false, framed: false, edition: 'CE', backHue: CARD_CATEGORIES.expansion.hue },
+  command: { label: 'Command', kind: 'Permanent', light: true, framed: false, edition: 'Classic', backHue: 38 },
+  gambit: { label: 'Gambit', kind: 'One-shot', light: false, framed: false, edition: 'Classic', backHue: 38 },
 };
 
 export const deckInfo = (d: CardDeck) => DECK_INFO[d];
@@ -162,9 +162,10 @@ const tspans = (line: Word[], boldColour: string) =>
 // ---------------------------------------------------------------------------
 // Faces
 
-/** Where things go on a face: permanent cards frame the art, one-shot cards run it to the edge. */
+/** Where things go on a face: framed cards inset the art, the others run it to the edges. */
 interface Layout {
   light: boolean;
+  framed: boolean;
   /** The art window, clipped. */
   win: Box;
   /** The part of the window that's visible on the trimmed card: illustrations compose to this. */
@@ -175,13 +176,13 @@ interface Layout {
   hud: { x: number; y: number };
 }
 
-function layout(light: boolean): Layout {
+function layout(light: boolean, framed: boolean): Layout {
   const { w: W, artBottom: AB, frame: F, bleed: B } = CARD;
-  if (light) {
+  if (framed) {
     const win = { x: F, y: F, w: W - 2 * F, h: AB - F };
-    return { light, win, view: win, winRadius: 2.2, hud: { x: F + 2.6, y: F + 4.6 } };
+    return { light, framed, win, view: win, winRadius: 2.2, hud: { x: F + 2.6, y: F + 4.6 } };
   }
-  return { light, win: { x: -B, y: -B, w: W + 2 * B, h: AB + B }, view: { x: 0, y: 0, w: W, h: AB }, winRadius: 0, hud: { x: CARD.safe + 0.6, y: 5.6 } };
+  return { light, framed, win: { x: -B, y: -B, w: W + 2 * B, h: AB + B }, view: { x: 0, y: 0, w: W, h: AB }, winRadius: 0, hud: { x: CARD.safe + 0.6, y: 5.6 } };
 }
 
 /** The illustration over a starfield in the category's colours, shaded towards the text panel. */
@@ -205,7 +206,7 @@ function art(face: CardFace, id: string, hue: number, L: Layout, p: CardPalette,
     defs: sky.defs + scene.defs + shade + clipRect(`${id}-win`, win, L.winRadius),
     body:
       `<g clip-path="url(#${id}-win)">${sky.body}${scene.body}${rect(win, `fill="url(#${id}-shade)"`)}</g>` +
-      (L.light ? rect(win, `rx="${n(L.winRadius)}" fill="none" stroke="${p.accent}" stroke-width=".35"`) : ''),
+      (L.framed ? rect(win, `rx="${n(L.winRadius)}" fill="none" stroke="${p.accent}" stroke-width=".35"`) : ''),
   };
 }
 
@@ -221,8 +222,8 @@ function hud(face: CardFace, label: string, L: Layout): string {
 function textPanel(face: CardFace, category: string, area: Box, L: Layout, p: CardPalette, measure: Measure): string {
   const { w: W, h: H, artBottom: top, safe } = CARD;
   const info = DECK_INFO[face.deck];
-  // Dark cards have their own panel below the full-bleed art; light ones are paper already.
-  let out = L.light ? '' : rect({ x: area.x, y: top, w: area.w, h: area.y + area.h - top }, `fill="${p.paper}"`) + rect({ x: area.x, y: top - 0.2, w: area.w, h: 0.4 }, `fill="${p.accent}"`);
+  // Full-bleed art gets a panel below it, edged in the accent; framed cards are paper already.
+  let out = L.framed ? '' : rect({ x: area.x, y: top, w: area.w, h: area.y + area.h - top }, `fill="${p.paper}"`) + rect({ x: area.x, y: top - 0.2, w: area.w, h: 0.4 }, `fill="${p.accent}"`);
 
   // Emblem straddling art and panel.
   out +=
@@ -237,11 +238,10 @@ function textPanel(face: CardFace, category: string, area: Box, L: Layout, p: Ca
   out += `<text x="${n(W / 2)}" y="${n(nameY)}" font-family="${FONTS.title}" font-weight="900" font-size="${n(nameSize)}" letter-spacing="${n(nameSize * TITLE_TRACKING)}" fill="${p.ink}" text-anchor="middle">${esc(nameText)}</text>`;
   const subY = nameY + 4;
   out += `<text x="${n(W / 2)}" y="${n(subY)}" font-family="${FONTS.body}" font-style="italic" font-size="2.3" fill="${p.accentInk}" text-anchor="middle">${esc(face.subtitle)}</text>`;
-  out += `<path d="M${n(W / 2 - 9)} ${n(subY + 2)}H${n(W / 2 + 9)}" stroke="${p.accent}" stroke-width=".25" opacity=".8"/><circle cx="${n(W / 2)}" cy="${n(subY + 2)}" r=".55" fill="${p.accent}"/>`;
 
-  // Rules text: the largest size that fits between the divider and the footer.
-  const bodyTop = subY + 4.2;
-  const bodyBottom = H - safe - 4.2;
+  // Rules text: the largest size that fits between the subtitle and the footer.
+  const bodyTop = subY + 3.4;
+  const bodyBottom = H - safe - 2.8;
   let size = 3.3;
   let lines = wrap(face.text, size, textW, measure);
   while (size > 2.1 && lines.length * size * 1.34 > bodyBottom - bodyTop) {
@@ -254,19 +254,20 @@ function textPanel(face: CardFace, category: string, area: Box, L: Layout, p: Ca
     .map((l, i) => `<text x="${n(W / 2)}" y="${n(firstY + i * lead)}" font-family="${FONTS.body}" font-size="${n(size)}" fill="${p.ink}" text-anchor="middle">${tspans(l, p.ink)}</text>`)
     .join('');
 
-  // Footer: position in the deck, and edition.
-  const fy = H - safe - 0.2;
+  // Footer, tucked into the bottom corners: position in the deck, and edition.
+  const fx = 3.2;
+  const fy = H - 2.4;
   const foot = (x: number, text: string, anchor: string) =>
-    `<text x="${n(x)}" y="${n(fy)}" font-family="${FONTS.body}" font-size="1.7" font-weight="600" letter-spacing=".18" fill="${p.muted}" text-anchor="${anchor}">${esc(text)}</text>`;
+    `<text x="${n(x)}" y="${n(fy)}" font-family="${FONTS.body}" font-size="1.35" font-weight="600" letter-spacing=".15" fill="${p.muted}" text-anchor="${anchor}">${esc(text.toUpperCase())}</text>`;
   const num = face.index !== undefined && face.deckSize ? `${String(face.index).padStart(2, '0')}/${face.deckSize}` : '';
-  return out + (num ? foot(safe + 0.6, num, 'start') : '') + foot(W - safe - 0.6, info.edition, 'end');
+  return out + (num ? foot(fx, num, 'start') : '') + foot(W - fx, info.edition, 'end');
 }
 
 /** The front of a card as a standalone SVG document. */
 export function cardSvg(face: CardFace, o: CardOptions = {}): string {
   const id = o.idPrefix ?? `card-${face.id}`;
   const cat = categoryOf(face);
-  const L = layout(DECK_INFO[face.deck].light);
+  const L = layout(DECK_INFO[face.deck].light, DECK_INFO[face.deck].framed);
   const p = cardPalette(L.light, cat.hue);
   const area = pageArea(o.bleed);
   const base: Fragment = { defs: fontStyle(o), body: rect(area, `fill="${p.paper}"`) };
@@ -292,7 +293,7 @@ export function cardBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure'> = {}
   let orbits = '';
   for (let i = 0; i < 3; i++) orbits += `<ellipse cx="${n(cx)}" cy="${n(cy + 1)}" rx="${n(16 + i * 5)}" ry="${n(5 + i * 1.6)}" fill="none" stroke="${hsl(hue, 80, 75)}" stroke-width=".3" opacity="${n(0.6 - i * 0.15)}" transform="rotate(-18 ${n(cx)} ${n(cy)})"/>`;
   const title = `<text x="${n(cx)}" y="${n(H * 0.72)}" font-family="${FONTS.title}" font-weight="900" font-size="7" letter-spacing="1.4" fill="#fff" text-anchor="middle">CUBIC</text>`;
-  const sub = `<text x="${n(cx)}" y="${n(H * 0.72 + 6)}" font-family="${FONTS.body}" font-weight="700" font-size="2.4" letter-spacing=".9" fill="${hsl(hue, 90, 78)}" text-anchor="middle">${esc(info.label.toUpperCase())}${info.edition === '2013' ? ' · ORIGINAL' : ''}</text>`;
+  const sub = `<text x="${n(cx)}" y="${n(H * 0.72 + 6)}" font-family="${FONTS.body}" font-weight="700" font-size="2.4" letter-spacing=".9" fill="${hsl(hue, 90, 78)}" text-anchor="middle">${esc(info.label.toUpperCase())}${info.edition === 'Classic' ? ' · ORIGINAL' : ''}</text>`;
   const border = info.light
     ? rect(win, `rx="2.6" fill="none" stroke="${p.accent}" stroke-width=".4"`)
     : `<rect x="3" y="3" width="${n(W - 6)}" height="${n(H - 6)}" rx="1.6" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".3" opacity=".5"/>`;
