@@ -22,6 +22,15 @@ export const DECKS: Deck[] = [
   { id: 'gambit', name: 'Gambit', edition: 'original', cards: faces('gambit', ORIGINAL_GAMBIT) },
 ];
 
+const byId = new Map(DECKS.flatMap((d) => d.cards.map((c) => [c.id, c])));
+
+/** A card's printed face, by card id. */
+export function faceOf(id: string): CardFace {
+  const face = byId.get(id);
+  if (!face) throw new Error(`Unknown card ${id}`);
+  return face;
+}
+
 /** The fonts cards are set in, as the page loads them (index.html). */
 const FAMILIES = { title: ['900', 'Orbitron'], body: ['400', 'Inter'], bold: ['700', 'Inter'] } as const;
 

@@ -394,7 +394,7 @@
       "category": "ship",
       "ce_status": "new",
       "count": 2,
-      "notes": "Replaces Reorganization."
+      "notes": "Replaces Reorganisation."
     },
     {
       "id": "warp-gate",
@@ -545,7 +545,7 @@
       "id": "o-ferocious",
       "name": "Ferocious",
       "subtitle": "Combat bonus",
-      "text": "Subtract 1 from every weapons or defenses combat roll.",
+      "text": "Subtract 1 from every weapons or defences combat roll.",
       "category": "combat",
       "effect": "ferocious",
       "ce_status": "original",
@@ -565,7 +565,7 @@
       "id": "o-ingenious",
       "name": "Ingenious",
       "subtitle": "Construct from corners",
-      "text": "Each of your ships diagonally adjacent to a planet may be counted toward the construct action.",
+      "text": "Each of your ships diagonally adjacent to a planet may be counted towards the construct action.",
       "category": "conquer",
       "effect": "ingenious",
       "ce_status": "original",
@@ -584,7 +584,7 @@
     {
       "id": "o-nomadic",
       "name": "Nomadic",
-      "subtitle": "Transport between neighboring planets",
+      "subtitle": "Transport between neighbouring planets",
       "text": "Once per turn, spend an action to relocate one of your ships in orbital position to another orbital position on a directly adjacent planet.",
       "category": "movement",
       "effect": "nomadic",
@@ -615,7 +615,7 @@
       "id": "o-rational",
       "name": "Rational",
       "subtitle": "Combat rolls fixed at 3",
-      "text": "Instead of rolling for weapons and defenses, all of your combat die rolls are considered to be 3.",
+      "text": "Instead of rolling for weapons and defences, all of your combat die rolls are considered to be 3.",
       "category": "combat",
       "effect": "rational",
       "ce_status": "original",
@@ -695,8 +695,8 @@
     {
       "id": "o-stubborn",
       "name": "Stubborn",
-      "subtitle": "Strong defense",
-      "text": "When you are attacked, ties go in your favor and you destroy your attacker if you win (and gain dominance).",
+      "subtitle": "Strong defence",
+      "text": "When you are attacked, ties go in your favour and you destroy your attacker if you win (and gain dominance).",
       "category": "combat",
       "effect": "stubborn",
       "ce_status": "original",
@@ -766,7 +766,7 @@
     },
     {
       "id": "o-reorganization",
-      "name": "Reorganization",
+      "name": "Reorganisation",
       "subtitle": "Immediately reroll any or all of your ships",
       "text": "Place each rerolled ship either in orbital position on a planet that has one of your cubes, or in your scrapyard.",
       "category": "ship",

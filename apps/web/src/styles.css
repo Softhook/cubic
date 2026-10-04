@@ -612,6 +612,12 @@ input { font: inherit; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
 .card-choice { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; }
 .card-choice.wrap { gap: 10px; }
+.card-art { position: relative; width: 180px; max-width: 100%; aspect-ratio: 63.5 / 88.9; flex: none; }
+.card-art-lg { width: 300px; }
+.card-art img, .card-art-ph { display: block; width: 100%; height: 100%; border-radius: 4.7%/3.4%; box-shadow: 0 12px 28px rgba(0,0,0,.5); }
+.card-art-ph { background: linear-gradient(180deg, #1a2346, #0e1530); animation: card-art-pulse 1.2s ease-in-out infinite alternate; }
+@keyframes card-art-pulse { to { opacity: .5; } }
+.card-art-badge { position: absolute; top: 8px; right: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(5,8,20,.85); color: #fff; font-weight: 700; font-size: 13px; box-shadow: 0 0 0 1px rgba(255,255,255,.25); }
 .choice-col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .choice-col small { color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
 

@@ -128,7 +128,7 @@ ships block movement.
 | Term | Definition |
 |---|---|
 | **Adjacent** | The 4 orthogonal spaces next to a ship or planet. |
-| **Orbital positions** | The 4 spaces adjacent to a planet. Ships here count toward conquering. |
+| **Orbital positions** | The 4 spaces adjacent to a planet. Ships here count towards conquering. |
 | **Surrounding spaces** | The 8 spaces around a ship or planet (orthogonal + diagonal). |
 | **Once per turn** | Once, on your own turn only. |
 

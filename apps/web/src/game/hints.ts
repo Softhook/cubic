@@ -22,7 +22,7 @@ export function hintFor(game: GameState, sel: Sel): string {
         return `Place Warp Gate ${head.placed.length + 1} of 2 on an empty space.`;
       case 'unveil':
         return head.reorganize
-          ? 'Reorganization: click your ships to re-roll them, then place re-rolled ships from your scrapyard. Press Done when finished.'
+          ? 'Reorganisation: click your ships to re-roll them, then place re-rolled ships from your scrapyard. Press Done when finished.'
           : 'Unveil the Fleet: re-roll and deploy ships from your scrapyard, then press Done.';
       case 'discardSkill':
         return head.reason === 'sabotage' ? 'Sabotage! Choose a card to discard.' : 'Choose a card to discard.';

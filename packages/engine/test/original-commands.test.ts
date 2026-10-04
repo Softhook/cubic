@@ -372,7 +372,7 @@ describe('Gambit cards', () => {
     expect(at(s, head.die).owner).toBe(me);
   });
 
-  it('Reorganization: re-rolled ships are placed again; with Stealthy anywhere no ship is next to (FAQ)', () => {
+  it('Reorganisation: re-rolled ships are placed again; with Stealthy anywhere no ship is next to (FAQ)', () => {
     let s = place(game({ me: ['o-stealthy'] }), [[0, 0, 6]], [[0, 1, 3]]);
     const { me } = ids(s);
     s = take(s, { gambit: 'o-reorganization' });

@@ -1,6 +1,26 @@
+import { useEffect, useState } from 'react';
 import { card } from '@quantum/engine';
-import { CardView } from './Card';
+import { cardImage, cardImageNow } from '../art/cardImages';
 import { Dialog } from './Dialog';
+
+/** A card as printed, with its illustration. */
+function CardArt({ id, size, badge }: { id: string; size: 'md' | 'lg'; badge?: string }) {
+  const [src, setSrc] = useState(() => cardImageNow(id));
+  useEffect(() => {
+    let live = true;
+    void cardImage(id).then((url) => live && setSrc(url));
+    return () => {
+      live = false;
+    };
+  }, [id]);
+  const def = card(id);
+  return (
+    <div className={`card-art card-art-${size}`}>
+      {src ? <img src={src} alt={`${def.name}: ${def.text}`} title={`${def.name} — ${def.text}`} /> : <span className="card-art-ph" aria-label={def.name} />}
+      {badge && <span className="card-art-badge">{badge}</span>}
+    </div>
+  );
+}
 
 /** Shows a single card large, or a pile of cards grouped by name (so a deck's draw order stays hidden). */
 export function CardViewer({ title, subtitle, cards, single, onClose }: {
@@ -18,7 +38,7 @@ export function CardViewer({ title, subtitle, cards, single, onClose }: {
     <Dialog title={title} subtitle={subtitle} wide={!single} className="card-viewer" onClose={onClose}>
       <div className="card-choice wrap">
         {ids.map((id) => (
-          <CardView key={id} id={id} size={single ? 'lg' : 'md'} badge={counts.get(id)! > 1 ? `×${counts.get(id)}` : undefined} />
+          <CardArt key={id} id={id} size={single ? 'lg' : 'md'} badge={counts.get(id)! > 1 ? `×${counts.get(id)}` : undefined} />
         ))}
       </div>
     </Dialog>

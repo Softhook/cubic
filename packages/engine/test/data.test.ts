@@ -30,7 +30,7 @@ describe('card data', () => {
   it('has the 2013 Original deck: 22 black Gambits and 31 white Commands, 1 of each', () => {
     const counts = Object.fromEntries(ORIGINAL_GAMBIT.map((c) => [c.name, c.count]));
     expect(counts).toEqual({
-      Expansion: 8, Momentum: 4, Aggression: 4, Relocation: 2, Reorganization: 2, Sabotage: 2,
+      Expansion: 8, Momentum: 4, Aggression: 4, Relocation: 2, Reorganisation: 2, Sabotage: 2,
     });
     expect(ORIGINAL_GAMBIT.reduce((n, c) => n + c.count, 0)).toBe(22);
 
