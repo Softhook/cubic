@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { EXPANSION, card, cardKind, rulesOf, type DeckKind, type GameState } from '@quantum/engine';
 import type { Legal } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
+import { useShortcut } from '../game/useShortcut';
 import { CardView, categoryStyle } from './Card';
 import { CardViewer } from './CardViewer';
 
@@ -18,10 +19,11 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
     skill: { name: cardRules.terms.skillDeck, cards: m.skillDeck },
     tactic: { name: cardRules.terms.tacticDeck, cards: m.tacticDeck },
   };
+  const deckTitle = (deck: DeckKind) => `${cardsLeft(decks[deck].cards.length)} in the ${decks[deck].name} deck — click to view them`;
 
   const row = (deck: DeckKind, cards: string[]) => (
     <div className={`market-row market-${deck}`}>
-      <button type="button" className={`deck deck-${deck}`} title={`${cardsLeft(decks[deck].cards.length)} in the ${decks[deck].name} deck — click to view them`} onClick={() => setViewing(deck)}>
+      <button type="button" className={`deck deck-${deck}`} title={deckTitle(deck)} onClick={() => setViewing(deck)}>
         <div className="deck-stack" />
         <span className="deck-label">{decks[deck].name}</span>
         <span className="deck-count">{decks[deck].cards.length}</span>
@@ -48,24 +50,27 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
     />
   );
 
-  // Collapsed: one slim strip of card-name chips, so the board gets the space back.
   const chips = (deck: DeckKind, cards: string[]) => (
     <div className={`market-strip-group market-${deck}`}>
-      <button type="button" className="market-strip-deck" title={`${cardsLeft(decks[deck].cards.length)} in the ${decks[deck].name} deck — click to view them`} onClick={() => setViewing(deck)}>
+      <button type="button" className="market-strip-deck" title={deckTitle(deck)} onClick={() => setViewing(deck)}>
         {decks[deck].name} <b>{decks[deck].cards.length}</b>
       </button>
-      {cards.map((id, index) => (
-        <button
-          type="button"
-          key={`${id}#${index}`}
-          className={`market-chip market-chip-${cardKind(id)} ${canTake(deck, index) ? 'takeable' : ''}`}
-          style={categoryStyle(card(id).category, cardKind(id) === 'skill')}
-          title={`${card(id).name} — ${card(id).text}`}
-          onClick={toggle}
-        >
-          {card(id).name}
-        </button>
-      ))}
+      {cards.map((id, index) => {
+        const def = card(id);
+        const kind = cardKind(id);
+        return (
+          <button
+            type="button"
+            key={`${id}#${index}`}
+            className={`market-chip market-chip-${kind} ${canTake(deck, index) ? 'takeable' : ''}`}
+            style={categoryStyle(def.category, kind === 'skill')}
+            title={`${def.name} — ${def.text}`}
+            onClick={toggle}
+          >
+            {def.name}
+          </button>
+        );
+      })}
     </div>
   );
 
@@ -85,40 +90,22 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
     </button>
   );
 
-  if (!open) {
-    return (
-      <section id="market-cards" className={`market collapsed ${picking ? 'picking' : ''}`}>
-        {toggleButton}
-        {chips('skill', m.skillRow)}
-        {chips('tactic', m.tacticRow)}
-        {cardRules.expansionPile && (
-          <div className="market-strip-group">
-            <button type="button" className="market-chip market-chip-expansion" title={`${m.expansions} Expansion cards left`} onClick={toggle}>
-              {EXPANSION.name} ×{m.expansions}
-            </button>
-          </div>
-        )}
-        {viewer}
-      </section>
-    );
-  }
-
-  return (
-    <section id="market-cards" className={`market ${picking ? 'picking' : ''}`}>
-      {toggleButton}
+  // Open: the face-up rows as cards, ready to take.
+  const rows = (
+    <>
       {row('skill', m.skillRow)}
       {row('tactic', m.tacticRow)}
       {cardRules.expansionPile && (
-      <div className="market-row market-expansion">
-        <CardView
-          id={EXPANSION.id}
-          size="sm"
-          badge={`×${m.expansions}`}
-          disabled={!canExpand}
-          onClick={canExpand ? () => dispatch({ type: 'takeCard', deck: 'expansion', index: 0 }) : undefined}
-          className={m.expansions ? 'market-card' : 'market-card empty'}
-        />
-      </div>
+        <div className="market-row market-expansion">
+          <CardView
+            id={EXPANSION.id}
+            size="sm"
+            badge={`×${m.expansions}`}
+            disabled={!canExpand}
+            onClick={canExpand ? () => dispatch({ type: 'takeCard', deck: 'expansion', index: 0 }) : undefined}
+            className={m.expansions ? 'market-card' : 'market-card empty'}
+          />
+        </div>
       )}
       {legal.can('profiteer') && (
         <button className="btn btn-ghost market-refresh" title="Profiteering: a card earned by a Conquer action" onClick={() => dispatch({ type: 'profiteer' })}>
@@ -130,6 +117,28 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
           Discard all face-up cards and deal new ones
         </button>
       )}
+    </>
+  );
+
+  // Collapsed: one slim strip of card-name chips, so the board gets the space back.
+  const strip = (
+    <>
+      {chips('skill', m.skillRow)}
+      {chips('tactic', m.tacticRow)}
+      {cardRules.expansionPile && (
+        <div className="market-strip-group">
+          <button type="button" className="market-chip market-chip-expansion" title={`${m.expansions} Expansion cards left`} onClick={toggle}>
+            {EXPANSION.name} ×{m.expansions}
+          </button>
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <section id="market-cards" className={`market ${open ? '' : 'collapsed'} ${picking ? 'picking' : ''}`}>
+      {toggleButton}
+      {open ? rows : strip}
       {viewer}
     </section>
   );
@@ -148,8 +157,13 @@ function useCollapse(picking: boolean) {
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem(STORAGE_KEY) === '1'; } catch { return false; }
   });
-  const [autoOpen, setAutoOpen] = useState(false);
-  useEffect(() => setAutoOpen(picking), [picking]);
+  // Follows `picking` during render (not in an effect), so the market never flashes collapsed first.
+  const [autoOpen, setAutoOpen] = useState(picking);
+  const [wasPicking, setWasPicking] = useState(picking);
+  if (picking !== wasPicking) {
+    setWasPicking(picking);
+    setAutoOpen(picking);
+  }
   const open = !collapsed || autoOpen;
 
   const toggle = () => {
@@ -159,17 +173,7 @@ function useCollapse(picking: boolean) {
     try { localStorage.setItem(STORAGE_KEY, next ? '1' : '0'); } catch { /* storage unavailable */ }
   };
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || e.key.toLowerCase() !== 'c') return;
-      const el = e.target as HTMLElement | null;
-      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
-      if (document.querySelector('[aria-modal="true"]')) return;
-      toggle();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  });
+  useShortcut((e) => !(e.metaKey || e.ctrlKey || e.altKey) && e.key.toLowerCase() === 'c', toggle);
 
   return { open, toggle };
 }

@@ -3,6 +3,7 @@ import { actor, apply, checkInvariants, isUndoable, RuleError, type Action, type
 import { sfx } from '../sound';
 import { useToasts } from './toasts';
 import { useAiDriver } from './useAiDriver';
+import { useShortcut } from './useShortcut';
 
 /** Applies an action; false (with an error shown) if the rules refuse it. */
 export type Dispatch = (a: Action) => boolean;
@@ -91,16 +92,11 @@ export function useGame(initial: GameState) {
 
 /** Ctrl/Cmd+Z undoes the last move, unless the user is typing or a dialog is open over the board. */
 function useUndoShortcut(undo: () => void) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.key.toLowerCase() !== 'z') return;
-      const el = e.target as HTMLElement | null;
-      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
-      if (document.querySelector('[aria-modal="true"]')) return;
+  useShortcut(
+    (e) => (e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z',
+    (e) => {
       e.preventDefault();
       undo();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [undo]);
+    },
+  );
 }
