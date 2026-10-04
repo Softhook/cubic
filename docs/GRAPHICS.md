@@ -13,7 +13,7 @@ at physical size. Nothing is drawn twice, so the printed game and the online gam
 
 | Element | How it's drawn | Can it be printed? |
 |---|---|---|
-| Board tiles, void, planets, gates | Inline SVG in [`Board.tsx`](../apps/web/src/components/Board.tsx), sized in **screen pixels** (`cell` from a `ResizeObserver`) | Not as is: coordinates, blur radius and stroke widths depend on the window size |
+| Board tiles, void, planets, gates | Inline SVG in [`board/BoardArt.tsx`](../apps/web/src/components/board/BoardArt.tsx), sized in **screen pixels** (`cell` from a `ResizeObserver`) | Not as is: coordinates, blur radius and stroke widths depend on the window size |
 | Gradient / filter ids | Global ids (`#tile`, `#planet7`, `#glow`) | Ids clash as soon as two boards or tiles share a page (a print sheet) |
 | Cards | HTML + CSS in [`Card.tsx`](../apps/web/src/components/Card.tsx), fixed `px` font sizes, no art slot | Layout is close; needs physical sizes, bleed and an art slot |
 | Category icons | SVG (`CategoryIcon`) | Yes, already vector |

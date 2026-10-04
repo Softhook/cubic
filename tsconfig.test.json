@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.base.json",
-  "compilerOptions": { "noEmit": true, "types": ["node"] },
-  "include": ["packages/*/test", "scripts/*.ts", "vitest.config.ts"]
+  "compilerOptions": { "noEmit": true, "types": ["node", "vite/client"] },
+  "include": ["packages/*/test", "apps/*/test", "scripts/*.ts", "vitest.config.ts"]
 }

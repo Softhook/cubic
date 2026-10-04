@@ -1,6 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { SHIP_NAMES, die, rulesOf, scrapyard, type GameState } from '@quantum/engine';
-import type { Toast } from '../game/toasts';
 import type { Dispatch } from '../game/useGame';
 import { CardView } from './Card';
 import { Die3D } from './Die3D';
@@ -177,30 +176,6 @@ function Modal({ title, subtitle, pc, wide, children }: { title: string; subtitl
       </div>
     </div>
   );
-}
-
-export function Toasts({ toasts, game }: { toasts: Toast[]; game: GameState }) {
-  return (
-    <div className="toasts" aria-live="polite">
-      {toasts.map((t) => (
-        <div key={t.id} className={`toast toast-${t.tone}`} style={{ '--pc': t.player !== undefined ? game.players[t.player]?.color : 'var(--accent)' } as CSSProperties}>
-          {t.text}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function ErrorToast({ error }: { error: { id: number; text: string } | null }) {
-  const [visible, setVisible] = useState<typeof error>(null);
-  useEffect(() => {
-    if (!error) return;
-    setVisible(error);
-    const t = window.setTimeout(() => setVisible(null), 2600);
-    return () => window.clearTimeout(t);
-  }, [error]);
-  if (!visible) return null;
-  return <div className="error-toast" key={visible.id}>{visible.text}</div>;
 }
 
 export function GameOver({ game, onNew, onClose }: { game: GameState; onNew: () => void; onClose: () => void }) {

@@ -137,6 +137,9 @@ export interface TurnState {
 /** Effects limited to once per turn. 'cunning' is the second use of a ship ability. */
 export type OncePerTurn = 'composed' | 'ambitious' | 'flexible' | 'resourceful' | 'tyrannical' | 'tactical' | 'cunning' | 'nomadic';
 
+/** The two sides of a battle. */
+export type CombatRole = 'attacker' | 'defender';
+
 export interface CombatSide {
   player: PlayerId;
   die: string;
@@ -269,9 +272,9 @@ export type Action =
   /** Tactical's 1-space move (`to`) or attack (`target`); with `passenger` + `drop` it is a Flagship transport. */
   | { type: 'tactical'; die: string; to?: Cell; target?: string; passenger?: string; drop?: Cell }
   // combat & decisions
-  | { type: 'missile'; by: PlayerId; side: 'attacker' | 'defender' }
+  | { type: 'missile'; by: PlayerId; side: CombatRole }
   /** Cruel, Relentless or Scrappy: re-roll one side's combat dice. */
-  | { type: 'reroll'; by: PlayerId; side: 'attacker' | 'defender' }
+  | { type: 'reroll'; by: PlayerId; side: CombatRole }
   | { type: 'dangerous'; destroy: boolean }
   | { type: 'clever'; value: number }
   | { type: 'brilliant'; gain: boolean }

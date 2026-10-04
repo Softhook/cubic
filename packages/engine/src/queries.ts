@@ -15,7 +15,7 @@ import { card, effectOf } from './data';
 import { cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
 import { rulesOf } from './rules';
 import { activeSkills, anySkill, ruleOf, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
-import type { Cell, CombatPending, Die, GameState, OncePerTurn, Planet, PlayerId } from './types';
+import type { Cell, CombatPending, CombatRole, Die, GameState, OncePerTurn, Planet, PlayerId } from './types';
 
 export type { CombatPart } from './skillRules';
 
@@ -72,6 +72,11 @@ export function canGainResearch(state: GameState, player: PlayerId): boolean {
 /** Whether deploying is free for the player. */
 export function deploysFree(state: GameState, player: PlayerId): boolean {
   return anySkill(state, player, (r) => r.freeDeploy);
+}
+
+/** Scrappy: whether the player whose turn it is may re-roll the ship rolled by the last action (core.ts rollShip). */
+export function canScrappy(state: GameState): boolean {
+  return !!state.turn.scrappy;
 }
 
 // ---------------------------------------------------------------------------
@@ -207,6 +212,49 @@ export function freeAttackTargets(state: GameState, dieId: string): Die[] {
     .filter((x): x is Die => !!x && x.owner !== d.owner);
 }
 
+export interface TacticalOptions {
+  /** `diagonal` steps need the Interceptor's Maneuver ability. */
+  moves: { cell: Cell; diagonal: boolean }[];
+  attacks: { die: Die; diagonal: boolean }[];
+}
+
+/**
+ * Tactical: one step (or an attack on an adjacent enemy) for a single ship. An Interceptor that
+ * still has its ability may step or attack diagonally (forum consensus, BGG thread 2433096).
+ */
+export function tacticalOptions(state: GameState, dieId: string): TacticalOptions {
+  const d = die(state, dieId);
+  const start = cellOf(d);
+  const result: TacticalOptions = { moves: [], attacks: [] };
+  if (!start) return result;
+  const straight = stepNeighbours(state, start, false);
+  const near = straight.map((cell) => ({ cell, diagonal: false }));
+  if (d.value === 5 && canUseAbility(state, d)) {
+    for (const cell of stepNeighbours(state, start, true))
+      if (!straight.some((p) => same(p, cell))) near.push({ cell, diagonal: true });
+  }
+  for (const { cell, diagonal } of near) {
+    const target = dieAt(state, cell);
+    if (!target && isEmptySpace(state, cell)) result.moves.push({ cell, diagonal });
+    else if (target && target.owner !== d.owner) result.attacks.push({ die: target, diagonal });
+  }
+  return result;
+}
+
+/**
+ * Nomadic (Original): empty orbital positions of the planets on the tiles next to the planet the
+ * ship orbits. "Next to" means the 4 orthogonally adjacent tiles (designer, BGG thread 1182319).
+ */
+export function nomadicTargets(state: GameState, dieId: string): Cell[] {
+  const at = cellOf(die(state, dieId));
+  if (!at) return [];
+  const home = state.board.planets.find((p) => orbitals(state.board, p).some((q) => same(q, at)));
+  if (!home) return [];
+  // Planets sit at the centre of their 3×3 tile, so planets on neighbouring tiles are 3 spaces away.
+  const near = state.board.planets.filter((p) => Math.abs(p.r - home.r) + Math.abs(p.c - home.c) === 3 && (p.r === home.r || p.c === home.c));
+  return near.flatMap((p) => orbitals(state.board, p).filter((q) => isEmptySpace(state, q)));
+}
+
 // ---------------------------------------------------------------------------
 // Setup and cards
 
@@ -265,7 +313,7 @@ export function deployTargets(state: GameState, player: PlayerId): Cell[] {
 }
 
 // ---------------------------------------------------------------------------
-// Conquer
+// Cubes: conquering, Infamy, Relocation
 
 export interface ConquerCheck {
   ok: boolean;
@@ -360,54 +408,6 @@ export function canRelocate(state: GameState, player: PlayerId, { planet, owner,
   return planetFreeSlots(dest) > 0 && !dest.cubes.includes(owner);
 }
 
-/**
- * Nomadic (Original): empty orbital positions of the planets on the tiles next to the planet the
- * ship orbits. "Next to" means the 4 orthogonally adjacent tiles (designer, BGG thread 1182319).
- */
-export function nomadicTargets(state: GameState, dieId: string): Cell[] {
-  const at = cellOf(die(state, dieId));
-  if (!at) return [];
-  const home = state.board.planets.find((p) => orbitals(state.board, p).some((q) => same(q, at)));
-  if (!home) return [];
-  // Planets sit at the centre of their 3×3 tile, so planets on neighbouring tiles are 3 spaces away.
-  const near = state.board.planets.filter((p) => Math.abs(p.r - home.r) + Math.abs(p.c - home.c) === 3 && (p.r === home.r || p.c === home.c));
-  return near.flatMap((p) => orbitals(state.board, p).filter((q) => isEmptySpace(state, q)));
-}
-
-/** Scrappy: whether the player whose turn it is may re-roll the ship rolled by the last action (core.ts rollShip). */
-export function canScrappy(state: GameState): boolean {
-  return !!state.turn.scrappy;
-}
-
-export interface TacticalOptions {
-  /** `diagonal` steps need the Interceptor's Maneuver ability. */
-  moves: { cell: Cell; diagonal: boolean }[];
-  attacks: { die: Die; diagonal: boolean }[];
-}
-
-/**
- * Tactical: one step (or an attack on an adjacent enemy) for a single ship. An Interceptor that
- * still has its ability may step or attack diagonally (forum consensus, BGG thread 2433096).
- */
-export function tacticalOptions(state: GameState, dieId: string): TacticalOptions {
-  const d = die(state, dieId);
-  const start = cellOf(d);
-  const result: TacticalOptions = { moves: [], attacks: [] };
-  if (!start) return result;
-  const straight = stepNeighbours(state, start, false);
-  const near = straight.map((cell) => ({ cell, diagonal: false }));
-  if (d.value === 5 && canUseAbility(state, d)) {
-    for (const cell of stepNeighbours(state, start, true))
-      if (!straight.some((p) => same(p, cell))) near.push({ cell, diagonal: true });
-  }
-  for (const { cell, diagonal } of near) {
-    const target = dieAt(state, cell);
-    if (!target && isEmptySpace(state, cell)) result.moves.push({ cell, diagonal });
-    else if (target && target.owner !== d.owner) result.attacks.push({ die: target, diagonal });
-  }
-  return result;
-}
-
 // ---------------------------------------------------------------------------
 // Combat
 
@@ -418,7 +418,7 @@ export interface CombatTotal {
 }
 
 /** The value a side's combat roll is set to, overriding the dice: a missile, Plan Ahead or Rational (in that priority). */
-function rollOverride(state: GameState, combat: CombatPending, side: 'attacker' | 'defender'): CombatPart | undefined {
+function rollOverride(state: GameState, combat: CombatPending, side: CombatRole): CombatPart | undefined {
   const s = combat[side];
   if (s.missile) return { label: 'Missile', value: 1 };
   if (state.players[s.player].planAhead > 0) return { label: 'Plan Ahead', value: 1 };
@@ -430,7 +430,7 @@ function rollOverride(state: GameState, combat: CombatPending, side: 'attacker' 
  * Combat roll pipeline (see docs/OPEN-QUESTIONS.md #10):
  * roll (Brutal: lower of two) → set effects (Rational 3, Plan Ahead 1) → missile (1) → modifiers.
  */
-export function combatTotal(state: GameState, combat: CombatPending, side: 'attacker' | 'defender'): CombatTotal {
+export function combatTotal(state: GameState, combat: CombatPending, side: CombatRole): CombatTotal {
   const s = combat[side];
   const skills = activeSkills(state, s.player).filter((a) => a.rule.combat);
   const parts: CombatPart[] = [];
@@ -462,7 +462,7 @@ export function combatOutcome(state: GameState, combat: CombatPending) {
  * Scrappy on their turn) or their opponent's (Cruel). Each is usable once per battle, and not on a
  * roll a missile, Plan Ahead or Rational has set.
  */
-export function combatReroll(state: GameState, combat: CombatPending, by: PlayerId, side: 'attacker' | 'defender'): ActiveSkill | undefined {
+export function combatReroll(state: GameState, combat: CombatPending, by: PlayerId, side: CombatRole): ActiveSkill | undefined {
   const target = combat[side].player;
   const opponent = side === 'attacker' ? combat.defender.player : combat.attacker.player;
   if (by !== target && by !== opponent) return undefined;
@@ -476,7 +476,7 @@ export function combatReroll(state: GameState, combat: CombatPending, by: Player
 }
 
 /** Every combat re-roll `by` could make now, on either side. */
-export function combatRerolls(state: GameState, combat: CombatPending, by: PlayerId): { side: 'attacker' | 'defender'; skill: ActiveSkill }[] {
+export function combatRerolls(state: GameState, combat: CombatPending, by: PlayerId): { side: CombatRole; skill: ActiveSkill }[] {
   return (['attacker', 'defender'] as const).flatMap((side) => {
     const skill = combatReroll(state, combat, by, side);
     return skill ? [{ side, skill }] : [];

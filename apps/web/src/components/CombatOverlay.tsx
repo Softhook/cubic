@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, tryApply, type Action, type CombatPending, type GameState, type PlayerState } from '@quantum/engine';
+import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, tryApply, type Action, type CombatPending, type CombatRole, type GameState, type PlayerState } from '@quantum/engine';
 import type { Dispatch } from '../game/useGame';
 import { Die3D } from './Die3D';
 
@@ -21,7 +21,7 @@ export function CombatOverlay({ game, combat, dispatch }: { game: GameState; com
   const autoResolve = !humans.some((p) => canRespondToCombat(game, combat, p.id));
   const leader = out.attackerWins ? A : D;
 
-  const side = (role: 'attacker' | 'defender') => {
+  const side = (role: CombatRole) => {
     const s = combat[role];
     const p = game.players[s.player];
     const total = role === 'attacker' ? out.attacker : out.defender;
@@ -114,7 +114,7 @@ function RerollButton({
 }: {
   game: GameState;
   combat: CombatPending;
-  role: 'attacker' | 'defender';
+  role: CombatRole;
   by: PlayerState;
   named: boolean;
   dispatch: Dispatch;
@@ -149,7 +149,7 @@ function MissileButton({
 }: {
   game: GameState;
   combat: CombatPending;
-  role: 'attacker' | 'defender';
+  role: CombatRole;
   shooter: PlayerState;
   named: boolean;
   dispatch: Dispatch;

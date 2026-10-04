@@ -14,7 +14,7 @@ import { linked } from './board';
 import { effectOf } from './data';
 import { SKILL_EFFECTS, type SkillEffect } from './effects';
 import { dieAt, shipsOnBoard } from './lookups';
-import type { Action, Cell, CombatPending, Die, GameState, PlayerId } from './types';
+import type { Action, Cell, CombatPending, CombatRole, Die, GameState, PlayerId } from './types';
 
 export interface CombatPart {
   label: string;
@@ -32,7 +32,7 @@ export interface ConquerContext {
 export interface CombatContext {
   state: GameState;
   combat: CombatPending;
-  side: 'attacker' | 'defender';
+  side: CombatRole;
 }
 
 export interface TurnBonus {

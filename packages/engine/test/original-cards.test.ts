@@ -3,7 +3,7 @@
  * Relentless, Scrappy), Dangerous, Clever, Scrappy ship re-rolls, Nomadic and Relocation.
  */
 import { describe, expect, it } from 'vitest';
-import { apply, legalActions, type Action, type GameState, type PlayerId } from '../src';
+import { apply, legalActions, type Action, type CombatRole, type GameState, type PlayerId } from '../src';
 import { arrange, originalGame as game } from './helpers';
 
 const ids = (s: GameState) => ({ me: s.turn.player, foe: 1 - s.turn.player, scout: `p${s.turn.player}d0`, enemy: `p${1 - s.turn.player}d0` });
@@ -23,7 +23,7 @@ function battle(s: GameState, rolls: [number, number]): GameState {
   return s;
 }
 
-const reroll = (by: PlayerId, side: 'attacker' | 'defender'): Action => ({ type: 'reroll', by, side });
+const reroll = (by: PlayerId, side: CombatRole): Action => ({ type: 'reroll', by, side });
 const rerolled = (s: GameState) => (s.pending[0].kind === 'combat' ? s.pending[0].rerolls : []);
 
 describe('combat re-rolls (2013 rulebook FAQ: after both have rolled; the new roll must be kept)', () => {
