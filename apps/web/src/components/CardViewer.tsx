@@ -35,7 +35,7 @@ export function CardViewer({ title, subtitle, cards, single, onClose }: {
   const ids = [...counts.keys()].sort((a, b) => card(a).name.localeCompare(card(b).name));
 
   return (
-    <Dialog title={title} subtitle={subtitle} wide={!single} className="card-viewer" onClose={onClose}>
+    <Dialog title={title} subtitle={subtitle} wide={!single} bare={single} className="card-viewer" onClose={onClose}>
       <div className="card-choice wrap">
         {ids.map((id) => (
           <CardArt key={id} id={id} size={single ? 'lg' : 'md'} badge={counts.get(id)! > 1 ? `×${counts.get(id)}` : undefined} />

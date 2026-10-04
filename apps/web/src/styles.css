@@ -643,6 +643,7 @@ input { font: inherit; }
 .modal.wide { width: min(880px, 100%); }
 .dialog h2 { padding-right: 36px; }
 .dialog-close { position: absolute; right: 14px; top: 14px; }
+.dialog-bare { max-width: 100%; outline: none; cursor: pointer; animation: pop .3s cubic-bezier(.2,.9,.3,1.2); }
 @keyframes pop { from { transform: scale(.94) translateY(8px); opacity: 0; } }
 .modal h2 { margin: 0; font-family: var(--display); font-size: 22px; letter-spacing: .04em; }
 .modal-sub { color: var(--muted); margin: 6px 0 18px; font-size: 14px; line-height: 1.5; }
