@@ -48,6 +48,21 @@ Two ideas hold it together:
   lists the same actions for the AI and the UI; `consistency.test.ts` checks that the two agree in both
   directions. The UI never re-checks a rule, it asks `legalActions`.
 
+## Web app game modules
+
+In [`apps/web/src/game`](../apps/web/src/game):
+
+| File | Contents |
+|---|---|
+| `useGame.ts` | The game being played: state, `dispatch`, undo (and Ctrl/Cmd+Z), engine-error reporting |
+| `useAiDriver.ts` | Moves for the AI players, with delays so humans can follow; AI responses in combat |
+| `aiClient.ts`, `aiWorker.ts` | Runs the AI in a Web Worker, falling back to the main thread |
+| `toasts.ts` | The toast and sound for each logged event |
+| `controller.ts` | The human's selection (`Sel`) and what a click on a die, space or planet does |
+| `highlights.ts` | `highlightsFor()`: what lights up on the board, derived from the legal actions |
+| `hints.ts` | The one-line hint for the current decision or selection |
+| `legal.ts` | The legal actions indexed by type, for buttons and highlights |
+
 ## Finding bugs
 
 - `checkInvariants(state)` lists everything wrong with a state: cube totals, every card in exactly one

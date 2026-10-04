@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { SHIP_NAMES, die, rulesOf, scrapyard, type GameState } from '@quantum/engine';
-import type { Dispatch, Toast } from '../game/useGame';
+import type { Toast } from '../game/toasts';
+import type { Dispatch } from '../game/useGame';
 import { CardView } from './Card';
 import { Die3D } from './Die3D';
 

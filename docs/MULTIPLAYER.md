@@ -172,8 +172,10 @@ All small, and all testable without a server:
 
 ### Client changes
 
-Today [useGame.ts](../apps/web/src/game/useGame.ts) owns the state, applies actions, runs
-the AI and keeps undo history. Split that behind one interface:
+Today [useGame.ts](../apps/web/src/game/useGame.ts) owns the state, applies actions and
+keeps undo history; it runs the AI through [useAiDriver.ts](../apps/web/src/game/useAiDriver.ts)
+and announces log events through [toasts.ts](../apps/web/src/game/toasts.ts). Split that behind
+one interface:
 
 ```ts
 interface GameSource {

@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { SHIP_NAMES, card, die, rulesOf, skillCard, type GameState, type SkillEffect } from '@quantum/engine';
-import { hintFor, type Controller } from '../game/controller';
+import type { Controller } from '../game/controller';
+import { hintFor } from '../game/hints';
 import type { Dispatch } from '../game/useGame';
 import { CategoryIcon } from './Card';
 import { ShipPanel } from './ShipPanel';
