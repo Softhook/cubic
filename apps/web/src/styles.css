@@ -559,10 +559,12 @@ input { font: inherit; }
   transition: background .3s;
 }
 .market.picking { background: linear-gradient(180deg, rgba(122,162,255,.08), rgba(5,8,19,.6)); box-shadow: inset 0 1px 0 var(--accent); }
-.market.picking .market-card:not(:disabled) { animation: deal .35s both, glowcard 1.8s ease-in-out infinite .4s; }
+.market.picking .market-card.takeable { animation: deal .35s both, glowcard 1.8s ease-in-out infinite .4s; }
 @keyframes glowcard { 50% { box-shadow: 0 6px 18px rgba(0,0,0,.35), 0 0 0 2px color-mix(in srgb, var(--cat) 70%, transparent); } }
 .market-row { display: flex; gap: 8px; align-items: flex-end; }
 .market-card.empty { opacity: .3; }
+.market .qcard-sm { width: 134px; } /* wide enough for the longest names, e.g. Reorganisation */
+.market-card.clickable:not(.takeable):hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0,0,0,.45), 0 0 0 1px var(--cat); }
 .market-refresh { align-self: center; max-width: 140px; font-size: 12px; white-space: normal; }
 .market .qcard-sub { display: none; } /* the name and rules text are what matter when choosing */
 .market-toggle {

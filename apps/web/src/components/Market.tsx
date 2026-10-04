@@ -14,6 +14,7 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   const cardRules = rulesOf(game).cards!;
   const peek = cardRules.peek;
   const [viewing, setViewing] = useState<DeckKind | null>(null);
+  const [viewingCard, setViewingCard] = useState<string | null>(null);
   const { open, toggle } = useCollapse(picking);
   const decks: Record<DeckKind, { name: string; cards: string[] }> = {
     skill: { name: cardRules.terms.skillDeck, cards: m.skillDeck },
@@ -33,9 +34,9 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
           key={`${id}#${cards.slice(0, index).filter((x) => x === id).length}`}
           id={id}
           size="sm"
-          className="market-card"
+          className={`market-card ${canTake(deck, index) ? 'takeable' : ''}`}
           badge={peek && index === cards.length - 1 && cards.length === 3 && decks[deck].cards.length > 0 ? 'Peek' : undefined}
-          onClick={canTake(deck, index) ? () => dispatch({ type: 'takeCard', deck, index }) : undefined}
+          onClick={canTake(deck, index) ? () => dispatch({ type: 'takeCard', deck, index }) : () => setViewingCard(id)}
         />
       ))}
     </div>
@@ -48,6 +49,10 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
       cards={decks[viewing].cards}
       onClose={() => setViewing(null)}
     />
+  );
+
+  const cardViewer = viewingCard && (
+    <CardViewer title={card(viewingCard).name} subtitle={card(viewingCard).subtitle} cards={[viewingCard]} single onClose={() => setViewingCard(null)} />
   );
 
   const chips = (deck: DeckKind, cards: string[]) => (
@@ -101,9 +106,8 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
             id={EXPANSION.id}
             size="sm"
             badge={`×${m.expansions}`}
-            disabled={!canExpand}
-            onClick={canExpand ? () => dispatch({ type: 'takeCard', deck: 'expansion', index: 0 }) : undefined}
-            className={m.expansions ? 'market-card' : 'market-card empty'}
+            onClick={canExpand ? () => dispatch({ type: 'takeCard', deck: 'expansion', index: 0 }) : () => setViewingCard(EXPANSION.id)}
+            className={`market-card ${m.expansions ? '' : 'empty'} ${canExpand ? 'takeable' : ''}`}
           />
         </div>
       )}
@@ -140,6 +144,7 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
       {toggleButton}
       {open ? rows : strip}
       {viewer}
+      {cardViewer}
     </section>
   );
 }
