@@ -4,10 +4,12 @@ import {
   panel, RESEARCH, route, scrapyard, shield, ship, shipOn, slash, space, sparkles, track, trackSlot, trails, world, worldOn, wreck,
 } from '../kit';
 import type { Illustration } from '../illustrations';
+import { SKILL_SCENES } from './skills';
+import { TACTIC_SCENES } from './tactics';
 
 /**
- * The original (2013) Command and Gambit cards. Where one does the same as a Community Edition card,
- * it shows the same idea from another angle, so no two cards share a picture.
+ * The original (2013) Command and Gambit cards. Where one is the same card as in the Community
+ * Edition, it uses the CE picture; otherwise every card has its own picture.
  */
 export const ORIGINAL_SCENES: Record<string, Illustration> = {
   'o-agile': {
@@ -48,24 +50,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
     },
   },
 
-  'o-brilliant': {
-    caption: 'a research station in orbit, adding two to research every turn',
-    draw: ({ id, r, hue, box }) => {
-      const [cx, cy] = at(box, 0.36, 0.55);
-      let rings = '';
-      [-22, 26, 62].forEach((t, i) => {
-        rings += `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(12.5 + i * 2)}" ry="${n(4 + i)}" fill="none" stroke="${hsl(hue, 85, 72)}" stroke-width=".3" opacity=".7" transform="rotate(${n(t)} ${n(cx)} ${n(cy)})"/>`;
-      });
-      const [tx, ty] = at(box, 0.6, 0.42);
-      return [
-        world(`${id}-w`, r.fork('w'), cx, cy, 7, 8),
-        f(rings),
-        f(sparkles(r.fork('sp'), cx, cy, 14, 18, 4)),
-        f(`<g transform="translate(${n(cx + 12)} ${n(cy - 6)}) rotate(-20)"><rect x="-3.5" y="-.6" width="7" height="1.2" fill="${hsl(hue, 60, 70)}"/><rect x="-1" y="-1.4" width="2" height="2.8" rx=".4" fill="#fff"/></g>`),
-        f(icon('research', tx + 6, ty, 8, hsl(RESEARCH, 100, 82), 2) + glyph(tx + 14, ty + 1, '+2', 5, hsl(RESEARCH, 100, 85), 'start')),
-      ];
-    },
-  },
+  'o-brilliant': SKILL_SCENES.brilliant,
 
   'o-cerebral': {
     caption: 'a dominance cube dissolved into three sparks of research',
@@ -572,25 +557,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
     },
   },
 
-  'o-expansion': {
-    caption: 'a new ship drops out of hyperspace into orbit beside your cube',
-    draw: ({ id, r, hue, box, p1 }) => {
-      const [cx, cy] = at(box, 0.38, 0.58);
-      const [sx, sy] = at(box, 0.68, 0.36);
-      let spiral = '';
-      for (let i = 0; i < 4; i++) spiral += `<ellipse cx="${n(sx)}" cy="${n(sy)}" rx="${n(3 + i * 2.6)}" ry="${n(1.6 + i * 1.3)}" fill="none" stroke="${hsl(hue + i * 10, 95, 70)}" stroke-width="${n(0.5 - i * 0.08)}" stroke-dasharray="${n(2 + i)} ${n(1 + i * 0.6)}" transform="rotate(${n(-20 + i * 7)} ${n(sx)} ${n(sy)})"/>`;
-      return [
-        f(`<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="15" ry="7.5" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".25" stroke-dasharray="1 1.2"/>`),
-        world(`${id}-w`, r.fork('w'), cx, cy, 9),
-        f(cube(cx - 3, cy - 6.5, 2.2, p1)),
-        glow(`${id}-g`, sx, sy, 14, 9, hue, 0.5),
-        f(spiral),
-        ...trails(`${id}-t`, r.fork('t'), sx - 1, sy + 1, -1, 0.5, 12, 1.4, hsl(hue, 90, 80), 4),
-        ship(`${id}-s`, sx - 4, sy + 3, 3.8, 3, p1),
-        arrowPath(`${id}-ar`, `M${n(sx - 8)} ${n(sy + 7)}Q${n(cx + 14)} ${n(cy + 2)} ${n(cx + 12)} ${n(cy + 5)}`, hsl(hue, 90, 82), { w: 0.35, dash: true }),
-      ];
-    },
-  },
+  'o-expansion': TACTIC_SCENES.expansion,
 
   'o-momentum': {
     caption: 'a ship slingshots through a time ring into a second, shorter turn',

@@ -126,16 +126,19 @@ describe('card art', () => {
     expect(cardSvg(a)).not.toBe(cardSvg(b));
   });
 
-  it('gives every card its own illustration, and no two cards the same picture', () => {
+  it('gives every card its own illustration, and no two cards the same picture unless they are the same card', () => {
     for (const f of faces) expect(ILLUSTRATIONS[f.id], f.id).toBeDefined();
     expect(Object.keys(ILLUSTRATIONS).sort()).toEqual(faces.map((f) => f.id).sort());
     // Each scene drawn with the same seed, box and colours: two cards sharing a drawing would match.
     const box = { x: 0, y: 0, w: 63.5, h: 43 };
     const seen = new Map<string, string>();
+    // An original card may reuse the picture of the same card in the Community Edition (o-x → x).
+    const shared = (id: string) => id.startsWith('o-') && ILLUSTRATIONS[id] === ILLUSTRATIONS[id.slice(2)];
     for (const f of faces) {
       const out = ILLUSTRATIONS[f.id].draw({ id: 'x', r: rng(1), hue: 200, box, p1: 196, p2: 328 });
       const svg = out.map((p) => p.defs + p.body).join('');
       expect(svg, f.id).not.toMatch(/NaN|undefined|Infinity/);
+      if (shared(f.id)) continue;
       expect(seen.get(svg), `${f.id} draws the same as ${seen.get(svg)}`).toBeUndefined();
       seen.set(svg, f.id);
     }

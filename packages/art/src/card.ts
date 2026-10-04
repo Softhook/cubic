@@ -209,13 +209,12 @@ function art(face: CardFace, id: string, hue: number, L: Layout, p: CardPalette,
   };
 }
 
-/** Labels over the art, like a targeting display: the category, the number of copies, corner ticks. */
+/** Labels over the art: the category and the number of copies. */
 function hud(face: CardFace, label: string, L: Layout): string {
   const { x, y } = L.hud;
   const text = (tx: number, s: string, anchor: string) =>
     `<text x="${n(tx)}" y="${n(y)}" font-family="${FONTS.body}" font-size="1.9" font-weight="700" letter-spacing=".22" fill="#fff" text-anchor="${anchor}" opacity=".92">${esc(s.toUpperCase())}</text>`;
-  const tick = (tx: number, sx: number) => `<path d="M${n(tx)} ${n(y - 3.4 + 2.4)}V${n(y - 3.4)}H${n(tx + sx * 2.4)}" fill="none" stroke="#fff" stroke-width=".25" opacity=".55"/>`;
-  return text(x, label, 'start') + (face.copies && face.copies > 1 ? text(CARD.w - x, `×${face.copies}`, 'end') : '') + tick(x - 1.2, 1) + tick(CARD.w - x + 1.2, -1);
+  return text(x, label, 'start') + (face.copies && face.copies > 1 ? text(CARD.w - x, `×${face.copies}`, 'end') : '');
 }
 
 /** The text panel: the category emblem, name, subtitle, rules text and footer. */
@@ -255,12 +254,12 @@ function textPanel(face: CardFace, category: string, area: Box, L: Layout, p: Ca
     .map((l, i) => `<text x="${n(W / 2)}" y="${n(firstY + i * lead)}" font-family="${FONTS.body}" font-size="${n(size)}" fill="${p.ink}" text-anchor="middle">${tspans(l, p.ink)}</text>`)
     .join('');
 
-  // Footer: deck and kind, edition and position.
+  // Footer: position in the deck, and edition.
   const fy = H - safe - 0.2;
   const foot = (x: number, text: string, anchor: string) =>
     `<text x="${n(x)}" y="${n(fy)}" font-family="${FONTS.body}" font-size="1.7" font-weight="600" letter-spacing=".18" fill="${p.muted}" text-anchor="${anchor}">${esc(text)}</text>`;
-  const num = face.index !== undefined && face.deckSize ? ` ${String(face.index).padStart(2, '0')}/${face.deckSize}` : '';
-  return out + foot(safe + 0.6, `${info.label} · ${info.kind}`.toUpperCase(), 'start') + foot(W - safe - 0.6, `CUBIC ${info.edition}${num}`, 'end');
+  const num = face.index !== undefined && face.deckSize ? `${String(face.index).padStart(2, '0')}/${face.deckSize}` : '';
+  return out + (num ? foot(safe + 0.6, num, 'start') : '') + foot(W - safe - 0.6, info.edition, 'end');
 }
 
 /** The front of a card as a standalone SVG document. */

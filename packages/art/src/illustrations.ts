@@ -10,8 +10,8 @@ export interface Illustration {
 }
 
 /**
- * One illustration per card, keyed by card id, each showing what that card does. Original cards
- * with the same effect as a Community Edition card get their own picture of the same idea.
+ * One illustration per card, keyed by card id, each showing what that card does. An original card
+ * that is the same card as in the Community Edition shares its picture.
  */
 export const ILLUSTRATIONS: Record<string, Illustration> = {
   ...SKILL_SCENES,
