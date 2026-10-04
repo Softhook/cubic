@@ -319,7 +319,7 @@ Full data (with categories, CE status and design notes) lives in
 | Industrious | Extra deployment | Gain an additional Deploy action each turn. |
 | Ingenious | Conquer from corners | When Conquering, you may use spaces diagonal to a planet. |
 | Intelligent | Flexible conquering | When Conquering, you may add or subtract 1 from the planet number. |
-| Patient | Delayed tactics | Whenever you take a Tactic, you may instead store it. At the end of each of your turns, you may play a stored Tactic. When you take this Skill, you may take and store a Tactic. |
+| Patient | Delayed tactics | Whenever you take a Tactic, you may instead store it. At the end of each of your turns, you may play a stored Tactic. |
 | Pioneering | Conquer with research | You may use your Research number in place of one of your ship numbers when Conquering. |
 | Plundering | Destruction is research | The first time you destroy an enemy ship each turn, gain 3 Research. |
 | Precocious | Accelerated breakthrough | Your Research resets at 4, 5, or 6. |
