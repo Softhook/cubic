@@ -108,6 +108,9 @@ from the layout and fails if they disagree. Official layouts are in
 |---|---|
 | [`basic.test.ts`](../packages/engine/test/basic.test.ts) | Every official rule in Basic mode, one scenario each, citing its source |
 | [`engine.test.ts`](../packages/engine/test/engine.test.ts) | Card effects, modes, missiles, undo |
+| [`card-audit.test.ts`](../packages/engine/test/card-audit.test.ts) | The card audit ([`audit.ts`](../packages/engine/test/audit.ts)) on its quick games: AI games with skills dealt so every card is held, checking at every step legality, soundness of card decisions, invariants, and each card's effect against its text. `npm run audit:cards` plays the whole matrix (`-- --deep`: level 4 and more maps) and prints each anomaly with the game log, plus card coverage |
+| [`card-scenarios.test.ts`](../packages/engine/test/card-scenarios.test.ts) | A scenario per card (every mode), driven through its real trigger; fails if a card has none |
+| [`community-cards.test.ts`](../packages/engine/test/community-cards.test.ts) | Calculating, Curious, Patient, Prideful and Ruthless, edge cases included |
 | [`consistency.test.ts`](../packages/engine/test/consistency.test.ts) | `legalActions` and `apply` agree (every offered action is accepted; brute force: every accepted action is offered); invariants after every action |
 | [`data.test.ts`](../packages/engine/test/data.test.ts) | Card ids unique; every card effect implemented or on the known-missing list |
 | [`golden.test.ts`](../packages/engine/test/golden.test.ts) | Exact replay of seeded AI-vs-AI games in every mode, with invariants checked after every action. Fails on *any* behaviour change. After an intended change, review and run `npx vitest run -u`. |

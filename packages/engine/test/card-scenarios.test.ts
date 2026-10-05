@@ -1,10 +1,7 @@
 /**
- * Every card in the game, exercised:
- *
- * - self-play: seeded AI games in each card mode, with the invariants and the legality of every
- *   AI action asserted at each step;
- * - a scenario per card, driving it through its real trigger (an actual combat, card pick or
- *   turn change) and asserting its effect.
+ * A scenario per card, driving it through its real trigger (an actual combat, card pick or turn
+ * change) and asserting its effect. Cards in real games, at every AI level and on many maps, are
+ * checked by the card audit (card-audit.test.ts).
  *
  * Scenarios are registered with `cardCase`, so the coverage check at the end is built when the
  * file is collected and doesn't depend on which tests run, or in what order.
@@ -35,7 +32,8 @@ import {
   type GameMode,
   type GameState,
 } from '../src';
-import { arrange, originalGame, playAiGame, quickStart, seededRandom } from './helpers';
+import { setSkills, toRow } from './audit';
+import { arrange, originalGame, quickStart, seededRandom } from './helpers';
 
 const ALL_CARDS: CardDef[] = [...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT];
 
@@ -91,63 +89,12 @@ function duel(mode: GameMode, seed: number, skills: { me?: string[]; foe?: strin
   return s;
 }
 
-/** Brings card `id` to the front of its market row, swapping places with the card there. */
-function toRow(s: GameState, deck: 'skill' | 'tactic', id: string) {
-  const m = s.market;
-  const row = deck === 'skill' ? m.skillRow : m.tacticRow;
-  const piles = deck === 'skill' ? [m.skillRow, m.skillDeck, m.skillDiscard] : [m.tacticRow, m.tacticDeck, m.tacticDiscard];
-  for (const pile of piles) {
-    const i = pile.indexOf(id);
-    if (i >= 0) return void ([pile[i], row[0]] = [row[0], pile[i]]);
-  }
-  throw new Error(`${id} is not in the market`);
-}
-
-/** Gives player `p` exactly these skills (active), moving cards to and from the market so every card stays accounted for. */
-function setSkills(s: GameState, p: number, ids: string[]) {
-  s.market.skillDiscard.push(...s.players[p].skills.map((sk) => sk.id));
-  s.players[p].skills = ids.map((id) => {
-    toRow(s, 'skill', id);
-    s.market.skillRow[0] = s.market.skillDeck.shift()!;
-    return { id, active: true };
-  });
-}
-
 /** The current player takes `id` from the tactic row, as if earned in the card phase. */
 function takeTactic(s: GameState, id: string, store = false): GameState {
   toRow(s, 'tactic', id);
   s.pending.unshift({ kind: 'takeCard', player: s.turn.player, count: 1 });
   return apply(s, { type: 'takeCard', deck: 'tactic', index: 0, store });
 }
-
-describe('self-play', () => {
-  for (const [mode, players, seed] of [
-    ['community', 2, 31],
-    ['community', 3, 32],
-    ['community', 4, 33],
-    ['original', 2, 34],
-    ['original', 3, 35],
-  ] as const)
-    it(`${mode}, ${players} players: every AI action is legal and every state valid`, () => {
-      let prev: GameState | null = null;
-      const { state } = playAiGame({
-        mode,
-        players,
-        seed,
-        aiSeed: seed * 7919,
-        before: (s) => (prev = s),
-        after: (s, action, step) => {
-          // Combat responses (re-rolls, missiles) are offered to whoever may react, not the actor.
-          if (prev!.pending[0]?.kind !== 'combat') {
-            expect(legalActions(prev!).map(keyOf), `step ${step}`).toContain(keyOf(action));
-          }
-          expectValid(s, `after step ${step}: ${keyOf(action)}`);
-        },
-      });
-      expect(state.phase).toBe('over');
-      expect(state.winner).not.toBeNull();
-    }, 60_000);
-});
 
 describe('tactics, gambits and expansion', () => {
   TACTICS.forEach((tactic, i) =>
