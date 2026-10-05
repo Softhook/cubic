@@ -789,6 +789,10 @@ input { font: inherit; }
   box-shadow: 0 30px 80px rgba(0,0,0,.45);
 }
 .lobby-card h2 { margin: 0 0 14px; font-family: var(--display); font-size: 16px; letter-spacing: .1em; text-transform: uppercase; }
+.saved-game { margin-bottom: 16px; border-color: var(--accent); }
+.saved-game-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.saved-game-players { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
+.saved-game-player { display: inline-flex; align-items: center; gap: 6px; }
 .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
 .mode {
   display: flex; flex-direction: column; gap: 4px; text-align: left;

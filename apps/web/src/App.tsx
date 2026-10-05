@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createGame, rulesOf, type GameState } from '@quantum/engine';
 import { useGame } from './game/useGame';
+import { clearSavedGame, loadSavedGame } from './game/savedGame';
 import { useController } from './game/controller';
 import { Board } from './components/Board';
 import { Market } from './components/Market';
@@ -17,16 +18,26 @@ import { setSoundEnabled, soundEnabled } from './sound';
 
 export function App() {
   const [game, setGame] = useState<GameState | null>(null);
+  const [saved, setSaved] = useState(loadSavedGame);
   const [rules, setRules] = useState(false);
 
   const start = (r: LobbyResult) => setGame(createGame({ players: r.players, mapId: r.mapId, mode: r.mode }));
+  const quit = () => {
+    clearSavedGame();
+    setSaved(null);
+    setGame(null);
+  };
+  const discard = () => {
+    clearSavedGame();
+    setSaved(null);
+  };
 
   return (
     <>
       {game ? (
-        <Game key={game.seed} initial={game} onQuit={() => setGame(null)} onRules={() => setRules(true)} />
+        <Game key={game.seed} initial={game} onQuit={quit} onRules={() => setRules(true)} />
       ) : (
-        <Lobby onStart={start} onRules={() => setRules(true)} />
+        <Lobby onStart={start} onRules={() => setRules(true)} saved={saved} onResume={() => setGame(saved)} onDiscard={discard} />
       )}
       {rules && <Rules onClose={() => setRules(false)} />}
     </>

@@ -104,8 +104,12 @@ describe('card edge cases', () => {
     expect(s.players[me].ambitionTokens).toBe(0);
   });
 
-  it('5-player games are refused until the 5-player maps are transcribed', () => {
-    expect(() => createGame({ players: players(5), seed: 1 })).toThrow(/2–4 players/);
+  it('5 players play the Community Edition 5-player maps; other rules and 6 players are refused', () => {
+    const s = createGame({ players: players(5), seed: 1 });
+    expect(s.players).toHaveLength(5);
+    expect(s.board.mapName).toBeTruthy();
+    expect(() => createGame({ players: players(5), seed: 1, mode: 'basic' })).toThrow(/isn't played with/);
+    expect(() => createGame({ players: players(6), seed: 1 })).toThrow(/2–5 players/);
   });
 });
 

@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
-import { defaultMap, MAPS, MODES, playerCounts, RULESETS, type GameMode, type MapDef, type PlayerConfig } from '@quantum/engine';
+import { defaultMap, MAPS, MODES, playerCounts, rulesOf, RULESETS, type GameMode, type GameState, type MapDef, type PlayerConfig } from '@quantum/engine';
 import { Die3D } from './Die3D';
 
 export const PLAYER_COLORS = ['#4cc9f0', '#f72585', '#ffb703', '#80ed99', '#b388ff'];
@@ -71,7 +71,55 @@ function MiniMap({ map }: { map: MapDef }) {
   );
 }
 
-export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void; onRules: () => void }) {
+/** The unfinished game from a previous visit, offered for resuming. */
+function SavedGame({ game, onResume, onDiscard }: { game: GameState; onResume: () => void; onDiscard: () => void }) {
+  return (
+    <div className="lobby-card saved-game">
+      <h2>Game in progress</h2>
+      <div className="saved-game-info">
+        <span className={`mode-badge mode-${game.mode}`}>{rulesOf(game).name}</span>
+        <strong>{game.board.mapName}</strong>
+        <span className="muted">{game.phase === 'setup' ? 'Setting up' : `Turn ${game.turn.number}`}</span>
+      </div>
+      <div className="saved-game-players">
+        {game.players.map((p, i) => (
+          <span key={i} className="saved-game-player" style={{ '--pc': p.color } as CSSProperties}>
+            <span className="player-swatch" />
+            {p.name}
+            {p.ai && <span className="muted"> · AI</span>}
+          </span>
+        ))}
+      </div>
+      <div className="modal-actions">
+        <button
+          className="btn"
+          onClick={() => {
+            if (confirm('Discard the game in progress?')) onDiscard();
+          }}
+        >
+          Discard
+        </button>
+        <button className="btn btn-primary btn-lg" onClick={onResume}>
+          Resume
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function Lobby({
+  onStart,
+  onRules,
+  saved,
+  onResume,
+  onDiscard,
+}: {
+  onStart: (r: LobbyResult) => void;
+  onRules: () => void;
+  saved: GameState | null;
+  onResume: () => void;
+  onDiscard: () => void;
+}) {
   const [wanted, setCount] = useState(2);
   const [mode, setMode] = useState<GameMode>(storedMode);
   // 5 players only has Community Edition maps; other rules fall back to their largest count.
@@ -108,6 +156,8 @@ export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void;
         <h1>Cubic</h1>
         <p className="tagline">Every die is a starship. Low numbers hit hard, high numbers fly fast. Place all your cubes to conquer the sector.</p>
       </div>
+
+      {saved && <SavedGame game={saved} onResume={onResume} onDiscard={onDiscard} />}
 
       <div className="lobby-card">
         <h2>New game</h2>
@@ -225,13 +275,14 @@ export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void;
           <button className="btn" onClick={onRules}>How to play</button>
           <button
             className="btn btn-primary btn-lg"
-            onClick={() =>
+            onClick={() => {
+              if (saved && !confirm('Starting a new game discards the game in progress. Continue?')) return;
               onStart({
                 players: seats.slice(0, count).map((s, i) => ({ ...s, name: s.name.trim() || `Player ${i + 1}` })),
                 mapId: map.id,
                 mode,
-              })
-            }
+              });
+            }}
           >
             Launch fleet
           </button>

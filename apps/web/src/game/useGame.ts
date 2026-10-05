@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { actor, apply, checkInvariants, isUndoable, RuleError, type Action, type GameState } from '@quantum/engine';
 import { sfx } from '../sound';
 import { useToasts } from './toasts';
+import { saveGame } from './savedGame';
 import { useAiDriver } from './useAiDriver';
 import { useShortcut } from './useShortcut';
 
@@ -80,6 +81,9 @@ export function useGame(initial: GameState) {
 
   useUndoShortcut(undo);
   useAiDriver(game, dispatch);
+
+  // Keep the unfinished game in the browser so a revisit can resume it.
+  useEffect(() => saveGame(game), [game]);
 
   // Dev-only hook for browser tests: window.__quantum.{state(), load(s), dispatch(a)}.
   useEffect(() => {
