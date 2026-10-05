@@ -11,7 +11,7 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   const picking = legal.can('takeCard');
   const m = game.market;
   const canTake = (deck: DeckKind | 'expansion', index: number) => legal.can('takeCard', (a) => a.deck === deck && a.index === index);
-  const canStore = (deck: DeckKind | 'expansion', index: number) => legal.can('takeCard', (a) => a.deck === deck && a.index === index && a.store);
+  const canStore = (deck: DeckKind | 'expansion', index: number) => legal.can('takeCard', (a) => a.deck === deck && a.index === index && !!a.store);
   const canExpand = canTake('expansion', 0);
   const cardRules = rulesOf(game).cards!;
   const peek = cardRules.peek;
