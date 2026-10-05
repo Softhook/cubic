@@ -70,10 +70,10 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
       subtitle={`Do you want to play ${card(patientChoice.id).name} immediately, or store it to play at the end of a turn?`}
       onClose={() => setPatientChoice(null)}
     >
-      <div className="card-choice wrap" style={{ justifyContent: 'center', marginBottom: '16px' }}>
+      <div className="card-choice">
         <CardView id={patientChoice.id} size="md" />
       </div>
-      <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+      <div className="modal-actions">
         <button
           type="button"
           className="btn"

@@ -42,7 +42,7 @@ export function CardViewer({ title, subtitle, cards, single, onClose, action }: 
           <CardArt key={id} id={id} size={single ? 'lg' : 'md'} badge={counts.get(id)! > 1 ? `×${counts.get(id)}` : undefined} />
         ))}
       </div>
-      {action && <div className="card-viewer-action" style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>{action}</div>}
+      {action && <div className="modal-actions card-viewer-action">{action}</div>}
     </Dialog>
   );
 }

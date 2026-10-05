@@ -6,7 +6,7 @@
  * its entry in TACTIC_EFFECTS. Skills are listed in SKILL_EFFECTS (effects.ts).
  */
 import { same } from './board';
-import { destroyedEnemyShip, destroyShip, fail, gainDominance, headOf, log, name, rollShip, shipName, type Handlers, type PendingOf } from './core';
+import { destroyedEnemyShip, destroyShip, fail, gainDominance, headOf, log, name, requireActionPhase, rollShip, shipName, type Handlers, type PendingOf } from './core';
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
 import { die, reserve, shipsOnBoard } from './lookups';
@@ -124,12 +124,25 @@ function gainCard(s: GameState, p: PlayerId, id: string) {
     log(s, `${pl.name} takes the ${def.name} ${rulesOf(s).cards?.terms.skill ?? 'skill'}.`, p, 'cardTaken');
     if (pl.skills.length > skillLimit(s, p)) s.pending.unshift({ kind: 'discardSkill', player: p, reason: 'limit' });
   } else {
-    log(s, `${pl.name} plays ${def.name}.`, p, 'cardPlayed');
-    s.market.tacticDiscard.push(id);
-    const effect = TACTIC_EFFECTS[effectOf(id) as TacticEffect] as TacticEffectFn | undefined;
-    if (!effect) throw new Error(`Unhandled tactic ${id}`);
-    effect(s, p);
+    playTactic(s, p, id, `${pl.name} plays ${def.name}.`);
   }
+}
+
+/** A Tactic is discarded and its effect resolves. */
+function playTactic(s: GameState, p: PlayerId, id: string, message: string) {
+  log(s, message, p, 'cardPlayed');
+  s.market.tacticDiscard.push(id);
+  const effect = TACTIC_EFFECTS[effectOf(id) as TacticEffect] as TacticEffectFn | undefined;
+  if (!effect) throw new Error(`Unhandled tactic ${id}`);
+  effect(s, p);
+}
+
+/** Gains a card just taken, or with Patient stores the Tactic instead of playing it. */
+function takeOrStore(s: GameState, p: PlayerId, id: string, store: boolean | undefined) {
+  if (!store) return gainCard(s, p, id);
+  const pl = s.players[p];
+  (pl.storedTactics ??= []).push(id);
+  log(s, `${pl.name} stores ${card(id).name} (Patient).`, p, 'cardTaken');
 }
 
 /** Moves a player's remaining picks to the Momentum turn's card phase. */
@@ -163,6 +176,7 @@ export const cardHandlers = {
       log(s, `${name(s, p)} expands their fleet.`, p, 'expansion');
       return;
     }
+    if (a.store && (a.deck !== 'tactic' || !hasSkill(s, p, 'patient'))) fail('Only a Tactic can be stored, with Patient');
     const deck = a.deck === 'skill' ? s.market.skillDeck : s.market.tacticDeck;
     const row = a.deck === 'skill' ? s.market.skillRow : s.market.tacticRow;
     if (row[a.index] !== undefined && !canTakeCard(s, p, row[a.index])) fail('Your reserve is empty');
@@ -172,14 +186,7 @@ export const cardHandlers = {
       return;
     }
     consumeCardPick(s);
-    if (a.deck === 'tactic' && a.store && hasSkill(s, p, 'patient')) {
-      const taken = takeFromRow(s, 'tactic', a.index);
-      const pl = s.players[p];
-      (pl.storedTactics ??= []).push(taken);
-      log(s, `${pl.name} stores ${card(taken).name} (Patient).`, p, 'cardTaken');
-      return;
-    }
-    gainCard(s, p, takeFromRow(s, a.deck, a.index));
+    takeOrStore(s, p, takeFromRow(s, a.deck, a.index), a.store);
   },
   peekChoice(s, a) {
     const head = headOf(s, 'peek', 'Not peeking');
@@ -188,13 +195,7 @@ export const cardHandlers = {
     const id = a.takeTop
       ? (head.deck === 'skill' ? s.market.skillDeck : s.market.tacticDeck).shift()!
       : takeFromRow(s, head.deck, 2);
-    if (head.deck === 'tactic' && head.store && hasSkill(s, head.player, 'patient')) {
-      const pl = s.players[head.player];
-      (pl.storedTactics ??= []).push(id);
-      log(s, `${pl.name} stores ${card(id).name} (Patient).`, head.player, 'cardTaken');
-      return;
-    }
-    gainCard(s, head.player, id);
+    takeOrStore(s, head.player, id, head.store);
   },
   /** Profiteering: a pick earned by a Conquer action (not by Infamy; OPEN-QUESTIONS #64) becomes 1 missile. */
   profiteer(s) {
@@ -314,20 +315,17 @@ export const cardHandlers = {
     headOf(s, 'unveil', 'Not unveiling');
     s.pending.shift();
   },
+  /** Patient: ends the action phase by playing one stored Tactic; unused actions are forfeited (OPEN-QUESTIONS #37). */
   playStoredTactic(s, a) {
-    const p = s.turn.player;
+    const t = requireActionPhase(s, true);
+    const p = t.player;
     if (!canPlayStoredTactic(s, p)) fail('Cannot play a stored tactic right now');
     const pl = s.players[p];
     const idx = pl.storedTactics?.indexOf(a.card) ?? -1;
     if (idx === -1) fail('Card not in stored tactics');
     pl.storedTactics!.splice(idx, 1);
-    s.turn.storedTacticPlayed = true;
-    s.turn.actionsLeft = 0;
-    s.market.tacticDiscard.push(a.card);
-    const def = card(a.card);
-    log(s, `${pl.name} plays stored tactic ${def.name}.`, p, 'cardPlayed');
-    const effect = TACTIC_EFFECTS[effectOf(a.card) as TacticEffect];
-    if (!effect) throw new Error(`Unhandled tactic ${a.card}`);
-    effect(s, p);
+    t.storedTacticPlayed = true;
+    t.actionsLeft = 0;
+    playTactic(s, p, a.card, `${pl.name} plays stored tactic ${card(a.card).name}.`);
   },
 } satisfies Partial<Handlers>;

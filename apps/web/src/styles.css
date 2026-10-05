@@ -747,6 +747,7 @@ input { font: inherit; }
 .gameover small { color: var(--pc); text-transform: uppercase; letter-spacing: .3em; font-weight: 700; font-size: 12px; }
 .gameover h2 { font-size: 26px; margin-top: 8px; }
 .gameover .modal-actions { justify-content: center; }
+.card-viewer-action { justify-content: center; }
 .gameover-burst { position: absolute; inset: -40%; background: conic-gradient(from 0deg, transparent, color-mix(in srgb, var(--pc) 25%, transparent), transparent 30%); animation: spin 8s linear infinite; pointer-events: none; }
 .gameover > *:not(.gameover-burst) { position: relative; }
 

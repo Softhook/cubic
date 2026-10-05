@@ -1,5 +1,6 @@
 import { actor, apply, legalActions, type Action, type GameState, type PlayerId } from '@quantum/engine';
 import { outcomes } from './chance';
+import { candidates } from './patient';
 import { evaluate } from './evaluate';
 
 /**
@@ -56,16 +57,16 @@ export class Search {
   choose(state: GameState): Action | null {
     const head = state.pending[0];
     if (head?.kind === 'combat') return { type: 'resolveCombat' };
-    const candidates = legalActions(state, { includeCarry: this.params.carry });
-    if (candidates.length <= 1) return candidates[0] ?? null;
+    const options = candidates(state, { includeCarry: this.params.carry });
+    if (options.length <= 1) return options[0] ?? null;
 
     const root = hideUnknowns(state, this.random);
     const depth = this.params.depth;
-    const scored = candidates
+    const scored = options
       .map((a) => ({ a, line: a.type === 'endTurn' ? this.standPat(root) : this.action(root, a, 0) }))
       .filter((x) => x.line.value > -Infinity)
       .sort((x, y) => y.line.value - x.line.value);
-    if (!scored.length) return candidates[0];
+    if (!scored.length) return options[0];
 
     // Deepen the most promising candidates. Ending the turn needs no deepening.
     if (depth > 1) {
@@ -148,7 +149,7 @@ export class Search {
 
     let best = this.standPat(s);
     if (depth > 0 && !this.exhausted()) {
-      const scored = legalActions(s, { includeCarry: this.params.carry })
+      const scored = candidates(s, { includeCarry: this.params.carry })
         .filter((a) => a.type !== 'endTurn')
         .map((a) => ({ a, line: this.action(s, a, 0) }))
         .filter((x) => x.line.value > -Infinity)
@@ -267,6 +268,9 @@ function signature(s: GameState): string {
     t.conquests,
     t.freeMovesUsed,
     t.attacked,
+    t.conquered,
+    t.curiousUsed,
+    t.storedTacticPlayed,
     t.destroyedBy,
     t.scrappy,
     s.players.map((p) => [
@@ -277,6 +281,7 @@ function signature(s: GameState): string {
       p.skills.map((k) => (k.active ? k.id : `-${k.id}`)),
       p.ambitionTokens,
       p.planAhead,
+      p.storedTactics,
     ]),
     s.board.planets.map((p) => p.cubes),
     s.gates,

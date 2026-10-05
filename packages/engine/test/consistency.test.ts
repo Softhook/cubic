@@ -32,6 +32,7 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
     { type: 'tyrannical' },
   ];
   for (const p of s.board.planets) out.push({ type: 'conquer', planet: p.id });
+  for (const card of s.players[me].storedTactics ?? []) out.push({ type: 'playStoredTactic', card });
   for (const d of mine) {
     out.push(
       { type: 'reconfigure', die: d.id },

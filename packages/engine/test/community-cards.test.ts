@@ -136,16 +136,39 @@ describe('Prideful', () => {
     expect(s.players[foe].skills.some((sk) => sk.id === 'prideful')).toBe(false);
   });
 
-  it('does not repeatedly trigger start-of-turn infamy when player has nowhere to place a cube', () => {
-    let s = communityGame({ me: ['prideful'] });
+  it('triggers Infamy when a Prideful taken from the market takes effect at the end of the turn', () => {
+    let s = communityGame();
+    const me = s.turn.player;
+    s.players[me].dominance = 5;
+    s.market.skillRow[0] = 'prideful';
+    s.pending = [{ kind: 'takeCard', player: me, count: 1 }];
+    s = apply(s, { type: 'takeCard', deck: 'skill', index: 0 });
+    // Not in effect yet while the turn lasts.
+    expect(s.pending.some((p) => p.kind === 'infamy')).toBe(false);
+
+    s = apply(s, { type: 'endTurn' });
+    expect(s.turn.player).toBe(1 - me);
+    expect(s.pending[0]).toMatchObject({ kind: 'infamy', player: me });
+  });
+
+  it('triggers Infamy when a Prideful disabled by Ruthless comes back', () => {
+    let s = communityGame();
     const me = s.turn.player;
     const foe = 1 - me;
-    s.players[me].dominance = 4;
-    // Fill all planet slots so infamyTargets is empty
-    for (const pl of s.board.planets) {
-      pl.cubes = Array(pl.capacity).fill(foe);
-    }
-    // End turn -> foe's turn -> end turn -> back to me's turn
+    s.players[foe].skills = [{ id: 'prideful', active: false, disabledUntil: me }];
+    s.players[foe].dominance = 4;
+    s = apply(s, { type: 'endTurn' });
+    expect(s.pending.some((p) => p.kind === 'infamy')).toBe(false);
+    s = apply(s, { type: 'endTurn' });
+    expect(s.turn.player).toBe(me);
+    expect(s.pending[0]).toMatchObject({ kind: 'infamy', player: foe });
+  });
+
+  it('does not trigger Infamy at the start of a turn without a lowered threshold', () => {
+    let s = communityGame();
+    const me = s.turn.player;
+    // Dominance 6 kept from an Infamy that had nowhere to go: no new Infamy until Dominance rises.
+    s.players[me].dominance = 6;
     s = apply(s, { type: 'endTurn' });
     s = apply(s, { type: 'endTurn' });
     expect(s.turn.player).toBe(me);
@@ -300,6 +323,24 @@ describe('Patient edge cases', () => {
     s = apply(s, { type: 'peekChoice', takeTop: true });
     // It should be stored, not played!
     expect(s.players[me].storedTactics).toContain('warp-gate');
+  });
+
+  it('refuses to store a card without Patient, or a Skill', () => {
+    let s = communityGame({ me: ['patient'] });
+    const me = s.turn.player;
+    s.pending = [{ kind: 'takeCard', player: me, count: 1 }];
+    expect(() => apply(s, { type: 'takeCard', deck: 'skill', index: 0, store: true })).toThrow('Only a Tactic can be stored');
+    s.players[me].skills = [];
+    expect(() => apply(s, { type: 'takeCard', deck: 'tactic', index: 0, store: true })).toThrow('Only a Tactic can be stored');
+  });
+
+  it('refuses to play a stored tactic while a decision is open', () => {
+    let s = communityGame({ me: ['patient'] });
+    const me = s.turn.player;
+    s.players[me].storedTactics = ['sabotage'];
+    s = apply(s, { type: 'attack', die: `p${me}d0`, target: `p${1 - me}d0` });
+    expect(s.pending[0].kind).toBe('combat');
+    expect(() => apply(s, { type: 'playStoredTactic', card: 'sabotage' })).toThrow('Resolve the current decision first');
   });
 
   it('discards stored tactics to the market discard pile if Patient is discarded', () => {

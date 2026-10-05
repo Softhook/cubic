@@ -322,13 +322,13 @@ Full data (with categories, CE status and design notes) lives in
 | Pioneering | Conquer with research | You may use your Research number in place of one of your ship numbers when Conquering. |
 | Plundering | Destruction is research | The first time you destroy an enemy ship each turn, gain 3 Research. |
 | Precocious | Accelerated breakthrough | Your Research resets at 4, 5, or 6. |
-| Prideful | Accelerated domination | Your Dominance resets at 4, 5, or 6. When a player destroys one of your ships, they may take this card from you. Engine: stolen card is active immediately; if exceeding skill limit, taker discards down at once but may not discard Prideful ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #32). |
+| Prideful | Accelerated domination | Your Dominance resets at 4, 5, or 6. When a player destroys one of your ships, they may take this card from you. Engine: stolen card is active immediately; if exceeding skill limit, taker discards down at once but may not discard Prideful. Infamy is checked whenever Prideful takes effect ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #32). |
 | Profiteering | Missiles from conquering | When you take a card for Conquering, you may instead gain 1 Missile. Engine: Conquer-action picks only, not Infamy ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #64). |
 | Rational | Fixed combat | Your Combat rolls are 3. |
 | Ravenous | Dominance amplification | The first time you destroy an enemy ship each turn, gain 1 additional Dominance. |
 | Resourceful | Sacrifice for action | Once per turn, you may destroy one of your ships and gain 1 Action. |
 | Righteous | Irreducible dominance | You cannot lose Dominance. You cannot gain Research. |
-| Ruthless | Weaken your enemies | The first time you destroy an enemy ship each turn, you may disable one of the enemy's Skills until the start of your next turn. |
+| Ruthless | Weaken your enemies | The first time you destroy an enemy ship each turn, you may disable one of the enemy's Skills until the start of your next turn. Engine: a Momentum turn does not end it ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #66). |
 | Steadfast | Move more than once | Your ships can move or move/attack more than once per turn (each move counts as an action). |
 | Stealthy | Isolated deployment | You may deploy to any space that is not adjacent to a ship. |
 | Strategic | Combat support bonus | During combat, if your ship is adjacent to one or more friendly ships, −2 to your Combat roll. |

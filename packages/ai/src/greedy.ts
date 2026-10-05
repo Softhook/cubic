@@ -18,6 +18,7 @@ import {
   type GameState,
   type PlayerId,
 } from '@quantum/engine';
+import { candidates, storedTactics } from './patient';
 
 /**
  * Level 1 (Cadet): greedy one-ply search. Every legal action is simulated (dice outcomes are
@@ -53,10 +54,10 @@ export function chooseAction(state: GameState, opts: GreedyOptions = {}): Action
   const me = actor(state);
   const head = state.pending[0];
   if (head?.kind === 'combat') return { type: 'resolveCombat' };
-  const candidates = legalActions(state);
-  if (!candidates.length) return null;
-  if (candidates.length === 1) return candidates[0];
-  return best(state, me, candidates, opts);
+  const options = candidates(state);
+  if (!options.length) return null;
+  if (options.length === 1) return options[0];
+  return best(state, me, options, opts);
 }
 
 /**
@@ -122,6 +123,8 @@ function tieBreak(a: Action): number {
   // Free abilities must actually improve the position, not just shuffle ships around.
   if (a.type === 'swap' || a.type === 'change' || a.type === 'flexible' || a.type === 'freeReconfigure') return -2;
   if (a.type === 'advance' && a.move) return 0.2;
+  if (a.type === 'ruthless' && a.skill) return 0.5;
+  if (a.type === 'prideful' && a.take) return 0.5;
   return 0;
 }
 
@@ -169,6 +172,12 @@ function quickPolicy(s: GameState, me: PlayerId): Action | null {
   if (head.kind === 'placeExpansion') {
     return options.find((a) => a.type === 'placeExpansion' && a.to) ?? options[0] ?? null;
   }
+  if (head.kind === 'ruthless') {
+    return options.find((a) => a.type === 'ruthless' && a.skill) ?? options[0] ?? null;
+  }
+  if (head.kind === 'prideful') {
+    return options.find((a) => a.type === 'prideful' && a.take) ?? options[0] ?? null;
+  }
   return options[0] ?? null;
 }
 
@@ -176,6 +185,8 @@ function quickPolicy(s: GameState, me: PlayerId): Action | null {
 // Evaluation
 
 const SKILL_VALUE = 60;
+/** A Tactic stored with Patient: worth keeping when playing it now would gain less. */
+const STORED_TACTIC_VALUE = 30;
 
 export function score(s: GameState, me: PlayerId): number {
   if (s.phase === 'over') return s.winner === me ? 1e6 : -1e6;
@@ -191,7 +202,8 @@ function playerValue(s: GameState, p: PlayerId, detailed: boolean): number {
   v += pl.dominance * pl.dominance * 6;
   v += pl.research * 14;
   v += pl.missiles * 25;
-  v += Math.min(pl.skills.length, 5) * SKILL_VALUE;
+  v += Math.min(pl.skills.filter((sk) => sk.active).length, 5) * SKILL_VALUE;
+  v += storedTactics(s, p) * STORED_TACTIC_VALUE;
   for (const d of s.dice) {
     if (d.owner !== p) continue;
     if (d.loc.zone === 'board') v += 40;

@@ -2,7 +2,7 @@ todo
 
 make another ai level
 
-self play make sure cards are all used
+- [x] self play make sure cards are all used
 
 make card market for community edition fit
 

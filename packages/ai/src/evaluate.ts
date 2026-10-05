@@ -16,6 +16,7 @@ import {
   type Planet,
   type PlayerId,
 } from '@quantum/engine';
+import { storedTactics } from './patient';
 
 /**
  * Position evaluation for levels 2 and up, in "cube points": one quantum cube is worth CUBE.
@@ -34,6 +35,8 @@ const SHIP_ON_BOARD = 70;
 const SHIP_IN_SCRAPYARD = 30;
 const MISSILE = 40;
 const SKILL = 110;
+/** A Tactic stored with Patient: worth keeping when playing it now would gain less. */
+const STORED_TACTIC = 50;
 /** A card still to be taken at the end of this turn (conquest or research breakthrough). */
 const CARD = 120;
 
@@ -137,6 +140,7 @@ function playerValue(ctx: Ctx, p: PlayerId): number {
     v += (pl.carriedPicks ?? 0) * CARD;
   }
   v += Math.min(pl.skills.length, skillLimit(s, p)) * SKILL;
+  v += storedTactics(s, p) * STORED_TACTIC;
   v += pl.missiles * MISSILE;
   v += shipsOnBoard(s, p).length * SHIP_ON_BOARD;
   v += scrapyard(s, p).length * SHIP_IN_SCRAPYARD;

@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { SHIP_NAMES, card, die, hasSkill, rulesOf, scrapyard, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, card, die, rulesOf, scrapyard, type GameState } from '@quantum/engine';
 import type { Dispatch } from '../game/useGame';
 import { CardView } from './Card';
 import { Die3D } from './Die3D';
@@ -103,7 +103,7 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
     case 'clever': {
       const p = game.players[head.player];
       const d = die(game, head.die);
-      const isCalculating = head.source === 'calculating' || (!head.source && !head.options && hasSkill(game, head.player, 'calculating') && !hasSkill(game, head.player, 'clever'));
+      const isCalculating = head.source === 'calculating';
       const title = isCalculating ? 'Calculating' : 'Clever';
       const subtitle = head.options
         ? `${p.name}, keep this ship’s number or change it by 1.`
@@ -135,9 +135,9 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
       const victim = game.players[head.victim];
       return (
         <Modal title="Prideful" subtitle={`${p.name}, you destroyed ${victim.name}’s ship. You may take Prideful from them.`} pc={p.color}>
-          <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '16px' }}>
-            <button className="btn primary" onClick={() => dispatch({ type: 'prideful', take: true })}>Take Prideful</button>
+          <div className="modal-actions">
             <button className="btn" onClick={() => dispatch({ type: 'prideful', take: false })}>Decline</button>
+            <button className="btn btn-primary" onClick={() => dispatch({ type: 'prideful', take: true })}>Take Prideful</button>
           </div>
         </Modal>
       );
@@ -147,18 +147,13 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
       const victim = game.players[head.victim];
       return (
         <Modal title="Ruthless" subtitle={`${p.name}, you destroyed an enemy ship. Choose one of ${victim.name}’s skills to disable until the start of your next turn.`} pc={p.color}>
-          <div className="skills-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '12px' }}>
-            {victim.skills.filter((s) => s.active).map((s) => {
-              const def = card(s.id);
-              return (
-                <button key={s.id} className="btn primary" onClick={() => dispatch({ type: 'ruthless', skill: s.id })}>
-                  Disable {def.name}
-                </button>
-              );
-            })}
-          </div>
-          <div className="modal-actions" style={{ display: 'flex', justifyContent: 'center', marginTop: '14px' }}>
+          <div className="modal-actions">
             <button className="btn" onClick={() => dispatch({ type: 'ruthless' })}>Skip</button>
+            {victim.skills.filter((s) => s.active).map((s) => (
+              <button key={s.id} className="btn btn-primary" onClick={() => dispatch({ type: 'ruthless', skill: s.id })}>
+                Disable {card(s.id).name}
+              </button>
+            ))}
           </div>
         </Modal>
       );

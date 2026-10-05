@@ -1,5 +1,6 @@
 /** Combat: starting an attack, missiles, resolution, advancing, and Infamy. */
 import {
+  checkInfamy,
   destroyedEnemyShip,
   destroyShip,
   fail,
@@ -15,7 +16,7 @@ import {
 } from './core';
 import { card, effectOf } from './data';
 import { cellOf, die, dieAt } from './lookups';
-import { combatDice, combatOutcome, combatReroll, combatTotal, infamyAt, infamyTargets, skillLimit } from './queries';
+import { combatDice, combatOutcome, combatReroll, combatTotal, infamyTargets, skillLimit } from './queries';
 import { d6 } from './rng';
 import { rulesOf } from './rules';
 import { anySkill, skillRules } from './skillRules';
@@ -155,17 +156,14 @@ export const combatHandlers = {
     const winnerPl = s.players[head.player];
     const idx = victimPl.skills.findIndex((sk) => effectOf(sk.id) === 'prideful');
     if (idx !== -1) {
+      // A stolen Prideful works at once, even if a Ruthless player had disabled it (OPEN-QUESTIONS #32).
       const [stolen] = victimPl.skills.splice(idx, 1);
-      winnerPl.skills.push({ ...stolen, active: true });
+      winnerPl.skills.push({ id: stolen.id, active: true });
       log(s, `${winnerPl.name} takes Prideful from ${victimPl.name}!`, head.player, 'cardTaken');
       if (winnerPl.skills.length > skillLimit(s, head.player)) {
         s.pending.unshift({ kind: 'discardSkill', player: head.player, reason: 'limit', cannotDiscard: 'prideful' });
       }
-      const thresh = infamyAt(s, head.player);
-      if (winnerPl.dominance >= thresh && !s.pending.some((x) => x.kind === 'infamy' && x.player === head.player)) {
-        log(s, `${winnerPl.name} achieves Infamy!`, head.player, 'infamy');
-        s.pending.push({ kind: 'infamy', player: head.player });
-      }
+      checkInfamy(s, head.player);
     }
   },
   ruthless(s, a) {

@@ -1,11 +1,11 @@
 /** Turn structure: start of turn, the end-of-turn card phase, and passing the turn on. */
-import { ACTIONS_PER_TURN, emptyTurn, gainResearch, log, name, type PendingOf } from './core';
+import { ACTIONS_PER_TURN, checkInfamy, emptyTurn, gainResearch, log, name, type PendingOf } from './core';
 import { effectOf } from './data';
 import { cellOf, scrapyard, shipsOnBoard } from './lookups';
-import { breakthroughAt, canProfiteer, canTakeAnyCard, infamyAt, infamyTargets, startSlots } from './queries';
+import { breakthroughAt, canProfiteer, canTakeAnyCard, infamyTargets, startSlots } from './queries';
 import { rulesOf } from './rules';
-import { askBrilliant, skillRules, type TurnBonus } from './skillRules';
-import type { GameState, Pending, PlayerId } from './types';
+import { askBrilliant, ruleOf, skillRules, type TurnBonus } from './skillRules';
+import type { GameState, OwnedSkill, Pending, PlayerId } from './types';
 
 /** The start-of-turn bonuses of the player's skills, added up. */
 function startOfTurnBonus(s: GameState, player: PlayerId): Required<TurnBonus> {
@@ -35,24 +35,9 @@ export function startTurn(s: GameState, player: PlayerId, actions: number, bonus
   s.turn.freeMoves = extra.freeMoves;
   for (const d of s.dice) if (d.owner === player) s.turn.seen[d.id] = [d.value];
 
-  // Re-enable skills disabled by Ruthless until this player's next regular turn.
-  if (!bonus) {
-    for (const o of s.players) {
-      for (const sk of o.skills) {
-        if (sk.disabledUntil === player) {
-          sk.active = true;
-          delete sk.disabledUntil;
-        }
-      }
-    }
-  }
-
-  // If a player starts their turn with Dominance >= Infamy threshold (e.g. from Prideful), trigger Infamy
-  const thresh = infamyAt(s, player);
-  if (pl.dominance >= thresh && infamyTargets(s, player).length > 0 && !s.pending.some((x) => x.kind === 'infamy' && x.player === player)) {
-    log(s, `${pl.name} achieves Infamy!`, player, 'infamy');
-    s.pending.push({ kind: 'infamy', player });
-  }
+  // Skills a Ruthless player disabled come back at the start of that player's next regular turn,
+  // not a Momentum turn, as with Sabotage (OPEN-QUESTIONS #66).
+  if (!bonus) for (const o of s.players) activateSkills(s, o.id, (sk) => sk.disabledUntil === player);
 
   if (extra.research) gainResearch(s, player, extra.research);
   // Void tiles: +1 research per own ship on one.
@@ -112,11 +97,7 @@ function finishTurn(s: GameState) {
   const n = s.players.length;
   const resume = s.turn.resume ?? (p + 1) % n;
   // Skills taken this turn, by anyone (off-turn picks too), work from now on, unless disabled.
-  for (const o of s.players) {
-    for (const sk of o.skills) {
-      if (sk.disabledUntil === undefined) sk.active = true;
-    }
-  }
+  for (const o of s.players) activateSkills(s, o.id, (sk) => sk.disabledUntil === undefined);
   const pl = s.players[p];
   if (pl.planAhead > 0) pl.planAhead--;
   // Momentum turns: the active player's first, then those earned on this turn by other players
@@ -131,6 +112,21 @@ function finishTurn(s: GameState) {
     return;
   }
   startTurn(s, resume, ACTIONS_PER_TURN, false);
+}
+
+/**
+ * Puts the player's inactive skills that pass `which` into effect. A Prideful taking effect can
+ * make the player's Dominance already enough for Infamy (OPEN-QUESTIONS #32).
+ */
+function activateSkills(s: GameState, player: PlayerId, which: (sk: OwnedSkill) => boolean) {
+  let threshold = false;
+  for (const sk of s.players[player].skills) {
+    if (sk.active || !which(sk)) continue;
+    sk.active = true;
+    delete sk.disabledUntil;
+    if (ruleOf(sk.id).infamyAt) threshold = true;
+  }
+  if (threshold) checkInfamy(s, player);
 }
 
 /**

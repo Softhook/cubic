@@ -215,11 +215,18 @@ export function gainResearch(s: GameState, p: PlayerId, n: number) {
 export function gainDominance(s: GameState, p: PlayerId, n: number) {
   const pl = s.players[p];
   pl.dominance = Math.min(6, pl.dominance + n);
-  const thresh = infamyAt(s, p);
-  if (pl.dominance >= thresh && !s.pending.some((x) => x.kind === 'infamy' && x.player === p)) {
-    log(s, `${pl.name} achieves Infamy!`, p, 'infamy');
-    s.pending.push({ kind: 'infamy', player: p });
-  }
+  checkInfamy(s, p);
+}
+
+/**
+ * Infamy: Dominance at the player's threshold (6, or 4 with Prideful) earns an Infamy cube. Checked
+ * when Dominance rises and when Prideful takes effect (OPEN-QUESTIONS #32).
+ */
+export function checkInfamy(s: GameState, p: PlayerId) {
+  const pl = s.players[p];
+  if (pl.dominance < infamyAt(s, p) || s.pending.some((x) => x.kind === 'infamy' && x.player === p)) return;
+  log(s, `${pl.name} achieves Infamy!`, p, 'infamy');
+  s.pending.push({ kind: 'infamy', player: p });
 }
 
 /**
