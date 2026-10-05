@@ -119,5 +119,5 @@ from the layout and fails if they disagree. Official layouts are in
 | [`original-commands.test.ts`](../packages/engine/test/original-commands.test.ts) | Original Command and Gambit cards that hook into existing rules, citing the 2013 FAQ |
 | [`off-turn.test.ts`](../packages/engine/test/off-turn.test.ts) | Cards taken on someone else's turn (skills, Plan Ahead, Momentum); Warp Gate, Change of Heart and Ambitious edge cases; when CE Brilliant asks |
 
-Shared helpers (`quickStart`, `playAiGame`…) are in [`test/helpers.ts`](../packages/engine/test/helpers.ts). `npm run check` typechecks
+Shared helpers (`quickStart`, `aiAction`, `playAiGame`…) are in [`test/helpers.ts`](../packages/engine/test/helpers.ts). `npm run selfplay:cards` (card win, pick and use rates over AI self-play) plays its games through the card audit too, with skills drafted rather than dealt. `npm run check` typechecks
 everything (tests included) and runs the tests.

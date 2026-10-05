@@ -4,8 +4,11 @@ import { actor, tryApply } from './engine';
 import type { PendingOf } from './core';
 import { reserve, scrapyard, shipsOnBoard } from './lookups';
 import {
+  actionsClosed,
+  canCurious,
   canGainResearch,
   canMoveDie,
+  canPlayStoredTactic,
   canReconfigure,
   canScrappy,
   canUseAbility,
@@ -22,13 +25,10 @@ import {
   relocationOptions,
   startSlots,
   tacticalOptions,
-  canCurious,
-  canPlayStoredTactic,
   usedThisTurn,
 } from './queries';
-import { effectOf } from './data';
 import { rulesOf } from './rules';
-import { hasSkill } from './skillRules';
+import { anySkill, hasSkill } from './skillRules';
 import type { Action, GameState, Pending } from './types';
 
 /**
@@ -71,7 +71,7 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
   takeCard: (s, head) => {
     const m = s.market;
     const out: Action[] = [];
-    const patient = hasSkill(s, head.player, 'patient');
+    const patient = anySkill(s, head.player, (r) => r.storeTactics);
     m.skillRow.forEach((_, index) => out.push({ type: 'takeCard', deck: 'skill', index }));
     m.tacticRow.forEach((_, index) => {
       out.push({ type: 'takeCard', deck: 'tactic', index });
@@ -87,7 +87,7 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
   ],
   discardSkill: (s, head) =>
     s.players[head.player].skills
-      .filter((sk) => !head.cannotDiscard || effectOf(sk.id) !== head.cannotDiscard)
+      .filter((sk) => sk.id !== head.cannotDiscard)
       .map((sk) => ({ type: 'discardSkill', skill: sk.id })),
   placeExpansion: (s, head) => [
     { type: 'placeExpansion', to: null },
@@ -134,8 +134,7 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
     for (const c of pl.storedTactics ?? []) out.push({ type: 'playStoredTactic', card: c });
   }
 
-  // Once the CE Curious action or a stored Tactic has been taken, no further actions are allowed this turn.
-  if (t.curiousUsed || t.storedTacticPlayed) return out;
+  if (actionsClosed(t)) return out;
 
   const actions = t.actionsLeft;
   const curious = actions === 0 && canCurious(s, me);

@@ -15,6 +15,13 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   const canTake = (deck: DeckKind | 'expansion', index: number) =>
     canPatientStore(deck, index) || legal.can('takeCard', (a) => a.deck === deck && a.index === index);
   const canStore = (deck: DeckKind | 'expansion', index: number) => legal.can('takeCard', (a) => a.deck === deck && a.index === index && !!a.store);
+  /** Takes the card (Patient: stores it, or asks whether to), or else shows it. */
+  const clickCard = (deck: DeckKind, index: number, id: string) => {
+    if (canPatientStore(deck, index)) dispatch({ type: 'patientTactic', index });
+    else if (canStore(deck, index)) setPatientChoice({ id, index });
+    else if (canTake(deck, index)) dispatch({ type: 'takeCard', deck, index });
+    else setViewingCard(id);
+  };
   const canExpand = canTake('expansion', 0);
   const cardRules = rulesOf(game).cards!;
   const peek = cardRules.peek;
@@ -42,15 +49,7 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
           size="sm"
           className={`market-card ${canTake(deck, index) ? 'takeable' : ''}`}
           badge={peek && index === cards.length - 1 && cards.length === 3 && decks[deck].cards.length > 0 ? 'Peek' : undefined}
-          onClick={
-            canPatientStore(deck, index)
-              ? () => dispatch({ type: 'patientTactic', index })
-              : canTake(deck, index)
-              ? canStore(deck, index)
-                ? () => setPatientChoice({ id, index })
-                : () => dispatch({ type: 'takeCard', deck, index })
-              : () => setViewingCard(id)
-          }
+          onClick={() => clickCard(deck, index, id)}
         />
       ))}
     </div>

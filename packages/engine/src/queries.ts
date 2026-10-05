@@ -14,8 +14,8 @@ import {
 import { card, effectOf } from './data';
 import { cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
 import { rulesOf } from './rules';
-import { activeSkills, anySkill, hasSkill, ruleOf, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
-import type { Cell, CombatPending, CombatRole, Die, GameState, OncePerTurn, Planet, PlayerId } from './types';
+import { activeSkills, anySkill, ruleOf, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
+import type { Cell, CombatPending, CombatRole, Die, GameState, OncePerTurn, Planet, PlayerId, TurnState } from './types';
 
 export type { CombatPart } from './skillRules';
 
@@ -63,11 +63,19 @@ export function infamyAt(state: GameState, player: PlayerId): number {
   return Math.min(6, ...skillRules(state, player).map((r) => r.infamyAt ?? 6));
 }
 
+/**
+ * Whether no more actions may be taken this turn, only ending it (or playing a stored Tactic): after
+ * the CE Curious extra action or a stored Tactic (Patient).
+ */
+export function actionsClosed(t: TurnState): boolean {
+  return !!(t.curiousUsed || t.storedTacticPlayed);
+}
+
 /** CE Curious: whether the player may take an additional Move or Research action. */
 export function canCurious(state: GameState, player: PlayerId): boolean {
   const t = state.turn;
   return (
-    hasSkill(state, player, 'curious') &&
+    anySkill(state, player, (r) => r.peacefulExtraAction) &&
     player === t.player &&
     t.phase === 'actions' &&
     !t.attacked &&
@@ -81,7 +89,7 @@ export function canPlayStoredTactic(state: GameState, player: PlayerId): boolean
   const t = state.turn;
   const pl = state.players[player];
   return (
-    hasSkill(state, player, 'patient') &&
+    anySkill(state, player, (r) => r.storeTactics) &&
     player === t.player &&
     t.phase === 'actions' &&
     !t.storedTacticPlayed &&

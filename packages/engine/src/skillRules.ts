@@ -74,12 +74,14 @@ export interface SkillRule {
   chooseShipNumbers?: boolean;
   /** When a ship is placed in your scrapyard, choose its number instead (Calculating). */
   chooseScrapyardNumber?: boolean;
-  /** CE Curious: extra Move or Research action if neither Attack nor Conquer occurred. */
-  curiousPeacefulAction?: boolean;
-  /** Patient: store Tactics when taken, and play one at the end of each turn. */
+  /** One more Move or Research once the actions are spent, on a turn without Attack or Conquer. */
+  peacefulExtraAction?: boolean;
+  /** Tactics may be stored when taken and one played at the end of the turn; taking the card stores one. */
   storeTactics?: boolean;
-  /** Ruthless: disable an enemy's skill on the first destroy each turn. */
+  /** On the first destroy of a turn, one of the victim's active skills is disabled. */
   disableSkillOnDestroy?: boolean;
+  /** Whoever destroys a ship of the holder may take this card, even while it is not in effect. */
+  stolenOnDestroy?: boolean;
   /** After reconfiguring, the player may raise or lower the ship's number by 1. */
   adjustReconfigure?: boolean;
   /** Normal moves may pass through enemy ships; those spaces cost no movement. */
@@ -190,9 +192,9 @@ export const SKILL_RULES: Record<SkillEffect, SkillRule> = {
   cunning: { abilityTwice: true },
   tactical: { activated: 'tactical' },
   calculating: { chooseScrapyardNumber: true },
-  curious: { curiousPeacefulAction: true },
+  curious: { peacefulExtraAction: true },
   patient: { storeTactics: true },
-  prideful: { infamyAt: 4 },
+  prideful: { infamyAt: 4, stolenOnDestroy: true },
   ruthless: { disableSkillOnDestroy: true },
   // original command cards
   arrogant: {
@@ -253,6 +255,11 @@ export function ruleOf(skillId: string): SkillRule {
 export function anySkill(state: GameState, player: PlayerId, test: (r: SkillRule) => unknown): boolean {
   // Called on hot paths (every roll, attack and combat total): no list is built.
   return state.players[player].skills.some((s) => s.active && test(ruleOf(s.id)));
+}
+
+/** The index in the player's skills of a card someone who destroys their ship may take (Prideful), active or not. */
+export function stealableSkill(state: GameState, player: PlayerId): number {
+  return state.players[player].skills.findIndex((s) => ruleOf(s.id).stolenOnDestroy);
 }
 
 /** True when the player owns an active skill with this effect (e.g. Cerebral has the 'composed' effect). */

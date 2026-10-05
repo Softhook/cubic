@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react';
-import { SHIP_NAMES, canPlayStoredTactic, card, reserve, rulesOf, scrapyard, type Die, type GameState, type PlayerState } from '@quantum/engine';
+import { SHIP_NAMES, card, reserve, rulesOf, scrapyard, type Die, type GameState, type PlayerState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
 import { CategoryIcon, categoryStyle } from './Card';
@@ -116,7 +116,7 @@ function PlayerCard({
           })}
           {p.storedTactics?.map((tId, i) => {
             const def = card(tId);
-            const canPlay = canPlayStoredTactic(game, p.id);
+            const canPlay = ctl.legal.can('playStoredTactic', (a) => a.card === tId);
             return (
               <button
                 type="button"
@@ -145,7 +145,7 @@ function PlayerCard({
           single
           onClose={() => setViewing(null)}
           action={
-            p.storedTactics?.includes(viewing) && canPlayStoredTactic(game, p.id) ? (
+            ctl.legal.can('playStoredTactic', (a) => a.card === viewing) ? (
               <button
                 type="button"
                 className="btn btn-primary"

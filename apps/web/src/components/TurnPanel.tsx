@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { canCurious, canPlayStoredTactic, SHIP_NAMES, card, die, rulesOf, skillCard, type GameState, type SkillEffect } from '@quantum/engine';
+import { canCurious, SHIP_NAMES, card, die, rulesOf, skillCard, type GameState, type SkillEffect } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { hintFor } from '../game/hints';
 import type { Dispatch } from '../game/useGame';
@@ -31,7 +31,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
             {t.freeDeploys > 0 && <em title="Free deploy (Industrious)">+1 deploy</em>}
             {t.freeMoves > 0 && <em title="Free move (Curious) — only if you don't attack this turn; attacking afterwards costs an action for it">+1 move</em>}
             {canAct && t.actionsLeft === 0 && canCurious(game, t.player) && <em title="Curious: peaceful Move or Research available">+1 curious</em>}
-            {canAct && canPlayStoredTactic(game, t.player) && <em title="Patient: you may play a stored tactic from your player card">+stored tactic</em>}
+            {legal.can('playStoredTactic') && <em title="Patient: you may play a stored tactic from your player card">+stored tactic</em>}
           </div>
         )}
       </div>
@@ -77,7 +77,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
             Undo
           </button>
           <button
-            className={`btn btn-primary ${canAct && t.actionsLeft === 0 && !canCurious(game, t.player) && !canPlayStoredTactic(game, t.player) ? 'pulse' : ''}`}
+            className={`btn btn-primary ${canAct && t.actionsLeft === 0 && !canCurious(game, t.player) && !legal.can('playStoredTactic') ? 'pulse' : ''}`}
             disabled={!legal.can('endTurn')}
             onClick={() => dispatch({ type: 'endTurn' })}
           >

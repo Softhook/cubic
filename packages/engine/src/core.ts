@@ -2,13 +2,13 @@
  * Shared building blocks for the rule modules: errors, the log, dice, actions and the
  * dominance / research / cube bookkeeping that many rules touch.
  */
-import { cardWithEffect, effectOf, SHIP_NAMES } from './data';
+import { cardWithEffect, SHIP_NAMES } from './data';
 import type { SkillEffect } from './effects';
 import { die } from './lookups';
-import { canCurious, canGainResearch, canUseAbility, infamyAt, usedThisTurn } from './queries';
+import { actionsClosed, canCurious, canGainResearch, canUseAbility, infamyAt, usedThisTurn } from './queries';
 import { d6 } from './rng';
 import { rulesOf } from './rules';
-import { anySkill, hasSkill, skillRules } from './skillRules';
+import { anySkill, hasSkill, skillRules, stealableSkill } from './skillRules';
 import { RuleError, type Action, type Die, type GameState, type LogEvent, type OncePerTurn, type Pending, type PlayerId, type TurnState } from './types';
 
 export const ACTIONS_PER_TURN = 3;
@@ -129,13 +129,17 @@ export function emptyTurn(player: PlayerId, number: number): TurnState {
   };
 }
 
-/** Phase-1 actions need a game in progress, no open decision, and the action phase. */
-export function requireActionPhase(s: GameState, allowAfterLock = false): TurnState {
+/**
+ * Phase-1 actions need a game in progress, no open decision, and the action phase. Once it is
+ * closed (Curious, Patient: `actionsClosed`) only the actions that end the turn pass `closing`.
+ */
+export function requireActionPhase(s: GameState, closing = false): TurnState {
   if (s.phase !== 'play') fail('The game has not started');
   if (s.pending.length) fail('Resolve the current decision first');
   if (s.turn.phase !== 'actions') fail('Not in the action phase');
-  if (!allowAfterLock && s.turn.curiousUsed) fail('No actions allowed after using Curious');
-  if (!allowAfterLock && s.turn.storedTacticPlayed) fail('No actions allowed after playing a stored tactic');
+  if (!closing && actionsClosed(s.turn)) {
+    fail(s.turn.curiousUsed ? 'No actions allowed after using Curious' : 'No actions allowed after playing a stored tactic');
+  }
   return s.turn;
 }
 
@@ -144,19 +148,21 @@ export function spend(s: GameState, n: number) {
   s.turn.actionsLeft -= n;
 }
 
-/** Pays for a move: a Curious free move if there is one, otherwise an action. */
+/** Pays for a Move or Research: an action, or once they are spent the CE Curious extra action. */
+export function spendPeaceful(s: GameState) {
+  const t = s.turn;
+  if (t.actionsLeft > 0) spend(s, 1);
+  else if (canCurious(s, t.player)) t.curiousUsed = true;
+  else fail('No actions left');
+}
+
+/** Pays for a move: an Original Curious free move if there is one, otherwise as `spendPeaceful`. */
 export function spendMove(s: GameState) {
   const t = s.turn;
   if (t.freeMoves > 0) {
     t.freeMoves--;
     t.freeMovesUsed++;
-  } else if (t.actionsLeft > 0) {
-    spend(s, 1);
-  } else if (canCurious(s, t.player)) {
-    t.curiousUsed = true;
-  } else {
-    fail('No actions left');
-  }
+  } else spendPeaceful(s);
 }
 
 /**
@@ -248,10 +254,8 @@ export function destroyedEnemyShip(s: GameState, winner: PlayerId, dominance: nu
   if (research) gainResearch(s, winner, research);
   gainDominance(s, winner, dominance);
   if (victim !== undefined && victim !== winner) {
-    if (s.players[victim].skills.some((sk) => effectOf(sk.id) === 'prideful')) {
-      s.pending.push({ kind: 'prideful', player: winner, victim });
-    }
-    if (first && hasSkill(s, winner, 'ruthless') && s.players[victim].skills.some((sk) => sk.active)) {
+    if (stealableSkill(s, victim) >= 0) s.pending.push({ kind: 'prideful', player: winner, victim });
+    if (first && anySkill(s, winner, (r) => r.disableSkillOnDestroy) && s.players[victim].skills.some((sk) => sk.active)) {
       s.pending.push({ kind: 'ruthless', player: winner, victim });
     }
   }

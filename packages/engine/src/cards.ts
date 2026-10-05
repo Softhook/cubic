@@ -13,7 +13,7 @@ import { die, reserve, shipsOnBoard } from './lookups';
 import { canPlayStoredTactic, canProfiteer, canRefreshMarket, canRelocate, canTakeCard, deployTargets, relocationOptions, skillLimit } from './queries';
 import { shuffle } from './rng';
 import { rulesOf } from './rules';
-import { hasSkill } from './skillRules';
+import { anySkill, ruleOf } from './skillRules';
 import type { DeckKind, GameState, PlayerId, PlayerState } from './types';
 
 // ---------------------------------------------------------------------------
@@ -124,7 +124,7 @@ function gainCard(s: GameState, p: PlayerId, id: string) {
     log(s, `${pl.name} takes the ${def.name} ${rulesOf(s).cards?.terms.skill ?? 'skill'}.`, p, 'cardTaken');
     if (pl.skills.length > skillLimit(s, p)) s.pending.unshift({ kind: 'discardSkill', player: p, reason: 'limit' });
     // Resolved before any discard, so a Tactic stored now is lost if Patient itself is then discarded.
-    if (effectOf(id) === 'patient') s.pending.unshift({ kind: 'patientTactic', player: p });
+    if (ruleOf(id).storeTactics) s.pending.unshift({ kind: 'patientTactic', player: p });
   } else {
     playTactic(s, p, id, `${pl.name} plays ${def.name}.`);
   }
@@ -178,7 +178,7 @@ export const cardHandlers = {
       log(s, `${name(s, p)} expands their fleet.`, p, 'expansion');
       return;
     }
-    if (a.store && (a.deck !== 'tactic' || !hasSkill(s, p, 'patient'))) fail('Only a Tactic can be stored, with Patient');
+    if (a.store && (a.deck !== 'tactic' || !anySkill(s, p, (r) => r.storeTactics))) fail('Only a Tactic can be stored, with Patient');
     const deck = a.deck === 'skill' ? s.market.skillDeck : s.market.tacticDeck;
     const row = a.deck === 'skill' ? s.market.skillRow : s.market.tacticRow;
     if (row[a.index] !== undefined && !canTakeCard(s, p, row[a.index])) fail('Your reserve is empty');
@@ -226,15 +226,13 @@ export const cardHandlers = {
   },
   discardSkill(s, a) {
     const head = headOf(s, 'discardSkill', 'Not discarding');
-    if (head.cannotDiscard && effectOf(a.skill) === head.cannotDiscard) {
-      fail(`Cannot discard ${card(a.skill).name}`);
-    }
+    if (a.skill === head.cannotDiscard) fail(`Cannot discard ${card(a.skill).name}`);
     const pl = s.players[head.player];
     const i = pl.skills.findIndex((x) => x.id === a.skill);
     if (i < 0) fail('You do not have that skill');
     pl.skills.splice(i, 1);
     if (effectOf(a.skill) === 'ambitious') pl.ambitionTokens = 0;
-    if (effectOf(a.skill) === 'patient' && pl.storedTactics?.length) {
+    if (ruleOf(a.skill).storeTactics && pl.storedTactics?.length) {
       s.market.tacticDiscard.push(...pl.storedTactics);
       pl.storedTactics.length = 0;
     }

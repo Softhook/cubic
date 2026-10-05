@@ -64,7 +64,18 @@ export interface AiGame {
   after?: (s: GameState, action: Action, step: number) => void;
 }
 
-/** Plays AI against AI to the end (any re-roll or missile first, as the web app does), or throws if it gets stuck. */
+/**
+ * The next AI action in `s`: in a combat, any player's re-roll or missile first (as the web app does),
+ * otherwise the acting player's choice. `levels` gives each player's AI level (default 1).
+ */
+export function aiAction(s: GameState, levels: readonly AiLevel[] | undefined, random: () => number, samples?: number): Action | null {
+  const level = (p: number) => levels?.[p] ?? 1;
+  let action: Action | null = null;
+  if (s.pending[0]?.kind === 'combat') for (const p of s.players) action ??= chooseCombatResponse(s, p.id, { level: level(p.id), random });
+  return action ?? chooseAction(s, { samples, random, level: level(actor(s)) });
+}
+
+/** Plays AI against AI to the end, or throws if it gets stuck. */
 export function playAiGame(game: AiGame): { state: GameState; actions: Action[] } {
   let s = createGame({ players: players(game.players), seed: game.seed, mode: game.mode });
   const random = seededRandom(game.aiSeed);
@@ -73,10 +84,7 @@ export function playAiGame(game: AiGame): { state: GameState; actions: Action[] 
     const step = actions.length;
     if (step >= 3000) throw new Error('no winner after 3000 actions');
     game.before?.(s, step);
-    let action: Action | null = null;
-    const level = (p: number) => game.levels?.[p] ?? 1;
-    if (s.pending[0]?.kind === 'combat') for (const p of s.players) action ??= chooseCombatResponse(s, p.id, { level: level(p.id), random });
-    action ??= chooseAction(s, { samples: 1, random, level: level(actor(s)) });
+    const action = aiAction(s, game.levels, random, 1);
     if (!action) throw new Error(`no action at step ${step}`);
     actions.push(action);
     s = apply(s, action);

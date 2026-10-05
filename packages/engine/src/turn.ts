@@ -1,10 +1,9 @@
 /** Turn structure: start of turn, the end-of-turn card phase, and passing the turn on. */
 import { ACTIONS_PER_TURN, checkInfamy, emptyTurn, gainResearch, log, name, type PendingOf } from './core';
-import { effectOf } from './data';
 import { cellOf, scrapyard, shipsOnBoard } from './lookups';
 import { breakthroughAt, canProfiteer, canTakeAnyCard, infamyTargets, startSlots } from './queries';
 import { rulesOf } from './rules';
-import { askBrilliant, ruleOf, skillRules, type TurnBonus } from './skillRules';
+import { askBrilliant, ruleOf, skillRules, stealableSkill, type TurnBonus } from './skillRules';
 import type { GameState, OwnedSkill, Pending, PlayerId } from './types';
 
 /** The start-of-turn bonuses of the player's skills, added up. */
@@ -168,7 +167,7 @@ const AUTO_RESOLVE: { [K in Pending['kind']]?: (s: GameState, head: PendingOf<K>
     return true;
   },
   prideful(s, head) {
-    if (s.players[head.victim].skills.some((sk) => effectOf(sk.id) === 'prideful')) return false;
+    if (stealableSkill(s, head.victim) >= 0) return false;
     s.pending.shift();
     return true;
   },

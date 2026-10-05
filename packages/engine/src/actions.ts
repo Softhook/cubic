@@ -14,10 +14,11 @@ import {
   rerollNew,
   spend,
   spendMove,
+  spendPeaceful,
   type Handlers,
 } from './core';
 import { die } from './lookups';
-import { canCurious, canGainResearch, canMoveDie, canReconfigure, conquerCheck, deployTargets, deploysFree, moveOptions } from './queries';
+import { canGainResearch, canMoveDie, canReconfigure, conquerCheck, deployTargets, deploysFree, moveOptions } from './queries';
 import { rulesOf } from './rules';
 import { endTurn } from './turn';
 
@@ -66,9 +67,7 @@ export const actionHandlers = {
     if (!rulesOf(s).cards) fail('This mode has no research');
     if (s.players[t.player].research >= 6) fail('Research is already at 6');
     if (!canGainResearch(s, t.player)) fail('You cannot gain research');
-    if (t.actionsLeft > 0) spend(s, 1);
-    else if (canCurious(s, t.player)) t.curiousUsed = true;
-    else fail('No actions left');
+    spendPeaceful(s);
     gainResearch(s, t.player, 1);
   },
   conquer(s, a) {

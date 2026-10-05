@@ -190,6 +190,7 @@ export type Pending =
   /** `conquer`: how many of the picks were earned by Conquer actions (Profiteering may take a missile instead). */
   | { kind: 'takeCard'; player: PlayerId; count: number; conquer?: number }
   | { kind: 'peek'; player: PlayerId; deck: DeckKind; top: string; store?: boolean }
+  /** `cannotDiscard`: a card that must be kept (Prideful, just taken). */
   | { kind: 'discardSkill'; player: PlayerId; reason?: 'limit' | 'sabotage'; cannotDiscard?: string }
   | { kind: 'placeExpansion'; player: PlayerId; die: string }
   | { kind: 'showOfForce'; player: PlayerId }

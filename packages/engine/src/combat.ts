@@ -14,12 +14,12 @@ import {
   type Handlers,
   type PendingOf,
 } from './core';
-import { card, effectOf } from './data';
+import { card } from './data';
 import { cellOf, die, dieAt } from './lookups';
 import { combatDice, combatOutcome, combatReroll, combatTotal, infamyTargets, skillLimit } from './queries';
 import { d6 } from './rng';
 import { rulesOf } from './rules';
-import { anySkill, skillRules } from './skillRules';
+import { anySkill, skillRules, stealableSkill } from './skillRules';
 import type { Cell, Die, GameState, PlayerId } from './types';
 
 /**
@@ -154,14 +154,14 @@ export const combatHandlers = {
     }
     const victimPl = s.players[head.victim];
     const winnerPl = s.players[head.player];
-    const idx = victimPl.skills.findIndex((sk) => effectOf(sk.id) === 'prideful');
+    const idx = stealableSkill(s, head.victim);
     if (idx !== -1) {
       // A stolen Prideful works at once, even if a Ruthless player had disabled it (OPEN-QUESTIONS #32).
       const [stolen] = victimPl.skills.splice(idx, 1);
       winnerPl.skills.push({ id: stolen.id, active: true });
       log(s, `${winnerPl.name} takes Prideful from ${victimPl.name}!`, head.player, 'cardTaken');
       if (winnerPl.skills.length > skillLimit(s, head.player)) {
-        s.pending.unshift({ kind: 'discardSkill', player: head.player, reason: 'limit', cannotDiscard: 'prideful' });
+        s.pending.unshift({ kind: 'discardSkill', player: head.player, reason: 'limit', cannotDiscard: stolen.id });
       }
       checkInfamy(s, head.player);
     }

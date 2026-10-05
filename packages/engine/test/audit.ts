@@ -14,12 +14,15 @@
  *   research, a Sabotaged player's next turn has one action less).
  *
  * Any failure is an anomaly. Coverage counts, per card, the turns it was held and the times it
- * fired, so a card that is held but never does anything stands out.
+ * fired, so a card that is held but never does anything stands out. The AI self-play benchmark
+ * (scripts/selfplay-cards.ts) plays its games through `auditGame` too, without dealing skills.
  */
-import { chooseAction, chooseCombatResponse, type AiLevel } from '../../ai/src';
+import type { AiLevel } from '../../ai/src';
 import {
+  activeSkills,
   actor,
   apply,
+  card,
   checkInvariants,
   combatTotal,
   createGame,
@@ -41,17 +44,27 @@ import {
   type GameState,
   type PlayerId,
 } from '../src';
-import { players } from './helpers';
+import { aiAction, players, seededRandom } from './helpers';
 
 export interface AuditGame {
   mode: GameMode;
-  mapId: string;
+  /** The map (default: the mode's default for the player count). */
+  mapId?: string;
   players: number;
   /** AI level per player. */
   levels: AiLevel[];
   seed: number;
-  /** Where in the mode's skill list this game's dealt skills start. */
-  deal: number;
+  /** Where in the mode's skill list this game's dealt skills start; none: skills are only drafted. */
+  deal?: number;
+}
+
+/** One step of an audited game, for `auditGame`'s `onStep`. */
+export interface AuditStep {
+  before: GameState;
+  action: Action;
+  after: GameState;
+  /** The cards that took effect in this step (coverage's `fired`, one entry per firing). */
+  fired: string[];
 }
 
 export interface Anomaly {
@@ -126,7 +139,7 @@ export const AUDIT_GAMES: (AuditGame & { quick?: boolean; deep?: boolean })[] = 
   { mode: 'original', mapId: 'gamma-sector', players: 4, levels: [1, 2, 1, 1], seed: 213, deal: 21, deep: true },
 ];
 
-export const gameName = (g: AuditGame) => `${g.mode} ${g.players}p ${g.mapId} L${g.levels.join('/')}`;
+export const gameName = (g: AuditGame) => `${g.mode} ${g.players}p ${g.mapId ?? 'default map'} L${g.levels.join('/')}`;
 
 // ---------------------------------------------------------------------------
 // Card bookkeeping that keeps every card accounted for
@@ -183,7 +196,7 @@ interface Step {
 }
 
 /** The active skill `p` holds in `s` with one of these engine effects, if any. */
-function held(s: GameState, p: PlayerId, ...effects: string[]): string | undefined {
+export function held(s: GameState, p: PlayerId, ...effects: string[]): string | undefined {
   return s.players[p].skills.find((sk) => sk.active && effects.includes(effectOf(sk.id)))?.id;
 }
 
@@ -250,19 +263,36 @@ function destroyed(c: Step, w: PlayerId, v: PlayerId, inCombat: boolean) {
   }
 }
 
+/**
+ * The card taken in this step (from the market, a deck, a setup draft or Change of Heart), by whom,
+ * and whether it is played at once: a Tactic or Expansion that is not stored (Patient).
+ */
+export function cardTaken(before: GameState, action: Action, after: GameState): { id: string; p: PlayerId; played: boolean } | undefined {
+  const head = before.pending[0];
+  if (action.type === 'takeCard' && head?.kind === 'takeCard') {
+    if (action.deck === 'expansion') return { id: before.mode === 'original' ? 'o-expansion' : EXPANSION.id, p: head.player, played: true };
+    // Taking the oldest card may only open a peek at the deck; the card is taken by the peekChoice.
+    if (after.pending[0]?.kind === 'peek' && after.pending[0].player === head.player) return;
+    const row = action.deck === 'skill' ? before.market.skillRow : before.market.tacticRow;
+    return { id: row[action.index], p: head.player, played: action.deck === 'tactic' && !action.store };
+  }
+  if (action.type === 'peekChoice' && head?.kind === 'peek') {
+    const row = head.deck === 'skill' ? before.market.skillRow : before.market.tacticRow;
+    return { id: action.takeTop ? head.top : row[2], p: head.player, played: head.deck === 'tactic' && !head.store };
+  }
+  if (action.type === 'patientTactic' && head?.kind === 'patientTactic' && action.index !== undefined) {
+    return { id: before.market.tacticRow[action.index], p: head.player, played: false };
+  }
+  if ((action.type === 'draftSkill' && head?.kind === 'skillDraft') || (action.type === 'changeOfHeart' && head?.kind === 'changeOfHeart')) {
+    return { id: action.skill, p: head.player, played: false };
+  }
+}
+
 /** The Tactic, Gambit or Expansion played in this step, and by whom. */
 function playedCard(c: Step): { id: string; p: PlayerId } | undefined {
-  const { before, after, action } = c;
-  const head = before.pending[0];
-  if (action.type === 'takeCard' && head?.kind === 'takeCard' && !action.store) {
-    if (action.deck === 'expansion') return { id: before.mode === 'original' ? 'o-expansion' : EXPANSION.id, p: head.player };
-    const peek = after.pending[0]?.kind === 'peek' && after.pending[0].player === head.player;
-    if (action.deck === 'tactic' && !peek) return { id: before.market.tacticRow[action.index], p: head.player };
-  }
-  if (action.type === 'peekChoice' && head?.kind === 'peek' && head.deck === 'tactic' && !head.store) {
-    return { id: action.takeTop ? head.top : before.market.tacticRow[2], p: head.player };
-  }
-  if (action.type === 'playStoredTactic') return { id: action.card, p: before.turn.player };
+  if (c.action.type === 'playStoredTactic') return { id: c.action.card, p: c.before.turn.player };
+  const taken = cardTaken(c.before, c.action, c.after);
+  if (taken?.played) return taken;
 }
 
 const ORACLES: ((c: Step) => void)[] = [
@@ -547,19 +577,47 @@ const PASSIVE: Partial<Record<Action['type'], string[]>> = {
   deploy: ['stealthy', 'eager'],
   conquer: ['ingenious', 'intelligent', 'pioneering', 'tyrannical'],
 };
-/** Combat skills: each battle of their holder counts as firing (the re-roll skills: each re-roll). */
-const COMBAT = ['ferocious', 'rational', 'strategic', 'strategic-original'];
+/** Re-roll skills: each re-roll counts as firing. */
 const REROLL = ['cruel', 'relentless', 'scrappy'];
+
+/** The other firings without an oracle: combat skills that changed a roll or total, Cunning, Talented. */
+function otherFirings(c: Step): (string | undefined)[] {
+  const { before, action, after } = c;
+  const who = actor(before);
+  const head = before.pending[0];
+  const out: (string | undefined)[] = [];
+  for (const table of [USES, PASSIVE]) {
+    const effects = table[action.type];
+    if (effects) out.push(held(before, who, ...effects));
+  }
+  if (action.type === 'prideful' && action.take && head?.kind === 'prideful') {
+    out.push(before.players[head.victim].skills.find((sk) => effectOf(sk.id) === 'prideful')?.id);
+  }
+  if (action.type === 'reroll') out.push(held(before, action.by, ...REROLL));
+  if (action.type === 'resolveCombat' && head?.kind === 'combat') {
+    for (const side of ['attacker', 'defender'] as const) {
+      const { parts } = combatTotal(before, head, side);
+      // A part labelled with the card's name: a set roll (Rational) or a modifier (Ferocious, Strategic). Brutal has its oracle.
+      for (const a of activeSkills(before, head[side].player)) if (parts.some((x) => x.label === card(a.card).name)) out.push(a.card);
+    }
+  }
+  if (!before.turn.oncePerTurn.includes('cunning') && after.turn.oncePerTurn.includes('cunning')) out.push(held(before, who, 'cunning'));
+  for (const p of after.players) {
+    if (p.skills.length > 3 && before.players[p.id].skills.length <= 3) out.push(held(after, p.id, 'talented'));
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------------------
 
-/** Plays one audited game. */
-export function auditGame(g: AuditGame, maxSteps = 3000): AuditResult {
+/** Plays one audited game; `onStep` sees every step the engine accepted. */
+export function auditGame(g: AuditGame, opts: { maxSteps?: number; onStep?: (step: AuditStep) => void } = {}): AuditResult {
+  const { maxSteps = 3000, onStep } = opts;
   const name = gameName(g);
   const anomalies: Anomaly[] = [];
   const coverage = new Map(modeCards(g.mode).map((c) => [c.id, { heldTurns: 0, fired: 0 }]));
   let s = createGame({ players: players(g.players), seed: g.seed, mode: g.mode, mapId: g.mapId });
-  let random = seed(g.seed * 7919);
+  const random = seededRandom(g.seed * 7919);
   let turn: TurnLog = { number: -1, attackedOrConquered: false, curiousUsed: false, destroyers: new Set() };
   let step = 0;
   let dealt = false;
@@ -572,7 +630,7 @@ export function auditGame(g: AuditGame, maxSteps = 3000): AuditResult {
 
   for (; s.phase !== 'over' && step < maxSteps; step++) {
     if (s.phase === 'play' && !dealt) {
-      deal(s, g.deal);
+      if (g.deal !== undefined) deal(s, g.deal);
       dealt = true;
     }
     if (s.turn.number !== turn.number) turn = { number: s.turn.number, attackedOrConquered: false, curiousUsed: false, destroyers: new Set() };
@@ -580,9 +638,7 @@ export function auditGame(g: AuditGame, maxSteps = 3000): AuditResult {
     action = null;
     after = undefined;
     try {
-      const level = (p: PlayerId) => g.levels[p] ?? 1;
-      if (s.pending[0]?.kind === 'combat') for (const p of s.players) action ??= chooseCombatResponse(s, p.id, { level: level(p.id), random });
-      action ??= chooseAction(s, { level: level(actor(s)), random });
+      action = aiAction(s, g.levels, random);
     } catch (e) {
       flag(undefined, `AI crashed: ${(e as Error).message}`);
       break;
@@ -618,23 +674,17 @@ export function auditGame(g: AuditGame, maxSteps = 3000): AuditResult {
       }
     }
 
+    const fired: string[] = [];
     if (s.phase === 'play' && after.phase === 'play') {
       const fire = (card: string | undefined) => {
         const entry = card ? coverage.get(card) : undefined;
-        if (entry) entry.fired++;
+        if (!entry) return;
+        entry.fired++;
+        fired.push(card!);
       };
       const c: Step = { before: s, action, after, legal, turn, fail: flag, fire };
       for (const oracle of ORACLES) oracle(c);
-      const who = actor(s);
-      for (const table of [USES, PASSIVE]) {
-        const effects = table[action.type];
-        if (effects) fire(held(s, who, ...effects));
-      }
-      if (action.type === 'prideful' && action.take) fire('prideful');
-      if (action.type === 'reroll') fire(held(s, action.by, ...REROLL));
-      if (action.type === 'resolveCombat' && head?.kind === 'combat') {
-        for (const side of [head.attacker, head.defender]) fire(held(s, side.player, ...COMBAT));
-      }
+      otherFirings(c).forEach(fire);
       if (action.type === 'attack' || action.type === 'freeAttack' || action.type === 'conquer' || (action.type === 'tactical' && 'target' in action)) {
         turn.attackedOrConquered = true;
       }
@@ -642,15 +692,11 @@ export function auditGame(g: AuditGame, maxSteps = 3000): AuditResult {
         for (const sk of s.players[s.turn.player].skills) if (sk.active && coverage.has(sk.id)) coverage.get(sk.id)!.heldTurns++;
       }
     }
+    onStep?.({ before: s, action, after, fired });
     s = after;
   }
   if (s.phase !== 'over') flag(undefined, `no winner after ${step} steps`);
   return { name, anomalies, coverage, steps: step, finished: s.phase === 'over' };
-}
-
-function seed(n: number): () => number {
-  let x = n;
-  return () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648;
 }
 
 /** Cards held for some turns that never fired, and cards never held or played, over several games. */
