@@ -10,9 +10,10 @@ import { destroyedEnemyShip, destroyShip, fail, gainDominance, headOf, log, name
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
 import { die, reserve, shipsOnBoard } from './lookups';
-import { canProfiteer, canRefreshMarket, canRelocate, canTakeCard, deployTargets, relocationOptions, skillLimit } from './queries';
+import { canPlayStoredTactic, canProfiteer, canRefreshMarket, canRelocate, canTakeCard, deployTargets, relocationOptions, skillLimit } from './queries';
 import { shuffle } from './rng';
 import { rulesOf } from './rules';
+import { hasSkill } from './skillRules';
 import type { DeckKind, GameState, PlayerId, PlayerState } from './types';
 
 // ---------------------------------------------------------------------------
@@ -61,8 +62,8 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
     if (shipsOnBoard(s).length) s.pending.unshift({ kind: 'showOfForce', player: p });
   },
   'unveil-the-fleet': (s, p) => {
-    for (const d of shipsOnBoard(s, p)) destroyShip(s, d);
     s.pending.unshift({ kind: 'unveil', player: p, rerolled: [] });
+    for (const d of shipsOnBoard(s, p)) destroyShip(s, d);
   },
   'warp-gate': (s, p) => {
     s.pending.unshift({ kind: 'warpGate', player: p, placed: [] });
@@ -167,10 +168,17 @@ export const cardHandlers = {
     if (row[a.index] !== undefined && !canTakeCard(s, p, row[a.index])) fail('Your reserve is empty');
     // Peek: taking the oldest card lets you look at the top of the deck first.
     if (rulesOf(s).cards?.peek && a.index === row.length - 1 && row.length === 3 && deck.length) {
-      s.pending.unshift({ kind: 'peek', player: p, deck: a.deck, top: deck[0] });
+      s.pending.unshift({ kind: 'peek', player: p, deck: a.deck, top: deck[0], store: a.store });
       return;
     }
     consumeCardPick(s);
+    if (a.deck === 'tactic' && a.store && hasSkill(s, p, 'patient')) {
+      const taken = takeFromRow(s, 'tactic', a.index);
+      const pl = s.players[p];
+      (pl.storedTactics ??= []).push(taken);
+      log(s, `${pl.name} stores ${card(taken).name} (Patient).`, p, 'cardTaken');
+      return;
+    }
     gainCard(s, p, takeFromRow(s, a.deck, a.index));
   },
   peekChoice(s, a) {
@@ -180,6 +188,12 @@ export const cardHandlers = {
     const id = a.takeTop
       ? (head.deck === 'skill' ? s.market.skillDeck : s.market.tacticDeck).shift()!
       : takeFromRow(s, head.deck, 2);
+    if (head.deck === 'tactic' && head.store && hasSkill(s, head.player, 'patient')) {
+      const pl = s.players[head.player];
+      (pl.storedTactics ??= []).push(id);
+      log(s, `${pl.name} stores ${card(id).name} (Patient).`, head.player, 'cardTaken');
+      return;
+    }
     gainCard(s, head.player, id);
   },
   /** Profiteering: a pick earned by a Conquer action (not by Infamy; OPEN-QUESTIONS #64) becomes 1 missile. */
@@ -209,11 +223,18 @@ export const cardHandlers = {
   },
   discardSkill(s, a) {
     const head = headOf(s, 'discardSkill', 'Not discarding');
+    if (head.cannotDiscard && effectOf(a.skill) === head.cannotDiscard) {
+      fail(`Cannot discard ${card(a.skill).name}`);
+    }
     const pl = s.players[head.player];
     const i = pl.skills.findIndex((x) => x.id === a.skill);
     if (i < 0) fail('You do not have that skill');
     pl.skills.splice(i, 1);
     if (effectOf(a.skill) === 'ambitious') pl.ambitionTokens = 0;
+    if (effectOf(a.skill) === 'patient' && pl.storedTactics?.length) {
+      s.market.tacticDiscard.push(...pl.storedTactics);
+      pl.storedTactics.length = 0;
+    }
     s.market.skillDiscard.push(a.skill);
     s.pending.shift();
     log(s, `${pl.name} discards ${card(a.skill).name}.`, head.player, 'discard');
@@ -238,7 +259,7 @@ export const cardHandlers = {
     destroyShip(s, d);
     // The victim loses no dominance: only the attack protocol or card text changes it (RULE-SUGGESTIONS #26).
     if (d.owner === head.player) gainDominance(s, head.player, 1);
-    else destroyedEnemyShip(s, head.player, 1);
+    else destroyedEnemyShip(s, head.player, 1, d.owner);
   },
   warpGate(s, a) {
     const head = headOf(s, 'warpGate', 'No Warp Gate to place');
@@ -292,5 +313,21 @@ export const cardHandlers = {
   unveilDone(s) {
     headOf(s, 'unveil', 'Not unveiling');
     s.pending.shift();
+  },
+  playStoredTactic(s, a) {
+    const p = s.turn.player;
+    if (!canPlayStoredTactic(s, p)) fail('Cannot play a stored tactic right now');
+    const pl = s.players[p];
+    const idx = pl.storedTactics?.indexOf(a.card) ?? -1;
+    if (idx === -1) fail('Card not in stored tactics');
+    pl.storedTactics!.splice(idx, 1);
+    s.turn.storedTacticPlayed = true;
+    s.turn.actionsLeft = 0;
+    s.market.tacticDiscard.push(a.card);
+    const def = card(a.card);
+    log(s, `${pl.name} plays stored tactic ${def.name}.`, p, 'cardPlayed');
+    const effect = TACTIC_EFFECTS[effectOf(a.card) as TacticEffect];
+    if (!effect) throw new Error(`Unhandled tactic ${a.card}`);
+    effect(s, p);
   },
 } satisfies Partial<Handlers>;

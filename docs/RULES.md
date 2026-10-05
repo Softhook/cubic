@@ -52,8 +52,7 @@ Original card text is in [`data/cards.yaml`](../data/cards.yaml) under `original
 Cards whose behaviour matches a Community Edition card share its implementation (e.g. Cerebral ≙ Composed,
 Energetic ≙ Steadfast, Warlike ≙ Hostile).
 
-Every Original card is implemented. Not yet implemented in the Community Edition (left out of the deck until
-they are): Calculating, Curious, Patient, Prideful, Ruthless.
+Every Original card and every Community Edition card (all 35 skills, 9 tactics, 1 expansion, 31 command cards, 6 gambits) is fully implemented.
 
 ---
 
@@ -306,11 +305,11 @@ Full data (with categories, CE status and design notes) lives in
 | Ambitious | 3 extra actions | Once per turn you may take an additional action, then put a token on this card. If this card has three tokens on it, discard it. |
 | Brilliant | Research bonus | At the start of your turn, you may gain 2 Research. Engine: asked only with Pioneering, where the exact research number matters; otherwise gained automatically. |
 | Brutal | Combat with advantage | For Combat rolls, roll twice and use the lower number. |
-| Calculating | Controlled scrapping | When a ship is placed in your scrapyard, choose its ship number. |
+| Calculating | Controlled scrapping | When a ship is placed in your scrapyard, choose its ship number. Engine: applies to every way a ship reaches the scrapyard during play ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #39). |
 | Clever | Flexible modification | After reconfiguring, you may increase or decrease the ship number by 1. Engine: even onto a number already shown; no wrap ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #63). |
 | Composed | Reduce dominance for research | Once per turn, you may lose 1 Dominance and gain 3 Research. Engine: not usable under Righteous, where neither half has an effect ([RULE-SUGGESTIONS](RULE-SUGGESTIONS.md) #33). |
 | Cunning | Extra ship ability | Once per turn, you may use one ship ability a second time. |
-| Curious | Bonus peaceful move | At the end of your turn, if you did not Attack or Conquer, gain an additional Move or Research action. |
+| Curious | Bonus peaceful move | At the end of your turn, if you did not Attack or Conquer, gain an additional Move or Research action. Engine: Attack includes Battlestation Strike; Infamy placement does not block Curious; no further actions or abilities may follow this action ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #36). |
 | Dangerous | Destroy your attacker | When you defend, before players roll combat dice, you can decide to destroy both ships (there is no dominance effect). |
 | Devious | Slingshot past enemies | You may move your ships through enemy ships. These spaces do not count towards your movement. Engine: normal moves only, not Transport or Tactical ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #65). |
 | Ferocious | Combat bonus | −1 to your Combat rolls. |
@@ -319,11 +318,11 @@ Full data (with categories, CE status and design notes) lives in
 | Industrious | Extra deployment | Gain an additional Deploy action each turn. |
 | Ingenious | Conquer from corners | When Conquering, you may use spaces diagonal to a planet. |
 | Intelligent | Flexible conquering | When Conquering, you may add or subtract 1 from the planet number. |
-| Patient | Delayed tactics | Whenever you take a Tactic, you may instead store it. At the end of each of your turns, you may play a stored Tactic. |
+| Patient | Delayed tactics | Whenever you take a Tactic, you may instead store it. At the end of each of your turns, you may play a stored Tactic. Engine: only Tactics may be stored; playable at the end of each turn even if ending with actions unused ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #37). |
 | Pioneering | Conquer with research | You may use your Research number in place of one of your ship numbers when Conquering. |
 | Plundering | Destruction is research | The first time you destroy an enemy ship each turn, gain 3 Research. |
 | Precocious | Accelerated breakthrough | Your Research resets at 4, 5, or 6. |
-| Prideful | Accelerated domination | Your Dominance resets at 4, 5, or 6. When a player destroys one of your ships, they may take this card from you. |
+| Prideful | Accelerated domination | Your Dominance resets at 4, 5, or 6. When a player destroys one of your ships, they may take this card from you. Engine: stolen card is active immediately; if exceeding skill limit, taker discards down at once but may not discard Prideful ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #32). |
 | Profiteering | Missiles from conquering | When you take a card for Conquering, you may instead gain 1 Missile. Engine: Conquer-action picks only, not Infamy ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #64). |
 | Rational | Fixed combat | Your Combat rolls are 3. |
 | Ravenous | Dominance amplification | The first time you destroy an enemy ship each turn, gain 1 additional Dominance. |

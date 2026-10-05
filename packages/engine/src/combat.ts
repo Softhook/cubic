@@ -13,9 +13,9 @@ import {
   type Handlers,
   type PendingOf,
 } from './core';
-import { card } from './data';
+import { card, effectOf } from './data';
 import { cellOf, die, dieAt } from './lookups';
-import { combatDice, combatOutcome, combatReroll, combatTotal, infamyTargets } from './queries';
+import { combatDice, combatOutcome, combatReroll, combatTotal, infamyAt, infamyTargets, skillLimit } from './queries';
 import { d6 } from './rng';
 import { rulesOf } from './rules';
 import { anySkill, skillRules } from './skillRules';
@@ -56,7 +56,7 @@ function dominanceStakes(s: GameState, p: PlayerId): number {
 /** Effects of `winner` destroying one of `loser`'s ships in combat. */
 function onDestroy(s: GameState, winner: PlayerId, loser: PlayerId) {
   loseDominance(s, loser, dominanceStakes(s, loser), true);
-  destroyedEnemyShip(s, winner, dominanceStakes(s, winner));
+  destroyedEnemyShip(s, winner, dominanceStakes(s, winner), loser);
 }
 
 function resolveCombat(s: GameState, combat: PendingOf<'combat'>) {
@@ -143,5 +143,43 @@ export const combatHandlers = {
       // is remembered for this turn's card phase (see endTurn).
       (s.turn.offTurnCubes ??= []).push(head.player);
     }
+  },
+  prideful(s, a) {
+    const head = headOf(s, 'prideful', 'No Prideful decision');
+    s.pending.shift();
+    if (!a.take) {
+      log(s, `${name(s, head.player)} declines to take Prideful.`, head.player);
+      return;
+    }
+    const victimPl = s.players[head.victim];
+    const winnerPl = s.players[head.player];
+    const idx = victimPl.skills.findIndex((sk) => effectOf(sk.id) === 'prideful');
+    if (idx !== -1) {
+      const [stolen] = victimPl.skills.splice(idx, 1);
+      winnerPl.skills.push({ ...stolen, active: true });
+      log(s, `${winnerPl.name} takes Prideful from ${victimPl.name}!`, head.player, 'cardTaken');
+      if (winnerPl.skills.length > skillLimit(s, head.player)) {
+        s.pending.unshift({ kind: 'discardSkill', player: head.player, reason: 'limit', cannotDiscard: 'prideful' });
+      }
+      const thresh = infamyAt(s, head.player);
+      if (winnerPl.dominance >= thresh && !s.pending.some((x) => x.kind === 'infamy' && x.player === head.player)) {
+        log(s, `${winnerPl.name} achieves Infamy!`, head.player, 'infamy');
+        s.pending.push({ kind: 'infamy', player: head.player });
+      }
+    }
+  },
+  ruthless(s, a) {
+    const head = headOf(s, 'ruthless', 'No Ruthless decision');
+    s.pending.shift();
+    if (!a.skill) {
+      log(s, `${name(s, head.player)} declines to disable a skill.`, head.player);
+      return;
+    }
+    const victimPl = s.players[head.victim];
+    const sk = victimPl.skills.find((x) => x.id === a.skill && x.active);
+    if (!sk) fail('Skill is not active or not owned by enemy');
+    sk.active = false;
+    sk.disabledUntil = head.player;
+    log(s, `${name(s, head.player)} disables ${victimPl.name}'s ${card(sk.id).name} (Ruthless).`, head.player);
   },
 } satisfies Partial<Handlers>;

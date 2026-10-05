@@ -38,6 +38,11 @@ export const SKILL_EFFECTS = [
   'tyrannical',
   'cunning',
   'tactical',
+  'calculating',
+  'curious',
+  'patient',
+  'prideful',
+  'ruthless',
   // original command cards
   'arrogant',
   'clever-original',

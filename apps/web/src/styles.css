@@ -492,6 +492,9 @@ input { font: inherit; }
 }
 .skill-chip:hover { background: #fff; }
 .skill-chip.pending { opacity: .5; outline: 1px dashed rgba(255,255,255,.5); }
+.skill-chip.disabled-chip { opacity: .4; text-decoration: line-through; filter: grayscale(1); }
+.skill-chip.stored-tactic { border: 1px dashed var(--cat); }
+.skill-chip.stored-tactic.playable { outline: 1px solid var(--good); }
 
 .log { flex: 1; min-height: 140px; display: flex; flex-direction: column; }
 .log h3 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }

@@ -2,10 +2,10 @@
  * Shared building blocks for the rule modules: errors, the log, dice, actions and the
  * dominance / research / cube bookkeeping that many rules touch.
  */
-import { cardWithEffect, SHIP_NAMES } from './data';
+import { cardWithEffect, effectOf, SHIP_NAMES } from './data';
 import type { SkillEffect } from './effects';
 import { die } from './lookups';
-import { canGainResearch, canUseAbility, usedThisTurn } from './queries';
+import { canCurious, canGainResearch, canUseAbility, infamyAt, usedThisTurn } from './queries';
 import { d6 } from './rng';
 import { rulesOf } from './rules';
 import { anySkill, hasSkill, skillRules } from './skillRules';
@@ -69,7 +69,7 @@ export function markSeen(s: GameState, d: Die) {
 export function rollShip(s: GameState, d: Die, avoid?: number) {
   roll(s, d, avoid);
   if (s.phase !== 'play') return;
-  if (anySkill(s, d.owner, (r) => r.chooseShipNumbers)) s.pending.unshift({ kind: 'clever', player: d.owner, die: d.id, avoid });
+  if (anySkill(s, d.owner, (r) => r.chooseShipNumbers)) s.pending.unshift({ kind: 'clever', player: d.owner, die: d.id, avoid, source: 'clever' });
   else if (d.owner === s.turn.player && anySkill(s, d.owner, (r) => r.rerollShips)) s.turn.scrappy = { die: d.id, avoid };
 }
 
@@ -88,7 +88,7 @@ export function rerollNew(s: GameState, d: Die) {
   // between 1 and 6, as with Flexible (decided 2026-10-03, OPEN-QUESTIONS #63).
   if (anySkill(s, d.owner, (r) => r.adjustReconfigure)) {
     const options = [d.value - 1, d.value, d.value + 1].filter((v) => v >= 1 && v <= 6);
-    s.pending.unshift({ kind: 'clever', player: d.owner, die: d.id, options });
+    s.pending.unshift({ kind: 'clever', player: d.owner, die: d.id, options, source: 'clever' });
   }
 }
 
@@ -97,6 +97,11 @@ export function destroyShip(s: GameState, d: Die) {
   d.loc = { zone: 'scrapyard' };
   rollShip(s, d);
   s.turn.seen[d.id] = [d.value];
+  if (s.phase === 'play' && anySkill(s, d.owner, (r) => r.chooseScrapyardNumber)) {
+    if (!s.pending.some((p) => p.kind === 'clever' && p.die === d.id)) {
+      s.pending.unshift({ kind: 'clever', player: d.owner, die: d.id, source: 'calculating' });
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -119,14 +124,18 @@ export function emptyTurn(player: PlayerId, number: number): TurnState {
     destroyedBy: [],
     oncePerTurn: [],
     bonus: false,
+    curiousUsed: false,
+    storedTacticPlayed: false,
   };
 }
 
 /** Phase-1 actions need a game in progress, no open decision, and the action phase. */
-export function requireActionPhase(s: GameState): TurnState {
+export function requireActionPhase(s: GameState, allowAfterLock = false): TurnState {
   if (s.phase !== 'play') fail('The game has not started');
   if (s.pending.length) fail('Resolve the current decision first');
   if (s.turn.phase !== 'actions') fail('Not in the action phase');
+  if (!allowAfterLock && s.turn.curiousUsed) fail('No actions allowed after using Curious');
+  if (!allowAfterLock && s.turn.storedTacticPlayed) fail('No actions allowed after playing a stored tactic');
   return s.turn;
 }
 
@@ -141,7 +150,13 @@ export function spendMove(s: GameState) {
   if (t.freeMoves > 0) {
     t.freeMoves--;
     t.freeMovesUsed++;
-  } else spend(s, 1);
+  } else if (t.actionsLeft > 0) {
+    spend(s, 1);
+  } else if (canCurious(s, t.player)) {
+    t.curiousUsed = true;
+  } else {
+    fail('No actions left');
+  }
 }
 
 /**
@@ -200,7 +215,8 @@ export function gainResearch(s: GameState, p: PlayerId, n: number) {
 export function gainDominance(s: GameState, p: PlayerId, n: number) {
   const pl = s.players[p];
   pl.dominance = Math.min(6, pl.dominance + n);
-  if (pl.dominance >= 6 && !s.pending.some((x) => x.kind === 'infamy' && x.player === p)) {
+  const thresh = infamyAt(s, p);
+  if (pl.dominance >= thresh && !s.pending.some((x) => x.kind === 'infamy' && x.player === p)) {
     log(s, `${pl.name} achieves Infamy!`, p, 'infamy');
     s.pending.push({ kind: 'infamy', player: p });
   }
@@ -210,7 +226,7 @@ export function gainDominance(s: GameState, p: PlayerId, n: number) {
  * `winner` destroyed an enemy ship, in combat or with a card such as Show of Force: gains `dominance`
  * plus the bonuses of their "destroy" skills (Hostile, Plundering, Ravenous; RULE-SUGGESTIONS #26).
  */
-export function destroyedEnemyShip(s: GameState, winner: PlayerId, dominance: number) {
+export function destroyedEnemyShip(s: GameState, winner: PlayerId, dominance: number, victim?: PlayerId) {
   const first = !s.turn.destroyedBy.includes(winner);
   if (first) s.turn.destroyedBy.push(winner);
   const ownTurn = winner === s.turn.player;
@@ -224,6 +240,14 @@ export function destroyedEnemyShip(s: GameState, winner: PlayerId, dominance: nu
   }
   if (research) gainResearch(s, winner, research);
   gainDominance(s, winner, dominance);
+  if (victim !== undefined && victim !== winner) {
+    if (s.players[victim].skills.some((sk) => effectOf(sk.id) === 'prideful')) {
+      s.pending.push({ kind: 'prideful', player: winner, victim });
+    }
+    if (first && hasSkill(s, winner, 'ruthless') && s.players[victim].skills.some((sk) => sk.active)) {
+      s.pending.push({ kind: 'ruthless', player: winner, victim });
+    }
+  }
 }
 
 export function loseDominance(s: GameState, p: PlayerId, n: number, destroyed = false) {

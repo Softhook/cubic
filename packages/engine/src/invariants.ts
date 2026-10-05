@@ -69,7 +69,10 @@ export function checkInvariants(s: GameState): string[] {
     const count = (id: string) => actual.set(id, (actual.get(id) ?? 0) + 1);
     const m = s.market;
     [m.skillDeck, m.skillRow, m.skillDiscard, m.tacticDeck, m.tacticRow, m.tacticDiscard].forEach((pile) => pile.forEach(count));
-    for (const p of s.players) p.skills.forEach((sk) => count(sk.id));
+    for (const p of s.players) {
+      p.skills.forEach((sk) => count(sk.id));
+      p.storedTactics?.forEach(count);
+    }
     for (const head of s.pending) if (head.kind === 'skillDraft') head.options.forEach(count);
     for (const p of s.players) {
       const discarding = s.pending.some((h) => h.kind === 'discardSkill' && h.player === p.id);

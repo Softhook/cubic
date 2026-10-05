@@ -55,6 +55,8 @@ export interface OwnedSkill {
   id: string;
   /** Skills taken during your turn only take effect from the next player's turn. */
   active: boolean;
+  /** Ruthless: disabled until the start of this player's next turn. */
+  disabledUntil?: PlayerId;
 }
 
 export interface PlayerConfig {
@@ -79,6 +81,8 @@ export interface PlayerState extends PlayerConfig {
   planAhead: number;
   /** Momentum: bonus turns queued (number of actions each). */
   bonusTurns: number[];
+  /** Patient: stored Tactic cards waiting to be played at the end of a turn. */
+  storedTactics?: string[];
   /** Card picks still owed when Momentum interrupted the card phase; taken in the bonus turn's. */
   carriedPicks?: number;
   /** How many of the carried picks were earned by Conquer actions (Profiteering). */
@@ -132,6 +136,10 @@ export interface TurnState {
    * the number a Reconfigure started from (the re-roll must still show a new number).
    */
   scrappy?: { die: string; avoid?: number };
+  /** CE Curious: whether the additional Move or Research action was used this turn. */
+  curiousUsed?: boolean;
+  /** Patient: whether a stored Tactic was played this turn. */
+  storedTacticPlayed?: boolean;
 }
 
 /** Effects limited to once per turn. 'cunning' is the second use of a ship ability. */
@@ -174,21 +182,25 @@ export type Pending =
    * Clever: the player chooses the number of a ship that was just rolled (Original: any but `avoid`,
    * for a Reconfigure; Community Edition: one of `options`, the reconfigured number ± 1).
    */
-  | { kind: 'clever'; player: PlayerId; die: string; avoid?: number; options?: number[] }
+  | { kind: 'clever'; player: PlayerId; die: string; avoid?: number; options?: number[]; source?: 'calculating' | 'clever' }
   /** Relocation: move another player's cube. */
   | { kind: 'relocation'; player: PlayerId }
   | { kind: 'advance'; player: PlayerId; die: string; to: Cell }
   | { kind: 'infamy'; player: PlayerId }
   /** `conquer`: how many of the picks were earned by Conquer actions (Profiteering may take a missile instead). */
   | { kind: 'takeCard'; player: PlayerId; count: number; conquer?: number }
-  | { kind: 'peek'; player: PlayerId; deck: DeckKind; top: string }
-  | { kind: 'discardSkill'; player: PlayerId; reason?: 'limit' | 'sabotage' }
+  | { kind: 'peek'; player: PlayerId; deck: DeckKind; top: string; store?: boolean }
+  | { kind: 'discardSkill'; player: PlayerId; reason?: 'limit' | 'sabotage'; cannotDiscard?: string }
   | { kind: 'placeExpansion'; player: PlayerId; die: string }
   | { kind: 'showOfForce'; player: PlayerId }
   | { kind: 'warpGate'; player: PlayerId; placed: Cell[] }
   | { kind: 'changeOfHeart'; player: PlayerId }
   /** CE Brilliant, at the start of the turn: gain 2 research or not (asked only with Pioneering). */
   | { kind: 'brilliant'; player: PlayerId }
+  /** Prideful: take Prideful from victim who lost a ship. */
+  | { kind: 'prideful'; player: PlayerId; victim: PlayerId }
+  /** Ruthless: disable one active skill of the victim. */
+  | { kind: 'ruthless'; player: PlayerId; victim: PlayerId }
   /** Unveil the Fleet (CE) or, with `reorganize`, Reorganization (original). */
   | { kind: 'unveil'; player: PlayerId; rerolled: string[]; reorganize?: boolean };
 
@@ -282,7 +294,7 @@ export type Action =
   | { type: 'resolveCombat' }
   | { type: 'advance'; move: boolean }
   | { type: 'infamy'; planet: number }
-  | { type: 'takeCard'; deck: DeckKind | 'expansion'; index: number }
+  | { type: 'takeCard'; deck: DeckKind | 'expansion'; index: number; store?: boolean }
   | { type: 'peekChoice'; takeTop: boolean }
   | { type: 'refreshMarket' }
   /** Profiteering: take 1 missile instead of a card earned by conquering. */
@@ -292,6 +304,9 @@ export type Action =
   | { type: 'showOfForce'; die: string }
   | { type: 'warpGate'; cell: Cell }
   | { type: 'changeOfHeart'; skill: string }
+  | { type: 'prideful'; take: boolean }
+  | { type: 'ruthless'; skill?: string }
+  | { type: 'playStoredTactic'; card: string }
   | { type: 'unveilReroll'; die: string }
   | { type: 'unveilDeploy'; die: string; to: Cell }
   | { type: 'unveilDone' };

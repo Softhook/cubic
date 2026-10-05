@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react';
-import { SHIP_NAMES, card, reserve, rulesOf, scrapyard, type Die, type GameState, type PlayerState } from '@quantum/engine';
+import { SHIP_NAMES, canPlayStoredTactic, card, reserve, rulesOf, scrapyard, type Die, type GameState, type PlayerState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
 import { CategoryIcon, categoryStyle } from './Card';
@@ -95,14 +95,39 @@ function PlayerCard({
           ))}
         </div>
       )}
-      {p.skills.length > 0 && (
+      {(p.skills.length > 0 || (p.storedTactics?.length ?? 0) > 0) && (
         <div className="skills">
           {p.skills.map((s, i) => {
             const def = card(s.id);
+            const disabled = s.disabledUntil !== undefined;
             return (
-              <button type="button" key={`${s.id}${i}`} onClick={() => setViewing(s.id)} className={`skill-chip ${s.active ? '' : 'pending'}`} style={categoryStyle(def.category, true)} title={`${def.name}: ${def.text}${s.active ? '' : '\n(Takes effect from the next player’s turn)'}`}>
+              <button
+                type="button"
+                key={`${s.id}${i}`}
+                onClick={() => setViewing(s.id)}
+                className={`skill-chip ${s.active ? '' : 'pending'} ${disabled ? 'disabled-chip' : ''}`}
+                style={categoryStyle(def.category, true)}
+                title={`${def.name}: ${def.text}${disabled ? `\n(Disabled by ${game.players[s.disabledUntil!].name} until their next turn)` : s.active ? '' : '\n(Takes effect from the next player’s turn)'}`}
+              >
                 <CategoryIcon category={def.category} size={11} />
                 {def.name}
+              </button>
+            );
+          })}
+          {p.storedTactics?.map((tId, i) => {
+            const def = card(tId);
+            const canPlay = canPlayStoredTactic(game, p.id);
+            return (
+              <button
+                type="button"
+                key={`stored-${tId}${i}`}
+                onClick={() => setViewing(tId)}
+                className={`skill-chip stored-tactic ${canPlay ? 'playable' : ''}`}
+                style={categoryStyle(def.category, true)}
+                title={`${def.name} (Stored Tactic): ${def.text}${canPlay ? '\n(Click to view / play)' : ''}`}
+              >
+                <CategoryIcon category={def.category} size={11} />
+                {def.name} [Tactic]
               </button>
             );
           })}
@@ -111,10 +136,28 @@ function PlayerCard({
       {viewing && (
         <CardViewer
           title={card(viewing).name}
-          subtitle={`${p.name}’s ${rulesOf(game).cards?.terms.skill ?? 'skill'}${p.skills.some((s) => s.id === viewing && !s.active) ? ' — takes effect from the next player’s turn' : ''}`}
+          subtitle={
+            p.storedTactics?.includes(viewing)
+              ? `${p.name}’s stored tactic`
+              : `${p.name}’s ${rulesOf(game).cards?.terms.skill ?? 'skill'}${p.skills.some((s) => s.id === viewing && !s.active) ? ' — takes effect from the next player’s turn' : ''}`
+          }
           cards={[viewing]}
           single
           onClose={() => setViewing(null)}
+          action={
+            p.storedTactics?.includes(viewing) && canPlayStoredTactic(game, p.id) ? (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  dispatch({ type: 'playStoredTactic', card: viewing });
+                  setViewing(null);
+                }}
+              >
+                Play Tactic
+              </button>
+            ) : undefined
+          }
         />
       )}
     </div>

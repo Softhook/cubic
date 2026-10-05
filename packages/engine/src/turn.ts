@@ -1,7 +1,8 @@
 /** Turn structure: start of turn, the end-of-turn card phase, and passing the turn on. */
 import { ACTIONS_PER_TURN, emptyTurn, gainResearch, log, name, type PendingOf } from './core';
+import { effectOf } from './data';
 import { cellOf, scrapyard, shipsOnBoard } from './lookups';
-import { breakthroughAt, canProfiteer, canTakeAnyCard, infamyTargets, startSlots } from './queries';
+import { breakthroughAt, canProfiteer, canTakeAnyCard, infamyAt, infamyTargets, startSlots } from './queries';
 import { rulesOf } from './rules';
 import { askBrilliant, skillRules, type TurnBonus } from './skillRules';
 import type { GameState, Pending, PlayerId } from './types';
@@ -33,6 +34,25 @@ export function startTurn(s: GameState, player: PlayerId, actions: number, bonus
   s.turn.freeDeploys = extra.freeDeploys;
   s.turn.freeMoves = extra.freeMoves;
   for (const d of s.dice) if (d.owner === player) s.turn.seen[d.id] = [d.value];
+
+  // Re-enable skills disabled by Ruthless until this player's next regular turn.
+  if (!bonus) {
+    for (const o of s.players) {
+      for (const sk of o.skills) {
+        if (sk.disabledUntil === player) {
+          sk.active = true;
+          delete sk.disabledUntil;
+        }
+      }
+    }
+  }
+
+  // If a player starts their turn with Dominance >= Infamy threshold (e.g. from Prideful), trigger Infamy
+  const thresh = infamyAt(s, player);
+  if (pl.dominance >= thresh && infamyTargets(s, player).length > 0 && !s.pending.some((x) => x.kind === 'infamy' && x.player === player)) {
+    log(s, `${pl.name} achieves Infamy!`, player, 'infamy');
+    s.pending.push({ kind: 'infamy', player });
+  }
 
   if (extra.research) gainResearch(s, player, extra.research);
   // Void tiles: +1 research per own ship on one.
@@ -91,8 +111,12 @@ function finishTurn(s: GameState) {
   const p = s.turn.player;
   const n = s.players.length;
   const resume = s.turn.resume ?? (p + 1) % n;
-  // Skills taken this turn, by anyone (off-turn picks too), work from now on.
-  for (const o of s.players) for (const sk of o.skills) sk.active = true;
+  // Skills taken this turn, by anyone (off-turn picks too), work from now on, unless disabled.
+  for (const o of s.players) {
+    for (const sk of o.skills) {
+      if (sk.disabledUntil === undefined) sk.active = true;
+    }
+  }
   const pl = s.players[p];
   if (pl.planAhead > 0) pl.planAhead--;
   // Momentum turns: the active player's first, then those earned on this turn by other players
@@ -134,6 +158,16 @@ const AUTO_RESOLVE: { [K in Pending['kind']]?: (s: GameState, head: PendingOf<K>
   },
   takeCard(s, head) {
     if (canTakeAnyCard(s, head.player) || canProfiteer(s)) return false;
+    s.pending.shift();
+    return true;
+  },
+  ruthless(s, head) {
+    if (s.players[head.victim].skills.some((sk) => sk.active)) return false;
+    s.pending.shift();
+    return true;
+  },
+  prideful(s, head) {
+    if (s.players[head.victim].skills.some((sk) => effectOf(sk.id) === 'prideful')) return false;
     s.pending.shift();
     return true;
   },

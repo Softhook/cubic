@@ -68,8 +68,18 @@ export interface SkillRule {
   skillLimit?: number;
   /** Research needed for a breakthrough. */
   breakthroughAt?: number;
+  /** Dominance needed for an Infamy cube (Prideful). */
+  infamyAt?: number;
   /** Whenever one of the player's ships is rolled, they choose its number instead. */
   chooseShipNumbers?: boolean;
+  /** When a ship is placed in your scrapyard, choose its number instead (Calculating). */
+  chooseScrapyardNumber?: boolean;
+  /** CE Curious: extra Move or Research action if neither Attack nor Conquer occurred. */
+  curiousPeacefulAction?: boolean;
+  /** Patient: store Tactics when taken, and play one at the end of each turn. */
+  storeTactics?: boolean;
+  /** Ruthless: disable an enemy's skill on the first destroy each turn. */
+  disableSkillOnDestroy?: boolean;
   /** After reconfiguring, the player may raise or lower the ship's number by 1. */
   adjustReconfigure?: boolean;
   /** Normal moves may pass through enemy ships; those spaces cost no movement. */
@@ -179,6 +189,11 @@ export const SKILL_RULES: Record<SkillEffect, SkillRule> = {
   tyrannical: { conquer: { sums: (c) => [c.sum + c.dominance] } },
   cunning: { abilityTwice: true },
   tactical: { activated: 'tactical' },
+  calculating: { chooseScrapyardNumber: true },
+  curious: { curiousPeacefulAction: true },
+  patient: { storeTactics: true },
+  prideful: { infamyAt: 4 },
+  ruthless: { disableSkillOnDestroy: true },
   // original command cards
   arrogant: {
     // More ships on the map than every other player.

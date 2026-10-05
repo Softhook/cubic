@@ -47,6 +47,7 @@ export function createGame(opts: NewGameOptions): GameState {
       actionPenalty: 0,
       planAhead: 0,
       bonusTurns: [],
+      storedTactics: [],
     })),
     dice: [],
     market: {

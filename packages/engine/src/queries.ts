@@ -14,7 +14,7 @@ import {
 import { card, effectOf } from './data';
 import { cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
 import { rulesOf } from './rules';
-import { activeSkills, anySkill, ruleOf, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
+import { activeSkills, anySkill, hasSkill, ruleOf, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
 import type { Cell, CombatPending, CombatRole, Die, GameState, OncePerTurn, Planet, PlayerId } from './types';
 
 export type { CombatPart } from './skillRules';
@@ -56,6 +56,37 @@ export function skillLimit(state: GameState, player: PlayerId): number {
 /** Research needed for a breakthrough at the end of the turn. */
 export function breakthroughAt(state: GameState, player: PlayerId): number {
   return Math.min(6, ...skillRules(state, player).map((r) => r.breakthroughAt ?? 6));
+}
+
+/** Dominance needed for Infamy (normally 6, or 4 with Prideful). */
+export function infamyAt(state: GameState, player: PlayerId): number {
+  return Math.min(6, ...skillRules(state, player).map((r) => r.infamyAt ?? 6));
+}
+
+/** CE Curious: whether the player may take an additional Move or Research action. */
+export function canCurious(state: GameState, player: PlayerId): boolean {
+  const t = state.turn;
+  return (
+    hasSkill(state, player, 'curious') &&
+    player === t.player &&
+    t.phase === 'actions' &&
+    !t.attacked &&
+    (t.conquered ?? 0) === 0 &&
+    !t.curiousUsed
+  );
+}
+
+/** Patient: whether the player can play a stored Tactic at the end of their turn. */
+export function canPlayStoredTactic(state: GameState, player: PlayerId): boolean {
+  const t = state.turn;
+  const pl = state.players[player];
+  return (
+    hasSkill(state, player, 'patient') &&
+    player === t.player &&
+    t.phase === 'actions' &&
+    !t.storedTacticPlayed &&
+    (pl.storedTactics?.length ?? 0) > 0
+  );
 }
 
 /** Profiteering: whether the current card pick may be taken as a missile instead. */

@@ -5,7 +5,7 @@ const ALL: CardDef[] = [...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, .
 const effect = (c: CardDef) => c.effect ?? c.id;
 
 /** Cards left out of the decks because their effect is not written yet. Shrink this list. */
-const NOT_YET_IMPLEMENTED = ['calculating', 'curious', 'patient', 'prideful', 'ruthless'];
+const NOT_YET_IMPLEMENTED: string[] = [];
 
 describe('card data', () => {
   it('has unique card ids', () => {

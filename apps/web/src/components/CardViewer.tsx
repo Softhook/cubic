@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { card } from '@quantum/engine';
 import { cardImage, cardImageNow } from '../art/cardImages';
 import { Dialog } from './Dialog';
@@ -23,24 +23,26 @@ function CardArt({ id, size, badge }: { id: string; size: 'md' | 'lg'; badge?: s
 }
 
 /** Shows a single card large, or a pile of cards grouped by name (so a deck's draw order stays hidden). */
-export function CardViewer({ title, subtitle, cards, single, onClose }: {
+export function CardViewer({ title, subtitle, cards, single, onClose, action }: {
   title: string;
   subtitle?: string;
   cards: string[];
   single?: boolean;
   onClose: () => void;
+  action?: ReactNode;
 }) {
   const counts = new Map<string, number>();
   for (const id of cards) counts.set(id, (counts.get(id) ?? 0) + 1);
   const ids = [...counts.keys()].sort((a, b) => card(a).name.localeCompare(card(b).name));
 
   return (
-    <Dialog title={title} subtitle={subtitle} wide={!single} bare={single} className="card-viewer" onClose={onClose}>
+    <Dialog title={title} subtitle={subtitle} wide={!single} bare={single && !action} className="card-viewer" onClose={onClose}>
       <div className="card-choice wrap">
         {ids.map((id) => (
           <CardArt key={id} id={id} size={single ? 'lg' : 'md'} badge={counts.get(id)! > 1 ? `×${counts.get(id)}` : undefined} />
         ))}
       </div>
+      {action && <div className="card-viewer-action" style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>{action}</div>}
     </Dialog>
   );
 }

@@ -5,16 +5,19 @@ import type { Dispatch } from '../game/useGame';
 import { useShortcut } from '../game/useShortcut';
 import { CardView, categoryStyle } from './Card';
 import { CardViewer } from './CardViewer';
+import { Dialog } from './Dialog';
 
 export function Market({ game, dispatch, legal }: { game: GameState; dispatch: Dispatch; legal: Legal }) {
   const picking = legal.can('takeCard');
   const m = game.market;
   const canTake = (deck: DeckKind | 'expansion', index: number) => legal.can('takeCard', (a) => a.deck === deck && a.index === index);
+  const canStore = (deck: DeckKind | 'expansion', index: number) => legal.can('takeCard', (a) => a.deck === deck && a.index === index && a.store);
   const canExpand = canTake('expansion', 0);
   const cardRules = rulesOf(game).cards!;
   const peek = cardRules.peek;
   const [viewing, setViewing] = useState<DeckKind | null>(null);
   const [viewingCard, setViewingCard] = useState<string | null>(null);
+  const [patientChoice, setPatientChoice] = useState<{ id: string; index: number } | null>(null);
   const { open, toggle } = useCollapse(picking);
   const decks: Record<DeckKind, { name: string; cards: string[] }> = {
     skill: { name: cardRules.terms.skillDeck, cards: m.skillDeck },
@@ -36,7 +39,13 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
           size="sm"
           className={`market-card ${canTake(deck, index) ? 'takeable' : ''}`}
           badge={peek && index === cards.length - 1 && cards.length === 3 && decks[deck].cards.length > 0 ? 'Peek' : undefined}
-          onClick={canTake(deck, index) ? () => dispatch({ type: 'takeCard', deck, index }) : () => setViewingCard(id)}
+          onClick={
+            canTake(deck, index)
+              ? canStore(deck, index)
+                ? () => setPatientChoice({ id, index })
+                : () => dispatch({ type: 'takeCard', deck, index })
+              : () => setViewingCard(id)
+          }
         />
       ))}
     </div>
@@ -53,6 +62,40 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
 
   const cardViewer = viewingCard && (
     <CardViewer title={card(viewingCard).name} subtitle={card(viewingCard).subtitle} cards={[viewingCard]} single onClose={() => setViewingCard(null)} />
+  );
+
+  const patientDialog = patientChoice && (
+    <Dialog
+      title="Patient"
+      subtitle={`Do you want to play ${card(patientChoice.id).name} immediately, or store it to play at the end of a turn?`}
+      onClose={() => setPatientChoice(null)}
+    >
+      <div className="card-choice wrap" style={{ justifyContent: 'center', marginBottom: '16px' }}>
+        <CardView id={patientChoice.id} size="md" />
+      </div>
+      <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            dispatch({ type: 'takeCard', deck: 'tactic', index: patientChoice.index });
+            setPatientChoice(null);
+          }}
+        >
+          Play immediately
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => {
+            dispatch({ type: 'takeCard', deck: 'tactic', index: patientChoice.index, store: true });
+            setPatientChoice(null);
+          }}
+        >
+          Store tactic
+        </button>
+      </div>
+    </Dialog>
   );
 
   const chips = (deck: DeckKind, cards: string[]) => (
@@ -145,6 +188,7 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
       {open ? rows : strip}
       {viewer}
       {cardViewer}
+      {patientDialog}
     </section>
   );
 }

@@ -22,8 +22,11 @@ import {
   relocationOptions,
   startSlots,
   tacticalOptions,
+  canCurious,
+  canPlayStoredTactic,
   usedThisTurn,
 } from './queries';
+import { effectOf } from './data';
 import { rulesOf } from './rules';
 import { hasSkill } from './skillRules';
 import type { Action, GameState, Pending } from './types';
@@ -68,8 +71,12 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
   takeCard: (s, head) => {
     const m = s.market;
     const out: Action[] = [];
+    const patient = hasSkill(s, head.player, 'patient');
     m.skillRow.forEach((_, index) => out.push({ type: 'takeCard', deck: 'skill', index }));
-    m.tacticRow.forEach((_, index) => out.push({ type: 'takeCard', deck: 'tactic', index }));
+    m.tacticRow.forEach((_, index) => {
+      out.push({ type: 'takeCard', deck: 'tactic', index });
+      if (patient) out.push({ type: 'takeCard', deck: 'tactic', index, store: true });
+    });
     if (m.expansions > 0 && reserve(s, head.player).length) out.push({ type: 'takeCard', deck: 'expansion', index: 0 });
     out.push({ type: 'refreshMarket' }, { type: 'profiteer' });
     return out;
@@ -78,7 +85,10 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     { type: 'peekChoice', takeTop: true },
     { type: 'peekChoice', takeTop: false },
   ],
-  discardSkill: (s, head) => s.players[head.player].skills.map((sk) => ({ type: 'discardSkill', skill: sk.id })),
+  discardSkill: (s, head) =>
+    s.players[head.player].skills
+      .filter((sk) => !head.cannotDiscard || effectOf(sk.id) !== head.cannotDiscard)
+      .map((sk) => ({ type: 'discardSkill', skill: sk.id })),
   placeExpansion: (s, head) => [
     { type: 'placeExpansion', to: null },
     ...deployTargets(s, head.player).map((to) => ({ type: 'placeExpansion', to }) as const),
@@ -92,6 +102,11 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     return out;
   },
   changeOfHeart: (s) => [...new Set(s.market.skillDeck)].map((skill) => ({ type: 'changeOfHeart', skill })),
+  prideful: () => [{ type: 'prideful', take: true }, { type: 'prideful', take: false }],
+  ruthless: (s, head) => [
+    { type: 'ruthless' } as const,
+    ...s.players[head.victim].skills.filter((sk) => sk.active).map((sk) => ({ type: 'ruthless', skill: sk.id }) as const),
+  ],
   unveil: (s, head) => {
     const out: Action[] = [{ type: 'unveilDone' }];
     const targets = deployTargets(s, head.player);
@@ -111,15 +126,24 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
 function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Action[] {
   const me = s.turn.player;
   const t = s.turn;
+  const pl = s.players[me];
   const out: Action[] = [{ type: 'endTurn' }];
+
+  if (canPlayStoredTactic(s, me)) {
+    for (const c of pl.storedTactics ?? []) out.push({ type: 'playStoredTactic', card: c });
+  }
+
+  // Once the CE Curious action or a stored Tactic has been taken, no further actions are allowed this turn.
+  if (t.curiousUsed || t.storedTacticPlayed) return out;
+
   const actions = t.actionsLeft;
+  const curious = actions === 0 && canCurious(s, me);
   // Attacking makes you pay for any Curious free moves already taken (payForAttack).
   const canAttack = (cost: number) => actions >= cost + t.freeMovesUsed;
-  const pl = s.players[me];
   const nomadic = actions > 0 && hasSkill(s, me, 'nomadic') && !usedThisTurn(s, 'nomadic');
 
   for (const d of shipsOnBoard(s, me)) {
-    if ((actions > 0 || t.freeMoves > 0) && canMoveDie(s, d)) {
+    if ((actions > 0 || t.freeMoves > 0 || curious) && canMoveDie(s, d)) {
       const moves = moveOptions(s, d.id);
       for (const m of moves.moves.values()) out.push({ type: 'move', die: d.id, to: m.cell });
       if (canAttack(1)) for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
@@ -140,7 +164,7 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
       if (d.value === 3) for (const o of shipsOnBoard(s, me)) if (o.id !== d.id) out.push({ type: 'swap', die: d.id, other: o.id });
       if (d.value === 4) out.push({ type: 'change', die: d.id, value: 3 }, { type: 'change', die: d.id, value: 5 });
       if (d.value === 6) out.push({ type: 'freeReconfigure', die: d.id });
-      if (d.value === 2 && opts.includeCarry && (actions > 0 || t.freeMoves > 0) && canMoveDie(s, d)) {
+      if (d.value === 2 && opts.includeCarry && (actions > 0 || t.freeMoves > 0 || curious) && canMoveDie(s, d)) {
         for (const p of carryPassengers(s, d.id))
           for (const dest of carryOptions(s, d.id, p.id).values())
             for (const drop of dest.drops) out.push({ type: 'carry', die: d.id, passenger: p.id, to: dest.cell, drop });
@@ -161,7 +185,7 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
     if (actions > 0 || t.freeDeploys > 0 || freeDeploy) for (const to of targets) out.push({ type: 'deploy', die: d.id, to });
     if (actions > 0 && canReconfigure(s, d)) out.push({ type: 'reconfigure', die: d.id });
   }
-  if (rulesOf(s).cards && actions > 0 && pl.research < 6 && canGainResearch(s, me)) out.push({ type: 'research' });
+  if (rulesOf(s).cards && (actions > 0 || curious) && pl.research < 6 && canGainResearch(s, me)) out.push({ type: 'research' });
   if (hasSkill(s, me, 'tyrannical-original') && !usedThisTurn(s, 'tyrannical') && pl.research > 1) out.push({ type: 'tyrannical' });
   if (actions >= 2) for (const p of s.board.planets) if (conquerCheck(s, me, p.id).ok) out.push({ type: 'conquer', planet: p.id });
   if (hasSkill(s, me, 'composed') && !usedThisTurn(s, 'composed') && pl.dominance > 1 && canGainResearch(s, me)) out.push({ type: 'composed' });
