@@ -81,6 +81,9 @@ export const actionHandlers = {
   },
   endTurn(s) {
     requireActionPhase(s, true);
+    const pl = s.players[s.turn.player];
+    if (!s.turn.acted && s.turn.actionsLeft > 0) pl.idleTurns = (pl.idleTurns ?? 0) + 1;
+    else delete pl.idleTurns;
     endTurn(s);
   },
 } satisfies Partial<Handlers>;

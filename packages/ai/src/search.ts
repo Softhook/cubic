@@ -57,7 +57,13 @@ export class Search {
   choose(state: GameState): Action | null {
     const head = state.pending[0];
     if (head?.kind === 'combat') return { type: 'resolveCombat' };
-    const options = candidates(state, { includeCarry: this.params.carry });
+    let options = candidates(state, { includeCarry: this.params.carry });
+    // Anti-stalemate: after IDLE_LIMIT turns in a row without an action, don't pass again while
+    // there is anything else to do (two players who both see no progress would pass forever).
+    if (!head && (state.players[this.me].idleTurns ?? 0) >= IDLE_LIMIT && !state.turn.acted) {
+      const active = options.filter((a) => a.type !== 'endTurn');
+      if (active.length) options = active;
+    }
     if (options.length <= 1) return options[0] ?? null;
 
     const root = hideUnknowns(state, this.random);
@@ -213,6 +219,9 @@ export class Search {
     return evaluate(s, this.me);
   }
 }
+
+/** Turns in a row a player may end without spending an action before the AI must act. */
+const IDLE_LIMIT = 2;
 
 /** The level-2 policy, used to play out the opponent's reply. */
 const LEVEL_2_REPLY: SearchParams = { depth: 1, width: 0, innerWidth: 0, samples: 1, carry: false, replies: 0, budget: Infinity };

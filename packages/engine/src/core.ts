@@ -146,6 +146,7 @@ export function requireActionPhase(s: GameState, closing = false): TurnState {
 export function spend(s: GameState, n: number) {
   if (s.turn.actionsLeft < n) fail(n === 1 ? 'No actions left' : `Needs ${n} actions`);
   s.turn.actionsLeft -= n;
+  s.turn.acted = true;
 }
 
 /** Pays for a Move or Research: an action, or once they are spent the CE Curious extra action. */

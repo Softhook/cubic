@@ -1,9 +1,12 @@
 import {
   attackOdds,
   breakthroughAt,
+  cellOf,
   conquerCheck,
+  distance,
   isEmptySpace,
   key,
+  movementRange,
   moveOptions,
   orbitals,
   planetFreeSlots,
@@ -47,6 +50,10 @@ const CARD = 120;
 const PROGRESS: Record<number, number> = { 2: 0.8, 3: 0.45, 4: 0.28, 5: 0.18 };
 /** Chance that a reconfigure-based plan works out (about 1 in 5 per roll, two tries). */
 const RECONFIGURE_ODDS = 0.4;
+/** Share of a cube for an orbit that makes up the whole target sum (less for part of it), on top of the plan. */
+const ORBIT_PROGRESS = 0.12;
+/** Share of a cube for a ship two moves from a planet's orbit; less the further it is (below one reacher's presence). */
+const APPROACH = 0.024;
 
 interface Ctx {
   s: GameState;
@@ -196,11 +203,27 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
     for (let i = 0; i < reachers.length; i++)
       for (let j = i + 1; j < reachers.length; j++) if (reachers[i].value + reachers[j].value === gap) option(4);
   }
-  // Any ship flies in and is reconfigured to fit.
-  if (reachers.length && gap >= 1) option(4, RECONFIGURE_ODDS);
+  // Any ship flies in and is reconfigured to fit (one die covers a gap of at most 6).
+  if (reachers.length && gap >= 1 && gap <= 6) option(4, RECONFIGURE_ODDS);
+  // Two ships fly in, one of them reconfigured to fit.
+  if (empty.length >= 2 && reachers.length >= 2 && gap >= 2 && gap <= 12) option(5, RECONFIGURE_ODDS);
 
-  // Presence: ships around a planet are a start even without a plan yet.
-  const presence = 0.03 * Math.min(inOrbit.length, 3) + 0.015 * Math.min(reachers.length, 3);
-  const value = CUBE * Math.max(best, presence);
+  // Progress: ships already in orbit are part of the sum, worth more the more of it they make up.
+  // An orbit over the target has to shed ships first, so it counts for nothing.
+  const progress = gap > 0 ? ORBIT_PROGRESS * (sum / target) : 0;
+  // Presence: ships that could join the orbit are a start even without a plan yet.
+  const presence = 0.015 * Math.min(reachers.length, 3);
+  // Approach: a planet no ship reaches in one move is still worth heading for, a little more the
+  // fewer moves it takes, so that a distant last planet doesn't leave every move scoring the same.
+  let approach = 0;
+  if (!inOrbit.length && !reachers.length && empty.length) {
+    for (const d of outside) {
+      const from = cellOf(d);
+      if (!from) continue;
+      const moves = Math.ceil(Math.min(...empty.map((c) => distance(from, c))) / Math.max(1, movementRange(s, d)));
+      approach = Math.max(approach, APPROACH / Math.max(2, moves));
+    }
+  }
+  const value = CUBE * (Math.max(best, presence, approach) + progress);
   return mover ? value : value * 0.8;
 }

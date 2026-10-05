@@ -87,6 +87,8 @@ export interface PlayerState extends PlayerConfig {
   carriedPicks?: number;
   /** How many of the carried picks were earned by Conquer actions (Profiteering). */
   carriedConquerPicks?: number;
+  /** Turns in a row this player ended without spending an action (the AI uses it to avoid stalemates). */
+  idleTurns?: number;
 }
 
 export type DeckKind = 'skill' | 'tactic';
@@ -140,6 +142,8 @@ export interface TurnState {
   curiousUsed?: boolean;
   /** Patient: whether a stored Tactic was played this turn. */
   storedTacticPlayed?: boolean;
+  /** Whether an action was spent this turn (free abilities don't count). */
+  acted?: boolean;
 }
 
 /** Effects limited to once per turn. 'cunning' is the second use of a ship ability. */
