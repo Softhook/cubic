@@ -137,7 +137,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
   - id: patient
     name: Patient
     subtitle: "Delayed tactics"
-    text: "Whenever you take a Tactic, you may instead store it. At the end of each of your turns, you may play a stored Tactic."
+    text: "Whenever you take a Tactic, you may instead store it. At the end of each of your turns, you may play a stored Tactic. When you take this Skill, you may take and store a Tactic."
     category: card
     ce_status: playtesting
     count: 1

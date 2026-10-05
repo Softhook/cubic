@@ -14,6 +14,8 @@ export function hintFor(game: GameState, sel: Sel): string {
         return 'Infamy! Seize any planet that does not have your cube yet.';
       case 'takeCard':
         return `Take ${head.count} card${head.count > 1 ? 's' : ''} from the market below${rulesOf(game).cards?.refresh ? ', or spend a pick on dealing new cards' : ''}${canProfiteer(game) ? ', or take a missile instead of a card earned by conquering (Profiteering)' : ''}.`;
+      case 'patientTactic':
+        return 'Patient: you may take a face-up tactic from the market below and store it.';
       case 'placeExpansion':
         return 'Place your new ship in orbit of one of your planets, or send it to your scrapyard.';
       case 'showOfForce':

@@ -9,7 +9,7 @@ function aiDelay(s: GameState): number {
   const head = s.pending[0];
   if (s.phase === 'setup') return 650;
   if (!head) return s.turn.actionsLeft === 3 && !Object.keys(s.turn.moved).length ? 1100 : 850;
-  if (head.kind === 'takeCard' || head.kind === 'peek') return 1100;
+  if (head.kind === 'takeCard' || head.kind === 'peek' || head.kind === 'patientTactic') return 1100;
   if (head.kind === 'advance') return 700;
   return 800;
 }

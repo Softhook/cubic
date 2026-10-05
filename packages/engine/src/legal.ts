@@ -102,6 +102,7 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     return out;
   },
   changeOfHeart: (s) => [...new Set(s.market.skillDeck)].map((skill) => ({ type: 'changeOfHeart', skill })),
+  patientTactic: (s) => [{ type: 'patientTactic' } as const, ...s.market.tacticRow.map((_, index) => ({ type: 'patientTactic', index }) as const)],
   prideful: () => [{ type: 'prideful', take: true }, { type: 'prideful', take: false }],
   ruthless: (s, head) => [
     { type: 'ruthless' } as const,

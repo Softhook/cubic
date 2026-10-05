@@ -219,6 +219,72 @@ describe('Patient', () => {
     s.dice.find((d) => d.id === `p${me}d0`)!.value = 4;
     expect(() => apply(s, { type: 'change', die: `p${me}d0`, value: 3 })).toThrow('No actions allowed after playing a stored tactic');
   });
+
+  it('lets the player take and store a face-up tactic when taking Patient, without using a pick', () => {
+    let s = communityGame();
+    const me = s.turn.player;
+    s.market.skillRow = ['patient'];
+    s.market.tacticRow = ['aggression', 'sabotage'];
+    s.market.tacticDeck = ['warp-gate'];
+    s.pending = [{ kind: 'takeCard', player: me, count: 2 }];
+
+    s = apply(s, { type: 'takeCard', deck: 'skill', index: 0 });
+    expect(s.pending[0]).toEqual({ kind: 'patientTactic', player: me });
+    expect(legalActions(s)).toEqual([
+      { type: 'patientTactic' },
+      { type: 'patientTactic', index: 0 },
+      { type: 'patientTactic', index: 1 },
+    ]);
+
+    s = apply(s, { type: 'patientTactic', index: 1 });
+    expect(s.players[me].storedTactics).toEqual(['sabotage']);
+    expect(s.market.tacticRow).toEqual(['warp-gate', 'aggression']);
+    expect(s.pending[0]).toMatchObject({ kind: 'takeCard', count: 1 });
+  });
+
+  it('may decline the tactic, and skips the choice when no tactic is face up', () => {
+    let s = communityGame();
+    const me = s.turn.player;
+    s.market.skillRow = ['patient', 'agile'];
+    s.market.tacticRow = ['aggression'];
+    s.pending = [{ kind: 'takeCard', player: me, count: 1 }];
+    s = apply(s, { type: 'takeCard', deck: 'skill', index: 0 });
+    s = apply(s, { type: 'patientTactic' });
+    expect(s.players[me].storedTactics ?? []).toEqual([]);
+    expect(s.market.tacticRow).toEqual(['aggression']);
+
+    let t = communityGame();
+    t.market.skillRow = ['patient'];
+    t.market.tacticRow = [];
+    t.market.tacticDeck = [];
+    t.pending = [{ kind: 'takeCard', player: t.turn.player, count: 2 }];
+    t = apply(t, { type: 'takeCard', deck: 'skill', index: 0 });
+    expect(t.pending[0]).toMatchObject({ kind: 'takeCard', count: 1 });
+  });
+
+  it('triggers when Patient is chosen with Change of Heart', () => {
+    let s = communityGame();
+    const me = s.turn.player;
+    s.market.skillDeck = ['patient', 'agile'];
+    s.market.tacticRow = ['aggression'];
+    s.pending = [{ kind: 'changeOfHeart', player: me }];
+    s = apply(s, { type: 'changeOfHeart', skill: 'patient' });
+    expect(s.pending[0]).toEqual({ kind: 'patientTactic', player: me });
+  });
+
+  it('stores the tactic before a skill-limit discard; discarding Patient then loses it', () => {
+    let s = communityGame({ me: ['agile', 'ferocious', 'brutal'] });
+    const me = s.turn.player;
+    s.market.skillRow = ['patient'];
+    s.market.tacticRow = ['aggression'];
+    s.pending = [{ kind: 'takeCard', player: me, count: 1 }];
+    s = apply(s, { type: 'takeCard', deck: 'skill', index: 0 });
+    expect(s.pending.map((p) => p.kind)).toEqual(['patientTactic', 'discardSkill']);
+    s = apply(s, { type: 'patientTactic', index: 0 });
+    s = apply(s, { type: 'discardSkill', skill: 'patient' });
+    expect(s.players[me].storedTactics).toEqual([]);
+    expect(s.market.tacticDiscard).toContain('aggression');
+  });
 });
 
 describe('Ruthless', () => {

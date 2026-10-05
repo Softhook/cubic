@@ -8,9 +8,12 @@ import { CardViewer } from './CardViewer';
 import { Dialog } from './Dialog';
 
 export function Market({ game, dispatch, legal }: { game: GameState; dispatch: Dispatch; legal: Legal }) {
-  const picking = legal.can('takeCard');
+  const patientPick = legal.can('patientTactic');
+  const picking = legal.can('takeCard') || patientPick;
   const m = game.market;
-  const canTake = (deck: DeckKind | 'expansion', index: number) => legal.can('takeCard', (a) => a.deck === deck && a.index === index);
+  const canPatientStore = (deck: DeckKind | 'expansion', index: number) => deck === 'tactic' && legal.can('patientTactic', (a) => a.index === index);
+  const canTake = (deck: DeckKind | 'expansion', index: number) =>
+    canPatientStore(deck, index) || legal.can('takeCard', (a) => a.deck === deck && a.index === index);
   const canStore = (deck: DeckKind | 'expansion', index: number) => legal.can('takeCard', (a) => a.deck === deck && a.index === index && !!a.store);
   const canExpand = canTake('expansion', 0);
   const cardRules = rulesOf(game).cards!;
@@ -40,7 +43,9 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
           className={`market-card ${canTake(deck, index) ? 'takeable' : ''}`}
           badge={peek && index === cards.length - 1 && cards.length === 3 && decks[deck].cards.length > 0 ? 'Peek' : undefined}
           onClick={
-            canTake(deck, index)
+            canPatientStore(deck, index)
+              ? () => dispatch({ type: 'patientTactic', index })
+              : canTake(deck, index)
               ? canStore(deck, index)
                 ? () => setPatientChoice({ id, index })
                 : () => dispatch({ type: 'takeCard', deck, index })
@@ -153,6 +158,11 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
             className={`market-card ${m.expansions ? '' : 'empty'} ${canExpand ? 'takeable' : ''}`}
           />
         </div>
+      )}
+      {patientPick && (
+        <button className="btn btn-ghost market-refresh" title="Patient: you may take and store a face-up tactic" onClick={() => dispatch({ type: 'patientTactic' })}>
+          Don't store a tactic
+        </button>
       )}
       {legal.can('profiteer') && (
         <button className="btn btn-ghost market-refresh" title="Profiteering: a card earned by a Conquer action" onClick={() => dispatch({ type: 'profiteer' })}>

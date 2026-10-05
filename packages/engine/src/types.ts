@@ -201,6 +201,8 @@ export type Pending =
   | { kind: 'prideful'; player: PlayerId; victim: PlayerId }
   /** Ruthless: disable one active skill of the victim. */
   | { kind: 'ruthless'; player: PlayerId; victim: PlayerId }
+  /** Patient, when taken: may take a face-up Tactic and store it. */
+  | { kind: 'patientTactic'; player: PlayerId }
   /** Unveil the Fleet (CE) or, with `reorganize`, Reorganization (original). */
   | { kind: 'unveil'; player: PlayerId; rerolled: string[]; reorganize?: boolean };
 
@@ -307,6 +309,8 @@ export type Action =
   | { type: 'prideful'; take: boolean }
   | { type: 'ruthless'; skill?: string }
   | { type: 'playStoredTactic'; card: string }
+  /** Patient, when taken: store the face-up Tactic at `index`, or none if left out. */
+  | { type: 'patientTactic'; index?: number }
   | { type: 'unveilReroll'; die: string }
   | { type: 'unveilDeploy'; die: string; to: Cell }
   | { type: 'unveilDone' };

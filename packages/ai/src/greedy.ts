@@ -166,6 +166,7 @@ function quickPolicy(s: GameState, me: PlayerId): Action | null {
     return options.find((a) => a.type === 'takeCard' && a.deck === 'expansion') ?? options[0] ?? null;
   }
   if (head.kind === 'peek') return { type: 'peekChoice', takeTop: false };
+  if (head.kind === 'patientTactic') return options.find((a) => a.type === 'patientTactic' && a.index !== undefined) ?? options[0] ?? null;
   if (head.kind === 'unveil') {
     return options.find((a) => a.type === 'unveilDeploy') ?? { type: 'unveilDone' };
   }

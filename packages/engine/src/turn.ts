@@ -157,6 +157,11 @@ const AUTO_RESOLVE: { [K in Pending['kind']]?: (s: GameState, head: PendingOf<K>
     s.pending.shift();
     return true;
   },
+  patientTactic(s) {
+    if (s.market.tacticRow.length) return false;
+    s.pending.shift();
+    return true;
+  },
   ruthless(s, head) {
     if (s.players[head.victim].skills.some((sk) => sk.active)) return false;
     s.pending.shift();

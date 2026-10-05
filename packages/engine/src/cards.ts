@@ -123,6 +123,8 @@ function gainCard(s: GameState, p: PlayerId, id: string) {
     pl.skills.push({ id, active: false });
     log(s, `${pl.name} takes the ${def.name} ${rulesOf(s).cards?.terms.skill ?? 'skill'}.`, p, 'cardTaken');
     if (pl.skills.length > skillLimit(s, p)) s.pending.unshift({ kind: 'discardSkill', player: p, reason: 'limit' });
+    // Resolved before any discard, so a Tactic stored now is lost if Patient itself is then discarded.
+    if (effectOf(id) === 'patient') s.pending.unshift({ kind: 'patientTactic', player: p });
   } else {
     playTactic(s, p, id, `${pl.name} plays ${def.name}.`);
   }
@@ -272,6 +274,18 @@ export const cardHandlers = {
       s.gates = head.placed;
       s.pending.shift();
     }
+  },
+  /** Patient: "When you take this Skill, you may take and store a Tactic." */
+  patientTactic(s, a) {
+    const head = headOf(s, 'patientTactic', 'Not storing a tactic');
+    if (a.index === undefined) {
+      s.pending.shift();
+      log(s, `${name(s, head.player)} does not store a tactic.`, head.player);
+      return;
+    }
+    const id = takeFromRow(s, 'tactic', a.index);
+    s.pending.shift();
+    takeOrStore(s, head.player, id, true);
   },
   changeOfHeart(s, a) {
     const head = headOf(s, 'changeOfHeart', 'Not choosing a skill');
