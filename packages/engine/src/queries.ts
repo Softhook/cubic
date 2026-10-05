@@ -2,7 +2,7 @@
 import {
   cellAt,
   diagonals,
-  distance,
+  delta,
   isDiagonalStep,
   key,
   linked,
@@ -162,7 +162,7 @@ function reach(state: GameState, start: Cell, range: number, diagonal: boolean, 
       const cost = info.steps + (kind === 'through' ? 0 : 1);
       const old = steps.get(key(nb));
       if (old && old.steps <= cost) continue;
-      steps.set(key(nb), { cell: nb, steps: cost, usedDiagonal: info.usedDiagonal || isDiagonalStep(cur, nb), through: kind === 'through' });
+      steps.set(key(nb), { cell: nb, steps: cost, usedDiagonal: info.usedDiagonal || isDiagonalStep(cur, nb, state.board), through: kind === 'through' });
       if (kind === 'through') queue.unshift(nb);
       else queue.push(nb);
     }
@@ -292,7 +292,10 @@ export function nomadicTargets(state: GameState, dieId: string): Cell[] {
   const home = state.board.planets.find((p) => orbitals(state.board, p).some((q) => same(q, at)));
   if (!home) return [];
   // Planets sit at the centre of their 3×3 tile, so planets on neighbouring tiles are 3 spaces away.
-  const near = state.board.planets.filter((p) => distance(p, home) === 3 && (p.r === home.r || p.c === home.c));
+  const near = state.board.planets.filter((p) => {
+    const d = delta(home, p, state.board);
+    return Math.abs(d.r) + Math.abs(d.c) === 3 && (d.r === 0 || d.c === 0);
+  });
   return near.flatMap((p) => orbitals(state.board, p).filter((q) => isEmptySpace(state, q)));
 }
 

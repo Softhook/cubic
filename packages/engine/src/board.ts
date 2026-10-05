@@ -49,7 +49,9 @@ export function buildBoard(map: MapDef): Board {
     });
   });
 
-  return { mapId: map.id, mapName: map.name, rows, cols, cells, planets };
+  const board: Board = { mapId: map.id, mapName: map.name, rows, cols, cells, planets };
+  if (map.wrap) board.wrap = { rows: map.wrap !== 'horizontal', cols: map.wrap !== 'vertical' };
+  return board;
 }
 
 export const key = (p: Cell) => `${p.r},${p.c}`;
@@ -66,9 +68,20 @@ export function spaces(board: Board): Cell[] {
   return out;
 }
 
-/** Orthogonal (Manhattan) distance between two cells. */
-export function distance(a: Cell, b: Cell): number {
-  return Math.abs(a.r - b.r) + Math.abs(a.c - b.c);
+/**
+ * The shortest step from a to b along each axis, going across a joined edge when that is shorter
+ * (only on a wrapping map, when `board` is given).
+ */
+export function delta(a: Cell, b: Cell, board?: Board): Cell {
+  const short = (d: number, size: number, wraps: boolean | undefined) =>
+    wraps && Math.abs(d) * 2 > size ? d - Math.sign(d) * size : d;
+  return { r: short(b.r - a.r, board?.rows ?? 0, board?.wrap?.rows), c: short(b.c - a.c, board?.cols ?? 0, board?.wrap?.cols) };
+}
+
+/** Orthogonal (Manhattan) distance between two cells, across joined edges when `board` wraps. */
+export function distance(a: Cell, b: Cell, board?: Board): number {
+  const d = delta(a, b, board);
+  return Math.abs(d.r) + Math.abs(d.c);
 }
 
 export function onBoard(board: Board, p: Cell): boolean {
@@ -76,13 +89,15 @@ export function onBoard(board: Board, p: Cell): boolean {
   return !!cell && cell.kind !== 'off';
 }
 
-export function offsets(p: Cell, deltas: Cell[]): Cell[] {
-  return deltas.map((d) => ({ r: p.r + d.r, c: p.c + d.c }));
+/** The cells one step from p in each direction, carried across the board's joined edges. */
+export function offsets(board: Board, p: Cell, deltas: Cell[]): Cell[] {
+  const join = (x: number, size: number, wraps: boolean | undefined) => (wraps ? (x + size) % size : x);
+  return deltas.map((d) => ({ r: join(p.r + d.r, board.rows, board.wrap?.rows), c: join(p.c + d.c, board.cols, board.wrap?.cols) }));
 }
 
 /** The 4 orthogonal spaces next to p that are on the board. */
 export function adjacent(board: Board, p: Cell): Cell[] {
-  return offsets(p, ORTHO).filter((q) => onBoard(board, q));
+  return offsets(board, p, ORTHO).filter((q) => onBoard(board, q));
 }
 
 /** The orthogonal neighbours of p plus its Warp Gate partner: the two gate spaces count as adjacent (RULE-SUGGESTIONS #30). */
@@ -92,12 +107,12 @@ export function linked(state: GameState, p: Cell): Cell[] {
 
 /** The 8 surrounding spaces of p that are on the board. */
 export function surrounding(board: Board, p: Cell): Cell[] {
-  return offsets(p, [...ORTHO, ...DIAG]).filter((q) => onBoard(board, q));
+  return offsets(board, p, [...ORTHO, ...DIAG]).filter((q) => onBoard(board, q));
 }
 
 /** Movement neighbours, including diagonals for interceptors and Warp Gate links. */
 export function stepNeighbours(state: GameState, p: Cell, diagonal: boolean): Cell[] {
-  const result = offsets(p, diagonal ? [...ORTHO, ...DIAG] : ORTHO).filter((q) =>
+  const result = offsets(state.board, p, diagonal ? [...ORTHO, ...DIAG] : ORTHO).filter((q) =>
     onBoard(state.board, q),
   );
   return [...result, ...gatePartner(state, p)];
@@ -110,8 +125,9 @@ function gatePartner(state: GameState, p: Cell): Cell[] {
   return same(p, a) ? [b] : same(p, b) ? [a] : [];
 }
 
-export function isDiagonalStep(a: Cell, b: Cell): boolean {
-  return Math.abs(a.r - b.r) === 1 && Math.abs(a.c - b.c) === 1;
+export function isDiagonalStep(a: Cell, b: Cell, board?: Board): boolean {
+  const d = delta(a, b, board);
+  return Math.abs(d.r) === 1 && Math.abs(d.c) === 1;
 }
 
 export function orbitals(board: Board, planet: Planet): Cell[] {
@@ -119,7 +135,7 @@ export function orbitals(board: Board, planet: Planet): Cell[] {
 }
 
 export function diagonals(board: Board, planet: Planet): Cell[] {
-  return offsets(planet, DIAG).filter((q) => onBoard(board, q));
+  return offsets(board, planet, DIAG).filter((q) => onBoard(board, q));
 }
 
 export function planetFreeSlots(planet: Planet): number {

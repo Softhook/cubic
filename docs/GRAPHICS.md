@@ -122,8 +122,8 @@ steps (7: 22 mm up to 10: 42 mm, nearly twice as wide). So a planet's number rea
 its size and the numeral, which also helps colour-blind players. Within a number, the seed picks the
 variant and surface, so every planet is distinct.
 
-**Every physical planet is unique.** A set that plays every map in `maps.yaml` needs 25 tiles (see
-§2a), so we design 25 individual planets: each tile has a fixed id (`p7-01` … `p10-04`, `void`), a
+**Every physical planet is unique.** A set that plays every map in `maps.yaml` needs 28 tiles (see
+§2a), so we design 28 individual planets: each tile has a fixed id (`p7-01` … `p10-05`, `void`), a
 pinned seed and look in `art.yaml`, and optionally a name printed small on the tile. The game assigns
 a map's planets to tile ids, so the planet on screen is the same one as on the table.
 
@@ -141,11 +141,11 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
 - **Loading.** Drawing a tile's noise filters takes ~45 ms (~1.1 s for a 25-tile map), so the game
   draws each tile once to a 576 px image and keeps it in the browser's IndexedDB
   ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)). Tiles are drawn in the background while
-  the lobby is open; later games and window resizes reuse the stored images (all 25 shown ~0.3 s after
+  the lobby is open; later games and window resizes reuse the stored images (all 28 shown ~0.3 s after
   Launch). Each stored image carries a hash of its SVG, so changing the artwork redraws only what
   changed.
 
-**Star backgrounds per tile.** Each of the 25 tiles gets its own seeded starfield and nebula, so a
+**Star backgrounds per tile.** Each of the 28 tiles gets its own seeded starfield and nebula, so a
 map never looks like a repeated pattern. Nebula colours are random but kept between blue and pink-purple
 (`NEBULA_HUES`, 215–330°) so the set looks consistent (blue clouds are lifted, since blue looks darker), and kept **behind the planet**, so the sky stays in the background and the planet's colour is what tells tiles apart. (The
 Void tile keeps a stronger magenta nebula around its rift.) Because tiles are rearranged for every map, backgrounds
@@ -217,8 +217,8 @@ table without remembering the rule. The pad area keeps a calm, darker surface so
 colour stand out.
 
 **Start markers.** Maps mark some planets as starting planets (`7*` etc.). Rather than printing extra
-"start" versions of tiles, use separate start tokens (up to 4 per map) placed on the planet during
-setup. This keeps the set at 25 tiles.
+"start" versions of tiles, use separate start tokens (up to 5 per map) placed on the planet during
+setup. This keeps the set at 28 tiles.
 
 **The tile set.** The most of each planet any map in `maps.yaml` uses at once:
 
@@ -226,12 +226,13 @@ setup. This keeps the set at 25 tiles.
 |---|---|
 | Planet 7 | 8 |
 | Planet 8 | 8 |
-| Planet 9 | 4 |
-| Planet 10 | 4 |
+| Planet 9 | 6 |
+| Planet 10 | 5 |
 | Void | 1 |
-| **Total** | **25** |
+| **Total** | **28** |
 
-(The "Everything" map uses all 25.) Empty tile slots (`.` in the layouts) are gaps in the map, not
+The 2–4 player maps need only four 9s and four 10s; Anecdotal (six 9s) and False Dilemma (five 10s)
+need the rest; the "Everything" map uses 25. Empty tile slots (`.` in the layouts) are gaps in the map, not
 tiles.
 
 **Sheets.** A 102 mm tile with bleed fits **2 × 2 per A4 or US Letter page** (204 mm of 210/216 mm
@@ -354,7 +355,7 @@ Because the print route is a normal page, it can be opened in a browser to check
 |---|---|---|
 | `cards-pod` | One PDF page (or PNG) per card face and back, with 3 mm bleed, no marks | 69.5 × 94.9 mm |
 | `cards-pnp` | Print-and-play sheets, 3×3 cards, crop marks, duplex backs mirrored | A4 and US Letter |
-| `tiles` | One file per tile (25) with bleed, plus backs | 102 × 102 mm |
+| `tiles` | One file per tile (28) with bleed, plus backs | 102 × 102 mm |
 | `tiles-pnp` | Tiles 2 × 2 per page with crop marks | A4 and US Letter |
 | `player-board` | Player board / reference sheet | A4 or A5 |
 | `proof` | Contact sheet of everything at reduced size, for review | A4 |
@@ -415,7 +416,7 @@ Each phase leaves the game working and better-looking.
 - [ ] PDF and text-fit checks.
 
 **Phase 3 — Art Lab**
-- [x] Lab route (`#lab`): all 25 tiles, seed/type/rings controls, SVG, SVG for Illustrator and PNG (300/600 dpi) export.
+- [x] Lab route (`#lab`): all 28 tiles, seed/type/rings controls, SVG, SVG for Illustrator and PNG (300/600 dpi) export.
 - [ ] Context view (tile vs. card vs. in-game size) and starfield/planet-only views.
 - [ ] `data/art.yaml` and pinning.
 
@@ -425,7 +426,7 @@ Each phase leaves the game working and better-looking.
 - [x] First pass: seeded starfield with warped-noise nebula, filaments and dust; five planet types (gas, rocky, ice, lava, ocean), each planet number its own kind of world from noise with sphere shading, atmosphere and rings; Void rift.
 - [ ] Iterate on the look in the lab; card frames and backs.
 - [x] The game maps each planet to a tile id (`assignTiles`), so a tile looks the same on every map.
-- [ ] Pin the chosen seeds for all 25 tiles in `art.yaml` (the lab shows each spec to copy).
+- [ ] Pin the chosen seeds for all 28 tiles in `art.yaml` (the lab shows each spec to copy).
 - [ ] Print one test tile at 100 % and check it with real 19 mm dice and cubes before the full set.
 - [x] In-game tiles are drawn once to images and cached in IndexedDB; drawn in the background in the lobby.
 - [ ] Pre-rendered PNG backgrounds for print (filters rasterise at an uncontrolled resolution in PDFs).

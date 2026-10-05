@@ -2546,5 +2546,525 @@
         "8*"
       ]
     ]
+  },
+  {
+    "id": "omega-sector",
+    "name": "Omega Sector",
+    "players": 5,
+    "group": "ce",
+    "cubes": 4,
+    "stats": {
+      "slack": 0,
+      "shared": 5,
+      "planets": 5
+    },
+    "layout": [
+      [
+        "7*",
+        "9",
+        "7*"
+      ],
+      [
+        "9",
+        "10*",
+        "9"
+      ],
+      [
+        "7*",
+        "9",
+        "7*"
+      ]
+    ]
+  },
+  {
+    "id": "ad-hominem",
+    "name": "Ad Hominem",
+    "players": 5,
+    "group": "ce",
+    "cubes": 5,
+    "stats": {
+      "slack": 0,
+      "shared": 7,
+      "planets": 7
+    },
+    "layout": [
+      [
+        "10*",
+        "9",
+        "10*"
+      ],
+      [
+        ".",
+        "9*",
+        "."
+      ],
+      [
+        "10*",
+        "9",
+        "10*"
+      ]
+    ]
+  },
+  {
+    "id": "false-dilemma",
+    "name": "False Dilemma",
+    "players": 5,
+    "group": "ce",
+    "cubes": 4,
+    "stats": {
+      "slack": 0,
+      "shared": 5,
+      "planets": 5
+    },
+    "layout": [
+      [
+        "10*",
+        ".",
+        "10*"
+      ],
+      [
+        ".",
+        "10*",
+        "."
+      ],
+      [
+        "10*",
+        ".",
+        "10*"
+      ]
+    ]
+  },
+  {
+    "id": "reification",
+    "name": "Reification",
+    "players": 5,
+    "group": "ce",
+    "cubes": 5,
+    "stats": {
+      "slack": 0,
+      "shared": 8,
+      "planets": 8
+    },
+    "layout": [
+      [
+        "10*",
+        "8",
+        "10*"
+      ],
+      [
+        "8",
+        "7*",
+        "8"
+      ],
+      [
+        "10*",
+        "8",
+        "10*"
+      ]
+    ]
+  },
+  {
+    "id": "no-true-scotsman",
+    "name": "No True Scotsman",
+    "players": 5,
+    "group": "ce",
+    "cubes": 5,
+    "stats": {
+      "slack": 0,
+      "shared": 10,
+      "planets": 10
+    },
+    "wrap": "vertical",
+    "layout": [
+      [
+        "8*"
+      ],
+      [
+        "9"
+      ],
+      [
+        "8*"
+      ],
+      [
+        "9"
+      ],
+      [
+        "8*"
+      ],
+      [
+        "9"
+      ],
+      [
+        "8*"
+      ],
+      [
+        "9"
+      ],
+      [
+        "8*"
+      ],
+      [
+        "9"
+      ]
+    ]
+  },
+  {
+    "id": "anecdotal",
+    "name": "Anecdotal",
+    "players": 5,
+    "group": "ce",
+    "cubes": 5,
+    "stats": {
+      "slack": 0,
+      "shared": 7,
+      "planets": 7
+    },
+    "layout": [
+      [
+        ".",
+        ".",
+        "7*"
+      ],
+      [
+        "9*",
+        ".",
+        "9"
+      ],
+      [
+        "9",
+        "0",
+        "10",
+        "9",
+        "7*"
+      ],
+      [
+        "9*",
+        ".",
+        "9"
+      ],
+      [
+        ".",
+        ".",
+        "7*"
+      ]
+    ]
+  },
+  {
+    "id": "fallacy-fallacy",
+    "name": "Fallacy Fallacy",
+    "players": 5,
+    "group": "ce",
+    "cubes": 6,
+    "stats": {
+      "slack": 0,
+      "shared": 7,
+      "planets": 7
+    },
+    "layout": [
+      [
+        ".",
+        "7*",
+        ".",
+        "7*",
+        "10",
+        "10"
+      ],
+      [
+        "7*",
+        "9",
+        "10",
+        "8"
+      ],
+      [
+        ".",
+        "7*",
+        ".",
+        "7*",
+        "10",
+        "10"
+      ]
+    ]
+  },
+  {
+    "id": "bandwagon",
+    "name": "Bandwagon",
+    "players": 5,
+    "group": "ce",
+    "cubes": 4,
+    "stats": {
+      "slack": 0,
+      "shared": 5,
+      "planets": 10
+    },
+    "layout": [
+      [
+        "7",
+        "9*",
+        "7",
+        "9*"
+      ],
+      [
+        "9*",
+        ".",
+        ".",
+        "7"
+      ],
+      [
+        "7",
+        "9*",
+        "7",
+        "9*"
+      ]
+    ]
+  },
+  {
+    "id": "appeal-to-authority",
+    "name": "Appeal to Authority",
+    "players": 5,
+    "group": "ce",
+    "cubes": 6,
+    "stats": {
+      "slack": 0,
+      "shared": 10,
+      "planets": 10
+    },
+    "wrap": "horizontal",
+    "layout": [
+      [
+        "7*",
+        "7*",
+        "7*",
+        "7*",
+        "7*"
+      ],
+      [
+        "8",
+        "8",
+        "8",
+        "8",
+        "8"
+      ],
+      [
+        "9",
+        "9",
+        "9",
+        "9",
+        "9"
+      ]
+    ]
+  },
+  {
+    "id": "false-equivalence",
+    "name": "False Equivalence",
+    "players": 5,
+    "group": "ce",
+    "cubes": 6,
+    "stats": {
+      "slack": 1,
+      "shared": 9,
+      "planets": 10
+    },
+    "wrap": "horizontal",
+    "layout": [
+      [
+        "7*",
+        "7*",
+        "7*",
+        "7*",
+        "7*"
+      ],
+      [
+        "8",
+        "9",
+        "8",
+        "9",
+        "8"
+      ],
+      [
+        "9",
+        "8",
+        "10",
+        "8",
+        "9"
+      ]
+    ]
+  },
+  {
+    "id": "special-pleading",
+    "name": "Special Pleading",
+    "players": 5,
+    "group": "ce",
+    "cubes": 6,
+    "stats": {
+      "slack": 1,
+      "shared": 9,
+      "planets": 10
+    },
+    "wrap": "both",
+    "layout": [
+      [
+        ".",
+        ".",
+        "10"
+      ],
+      [
+        "8",
+        "8",
+        "7*",
+        "8",
+        "8"
+      ],
+      [
+        "9",
+        "7*",
+        "0",
+        "7*",
+        "9"
+      ],
+      [
+        "8",
+        "7*",
+        "10",
+        "7*",
+        "8"
+      ]
+    ]
+  },
+  {
+    "id": "false-dichotomy",
+    "name": "False Dichotomy",
+    "players": 5,
+    "group": "ce",
+    "cubes": 6,
+    "stats": {
+      "slack": 0,
+      "shared": 10,
+      "planets": 10
+    },
+    "layout": [
+      [
+        "8",
+        "9",
+        "7*"
+      ],
+      [
+        "9",
+        "8"
+      ],
+      [
+        "7*",
+        ".",
+        "9",
+        "8",
+        "7*"
+      ],
+      [
+        ".",
+        ".",
+        "8",
+        "10",
+        "8"
+      ],
+      [
+        ".",
+        ".",
+        "7*",
+        "8",
+        "7*"
+      ]
+    ]
+  },
+  {
+    "id": "ambiguity",
+    "name": "Ambiguity",
+    "players": 5,
+    "group": "ce",
+    "cubes": 6,
+    "stats": {
+      "slack": 1,
+      "shared": 9,
+      "planets": 13
+    },
+    "layout": [
+      [
+        ".",
+        "10*",
+        "7",
+        "10*"
+      ],
+      [
+        ".",
+        ".",
+        "8",
+        ".",
+        "8"
+      ],
+      [
+        "9*",
+        ".",
+        "0",
+        "8",
+        "7"
+      ],
+      [
+        "7",
+        "8",
+        "9"
+      ],
+      [
+        "7*",
+        ".",
+        "8",
+        "8",
+        "7*"
+      ]
+    ]
+  },
+  {
+    "id": "beg-the-question",
+    "name": "Beg the Question",
+    "players": 5,
+    "group": "ce",
+    "cubes": 6,
+    "stats": {
+      "slack": 4,
+      "shared": 8,
+      "planets": 12
+    },
+    "layout": [
+      [
+        ".",
+        "8",
+        "9",
+        "8"
+      ],
+      [
+        ".",
+        "7*",
+        ".",
+        "7*"
+      ],
+      [
+        "8",
+        "9",
+        "0",
+        "9",
+        "8"
+      ],
+      [
+        "7*",
+        ".",
+        "7*",
+        ".",
+        "7*"
+      ],
+      [
+        "8",
+        "9",
+        "8",
+        "9",
+        "8"
+      ]
+    ]
   }
 ]

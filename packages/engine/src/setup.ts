@@ -19,8 +19,8 @@ export interface NewGameOptions {
 
 export function createGame(opts: NewGameOptions): GameState {
   const n = opts.players.length;
-  // The CE print edition's 5-player maps are not transcribed yet.
-  if (n < 2 || n > 4) throw new Error('Cubic needs 2–4 players');
+  // 5 players only on the CE print booklet's 5-player maps, which the mode's map groups decide.
+  if (n < 2 || n > 5) throw new Error('Cubic needs 2–5 players');
   const mode = opts.mode ?? 'community';
   const rules = RULESETS[mode];
   const map = opts.mapId ? MAPS.find((m) => m.id === opts.mapId) : defaultMap(n);

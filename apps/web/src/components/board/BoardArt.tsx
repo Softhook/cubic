@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { GameState } from '@quantum/engine';
 import { CUBE_PAD, PLANET_DIAMETER, PLANET_FAMILY, TILE, cubePadCentres } from '@quantum/art';
 import { tileImage } from '../../art/tileImages';
-import { tileArt } from './geometry';
+import { tileArt, wrapMarks } from './geometry';
 
 /** Tile artwork by physical tile id, filled in as each image is ready (a plain tile shows meanwhile). */
 function useTileImages(game: GameState) {
@@ -63,6 +63,30 @@ export function BoardArt({ game, cell }: { game: GameState; cell: number }) {
           ) : null,
         ),
       )}
+
+      {/* Chevrons on edges that join the opposite edge, pointing off the board. */}
+      {wrapMarks(game.board).map((m) => {
+        const angle = { right: 0, bottom: 90, left: 180, top: 270 }[m.side];
+        const x = (m.c + 0.5 + (m.side === 'right' ? 0.42 : m.side === 'left' ? -0.42 : 0)) * cell;
+        const y = (m.r + 0.5 + (m.side === 'bottom' ? 0.42 : m.side === 'top' ? -0.42 : 0)) * cell;
+        const s = cell * 0.09;
+        return (
+          <path
+            key={`w${m.side}${m.r},${m.c}`}
+            className="wrap-mark"
+            d={`M${-s} ${-s * 1.6} L${s} 0 L${-s} ${s * 1.6}`}
+            transform={`translate(${x} ${y}) rotate(${angle})`}
+            fill="none"
+            stroke="#7fb2ff"
+            strokeOpacity={0.7}
+            strokeWidth={Math.max(1.5, cell * 0.04)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <title>This edge joins the opposite edge</title>
+          </path>
+        );
+      })}
 
       {game.gates.map((g, i) => (
         <g key={i} transform={`translate(${(g.c + 0.5) * cell} ${(g.r + 0.5) * cell})`}>

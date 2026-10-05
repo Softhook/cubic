@@ -25,6 +25,8 @@ export interface MapDef {
   group: string;
   cubes: number;
   stats: { slack: number; shared: number | null; planets: number };
+  /** Edges that join: leaving one edge of a row or column re-enters at its opposite edge. */
+  wrap?: 'horizontal' | 'vertical' | 'both';
   layout: string[][];
 }
 
@@ -33,7 +35,8 @@ export const TACTICS: CardDef[] = cardsJson.tactics;
 export const EXPANSION: CardDef = cardsJson.expansion[0];
 export const ORIGINAL_COMMAND: CardDef[] = cardsJson.original_command;
 export const ORIGINAL_GAMBIT: CardDef[] = cardsJson.original_gambit;
-export const MAPS: MapDef[] = mapsJson;
+// build-data.mjs checks `wrap` is one of the allowed values.
+export const MAPS: MapDef[] = mapsJson as MapDef[];
 
 /** The basic map for a player count. */
 export function defaultMap(players: number): MapDef | undefined {

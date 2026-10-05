@@ -3,7 +3,7 @@ import { PLANET_FAMILY, type PlanetType } from './tokens';
 
 /** One physical tile: which planet it carries and the seed its look comes from. */
 export interface TileSpec {
-  /** `p7-01` … `p10-04`, or `void`. */
+  /** `p7-01` … `p10-05`, or `void`. */
   id: string;
   /** Planet number, or 0 for the Void tile. */
   number: number;
@@ -16,7 +16,7 @@ export interface TileSpec {
  * How many of each tile a set needs: the most any map in data/maps.yaml uses at once
  * (docs/GRAPHICS.md §2a). Start planets use a separate token, so they need no tiles of their own.
  */
-export const SET_COUNTS: Record<number, number> = { 7: 8, 8: 8, 9: 4, 10: 4, 0: 1 };
+export const SET_COUNTS: Record<number, number> = { 7: 8, 8: 8, 9: 6, 10: 5, 0: 1 };
 
 /** The look of one tile, from its id. Ids past the set's count (a map larger than the set) still work. */
 export function tileSpec(id: string): TileSpec {

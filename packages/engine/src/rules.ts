@@ -1,4 +1,4 @@
-import { ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef, type GameMode } from './data';
+import { MAPS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef, type GameMode } from './data';
 import type { GameState } from './types';
 
 /**
@@ -95,13 +95,18 @@ export const RULESETS: Record<GameMode, RuleSet> = {
     },
     startingMissiles: 1,
     reconfigure: 'unseen',
-    mapGroups: [...OFFICIAL_MAPS, 'bga'],
+    mapGroups: [...OFFICIAL_MAPS, 'bga', 'ce'],
   },
 };
 
 /** The rule set a game is played with. */
 export function rulesOf(state: GameState): RuleSet {
   return RULESETS[state.mode];
+}
+
+/** Player counts a rule set has maps for. */
+export function playerCounts(rules: RuleSet): number[] {
+  return [...new Set(MAPS.filter((m) => rules.mapGroups.includes(m.group)).map((m) => m.players))].sort((a, b) => a - b);
 }
 
 /** Rule sets in menu order. */

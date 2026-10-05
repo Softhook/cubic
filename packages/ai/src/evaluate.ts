@@ -220,7 +220,7 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
     for (const d of outside) {
       const from = cellOf(d);
       if (!from) continue;
-      const moves = Math.ceil(Math.min(...empty.map((c) => distance(from, c))) / Math.max(1, movementRange(s, d)));
+      const moves = Math.ceil(Math.min(...empty.map((c) => distance(from, c, s.board))) / Math.max(1, movementRange(s, d)));
       approach = Math.max(approach, APPROACH / Math.max(2, moves));
     }
   }

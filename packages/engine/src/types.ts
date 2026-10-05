@@ -33,6 +33,8 @@ export interface Board {
   mapName: string;
   rows: number;
   cols: number;
+  /** Rows wrap left↔right (`cols`) and/or columns wrap top↔bottom (`rows`); absent on most maps. */
+  wrap?: { rows: boolean; cols: boolean };
   cells: BoardCell[][];
   planets: Planet[];
 }

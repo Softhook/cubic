@@ -59,6 +59,8 @@ export interface AiGame {
   seed: number;
   /** Seed of the AI's own randomness. */
   aiSeed: number;
+  /** Defaults to the mode's map for the player count. */
+  mapId?: string;
   /** AI level of each player (default 1, the level the golden tests replay). */
   levels?: AiLevel[];
   /** Called with the state before each action, and the action about to be applied. */
@@ -80,7 +82,7 @@ export function aiAction(s: GameState, levels: readonly AiLevel[] | undefined, r
 
 /** Plays AI against AI to the end, or throws if it gets stuck. */
 export function playAiGame(game: AiGame): { state: GameState; actions: Action[] } {
-  let s = createGame({ players: players(game.players), seed: game.seed, mode: game.mode });
+  let s = createGame({ players: players(game.players), seed: game.seed, mode: game.mode, mapId: game.mapId });
   const random = seededRandom(game.aiSeed);
   const actions: Action[] = [];
   while (s.phase !== 'over') {

@@ -1,10 +1,10 @@
 import { useState, type CSSProperties } from 'react';
 import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
-import { defaultMap, MAPS, MODES, RULESETS, type GameMode, type MapDef, type PlayerConfig } from '@quantum/engine';
+import { defaultMap, MAPS, MODES, playerCounts, RULESETS, type GameMode, type MapDef, type PlayerConfig } from '@quantum/engine';
 import { Die3D } from './Die3D';
 
-export const PLAYER_COLORS = ['#4cc9f0', '#f72585', '#ffb703', '#80ed99'];
-const AI_NAMES = ['Nova', 'Vex', 'Orion', 'Lyra'];
+export const PLAYER_COLORS = ['#4cc9f0', '#f72585', '#ffb703', '#80ed99', '#b388ff'];
+const AI_NAMES = ['Nova', 'Vex', 'Orion', 'Lyra', 'Kepler'];
 
 export interface LobbyResult {
   players: PlayerConfig[];
@@ -37,6 +37,7 @@ const MAP_GROUPS: { id: string; name: string }[] = [
   { id: 'advanced', name: 'Advanced' },
   { id: 'addon', name: 'Add-on pack' },
   { id: 'bga', name: 'Board Game Arena' },
+  { id: 'ce', name: 'Community Edition' },
 ];
 
 function storedMap(players: number): string {
@@ -71,12 +72,15 @@ function MiniMap({ map }: { map: MapDef }) {
 }
 
 export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void; onRules: () => void }) {
-  const [count, setCount] = useState(2);
+  const [wanted, setCount] = useState(2);
   const [mode, setMode] = useState<GameMode>(storedMode);
+  // 5 players only has Community Edition maps; other rules fall back to their largest count.
+  const counts = playerCounts(RULESETS[mode]);
+  const count = counts.includes(wanted) ? wanted : counts[counts.length - 1];
   const [seats, setSeats] = useState<PlayerConfig[]>(() =>
     PLAYER_COLORS.map((color, i) => ({ name: i === 0 ? 'Commander' : AI_NAMES[i], color, ai: i !== 0, aiLevel: storedAiLevel() })),
   );
-  const [mapIds, setMapIds] = useState<Record<number, string>>(() => ({ 2: storedMap(2), 3: storedMap(3), 4: storedMap(4) }));
+  const [mapIds, setMapIds] = useState<Record<number, string>>(() => Object.fromEntries([2, 3, 4, 5].map((n) => [n, storedMap(n)])));
   const choices = MAPS.filter((m) => m.players === count && RULESETS[mode].mapGroups.includes(m.group));
   // A remembered map the chosen rules don't use falls back to the basic map (it stays remembered).
   const map = choices.find((m) => m.id === mapIds[count]) ?? defaultMap(count)!;
@@ -132,7 +136,7 @@ export function Lobby({ onStart, onRules }: { onStart: (r: LobbyResult) => void;
         <label className="field">
           <span>Players</span>
           <div className="segmented">
-            {[2, 3, 4].map((n) => (
+            {counts.map((n) => (
               <button key={n} className={n === count ? 'on' : ''} onClick={() => setCount(n)}>
                 {n}
               </button>

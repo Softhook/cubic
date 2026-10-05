@@ -10,7 +10,13 @@
 #   suffix *         starting planet
 #
 # Groups: basic (the box's basic maps), advanced (the 2013 rulebook's advanced maps),
-#         addon (the add-on pack), bga (maps Board Game Arena added).
+#         addon (the add-on pack), bga (maps Board Game Arena added),
+#         ce (the CE print booklet's 5-player maps, pages 14–15).
+#
+# wrap (optional): horizontal | vertical | both. The booklet marks these edges with arrows.
+#   A ship leaving one edge comes back at the opposite edge of the same row or column, as if
+#   the board were a cylinder (or a torus for both). The join is on the full grid, so a row or
+#   column only wraps when it has a tile at both ends.
 #
 # Stats (from the CE print booklet), all derivable from layout + cubes + player count:
 #   slack   = total cube locations − players × cubes
@@ -23,8 +29,9 @@
 # (reference/original-2013/) shows an older 2p and 3p map; the designer corrected both in
 # his errata (BGG thread 1087563).
 #
-# All other maps come from reference/bga/maps.json. Their stats were computed by mapStats()
-# rather than copied from the booklet; maps.test.ts keeps them in step with the layouts.
+# The 2–4 player advanced, addon and bga maps come from reference/bga/maps.json; the ce maps
+# from the booklet. Their stats were computed by mapStats() rather than copied from the booklet;
+# maps.test.ts keeps them in step with the layouts.
 
 maps:
   - id: alpha-sector
@@ -104,7 +111,7 @@ maps:
       - ".  .  7*"
 
   - id: interpolation
-    name: Interpolation
+    name: Interpolation  # Named "Entanglement" in the CE print booklet
     players: 2
     group: advanced
     cubes: 5
@@ -859,3 +866,183 @@ maps:
       - "7  9  0  9  7"
       - ".  7  8  .  8*"
       - ".  .  8  8*"
+
+  # 5 players: the CE print booklet's own maps (Community Edition only)
+
+  - id: omega-sector
+    name: Omega Sector
+    players: 5
+    group: ce
+    cubes: 4
+    stats: { slack: 0, shared: 5, planets: 5 }
+    layout:
+      - "7* 9  7*"
+      - "9  10* 9"
+      - "7* 9  7*"
+
+  - id: ad-hominem
+    name: Ad Hominem
+    players: 5
+    group: ce
+    cubes: 5
+    stats: { slack: 0, shared: 7, planets: 7 }
+    layout:
+      - "10* 9  10*"
+      - ".   9* ."
+      - "10* 9  10*"
+
+  - id: false-dilemma
+    name: False Dilemma
+    players: 5
+    group: ce
+    cubes: 4
+    stats: { slack: 0, shared: 5, planets: 5 }
+    layout:
+      - "10* .   10*"
+      - ".   10* ."
+      - "10* .   10*"
+
+  - id: reification
+    name: Reification
+    players: 5
+    group: ce
+    cubes: 5
+    stats: { slack: 0, shared: 8, planets: 8 }
+    layout:
+      - "10* 8  10*"
+      - "8   7* 8"
+      - "10* 8  10*"
+
+  - id: no-true-scotsman
+    name: No True Scotsman
+    players: 5
+    group: ce
+    cubes: 5
+    stats: { slack: 0, shared: 10, planets: 10 }
+    wrap: vertical  # top and bottom edges join
+    layout:
+      - "8*"
+      - "9"
+      - "8*"
+      - "9"
+      - "8*"
+      - "9"
+      - "8*"
+      - "9"
+      - "8*"
+      - "9"
+
+  - id: anecdotal
+    name: Anecdotal
+    players: 5
+    group: ce
+    cubes: 5
+    stats: { slack: 0, shared: 7, planets: 7 }
+    layout:
+      - ".  .  7*"
+      - "9* .  9"
+      - "9  0  10 9  7*"
+      - "9* .  9"
+      - ".  .  7*"
+
+  - id: fallacy-fallacy
+    name: Fallacy Fallacy
+    players: 5
+    group: ce
+    cubes: 6
+    stats: { slack: 0, shared: 7, planets: 7 }
+    layout:
+      - ".  7* .  7* 10 10"
+      - "7* 9  10 8"
+      - ".  7* .  7* 10 10"
+
+  - id: bandwagon
+    name: Bandwagon
+    players: 5
+    group: ce
+    cubes: 4
+    stats: { slack: 0, shared: 5, planets: 10 }
+    layout:
+      - "7  9* 7  9*"
+      - "9* .  .  7"
+      - "7  9* 7  9*"
+
+  - id: appeal-to-authority
+    name: Appeal to Authority
+    players: 5
+    group: ce
+    cubes: 6
+    stats: { slack: 0, shared: 10, planets: 10 }
+    wrap: horizontal  # left and right edges join
+    layout:
+      - "7* 7* 7* 7* 7*"
+      - "8  8  8  8  8"
+      - "9  9  9  9  9"
+
+  - id: false-equivalence
+    name: False Equivalence
+    players: 5
+    group: ce
+    cubes: 6
+    stats: { slack: 1, shared: 9, planets: 10 }
+    wrap: horizontal  # left and right edges join
+    layout:
+      - "7* 7* 7* 7* 7*"
+      - "8  9  8  9  8"
+      - "9  8  10 8  9"
+
+  - id: special-pleading
+    name: Special Pleading
+    players: 5
+    group: ce
+    cubes: 6
+    # Booklet reports 10/10 planets shared; mapStats computes 9
+    stats: { slack: 1, shared: 9, planets: 10 }
+    # Both pairs of edges join; only the 10s' column reaches the top and bottom edges.
+    wrap: both
+    layout:
+      - ".  .  10"
+      - "8  8  7* 8  8"
+      - "9  7* 0  7* 9"
+      - "8  7* 10 7* 8"
+
+  - id: false-dichotomy
+    name: False Dichotomy
+    players: 5
+    group: ce
+    cubes: 6
+    # Booklet reports 6/10 planets shared; mapStats computes 10
+    stats: { slack: 0, shared: 10, planets: 10 }
+    layout:
+      - "8  9  7*"
+      - "9  8"
+      - "7* .  9  8  7*"
+      - ".  .  8  10 8"
+      - ".  .  7* 8  7*"
+
+  - id: ambiguity
+    name: Ambiguity
+    players: 5
+    group: ce
+    cubes: 6
+    stats: { slack: 1, shared: 9, planets: 13 }
+    layout:
+      - ".  10* 7  10*"
+      - ".  .   8  .   8"
+      - "9* .   0  8   7"
+      - "7  8   9"
+      - "7* .   8  8   7*"
+
+  - id: beg-the-question
+    name: Beg the Question
+    players: 5
+    group: ce
+    cubes: 6
+    stats: { slack: 4, shared: 8, planets: 12 }
+    layout:
+      - ".  8  9  8"
+      - ".  7* .  7*"
+      - "8  9  0  9  8"
+      - "7* .  7* .  7*"
+      - "8  9  8  9  8"
+
