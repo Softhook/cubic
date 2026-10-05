@@ -1,5 +1,5 @@
 /** Legal action enumeration, used by the AI and for UI hints. */
-import { same } from './board';
+import { same, spaces } from './board';
 import { actor, tryApply } from './engine';
 import type { PendingOf } from './core';
 import { reserve, scrapyard, shipsOnBoard } from './lookups';
@@ -29,7 +29,7 @@ import {
 } from './queries';
 import { rulesOf } from './rules';
 import { anySkill, hasSkill } from './skillRules';
-import type { Action, GameState, Pending } from './types';
+import type { Action, Die, GameState, Pending } from './types';
 
 /**
  * Candidate answers to each pending decision. Candidates may include illegal ones:
@@ -94,13 +94,10 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     ...deployTargets(s, head.player).map((to) => ({ type: 'placeExpansion', to }) as const),
   ],
   showOfForce: (s) => shipsOnBoard(s).map((d) => ({ type: 'showOfForce', die: d.id })),
-  warpGate: (s, head) => {
-    const out: Action[] = [];
-    for (let r = 0; r < s.board.rows; r++)
-      for (let c = 0; c < s.board.cols; c++)
-        if (s.board.cells[r][c].kind === 'space' && !head.placed.some((p) => same(p, { r, c }))) out.push({ type: 'warpGate', cell: { r, c } });
-    return out;
-  },
+  warpGate: (s, head) =>
+    spaces(s.board)
+      .filter((cell) => !head.placed.some((p) => same(p, cell)))
+      .map((cell) => ({ type: 'warpGate', cell })),
   changeOfHeart: (s) => [...new Set(s.market.skillDeck)].map((skill) => ({ type: 'changeOfHeart', skill })),
   patientTactic: (s) => [{ type: 'patientTactic' } as const, ...s.market.tacticRow.map((_, index) => ({ type: 'patientTactic', index }) as const)],
   prideful: () => [{ type: 'prideful', take: true }, { type: 'prideful', take: false }],
@@ -123,6 +120,13 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
   },
 };
 
+/** Every Flagship transport by `d`: passenger, destination and drop. `range` 1 is Tactical's step. */
+function carries(s: GameState, d: Die, range?: number) {
+  return carryPassengers(s, d.id).flatMap((p) =>
+    [...carryOptions(s, d.id, p.id, range).values()].flatMap((dest) => dest.drops.map((drop) => ({ passenger: p.id, to: dest.cell, drop }))),
+  );
+}
+
 /** Phase-1 options for the current player. `includeCarry` adds every Flagship transport (many). */
 function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Action[] {
   const me = s.turn.player;
@@ -137,13 +141,15 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
   if (actionsClosed(t)) return out;
 
   const actions = t.actionsLeft;
+  // A move is paid with an action, an Original Curious free move, or the CE Curious extra action (spendMove).
   const curious = actions === 0 && canCurious(s, me);
+  const canPayMove = actions > 0 || t.freeMoves > 0 || curious;
   // Attacking makes you pay for any Curious free moves already taken (payForAttack).
   const canAttack = (cost: number) => actions >= cost + t.freeMovesUsed;
   const nomadic = actions > 0 && hasSkill(s, me, 'nomadic') && !usedThisTurn(s, 'nomadic');
 
   for (const d of shipsOnBoard(s, me)) {
-    if ((actions > 0 || t.freeMoves > 0 || curious) && canMoveDie(s, d)) {
+    if (canPayMove && canMoveDie(s, d)) {
       const moves = moveOptions(s, d.id);
       for (const m of moves.moves.values()) out.push({ type: 'move', die: d.id, to: m.cell });
       if (canAttack(1)) for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
@@ -154,9 +160,7 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
       for (const m of tac.moves) out.push({ type: 'tactical', die: d.id, to: m.cell });
       if (canAttack(0)) for (const x of tac.attacks) out.push({ type: 'tactical', die: d.id, target: x.die.id });
       if (d.value === 2 && opts.includeCarry && canUseAbility(s, d)) {
-        for (const p of carryPassengers(s, d.id))
-          for (const dest of carryOptions(s, d.id, p.id, 1).values())
-            for (const drop of dest.drops) out.push({ type: 'tactical', die: d.id, passenger: p.id, to: dest.cell, drop });
+        for (const c of carries(s, d, 1)) out.push({ type: 'tactical', die: d.id, ...c });
       }
     }
     if (canUseAbility(s, d)) {
@@ -164,10 +168,8 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
       if (d.value === 3) for (const o of shipsOnBoard(s, me)) if (o.id !== d.id) out.push({ type: 'swap', die: d.id, other: o.id });
       if (d.value === 4) out.push({ type: 'change', die: d.id, value: 3 }, { type: 'change', die: d.id, value: 5 });
       if (d.value === 6) out.push({ type: 'freeReconfigure', die: d.id });
-      if (d.value === 2 && opts.includeCarry && (actions > 0 || t.freeMoves > 0 || curious) && canMoveDie(s, d)) {
-        for (const p of carryPassengers(s, d.id))
-          for (const dest of carryOptions(s, d.id, p.id).values())
-            for (const drop of dest.drops) out.push({ type: 'carry', die: d.id, passenger: p.id, to: dest.cell, drop });
+      if (d.value === 2 && opts.includeCarry && canPayMove && canMoveDie(s, d)) {
+        for (const c of carries(s, d)) out.push({ type: 'carry', die: d.id, ...c });
       }
     }
     if (hasSkill(s, me, 'flexible') && !usedThisTurn(s, 'flexible')) {

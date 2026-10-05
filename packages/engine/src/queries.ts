@@ -2,12 +2,14 @@
 import {
   cellAt,
   diagonals,
+  distance,
   isDiagonalStep,
   key,
   linked,
   orbitals,
   planetFreeSlots,
   same,
+  spaces,
   stepNeighbours,
   surrounding,
 } from './board';
@@ -290,7 +292,7 @@ export function nomadicTargets(state: GameState, dieId: string): Cell[] {
   const home = state.board.planets.find((p) => orbitals(state.board, p).some((q) => same(q, at)));
   if (!home) return [];
   // Planets sit at the centre of their 3×3 tile, so planets on neighbouring tiles are 3 spaces away.
-  const near = state.board.planets.filter((p) => Math.abs(p.r - home.r) + Math.abs(p.c - home.c) === 3 && (p.r === home.r || p.c === home.c));
+  const near = state.board.planets.filter((p) => distance(p, home) === 3 && (p.r === home.r || p.c === home.c));
   return near.flatMap((p) => orbitals(state.board, p).filter((q) => isEmptySpace(state, q)));
 }
 
@@ -339,13 +341,8 @@ export function deployTargets(state: GameState, player: PlayerId): Cell[] {
     }
   }
   if (anySkill(state, player, (r) => r.deployIsolated)) {
-    for (let r = 0; r < state.board.rows; r++) {
-      for (let c = 0; c < state.board.cols; c++) {
-        const p = { r, c };
-        if (!isEmptySpace(state, p)) continue;
-        if (linked(state, p).some((q) => dieAt(state, q))) continue;
-        targets.set(key(p), p);
-      }
+    for (const p of spaces(state.board)) {
+      if (isEmptySpace(state, p) && !linked(state, p).some((q) => dieAt(state, q))) targets.set(key(p), p);
     }
   }
   return [...targets.values()];

@@ -10,7 +10,7 @@
  * player could not make, or one the engine would refuse.
  */
 import { describe, expect, it } from 'vitest';
-import { checkInvariants, legalActions, tryApply, type Action, type Cell, type GameMode, type GameState } from '../src';
+import { checkInvariants, distance, legalActions, spaces, tryApply, type Action, type GameMode, type GameState } from '../src';
 import { playAiGame, quickStart } from './helpers';
 
 const DEEP = !!process.env.DEEP;
@@ -20,8 +20,7 @@ const keyOf = (a: Action) => JSON.stringify(a, Object.keys(a).sort());
 /** Every phase-1 action worth trying in this state, legal or not. */
 function bruteForce(s: GameState, withCarry: boolean): Action[] {
   const me = s.turn.player;
-  const cells: Cell[] = [];
-  for (let r = 0; r < s.board.rows; r++) for (let c = 0; c < s.board.cols; c++) if (s.board.cells[r][c].kind === 'space') cells.push({ r, c });
+  const cells = spaces(s.board);
   const mine = s.dice.filter((d) => d.owner === me);
   const onBoard = s.dice.filter((d) => d.loc.zone === 'board');
   const out: Action[] = [
@@ -51,7 +50,7 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
     const at = d.loc;
     if (withCarry && d.value === 2 && at.zone === 'board') {
       // Only spaces within reach can be destinations or drops (range 2, +1 for Agile, +1 to drop).
-      const near = cells.filter((c) => Math.abs(c.r - at.r) + Math.abs(c.c - at.c) <= 4);
+      const near = cells.filter((c) => distance(c, at) <= 4);
       for (const p of mine) {
         if (p.id === d.id || p.loc.zone !== 'board') continue;
         for (const to of near)

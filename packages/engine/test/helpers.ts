@@ -4,11 +4,15 @@ import { actor, apply, createGame, legalActions, type Action, type GameMode, typ
 
 export const players = (n: number) => Array.from({ length: n }, (_, i) => ({ name: `P${i}`, color: '#fff', ai: true }));
 
-/** A game with setup done, taking the first legal choice for every setup decision. */
-export function quickStart(n = 2, seed = 1, mode: GameMode = 'community'): GameState {
-  let s = createGame({ players: players(n), seed, mode });
+/** Finishes setup, taking the first legal choice for every setup decision. */
+export function finishSetup(s: GameState): GameState {
   while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
   return s;
+}
+
+/** A game with setup done (see `finishSetup`); `mapId` defaults to the mode's map for `n` players. */
+export function quickStart(n = 2, seed = 1, mode: GameMode = 'community', mapId?: string): GameState {
+  return finishSetup(createGame({ players: players(n), seed, mode, mapId }));
 }
 
 /** Empties the map and places dice at given cells, as [row, col, value], for focused rule tests. */
@@ -30,8 +34,7 @@ export function arrange(s: GameState, placements: Record<string, [number, number
  * (0,1); `skills` are given to each side, active.
  */
 export function originalGame(skills: { me?: string[]; foe?: string[] } = {}): GameState {
-  let s = createGame({ players: players(2), seed: 3, mode: 'original', mapId: 'alpha-sector' });
-  while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
+  let s = quickStart(2, 3, 'original', 'alpha-sector');
   const me = s.turn.player;
   const foe = 1 - me;
   s = arrange(s, { [`p${me}d0`]: [0, 0, 6], [`p${foe}d0`]: [0, 1, 3] });

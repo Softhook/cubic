@@ -234,8 +234,7 @@ describe('modes', () => {
      * Destroyer at (3,3) and a Battlestation at (5,5) next to an enemy Scout at (5,6).
      */
     function curious(actionsLeft: number): GameState {
-      let s = createGame({ players: players(2), seed: 3, mode: 'original', mapId: 'alpha-sector' });
-      while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
+      let s = quickStart(2, 3, 'original', 'alpha-sector');
       const me = s.turn.player;
       const foe = 1 - me;
       s = arrange(s, { [`p${me}d0`]: [2, 2, 2], [`p${me}d1`]: [3, 3, 3], [`p${me}d2`]: [5, 5, 1], [`p${foe}d0`]: [5, 6, 6] });
@@ -293,8 +292,7 @@ describe('Tactical with ship abilities (forum consensus, BGG threads 1093051 and
    * Destroyer at (3,3) and an Interceptor at (5,5); an enemy Scout sits diagonally at (4,6).
    */
   function tactical(mode: GameMode, skill: string): GameState {
-    let s = createGame({ players: players(2), seed: 3, mode, mapId: 'alpha-sector' });
-    while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
+    let s = quickStart(2, 3, mode, 'alpha-sector');
     const me = s.turn.player;
     s = arrange(s, { [`p${me}d0`]: [2, 2, 2], [`p${me}d1`]: [3, 3, 3], [`p${me}d2`]: [5, 5, 5], [`p${1 - me}d0`]: [4, 6, 6] });
     s.players[me].skills = [{ id: skill, active: true }];
@@ -348,8 +346,7 @@ describe('Tactical with ship abilities (forum consensus, BGG threads 1093051 and
 describe('void tiles (The Void maps; BGA rules help)', () => {
   // Axiomatic: the void tile is tile row 1, col 1, so board rows and cols 3–5.
   const start = (mode: GameMode) => {
-    let s = createGame({ players: players(2), seed: 5, mode, mapId: 'axiomatic' });
-    while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
+    const s = quickStart(2, 5, mode, 'axiomatic');
     for (const p of s.players) p.skills = [];
     return s;
   };

@@ -7,6 +7,7 @@ import {
   conquerCheck,
   die,
   dieAt,
+  distance,
   isEmptySpace,
   legalActions,
   movementRange,
@@ -16,6 +17,7 @@ import {
   tryApply,
   type Action,
   type GameState,
+  type Pending,
   type PlayerId,
 } from '@quantum/engine';
 import { candidates, storedTactics } from './patient';
@@ -153,33 +155,25 @@ function playOutDecisions(state: GameState, me: PlayerId): GameState {
   return s;
 }
 
+/** The follow-up option `quickPolicy` prefers for each kind of decision; otherwise the first legal one. */
+const PREFERRED: { [K in Pending['kind']]?: (a: Action, s: GameState, me: PlayerId) => boolean } = {
+  showOfForce: (a, s, me) => a.type === 'showOfForce' && die(s, a.die).owner !== me,
+  takeCard: (a) => a.type === 'takeCard' && a.deck === 'expansion',
+  patientTactic: (a) => a.type === 'patientTactic' && a.index !== undefined,
+  unveil: (a) => a.type === 'unveilDeploy',
+  placeExpansion: (a) => a.type === 'placeExpansion' && !!a.to,
+  ruthless: (a) => a.type === 'ruthless' && !!a.skill,
+  prideful: (a) => a.type === 'prideful' && a.take,
+};
+
 function quickPolicy(s: GameState, me: PlayerId): Action | null {
   const head = s.pending[0];
   if (!head) return null;
   if (head.kind === 'combat') return { type: 'resolveCombat' };
-  const options = legalActions(s);
-  if (head.kind === 'showOfForce') {
-    const enemy = options.find((a) => a.type === 'showOfForce' && die(s, a.die).owner !== me);
-    return enemy ?? options[0] ?? null;
-  }
-  if (head.kind === 'takeCard') {
-    return options.find((a) => a.type === 'takeCard' && a.deck === 'expansion') ?? options[0] ?? null;
-  }
   if (head.kind === 'peek') return { type: 'peekChoice', takeTop: false };
-  if (head.kind === 'patientTactic') return options.find((a) => a.type === 'patientTactic' && a.index !== undefined) ?? options[0] ?? null;
-  if (head.kind === 'unveil') {
-    return options.find((a) => a.type === 'unveilDeploy') ?? { type: 'unveilDone' };
-  }
-  if (head.kind === 'placeExpansion') {
-    return options.find((a) => a.type === 'placeExpansion' && a.to) ?? options[0] ?? null;
-  }
-  if (head.kind === 'ruthless') {
-    return options.find((a) => a.type === 'ruthless' && a.skill) ?? options[0] ?? null;
-  }
-  if (head.kind === 'prideful') {
-    return options.find((a) => a.type === 'prideful' && a.take) ?? options[0] ?? null;
-  }
-  return options[0] ?? null;
+  const options = legalActions(s);
+  const prefer = PREFERRED[head.kind];
+  return (prefer && options.find((a) => prefer(a, s, me))) ?? options[0] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -236,7 +230,7 @@ function conquerPotential(s: GameState, p: PlayerId): number {
         if (inOrbit.includes(d)) continue;
         const c = cellOf(d)!;
         const near = slots.some(
-          (q) => isEmptySpace(s, q) && Math.abs(q.r - c.r) + Math.abs(q.c - c.c) <= movementRange(s, d),
+          (q) => isEmptySpace(s, q) && distance(q, c) <= movementRange(s, d),
         );
         if (near) v += 6;
       }
@@ -255,8 +249,7 @@ function danger(s: GameState, p: PlayerId): number {
     const c = cellOf(mine)!;
     let worst = 0;
     for (const e of enemies) {
-      const ec = cellOf(e)!;
-      const dist = Math.abs(ec.r - c.r) + Math.abs(ec.c - c.c);
+      const dist = distance(cellOf(e)!, c);
       if (dist <= movementRange(s, e) + 1 && dist > 0) worst = Math.max(worst, attackOdds(e.value, mine.value));
     }
     total += worst * 45;

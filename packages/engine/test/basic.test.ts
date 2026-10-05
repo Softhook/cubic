@@ -22,7 +22,7 @@ import {
   type Cell,
   type GameState,
 } from '../src';
-import { players, quickStart } from './helpers';
+import { finishSetup, players, quickStart } from './helpers';
 
 const BASE = quickStart(2, 1, 'basic');
 
@@ -133,7 +133,7 @@ describe('setup (p.3)', () => {
     expect(loc(s, c)).toEqual(board(1, 0));
     expect(s.pending[0]).toMatchObject({ kind: 'placeShips', player: other });
 
-    while (s.phase === 'setup') s = apply(s, legalActions(s)[0]);
+    s = finishSetup(s);
     expect(s.turn).toMatchObject({ player: first, actionsLeft: 3, phase: 'actions' });
     for (const p of s.players) expect(p.cubesLeft).toBe(4);
   });

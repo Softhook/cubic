@@ -59,6 +59,18 @@ export function cellAt(board: Board, p: Cell): BoardCell | undefined {
   return board.cells[p.r]?.[p.c];
 }
 
+/** Every space (not a planet, void or off-board cell) on the board, row by row. */
+export function spaces(board: Board): Cell[] {
+  const out: Cell[] = [];
+  board.cells.forEach((row, r) => row.forEach((cell, c) => cell.kind === 'space' && out.push({ r, c })));
+  return out;
+}
+
+/** Orthogonal (Manhattan) distance between two cells. */
+export function distance(a: Cell, b: Cell): number {
+  return Math.abs(a.r - b.r) + Math.abs(a.c - b.c);
+}
+
 export function onBoard(board: Board, p: Cell): boolean {
   const cell = cellAt(board, p);
   return !!cell && cell.kind !== 'off';
