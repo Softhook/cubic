@@ -7,8 +7,10 @@ type FsElement = HTMLElement & { webkitRequestFullscreen?: () => Promise<void> }
 const doc = document as FsDocument;
 const root = document.documentElement as FsElement;
 
-const supported = !!(root.requestFullscreen || root.webkitRequestFullscreen);
+// Opened from the home screen with the manifest's `display: fullscreen`, there are no bars to hide.
+const supported = !!(root.requestFullscreen || root.webkitRequestFullscreen) && !matchMedia('(display-mode: fullscreen)').matches;
 const isFullscreen = () => !!(doc.fullscreenElement ?? doc.webkitFullscreenElement);
+const enter = () => (root.requestFullscreen ?? root.webkitRequestFullscreen)?.call(root)?.catch?.(() => {});
 
 /**
  * Phones go full screen on the first tap in a game: the address bar and system bars take a lot of a
@@ -19,7 +21,7 @@ export function useFullscreenOnFirstTap() {
   useEffect(() => {
     if (!supported || !matchMedia('(pointer: coarse)').matches) return;
     const go = () => {
-      if (!isFullscreen()) (root.requestFullscreen ?? root.webkitRequestFullscreen)?.call(root)?.catch?.(() => {});
+      if (!isFullscreen()) enter();
     };
     document.addEventListener('click', go, { once: true, capture: true });
     return () => document.removeEventListener('click', go, { capture: true });
@@ -28,7 +30,7 @@ export function useFullscreenOnFirstTap() {
 
 function toggle() {
   if (isFullscreen()) (doc.exitFullscreen ?? doc.webkitExitFullscreen)?.call(doc);
-  else (root.requestFullscreen ?? root.webkitRequestFullscreen)?.call(root)?.catch?.(() => {});
+  else enter();
 }
 
 export function FullscreenButton() {

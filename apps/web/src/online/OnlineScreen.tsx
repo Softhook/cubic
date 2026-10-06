@@ -31,6 +31,7 @@ export function OnlineScreen({ secret, onLeave, onRules }: { secret: string; onL
       view={g.view}
       online
       onQuit={onLeave}
+      onLobby={onLeave}
       onRules={onRules}
       side={<OnlinePanel g={g} secret={secret} onJoin={watching && openSeats.length && !g.mySeats.length ? () => setWatching(false) : undefined} />}
       overlay={joining && <JoinDialog replay={g.replay} onJoin={g.claim} onWatch={() => setWatching(true)} />}

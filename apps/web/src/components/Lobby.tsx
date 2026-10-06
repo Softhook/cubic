@@ -4,6 +4,7 @@ import { defaultMap, MAPS, MODES, playerCounts, rulesOf, RULESETS, type GameMode
 import { Die3D } from './Die3D';
 import { forgetGame, onlineGames } from '../online/storage';
 import { defaultSeat } from '../game/seats';
+import { clearSavedGame, loadSavedGame } from '../game/savedGame';
 import { remember, stored } from '../storage';
 import { PLAYER_COLORS } from '../theme';
 
@@ -253,16 +254,18 @@ function MapPicker({ map, choices, onChoose }: { map: MapDef; choices: MapDef[];
 export function Lobby({
   onStart,
   onRules,
-  saved,
   onResume,
-  onDiscard,
 }: {
   onStart: (r: LobbyResult) => void;
   onRules: () => void;
-  saved: GameState | null;
-  onResume: () => void;
-  onDiscard: () => void;
+  onResume: (saved: GameState) => void;
 }) {
+  // Read on each visit: a game played since keeps saving itself.
+  const [saved, setSaved] = useState(loadSavedGame);
+  const discard = () => {
+    clearSavedGame();
+    setSaved(null);
+  };
   const [wanted, setWanted] = useState(2);
   const [online, setOnline] = useState(false);
   const [mode, setMode] = useState<GameMode>(storedMode);
@@ -322,7 +325,7 @@ export function Lobby({
         <p className="tagline">Every die is a starship. Low numbers hit hard, high numbers fly fast. Place all your cubes to conquer the sector.</p>
       </div>
 
-      <YourGames saved={saved} onResume={onResume} onDiscard={onDiscard} />
+      <YourGames saved={saved} onResume={() => saved && onResume(saved)} onDiscard={discard} />
 
       <div className="lobby-card">
         <h2>New game</h2>

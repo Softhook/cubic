@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createGame, type GameState } from '@quantum/engine';
 import { useGame } from './game/useGame';
-import { clearSavedGame, loadSavedGame } from './game/savedGame';
+import { clearSavedGame } from './game/savedGame';
 import { devStartGame } from './game/devStart';
 import { Lobby, type LobbyResult } from './components/Lobby';
 import { Rules } from './components/Rules';
@@ -11,7 +11,6 @@ import { createOnlineGame } from './online/create';
 
 export function App() {
   const [game, setGame] = useState<GameState | null>(devStartGame);
-  const [saved, setSaved] = useState(loadSavedGame);
   const [rules, setRules] = useState(false);
   // An online game is opened by its link: #online/<secret>.
   const [online, setOnline] = useState(onlineSecret);
@@ -21,10 +20,7 @@ export function App() {
       setOnline(secret);
       // Leaving a game on this device (Back, or an invite link): it lives on as the saved game, to
       // resume from the lobby. Its screen would otherwise come back at the state it started from.
-      if (secret) {
-        setGame(null);
-        setSaved(loadSavedGame());
-      }
+      if (secret) setGame(null);
     };
     window.addEventListener('hashchange', follow);
     return () => window.removeEventListener('hashchange', follow);
@@ -34,17 +30,10 @@ export function App() {
     if (r.online) location.hash = `#online/${createOnlineGame(r)}`;
     else setGame(createGame({ players: r.players, mapId: r.mapId, mode: r.mode }));
   };
-  const discard = () => {
-    clearSavedGame();
-    setSaved(null);
-  };
   /** Back to the lobby; the game lives on as the saved game, to resume from there. */
-  const toLobby = () => {
-    setSaved(loadSavedGame());
-    setGame(null);
-  };
+  const toLobby = () => setGame(null);
   const quit = () => {
-    discard();
+    clearSavedGame();
     setGame(null);
   };
 
@@ -55,7 +44,7 @@ export function App() {
       ) : game ? (
         <LocalGame key={game.seed} initial={game} onQuit={quit} onLobby={toLobby} onRules={() => setRules(true)} />
       ) : (
-        <Lobby onStart={start} onRules={() => setRules(true)} saved={saved} onResume={() => setGame(saved)} onDiscard={discard} />
+        <Lobby onStart={start} onRules={() => setRules(true)} onResume={setGame} />
       )}
       {rules && <Rules onClose={() => setRules(false)} />}
     </>

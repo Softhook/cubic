@@ -16,7 +16,7 @@ import { FullscreenButton, useFullscreenOnFirstTap } from './FullscreenButton';
 /**
  * The game screen, for a game on this device or online. `side` goes at the top of the sidebar,
  * `overlay` over everything; online, leaving doesn't end the game. `onLobby` (the title) goes back to
- * the lobby without ending it; without it, the title quits.
+ * the lobby without ending it.
  */
 export function Game({
   view,
@@ -29,7 +29,7 @@ export function Game({
 }: {
   view: GameView;
   onQuit: () => void;
-  onLobby?: () => void;
+  onLobby: () => void;
   onRules: () => void;
   online?: boolean;
   side?: ReactNode;
@@ -49,7 +49,7 @@ export function Game({
   return (
     <div className="app">
       <header className="topbar">
-        <button type="button" className="brand" title="Back to the lobby" onClick={onLobby ?? onQuit}>Cubic</button>
+        <button type="button" className="brand" title="Back to the lobby" onClick={onLobby}>Cubic</button>
         <div className="topbar-map">
           <span className={`mode-badge mode-${game.mode}`}>{rulesOf(game).name}</span>
           {game.board.mapName}
