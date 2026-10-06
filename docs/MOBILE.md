@@ -132,12 +132,15 @@ Steps 1–3 come first; Step 4 is the big one and can wait until they are in.
 
 ### Step 0: Test setup ✅ (2026-10-06)
 - [x] **`npm run mobile:shots`** ([scripts/mobile-shots.ts](../scripts/mobile-shots.ts)): starts
-      its own dev server, opens a 2p 3×3, a 4p 5×5 and a 4p 7×7 game on the 7 device sizes from
-      §2, writes screenshots to `test-results/mobile/` (git-ignored) and prints the cell size
-      and page size for each. It **exits with 1 when a layout is broken**: page wider than the
-      screen, or board bigger than its stage. Today: 19 of 21 broken, as §2 says. `--url` checks
-      a running dev server instead, `--webkit` uses WebKit (needs
-      `npx playwright install webkit`). Takes about 45 s.
+      its own dev server, opens a 2p 3×3, a 2p wide map (Asymptote, 15 cells across), a 4p 5×5
+      and a 4p 7×7 game on the 7 device sizes from §2, screenshots each setup popup (fleet roll,
+      starting skill) and the game to `test-results/mobile/` (git-ignored), and prints the cell
+      size and page size for each. It **exits with 1 when a layout is broken**: page wider than
+      the screen, board bigger than its stage, or a setup popup with buttons or cards off screen
+      (you'd have to scroll inside it). 2026-10-06 after Step 1: board and page pass everywhere;
+      16 of 28 fail on popups (fleet roll in phone landscape, skill cards on phones; Step 3).
+      `--url` checks a running dev server instead, `--webkit` uses WebKit (needs
+      `npx playwright install webkit`). Takes about 4 minutes.
 - [x] **Dev link straight into a game** ([devStart.ts](../apps/web/src/game/devStart.ts), dev
       server only): `?play=classic&players=4&map=tesseract&seed=1`. `play` takes a mode's id or
       name; `map` defaults to the basic map; `seed` repeats the same dice. One human
