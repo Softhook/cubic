@@ -22,14 +22,13 @@ export function App() {
   const [rules, setRules] = useState(false);
 
   const start = (r: LobbyResult) => setGame(createGame({ players: r.players, mapId: r.mapId, mode: r.mode }));
-  const quit = () => {
-    clearSavedGame();
-    setSaved(null);
-    setGame(null);
-  };
   const discard = () => {
     clearSavedGame();
     setSaved(null);
+  };
+  const quit = () => {
+    discard();
+    setGame(null);
   };
 
   return (

@@ -50,7 +50,7 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
     const at = d.loc;
     if (withCarry && d.value === 2 && at.zone === 'board') {
       // Only spaces within reach can be destinations or drops (range 2, +1 for Agile, +1 to drop).
-      const near = cells.filter((c) => distance(c, at) <= 4);
+      const near = cells.filter((c) => distance(c, at, s.board) <= 4);
       for (const p of mine) {
         if (p.id === d.id || p.loc.zone !== 'board') continue;
         for (const to of near)

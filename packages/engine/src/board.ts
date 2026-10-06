@@ -68,18 +68,14 @@ export function spaces(board: Board): Cell[] {
   return out;
 }
 
-/**
- * The shortest step from a to b along each axis, going across a joined edge when that is shorter
- * (only on a wrapping map, when `board` is given).
- */
-export function delta(a: Cell, b: Cell, board?: Board): Cell {
-  const short = (d: number, size: number, wraps: boolean | undefined) =>
-    wraps && Math.abs(d) * 2 > size ? d - Math.sign(d) * size : d;
-  return { r: short(b.r - a.r, board?.rows ?? 0, board?.wrap?.rows), c: short(b.c - a.c, board?.cols ?? 0, board?.wrap?.cols) };
+/** The shortest step from a to b along each axis, going across a joined edge when that is shorter. */
+export function delta(a: Cell, b: Cell, board: Board): Cell {
+  const short = (d: number, size: number, wraps = false) => (wraps && Math.abs(d) * 2 > size ? d - Math.sign(d) * size : d);
+  return { r: short(b.r - a.r, board.rows, board.wrap?.rows), c: short(b.c - a.c, board.cols, board.wrap?.cols) };
 }
 
-/** Orthogonal (Manhattan) distance between two cells, across joined edges when `board` wraps. */
-export function distance(a: Cell, b: Cell, board?: Board): number {
+/** Orthogonal (Manhattan) distance between two cells, across joined edges on a wrapping map. */
+export function distance(a: Cell, b: Cell, board: Board): number {
   const d = delta(a, b, board);
   return Math.abs(d.r) + Math.abs(d.c);
 }
@@ -91,7 +87,7 @@ export function onBoard(board: Board, p: Cell): boolean {
 
 /** The cells one step from p in each direction, carried across the board's joined edges. */
 export function offsets(board: Board, p: Cell, deltas: Cell[]): Cell[] {
-  const join = (x: number, size: number, wraps: boolean | undefined) => (wraps ? (x + size) % size : x);
+  const join = (x: number, size: number, wraps = false) => (wraps ? (x + size) % size : x);
   return deltas.map((d) => ({ r: join(p.r + d.r, board.rows, board.wrap?.rows), c: join(p.c + d.c, board.cols, board.wrap?.cols) }));
 }
 
@@ -112,9 +108,7 @@ export function surrounding(board: Board, p: Cell): Cell[] {
 
 /** Movement neighbours, including diagonals for interceptors and Warp Gate links. */
 export function stepNeighbours(state: GameState, p: Cell, diagonal: boolean): Cell[] {
-  const result = offsets(state.board, p, diagonal ? [...ORTHO, ...DIAG] : ORTHO).filter((q) =>
-    onBoard(state.board, q),
-  );
+  const result = offsets(state.board, p, diagonal ? [...ORTHO, ...DIAG] : ORTHO).filter((q) => onBoard(state.board, q));
   return [...result, ...gatePartner(state, p)];
 }
 
@@ -125,7 +119,7 @@ function gatePartner(state: GameState, p: Cell): Cell[] {
   return same(p, a) ? [b] : same(p, b) ? [a] : [];
 }
 
-export function isDiagonalStep(a: Cell, b: Cell, board?: Board): boolean {
+export function isDiagonalStep(a: Cell, b: Cell, board: Board): boolean {
   const d = delta(a, b, board);
   return Math.abs(d.r) === 1 && Math.abs(d.c) === 1;
 }

@@ -294,7 +294,7 @@ export function nomadicTargets(state: GameState, dieId: string): Cell[] {
   // Planets sit at the centre of their 3×3 tile, so planets on neighbouring tiles are 3 spaces away.
   const near = state.board.planets.filter((p) => {
     const d = delta(home, p, state.board);
-    return Math.abs(d.r) + Math.abs(d.c) === 3 && (d.r === 0 || d.c === 0);
+    return (d.r === 0 && Math.abs(d.c) === 3) || (d.c === 0 && Math.abs(d.r) === 3);
   });
   return near.flatMap((p) => orbitals(state.board, p).filter((q) => isEmptySpace(state, q)));
 }

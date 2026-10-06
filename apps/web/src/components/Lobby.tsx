@@ -5,6 +5,7 @@ import { Die3D } from './Die3D';
 
 export const PLAYER_COLORS = ['#4cc9f0', '#f72585', '#ffb703', '#80ed99', '#b388ff'];
 const AI_NAMES = ['Nova', 'Vex', 'Orion', 'Lyra', 'Kepler'];
+const PLAYER_COUNTS = [...new Set(MAPS.map((m) => m.players))];
 
 export interface LobbyResult {
   players: PlayerConfig[];
@@ -120,7 +121,7 @@ export function Lobby({
   onResume: () => void;
   onDiscard: () => void;
 }) {
-  const [wanted, setCount] = useState(2);
+  const [wanted, setWanted] = useState(2);
   const [mode, setMode] = useState<GameMode>(storedMode);
   // 5 players only has Community Edition maps; other rules fall back to their largest count.
   const counts = playerCounts(RULESETS[mode]);
@@ -128,7 +129,7 @@ export function Lobby({
   const [seats, setSeats] = useState<PlayerConfig[]>(() =>
     PLAYER_COLORS.map((color, i) => ({ name: i === 0 ? 'Commander' : AI_NAMES[i], color, ai: i !== 0, aiLevel: storedAiLevel() })),
   );
-  const [mapIds, setMapIds] = useState<Record<number, string>>(() => Object.fromEntries([2, 3, 4, 5].map((n) => [n, storedMap(n)])));
+  const [mapIds, setMapIds] = useState<Record<number, string>>(() => Object.fromEntries(PLAYER_COUNTS.map((n) => [n, storedMap(n)])));
   const choices = MAPS.filter((m) => m.players === count && RULESETS[mode].mapGroups.includes(m.group));
   // A remembered map the chosen rules don't use falls back to the basic map (it stays remembered).
   const map = choices.find((m) => m.id === mapIds[count]) ?? defaultMap(count)!;
@@ -187,7 +188,7 @@ export function Lobby({
           <span>Players</span>
           <div className="segmented">
             {counts.map((n) => (
-              <button key={n} className={n === count ? 'on' : ''} onClick={() => setCount(n)}>
+              <button key={n} className={n === count ? 'on' : ''} onClick={() => setWanted(n)}>
                 {n}
               </button>
             ))}

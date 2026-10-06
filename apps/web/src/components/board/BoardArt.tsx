@@ -2,7 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import type { GameState } from '@quantum/engine';
 import { CUBE_PAD, PLANET_DIAMETER, PLANET_FAMILY, TILE, cubePadCentres } from '@quantum/art';
 import { tileImage } from '../../art/tileImages';
-import { tileArt, wrapMarks } from './geometry';
+import { tileArt, wrapMarks, type WrapMark } from './geometry';
+
+/** Which way each board edge faces, for the wrap chevrons. */
+const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number }> = {
+  right: { angle: 0, r: 0, c: 1 },
+  bottom: { angle: 90, r: 1, c: 0 },
+  left: { angle: 180, r: 0, c: -1 },
+  top: { angle: 270, r: -1, c: 0 },
+};
 
 /** Tile artwork by physical tile id, filled in as each image is ready (a plain tile shows meanwhile). */
 function useTileImages(game: GameState) {
@@ -66,9 +74,9 @@ export function BoardArt({ game, cell }: { game: GameState; cell: number }) {
 
       {/* Chevrons on edges that join the opposite edge, pointing off the board. */}
       {wrapMarks(game.board).map((m) => {
-        const angle = { right: 0, bottom: 90, left: 180, top: 270 }[m.side];
-        const x = (m.c + 0.5 + (m.side === 'right' ? 0.42 : m.side === 'left' ? -0.42 : 0)) * cell;
-        const y = (m.r + 0.5 + (m.side === 'bottom' ? 0.42 : m.side === 'top' ? -0.42 : 0)) * cell;
+        const { angle, r, c } = WRAP_SIDE[m.side];
+        const x = (m.c + 0.5 + c * 0.42) * cell;
+        const y = (m.r + 0.5 + r * 0.42) * cell;
         const s = cell * 0.09;
         return (
           <path
