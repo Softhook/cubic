@@ -5,7 +5,7 @@ import { hintFor } from '../game/hints';
 import type { Dispatch } from '../game/useGame';
 import { CategoryIcon } from './Card';
 import { Tip } from './InfoPop';
-import { canDeployFrom, Scrapyard, unveilingOf } from './PlayerList';
+import { canDeployFrom, Scrapyard } from './Scrapyard';
 import { ShipPanel } from './ShipPanel';
 
 export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl: Controller; dispatch: Dispatch; undo?: () => void }) {
@@ -50,7 +50,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
       {/* Below 980px the turn panel is the sticky turn bar, so the ships to deploy are in it too. */}
       {deployer && (
         <div className="turn-scrap">
-          <Scrapyard game={game} p={deployer} ctl={ctl} dispatch={dispatch} unveiling={unveilingOf(game, deployer.id, ctl)} />
+          <Scrapyard game={game} p={deployer} ctl={ctl} dispatch={dispatch} />
         </div>
       )}
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { EXPANSION, card, cardKind, rulesOf, type DeckKind, type GameState } from '@quantum/engine';
 import type { Legal } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
+import { PHONE } from '../game/useMediaQuery';
 import { useShortcut } from '../game/useShortcut';
 import { remember, stored } from '../storage';
 import { CardView, categoryStyle } from './Card';
@@ -206,7 +207,6 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
 const cardsLeft = (n: number) => `${n} card${n === 1 ? '' : 's'} left`;
 
 const STORAGE_KEY = 'quantum.marketCollapsed';
-const PHONE = '(max-width: 600px), (max-height: 500px)';
 
 /**
  * The market's open/collapsed state. The player's choice is remembered across games, but a collapsed

@@ -14,6 +14,9 @@
  * than its stage, a page wider than the screen (the phone then zooms the page out), a setup popup
  * whose buttons or cards are off screen without scrolling, or something you'd have to scroll to (or
  * that is covered) while placing your ships or on your turn, or the turn bar over the board.
+ * Then each device opens the in-game popups (`-combat`, `-changeOfHeart`, `-over`, `-rules`, see
+ * POPUPS): the popup must fit the screen, and its buttons must be on screen without scrolling inside
+ * it (Change of Heart and the rules scroll their content, so only their heading and × must show).
  */
 import { mkdirSync } from 'node:fs';
 import { chromium, devices, webkit, type BrowserContextOptions, type Page } from 'playwright';
@@ -38,6 +41,17 @@ const GAMES = [
   { play: 'community', players: 2, map: 'asymptote' },
   { play: 'original', players: 4, map: 'tesseract' },
   { play: 'community', players: 4, map: 'event-horizon' },
+];
+
+/**
+ * The in-game popups, opened through the dev link's `scene` (the rules from the topbar on your turn). `must` lists
+ * what has to be on screen without scrolling inside the popup.
+ */
+const POPUPS = [
+  { name: 'combat', play: 'community', scene: 'combat', must: '.combat-card h2, .combat-total, .combat-card button' },
+  { name: 'changeOfHeart', play: 'community', scene: 'changeOfHeart', must: '.modal h2, .modal .qcard:first-child' },
+  { name: 'over', play: 'basic', scene: 'over', must: '.modal h2, .modal button' },
+  { name: 'rules', play: 'basic', scene: 'turn', must: '.dialog > h2, .dialog-close' },
 ];
 
 const OUT = 'test-results/mobile';
@@ -106,6 +120,43 @@ async function playToMyTurn(page: Page) {
   });
   if (overlap > 2) issues.push(`your turn: turn bar covers ${Math.round(overlap)}px of the board`);
   return { issues, deployChecked, myTurn };
+}
+
+/** Opens each of POPUPS on a new page and lists what doesn't fit. */
+async function checkPopups(newPage: () => Promise<Page>, base: string, device: string): Promise<string[]> {
+  const issues: string[] = [];
+  for (const pop of POPUPS) {
+    const page = await newPage();
+    await page.goto(`${base}?play=${pop.play}&players=2&seed=1&scene=${pop.scene}`);
+    await page.waitForSelector('.board');
+    if (pop.name === 'rules') await page.locator('.topbar button', { hasText: 'Rules' }).evaluate((b: HTMLElement) => b.click());
+    const box = page.locator('.overlay .modal, .overlay .combat-card').first();
+    if (!(await box.waitFor({ timeout: 5000 }).then(() => true, () => false))) {
+      issues.push(`${pop.name}: never opened`);
+      await page.context().close();
+      continue;
+    }
+    await page.waitForTimeout(2000); // the battle reveals its totals and buttons after 1.25 s
+    await page.screenshot({ path: `${OUT}/${device}-${pop.name}.png` });
+    const found = await box.evaluate((el, must) => {
+      const b = el.getBoundingClientRect();
+      const out: string[] = [];
+      if (b.top < -1 || b.left < -1 || b.bottom > innerHeight + 1 || b.right > innerWidth + 1) out.push(`${Math.round(b.width)}×${Math.round(b.height)} box, larger than the screen`);
+      const top = Math.max(0, b.top), bottom = Math.min(innerHeight, b.bottom), left = Math.max(0, b.left), right = Math.min(innerWidth, b.right);
+      const items = [...el.querySelectorAll(must)];
+      if (!items.length) out.push(`nothing matches ${must}`);
+      for (const t of items) {
+        const r = t.getBoundingClientRect();
+        if (r.top < top - 1 || r.bottom > bottom + 1 || r.left < left - 1 || r.right > right + 1) {
+          out.push(`"${(t.getAttribute('aria-label') ?? t.textContent ?? '').trim().slice(0, 30)}" off screen`);
+        }
+      }
+      return out;
+    }, pop.must);
+    issues.push(...found.map((t) => `${pop.name}: ${t}`));
+    await page.context().close();
+  }
+  return issues;
 }
 
 async function main() {
@@ -185,6 +236,9 @@ async function main() {
         problems.push(...issues.map((i) => `${name}: ${i}`));
         await ctx.close();
       }
+      const popIssues = await checkPopups(async () => (await browser.newContext({ ...options, ignoreHTTPSErrors: true })).newPage(), base, device);
+      lines.push(`${`${device} popups`.padEnd(36)} ${POPUPS.map((p) => p.name).join(', ')}  ${popIssues.length ? '✗ ' + popIssues.join('; ') : '✓'}`);
+      problems.push(...popIssues.map((i) => `${device}: ${i}`));
       return lines;
     }));
     console.log(results.flat().join('\n'));

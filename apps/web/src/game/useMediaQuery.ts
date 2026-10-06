@@ -11,3 +11,6 @@ export function useMediaQuery(query: string): boolean {
     () => matchMedia(query).matches,
   );
 }
+
+/** Phone-sized screens, portrait or landscape; the same query styles.css uses to shrink popups. */
+export const PHONE = '(max-width: 600px), (max-height: 500px)';

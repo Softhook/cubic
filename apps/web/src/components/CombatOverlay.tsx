@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, missileOffered, tryApply, type Action, type CombatPending, type CombatRole, type GameState, type PlayerId, type PlayerState } from '@quantum/engine';
 import type { Dispatch } from '../game/useGame';
 import type { GameView } from '../game/view';
+import { PHONE, useMediaQuery } from '../game/useMediaQuery';
 import { COMBAT_DICE } from '../theme';
 import { Die3D } from './Die3D';
 
@@ -23,6 +24,7 @@ export function CombatOverlay({
   online?: GameView['combat'];
 }) {
   const [revealed, setRevealed] = useState(false);
+  const dieSize = useMediaQuery(PHONE) ? 40 : 64;
   useEffect(() => {
     setRevealed(false);
     const t = window.setTimeout(() => setRevealed(true), REVEAL_MS);
@@ -57,14 +59,14 @@ export function CombatOverlay({
         </div>
         <div className="combat-dice">
           <div className="combat-die-col">
-            <Die3D value={s.ship} size={64} color={p.color} sound={false} />
+            <Die3D value={s.ship} size={dieSize} color={p.color} sound={false} />
             <span>{SHIP_NAMES[s.ship]}</span>
           </div>
           <span className="combat-plus">+</span>
           <div className={`combat-die-col ${s.missile ? 'missiled' : ''}`}>
             <Die3D
               value={total.roll}
-              size={64}
+              size={dieSize}
               color={COMBAT_DICE[role].color}
               pip={COMBAT_DICE[role].pip}
               tumbleOnMount

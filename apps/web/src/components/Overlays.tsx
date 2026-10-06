@@ -254,7 +254,7 @@ export function GameOver({ game, onNew, onClose, newLabel = 'New game' }: { game
         <div className="gameover-burst" />
         <small>Victory</small>
         <h2>{w.name} conquers the sector</h2>
-        <p className="modal-sub">All cubes placed after {game.turn.number} turns.</p>
+        <p className="modal-sub">All cubes placed after {game.turn.number} turn{game.turn.number === 1 ? '' : 's'}.</p>
         <div className="modal-actions">
           <button className="btn" onClick={onClose}>View board</button>
           <button className="btn btn-primary" onClick={onNew}>{newLabel}</button>

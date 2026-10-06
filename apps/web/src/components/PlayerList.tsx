@@ -1,11 +1,11 @@
 import { useState, type CSSProperties } from 'react';
-import { SHIP_ABILITIES, SHIP_NAMES, card, rulesOf, scrapyard, type Die, type GameState, type PlayerState } from '@quantum/engine';
+import { card, rulesOf, type GameState, type PlayerState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
 import { CategoryIcon, categoryStyle } from './Card';
 import { CardViewer } from './CardViewer';
-import { Die3D } from './Die3D';
 import { Tip } from './InfoPop';
+import { Scrapyard } from './Scrapyard';
 
 function Track({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
@@ -20,42 +20,17 @@ function Track({ label, value, tone }: { label: string; value: number; tone: str
   );
 }
 
-/** The ships `player` has re-rolled while unveiling (Unveil tactic) on this device, or null when not unveiling. */
-export function unveilingOf(game: GameState, player: number, ctl: Controller): string[] | null {
-  const head = game.pending[0];
-  return head?.kind === 'unveil' && head.player === player && ctl.human ? head.rerolled : null;
-}
-
-/** Whether `p` can deploy from their scrapyard on this device now: in their action phase, unveiling, or placing their starting ships. */
-export function canDeployFrom(game: GameState, p: PlayerState, ctl: Controller): boolean {
-  const head = game.pending[0];
-  const placingStart = head?.kind === 'placeShips' && head.player === p.id && ctl.human;
-  return (ctl.actionPhase && game.turn.player === p.id) || !!unveilingOf(game, p.id, ctl) || placingStart;
-}
-
 export function PlayerList({ game, ctl, dispatch }: { game: GameState; ctl: Controller; dispatch: Dispatch }) {
   return (
     <section className="panel players">
       {game.players.map((p) => (
-        <PlayerCard key={p.id} game={game} p={p} ctl={ctl} dispatch={dispatch} unveiling={unveilingOf(game, p.id, ctl)} />
+        <PlayerCard key={p.id} game={game} p={p} ctl={ctl} dispatch={dispatch} />
       ))}
     </section>
   );
 }
 
-function PlayerCard({
-  game,
-  p,
-  ctl,
-  dispatch,
-  unveiling,
-}: {
-  game: GameState;
-  p: PlayerState;
-  ctl: Controller;
-  dispatch: Dispatch;
-  unveiling: string[] | null;
-}) {
+function PlayerCard({ game, p, ctl, dispatch }: { game: GameState; p: PlayerState; ctl: Controller; dispatch: Dispatch }) {
   const active = game.phase === 'play' && game.turn.player === p.id;
   const totalCubes = p.cubesLeft + game.board.planets.reduce((a, pl) => a + pl.cubes.filter((x) => x === p.id).length, 0);
   const [viewing, setViewing] = useState<string | null>(null);
@@ -82,7 +57,7 @@ function PlayerCard({
         {p.actionPenalty > 0 && <Tip className="stat bad" tip="Sabotaged: fewer actions next turn">−{p.actionPenalty} action</Tip>}
         {p.ambitionTokens > 0 && <Tip className="stat" tip="Ambition tokens">Ambition {p.ambitionTokens}/3</Tip>}
       </div>
-      <Scrapyard game={game} p={p} ctl={ctl} dispatch={dispatch} unveiling={unveiling} />
+      <Scrapyard game={game} p={p} ctl={ctl} dispatch={dispatch} />
       {(p.skills.length > 0 || (p.storedTactics?.length ?? 0) > 0) && (
         <div className="skills">
           {p.skills.map((s, i) => {
@@ -148,45 +123,6 @@ function PlayerCard({
           }
         />
       )}
-    </div>
-  );
-}
-
-/** A player's scrapyard: their ships off the board, which they tap to deploy when they can. */
-export function Scrapyard({ game, p, ctl, dispatch, unveiling }: { game: GameState; p: PlayerState; ctl: Controller; dispatch: Dispatch; unveiling: string[] | null }) {
-  const scrap = scrapyard(game, p.id);
-  if (!scrap.length) return null;
-  const canDeploy = canDeployFrom(game, p, ctl);
-  const clickScrap = (d: Die) => {
-    ctl.select(ctl.sel.kind === 'scrap' && ctl.sel.die === d.id ? { kind: 'none' } : { kind: 'scrap', die: d.id });
-  };
-  return (
-    <div className="scrapyard">
-      <span className="scrap-label">Scrapyard</span>
-      {scrap.map((d) => (
-        <span key={d.id} className="scrap-die-wrap">
-          <Tip
-            className={`scrap-die ${canDeploy ? 'clickable' : ''} ${ctl.sel.kind === 'scrap' && ctl.sel.die === d.id ? 'selected' : ''}`}
-            onClick={() => canDeploy && (clickScrap(d), true)}
-            tip={
-              <>
-                <b>
-                  {SHIP_NAMES[d.value]} ({d.value})
-                </b>
-                <span>
-                  {SHIP_ABILITIES[d.value].name}: {SHIP_ABILITIES[d.value].text}
-                </span>
-                <span className="muted">Waiting in the scrapyard to be deployed.</span>
-              </>
-            }
-          >
-            <Die3D value={d.value} rolls={d.rolls} size={22} color={p.color} sound={false} />
-          </Tip>
-          {unveiling && !unveiling.includes(d.id) && (
-            <button className="mini-btn" onClick={() => dispatch({ type: 'unveilReroll', die: d.id })}>re-roll</button>
-          )}
-        </span>
-      ))}
     </div>
   );
 }

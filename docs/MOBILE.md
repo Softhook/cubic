@@ -3,7 +3,7 @@
 How to make the web app play well on phones and iPads: what works today, what breaks, and a
 plan sized to where the app is now.
 
-Status: **Steps 0, 1 and 2 done; Step 3's layout done in emulation, its real-device checks still to do.** First written
+Status: **Steps 0, 1 and 2 done; Step 3 done in emulation (layout and every popup), its real-device checks still to do.** First written
 2026-10-02 as a proposal. Revised 2026-10-06 after measuring the build in device emulation
 (`npm run mobile:shots`: Playwright + Chrome; iPhone SE, iPhone 15, Moto G55 and iPad mini,
 portrait and landscape). On the real Moto G55 so far: the default map (fine) and Asymptote
@@ -54,8 +54,10 @@ Chrome's address bar and Android's navigation bar, and changes as the address ba
   but, played to a real turn, covered a third of the board on the iPhone SE and left the ships to
   deploy off screen on the iPad, so `mobile:shots` now plays to your first turn and checks that
   (see Step 0). 28 of 28 pass; the matrix runs devices in parallel (≈ 2 minutes).
-- **Next:** play Step 3 on the G55 (2p Basic and 3p Classic, setup to game over), check the
-  remaining overlays (combat, Change of Heart, game over, rules), then Step 4. Still to check from
+- **In-game popups checked (late evening):** `mobile:shots` now also opens combat, Change of Heart,
+  game over and the rules on every device (dev link `&scene=combat|changeOfHeart|over|turn`). Combat
+  was twice the screen's height on phones; fixed (Step 3). All 7 devices pass.
+- **Next:** play Step 3 on the G55 (2p Basic and 3p Classic, setup to game over), then Step 4. Still to check from
   Step 1: the board re-fit when the market opens/closes on screens ≥ 980px.
 
 ---
@@ -268,12 +270,17 @@ Keep the scrolling column, but pin what matters:
 - [x] Phone landscape (below 980 × 500, landscape): board on the left at full height (sticky,
       spanning the rows), one scrolling column on the right: turn panel, market, players, log.
       G55 cells: 31 / 23 / 18 / 13px.
-- [ ] Overlays at 320–393px: check combat (dice and totals), card choice (two large cards
-      side by side), Change of Heart (whole-deck search), game over, rules.
-      **Done for the setup popups (2026-10-06):** below 600px wide or 500px high, popups have
-      less padding, two-card choices (starting skill, Peek, market) sit side by side and shrink,
-      with text scaled by container units; on short screens (phone landscape) the fleet roll is
-      compact with 54px dice. Combat, Change of Heart, game over and rules still to check.
+- [x] Overlays at 320–393px ✅ (2026-10-06), checked by `mobile:shots` on every device (`-combat`,
+      `-changeOfHeart`, `-over`, `-rules` screenshots), opened through the dev link's `scene`.
+      Setup popups: below 600px wide or 500px high, popups have less padding, two-card choices
+      (starting skill, Peek, market) sit side by side and shrink, with text scaled by container
+      units; on short screens (phone landscape) the fleet roll is compact with 54px dice.
+      **Combat was broken on every phone:** below 980px the two sides stacked, making the battle
+      ≈ 850px tall with *Resolve battle* off screen and no way to scroll to it. Now the sides stay
+      side by side with 40px dice and tighter spacing; in phone landscape each side's roll and
+      ship share a row and the rule sits beside the verdict; the battle box scrolls as a last
+      resort. Change of Heart and the rules scroll their content with the heading (and ×) in view;
+      game over fits as it was.
 - [x] iPad portrait: the player list and log side by side (the turn panel is the sticky bar),
       log capped at 420px. The page is still ≈ 1,700px on a 4p map; the bar means you don't
       need to scroll it to act. The open market sits under the bar until you scroll (not during a
