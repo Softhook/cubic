@@ -6,7 +6,8 @@ import { KIND, type NostrEvent } from '@quantum/online';
  * 40 events and returned them all. Left out: relays that want payment, a NIP-05 address or a "web
  * of trust" (nostr.wine, nostr.land, offchain.pub…), and ones with tight rate limits (damus.io,
  * nostr.oxtr.dev). A game is sent to all of them, so it survives any one going away; every browser
- * also keeps the whole game and re-sends whatever a relay is missing.
+ * also keeps the whole game and re-sends whatever a relay is missing. To find and check relays
+ * (gently, so we don't get banned): `npm run relays:check`.
  */
 export const RELAYS = [
   'wss://relay.primal.net',
