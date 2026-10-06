@@ -16,24 +16,35 @@ export interface LobbyResult {
   online?: boolean;
 }
 
-function storedAiLevel(): number {
+/** localStorage read that survives storage being unavailable (private windows, blocked site data). */
+function stored(key: string): string | null {
   try {
-    const n = Number(localStorage.getItem('quantum.aiLevel'));
-    if (AI_LEVELS.some((l) => l.level === n)) return n;
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function remember(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
   } catch {
     /* storage unavailable */
   }
-  return DEFAULT_AI_LEVEL;
+}
+
+function storedAiLevel(): number {
+  const n = Number(stored('quantum.aiLevel'));
+  return AI_LEVELS.some((l) => l.level === n) ? n : DEFAULT_AI_LEVEL;
 }
 
 function storedMode(): GameMode {
-  try {
-    const m = localStorage.getItem('quantum.mode');
-    if (m === 'basic' || m === 'original' || m === 'community') return m;
-  } catch {
-    /* storage unavailable */
-  }
-  return 'community';
+  return MODES.find((m) => m.id === stored('quantum.mode'))?.id ?? 'community';
+}
+
+function storedMap(players: number): string {
+  const id = stored(`quantum.map.${players}`);
+  return MAPS.find((m) => m.id === id && m.players === players)?.id ?? defaultMap(players)!.id;
 }
 
 const MAP_GROUPS: { id: string; name: string }[] = [
@@ -43,16 +54,6 @@ const MAP_GROUPS: { id: string; name: string }[] = [
   { id: 'bga', name: 'Board Game Arena' },
   { id: 'ce', name: 'Community Edition' },
 ];
-
-function storedMap(players: number): string {
-  try {
-    const id = localStorage.getItem(`quantum.map.${players}`);
-    if (MAPS.some((m) => m.id === id && m.players === players)) return id!;
-  } catch {
-    /* storage unavailable */
-  }
-  return defaultMap(players)!.id;
-}
 
 function MiniMap({ map }: { map: MapDef }) {
   const cols = Math.max(...map.layout.map((r) => r.length));
@@ -111,6 +112,103 @@ function SavedGame({ game, onResume, onDiscard }: { game: GameState; onResume: (
   );
 }
 
+/** Online, human seats after the first are left open for friends to claim. */
+const isFriendSeat = (seat: PlayerConfig, index: number, online: boolean) => online && index > 0 && !seat.ai;
+
+/** One player seat: name, who plays it, and the AI level when an AI does. */
+function SeatRow({
+  seat,
+  index,
+  online,
+  onChange,
+}: {
+  seat: PlayerConfig;
+  index: number;
+  online: boolean;
+  onChange: (patch: Partial<PlayerConfig>) => void;
+}) {
+  const label = `Player ${index + 1}`;
+  const aiLevel = seat.aiLevel ?? DEFAULT_AI_LEVEL;
+  return (
+    <div className="seat" style={{ '--pc': seat.color } as CSSProperties}>
+      <span className="player-swatch" />
+      {isFriendSeat(seat, index, online) ? (
+        <input value="" placeholder="A friend joins here" disabled aria-label={`${label}: a friend`} />
+      ) : (
+        <input value={seat.name} maxLength={14} onChange={(e) => onChange({ name: e.target.value })} aria-label={`${label} name`} />
+      )}
+      {online && index === 0 ? (
+        <span className="seat-you">You</span>
+      ) : (
+        <div className="segmented small">
+          <button className={!seat.ai ? 'on' : ''} onClick={() => onChange({ ai: false })}>{online ? 'Friend' : 'Human'}</button>
+          <button className={seat.ai ? 'on' : ''} onClick={() => onChange({ ai: true })}>AI</button>
+        </div>
+      )}
+      {seat.ai && (
+        <select
+          className="ai-level"
+          value={aiLevel}
+          aria-label={`${label} AI level`}
+          title={AI_LEVELS.find((l) => l.level === aiLevel)?.summary}
+          onChange={(e) => {
+            onChange({ aiLevel: Number(e.target.value) });
+            remember('quantum.aiLevel', e.target.value);
+          }}
+        >
+          {AI_LEVELS.map((l) => (
+            <option key={l.level} value={l.level}>
+              {l.level} · {l.name}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
+}
+
+/** Map dropdown grouped by origin, a random pick, and a preview of the chosen map. */
+function MapPicker({ map, choices, onChoose }: { map: MapDef; choices: MapDef[]; onChoose: (id: string) => void }) {
+  const chooseRandom = () => {
+    const others = choices.filter((m) => m.id !== map.id);
+    onChoose(others[Math.floor(Math.random() * others.length)].id);
+  };
+  return (
+    <div className="map-preview">
+      <div className="map-info">
+        <small>Map</small>
+        <div className="map-select">
+          <select value={map.id} aria-label="Map" onChange={(e) => onChoose(e.target.value)}>
+            {MAP_GROUPS.map((g) => {
+              const maps = choices.filter((m) => m.group === g.id);
+              return (
+                maps.length > 0 && (
+                  <optgroup key={g.id} label={g.name}>
+                    {maps.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )
+              );
+            })}
+          </select>
+          <button className="btn btn-icon" title="Random map" aria-label="Random map" onClick={chooseRandom}>
+            ⚄
+          </button>
+        </div>
+        <span className="muted">
+          {map.cubes} cubes each ·{' '}
+          {map.stats.shared === null ? 'too few spaces for every cube' : `${map.stats.shared}/${map.stats.planets} planets shared`}
+          {map.layout.flat().includes('0') && ' · void'}
+        </span>
+      </div>
+      <MiniMap map={map} />
+    </div>
+  );
+}
+
 export function Lobby({
   onStart,
   onRules,
@@ -138,20 +236,34 @@ export function Lobby({
   // A remembered map the chosen rules don't use falls back to the basic map (it stays remembered).
   const map = choices.find((m) => m.id === mapIds[count]) ?? defaultMap(count)!;
 
+  const chooseMode = (id: GameMode) => {
+    setMode(id);
+    remember('quantum.mode', id);
+  };
   const chooseMap = (id: string) => {
     setMapIds((ids) => ({ ...ids, [count]: id }));
-    try {
-      localStorage.setItem(`quantum.map.${count}`, id);
-    } catch {
-      /* ignore */
-    }
+    remember(`quantum.map.${count}`, id);
   };
-
-  const update = (i: number, patch: Partial<PlayerConfig>) =>
+  const updateSeat = (i: number, patch: Partial<PlayerConfig>) =>
     setSeats((s) => s.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+
   // Online, the first seat is yours, whatever it was set to; human seats after it are for friends.
   const playing = seats.slice(0, count).map((s, i) => (online && i === 0 ? { ...s, ai: false } : s));
-  const friendSeats = playing.filter((s, i) => i > 0 && !s.ai).length;
+  const friendSeats = playing.filter((s, i) => isFriendSeat(s, i, online)).length;
+  const canStart = !online || friendSeats > 0;
+
+  const start = () => {
+    if (!online && saved && !confirm('Starting a new game discards the game in progress. Continue?')) return;
+    onStart({
+      players: playing.map((s, i) => ({
+        ...s,
+        name: isFriendSeat(s, i, online) ? `Player ${i + 1}` : s.name.trim() || `Player ${i + 1}`,
+      })),
+      mapId: map.id,
+      mode,
+      online,
+    });
+  };
 
   return (
     <div className="lobby">
@@ -184,20 +296,7 @@ export function Lobby({
         )}
         <div className="modes" role="radiogroup" aria-label="Rules">
           {MODES.map((m) => (
-            <button
-              key={m.id}
-              role="radio"
-              aria-checked={m.id === mode}
-              className={`mode ${m.id === mode ? 'on' : ''}`}
-              onClick={() => {
-                setMode(m.id);
-                try {
-                  localStorage.setItem('quantum.mode', m.id);
-                } catch {
-                  /* ignore */
-                }
-              }}
-            >
+            <button key={m.id} role="radio" aria-checked={m.id === mode} className={`mode ${m.id === mode ? 'on' : ''}`} onClick={() => chooseMode(m.id)}>
               <strong>{m.name}</strong>
               <span>{m.summary}</span>
             </button>
@@ -217,108 +316,16 @@ export function Lobby({
 
         <div className="seats">
           {playing.map((s, i) => (
-            <div className="seat" key={i} style={{ '--pc': s.color } as CSSProperties}>
-              <span className="player-swatch" />
-              {online && i > 0 && !s.ai ? (
-                <input value="" placeholder="A friend joins here" disabled aria-label={`Player ${i + 1}: a friend`} />
-              ) : (
-                <input value={s.name} maxLength={14} onChange={(e) => update(i, { name: e.target.value })} aria-label={`Player ${i + 1} name`} />
-              )}
-              {online && i === 0 ? (
-                <span className="seat-you">You</span>
-              ) : (
-                <div className="segmented small">
-                  <button className={!s.ai ? 'on' : ''} onClick={() => update(i, { ai: false })}>{online ? 'Friend' : 'Human'}</button>
-                  <button className={s.ai ? 'on' : ''} onClick={() => update(i, { ai: true })}>AI</button>
-                </div>
-              )}
-              {s.ai && (
-                <select
-                  className="ai-level"
-                  value={s.aiLevel ?? DEFAULT_AI_LEVEL}
-                  aria-label={`Player ${i + 1} AI level`}
-                  title={AI_LEVELS.find((l) => l.level === (s.aiLevel ?? DEFAULT_AI_LEVEL))?.summary}
-                  onChange={(e) => {
-                    const aiLevel = Number(e.target.value);
-                    update(i, { aiLevel });
-                    try {
-                      localStorage.setItem('quantum.aiLevel', String(aiLevel));
-                    } catch {
-                      /* ignore */
-                    }
-                  }}
-                >
-                  {AI_LEVELS.map((l) => (
-                    <option key={l.level} value={l.level}>
-                      {l.level} · {l.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+            <SeatRow key={i} seat={s} index={i} online={online} onChange={(patch) => updateSeat(i, patch)} />
           ))}
         </div>
 
-        <div className="map-preview">
-          <div className="map-info">
-            <small>Map</small>
-            <div className="map-select">
-              <select value={map.id} aria-label="Map" onChange={(e) => chooseMap(e.target.value)}>
-                {MAP_GROUPS.map((g) => {
-                  const maps = choices.filter((m) => m.group === g.id);
-                  return (
-                    maps.length > 0 && (
-                      <optgroup key={g.id} label={g.name}>
-                        {maps.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )
-                  );
-                })}
-              </select>
-              <button
-                className="btn btn-icon"
-                title="Random map"
-                aria-label="Random map"
-                onClick={() => {
-                  const others = choices.filter((m) => m.id !== map.id);
-                  chooseMap(others[Math.floor(Math.random() * others.length)].id);
-                }}
-              >
-                ⚄
-              </button>
-            </div>
-            <span className="muted">
-              {map.cubes} cubes each ·{' '}
-              {map.stats.shared === null ? 'too few spaces for every cube' : `${map.stats.shared}/${map.stats.planets} planets shared`}
-              {map.layout.flat().includes('0') && ' · void'}
-            </span>
-          </div>
-          <MiniMap map={map} />
-        </div>
+        <MapPicker map={map} choices={choices} onChoose={chooseMap} />
 
-        {online && !friendSeats && <p className="muted lobby-note">Make at least one seat a Friend to play online.</p>}
+        {!canStart && <p className="muted lobby-note">Make at least one seat a Friend to play online.</p>}
         <div className="modal-actions">
           <button className="btn" onClick={onRules}>How to play</button>
-          <button
-            className="btn btn-primary btn-lg"
-            disabled={online && !friendSeats}
-            onClick={() => {
-              if (!online && saved && !confirm('Starting a new game discards the game in progress. Continue?')) return;
-              onStart({
-                players: playing.map((s, i) => ({
-                  ...s,
-                  name: online && i > 0 && !s.ai ? `Player ${i + 1}` : s.name.trim() || `Player ${i + 1}`,
-                })),
-                mapId: map.id,
-                mode,
-                online,
-              });
-            }}
-          >
+          <button className="btn btn-primary btn-lg" disabled={!canStart} onClick={start}>
             {online ? 'Create online game' : 'Launch fleet'}
           </button>
         </div>
