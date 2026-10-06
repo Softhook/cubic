@@ -29,8 +29,10 @@
 html, body, #root { height: 100%; margin: 0; }
 /* No double-tap zoom (taps fire at once); pinch zoom still works. */
 html { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
-/* Keep clear of notches and the home indicator (index.html sets viewport-fit=cover). */
-#root { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+/* Keep clear of notches and the home indicator (index.html sets viewport-fit=cover). Not the top: there
+   the game's topbar and the lobby reach up under the camera cutout and keep their content below it,
+   so there's no bare strip in full screen. */
+#root { padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 
 body {
   font-family: var(--body);
@@ -129,14 +131,14 @@ input { font: inherit; }
   z-index: 1;
   height: 100%;
   display: grid;
-  grid-template-rows: var(--topbar-h) 1fr;
+  grid-template-rows: calc(var(--topbar-h) + env(safe-area-inset-top)) 1fr;
 }
 
 .topbar {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 0 16px;
+  padding: env(safe-area-inset-top) 16px 0; /* the top: under the camera cutout */
   border-bottom: 1px solid var(--line);
   background: rgba(5, 8, 19, .6);
   backdrop-filter: blur(8px);
@@ -803,7 +805,7 @@ input { font: inherit; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 7vh 16px 32px;
+  padding: calc(7vh + env(safe-area-inset-top)) 16px 32px;
   gap: 20px;
 }
 .lobby-hero { text-align: center; }
@@ -875,7 +877,7 @@ input { font: inherit; }
 
 /* ------------------------------------------------------------------ art lab */
 .lab { height: 100%; overflow: auto; position: relative; z-index: 1; }
-.lab-head { display: flex; align-items: center; gap: 18px; padding: 12px 20px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.lab-head { display: flex; align-items: center; gap: 18px; padding: calc(12px + env(safe-area-inset-top)) 20px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
 .lab-head h1 { font-family: var(--display); font-size: 16px; margin: 0; letter-spacing: .04em; }
 .lab-head a { text-decoration: none; }
 .lab-tabs { display: flex; gap: 4px; }
@@ -1005,7 +1007,7 @@ input { font: inherit; }
 }
 
 @media (max-width: 600px) {
-  .topbar { gap: 8px; padding: 0 8px; }
+  .topbar { gap: 8px; padding: env(safe-area-inset-top) 8px 0; }
   .topbar-map { display: none; }
   .topbar .btn { padding: 6px 8px; }
   .brand { letter-spacing: .18em; }
