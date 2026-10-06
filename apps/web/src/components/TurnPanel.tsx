@@ -5,6 +5,7 @@ import { hintFor } from '../game/hints';
 import type { Dispatch } from '../game/useGame';
 import { CategoryIcon } from './Card';
 import { Tip } from './InfoPop';
+import { canDeployFrom, Scrapyard, unveilingOf } from './PlayerList';
 import { ShipPanel } from './ShipPanel';
 
 export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl: Controller; dispatch: Dispatch; undo?: () => void }) {
@@ -17,6 +18,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
   const waitingOn = head && head.kind !== 'combat' ? game.players[head.player] : null;
   // Whose decision the table waits for (battles have their own overlay).
   const waitingFor = waitingOn ?? (!head && game.phase !== 'over' ? p : null);
+  const deployer = game.players.find((q) => canDeployFrom(game, q, ctl));
 
   return (
     <section className="panel turn-panel" style={{ '--pc': p.color } as CSSProperties}>
@@ -45,6 +47,12 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
         </p>
       )}
       {hint && <p className="hint">{hint}</p>}
+      {/* Below 980px the turn panel is the sticky turn bar, so the ships to deploy are in it too. */}
+      {deployer && (
+        <div className="turn-scrap">
+          <Scrapyard game={game} p={deployer} ctl={ctl} dispatch={dispatch} unveiling={unveilingOf(game, deployer.id, ctl)} />
+        </div>
+      )}
 
       {game.phase === 'play' && ctl.mine(p.id) && (
         <div className="turn-actions">
@@ -66,6 +74,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
           )}
           <button
             className="btn btn-ghost undo-btn"
+            aria-label="Undo"
             disabled={!canAct || !undo}
             onClick={() => {
               ctl.select({ kind: 'none' });
@@ -77,7 +86,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
               <path d="M9 14 4 9l5-5" />
               <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
             </svg>
-            Undo
+            <span className="undo-label">Undo</span>
           </button>
           <button
             className={`btn btn-primary ${canAct && t.actionsLeft === 0 && !canCurious(game, t.player) && !legal.can('playStoredTactic') ? 'pulse' : ''}`}

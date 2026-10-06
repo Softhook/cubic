@@ -9,13 +9,14 @@
  * Uses the installed Google Chrome, so Playwright needs no browser download. `--no-proxy-server`
  * skips Chrome's proxy auto-detection, which otherwise costs 12 s on every page. Games start from the
  * dev-only `?play=` link (apps/web/src/game/devStart.ts), so `--url` must be a dev server.
- * Screenshots go to test-results/mobile/ (the game, and each setup popup as `-popupN`). Exits with 1
- * when a layout is broken: the board wider or taller than its stage, a page wider than the screen
- * (the phone then zooms the page out), End turn off screen, or a setup popup whose buttons or cards are off screen
- * without scrolling.
+ * Screenshots go to test-results/mobile/ (the game, each setup popup as `-popupN`, and your first turn
+ * with a ship selected as `-turn`). Exits with 1 when a layout is broken: the board wider or taller
+ * than its stage, a page wider than the screen (the phone then zooms the page out), a setup popup
+ * whose buttons or cards are off screen without scrolling, or something you'd have to scroll to (or
+ * that is covered) while placing your ships or on your turn, or the turn bar over the board.
  */
 import { mkdirSync } from 'node:fs';
-import { chromium, devices, webkit, type BrowserContextOptions } from 'playwright';
+import { chromium, devices, webkit, type BrowserContextOptions, type Page } from 'playwright';
 import { createServer } from 'vite';
 
 /** The user's Moto G55: 1080×2400 at a device pixel ratio of 2.625, minus Chrome's and Android's bars. */
@@ -46,6 +47,67 @@ const arg = (name: string) => {
   return i < 0 ? undefined : process.argv[i + 1];
 };
 
+/**
+ * Lists the shown elements matching `sel` that are off screen or under something from outside their
+ * panel (neighbouring 3D dice overlap a little, which doesn't count).
+ */
+function unreachable(page: Page, sel: string): Promise<string[]> {
+  return page.evaluate((sel) => {
+    return [...document.querySelectorAll(sel)].flatMap((el) => {
+      const r = el.getBoundingClientRect();
+      if (!r.width) return []; // not shown at this size
+      const label = (el.getAttribute('aria-label') ?? el.textContent ?? '').trim() || 'ship';
+      if (r.top < -1 || r.left < -1 || r.bottom > innerHeight + 1 || r.right > innerWidth + 1) return [`"${label}" off screen`];
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return hit && (el.closest('.panel') ?? el).contains(hit) ? [] : [`"${label}" covered by ${hit?.className}`];
+    });
+  }, sel);
+}
+
+/**
+ * Plays the human's setup (start planet, ship placement) and waits through the AI until it's the human's
+ * turn, then selects a ship. Checks the ships to place and, at the turn, End turn and the ship's buttons.
+ */
+async function playToMyTurn(page: Page) {
+  const issues: string[] = [];
+  let deployChecked = false;
+  let myTurn = false;
+  for (let i = 0; i < 150 && !myTurn; i++) {
+    await page.waitForTimeout(400);
+    if (!deployChecked && (await page.locator('.turn-scrap .scrap-die.clickable').count())) {
+      deployChecked = true;
+      // The turn bar's scrapyard below 980px, the player list's on the desktop layout (the sidebar may scroll there).
+      if (await page.locator('.turn-scrap').isVisible()) {
+        issues.push(...(await unreachable(page, '.turn-scrap .scrap-die.clickable')).map((t) => `placing ships: ${t}`));
+      }
+    }
+    const step = await page.evaluate(() => {
+      const modal = document.querySelector('.overlay .modal');
+      if (modal) {
+        const keep = [...modal.querySelectorAll('button:not([disabled])')].find((b) => b.textContent!.includes('Keep'));
+        ((keep ?? modal.querySelector('.qcard') ?? modal.querySelector('.btn-primary:not([disabled])')) as HTMLElement | null)?.click();
+        return 'modal';
+      }
+      if (document.querySelector('.turn-actions .btn-primary:not([disabled])')) return 'mine';
+      const target = document.querySelector('.planet-label')?.closest('.planet-hit') ?? document.querySelector('.hl') ?? document.querySelector('.turn-scrap .scrap-die.clickable');
+      (target as HTMLElement | null)?.click();
+      return 'wait';
+    });
+    myTurn = step === 'mine';
+  }
+  if (!myTurn) return { issues, deployChecked, myTurn };
+  await page.evaluate(() => (document.querySelector('.ship.own') as HTMLElement | null)?.click());
+  await page.waitForTimeout(500);
+  issues.push(...(await unreachable(page, '.turn-actions .btn-primary, .turn-panel .ship-panel button')).map((t) => `your turn: ${t}`));
+  const overlap = await page.evaluate(() => {
+    const a = document.querySelector('.board')!.getBoundingClientRect();
+    const b = document.querySelector('.turn-panel')!.getBoundingClientRect();
+    return Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)) * (Math.min(a.right, b.right) > Math.max(a.left, b.left) ? 1 : 0);
+  });
+  if (overlap > 2) issues.push(`your turn: turn bar covers ${Math.round(overlap)}px of the board`);
+  return { issues, deployChecked, myTurn };
+}
+
 async function main() {
   const server = arg('--url') ? null : await createServer({ root: 'apps/web', server: { port: 5180, host: '127.0.0.1' } });
   await server?.listen();
@@ -55,7 +117,9 @@ async function main() {
 
   const problems: string[] = [];
   try {
-    for (const [device, options] of Object.entries(DEVICES)) {
+    // Devices run side by side (each plays its games in turn); results print in the usual order.
+    const results = await Promise.all(Object.entries(DEVICES).map(async ([device, options]) => {
+      const lines: string[] = [];
       for (const g of GAMES) {
         const ctx = await browser.newContext({ ...options, ignoreHTTPSErrors: true }); // dev:https is self-signed
         const page = await ctx.newPage();
@@ -93,6 +157,7 @@ async function main() {
           await page.waitForTimeout(800);
         }
         await page.waitForTimeout(700);
+        await page.screenshot({ path: `${OUT}/${name}.png` });
 
         const m = await page.evaluate(() => {
           const rect = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
@@ -103,23 +168,26 @@ async function main() {
             pageWidth: window.innerWidth,
             pageHeight: document.scrollingElement!.scrollHeight,
             overflowsStage: board.width > stage.width + 1 || board.height > stage.height + 1,
-            // You never scroll to act: End turn (or, on someone else's turn, the turn panel's head) is on screen.
-            turnBarOnScreen: (() => {
-              const el = document.querySelector('.turn-panel .btn-primary') ?? document.querySelector('.turn-panel .turn-head');
-              const r = el!.getBoundingClientRect();
-              return r.top >= 0 && r.bottom <= innerHeight + 1 && r.left >= 0 && r.right <= innerWidth + 1;
-            })(),
           };
         });
         if (m.pageWidth > screen.width) issues.push(`page ${m.pageWidth}px wide on a ${screen.width}px screen`);
         if (m.overflowsStage) issues.push('board overflows its stage');
-        if (!m.turnBarOnScreen) issues.push('turn panel (End turn) off screen');
-        await page.screenshot({ path: `${OUT}/${name}.png` });
-        console.log(`${name.padEnd(36)} cell ${String(m.cell).padStart(3)}px  page ${m.pageWidth}×${m.pageHeight}  ${issues.length ? '✗ ' + issues.join('; ') : '✓'}`);
+
+        // Play on to your first turn: you never scroll to act. Placing your ships, then with a ship
+        // selected, everything you tap is on screen and not under anything, and the turn bar doesn't
+        // cover the board.
+        const turn = await playToMyTurn(page);
+        if (!turn.deployChecked) issues.push('never had ships to place');
+        if (!turn.myTurn) issues.push('never reached your turn');
+        issues.push(...turn.issues);
+        await page.screenshot({ path: `${OUT}/${name}-turn.png` });
+        lines.push(`${name.padEnd(36)} cell ${String(m.cell).padStart(3)}px  page ${m.pageWidth}×${m.pageHeight}  ${issues.length ? '✗ ' + issues.join('; ') : '✓'}`);
         problems.push(...issues.map((i) => `${name}: ${i}`));
         await ctx.close();
       }
-    }
+      return lines;
+    }));
+    console.log(results.flat().join('\n'));
   } finally {
     await browser.close();
     await server?.close();

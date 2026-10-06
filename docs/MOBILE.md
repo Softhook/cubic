@@ -47,10 +47,13 @@ Chrome's address bar and Android's navigation bar, and changes as the address ba
 - **On the real G55:** Asymptote now fits but its cells are about 26px (ships ≈ 15px). That is
   the expected limit of fit-to-screen; bigger needs zoom (Step 4). Tapping a ship for its info
   helps in the meantime.
-- **Step 3 layout (late evening):** below 980px the turn panel sticks to the bottom of the
-  screen; phone landscape has two columns; on iPad portrait the players and log sit side by side;
-  the market starts collapsed on phones. `mobile:shots` now also checks that *End turn* is on
-  screen: 28 of 28 pass.
+- **Step 3 layout (late evening):** below 980px the turn panel is a compact bar stuck to the
+  bottom of the screen, with your scrapyard in it whenever you can deploy; phone landscape has the
+  board on the left and one scrolling column on the right; on iPad portrait the players and log
+  sit side by side; the market starts collapsed on phones. A first version passed the old checks
+  but, played to a real turn, covered a third of the board on the iPhone SE and left the ships to
+  deploy off screen on the iPad, so `mobile:shots` now plays to your first turn and checks that
+  (see Step 0). 28 of 28 pass; the matrix runs devices in parallel (≈ 2 minutes).
 - **Next:** play Step 3 on the G55 (2p Basic and 3p Classic, setup to game over), check the
   remaining overlays (combat, Change of Heart, game over, rules), then Step 4. Still to check from
   Step 1: the board re-fit when the market opens/closes on screens ≥ 980px.
@@ -175,7 +178,10 @@ Steps 1–3 come first; Step 4 is the big one and can wait until they are in.
       (you'd have to scroll inside it). 2026-10-06 after Step 1: board and page pass everywhere;
       16 of 28 failed on popups, fixed the same day (Step 3's setup popups): 28 of 28 pass.
       `--url` checks a running dev server instead, `--webkit` uses WebKit (needs
-      `npx playwright install webkit`). Takes about 4 minutes.
+      `npx playwright install webkit`). It then plays on to your first turn: while you place
+      your ships, the scrapyard must be on screen and not covered; with a ship selected, so must
+      *End turn* and the ship's buttons, and the turn bar must not cover the board (screenshot
+      `-turn`). Devices run in parallel: about 2 minutes.
 - [x] **Dev link straight into a game** ([devStart.ts](../apps/web/src/game/devStart.ts), dev
       server only): `?play=classic&players=4&map=tesseract&seed=1`. `play` takes a mode's id or
       name; `map` defaults to the basic map; `seed` repeats the same dice. One human
@@ -246,8 +252,12 @@ emulation; G55 by eye still to do.
 
 ### Step 3: Phone layout, minimal version (medium, 1–2 days)
 Keep the scrolling column, but pin what matters:
-- [x] **Sticky bottom turn bar** below 980px: the TurnPanel (with ShipPanel) itself, slightly
-      more compact on phones, `position: sticky; bottom: 0`. The sidebar becomes
+- [x] **Sticky bottom turn bar** below 980px: the TurnPanel (with ShipPanel) itself in a compact
+      form, `position: sticky; bottom: 0`. Compact: "Turn 4" beside the name, the hint at most 3
+      lines (2 below 400px), the selected ship one row (ability text hidden, a tap on its name
+      shows it; below 400px no die and Undo is just its icon). Your scrapyard is in the bar
+      whenever you can deploy (setup placement, your action phase, Unveil). During a card pick
+      the bar lets go (`:has(.market.picking)`), so it can't cover the cards. The sidebar becomes
       `display: contents` so its panels join one flex column (board, market, online panel,
       players, log, turn panel). The turn panel goes **last**: pinned to the bottom of the screen
       while you're higher up, in its own place at the end, so it never hides the log. Flex, not
@@ -255,9 +265,9 @@ Keep the scrolling column, but pin what matters:
 - [x] Board first and fully visible on load; market (collapsed by default on phones unless the
       player chose otherwise), players and log below it. In portrait the stage leaves 160px
       below it for the turn bar (only matters on short, wide screens).
-- [x] Phone landscape (below 980 × 500, landscape): board on the left at full height, sidebar
-      scrolling on the right with the turn panel first, market under it. The stage has
-      `contain: size` because it spans both rows. G55 cells: 31 / 23 / 18 / 13px.
+- [x] Phone landscape (below 980 × 500, landscape): board on the left at full height (sticky,
+      spanning the rows), one scrolling column on the right: turn panel, market, players, log.
+      G55 cells: 31 / 23 / 18 / 13px.
 - [ ] Overlays at 320–393px: check combat (dice and totals), card choice (two large cards
       side by side), Change of Heart (whole-deck search), game over, rules.
       **Done for the setup popups (2026-10-06):** below 600px wide or 500px high, popups have
@@ -266,7 +276,8 @@ Keep the scrolling column, but pin what matters:
       compact with 54px dice. Combat, Change of Heart, game over and rules still to check.
 - [x] iPad portrait: the player list and log side by side (the turn panel is the sticky bar),
       log capped at 420px. The page is still ≈ 1,700px on a 4p map; the bar means you don't
-      need to scroll it to act.
+      need to scroll it to act. The open market sits under the bar until you scroll (not during a
+      pick, see above).
 
 The slide-up sheet with tabs (P2 in the old draft) is the polished version of this. Do it only
 if the sticky bar turns out not to be enough. If it comes to that, don't use Vaul, which is

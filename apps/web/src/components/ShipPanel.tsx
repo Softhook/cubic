@@ -2,6 +2,7 @@ import { SHIP_ABILITIES, SHIP_NAMES, canMoveDie, canUseAbility, card, hasSkill, 
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
 import { Die3D } from './Die3D';
+import { Tip } from './InfoPop';
 
 /** Actions for the selected ship: its ability, Reconfigure, and skills that act on one ship. */
 export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Controller; dispatch: Dispatch }) {
@@ -60,12 +61,13 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
     <div className="ship-panel">
       <div className="ship-panel-head">
         <Die3D value={d.value} rolls={d.rolls} size={34} color={game.players[d.owner].color} sound={false} />
-        <div>
+        {/* On phones the ability text below is hidden: a tap on the name shows it. */}
+        <Tip as="div" className="ship-name" tip={`${ability.name}: ${used ? 'used this turn' : ability.text}`}>
           <strong>{SHIP_NAMES[d.value]}</strong>
           <small>
             {onBoard ? `Moves ${movementRange(game, d)} · ${canMoveDie(game, d) ? 'ready' : 'already moved'}` : 'In scrapyard'}
           </small>
-        </div>
+        </Tip>
         <button className="icon-btn" onClick={cancel} aria-label="Deselect">×</button>
       </div>
       <p className="ship-ability">
