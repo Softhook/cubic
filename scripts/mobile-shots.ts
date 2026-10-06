@@ -29,9 +29,10 @@ const DEVICES: Record<string, BrowserContextOptions> = {
   'ipad-mini-landscape': devices['iPad Mini landscape'],
 };
 
-/** A small, a typical 4-player and the largest map, each under rules that offer it. */
+/** A small, a wide (5 sectors across, irregular), a typical 4-player and the largest map, each under rules that offer it. */
 const GAMES = [
   { play: 'basic', players: 2, map: 'alpha-sector' },
+  { play: 'community', players: 2, map: 'asymptote' },
   { play: 'original', players: 4, map: 'tesseract' },
   { play: 'community', players: 4, map: 'event-horizon' },
 ];

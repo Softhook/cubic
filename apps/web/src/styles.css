@@ -945,7 +945,7 @@ input { font: inherit; }
 @media (max-width: 980px) {
   body { overflow: auto; }
   .app { height: auto; min-height: 100%; }
-  .layout { grid-template-columns: 1fr; grid-template-rows: auto; grid-template-areas: 'stage' 'market' 'sidebar'; }
+  .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: 'stage' 'market' 'sidebar'; }
   /* As tall as the screen allows below the topbar: square in portrait, the full height in landscape. */
   .stage { height: min(100vw, 70vh); height: min(100vw, calc(100dvh - 52px - env(safe-area-inset-top) - env(safe-area-inset-bottom))); padding: 4px; }
   .sidebar { border-left: 0; overflow: visible; }
