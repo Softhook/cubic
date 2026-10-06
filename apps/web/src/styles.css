@@ -1,4 +1,5 @@
 :root {
+  --topbar-h: 52px;
   --bg: #050813;
   --bg-2: #0a1022;
   --panel: rgba(14, 20, 40, 0.78);
@@ -128,7 +129,7 @@ input { font: inherit; }
   z-index: 1;
   height: 100%;
   display: grid;
-  grid-template-rows: 52px 1fr;
+  grid-template-rows: var(--topbar-h) 1fr;
 }
 
 .topbar {
@@ -947,7 +948,7 @@ input { font: inherit; }
   .app { height: auto; min-height: 100%; }
   .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: 'stage' 'market' 'sidebar'; }
   /* As tall as the screen allows below the topbar: square in portrait, the full height in landscape. */
-  .stage { height: min(100vw, 70vh); height: min(100vw, calc(100dvh - 52px - env(safe-area-inset-top) - env(safe-area-inset-bottom))); padding: 4px; }
+  .stage { height: min(100vw, 70vh); height: min(100vw, calc(100dvh - var(--topbar-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom))); padding: 4px; }
   .sidebar { border-left: 0; overflow: visible; }
   .combat-grid { grid-template-columns: 1fr; }
   .combat-vs { padding: 0; font-size: 16px; }

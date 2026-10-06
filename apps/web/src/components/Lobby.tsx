@@ -3,10 +3,10 @@ import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
 import { defaultMap, MAPS, MODES, playerCounts, rulesOf, RULESETS, type GameMode, type GameState, type MapDef, type PlayerConfig } from '@quantum/engine';
 import { Die3D } from './Die3D';
 import { forgetGame, onlineGames } from '../online/storage';
+import { defaultSeat } from '../game/seats';
 import { remember, stored } from '../storage';
 import { PLAYER_COLORS } from '../theme';
 
-export const AI_NAMES = ['Nova', 'Vex', 'Orion', 'Lyra', 'Kepler'];
 const PLAYER_COUNTS = [...new Set(MAPS.map((m) => m.players))];
 
 export interface LobbyResult {
@@ -271,8 +271,8 @@ export function Lobby({
   const count = counts.includes(wanted) ? wanted : counts[counts.length - 1];
   // Each way of playing keeps its own seats: AI opponents on this device, friends online.
   const [seatSets, setSeatSets] = useState<Record<'local' | 'online', PlayerConfig[]>>(() => {
-    const seat = (i: number, ai: boolean) => ({ name: i === 0 ? 'Commander' : AI_NAMES[i], color: PLAYER_COLORS[i], ai, aiLevel: storedAiLevel() });
-    return { local: PLAYER_COLORS.map((_, i) => seat(i, i !== 0)), online: PLAYER_COLORS.map((_, i) => seat(i, false)) };
+    const aiLevel = storedAiLevel();
+    return { local: PLAYER_COLORS.map((_, i) => defaultSeat(i, i !== 0, aiLevel)), online: PLAYER_COLORS.map((_, i) => defaultSeat(i, false, aiLevel)) };
   });
   const where = online ? 'online' : 'local';
   const seats = seatSets[where];

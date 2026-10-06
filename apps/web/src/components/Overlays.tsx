@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { SHIP_NAMES, card, die, rulesOf, scrapyard, type GameState, type Pending } from '@quantum/engine';
 import { useShortcut } from '../game/useShortcut';
+import { useMediaQuery } from '../game/useMediaQuery';
 import type { Dispatch } from '../game/useGame';
 import { CardView } from './Card';
 import { Die3D } from './Die3D';
@@ -200,7 +201,7 @@ function SetupRoll({ game, dispatch, player, rerolled }: { game: GameState; disp
   const sum = dice.reduce((a, d) => a + d.value, 0);
   const [landed, setLanded] = useState(false);
   // Smaller dice on short screens (phone landscape), so Keep fleet stays on screen. Matches styles.css.
-  const dieSize = matchMedia('(max-height: 500px)').matches ? 54 : 78;
+  const dieSize = useMediaQuery('(max-height: 500px)') ? 54 : 78;
   const rollKey = dice.map((d) => d.rolls).join();
   useEffect(() => {
     setLanded(false);

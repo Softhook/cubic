@@ -1,7 +1,6 @@
 import { createGame, defaultMap, MAPS, MODES, type GameState } from '@quantum/engine';
 import { DEFAULT_AI_LEVEL } from '@quantum/ai';
-import { AI_NAMES } from '../components/Lobby';
-import { PLAYER_COLORS } from '../theme';
+import { defaultSeat } from './seats';
 
 /**
  * Dev server only: a link that skips the lobby, for checking a layout on a phone and for
@@ -24,12 +23,7 @@ export function devStartGame(): GameState | null {
     return null;
   }
   return createGame({
-    players: Array.from({ length: players }, (_, i) => ({
-      name: i === 0 ? 'Commander' : AI_NAMES[i],
-      color: PLAYER_COLORS[i],
-      ai: i !== 0,
-      aiLevel: DEFAULT_AI_LEVEL,
-    })),
+    players: Array.from({ length: players }, (_, i) => defaultSeat(i, i !== 0, DEFAULT_AI_LEVEL)),
     mapId: map.id,
     mode: rules.id,
     seed: Number.isFinite(seed) && q.has('seed') ? seed : undefined,
