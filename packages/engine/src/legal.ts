@@ -20,6 +20,7 @@ import {
   deployTargets,
   freeAttackTargets,
   infamyTargets,
+  missileOffered,
   moveOptions,
   nomadicTargets,
   relocationOptions,
@@ -44,9 +45,9 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
   combat: (s, head) => {
     const out: Action[] = [{ type: 'resolveCombat' }];
     for (const pl of s.players) {
-      if (pl.missiles <= 0) continue;
-      if (!head.attacker.missile) out.push({ type: 'missile', by: pl.id, side: 'attacker' });
-      if (!head.defender.missile) out.push({ type: 'missile', by: pl.id, side: 'defender' });
+      for (const side of ['attacker', 'defender'] as const) {
+        if (missileOffered(s, head, pl.id, side)) out.push({ type: 'missile', by: pl.id, side });
+      }
     }
     for (const by of [head.attacker.player, head.defender.player]) {
       for (const { side } of combatRerolls(s, head, by)) out.push({ type: 'reroll', by, side });

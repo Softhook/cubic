@@ -391,6 +391,18 @@ describe('Patient edge cases', () => {
     expect(s.players[me].storedTactics).toContain('warp-gate');
   });
 
+  it('peeks after reshuffling the discards into an empty deck', () => {
+    let s = communityGame();
+    const me = s.turn.player;
+    s.market.tacticRow = ['relocation', 'show-of-force', 'aggression'];
+    s.market.tacticDeck = [];
+    s.market.tacticDiscard = ['warp-gate'];
+    s.pending = [{ kind: 'takeCard', player: me, count: 1 }];
+    s = apply(s, { type: 'takeCard', deck: 'tactic', index: 2 });
+    expect(s.pending[0]).toMatchObject({ kind: 'peek', player: me, deck: 'tactic', top: 'warp-gate' });
+    expect(s.market.tacticDiscard).toEqual([]);
+  });
+
   it('refuses to store a card without Patient, or a Skill', () => {
     let s = communityGame({ me: ['patient'] });
     const me = s.turn.player;

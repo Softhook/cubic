@@ -28,13 +28,8 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
     s.players[p].missiles += 2;
   },
   'change-of-heart': (s, p) => {
-    const m = s.market;
     // Like a draw: an empty deck is first refilled from its discards.
-    if (!m.skillDeck.length && m.skillDiscard.length) {
-      m.skillDeck.push(...shuffle(s, m.skillDiscard));
-      m.skillDiscard.length = 0;
-    }
-    if (m.skillDeck.length) s.pending.unshift({ kind: 'changeOfHeart', player: p });
+    if (refill(s, 'skill').length) s.pending.unshift({ kind: 'changeOfHeart', player: p });
   },
   momentum: (s, p) => {
     s.players[p].bonusTurns.push(2);
@@ -94,8 +89,8 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
 // ---------------------------------------------------------------------------
 // Market
 
-/** Draws from a deck, reshuffling its discards when it runs out. */
-function draw(s: GameState, deck: DeckKind): string | undefined {
+/** An empty deck is refilled by shuffling its discards (2013 rulebook p.9). Returns the deck. */
+function refill(s: GameState, deck: DeckKind): string[] {
   const m = s.market;
   const d = deck === 'skill' ? m.skillDeck : m.tacticDeck;
   const discard = deck === 'skill' ? m.skillDiscard : m.tacticDiscard;
@@ -103,7 +98,12 @@ function draw(s: GameState, deck: DeckKind): string | undefined {
     d.push(...shuffle(s, discard));
     discard.length = 0;
   }
-  return d.shift();
+  return d;
+}
+
+/** Draws from a deck, reshuffling its discards when it runs out. */
+function draw(s: GameState, deck: DeckKind): string | undefined {
+  return refill(s, deck).shift();
 }
 
 /** Takes a face-up card; the row slides away from the deck and a new card enters next to it. */
@@ -179,13 +179,16 @@ export const cardHandlers = {
       return;
     }
     if (a.store && (a.deck !== 'tactic' || !anySkill(s, p, (r) => r.storeTactics))) fail('Only a Tactic can be stored, with Patient');
-    const deck = a.deck === 'skill' ? s.market.skillDeck : s.market.tacticDeck;
     const row = a.deck === 'skill' ? s.market.skillRow : s.market.tacticRow;
     if (row[a.index] !== undefined && !canTakeCard(s, p, row[a.index])) fail('Your reserve is empty');
-    // Peek: taking the oldest card lets you look at the top of the deck first.
-    if (rulesOf(s).cards?.peek && a.index === row.length - 1 && row.length === 3 && deck.length) {
-      s.pending.unshift({ kind: 'peek', player: p, deck: a.deck, top: deck[0], store: a.store });
-      return;
+    // Peek: taking the oldest card lets you look at the top of the deck first. An empty deck is
+    // refilled from its discards first, as for a draw (OPEN-QUESTIONS #51).
+    if (rulesOf(s).cards?.peek && a.index === row.length - 1 && row.length === 3) {
+      const deck = refill(s, a.deck);
+      if (deck.length) {
+        s.pending.unshift({ kind: 'peek', player: p, deck: a.deck, top: deck[0], store: a.store });
+        return;
+      }
     }
     consumeCardPick(s);
     takeOrStore(s, p, takeFromRow(s, a.deck, a.index), a.store);

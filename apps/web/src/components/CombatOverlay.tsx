@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, tryApply, type Action, type CombatPending, type CombatRole, type GameState, type PlayerState } from '@quantum/engine';
+import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, missileOffered, tryApply, type Action, type CombatPending, type CombatRole, type GameState, type PlayerState } from '@quantum/engine';
 import type { Dispatch } from '../game/useGame';
 import { Die3D } from './Die3D';
 
@@ -136,7 +136,8 @@ function RerollButton({
 
 /**
  * A missile sets one combat roll to 1. Lower totals win, so firing at your opponent's roll
- * only helps them: combatants are offered their own roll only, bystanders either roll.
+ * only helps them: combatants are offered their own roll only, and not while already winning;
+ * bystanders either roll (engine missileOffered).
  * Each button previews the battle result if fired.
  */
 function MissileButton({
@@ -156,7 +157,7 @@ function MissileButton({
 }) {
   const side = combat[role];
   const fighting = shooter.id === combat.attacker.player || shooter.id === combat.defender.player;
-  if (fighting && shooter.id !== side.player) return null;
+  if (!missileOffered(game, combat, shooter.id, role)) return null;
   const action: Action = { type: 'missile', by: shooter.id, side: role };
   const next = tryApply(game, action);
   const nextCombat = next?.pending[0];

@@ -263,7 +263,8 @@ After taking a face-up card, slide the remaining cards away from the deck and de
 new card into the slot **next to the deck** (card order = age).
 
 **Peek:** if you pick the face-up Skill/Tactic **farthest from its deck** (the oldest),
-you may first peek at the top card of that deck and take that instead.
+you may first peek at the top card of that deck and take that instead. If the deck is empty,
+its discards are reshuffled first ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #51).
 
 **Empty decks:** when a deck runs out, shuffle its discards into a new deck (2013 rulebook p.9;
 the CE booklet doesn't say otherwise).
@@ -286,6 +287,8 @@ conquering, Infamy, or a card effect.
 
 - Each player starts with **1 missile**.
 - Spend a missile **at any time** to change **any** player's combat roll to **1**.
+- Engine: a combatant is offered a missile only on their own roll, and only while losing;
+  bystanders may fire at either roll ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #21).
 - The CE print booklet has no missile trading. Trading comes from the stolksdorf CE and is
   not implemented (see [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) #23).
 - Extra missiles come from *Black Market* (tactic) and *Profiteering* (skill).
@@ -313,7 +316,7 @@ Full data (with categories, CE status and design notes) lives in
 | Dangerous | Destroy your attacker | When you defend, before players roll combat dice, you can decide to destroy both ships (there is no dominance effect). |
 | Devious | Slingshot past enemies | You may move your ships through enemy ships. These spaces do not count towards your movement. Engine: normal moves only, not Transport or Tactical ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #65). |
 | Ferocious | Combat bonus | −1 to your Combat rolls. |
-| Flexible | Adjust a ship | Once per turn, you may increase or decrease one of your ship numbers by 1. |
+| Flexible | Adjust a ship | Once per turn, you may increase or decrease one of your ship numbers by 1. Engine: ships on the map only; no wrap between 1 and 6 ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #59). |
 | Hostile | Extra action for destruction | The first time you destroy an enemy ship each turn, gain 1 action. |
 | Industrious | Extra deployment | Gain an additional Deploy action each turn. |
 | Ingenious | Conquer from corners | When Conquering, you may use spaces diagonal to a planet. |

@@ -522,9 +522,23 @@ export function combatRerolls(state: GameState, combat: CombatPending, by: Playe
   });
 }
 
+/**
+ * Whether `by` is offered a missile on `side`'s combat roll. A combatant is only offered their own
+ * roll (a lower roll for the opponent only helps them), and not while already winning. Bystanders
+ * may fire at either roll. A roll that is already 1 is never offered.
+ */
+export function missileOffered(state: GameState, combat: CombatPending, by: PlayerId, side: CombatRole): boolean {
+  if (state.players[by].missiles <= 0 || combat[side].missile || combatTotal(state, combat, side).roll === 1) return false;
+  if (by !== combat.attacker.player && by !== combat.defender.player) return true;
+  return combat[side].player === by && combatOutcome(state, combat).attackerWins !== (side === 'attacker');
+}
+
 /** Whether `player` can still respond to the battle: a missile, or a re-roll card. */
 export function canRespondToCombat(state: GameState, combat: CombatPending, player: PlayerId): boolean {
-  return state.players[player].missiles > 0 || combatRerolls(state, combat, player).length > 0;
+  return (
+    (['attacker', 'defender'] as const).some((side) => missileOffered(state, combat, player, side)) ||
+    combatRerolls(state, combat, player).length > 0
+  );
 }
 
 /** How many combat dice the player rolls (the lowest counts). */

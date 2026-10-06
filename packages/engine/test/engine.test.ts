@@ -148,6 +148,14 @@ describe('missiles', () => {
     expect(() => apply(battle({}, [1, 1]), { type: 'missile', by: 0, side: 'defender' })).toThrow(/already 1/);
   });
 
+  it('is offered to a combatant only on their own roll, and only while losing', () => {
+    const missiles = (s: GameState) => legalActions(s).filter((a) => a.type === 'missile');
+    // Attacker 3+2=5 vs defender 4+5=9: the attacker (player 1) is winning.
+    expect(missiles(battle({}, [3, 4]))).toEqual([{ type: 'missile', by: 0, side: 'defender' }]);
+    // Attacker 6+2=8 vs defender 1+5=6: the defender (player 0) is winning.
+    expect(missiles(battle({}, [6, 1]))).toEqual([{ type: 'missile', by: 1, side: 'attacker' }]);
+  });
+
   it('overrides Rational', () => {
     const s = battle({ skills: ['rational'] }, [1, 6]);
     expect(totals(s)).toEqual([3, 8]);
