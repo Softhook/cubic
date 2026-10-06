@@ -1,7 +1,9 @@
 :root {
   --topbar-h: 52px;
+  /* Room for the status bar and camera cutout at the top; none in full screen (below). */
+  --safe-top: env(safe-area-inset-top);
   /* The screen's height below the topbar, clear of the notch and the home indicator (dvh below). */
-  --below-topbar: calc(100vh - var(--topbar-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  --below-topbar: calc(100vh - var(--topbar-h) - var(--safe-top) - env(safe-area-inset-bottom));
   --bg: #050813;
   --bg-2: #0a1022;
   --panel: rgba(14, 20, 40, 0.78);
@@ -26,9 +28,13 @@
   --body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme: dark;
 }
+/* Full screen hides the status bar, but Android still reports its height as the inset, which left an
+   empty strip at the top. Separate rules: an unknown prefixed pseudo-class would void a shared list. */
+:root:fullscreen { --safe-top: 0px; }
+:root:-webkit-full-screen { --safe-top: 0px; }
 /* Through a var() an unsupported unit can't fall back to an earlier declaration, so it's chosen here. */
 @supports (height: 100dvh) {
-  :root { --below-topbar: calc(100dvh - var(--topbar-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  :root { --below-topbar: calc(100dvh - var(--topbar-h) - var(--safe-top) - env(safe-area-inset-bottom)); }
 }
 
 * { box-sizing: border-box; }
@@ -137,14 +143,14 @@ input { font: inherit; }
   z-index: 1;
   height: 100%;
   display: grid;
-  grid-template-rows: calc(var(--topbar-h) + env(safe-area-inset-top)) 1fr;
+  grid-template-rows: calc(var(--topbar-h) + var(--safe-top)) 1fr;
 }
 
 .topbar {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: env(safe-area-inset-top) 16px 0; /* the top: under the camera cutout */
+  padding: var(--safe-top) 16px 0; /* the top: under the camera cutout */
   border-bottom: 1px solid var(--line);
   background: rgba(5, 8, 19, .6);
   backdrop-filter: blur(8px);
@@ -816,7 +822,7 @@ input { font: inherit; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: calc(7vh + env(safe-area-inset-top)) 16px 32px;
+  padding: calc(7vh + var(--safe-top)) 16px 32px;
   gap: 20px;
 }
 .lobby-hero { text-align: center; }
@@ -888,7 +894,7 @@ input { font: inherit; }
 
 /* ------------------------------------------------------------------ art lab */
 .lab { height: 100%; overflow: auto; position: relative; z-index: 1; }
-.lab-head { display: flex; align-items: center; gap: 18px; padding: calc(12px + env(safe-area-inset-top)) 20px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.lab-head { display: flex; align-items: center; gap: 18px; padding: calc(12px + var(--safe-top)) 20px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
 .lab-head h1 { font-family: var(--display); font-size: 16px; margin: 0; letter-spacing: .04em; }
 .lab-head a { text-decoration: none; }
 .lab-tabs { display: flex; gap: 4px; }

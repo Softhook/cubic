@@ -7,10 +7,21 @@ type FsElement = HTMLElement & { webkitRequestFullscreen?: () => Promise<void> }
 const doc = document as FsDocument;
 const root = document.documentElement as FsElement;
 
-// Opened from the home screen with the manifest's `display: fullscreen`, there are no bars to hide.
-const supported = !!(root.requestFullscreen || root.webkitRequestFullscreen) && !matchMedia('(display-mode: fullscreen)').matches;
+// The installed app opens `standalone` (manifest) and goes full screen the same way as the browser.
+const supported = !!(root.requestFullscreen || root.webkitRequestFullscreen);
 const isFullscreen = () => !!(doc.fullscreenElement ?? doc.webkitFullscreenElement);
-const enter = () => (root.requestFullscreen ?? root.webkitRequestFullscreen)?.call(root)?.catch?.(() => {});
+/** Whether full screen was asked for and not left on purpose, to restore it when the phone drops it. */
+let wanted = false;
+const enter = () => {
+  wanted = true;
+  (root.requestFullscreen ?? root.webkitRequestFullscreen)?.call(root, { navigationUI: 'hide' })?.catch?.(() => {});
+};
+
+// Phones leave full screen when the screen locks or another app comes up; back in the game, it returns.
+// (Browsers refuse the request while the page is hidden, so it waits until the page is visible again.)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && wanted && !isFullscreen()) enter();
+});
 
 const phone = () => supported && matchMedia('(pointer: coarse)').matches;
 
@@ -23,8 +34,8 @@ export function fullscreenOnPhone() {
 }
 
 /**
- * A game opened without a lobby tap (an invite link, a reload) goes full screen on its first tap; once
- * per game screen, so leaving full screen sticks.
+ * A screen opened without a lobby tap (the lobby itself, an invite link, a reload) goes full screen on
+ * its first tap; once per screen, so leaving full screen sticks.
  */
 export function useFullscreenOnFirstTap() {
   useEffect(() => {
@@ -35,8 +46,10 @@ export function useFullscreenOnFirstTap() {
 }
 
 function toggle() {
-  if (isFullscreen()) (doc.exitFullscreen ?? doc.webkitExitFullscreen)?.call(doc);
-  else enter();
+  if (isFullscreen()) {
+    wanted = false;
+    (doc.exitFullscreen ?? doc.webkitExitFullscreen)?.call(doc);
+  } else enter();
 }
 
 export function FullscreenButton() {

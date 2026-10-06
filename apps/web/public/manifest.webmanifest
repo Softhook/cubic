@@ -2,7 +2,7 @@
   "name": "Cubic",
   "short_name": "Cubic",
   "start_url": "./",
-  "display": "fullscreen",
+  "display": "standalone",
   "background_color": "#050813",
   "theme_color": "#050813",
   "icons": [
