@@ -1,6 +1,6 @@
 import { encodePost, gameKeys, newSecret, PROTOCOL } from '@quantum/online';
 import type { LobbyResult } from '../components/Lobby';
-import { identity, rememberGame, saveEvents } from './storage';
+import { identity, keepStorage, rememberGame, saveEvents } from './storage';
 
 /**
  * Creates an online game from the lobby's choices and returns its secret. The game exists only in
@@ -18,6 +18,7 @@ export function createOnlineGame(r: LobbyResult): string {
     null,
   );
   saveEvents(keys.tag, [event]);
+  keepStorage();
   rememberGame({ secret });
   return secret;
 }

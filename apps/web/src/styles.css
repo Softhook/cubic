@@ -928,6 +928,8 @@ input { font: inherit; }
 /* Online play */
 .online-panel { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; }
 .online-status { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); }
+.online-desync { flex-basis: 100%; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--bad); background: rgba(255,93,115,.1); font-size: 13px; }
+.online-desync .btn { align-self: flex-start; }
 .online-panel .btn { padding: 5px 12px; }
 .relay-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff6b81; box-shadow: 0 0 0 3px rgba(255,107,129,.15); flex: none; }
 .relay-dot.ok { background: #80ed99; box-shadow: 0 0 0 3px rgba(128,237,153,.15); }

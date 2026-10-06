@@ -20,43 +20,72 @@ export const RELAYS = [
 const RETRY_MS = [2000, 5000, 15000, 30000];
 /** A relay that doesn't answer within this long counts as down (and is retried later). */
 const CONNECT_TIMEOUT_MS = 8000;
+/** How long a relay may take to send what it has stored (a whole game is a few hundred events). */
+const EOSE_TIMEOUT_MS = 20000;
 /** Gap between two events sent to the same relay, so a burst of moves doesn't trip rate limits. */
 const SEND_GAP_MS = 150;
 /** Pause after a relay says we are sending too fast. */
 const RATE_LIMIT_PAUSE_MS = 30000;
+/** Waits before sending an event again after a relay didn't confirm it (a timeout, a hiccup). */
+const SEND_RETRY_MS = [2000, 8000, 30000];
 /** Refusals that won't change by trying again: stop writing to that relay. */
 const REFUSED_FOR_GOOD = /blocked|restricted|web of trust|pay|auth-required|nip-05|whitelist|not allowed/i;
 const RATE_LIMITED = /rate.?limit|too (many|fast)|slow down/i;
+/** Failures worth trying again (no answer, or the relay's own trouble); any other refusal is about the event. */
+const TRANSIENT = /timed out|timeout|closed|connection|^error:/i;
 /** Relays answer a query with at most a few hundred events; older ones are fetched page by page. */
 const PAGE = 500;
+/**
+ * After a reconnect, only events from this long before the last sync are fetched again. Generous,
+ * because an event's time is its poster's clock, which may run behind.
+ */
+const SINCE_MARGIN_S = 3600;
 
 export interface RelayStatus {
   connected: number;
   total: number;
+  /** Events this browser posted that no relay has confirmed yet. */
+  unsent: number;
+}
+
+/** The events this browser holds for the game. */
+export interface EventStore {
+  get(id: string): NostrEvent | undefined;
+  all(): NostrEvent[];
 }
 
 /**
  * One game's connection to the relays: receives every event filed under the game's tag (the
  * stored ones, then new ones as they are posted), publishes this browser's events, and re-sends
  * known events a relay doesn't have.
+ *
+ * Every relay sends the whole game on connecting; events this browser already holds are skipped
+ * before they are parsed or their signature checked (a few ms each on a phone), so reconnecting
+ * stays cheap.
  */
 export class RelayLink {
   private relays = new Map<string, Relay>();
   /** Relays with a connection attempt under way; a second one would leak a socket. */
   private connecting = new Set<string>();
+  /** Per relay: the events it is known to hold. */
   private seen = new Map<string, Set<string>>();
+  /** Per relay: when (unix seconds) it last sent us everything it had. */
+  private synced = new Map<string, number>();
   /** Events waiting to be sent, per relay, oldest first. */
   private outbox = new Map<string, NostrEvent[]>();
   private sending = new Set<string>();
+  /** Per relay: how many times the event at the head of its outbox went unconfirmed. */
+  private tries = new Map<string, number>();
   /** Relays that refused our events for good; still read from. */
   private readOnly = new Set<string>();
+  /** This browser's events that no relay has confirmed yet. */
+  private unsent = new Set<string>();
   private closed = false;
   private timers = new Set<number>();
 
   constructor(
     private tag: string,
-    /** Every event this browser holds for the game. */
-    private known: () => NostrEvent[],
+    private store: EventStore,
     private onEvent: (e: NostrEvent) => void,
     private onStatus: (s: RelayStatus) => void,
   ) {}
@@ -81,6 +110,8 @@ export class RelayLink {
   }
 
   publish(e: NostrEvent) {
+    this.unsent.add(e.id);
+    this.status();
     for (const url of RELAYS) this.enqueue(url, [e]);
   }
 
@@ -91,7 +122,7 @@ export class RelayLink {
 
   private status() {
     const writable = [...this.relays].filter(([url, r]) => r.connected && !this.readOnly.has(url)).length;
-    this.onStatus({ connected: writable, total: RELAYS.length });
+    this.onStatus({ connected: writable, total: RELAYS.length, unsent: this.unsent.size });
   }
 
   private later(fn: () => void, ms: number) {
@@ -100,6 +131,12 @@ export class RelayLink {
       fn();
     }, ms);
     this.timers.add(t);
+  }
+
+  /** The relay holds this event. */
+  private holds(url: string, id: string) {
+    this.seen.get(url)!.add(id);
+    if (this.unsent.delete(id)) this.status();
   }
 
   private async connect(url: string, attempt: number) {
@@ -121,6 +158,7 @@ export class RelayLink {
     }
     if (this.closed) return r.close();
     this.relays.set(url, r);
+    if (!this.seen.has(url)) this.seen.set(url, new Set());
     this.status();
     this.drain(url);
     r.onclose = () => {
@@ -129,40 +167,66 @@ export class RelayLink {
       this.status();
       this.later(() => void this.connect(url, 1), RETRY_MS[0]);
     };
-    const seen = this.seen.get(url) ?? new Set<string>();
-    this.seen.set(url, seen);
-    const got = (e: NostrEvent) => {
-      seen.add(e.id);
-      this.onEvent(e);
-    };
-    // The newest events, then every new one as it is posted.
-    let oldest = Infinity;
-    let count = 0;
-    r.subscribe([{ kinds: [KIND], '#t': [this.tag], limit: PAGE }], {
-      onevent: (e) => {
-        count++;
-        oldest = Math.min(oldest, e.created_at);
-        got(e);
+    this.subscribe(url, r);
+  }
+
+  /**
+   * The relay's events for the game (all of them the first time, those since the last sync after
+   * that), then every new one as it is posted. Once it has sent what it has, it gets what it lacks.
+   */
+  private subscribe(url: string, r: Relay) {
+    const last = this.synced.get(url);
+    const since = last === undefined ? undefined : last - SINCE_MARGIN_S;
+    const startedAt = Math.floor(Date.now() / 1000);
+    const page = { count: 0, oldest: Infinity };
+    r.subscribe([{ kinds: [KIND], '#t': [this.tag], limit: PAGE, since }], {
+      eoseTimeout: EOSE_TIMEOUT_MS,
+      ...this.receiver(url, page),
+      oneose: () =>
+        void this.backfill(url, r, page, since).then(() => {
+          this.synced.set(url, startedAt);
+          this.resend(url);
+        }),
+      // The relay ended the subscription (some do after a while); ask again unless we're leaving.
+      onclose: (reason) => {
+        if (this.closed || this.relays.get(url) !== r || !r.connected || reason === 'closed by caller') return;
+        this.later(() => this.relays.get(url) === r && r.connected && this.subscribe(url, r), RETRY_MS[1]);
       },
-      oneose: () => void this.backfill(url, r, count, oldest).then(() => this.resend(url)),
     });
   }
 
+  /** Subscription callbacks that record what the relay holds, count a page, and pass on new events. */
+  private receiver(url: string, page: { count: number; oldest: number }) {
+    const counted = (createdAt: number) => {
+      page.count++;
+      page.oldest = Math.min(page.oldest, createdAt);
+    };
+    return {
+      // Called with the id alone, before nostr-tools parses the event or checks its signature.
+      alreadyHaveEvent: (id: string) => {
+        const e = this.store.get(id);
+        if (e) counted(e.created_at);
+        return !!e;
+      },
+      receivedEvent: (_: unknown, id: string) => this.holds(url, id),
+      onevent: (e: NostrEvent) => {
+        counted(e.created_at);
+        this.onEvent(e);
+      },
+    };
+  }
+
   /** Fetches older pages until one brings nothing new. */
-  private async backfill(url: string, r: Relay, count: number, oldest: number) {
+  private async backfill(url: string, r: Relay, first: { count: number; oldest: number }, since: number | undefined) {
     const seen = this.seen.get(url)!;
-    while (count >= 50 && Number.isFinite(oldest) && !this.closed) {
+    let { count, oldest } = first;
+    while (count >= 50 && Number.isFinite(oldest) && !this.closed && r.connected) {
       const before = seen.size;
-      let next = Infinity;
-      count = 0;
+      const page = { count: 0, oldest: Infinity };
       await new Promise<void>((done) => {
-        const sub = r.subscribe([{ kinds: [KIND], '#t': [this.tag], until: oldest, limit: PAGE }], {
-          onevent: (e) => {
-            count++;
-            next = Math.min(next, e.created_at);
-            seen.add(e.id);
-            this.onEvent(e);
-          },
+        const sub = r.subscribe([{ kinds: [KIND], '#t': [this.tag], until: oldest, since, limit: PAGE }], {
+          eoseTimeout: EOSE_TIMEOUT_MS,
+          ...this.receiver(url, page),
           oneose: () => {
             sub.close();
             done();
@@ -171,14 +235,14 @@ export class RelayLink {
         });
       });
       if (seen.size === before) break;
-      oldest = next;
+      ({ count, oldest } = page);
     }
   }
 
   /** Queues every event the relay didn't return. */
   private resend(url: string) {
     const seen = this.seen.get(url)!;
-    this.enqueue(url, this.known().filter((e) => !seen.has(e.id)));
+    this.enqueue(url, this.store.all().filter((e) => !seen.has(e.id)));
   }
 
   private enqueue(url: string, events: NostrEvent[]) {
@@ -201,14 +265,19 @@ export class RelayLink {
       this.sending.delete(url);
       this.later(() => this.drain(url), ms);
     };
+    const done = () => {
+      q.shift();
+      this.tries.delete(url);
+      next(SEND_GAP_MS);
+    };
     r.publish(e).then(
       () => {
-        this.seen.get(url)?.add(e.id);
-        q.shift();
-        next(SEND_GAP_MS);
+        this.holds(url, e.id);
+        done();
       },
       (err: unknown) => {
         const why = String((err as Error)?.message ?? err);
+        const tries = this.tries.get(url) ?? 0;
         if (REFUSED_FOR_GOOD.test(why)) {
           console.warn(`[quantum] ${url} refuses our events (${why}); reading from it only`);
           this.readOnly.add(url);
@@ -217,10 +286,13 @@ export class RelayLink {
           this.status();
         } else if (RATE_LIMITED.test(why)) {
           next(RATE_LIMIT_PAUSE_MS);
+        } else if (TRANSIENT.test(why) && tries < SEND_RETRY_MS.length) {
+          // Keep it at the head of the queue; if the socket died, it goes out after reconnecting.
+          this.tries.set(url, tries + 1);
+          next(SEND_RETRY_MS[tries]);
         } else {
-          // Anything else (a timeout, a hiccup): skip it; the next sync re-sends what is missing.
-          q.shift();
-          next(SEND_GAP_MS);
+          // The relay won't take this event (or keeps failing): skip it; the next sync tries again.
+          done();
         }
       },
     );

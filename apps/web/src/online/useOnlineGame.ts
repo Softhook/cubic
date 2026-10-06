@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { chooseCombatResponse } from '@quantum/ai';
 import { actor, apply, legalActions, MAPS, RuleError, RULESETS, type Action, type GameState, type PlayerId } from '@quantum/engine';
 import {
+  actBody,
   CHAINED,
   decodeEvent,
   encodePost,
@@ -20,7 +21,7 @@ import { aiLevelOf, think } from '../game/aiClient';
 import { useToasts } from '../game/toasts';
 import type { GameView } from '../game/view';
 import { nextStep } from './playback';
-import { identity, loadEvents, rememberGame, saveEvents } from './storage';
+import { identity, keepStorage, loadEvents, rememberGame, saveEvents } from './storage';
 import { RelayLink, type RelayStatus } from './relays';
 
 /**
@@ -77,7 +78,9 @@ export function useOnlineGame(secret: string): OnlineGame {
         console.error('[quantum] apply threw', { action: a, error: e, state: JSON.stringify(head) });
         return fail(`Engine error: ${(e as Error).message}`);
       }
-      post({ t: 'act', seat, action: a });
+      // Checked again against the game as it is when the post goes out: a second click before
+      // the screen caught up would otherwise follow the first move and be refused everywhere.
+      post((r) => actBody(r, seat, a));
       return true;
     },
     [head, live, mySeats, post],
@@ -127,7 +130,10 @@ export function useOnlineGame(secret: string): OnlineGame {
     mySeats,
     view,
     live,
-    claim: (seat, name) => post({ t: 'claim', seat, name }),
+    claim: (seat, name) => {
+      keepStorage();
+      post({ t: 'claim', seat, name });
+    },
     setAsk: (ask) => mySeats.forEach((seat) => post({ t: 'ask', seat, ask })),
   };
 }
@@ -144,22 +150,23 @@ function usePostLog(secret: string) {
   const timeline = useMemo(() => new Timeline(), [secret]);
   const events = useMemo(() => new Map<string, NostrEvent>(), [secret]);
   const [replay, setReplay] = useState<Replay | null>(null);
-  const [relays, setRelays] = useState<RelayStatus>({ connected: 0, total: 0 });
+  const [relays, setRelays] = useState<RelayStatus>({ connected: 0, total: 0, unsent: 0 });
   const [failure, setFailure] = useState<string | null>(null);
   const link = useRef<RelayLink | null>(null);
 
-  // The timeline changes in place; React gets a fresh copy, at most once a frame (a relay can
-  // send hundreds of events in a burst).
-  const frame = useRef(0);
+  // The timeline changes in place; React gets a fresh copy, batched (a relay can send hundreds of
+  // events in a burst). A timer, not an animation frame: those never fire in a background tab,
+  // which would stop it from following the game and moving the AI.
+  const batch = useRef<number | undefined>(undefined);
   const publish = useCallback(() => {
-    if (frame.current) return;
-    frame.current = requestAnimationFrame(() => {
-      frame.current = 0;
+    if (batch.current !== undefined) return;
+    batch.current = window.setTimeout(() => {
+      batch.current = undefined;
       const r = timeline.replay();
       setReplay(r && { ...r, seats: r.seats.map((s) => ({ ...s })), steps: [...r.steps] });
-    });
+    }, 16);
   }, [timeline]);
-  useEffect(() => () => cancelAnimationFrame(frame.current), []);
+  useEffect(() => () => window.clearTimeout(batch.current), []);
 
   const save = useThrottled(() => saveEvents(keys.tag, [...events.values()]), 400);
 
@@ -180,7 +187,8 @@ function usePostLog(secret: string) {
     try {
       for (const e of loadEvents(keys.tag)) receive(e, true);
       publish();
-      l = new RelayLink(keys.tag, () => [...events.values()], (e) => receive(e) && (save(), publish()), setRelays);
+      const store = { get: (id: string) => events.get(id), all: () => [...events.values()] };
+      l = new RelayLink(keys.tag, store, (e) => receive(e) && (save(), publish()), setRelays);
       l.start();
       link.current = l;
     } catch (e) {
@@ -265,9 +273,9 @@ function useAiSeats(replay: Replay | null, me: string, post: (req: PostRequest) 
     const level = aiLevelOf(head.players[work.seat]);
     if (work.combat) {
       const a = chooseCombatResponse(head, work.seat, { level });
-      post((r) => (!current(r) ? null : a ? { t: 'act', seat: work.seat, action: a } : { t: 'pass', seat: work.seat, stage }));
+      post((r) => (!current(r) ? null : a ? actBody(r, work.seat, a) : { t: 'pass', seat: work.seat, stage }));
     } else {
-      void think(head, level).then((a) => a && post((r) => (current(r) ? { t: 'act', seat: work.seat, action: a } : null)));
+      void think(head, level).then((a) => a && post((r) => (current(r) ? actBody(r, work.seat, a) : null)));
     }
   }, [replay, me, post, recheck]);
 }

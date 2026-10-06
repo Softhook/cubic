@@ -21,6 +21,14 @@ export function identity(): Uint8Array {
   return sk;
 }
 
+/**
+ * Asks the browser not to clear this site's storage when space runs low: it holds this browser's
+ * identity, and with it its seats. (Safari may still clear it after weeks without a visit.)
+ */
+export function keepStorage() {
+  void navigator.storage?.persist?.().catch(() => {});
+}
+
 export function loadEvents(tag: string): NostrEvent[] {
   return storedJson<NostrEvent[]>(eventsKey(tag)) ?? [];
 }

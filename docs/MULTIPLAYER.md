@@ -47,10 +47,18 @@ store small signed messages for anyone. We run nothing.
   which browsers never send to a server. Relays see only an encrypted blob (AES-GCM, key
   derived from the secret), a tag derived from it, and the poster's public key.
 - **Relays** ([`relays.ts`](../apps/web/src/online/relays.ts)): six that accept bursts from new
-  keys (checked 2026-10). Each relay gets a paced send queue; rate limits pause it; a relay
-  that refuses for good (payment, web of trust) is only read from. After syncing, a browser
-  re-sends anything a relay is missing, so a game survives relays dropping old events as long
-  as one player still has it.
+  keys (checked 2026-10). Each relay gets a paced send queue; rate limits pause it; a send that
+  goes unconfirmed is retried; a relay that refuses for good (payment, web of trust) is only
+  read from. After syncing, a browser re-sends anything a relay is missing, so a game survives
+  relays dropping old events as long as one player still has it. Every relay sends the whole
+  game on connecting, but events the browser already holds are skipped before they are parsed
+  or their signature checked (~1 ms each on a laptop, more on a phone), and a reconnect only
+  asks for what's new since the last sync. A relay that ends our subscription is asked again.
+  The panel shows *Sending…* while a move of ours isn't confirmed by any relay.
+- **Staying in sync.** Each move carries a hash of the position it leads to (names and log
+  left out, as claims may still be in flight). A browser that gets a different position, or
+  refuses a move the seat's owner made from the same position, shows *Out of sync* and asks
+  both players to reload: almost always two app versions (a deploy during a game).
 - **Async.** Close the tab whenever; open the game from the lobby's *Online games* list or the
   link and it catches up (moves you missed are replayed briefly, or skipped if many). Live
   play works the same way, with moves arriving in about a second.
@@ -61,9 +69,11 @@ store small signed messages for anyone. We run nothing.
 |---|---|
 | **Players can cheat with dev tools**: every browser holds the seed, so future rolls and deck order are predictable | Inherent without a trusted party. Fine between friends; a server (§2 C) fixes it |
 | No "your turn" notifications | Needs a server to send email/Web Push. The lobby shows *Your move* for games last seen waiting on you |
-| A seat lives in one browser | Moving to another device would need exporting the key (not built) |
+| A seat lives in one browser | Moving to another device would need exporting the key (not built). Safari may clear a site's storage after ~7 days without a visit, losing the seat; we ask for persistent storage, which helps elsewhere |
 | Public relays may rate-limit or drop events | Six relays, paced sending, re-sending from every browser |
-| **Engine changes can break games in progress**: replay must give the same result on every browser | `golden.test.ts` flags any behaviour change; bump `PROTOCOL` (protocol.ts) when one would alter replays, which retires older games |
+| **Engine changes can break games in progress**: replay must give the same result on every browser | `golden.test.ts` flags any behaviour change; bump `PROTOCOL` (protocol.ts) when one would alter replays, which retires older games. A player still on the old version is caught by the position hash (*Out of sync*) |
+| Relays promise nothing: they may prune old events or start refusing new keys | Every player's browser is a full copy and re-seeds the relays when it opens the game; the list in `relays.ts` is easy to change. A friend joining an idle game may need the creator to open it first |
+| Rival posts are ordered by the poster's clock | A wrong clock only decides races (two bystanders firing at once); fine between friends |
 | localStorage (~5 MB) holds every game's events (~0.5 KB each) | Plenty for dozens of games; finished games can be removed from the lobby |
 
 ### Testing it

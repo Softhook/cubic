@@ -1,4 +1,4 @@
-import type { Action, CombatPending, GameMode, PlayerConfig, PlayerId } from '@quantum/engine';
+import type { Action, CombatPending, GameMode, GameState, PlayerConfig, PlayerId } from '@quantum/engine';
 
 /**
  * An online game is a log of posts that every player's browser keeps and replays with the engine.
@@ -23,7 +23,11 @@ export type Body =
   | { t: 'create'; protocol: number; config: GameConfig; creator: PlayerId; open: PlayerId[] }
   /** Take an open seat. The earliest claim of a seat wins. */
   | { t: 'claim'; seat: PlayerId; name: string }
-  | { t: 'act'; seat: PlayerId; action: Action }
+  /**
+   * `h`: the hash of the position the move leads to (`stateHash`), as the poster's browser computed
+   * it. A browser that gets a different one is out of sync (most often: a different app version).
+   */
+  | { t: 'act'; seat: PlayerId; action: Action; h?: string }
   /** Take back the seat's last move, if the engine allows it (isUndoable). */
   | { t: 'undo'; seat: PlayerId }
   | { t: 'ask'; seat: PlayerId; ask: AskMode }
@@ -58,4 +62,21 @@ export function combatStage(c: CombatPending): string {
 /** Earlier posts win; equal times are broken by id, so every browser picks the same one. */
 export function byTime(a: Post, b: Post): number {
   return a.at - b.at || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+}
+
+/**
+ * A short fingerprint of a position (FNV-1a over its JSON). Two browsers running the same engine on
+ * the same posts build their states the same way, so their fingerprints match.
+ *
+ * Leaves out player names and the log (which quotes them): names come from claims, and a browser
+ * may not have every claim yet when it posts a move.
+ */
+export function stateHash(state: GameState): string {
+  const json = JSON.stringify(state, (k, v) => (k === 'name' || (k === 'log' && Array.isArray(v)) ? undefined : v));
+  let h = 0x811c9dc5;
+  for (let i = 0; i < json.length; i++) {
+    h ^= json.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16).padStart(8, '0');
 }

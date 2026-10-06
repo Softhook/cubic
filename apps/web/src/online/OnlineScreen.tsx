@@ -139,18 +139,29 @@ function OnlinePanel({ g, secret }: { g: OnlineGame; secret: string }) {
     }
   };
   const ok = g.relays.connected > 0;
+  const unsent = g.relays.unsent;
+  const status = open
+    ? `${open} seat${open > 1 ? 's' : ''} open`
+    : !ok
+      ? unsent
+        ? `Offline — ${unsent} move${unsent > 1 ? 's' : ''} waiting to be sent`
+        : 'Offline — moves are kept and sent later'
+      : unsent
+        ? 'Sending…'
+        : !g.live
+          ? 'Catching up…'
+          : 'Online';
   return (
     <section className="panel online-panel">
       <span
         className={`relay-dot ${ok ? 'ok' : ''}`}
         title={`Connected to ${g.relays.connected} of ${g.relays.total} relays. Your moves are saved in this browser and sent when a relay is reachable.`}
       />
-      <span className="online-status">
-        {open ? `${open} seat${open > 1 ? 's' : ''} open` : !g.live ? 'Catching up…' : ok ? 'Online' : 'Offline — moves are kept and sent later'}
-      </span>
+      <span className="online-status">{status}</span>
       <button className={`btn ${open ? 'btn-primary' : ''}`} onClick={copy} title="Copy the link to this game. Anyone with it can join an open seat or watch.">
         {copied ? 'Copied' : open ? 'Invite' : 'Link'}
       </button>
+      {r.desync && <OutOfSync replay={r} />}
       {ask && (
         <select className="ask-select" value={ask} aria-label="Battles to be asked about" title="When to wait for you to fire a missile or re-roll in a battle. Battles you're not asked about resolve without you." onChange={(e) => g.setAsk(e.target.value as AskMode)}>
           {(Object.keys(ASK_LABELS) as AskMode[]).map((m) => (
@@ -161,5 +172,26 @@ function OnlinePanel({ g, secret }: { g: OnlineGame; secret: string }) {
         </select>
       )}
     </section>
+  );
+}
+
+/**
+ * Another browser played a move this one refuses, or got a different position from it. Both run
+ * the same posts through the engine, so they almost certainly run different versions of the app.
+ */
+function OutOfSync({ replay }: { replay: Replay }) {
+  const d = replay.desync!;
+  const who = replay.seats[d.seat]?.name ?? 'Another player';
+  return (
+    <div className="online-desync" role="alert">
+      <strong>Out of sync with {who}</strong>
+      <span>
+        {d.why === 'rejected' ? `A move by ${who} doesn’t fit the game as this browser sees it.` : `${who}’s browser sees a different game after their move.`} One of you is probably
+        running an older version: both reload the page.
+      </span>
+      <button className="btn" onClick={() => location.reload()}>
+        Reload
+      </button>
+    </div>
   );
 }

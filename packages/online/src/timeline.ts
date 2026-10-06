@@ -1,5 +1,5 @@
-import { apply, canRespondToCombat, createGame, isUndoable, mayAct, type CombatPending, type GameState, type PlayerId } from '@quantum/engine';
-import { byTime, CHAINED, combatStage, PROTOCOL, type AskMode, type Body, type GameConfig, type Post } from './protocol';
+import { apply, canRespondToCombat, createGame, isUndoable, mayAct, type Action, type CombatPending, type GameState, type PlayerId } from '@quantum/engine';
+import { byTime, CHAINED, combatStage, PROTOCOL, stateHash, type AskMode, type Body, type GameConfig, type Post } from './protocol';
 
 export interface Seat {
   id: PlayerId;
@@ -25,6 +25,17 @@ export interface CombatWait {
   passed: PlayerId[];
 }
 
+/**
+ * This browser disagrees with another about the game: a move its player made was refused here
+ * (`rejected`), or led to a different position here (`differs`). Every browser runs the same
+ * posts through the same engine, so this means different app versions (or a bug, or tampering).
+ */
+export interface Desync {
+  seat: PlayerId;
+  author: string;
+  why: 'rejected' | 'differs';
+}
+
 /** Everything a browser derives from the posts it has. */
 export interface Replay {
   genesis: Post;
@@ -40,6 +51,8 @@ export interface Replay {
   /** The seat that may take back its last move now, if any. */
   undoSeat: PlayerId | null;
   combat: CombatWait | null;
+  /** The first disagreement with another browser, if any. */
+  desync: Desync | null;
 }
 
 const MAX_NAME = 14;
@@ -195,14 +208,21 @@ export class Timeline {
     const prev = r.steps.at(-1)!.state;
     let next: GameState | null = null;
     if (b.t === 'act') {
-      if (prev.phase === 'over' || !mayAct(prev, b.seat, b.action)) return false;
       // Having passed this stage of a battle, a seat has nothing more to say in it.
       if (r.combat && r.combat.passed.includes(b.seat)) return false;
+      // The poster's browser checked the move against this same position before sending it, so
+      // the engine refusing it here means the two browsers don't agree on the rules.
+      const refused = () => {
+        if (!seat.ai) r.desync ??= { seat: b.seat, author: p.author, why: 'rejected' };
+        return false;
+      };
+      if (prev.phase === 'over' || !mayAct(prev, b.seat, b.action)) return refused();
       try {
         next = apply(prev, b.action);
       } catch {
-        return false;
+        return refused();
       }
+      if (b.h !== undefined && b.h !== stateHash(next)) r.desync ??= { seat: b.seat, author: p.author, why: 'differs' };
       this.undoStack = !seat.ai && isUndoable(prev, b.action, next) ? [...this.undoStack, { state: prev, seat: b.seat }] : [];
     } else if (b.t === 'undo') {
       const top = this.undoStack.at(-1);
@@ -239,6 +259,20 @@ export class Timeline {
   }
 }
 
+/**
+ * The `act` post that makes `seat` play `action` in the game as it stands, or null if the game
+ * wouldn't take it (checked here so a stale click never goes out as a post every browser drops).
+ */
+export function actBody(r: Replay, seat: PlayerId, action: Action): Body | null {
+  const s = r.steps.at(-1)!.state;
+  if (s.phase === 'over' || !mayAct(s, seat, action) || r.combat?.passed.includes(seat)) return null;
+  try {
+    return { t: 'act', seat, action, h: stateHash(apply(s, action)) };
+  } catch {
+    return null;
+  }
+}
+
 function start(g: Post): Replay | null {
   const b = g.body;
   if (b.t !== 'create' || b.protocol !== PROTOCOL) return null;
@@ -260,7 +294,7 @@ function start(g: Post): Replay | null {
   }));
   // A human seat is either the creator's or open; anything else would be a seat nobody can play.
   if (seats.some((s) => !s.ai && !s.open && s.id !== b.creator) || seats[b.creator].ai) return null;
-  return { genesis: g, config: b.config, seats, steps: [{ state, post: null }], tip: g.id, tipAt: g.at, tipAuthor: g.author, undoSeat: null, combat: null };
+  return { genesis: g, config: b.config, seats, steps: [{ state, post: null }], tip: g.id, tipAt: g.at, tipAuthor: g.author, undoSeat: null, combat: null, desync: null };
 }
 
 const ASK: ReadonlySet<unknown> = new Set<AskMode>(['always', 'own', 'never']);
@@ -278,7 +312,7 @@ function wellFormed(p: Post): boolean {
     case 'claim':
       return seat && typeof b.name === 'string';
     case 'act':
-      return seat && typeof b.action === 'object' && b.action !== null && typeof b.action.type === 'string';
+      return seat && typeof b.action === 'object' && b.action !== null && typeof b.action.type === 'string' && (b.h === undefined || typeof b.h === 'string');
     case 'undo':
       return seat;
     case 'ask':

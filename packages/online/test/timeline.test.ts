@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { actor, apply, checkInvariants, legalActions, defaultMap, type GameMode, type Action, type GameState, type PlayerConfig, type PlayerId } from '@quantum/engine';
 import { chooseAction, chooseCombatResponse } from '@quantum/ai';
-import { decodeEvent, encodePost, gameKeys, hex, newSecret, PROTOCOL, Timeline, type Body, type Post, type Replay } from '../src';
+import { actBody, decodeEvent, encodePost, gameKeys, hex, newSecret, PROTOCOL, stateHash, Timeline, type Body, type Post, type Replay } from '../src';
 import { seededRandom } from '../../engine/test/helpers';
 
 const seat = (name: string, ai = false): PlayerConfig => ({ name, color: '#fff', ai, aiLevel: 1 });
@@ -56,7 +56,7 @@ class Browser {
       for (const id of r.combat.waitingOn) {
         if (!plays(id) || r.combat.passed.includes(id)) continue;
         const a = chooseCombatResponse(s, id, { level: 1, random: this.random });
-        return this.send(a ? { t: 'act', seat: id, action: a } : { t: 'pass', seat: id, stage: r.combat.stage }, !!a);
+        return this.send(a ? actBody(r, id, a)! : { t: 'pass', seat: id, stage: r.combat.stage }, !!a);
       }
       return null;
     }
@@ -64,7 +64,7 @@ class Browser {
     const who = actor(s);
     if (!plays(who)) return null;
     const a = chooseAction(s, { level: 1, random: this.random, samples: 1 });
-    return a ? this.send({ t: 'act', seat: who, action: a }, true) : null;
+    return a ? this.send(actBody(r, who, a)!, true) : null;
   }
 }
 
@@ -109,6 +109,9 @@ describe('online timeline', () => {
     expect(ra.seats.map((s) => s.name)).toEqual(['Alice', 'Bob the very l', 'Nova']);
     expect(ra.seats[0].ask).toBe('own');
     expect(checkInvariants(head(ra))).toEqual([]);
+    // Every move carried the hash of its position, and both browsers got the same ones.
+    expect(ra.desync).toBeNull();
+    expect(rb.desync).toBeNull();
     // A fresh browser that only receives the posts (in any order) computes the same game.
     const c = new Timeline();
     for (const p of [...a.timeline.all()].reverse()) c.add(p);
@@ -171,6 +174,59 @@ describe('online timeline', () => {
     t.add(early);
     expect(t.replay()!.tip).toBe(early.id);
     expect(t.replay()!.steps.map((s) => s.post?.id)).toEqual([undefined, early.id]);
+  });
+
+  it('notices a browser that disagrees about the game', () => {
+    const g = create('alice', [seat('Alice'), seat('Open')], [1]);
+    const claim = post('bob', { t: 'claim', seat: 1, name: 'Bob' });
+    const fresh = () => {
+      const t = new Timeline();
+      t.add(g);
+      t.add(claim);
+      return t;
+    };
+    const s0 = head(fresh().replay()!);
+    const keep: Action = { type: 'setupKeep' };
+
+    // Alice's browser took a move this one refuses (here: one the engine doesn't know).
+    const t1 = fresh();
+    t1.add(post('alice', { t: 'act', seat: 0, action: { type: 'warpDrive' } as unknown as Action }, g.id));
+    expect(t1.replay()!.steps).toHaveLength(1);
+    expect(t1.replay()!.desync).toEqual({ seat: 0, author: 'alice', why: 'rejected' });
+
+    // Alice's browser got a different position from the move: it still counts, but is flagged.
+    const t2 = fresh();
+    t2.add(post('alice', { t: 'act', seat: 0, action: keep, h: 'deadbeef' }, g.id));
+    expect(t2.replay()!.steps).toHaveLength(2);
+    expect(t2.replay()!.desync?.why).toBe('differs');
+
+    // The same move with the right hash, or none (older browsers), is fine.
+    const t3 = fresh();
+    t3.add(post('alice', { t: 'act', seat: 0, action: keep, h: stateHash(apply(s0, keep)) }, g.id));
+    expect(t3.replay()!.desync).toBeNull();
+    // A browser that hasn't got Bob's claim yet (so calls him "Open") still agrees on the position.
+    const early = new Timeline();
+    early.add(g);
+    const h = actBody(early.replay()!, 0, keep)!;
+    const t5 = fresh();
+    t5.add(post('alice', h, g.id));
+    expect(t5.replay()!.desync).toBeNull();
+    const t4 = fresh();
+    t4.add(post('mallory', { t: 'act', seat: 0, action: { type: 'warpDrive' } as unknown as Action }, g.id));
+    expect(t4.replay()!.desync).toBeNull();
+  });
+
+  it('builds a move for the game as it is now, or none if it no longer fits', () => {
+    const t = new Timeline();
+    const g = create('alice', [seat('Alice'), seat('Bob')], [1]);
+    t.add(g);
+    const keep: Action = { type: 'setupKeep' };
+    const body = actBody(t.replay()!, 0, keep)!;
+    expect(body).toMatchObject({ t: 'act', seat: 0, action: keep, h: stateHash(apply(head(t.replay()!), keep)) });
+    t.add(post('alice', body, g.id));
+    // A second click on the same button, sent after the first went out: not Alice's move any more.
+    expect(actBody(t.replay()!, 0, keep)).toBeNull();
+    expect(actBody(t.replay()!, 1, { type: 'warpDrive' } as unknown as Action)).toBeNull();
   });
 
   it('rejects malformed posts and actions', () => {
