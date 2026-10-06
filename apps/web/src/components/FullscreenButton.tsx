@@ -10,6 +10,22 @@ const root = document.documentElement as FsElement;
 const supported = !!(root.requestFullscreen || root.webkitRequestFullscreen);
 const isFullscreen = () => !!(doc.fullscreenElement ?? doc.webkitFullscreenElement);
 
+/**
+ * Phones go full screen on the first tap in a game: the address bar and system bars take a lot of a
+ * small screen. Browsers only allow it from a tap, so it waits for one; once per game screen, so
+ * leaving full screen sticks.
+ */
+export function useFullscreenOnFirstTap() {
+  useEffect(() => {
+    if (!supported || !matchMedia('(pointer: coarse)').matches) return;
+    const go = () => {
+      if (!isFullscreen()) (root.requestFullscreen ?? root.webkitRequestFullscreen)?.call(root)?.catch?.(() => {});
+    };
+    document.addEventListener('click', go, { once: true, capture: true });
+    return () => document.removeEventListener('click', go, { capture: true });
+  }, []);
+}
+
 function toggle() {
   if (isFullscreen()) (doc.exitFullscreen ?? doc.webkitExitFullscreen)?.call(doc);
   else (root.requestFullscreen ?? root.webkitRequestFullscreen)?.call(root)?.catch?.(() => {});

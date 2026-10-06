@@ -11,15 +11,17 @@ import { TurnPanel } from './TurnPanel';
 import { CombatOverlay } from './CombatOverlay';
 import { AdvancePrompt, DecisionOverlay, GameOver } from './Overlays';
 import { ErrorToast, Toasts } from './Toasts';
-import { FullscreenButton } from './FullscreenButton';
+import { FullscreenButton, useFullscreenOnFirstTap } from './FullscreenButton';
 
 /**
  * The game screen, for a game on this device or online. `side` goes at the top of the sidebar,
- * `overlay` over everything; online, leaving doesn't end the game.
+ * `overlay` over everything; online, leaving doesn't end the game. `onLobby` (the title) goes back to
+ * the lobby without ending it; without it, the title quits.
  */
 export function Game({
   view,
   onQuit,
+  onLobby,
   onRules,
   online,
   side,
@@ -27,6 +29,7 @@ export function Game({
 }: {
   view: GameView;
   onQuit: () => void;
+  onLobby?: () => void;
   onRules: () => void;
   online?: boolean;
   side?: ReactNode;
@@ -36,6 +39,7 @@ export function Game({
   const ctl = useController(game, dispatch, view.mine);
   const [sound, setSound] = useState(soundEnabled());
   const [hideGameOver, setHideGameOver] = useState(false);
+  useFullscreenOnFirstTap();
   const head = game.pending[0];
   /** Online games go on without you; a local game is abandoned, so it asks first. */
   const leave = () => {
@@ -45,7 +49,7 @@ export function Game({
   return (
     <div className="app">
       <header className="topbar">
-        <button type="button" className="brand" title="Back to the lobby" onClick={leave}>Cubic</button>
+        <button type="button" className="brand" title="Back to the lobby" onClick={onLobby ?? onQuit}>Cubic</button>
         <div className="topbar-map">
           <span className={`mode-badge mode-${game.mode}`}>{rulesOf(game).name}</span>
           {game.board.mapName}

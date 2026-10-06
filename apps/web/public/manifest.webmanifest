@@ -1,0 +1,11 @@
+{
+  "name": "Cubic",
+  "short_name": "Cubic",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "background_color": "#050813",
+  "theme_color": "#050813",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

@@ -38,6 +38,11 @@ export function App() {
     clearSavedGame();
     setSaved(null);
   };
+  /** Back to the lobby; the game lives on as the saved game, to resume from there. */
+  const toLobby = () => {
+    setSaved(loadSavedGame());
+    setGame(null);
+  };
   const quit = () => {
     discard();
     setGame(null);
@@ -48,7 +53,7 @@ export function App() {
       {online ? (
         <OnlineScreen key={online} secret={online} onLeave={() => (location.hash = '')} onRules={() => setRules(true)} />
       ) : game ? (
-        <LocalGame key={game.seed} initial={game} onQuit={quit} onRules={() => setRules(true)} />
+        <LocalGame key={game.seed} initial={game} onQuit={quit} onLobby={toLobby} onRules={() => setRules(true)} />
       ) : (
         <Lobby onStart={start} onRules={() => setRules(true)} saved={saved} onResume={() => setGame(saved)} onDiscard={discard} />
       )}
@@ -57,7 +62,7 @@ export function App() {
   );
 }
 
-function LocalGame({ initial, onQuit, onRules }: { initial: GameState; onQuit: () => void; onRules: () => void }) {
+function LocalGame({ initial, onQuit, onLobby, onRules }: { initial: GameState; onQuit: () => void; onLobby: () => void; onRules: () => void }) {
   const view = useGame(initial);
-  return <Game view={view} onQuit={onQuit} onRules={onRules} />;
+  return <Game view={view} onQuit={onQuit} onLobby={onLobby} onRules={onRules} />;
 }
