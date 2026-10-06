@@ -65,7 +65,8 @@ async function load(id: string, svg: string): Promise<string> {
 export function tileImage(id: string): Promise<string> {
   let image = images.get(id);
   if (!image) {
-    const svg = tileSvg(tileSpec(id), { rounded: true });
+    // The space pads and their hatching come with the art, as printed; the board draws the number and cubes live.
+    const svg = tileSvg(tileSpec(id), { rounded: true, markings: 'spaces' });
     // If drawing or storage fails, fall back to the SVG itself (slower to show, same look).
     image = load(id, svg).catch(() => dataUrl(svg));
     images.set(id, image);

@@ -9,8 +9,11 @@ import type { TileSpec } from './tileset';
 export interface TileOptions {
   /** Include the 3 mm print bleed around the trim. */
   bleed?: boolean;
-  /** Print markings: space pads, number badge and cube pads. The game draws its own instead. */
-  markings?: boolean;
+  /**
+   * Print markings: space pads, number badge and cube pads. `'spaces'` draws only the space pads and
+   * their hatching, for the game, which draws the number and cube pads itself (they change in play).
+   */
+  markings?: boolean | 'spaces';
   /** Round the corners (for on-screen use; print uses the die-cut). */
   rounded?: boolean;
   /** Prefix for ids; defaults to the tile id. */
@@ -91,26 +94,41 @@ export function numberPlacement(number: number): NumberPlacement {
   return { x: d, y: d, size, halfW, halfH };
 }
 
+/** Gap between hatch lines and their inset from the pad's edge, inside its rounded corners (mm). */
+const HATCH = { gap: 3, inset: 1.5 };
+
+/**
+ * Diagonal hatching across the pad centred on (cx, cy): plain line segments, clipped by hand to a
+ * square inset from the pad, so they stay editable vectors without a clip path.
+ */
+function hatch(cx: number, cy: number): string {
+  const h = TILE.pad / 2 - HATCH.inset;
+  let out = '';
+  // Lines u + v = c across the square |u|, |v| ≤ h (u right, v down from the centre): bottom left to top right.
+  for (let c = -2 * h + HATCH.gap; c < 2 * h - 0.01; c += HATCH.gap) {
+    const u1 = Math.max(-h, c - h);
+    const u2 = Math.min(h, c + h);
+    out += `<line x1="${n(cx + u1)}" y1="${n(cy + c - u1)}" x2="${n(cx + u2)}" y2="${n(cy + c - u2)}" stroke="${hex(222, 80, 82)}" stroke-opacity=".3" stroke-width=".3"/>`;
+  }
+  return out;
+}
+
 /**
  * Print markings. Plain SVG only (hex colours, no `paint-order` or `dominant-baseline`), so they import
  * into Illustrator as editable vectors.
  */
-function markings(spec: TileSpec): Fragment {
+function markings(spec: TileSpec, spacesOnly = false): Fragment {
   let body = '';
   CELL_CENTRES.forEach((x) =>
     CELL_CENTRES.forEach((y) => {
       if (spec.number > 0 && x === MID && y === MID) return;
       const p = TILE.pad;
       body += `<rect x="${n(x - p / 2)}" y="${n(y - p / 2)}" width="${p}" height="${p}" rx="4" fill="#fff" fill-opacity=".03" stroke="${hex(222, 80, 82)}" stroke-opacity=".3" stroke-width=".3"/>`;
-      // The four spaces beside a planet are where dice go to conquer it: a faint double ring marks them.
-      if (spec.number > 0 && (x === MID) !== (y === MID)) {
-        for (const r of [2.6, 4.2]) {
-          body += `<circle cx="${n(x)}" cy="${n(y)}" r="${r}" fill="none" stroke="${hex(222, 80, 82)}" stroke-opacity=".3" stroke-width=".3"/>`;
-        }
-      }
+      // The four spaces beside a planet are where dice go to conquer it: faint diagonal hatching marks them.
+      if (spec.number > 0 && (x === MID) !== (y === MID)) body += hatch(x, y);
     }),
   );
-  if (spec.number > 0) {
+  if (spec.number > 0 && !spacesOnly) {
     const s = CUBE_PAD.size;
     for (const p of cubePadCentres(spec.number - 6, MID, MID)) {
       body += `<rect x="${n(p.x - s / 2)}" y="${n(p.y - s / 2)}" width="${s}" height="${s}" rx="1.6" fill="#000" fill-opacity=".42" stroke="#fff" stroke-opacity=".75" stroke-width=".3"/>`;
@@ -195,7 +213,8 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
   const art = rng(spec.seed);
   const isVoid = spec.number === 0;
 
-  if (o.only === 'markings') return document(markings(spec), area);
+  const marks = () => markings(spec, o.markings === 'spaces');
+  if (o.only === 'markings') return document(marks(), area);
   const parts: Fragment[] = [
     starfield({
       rng: art.fork('sky'),
@@ -223,7 +242,7 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
     );
   }
   if (!isVoid && o.only !== 'art') parts.push(label(spec));
-  if (o.markings && o.only !== 'art') parts.push(markings(spec));
+  if (o.markings && o.only !== 'art') parts.push(marks());
 
   let all = join(...parts);
   if (o.rounded) {
@@ -244,7 +263,7 @@ export function editableTileSvg(spec: TileSpec, artPng: string, o: Pick<TileOpti
   const b = o.bleed ? TILE.bleed : 0;
   const w = TILE.size + 2 * b;
   const area: Box = { x: -b, y: -b, w, h: w };
-  const marks = o.markings ? markings(spec) : { defs: '', body: '' };
+  const marks = o.markings ? markings(spec, o.markings === 'spaces') : { defs: '', body: '' };
   const flavour = spec.number > 0 ? label(spec).body : '';
   return document(
     {

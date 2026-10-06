@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { GameState } from '@quantum/engine';
-import { CUBE_PAD, PLANET_DIAMETER, PLANET_FAMILY, TILE, cubePadCentres } from '@quantum/art';
+import { CUBE_PAD, PLANET_DIAMETER, PLANET_FAMILY, TILE, cubePadCentres, numberPlacement } from '@quantum/art';
 import { tileImage } from '../../art/tileImages';
 import { tileArt } from '../../art/boardTiles';
 import { wrapMarks, type WrapMark } from './geometry';
@@ -33,6 +33,8 @@ export function BoardArt({ game, cell }: { game: GameState; cell: number }) {
   const { tiles, images } = useTileImages(game);
   const W = cols * cell;
   const H = rows * cell;
+  // Print millimetres to screen pixels: the tile art and everything drawn over it use the printed geometry.
+  const mm = cell / TILE.cell;
   return (
     <svg className="board-svg" width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
       <defs>
@@ -56,22 +58,23 @@ export function BoardArt({ game, cell }: { game: GameState; cell: number }) {
         </g>
       ))}
 
-      {cells.flatMap((row, r) =>
-        row.map((x, c) =>
-          x.kind === 'space' ? (
-            <rect
-              key={`s${r},${c}`}
-              x={c * cell + cell * 0.12}
-              y={r * cell + cell * 0.12}
-              width={cell * 0.76}
-              height={cell * 0.76}
-              rx={cell * 0.16}
-              fill="rgba(255,255,255,.018)"
-              stroke="rgba(160,190,255,.07)"
-            />
-          ) : null,
-        ),
-      )}
+      {/* The space pads are part of the tile art; until a tile's image is ready, plain ones stand in. */}
+      {tiles
+        .filter((t) => !images[t.id])
+        .flatMap((t) => [0, 1, 2].flatMap((dr) => [0, 1, 2].map((dc) => ({ r: t.r + dr, c: t.c + dc }))))
+        .filter(({ r, c }) => cells[r]?.[c]?.kind === 'space')
+        .map(({ r, c }) => (
+          <rect
+            key={`s${r},${c}`}
+            x={(c + 0.5) * cell - (TILE.pad / 2) * mm}
+            y={(r + 0.5) * cell - (TILE.pad / 2) * mm}
+            width={TILE.pad * mm}
+            height={TILE.pad * mm}
+            rx={4 * mm}
+            fill="rgba(255,255,255,.03)"
+            stroke="rgba(160,190,255,.2)"
+          />
+        ))}
 
       {/* Chevrons on edges that join the opposite edge, pointing off the board. */}
       {wrapMarks(game.board).map((m) => {
@@ -107,14 +110,12 @@ export function BoardArt({ game, cell }: { game: GameState; cell: number }) {
       {planets.map((p) => {
         const cx = (p.c + 0.5) * cell;
         const cy = (p.r + 0.5) * cell;
-        // The planet itself is part of the tile art; this layer adds the live number and cubes.
-        const R = (PLANET_DIAMETER[p.number] / 2 / TILE.cell) * cell;
-        // Cube slots in the printed pads' pattern, centred, but sized for the screen.
-        const slot = cell * 0.15;
-        const step = (slot + cell * 0.035) / (CUBE_PAD.size + CUBE_PAD.gap);
-        const slots = cubePadCentres(p.capacity, 0, 0).map((q) => ({ x: cx + q.x * step, y: cy + q.y * step }));
-        // The number is drawn on the planet towards its bottom right, as on the printed tile, clear of the cubes.
-        const off = R * 0.55;
+        // The planet itself is part of the tile art; this layer adds the live number and cubes, placed
+        // and sized as on the printed tile.
+        const R = (PLANET_DIAMETER[p.number] / 2) * mm;
+        const slot = CUBE_PAD.size * mm;
+        const slots = cubePadCentres(p.capacity, 0, 0).map((q) => ({ x: cx + q.x * mm, y: cy + q.y * mm }));
+        const at = numberPlacement(p.number);
         const hue = PLANET_FAMILY[p.number].hue;
         return (
           <g key={p.id}>
@@ -122,14 +123,13 @@ export function BoardArt({ game, cell }: { game: GameState; cell: number }) {
               <circle cx={cx} cy={cy} r={R * 1.12} fill="none" stroke="#fff" strokeOpacity={0.5} strokeDasharray="3 4" />
             )}
             <text
-              x={cx + off}
-              y={cy + off + cell * 0.015}
+              x={cx + at.x * mm}
+              y={cy + (at.y + at.size * 0.4) * mm}
               className="planet-num"
-              fontSize={cell * (p.number === 10 ? 0.32 : 0.38)}
+              fontSize={at.size * mm}
               stroke={`hsl(${hue} 50% 7%)`}
-              strokeWidth={cell * 0.045}
+              strokeWidth={at.size * 0.13 * mm}
               textAnchor="middle"
-              dominantBaseline="central"
             >
               {p.number}
             </text>
@@ -142,9 +142,9 @@ export function BoardArt({ game, cell }: { game: GameState; cell: number }) {
                   y={q.y - slot / 2}
                   width={slot}
                   height={slot}
-                  rx={slot * 0.2}
-                  fill={owner === undefined ? 'rgba(0,0,0,.35)' : game.players[owner].color}
-                  stroke={owner === undefined ? 'rgba(255,255,255,.45)' : '#fff'}
+                  rx={1.6 * mm}
+                  fill={owner === undefined ? 'rgba(0,0,0,.42)' : game.players[owner].color}
+                  stroke={owner === undefined ? 'rgba(255,255,255,.75)' : '#fff'}
                   strokeWidth={owner === undefined ? 1 : 1.2}
                   className={owner === undefined ? '' : 'cube'}
                 />
