@@ -3,6 +3,7 @@ import { EXPANSION, card, cardKind, rulesOf, type DeckKind, type GameState } fro
 import type { Legal } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
 import { useShortcut } from '../game/useShortcut';
+import { remember, stored } from '../storage';
 import { CardView, categoryStyle } from './Card';
 import { CardViewer } from './CardViewer';
 import { Dialog } from './Dialog';
@@ -212,9 +213,7 @@ const STORAGE_KEY = 'quantum.marketCollapsed';
  * C toggles it.
  */
 function useCollapse(picking: boolean) {
-  const [collapsed, setCollapsed] = useState(() => {
-    try { return localStorage.getItem(STORAGE_KEY) === '1'; } catch { return false; }
-  });
+  const [collapsed, setCollapsed] = useState(() => stored(STORAGE_KEY) === '1');
   // Follows `picking` during render (not in an effect), so the market never flashes collapsed first.
   const [autoOpen, setAutoOpen] = useState(picking);
   const [wasPicking, setWasPicking] = useState(picking);
@@ -228,7 +227,7 @@ function useCollapse(picking: boolean) {
     const next = open;
     setAutoOpen(false);
     setCollapsed(next);
-    try { localStorage.setItem(STORAGE_KEY, next ? '1' : '0'); } catch { /* storage unavailable */ }
+    remember(STORAGE_KEY, next ? '1' : '0');
   };
 
   useShortcut((e) => !(e.metaKey || e.ctrlKey || e.altKey) && e.key.toLowerCase() === 'c', toggle);

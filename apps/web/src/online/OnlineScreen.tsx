@@ -5,6 +5,7 @@ import { useUndoShortcut } from '../game/useGame';
 import { inviteLink } from './create';
 import { useOnlineGame, type OnlineGame } from './useOnlineGame';
 import type { RelayStatus } from './relays';
+import { remember, stored } from '../storage';
 
 /** The secret of the online game the URL opens (#online/<secret>), if any. */
 export function onlineSecret(): string | null {
@@ -67,13 +68,7 @@ function Searching({ relays, failure, onLeave }: { relays: RelayStatus; failure:
 }
 
 function JoinDialog({ replay, onJoin, onWatch }: { replay: Replay; onJoin: (seat: number, name: string) => void; onWatch: () => void }) {
-  const [name, setName] = useState(() => {
-    try {
-      return localStorage.getItem(NAME) ?? '';
-    } catch {
-      return '';
-    }
-  });
+  const [name, setName] = useState(() => stored(NAME) ?? '');
   const open = replay.seats.filter((s) => s.open && !s.owner);
   const seated = replay.seats.filter((x) => x.owner || x.ai);
   const [seat, setSeat] = useState(open[0].id);
@@ -82,11 +77,7 @@ function JoinDialog({ replay, onJoin, onWatch }: { replay: Replay; onJoin: (seat
   const join = () => {
     const n = name.trim();
     if (!n) return;
-    try {
-      localStorage.setItem(NAME, n);
-    } catch {
-      /* ignore */
-    }
+    remember(NAME, n);
     onJoin(chosen, n);
   };
   return (

@@ -3,6 +3,7 @@ import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
 import { defaultMap, MAPS, MODES, playerCounts, rulesOf, RULESETS, type GameMode, type GameState, type MapDef, type PlayerConfig } from '@quantum/engine';
 import { Die3D } from './Die3D';
 import { OnlineGames } from '../online/OnlineGames';
+import { remember, stored } from '../storage';
 
 export const PLAYER_COLORS = ['#4cc9f0', '#f72585', '#ffb703', '#80ed99', '#b388ff'];
 const AI_NAMES = ['Nova', 'Vex', 'Orion', 'Lyra', 'Kepler'];
@@ -14,23 +15,6 @@ export interface LobbyResult {
   mode: GameMode;
   /** Played online: the human seats other than the first are for friends to claim. */
   online?: boolean;
-}
-
-/** localStorage read that survives storage being unavailable (private windows, blocked site data). */
-function stored(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function remember(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    /* storage unavailable */
-  }
 }
 
 function storedAiLevel(): number {
