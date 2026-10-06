@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import type { GameState } from '@quantum/engine';
 import { CUBE_PAD, PLANET_DIAMETER, PLANET_FAMILY, TILE, cubePadCentres } from '@quantum/art';
 import { tileImage } from '../../art/tileImages';
-import { tileArt, wrapMarks, type WrapMark } from './geometry';
+import { tileArt } from '../../art/boardTiles';
+import { wrapMarks, type WrapMark } from './geometry';
 
 /** Which way each board edge faces, for the wrap chevrons. */
 const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number }> = {
