@@ -13,6 +13,11 @@
   --bad: #ff5d73;
   --gold: #ffc857;
   --violet: #b98cff;
+  /* Player tracks: Dominance red-orange, Research blue. */
+  --dom-1: #ff8a5c;
+  --dom-2: #ff5d73;
+  --res-1: #5cc8ff;
+  --res-2: #7aa2ff;
   --radius: 14px;
   --display: 'Orbitron', 'Inter', system-ui, sans-serif;
   --body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -487,8 +492,8 @@ input { font: inherit; }
 .track-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
 .track-cells { display: flex; gap: 3px; margin-top: 3px; }
 .track-cells span { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.07); transition: background .4s, box-shadow .4s; }
-.track-dom .track-cells span.on { background: linear-gradient(90deg, #ff8a5c, #ff5d73); box-shadow: 0 0 6px rgba(255,93,115,.5); }
-.track-res .track-cells span.on { background: linear-gradient(90deg, #5cc8ff, #7aa2ff); box-shadow: 0 0 6px rgba(122,162,255,.5); }
+.track-dom .track-cells span.on { background: linear-gradient(90deg, var(--dom-1), var(--dom-2)); box-shadow: 0 0 6px color-mix(in srgb, var(--dom-2) 50%, transparent); }
+.track-res .track-cells span.on { background: linear-gradient(90deg, var(--res-1), var(--res-2)); box-shadow: 0 0 6px color-mix(in srgb, var(--res-2) 50%, transparent); }
 .player-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .stat { font-size: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.05); }
 .stat.muted { color: var(--muted); }
@@ -859,15 +864,9 @@ input { font: inherit; }
 .mini-tile.start { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.7); }
 .credits { color: var(--muted); font-size: 12px; text-align: center; max-width: 480px; }
 
-.rules { line-height: 1.5; }
-.rules h3 { font-family: var(--display); font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin: 16px 0 6px; }
-.rules p, .rules li { font-size: 13.5px; color: #c9d1ee; }
-.rules ul { padding-left: 18px; margin: 6px 0; }
-.rules li { margin-bottom: 4px; }
-.rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.ship-table { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
-.ship-row { display: flex; gap: 12px; align-items: flex-start; }
-.ship-row p { margin: 2px 0 0; font-size: 12.5px; }
+.manual-dialog.modal.wide { width: min(920px, 100%); padding-top: 20px; }
+.manual-print { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
+.manual-print a { color: var(--accent); font-weight: 600; }
 
 /* ------------------------------------------------------------------ art lab */
 .lab { height: 100%; overflow: auto; position: relative; z-index: 1; }
@@ -948,7 +947,6 @@ input { font: inherit; }
   .layout { grid-template-columns: 1fr; grid-template-rows: auto; grid-template-areas: 'stage' 'market' 'sidebar'; }
   .stage { height: min(100vw, 70vh); padding: 8px; }
   .sidebar { border-left: 0; overflow: visible; }
-  .rules-grid, .ship-table { grid-template-columns: 1fr; }
   .combat-grid { grid-template-columns: 1fr; }
   .combat-vs { padding: 0; font-size: 16px; }
   .fleet-roll { gap: 18px; }

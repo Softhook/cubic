@@ -4,8 +4,8 @@ import { defaultMap, MAPS, MODES, playerCounts, rulesOf, RULESETS, type GameMode
 import { Die3D } from './Die3D';
 import { forgetGame, onlineGames } from '../online/storage';
 import { remember, stored } from '../storage';
+import { PLAYER_COLORS } from '../theme';
 
-export const PLAYER_COLORS = ['#4cc9f0', '#f72585', '#ffb703', '#80ed99', '#b388ff'];
 const AI_NAMES = ['Nova', 'Vex', 'Orion', 'Lyra', 'Kepler'];
 const PLAYER_COUNTS = [...new Set(MAPS.map((m) => m.players))];
 
@@ -379,7 +379,7 @@ export function Lobby({
       </div>
       <nav className="lobby-links">
         <button onClick={onRules}>How to play</button>
-        <a href="#rulebook">Rulebook (PDF)</a>
+        <a href="#rulebook">Manual (PDF)</a>
         <a href="#lab/cards">Art Lab: cards &amp; tiles</a>
       </nav>
       <p className="credits">

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import { playRoll } from '../sound';
+import { PIP } from '../theme';
 
 /**
  * A CSS 3D die. Faces sit on a cube; the cube rotates so the face for `value` points at
@@ -56,7 +57,7 @@ export function Die3D({
   rolls = 0,
   size,
   color,
-  pip = '#0a0f1e',
+  pip = PIP,
   tumbleOnMount,
   delay = 0,
   sound = true,

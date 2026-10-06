@@ -3,6 +3,7 @@ import type { GameState } from '@quantum/engine';
 import { CUBE_PAD, PLANET_DIAMETER, PLANET_FAMILY, TILE, cubePadCentres, numberPlacement } from '@quantum/art';
 import { tileImage } from '../../art/tileImages';
 import { tileArt } from '../../art/boardTiles';
+import { CUBE_SLOT } from '../../theme';
 import { wrapMarks, type WrapMark } from './geometry';
 
 /** Which way each board edge faces, for the wrap chevrons. */
@@ -143,8 +144,8 @@ export function BoardArt({ game, cell }: { game: GameState; cell: number }) {
                   width={slot}
                   height={slot}
                   rx={1.6 * mm}
-                  fill={owner === undefined ? 'rgba(0,0,0,.42)' : game.players[owner].color}
-                  stroke={owner === undefined ? 'rgba(255,255,255,.75)' : '#fff'}
+                  fill={owner === undefined ? CUBE_SLOT.fill : game.players[owner].color}
+                  stroke={owner === undefined ? CUBE_SLOT.stroke : '#fff'}
                   strokeWidth={owner === undefined ? 1 : 1.2}
                   className={owner === undefined ? '' : 'cube'}
                 />

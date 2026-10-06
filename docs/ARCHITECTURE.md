@@ -10,7 +10,7 @@ How the code is organised, and where to make the common changes.
 | [`packages/ai`](../packages/ai) | AI players in four levels ([AI.md](AI.md)). Chooses among `legalActions(state)`; never sees the real RNG or deck order. | engine |
 | [`packages/art`](../packages/art) | Artwork as SVG text: tiles, planets, starfields ([GRAPHICS.md](GRAPHICS.md)). Plain functions, seeded, in mm; shared by the game and print. | — |
 | [`packages/online`](../packages/online) | Online play without a server ([MULTIPLAYER.md](MULTIPLAYER.md)): a game as a log of signed, encrypted posts; `Timeline` replays it with the engine so every browser computes the same game. No network code. | engine |
-| [`apps/web`](../apps/web) | React UI. Renders a state, sends actions. Holds no rules of its own: buttons and highlights come from `legalActions` ([`game/legal.ts`](../apps/web/src/game/legal.ts)). The Art Lab is at `#lab` (tiles) and `#lab/cards`; the printable rulebook at `#rulebook`. | engine, ai, art |
+| [`apps/web`](../apps/web) | React UI. Renders a state, sends actions. Holds no rules of its own: buttons and highlights come from `legalActions` ([`game/legal.ts`](../apps/web/src/game/legal.ts)). The Art Lab is at `#lab` (tiles) and `#lab/cards`; the player manual at `#rulebook` (the same `Manual` component as the in-game How to play dialog). | engine, ai, art |
 | [`data/`](../data) | Cards and maps as YAML, compiled to JSON by `npm run data`. | — |
 
 ## Engine modules

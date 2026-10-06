@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, missileOffered, tryApply, type Action, type CombatPending, type CombatRole, type GameState, type PlayerId, type PlayerState } from '@quantum/engine';
 import type { Dispatch } from '../game/useGame';
 import type { GameView } from '../game/view';
+import { COMBAT_DICE } from '../theme';
 import { Die3D } from './Die3D';
 
 const REVEAL_MS = 1250;
@@ -64,8 +65,8 @@ export function CombatOverlay({
             <Die3D
               value={total.roll}
               size={64}
-              color={role === 'attacker' ? '#1b1f2e' : '#f4f6fb'}
-              pip={role === 'attacker' ? '#ff6b81' : '#14192b'}
+              color={COMBAT_DICE[role].color}
+              pip={COMBAT_DICE[role].pip}
               tumbleOnMount
               delay={role === 'attacker' ? 0 : 0.12}
               sound={role === 'attacker'}

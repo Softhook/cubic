@@ -108,7 +108,7 @@ export function CardLab() {
             onBleed={setBleed}
             set={decks.flatMap(itemsOf).map(printable)}
             part={edition === 'all' ? undefined : edition === 'community' ? 'Community' : 'Classic'}
-            notes={`Copies per card: the ×N mark on the card, or the deck list in the rulebook.\nEach folder's back.png is the back for every card in it.\n`}
+            notes={`Copies per card: the ×N mark on the card.\nEach folder's back.png is the back for every card in it.\n`}
             sheets={sheets}
             copies
             backs
