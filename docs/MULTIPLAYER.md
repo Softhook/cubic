@@ -38,7 +38,7 @@ store small signed messages for anyone. We run nothing.
   actor, or the player named in a missile/re-roll), and `apply` accepts it. Anyone may move
   an AI seat.
 - **AI seats** are played by the browser that made the last move; if it has gone, any other
-  browser takes over after 15 s.
+  browser takes over after 15 s (the others in turn, 15 s apart).
 - **Missiles (open question #21).** A battle waits for every player who may respond (fire,
   re-roll), unless their `ask` setting says otherwise: *all battles* (default), *my battles*
   or *never*. Each responds or passes ("Done"); once all have passed, every browser

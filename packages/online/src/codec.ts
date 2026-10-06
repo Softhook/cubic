@@ -37,7 +37,8 @@ function b64url(bytes: Uint8Array): string {
 }
 
 function fromB64url(s: string): Uint8Array {
-  const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/'));
+  // Padded back: older WebKit's atob refuses base64 without it.
+  const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (s.length % 4)) % 4));
   return Uint8Array.from(bin, (c) => c.charCodeAt(0));
 }
 

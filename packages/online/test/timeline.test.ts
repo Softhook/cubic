@@ -176,6 +176,18 @@ describe('online timeline', () => {
     expect(t.replay()!.steps.map((s) => s.post?.id)).toEqual([undefined, early.id]);
   });
 
+  it('a battle setting changed at the same moment as a move never displaces the move', () => {
+    const t = new Timeline();
+    const g = create('alice', [seat('Alice'), seat('Open')], [1]);
+    t.add(g);
+    t.add(post('bob', { t: 'claim', seat: 1, name: 'Bob' }));
+    const move = post('alice', { t: 'act', seat: 0, action: { type: 'setupKeep' } }, g.id);
+    t.add(move);
+    t.add(post('bob', { t: 'ask', seat: 1, ask: 'never' }, g.id, move.at - 1));
+    expect(t.replay()!.tip).toBe(move.id);
+    expect(t.replay()!.steps).toHaveLength(2);
+  });
+
   it('notices a browser that disagrees about the game', () => {
     const g = create('alice', [seat('Alice'), seat('Open')], [1]);
     const claim = post('bob', { t: 'claim', seat: 1, name: 'Bob' });
@@ -193,6 +205,10 @@ describe('online timeline', () => {
     t1.add(post('alice', { t: 'act', seat: 0, action: { type: 'warpDrive' } as unknown as Action }, g.id));
     expect(t1.replay()!.steps).toHaveLength(1);
     expect(t1.replay()!.desync).toEqual({ seat: 0, author: 'alice', why: 'rejected' });
+    // Once Alice's browser plays a move this one agrees on (she reloaded), the warning goes.
+    t1.add(post('alice', { t: 'act', seat: 0, action: keep, h: stateHash(apply(s0, keep)) }, g.id));
+    expect(t1.replay()!.steps).toHaveLength(2);
+    expect(t1.replay()!.desync).toBeNull();
 
     // Alice's browser got a different position from the move: it still counts, but is flagged.
     const t2 = fresh();

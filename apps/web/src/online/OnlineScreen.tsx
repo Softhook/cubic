@@ -32,7 +32,7 @@ export function OnlineScreen({ secret, onLeave, onRules }: { secret: string; onL
       online
       onQuit={onLeave}
       onRules={onRules}
-      side={<OnlinePanel g={g} secret={secret} />}
+      side={<OnlinePanel g={g} secret={secret} onJoin={watching && openSeats.length && !g.mySeats.length ? () => setWatching(false) : undefined} />}
       overlay={joining && <JoinDialog replay={g.replay} onJoin={g.claim} onWatch={() => setWatching(true)} />}
     />
   );
@@ -122,7 +122,7 @@ const ASK_LABELS: Record<AskMode, string> = {
 };
 
 /** Online extras at the top of the sidebar: connection, invite link, and which battles to be asked about. */
-function OnlinePanel({ g, secret }: { g: OnlineGame; secret: string }) {
+function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJoin?: () => void }) {
   const [copied, setCopied] = useState(false);
   const r = g.replay!;
   const open = r.seats.filter((s) => s.open && !s.owner).length;
@@ -161,6 +161,11 @@ function OnlinePanel({ g, secret }: { g: OnlineGame; secret: string }) {
       <button className={`btn ${open ? 'btn-primary' : ''}`} onClick={copy} title="Copy the link to this game. Anyone with it can join an open seat or watch.">
         {copied ? 'Copied' : open ? 'Invite' : 'Link'}
       </button>
+      {onJoin && (
+        <button className="btn btn-primary" onClick={onJoin}>
+          Join
+        </button>
+      )}
       {r.desync && <OutOfSync replay={r} />}
       {ask && (
         <select className="ask-select" value={ask} aria-label="Battles to be asked about" title="When to wait for you to fire a missile or re-roll in a battle. Battles you're not asked about resolve without you." onChange={(e) => g.setAsk(e.target.value as AskMode)}>

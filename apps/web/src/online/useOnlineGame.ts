@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { chooseCombatResponse } from '@quantum/ai';
 import { actor, apply, legalActions, MAPS, RuleError, RULESETS, type Action, type GameState, type PlayerId } from '@quantum/engine';
 import {
@@ -25,8 +25,9 @@ import { identity, keepStorage, loadEvents, rememberGame, saveEvents } from './s
 import { RelayLink, type RelayStatus } from './relays';
 
 /**
- * The browser that made the last move also moves the AI players. If it went away, any other
- * browser takes over after this long.
+ * The browser that made the last move also moves the AI players. If it went away, the other
+ * players' browsers take over one after another, this long apart (so they don't all post rival
+ * moves at once); spectators come last.
  */
 const AI_TAKEOVER_MS = 15000;
 
@@ -229,16 +230,20 @@ function usePlayback(replay: Replay | null, me: string) {
   const [shown, setShown] = useState<Step | null>(null);
   const shownAt = useRef(0);
 
-  useEffect(() => {
+  // A layout effect, so a step shown at once (this browser's own move) replaces the previous one
+  // before the screen is painted: no frame where the game looks like it's catching up.
+  useLayoutEffect(() => {
     if (!replay) return;
     const own = (p: Post) => p.author === me && 'seat' in p.body && !replay.seats[p.body.seat]?.ai;
     const next = nextStep(replay.steps, shown, own, performance.now() - shownAt.current);
     if (!next) return;
-    const t = window.setTimeout(() => {
+    const show = () => {
       if (next.announce && shown) announce(shown.state, next.step.state);
       shownAt.current = performance.now();
       setShown(next.step);
-    }, next.delay);
+    };
+    if (next.delay === 0) return show();
+    const t = window.setTimeout(show, next.delay);
     return () => window.clearTimeout(t);
   }, [replay, shown, me, announce]);
 
@@ -258,8 +263,11 @@ function useAiSeats(replay: Replay | null, me: string, post: (req: PostRequest) 
     if (!replay || !head || head.phase === 'over') return;
     const work = aiWork(replay, head);
     if (!work) return;
+    // Every browser ranks the others the same way, so they take over in turn.
+    const others = [...new Set(replay.seats.flatMap((s) => (s.owner && s.owner !== replay.tipAuthor ? [s.owner] : [])))].sort();
+    const turn = AI_TAKEOVER_MS * (1 + (others.includes(me) ? others.indexOf(me) : others.length));
     // Capped, so a poster whose clock runs ahead can't hold the game up for longer.
-    const wait = replay.tipAuthor === me ? 0 : Math.min(AI_TAKEOVER_MS, AI_TAKEOVER_MS - (Date.now() - replay.tipAt));
+    const wait = replay.tipAuthor === me ? 0 : Math.min(turn, turn - (Date.now() - replay.tipAt));
     if (wait > 0) {
       const t = window.setTimeout(() => setRecheck((n) => n + 1), wait + 50);
       return () => window.clearTimeout(t);

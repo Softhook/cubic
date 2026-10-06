@@ -55,6 +55,14 @@ export interface Replay {
   desync: Desync | null;
 }
 
+/**
+ * Which of two rival chained posts comes next: the earlier, except that an `ask` (a setting anyone
+ * may change at any time) never displaces a move made at the same moment.
+ */
+function byRank(a: Post, b: Post): number {
+  return +(a.body.t === 'ask') - +(b.body.t === 'ask') || byTime(a, b);
+}
+
 const MAX_NAME = 14;
 const cleanName = (s: unknown, fallback: string) => (typeof s === 'string' && s.trim() ? s.trim().slice(0, MAX_NAME) : fallback);
 
@@ -63,7 +71,8 @@ const cleanName = (s: unknown, fallback: string) => (typeof s === 'string' && s.
  * computes the same game, whatever order they arrived in:
  *
  * - the chain starts at the earliest valid `create`; at each post, the earliest valid post that
- *   follows it comes next (rival posts made at the same moment lose to the earlier one);
+ *   follows it comes next (rival posts made at the same moment lose to the earlier one; an `ask`
+ *   loses to any other post);
  * - a post counts only if its author plays the seat (anyone may move an AI seat) and the
  *   engine accepts the move (`mayAct`, `apply`);
  * - a battle resolves by itself once every seat it waits for has passed (`waitingOn`).
@@ -115,7 +124,7 @@ export class Timeline {
     } else {
       const sibs = this.children.get(post.prev!) ?? [];
       sibs.push(post);
-      sibs.sort(byTime);
+      sibs.sort(byRank);
       this.children.set(post.prev!, sibs);
       if (this.r && !this.dirty) {
         if (post.prev === this.r.tip) this.extend();
@@ -124,7 +133,7 @@ export class Timeline {
           const at = post.prev === this.r.genesis.id ? -1 : this.inChain.get(post.prev!);
           if (at !== undefined) {
             const next = this.chain[at + 1];
-            if (next && byTime(post, next) < 0) this.dirty = true;
+            if (next && byRank(post, next) < 0) this.dirty = true;
           }
         }
       }
@@ -222,7 +231,11 @@ export class Timeline {
       } catch {
         return refused();
       }
-      if (b.h !== undefined && b.h !== stateHash(next)) r.desync ??= { seat: b.seat, author: p.author, why: 'differs' };
+      if (b.h !== undefined) {
+        if (b.h !== stateHash(next)) r.desync ??= { seat: b.seat, author: p.author, why: 'differs' };
+        // A later move on which that browser agrees: it has caught up (reloaded a newer version).
+        else if (r.desync?.author === p.author) r.desync = null;
+      }
       this.undoStack = !seat.ai && isUndoable(prev, b.action, next) ? [...this.undoStack, { state: prev, seat: b.seat }] : [];
     } else if (b.t === 'undo') {
       const top = this.undoStack.at(-1);
