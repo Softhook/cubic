@@ -4,6 +4,7 @@ import type { Controller } from '../game/controller';
 import { hintFor } from '../game/hints';
 import type { Dispatch } from '../game/useGame';
 import { CategoryIcon } from './Card';
+import { Tip } from './InfoPop';
 import { ShipPanel } from './ShipPanel';
 
 export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl: Controller; dispatch: Dispatch; undo?: () => void }) {
@@ -26,15 +27,15 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
           <strong>{game.phase === 'setup' && waitingOn ? waitingOn.name : p.name}</strong>
         </div>
         {game.phase === 'play' && (
-          <div className="action-pips" title={`${t.actionsLeft} action${t.actionsLeft === 1 ? '' : 's'} left`}>
+          <Tip as="div" className="action-pips" tip={`${t.actionsLeft} action${t.actionsLeft === 1 ? '' : 's'} left`}>
             {Array.from({ length: Math.max(3, t.actionsLeft) }, (_, i) => (
               <span key={i} className={i < t.actionsLeft ? 'on' : ''} />
             ))}
-            {t.freeDeploys > 0 && <em title="Free deploy (Industrious)">+1 deploy</em>}
-            {t.freeMoves > 0 && <em title="Free move (Curious) — only if you don't attack this turn; attacking afterwards costs an action for it">+1 move</em>}
-            {canAct && t.actionsLeft === 0 && canCurious(game, t.player) && <em title="Curious: peaceful Move or Research available">+1 curious</em>}
-            {legal.can('playStoredTactic') && <em title="Patient: you may play a stored tactic from your player card">+stored tactic</em>}
-          </div>
+            {t.freeDeploys > 0 && <Tip as="em" tip="Free deploy (Industrious)">+1 deploy</Tip>}
+            {t.freeMoves > 0 && <Tip as="em" tip="Free move (Curious): only if you don't attack this turn; attacking afterwards costs an action for it">+1 move</Tip>}
+            {canAct && t.actionsLeft === 0 && canCurious(game, t.player) && <Tip as="em" tip="Curious: peaceful Move or Research available">+1 curious</Tip>}
+            {legal.can('playStoredTactic') && <Tip as="em" tip="Patient: you may play a stored tactic from your player card">+stored tactic</Tip>}
+          </Tip>
         )}
       </div>
 

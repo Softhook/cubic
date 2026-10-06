@@ -62,13 +62,14 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
     [dispatch],
   );
 
+  /** A tap on a ship. Returns false when it had nothing to do, so the board can show the ship's info instead. */
   const onDie = useCallback(
-    (id: string) => {
-      if (!human) return;
+    (id: string): false | void => {
+      if (!human) return false;
       const tone = highlights.dice.get(id);
       if (head?.kind === 'showOfForce' && tone) return void dispatch({ type: 'showOfForce', die: id });
       if (head?.kind === 'unveil' && head.reorganize && tone === 'swap') return void dispatch({ type: 'unveilReroll', die: id });
-      if (head) return;
+      if (head) return false;
       if (sel.kind === 'swap' && tone === 'swap') return void (dispatch({ type: 'swap', die: sel.die, other: id }) && setSel(NONE));
       if (sel.kind === 'freeAttack' && tone === 'attack') return void dispatch({ type: 'freeAttack', die: sel.die, target: id });
       if (sel.kind === 'tactical' && tone === 'attack') return void dispatch({ type: 'tactical', die: sel.die, target: id });
@@ -84,6 +85,7 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
         return select(sel.kind === 'ship' && sel.die === id ? NONE : { kind: 'ship', die: id });
       }
       setSel(NONE);
+      return false;
     },
     [human, highlights, head, sel, game, actionPhase, dispatch, select],
   );
@@ -122,11 +124,12 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
     [human, highlights, head, sel, game, dispatch, select, place],
   );
 
+  /** A tap on a planet. Returns false when it had nothing to do, so the board can show the planet's info instead. */
   const onPlanet = useCallback(
-    (id: number) => {
-      if (!human) return;
+    (id: number): false | void => {
+      if (!human) return false;
       const hl = highlights.planets.get(id);
-      if (!hl) return;
+      if (!hl) return false;
       if (head?.kind === 'relocation') {
         if (sel.kind === 'relocate' && id !== sel.planet) return void dispatch({ type: 'relocate', planet: sel.planet, owner: sel.owner, to: id });
         // Choose the cube; clicking its planet again picks another player's cube there, if any.

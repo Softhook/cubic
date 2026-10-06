@@ -1,21 +1,22 @@
 import { useState, type CSSProperties } from 'react';
-import { SHIP_NAMES, card, reserve, rulesOf, scrapyard, type Die, type GameState, type PlayerState } from '@quantum/engine';
+import { SHIP_ABILITIES, SHIP_NAMES, card, reserve, rulesOf, scrapyard, type Die, type GameState, type PlayerState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
 import { CategoryIcon, categoryStyle } from './Card';
 import { CardViewer } from './CardViewer';
 import { Die3D } from './Die3D';
+import { Tip } from './InfoPop';
 
 function Track({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div className={`track track-${tone}`} title={`${label}: ${value} of 6`}>
+    <Tip as="div" className={`track track-${tone}`} tip={`${label}: ${value} of 6`}>
       <span className="track-label">{label}</span>
       <div className="track-cells">
         {[1, 2, 3, 4, 5, 6].map((n) => (
           <span key={n} className={n <= value ? 'on' : ''} />
         ))}
       </div>
-    </div>
+    </Tip>
   );
 }
 
@@ -53,7 +54,6 @@ function PlayerCard({
   const canDeploy = (ctl.actionPhase && game.turn.player === p.id) || !!unveiling || placingStart;
 
   const clickScrap = (d: Die) => {
-    if (!canDeploy) return;
     ctl.select(ctl.sel.kind === 'scrap' && ctl.sel.die === d.id ? { kind: 'none' } : { kind: 'scrap', die: d.id });
   };
 
@@ -63,31 +63,45 @@ function PlayerCard({
         <span className="player-swatch" />
         <strong>{p.name}</strong>
         {p.ai && <span className="tag">AI</span>}
-        <span className="cubes" title={`${totalCubes - p.cubesLeft} of ${totalCubes} cubes placed`}>
+        <Tip className="cubes" tip={`${totalCubes - p.cubesLeft} of ${totalCubes} cubes placed`}>
           {Array.from({ length: totalCubes }, (_, i) => (
             <span key={i} className={i < totalCubes - p.cubesLeft ? 'placed' : ''} />
           ))}
-        </span>
+        </Tip>
       </div>
       <div className="player-tracks">
         <Track label="Dominance" value={p.dominance} tone="dom" />
         {rulesOf(game).cards && <Track label="Research" value={p.research} tone="res" />}
       </div>
       <div className="player-row">
-        {rulesOf(game).startingMissiles > 0 && <span className="stat" title="Missiles: set any combat roll to 1">🚀 {p.missiles}</span>}
-        {p.planAhead > 0 && <span className="stat gold" title="Plan Ahead: all your combat rolls are 1">Plan Ahead</span>}
-        {p.actionPenalty > 0 && <span className="stat bad" title="Sabotaged: fewer actions next turn">−{p.actionPenalty} action</span>}
-        {p.ambitionTokens > 0 && <span className="stat" title="Ambition tokens">Ambition {p.ambitionTokens}/3</span>}
-        {rulesOf(game).cards && <span className="stat muted" title="Reserve ships (brought in by Expansion cards)">Reserve {res.length}</span>}
+        {rulesOf(game).startingMissiles > 0 && <Tip className="stat" tip="Missiles: set any combat roll to 1">🚀 {p.missiles}</Tip>}
+        {p.planAhead > 0 && <Tip className="stat gold" tip="Plan Ahead: all your combat rolls are 1">Plan Ahead</Tip>}
+        {p.actionPenalty > 0 && <Tip className="stat bad" tip="Sabotaged: fewer actions next turn">−{p.actionPenalty} action</Tip>}
+        {p.ambitionTokens > 0 && <Tip className="stat" tip="Ambition tokens">Ambition {p.ambitionTokens}/3</Tip>}
+        {rulesOf(game).cards && <Tip className="stat muted" tip="Reserve ships (brought in by Expansion cards)">Reserve {res.length}</Tip>}
       </div>
       {scrap.length > 0 && (
         <div className="scrapyard">
           <span className="scrap-label">Scrapyard</span>
           {scrap.map((d) => (
             <span key={d.id} className="scrap-die-wrap">
-              <span className={`scrap-die ${canDeploy ? 'clickable' : ''} ${ctl.sel.kind === 'scrap' && ctl.sel.die === d.id ? 'selected' : ''}`} onClick={() => clickScrap(d)} title={`${SHIP_NAMES[d.value]} (${d.value}) — ${canDeploy ? 'click to deploy' : 'waiting to be deployed'}`}>
+              <Tip
+                className={`scrap-die ${canDeploy ? 'clickable' : ''} ${ctl.sel.kind === 'scrap' && ctl.sel.die === d.id ? 'selected' : ''}`}
+                onClick={() => canDeploy && (clickScrap(d), true)}
+                tip={
+                  <>
+                    <b>
+                      {SHIP_NAMES[d.value]} ({d.value})
+                    </b>
+                    <span>
+                      {SHIP_ABILITIES[d.value].name}: {SHIP_ABILITIES[d.value].text}
+                    </span>
+                    <span className="muted">Waiting in the scrapyard to be deployed.</span>
+                  </>
+                }
+              >
                 <Die3D value={d.value} rolls={d.rolls} size={22} color={p.color} sound={false} />
-              </span>
+              </Tip>
               {unveiling && !unveiling.includes(d.id) && (
                 <button className="mini-btn" onClick={() => dispatch({ type: 'unveilReroll', die: d.id })}>re-roll</button>
               )}

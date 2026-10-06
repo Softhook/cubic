@@ -3,7 +3,7 @@
 How to make the web app play well on phones and iPads: what works today, what breaks, and a
 plan sized to where the app is now.
 
-Status: **Steps 0 and 1 done, plus the setup popups from Step 3; Step 2 next.** First written
+Status: **Steps 0, 1 and 2 done, plus the setup popups from Step 3.** First written
 2026-10-02 as a proposal. Revised 2026-10-06 after measuring the build in device emulation
 (`npm run mobile:shots`: Playwright + Chrome; iPhone SE, iPhone 15, Moto G55 and iPad mini,
 portrait and landscape). On the real Moto G55 so far: the default map (fine) and Asymptote
@@ -38,8 +38,18 @@ Chrome's address bar and Android's navigation bar, and changes as the address ba
 - **Result:** 28 of 28 device × map checks pass (was 2 of 21 at the start of the day).
 - **Testing on the G55** is by eye through the GitHub Pages build. USB remote debugging was
   dropped (Step 0).
-- **Next:** Step 2 (tap a ship or planet for its info). Still to check from Step 1: the board
-  re-fit when the market opens/closes on screens ≥ 980px.
+- **Step 2 done (same evening):** tap an opponent's ship (or any ship or planet when the tap has
+  nothing else to do) for a bubble with its info; stats, tracks, cubes, action pips and scrapyard
+  dice explain themselves on tap too. Checked in G55 emulation on Asymptote.
+- **Refactor before Step 2:** default seats in one place (`game/seats.ts`, used by the lobby and
+  the dev link), `--topbar-h` instead of a repeated 52px, and a `useMediaQuery` hook so the
+  fleet-roll dice resize when the phone is turned.
+- **On the real G55:** Asymptote now fits but its cells are about 26px (ships ≈ 15px). That is
+  the expected limit of fit-to-screen; bigger needs zoom (Step 4). Tapping a ship for its info
+  helps in the meantime.
+- **Next:** Step 3 (sticky turn bar, phone landscape), or Step 4 early if big maps on phones
+  matter more. Still to check from Step 1: the board re-fit when the market opens/closes on
+  screens ≥ 980px.
 
 ---
 
@@ -207,20 +217,28 @@ longer depends on the market, so it only matters ≥ 980px), and everything on t
 on every device), and on the G55 a double-tap never zooms the page and nothing sticks after a
 tap.
 
-### Step 2: Info on touch (small to medium, 1 day)
-- [ ] **Tap any ship to see its info.** When tapping an opponent's ship (or your own outside
-      your action phase) does nothing today, show a small info popover instead: owner, ship
-      name, value, ability text. No conflict with play, because those taps are currently no-ops.
-- [ ] One `<Tip>` popover component (hover on mouse, tap or long-press on touch) for things
-      that aren't actionable: planet capacity, stat tracks, cubes, the ✦ "ability used" badge,
-      scrapyard dice. Then replace the `title=` strings one component at a time (Board,
-      PlayerList, TurnPanel, ShipPanel, Market first). Build it on the browser's own
-      **Popover API + CSS anchor positioning** (no dependency; §5), with a plain bottom-centre
-      fallback via `@supports` for older iOS.
-- [ ] Long-press for info on actionable things (own ships, planets) is a nice-to-have; skip
-      unless real-device testing shows it's needed.
+### Step 2: Info on touch ✅ (2026-10-06)
+- [x] **Tap any ship to see its info.** `onDie` / `onPlanet` in
+      [controller.ts](../apps/web/src/game/controller.ts) now return whether the tap did
+      anything; when it didn't (an opponent's ship, your own outside your action phase, a planet
+      that isn't highlighted), the board shows a bubble: owner, ship, value and ability, or the
+      planet's free cube spaces and whose cubes are on it. Tapping it again or anywhere else
+      closes it. Ships and planets keep `title=` for mouse users.
+- [x] **`Tip` / `InfoPop`** ([InfoPop.tsx](../apps/web/src/components/InfoPop.tsx)): one bubble
+      for things that aren't controls, on hover with a mouse and on tap with a finger. Built on
+      the **Popover API** (top layer, light dismiss) and **CSS anchor positioning** (above the
+      thing, flips below, kept on screen); without anchor positioning it sits at the bottom of
+      the screen. Replaces `title=` on the dominance and research tracks, cubes, player stats,
+      action pips and their badges, and scrapyard dice (a deployable die still deploys on tap).
+- Left as `title=`: buttons (their label says what they do; the title is a desktop extra), the
+      lobby, market chips and decks (a tap opens the card viewer), the ✦ badge (now in the ship
+      bubble).
+- [ ] Long-press for info on actionable things (own ships during your turn, highlighted
+      planets): skip unless real-device testing shows it's needed. Your selected ship's ability
+      is already in ShipPanel.
 
-**Done when:** on an iPad you can find every piece of information without a mouse.
+**Done when:** on an iPad you can find every piece of information without a mouse. ✅ in
+emulation; G55 by eye still to do.
 
 ### Step 3: Phone layout, minimal version (medium, 1–2 days)
 Keep the scrolling column, but pin what matters:
