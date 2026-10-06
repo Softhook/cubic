@@ -1032,7 +1032,8 @@ input { font: inherit; }
 
 /* Touch: small buttons keep their look but get a 44px hit area. */
 @media (pointer: coarse) {
-  .icon-btn, .mini-btn, .segmented button, .topbar .btn { position: relative; }
+  /* :where() keeps this from overriding a button's own position, e.g. the dialogs' top-right ×. */
+  :where(.icon-btn, .mini-btn, .segmented button, .topbar .btn) { position: relative; }
   .icon-btn::after, .mini-btn::after, .segmented button::after, .topbar .btn::after {
     content: ''; position: absolute; left: 50%; top: 50%;
     width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
