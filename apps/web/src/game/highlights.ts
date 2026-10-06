@@ -42,6 +42,9 @@ export function highlightsFor(game: GameState, sel: Sel, legal: Legal, actionPha
       case 'showOfForce':
         for (const a of legal.of('showOfForce')) h.dice.set(a.die, 'target');
         break;
+      case 'advance':
+        addCells([head.to], 'move');
+        break;
       case 'warpGate':
         addCells(legal.of('warpGate').map((a) => a.cell), 'gate');
         break;

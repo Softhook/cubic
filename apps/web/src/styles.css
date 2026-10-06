@@ -247,6 +247,25 @@ input { font: inherit; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .board-layer { position: absolute; inset: 0; }
+.advance-prompt {
+  position: absolute;
+  left: 50%;
+  z-index: 8;
+  transform: translate(-50%, -50%);
+  width: max-content;
+  max-width: min(380px, 92%);
+  padding: 14px 18px;
+  border-radius: 16px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(18, 26, 54, .94), rgba(11, 17, 38, .94));
+  border: 1px solid color-mix(in srgb, var(--pc) 55%, var(--line));
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .04) inset;
+  animation: advance-in .3s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes advance-in { from { transform: translate(-50%, -50%) scale(.94); opacity: 0; } }
+.advance-prompt small { display: block; color: var(--pc); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; font-size: 11px; }
+.advance-prompt strong { display: block; margin-top: 4px; font-size: 15px; line-height: 1.4; }
+.advance-prompt .modal-actions { justify-content: center; margin-top: 12px; }
 
 .hl {
   position: absolute;

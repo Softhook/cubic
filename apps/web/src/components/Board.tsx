@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type RefObject } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import { SHIP_ABILITIES, SHIP_NAMES, key, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
@@ -36,9 +36,10 @@ function useCellSize(wrap: RefObject<HTMLDivElement>, rows: number, cols: number
 
 /**
  * The map: artwork underneath (SVG), then clickable layers for highlighted spaces, planets and
- * ships, then explosions. What is clickable comes from the controller's highlights.
+ * ships, then explosions. What is clickable comes from the controller's highlights. `children` float
+ * over the map (positioned in percent of its size).
  */
-export function Board({ game, ctl }: { game: GameState; ctl: Controller }) {
+export function Board({ game, ctl, children }: { game: GameState; ctl: Controller; children?: ReactNode }) {
   const wrap = useRef<HTMLDivElement>(null);
   const { rows, cols, planets } = game.board;
   const { cell, resizing } = useCellSize(wrap, rows, cols);
@@ -87,6 +88,7 @@ export function Board({ game, ctl }: { game: GameState; ctl: Controller }) {
           <Ships game={game} ctl={ctl} cell={cell} />
           <Explosions game={game} cell={cell} />
         </div>
+        {children}
       </div>
     </div>
   );

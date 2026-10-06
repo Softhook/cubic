@@ -86,12 +86,6 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
         </div>
       )}
 
-      {head?.kind === 'advance' && ctl.human && (
-        <div className="turn-actions">
-          <button className="btn btn-primary" onClick={() => dispatch({ type: 'advance', move: true })}>Advance</button>
-          <button className="btn" onClick={() => dispatch({ type: 'advance', move: false })}>Hold position</button>
-        </div>
-      )}
       {head?.kind === 'placeExpansion' && ctl.human && (
         <div className="turn-actions">
           <button className="btn" onClick={() => dispatch({ type: 'placeExpansion', to: null })}>Send to scrapyard</button>

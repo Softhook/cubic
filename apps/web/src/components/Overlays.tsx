@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { SHIP_NAMES, card, die, rulesOf, scrapyard, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, card, die, rulesOf, scrapyard, type GameState, type Pending } from '@quantum/engine';
+import { useShortcut } from '../game/useShortcut';
 import type { Dispatch } from '../game/useGame';
 import { CardView } from './Card';
 import { Die3D } from './Die3D';
@@ -161,6 +162,36 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
     default:
       return null;
   }
+}
+
+/**
+ * After winning a battle: advance into the destroyed ship's space or hold. Floats over the board
+ * without a backdrop, in the half away from that space, so it stays visible (clicking it also
+ * advances). Enter advances, unless a button has focus (then Enter presses that button).
+ */
+export function AdvancePrompt({ game, advance, dispatch }: { game: GameState; advance: Extract<Pending, { kind: 'advance' }>; dispatch: Dispatch }) {
+  const p = game.players[advance.player];
+  const d = die(game, advance.die);
+  const go = (move: boolean) => dispatch({ type: 'advance', move });
+  useShortcut(
+    (e) => e.key === 'Enter' && (e.target as HTMLElement | null)?.tagName !== 'BUTTON',
+    (e) => {
+      e.preventDefault();
+      go(true);
+    },
+  );
+  // By the target space alone: on a wrapping map the attacker may sit at the opposite edge.
+  const top = advance.to.r + 0.5 < game.board.rows / 2 ? '75%' : '25%';
+  return (
+    <div className="advance-prompt" style={{ top, '--pc': p.color } as CSSProperties} role="group" aria-label="Advance or hold">
+      <small>Victory</small>
+      <strong>Advance your {SHIP_NAMES[d.value]} into the destroyed ship’s space?</strong>
+      <div className="modal-actions">
+        <button className="btn" onClick={() => go(false)}>Hold position</button>
+        <button className="btn btn-primary" onClick={() => go(true)}>Advance</button>
+      </div>
+    </div>
+  );
 }
 
 function SetupRoll({ game, dispatch, player, rerolled }: { game: GameState; dispatch: Dispatch; player: number; rerolled: boolean }) {

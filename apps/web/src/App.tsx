@@ -9,7 +9,7 @@ import { Log } from './components/Log';
 import { PlayerList } from './components/PlayerList';
 import { TurnPanel } from './components/TurnPanel';
 import { CombatOverlay } from './components/CombatOverlay';
-import { DecisionOverlay, GameOver } from './components/Overlays';
+import { AdvancePrompt, DecisionOverlay, GameOver } from './components/Overlays';
 import { ErrorToast, Toasts } from './components/Toasts';
 import { Lobby, type LobbyResult } from './components/Lobby';
 import { Rules } from './components/Rules';
@@ -73,7 +73,9 @@ function Game({ initial, onQuit, onRules }: { initial: GameState; onQuit: () => 
 
       <main className="layout">
         <div className="stage">
-          <Board game={game} ctl={ctl} />
+          <Board game={game} ctl={ctl}>
+            {head?.kind === 'advance' && ctl.human && <AdvancePrompt game={game} advance={head} dispatch={dispatch} />}
+          </Board>
           <Toasts toasts={toasts} game={game} />
           <ErrorToast error={error} />
         </div>

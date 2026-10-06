@@ -91,6 +91,7 @@ export function useController(game: GameState, dispatch: Dispatch) {
     (cell: Cell) => {
       if (!human) return;
       if (!highlights.cells.has(key(cell))) return setSel(sel.kind === 'scrap' ? sel : NONE);
+      if (head?.kind === 'advance') return void dispatch({ type: 'advance', move: true });
       if (head?.kind === 'warpGate') return void dispatch({ type: 'warpGate', cell });
       if (head?.kind === 'placeExpansion') return void dispatch({ type: 'placeExpansion', to: cell });
       if (head?.kind === 'placeShips') {
