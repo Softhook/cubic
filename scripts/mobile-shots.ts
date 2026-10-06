@@ -11,7 +11,7 @@
  * dev-only `?play=` link (apps/web/src/game/devStart.ts), so `--url` must be a dev server.
  * Screenshots go to test-results/mobile/ (the game, and each setup popup as `-popupN`). Exits with 1
  * when a layout is broken: the board wider or taller than its stage, a page wider than the screen
- * (the phone then zooms the page out), or a setup popup whose buttons or cards are off screen
+ * (the phone then zooms the page out), End turn off screen, or a setup popup whose buttons or cards are off screen
  * without scrolling.
  */
 import { mkdirSync } from 'node:fs';
@@ -103,10 +103,17 @@ async function main() {
             pageWidth: window.innerWidth,
             pageHeight: document.scrollingElement!.scrollHeight,
             overflowsStage: board.width > stage.width + 1 || board.height > stage.height + 1,
+            // You never scroll to act: End turn (or, on someone else's turn, the turn panel's head) is on screen.
+            turnBarOnScreen: (() => {
+              const el = document.querySelector('.turn-panel .btn-primary') ?? document.querySelector('.turn-panel .turn-head');
+              const r = el!.getBoundingClientRect();
+              return r.top >= 0 && r.bottom <= innerHeight + 1 && r.left >= 0 && r.right <= innerWidth + 1;
+            })(),
           };
         });
         if (m.pageWidth > screen.width) issues.push(`page ${m.pageWidth}px wide on a ${screen.width}px screen`);
         if (m.overflowsStage) issues.push('board overflows its stage');
+        if (!m.turnBarOnScreen) issues.push('turn panel (End turn) off screen');
         await page.screenshot({ path: `${OUT}/${name}.png` });
         console.log(`${name.padEnd(36)} cell ${String(m.cell).padStart(3)}px  page ${m.pageWidth}×${m.pageHeight}  ${issues.length ? '✗ ' + issues.join('; ') : '✓'}`);
         problems.push(...issues.map((i) => `${name}: ${i}`));

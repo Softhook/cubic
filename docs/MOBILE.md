@@ -3,7 +3,7 @@
 How to make the web app play well on phones and iPads: what works today, what breaks, and a
 plan sized to where the app is now.
 
-Status: **Steps 0, 1 and 2 done, plus the setup popups from Step 3.** First written
+Status: **Steps 0, 1 and 2 done; Step 3's layout done in emulation, its real-device checks still to do.** First written
 2026-10-02 as a proposal. Revised 2026-10-06 after measuring the build in device emulation
 (`npm run mobile:shots`: Playwright + Chrome; iPhone SE, iPhone 15, Moto G55 and iPad mini,
 portrait and landscape). On the real Moto G55 so far: the default map (fine) and Asymptote
@@ -47,9 +47,13 @@ Chrome's address bar and Android's navigation bar, and changes as the address ba
 - **On the real G55:** Asymptote now fits but its cells are about 26px (ships ≈ 15px). That is
   the expected limit of fit-to-screen; bigger needs zoom (Step 4). Tapping a ship for its info
   helps in the meantime.
-- **Next:** Step 3 (sticky turn bar, phone landscape), or Step 4 early if big maps on phones
-  matter more. Still to check from Step 1: the board re-fit when the market opens/closes on
-  screens ≥ 980px.
+- **Step 3 layout (late evening):** below 980px the turn panel sticks to the bottom of the
+  screen; phone landscape has two columns; on iPad portrait the players and log sit side by side;
+  the market starts collapsed on phones. `mobile:shots` now also checks that *End turn* is on
+  screen: 28 of 28 pass.
+- **Next:** play Step 3 on the G55 (2p Basic and 3p Classic, setup to game over), check the
+  remaining overlays (combat, Change of Heart, game over, rules), then Step 4. Still to check from
+  Step 1: the board re-fit when the market opens/closes on screens ≥ 980px.
 
 ---
 
@@ -242,21 +246,27 @@ emulation; G55 by eye still to do.
 
 ### Step 3: Phone layout, minimal version (medium, 1–2 days)
 Keep the scrolling column, but pin what matters:
-- [ ] **Sticky bottom turn bar** on phones: current player, short prompt, the main actions
-      (End turn, Undo, the selected ship's actions). This can be the TurnPanel/ShipPanel in a
-      compact form with `position: sticky; bottom: 0`. You never have to scroll to act.
-- [ ] Board first and fully visible on load; market (collapsed by default on phones), players
-      and log below it.
-- [ ] Phone landscape: board on the left at full height, sidebar scrolling on the right
-      (a two-column grid below 980px when `orientation: landscape` and the height is small).
+- [x] **Sticky bottom turn bar** below 980px: the TurnPanel (with ShipPanel) itself, slightly
+      more compact on phones, `position: sticky; bottom: 0`. The sidebar becomes
+      `display: contents` so its panels join one flex column (board, market, online panel,
+      players, log, turn panel). The turn panel goes **last**: pinned to the bottom of the screen
+      while you're higher up, in its own place at the end, so it never hides the log. Flex, not
+      grid, because a sticky grid item can't leave its grid area.
+- [x] Board first and fully visible on load; market (collapsed by default on phones unless the
+      player chose otherwise), players and log below it. In portrait the stage leaves 160px
+      below it for the turn bar (only matters on short, wide screens).
+- [x] Phone landscape (below 980 × 500, landscape): board on the left at full height, sidebar
+      scrolling on the right with the turn panel first, market under it. The stage has
+      `contain: size` because it spans both rows. G55 cells: 31 / 23 / 18 / 13px.
 - [ ] Overlays at 320–393px: check combat (dice and totals), card choice (two large cards
       side by side), Change of Heart (whole-deck search), game over, rules.
       **Done for the setup popups (2026-10-06):** below 600px wide or 500px high, popups have
       less padding, two-card choices (starting skill, Peek, market) sit side by side and shrink,
       with text scaled by container units; on short screens (phone landscape) the fleet roll is
       compact with 54px dice. Combat, Change of Heart, game over and rules still to check.
-- [ ] iPad portrait: put the turn panel and the player list side by side under the board,
-      so the page stops being 1,800px tall.
+- [x] iPad portrait: the player list and log side by side (the turn panel is the sticky bar),
+      log capped at 420px. The page is still ≈ 1,700px on a 4p map; the bar means you don't
+      need to scroll it to act.
 
 The slide-up sheet with tabs (P2 in the old draft) is the polished version of this. Do it only
 if the sticky bar turns out not to be enough. If it comes to that, don't use Vaul, which is
@@ -268,8 +278,8 @@ unmaintained (§5).
 
 **Done when:** a 2p Basic game and a 3p Classic game, setup to game over, can be played on
 the Moto G55 (and on an iPhone, through BrowserStack) without scrolling to act; a full 4p
-Classic game is comfortable on an iPad in both orientations. Add a check to `mobile:shots` that
-the turn bar's *End turn* is inside the screen.
+Classic game is comfortable on an iPad in both orientations. `mobile:shots` checks that *End
+turn* (or, on another player's turn, the turn panel's head) is on screen ✅.
 
 ### Step 4: Board zoom (larger, 3–4 days)
 Needed for 4–5 player maps on phones. Start with a **one-day spike with
