@@ -98,7 +98,7 @@ describe('online timeline', () => {
     for (const p of a.timeline.all()) b.timeline.add(p);
     b.send({ t: 'claim', seat: 1, name: '  Bob the very long name  ' }, false);
     a.timeline.add(b.sent[0]);
-    a.send({ t: 'ask', seat: 0, ask: 'own' }, true);
+    a.send({ t: 'ask', seat: 0, ask: 'always' }, true);
     b.timeline.add(a.sent[0]);
 
     playOnline([a, b], 3);
@@ -107,7 +107,7 @@ describe('online timeline', () => {
     expect(head(rb)).toEqual(head(ra));
     expect(rb.steps.length).toBe(ra.steps.length);
     expect(ra.seats.map((s) => s.name)).toEqual(['Alice', 'Bob the very l', 'Nova']);
-    expect(ra.seats[0].ask).toBe('own');
+    expect(ra.seats[0].ask).toBe('always');
     expect(checkInvariants(head(ra))).toEqual([]);
     // Every move carried the hash of its position, and both browsers got the same ones.
     expect(ra.desync).toBeNull();

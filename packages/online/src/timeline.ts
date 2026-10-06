@@ -311,7 +311,7 @@ function start(g: Post): Replay | null {
     name: cleanName(p.name, `Player ${p.id + 1}`),
     ai: p.ai,
     open: b.open.includes(p.id),
-    ask: 'always',
+    ask: 'own',
   }));
   // A human seat is either the creator's or open; anything else would be a seat nobody can play.
   if (seats.some((s) => !s.ai && !s.open && s.id !== b.creator) || seats[b.creator].ai) return null;

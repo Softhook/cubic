@@ -1,9 +1,9 @@
 import type { Post, Step } from '@quantum/online';
 
 /** How long a move by someone else stays on screen before the next one is shown. */
-export const STEP_MS = 900;
+export const STEP_MS = 1500;
 /** How long a battle stays on screen (the dice reveal, then the verdict). */
-export const COMBAT_MS = 2800;
+export const COMBAT_MS = 3500;
 /** Further behind than this, the screen jumps to the present instead of replaying the moves. */
 export const MAX_BEHIND = 12;
 
