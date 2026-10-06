@@ -20,7 +20,7 @@ function useCellSize(wrap: RefObject<HTMLDivElement>, rows: number, cols: number
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       const size = Math.floor(Math.min(width / cols, height / rows));
-      setCell(Math.max(34, Math.min(140, size)));
+      setCell(Math.max(8, Math.min(140, size)));
       setResizing(true);
       clearTimeout(settle);
       settle = setTimeout(() => setResizing(false), 200);

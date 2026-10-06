@@ -3,7 +3,7 @@
 How to make the web app play well on phones and iPads: what works today, what breaks, and a
 plan sized to where the app is now.
 
-Status: **Step 0 done, Step 1 next.** First written 2026-10-02 as a proposal. Revised
+Status: **Step 0 done, Step 1 done in emulation, real-device check on the G55 next.** First written 2026-10-02 as a proposal. Revised
 2026-10-06 after measuring the current build in device emulation (`npm run mobile:shots`:
 Playwright + Chrome; iPhone SE, iPhone 15, Moto G55 and iPad mini, portrait and landscape).
 Not yet checked on real devices.
@@ -147,31 +147,37 @@ Steps 1–3 come first; Step 4 is the big one and can wait until they are in.
       (`@vitejs/plugin-basic-ssl` v1; v2 needs Vite 6). On the phone open
       `https://<Mac's LAN address>:5173/`, accept the warning once, and the share sheet and
       clipboard work.
-- [ ] **Moto G55 remote debugging** (one-time, by hand): on the phone, Settings → About phone →
-      tap *Build number* 7 times; then Developer options → *USB debugging* on. Connect by USB,
-      open `chrome://inspect` in Chrome on the Mac, and *inspect* the game's tab.
+- ~~**Moto G55 remote debugging** over USB (`chrome://inspect`)~~ dropped 2026-10-06: the phone
+      stayed at "Pending authentication" (no *Allow USB debugging?* prompt), and installing
+      `adb` hit Gatekeeper. Real-device checks are by eye instead: the dev server over Wi-Fi
+      (phone and Mac on the same network, no client isolation) or the GitHub Pages build.
 
-**Done when:** one command produces the device matrix ✅, and the G55 can open the dev server
-over HTTPS with DevTools attached (the last checkbox).
+**Done when:** one command produces the device matrix ✅.
 
 ### Step 1: Stop the breakage (small, ½ day)
-- [ ] **Board never wider than its box.** In `useCellSize`
-      ([Board.tsx](../apps/web/src/components/Board.tsx)) drop the 34px floor: always fit. Tap
+- [x] **Board never wider than its box.** In `useCellSize`
+      ([Board.tsx](../apps/web/src/components/Board.tsx)) drop the 34px floor: always fit (8px floor, only against zero). Tap
       areas are already full cells, so 25px cells on a 5×5 are tight but usable, and far better
       than a zoomed-out page; 7×7 on a phone (≈ 17px) stays poor until Step 4.
-- [ ] Stage height on phones: give the board the space it needs, e.g.
+- [x] Stage height on phones: give the board the space it needs, e.g.
       `height: min(100vw, calc(100dvh - topbar - turn bar))`, and in landscape let the board
       use the full height.
 - [ ] Re-fit the board when the market collapses or expands (it's a `ResizeObserver` on the
       wrap, so check the stage really resizes rather than overflows).
-- [ ] `viewport-fit=cover` + `env(safe-area-inset-*)` padding; `100vh` → `100dvh` (`.modal`,
+- [x] `viewport-fit=cover` + `env(safe-area-inset-*)` padding; `100vh` → `100dvh` (`.modal`,
       and anywhere else that is sized by the viewport).
-- [ ] `touch-action: manipulation` on the app; `user-select: none` and
+- [x] `touch-action: manipulation` on the app; `user-select: none` and
       `-webkit-touch-callout: none` on the board and the dice.
-- [ ] Wrap the 22 `:hover` rules in `@media (hover: hover)`.
-- [ ] `@media (pointer: coarse)`: 44px minimum for `.icon-btn`, `.mini-btn`, segmented
+- [x] Wrap the 22 `:hover` rules in `@media (hover: hover)`.
+- [x] `@media (pointer: coarse)`: 44px minimum for `.icon-btn`, `.mini-btn`, segmented
       buttons, topbar buttons (padding or a larger hit area via `::after`, so things don't look
       bloated).
+
+Done 2026-10-06: `npm run mobile:shots` passes 21 of 21 (G55 cells: 3×3 44px, 5×5 26px,
+7×7 19px portrait; 31 / 18 / 13px landscape). The stage is
+`min(100vw, 100dvh − topbar − safe areas)`; the hit areas are a centred `::after`, so the
+buttons look the same. Not yet checked: the market re-fit (on phones the stage height no
+longer depends on the market, so it only matters ≥ 980px), and everything on the real G55.
 
 **Done when:** `npm run mobile:shots` reports no problems (it checks the first two points
 on every device), and on the G55 a double-tap never zooms the page and nothing sticks after a
@@ -210,8 +216,8 @@ The slide-up sheet with tabs (P2 in the old draft) is the polished version of th
 if the sticky bar turns out not to be enough. If it comes to that, don't use Vaul, which is
 unmaintained (§5).
 
-- [ ] Profile one full turn on the G55 with remote debugging: 3D dice, four `backdrop-filter`
-      blur layers, explosions. Its Dimensity 7025 is mid-range and the screen runs at 120 Hz.
+- [ ] Check one full turn on the G55 for smoothness (no remote profiling, see Step 0): 3D dice,
+      four `backdrop-filter` blur layers, explosions. Its Dimensity 7025 is mid-range and the screen runs at 120 Hz.
       Only optimise what the profile shows.
 
 **Done when:** a 2p Basic game and a 3p Classic game, setup to game over, can be played on
