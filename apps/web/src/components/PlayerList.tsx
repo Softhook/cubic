@@ -5,7 +5,7 @@ import type { Dispatch } from '../game/useGame';
 import { CategoryIcon, categoryStyle } from './Card';
 import { CardViewer } from './CardViewer';
 import { Tip } from './InfoPop';
-import { Scrapyard } from './Scrapyard';
+import { canDeployFrom, Scrapyard } from './Scrapyard';
 
 function Track({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
@@ -57,7 +57,10 @@ function PlayerCard({ game, p, ctl, dispatch }: { game: GameState; p: PlayerStat
         {p.actionPenalty > 0 && <Tip className="stat bad" tip="Sabotaged: fewer actions next turn">−{p.actionPenalty} action</Tip>}
         {p.ambitionTokens > 0 && <Tip className="stat" tip="Ambition tokens">Ambition {p.ambitionTokens}/3</Tip>}
       </div>
-      <Scrapyard game={game} p={p} ctl={ctl} dispatch={dispatch} />
+      {/* Below 980px the turn bar shows the deploying player's scrapyard, so this copy hides there. */}
+      <div className={`player-scrap ${canDeployFrom(game, p, ctl) ? 'in-turn-bar' : ''}`}>
+        <Scrapyard game={game} p={p} ctl={ctl} dispatch={dispatch} />
+      </div>
       {(p.skills.length > 0 || (p.storedTactics?.length ?? 0) > 0) && (
         <div className="skills">
           {p.skills.map((s, i) => {

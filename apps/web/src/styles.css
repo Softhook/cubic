@@ -1018,6 +1018,7 @@ input { font: inherit; }
   .turn-panel .turn-actions { margin-top: 6px; }
   .turn-panel .btn { padding-top: 7px; padding-bottom: 7px; }
   .turn-scrap { display: block; }
+  .player-scrap.in-turn-bar { display: none; }
   .turn-scrap .scrapyard { margin-top: 6px; }
   .turn-panel .ship-panel { margin-top: 6px; padding: 6px 36px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; position: relative; }
   .turn-panel .ship-panel-head, .turn-panel .ship-panel .turn-actions { display: contents; }
