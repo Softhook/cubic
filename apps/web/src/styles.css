@@ -965,6 +965,30 @@ input { font: inherit; }
   .market.collapsed .market-toggle { margin: 0 0 0 -8px; }
 }
 
+/* Popups on phones: less padding, so they fit without scrolling inside them. */
+@media (max-width: 600px), (max-height: 500px) {
+  .overlay { padding: 8px; }
+  .modal { max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); padding: 18px 16px; }
+  /* Two cards side by side, shrunk to fit; their text scales with the card. */
+  .card-choice:not(.wrap) { gap: 10px; flex-wrap: nowrap; }
+  .card-choice:not(.wrap) > .qcard-lg, .card-choice:not(.wrap) > .choice-col { flex: 0 1 210px; min-width: 0; }
+  .card-choice:not(.wrap) .qcard-lg { width: 100%; height: auto; aspect-ratio: 210 / 280; padding: 10px; container-type: inline-size; }
+  .card-choice:not(.wrap) .qcard-lg .qcard-name { font-size: clamp(13px, 9cqi, 19px); margin-top: clamp(6px, 5cqi, 12px); }
+  .card-choice:not(.wrap) .qcard-lg .qcard-sub { font-size: clamp(10px, 6cqi, 12.5px); }
+  .card-choice:not(.wrap) .qcard-lg .qcard-text { font-size: clamp(10.5px, 6.4cqi, 13.5px); margin-top: clamp(6px, 6cqi, 14px); }
+}
+/* Landscape phones: about 340px of height for the whole popup. */
+@media (max-height: 500px) {
+  .modal { padding: 12px 20px; }
+  .modal h2 { font-size: 18px; }
+  .modal-sub { margin: 2px 0 8px; font-size: 13px; line-height: 1.4; }
+  .modal-actions { margin-top: 8px; }
+  .fleet-roll { padding: 4px 0 0; }
+  .fleet-die { gap: 6px; }
+  .fleet-sum { margin-top: 2px; }
+  .card-choice:not(.wrap) > .qcard-lg, .card-choice:not(.wrap) > .choice-col { flex-basis: 150px; }
+}
+
 /* Touch: small buttons keep their look but get a 44px hit area. */
 @media (pointer: coarse) {
   .icon-btn, .mini-btn, .segmented button, .topbar .btn { position: relative; }

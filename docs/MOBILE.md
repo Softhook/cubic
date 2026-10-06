@@ -3,10 +3,11 @@
 How to make the web app play well on phones and iPads: what works today, what breaks, and a
 plan sized to where the app is now.
 
-Status: **Step 0 done, Step 1 done in emulation, real-device check on the G55 next.** First written 2026-10-02 as a proposal. Revised
-2026-10-06 after measuring the current build in device emulation (`npm run mobile:shots`:
-Playwright + Chrome; iPhone SE, iPhone 15, Moto G55 and iPad mini, portrait and landscape).
-Not yet checked on real devices.
+Status: **Steps 0 and 1 done, plus the setup popups from Step 3; Step 2 next.** First written
+2026-10-02 as a proposal. Revised 2026-10-06 after measuring the build in device emulation
+(`npm run mobile:shots`: Playwright + Chrome; iPhone SE, iPhone 15, Moto G55 and iPad mini,
+portrait and landscape). On the real Moto G55 so far: the default map (fine) and Asymptote
+(broken, fixed since); see *Progress* below.
 
 **Reference devices:**
 
@@ -19,6 +20,26 @@ Not yet checked on real devices.
 
 The Moto G55 is 1080×2400 at a device pixel ratio of ≈ 2.625. The visible height subtracts
 Chrome's address bar and Android's navigation bar, and changes as the address bar hides.
+
+---
+
+## Progress
+
+**2026-10-06** (one session; commits `6262692`, `b8accec`, `9c93b91` and the popup commit after them):
+- **Step 1 done.** The board always fits its box, so phones never zoom out. The phone stage
+  uses the visible height (portrait: square; landscape: full height). Notch-safe, no
+  double-tap zoom, no sticky hover, 44px tap areas on touch.
+- **Wide-map bug found on the G55 and fixed.** Asymptote (15 cells across) made the page 504px
+  wide on a 412px screen; the phone's single grid column couldn't shrink below the board
+  (`1fr` → `minmax(0, 1fr)`).
+- **`mobile:shots` checks more:** a wide map, and every setup popup (fleet roll, starting
+  skill) must have its buttons and cards on screen without scrolling.
+- **Setup popups fit phones** in both orientations (part of Step 3).
+- **Result:** 28 of 28 device × map checks pass (was 2 of 21 at the start of the day).
+- **Testing on the G55** is by eye through the GitHub Pages build. USB remote debugging was
+  dropped (Step 0).
+- **Next:** Step 2 (tap a ship or planet for its info). Still to check from Step 1: the board
+  re-fit when the market opens/closes on screens ≥ 980px.
 
 ---
 
@@ -138,7 +159,7 @@ Steps 1–3 come first; Step 4 is the big one and can wait until they are in.
       size and page size for each. It **exits with 1 when a layout is broken**: page wider than
       the screen, board bigger than its stage, or a setup popup with buttons or cards off screen
       (you'd have to scroll inside it). 2026-10-06 after Step 1: board and page pass everywhere;
-      16 of 28 fail on popups (fleet roll in phone landscape, skill cards on phones; Step 3).
+      16 of 28 failed on popups, fixed the same day (Step 3's setup popups): 28 of 28 pass.
       `--url` checks a running dev server instead, `--webkit` uses WebKit (needs
       `npx playwright install webkit`). Takes about 4 minutes.
 - [x] **Dev link straight into a game** ([devStart.ts](../apps/web/src/game/devStart.ts), dev
@@ -212,6 +233,10 @@ Keep the scrolling column, but pin what matters:
       (a two-column grid below 980px when `orientation: landscape` and the height is small).
 - [ ] Overlays at 320–393px: check combat (dice and totals), card choice (two large cards
       side by side), Change of Heart (whole-deck search), game over, rules.
+      **Done for the setup popups (2026-10-06):** below 600px wide or 500px high, popups have
+      less padding, two-card choices (starting skill, Peek, market) sit side by side and shrink,
+      with text scaled by container units; on short screens (phone landscape) the fleet roll is
+      compact with 54px dice. Combat, Change of Heart, game over and rules still to check.
 - [ ] iPad portrait: put the turn panel and the player list side by side under the board,
       so the page stops being 1,800px tall.
 

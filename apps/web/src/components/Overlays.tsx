@@ -199,6 +199,8 @@ function SetupRoll({ game, dispatch, player, rerolled }: { game: GameState; disp
   const dice = scrapyard(game, player);
   const sum = dice.reduce((a, d) => a + d.value, 0);
   const [landed, setLanded] = useState(false);
+  // Smaller dice on short screens (phone landscape), so Keep fleet stays on screen. Matches styles.css.
+  const dieSize = matchMedia('(max-height: 500px)').matches ? 54 : 78;
   const rollKey = dice.map((d) => d.rolls).join();
   useEffect(() => {
     setLanded(false);
@@ -211,7 +213,7 @@ function SetupRoll({ game, dispatch, player, rerolled }: { game: GameState; disp
       <div className="fleet-roll">
         {dice.map((d, i) => (
           <div key={d.id} className="fleet-die">
-            <Die3D value={d.value} rolls={d.rolls} size={78} color={p.color} tumbleOnMount delay={i * 0.12} sound={i === 0} />
+            <Die3D value={d.value} rolls={d.rolls} size={dieSize} color={p.color} tumbleOnMount delay={i * 0.12} sound={i === 0} />
             <span className={landed ? 'show' : ''}>{SHIP_NAMES[d.value]}</span>
           </div>
         ))}
