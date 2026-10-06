@@ -239,16 +239,8 @@ input { font: inherit; }
 }
 .board { position: relative; }
 .board-svg { position: absolute; inset: 0; overflow: visible; }
-.planet-num {
-  font-family: var(--body);
-  font-weight: 800;
-  fill: #fff;
-  letter-spacing: -.03em;
-  paint-order: stroke;
-  stroke-linejoin: round;
-  pointer-events: none;
-}
-.cube { filter: drop-shadow(0 0 3px rgba(255,255,255,.6)); animation: cube-in .5s cubic-bezier(.3,1.6,.5,1); transform-box: fill-box; transform-origin: center; }
+.planet-num { font-family: var(--body); pointer-events: none; }
+.cube { animation: cube-in .5s cubic-bezier(.3,1.6,.5,1); transform-box: fill-box; transform-origin: center; }
 @keyframes cube-in { from { transform: scale(0) rotate(-90deg); } to { transform: scale(1) rotate(0); } }
 .gate-spin { animation: spin 6s linear infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes spin { to { transform: rotate(360deg); } }

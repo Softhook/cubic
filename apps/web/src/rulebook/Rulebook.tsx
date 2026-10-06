@@ -9,8 +9,8 @@ import css from './rulebook.css?raw';
  * "Save as PDF" prints the page; "Download HTML" saves it as one self-contained file.
  */
 
-/** The game's colour variables (styles.css :root) the manual uses; the downloaded file gets a copy. */
-const GAME_VARS = ['--text', '--muted', '--accent', '--line', '--line-2', '--good', '--bad', '--gold', '--bg', '--panel-solid', '--dom-1', '--dom-2', '--res-1', '--res-2'];
+/** The game's colour variables (styles.css :root) the manual uses, read off its stylesheet; the downloaded file gets a copy. */
+const GAME_VARS = [...new Set(css.match(/var\(--(?!mn-)[\w-]+/g)!.map((v) => v.slice(4)))];
 
 function gameColours() {
   const root = getComputedStyle(document.documentElement);

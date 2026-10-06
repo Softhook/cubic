@@ -1,4 +1,5 @@
 import type { CSSProperties, MouseEvent, ReactNode } from 'react';
+import type { CardDeck } from '@quantum/art';
 import { MODES, SHIP_ABILITIES, SHIP_NAMES } from '@quantum/engine';
 import { PLAYER_COLORS } from '../theme';
 import { Arrow, CubeIcon, Diagram, DieFace, DieIcon, Dots, Glow, Icon, Mark, Note, Path, PlanetIcon, PlanetMarks, Ship, Tile, cardBackUrl, reachable, type At } from './diagrams';
@@ -17,6 +18,12 @@ const SHIP_TEXT: Record<number, string> = {
   5: 'May move and attack diagonally as part of its move.',
   6: 'Re-roll itself to a new number, without spending an action.',
 };
+
+const CARD_TYPES: [deck: CardDeck, name: string, classicName: string | undefined, text: string][] = [
+  ['skill', 'Skills', 'Command', 'Keep it in front of you. It works from the next player’s turn. You can hold 3; take a fourth and you must discard one.'],
+  ['tactic', 'Tactics', 'Gambit', 'Happens the moment you take it, then goes to the discard pile.'],
+  ['expansion', 'Expansion', undefined, 'Roll one of your 2 reserve dice and add it to your fleet: in orbit of a planet with your cube, or in your scrapyard.'],
+];
 
 const SECTIONS: [id: string, title: string][] = [
   ['mn-goal', 'Goal'],
@@ -38,10 +45,11 @@ const jump = (e: MouseEvent<HTMLAnchorElement>) => {
 const Tag = ({ children }: { children: ReactNode }) => <span className="mn-tag">{children}</span>;
 
 function Cost({ n }: { n: number }) {
+  const label = `${n} action${n > 1 ? 's' : ''}`;
   return (
-    <span className="mn-cost" aria-label={`${n} action${n > 1 ? 's' : ''}`}>
+    <span className="mn-cost" aria-label={label}>
       {Array.from({ length: n }, (_, i) => <i key={i} />)}
-      <span>{n} action{n > 1 ? 's' : ''}</span>
+      <span>{label}</span>
     </span>
   );
 }
@@ -75,6 +83,22 @@ function Track({ at, next, end, tone }: { at: number; next?: boolean; end: React
 }
 
 const ORBIT: At[] = [[0, 1], [1, 0], [1, 2], [2, 1]];
+
+/** One side of the combat example: ship + die = total. */
+function Side({ role, ship, die, total, win }: { role: 'Attacker' | 'Defender'; ship: ReactNode; die: ReactNode; total: number; win?: boolean }) {
+  return (
+    <div className={role === 'Attacker' ? 'mn-side mn-you-side' : 'mn-side mn-foe-side'}>
+      <small>{role}</small>
+      <div className="mn-eq">
+        <span className="mn-eq-part">{ship}<i>ship</i></span>
+        <b>+</b>
+        <span className="mn-eq-part">{die}<i>{role === 'Attacker' ? 'attack' : 'defence'} die</i></span>
+        <b>=</b>
+        <span className={win ? 'mn-total win' : 'mn-total'}>{total}</span>
+      </div>
+    </div>
+  );
+}
 
 // ------------------------------------------------------------------ diagrams
 
@@ -217,11 +241,9 @@ export function Manual({ dark }: { dark?: boolean }) {
         <h2>The goal</h2>
         <div className="mn-hero">
           <div className="mn-hero-cubes" aria-label="Four cubes placed, one to go">
-            <CubeIcon size={34} />
-            <CubeIcon size={34} />
-            <CubeIcon size={34} />
-            <CubeIcon size={34} />
-            <CubeIcon size={34} empty />
+            {[1, 2, 3, 4, 5].map((n) => (
+              <CubeIcon key={n} size={34} empty={n === 5} />
+            ))}
           </div>
           <p className="mn-lead">
             Be the first to place <b>all your cubes</b> on planets.
@@ -390,27 +412,9 @@ export function Manual({ dark }: { dark?: boolean }) {
         <h2>Combat</h2>
         <p>Both players roll a die and <b>add their ship’s number</b>. The <b>lower total wins</b>. Ties go to the attacker.</p>
         <div className="mn-fight">
-          <div className="mn-side mn-you-side">
-            <small>Attacker</small>
-            <div className="mn-eq">
-              <span className="mn-eq-part"><DieIcon v={2} size={36} /><i>ship</i></span>
-              <b>+</b>
-              <span className="mn-eq-part"><DieIcon v={3} kind="atk" size={36} /><i>attack die</i></span>
-              <b>=</b>
-              <span className="mn-total win">5</span>
-            </div>
-          </div>
+          <Side role="Attacker" ship={<DieIcon v={2} size={36} />} die={<DieIcon v={3} kind="atk" size={36} />} total={5} win />
           <div className="mn-vs">vs</div>
-          <div className="mn-side mn-foe-side">
-            <small>Defender</small>
-            <div className="mn-eq">
-              <span className="mn-eq-part"><DieIcon v={4} kind="foe" size={36} /><i>ship</i></span>
-              <b>+</b>
-              <span className="mn-eq-part"><DieIcon v={2} kind="def" size={36} /><i>defence die</i></span>
-              <b>=</b>
-              <span className="mn-total">6</span>
-            </div>
-          </div>
+          <Side role="Defender" ship={<DieIcon v={4} kind="foe" size={36} />} die={<DieIcon v={2} kind="def" size={36} />} total={6} />
         </div>
         <p className="mn-center mn-legend">5 is lower than 6, so the attacker wins.</p>
 
@@ -464,27 +468,15 @@ export function Manual({ dark }: { dark?: boolean }) {
           deck is always the oldest.
         </p>
         <div className="mn-cardtypes">
-          <div className="mn-ctype">
-            <img className="mn-minicard" src={cardBackUrl('skill')} alt="Skill card back" />
-            <div>
-              <b>Skills</b> <small>Classic: Command</small>
-              <p>Keep it in front of you. It works from the next player’s turn. You can hold 3; take a fourth and you must discard one.</p>
+          {CARD_TYPES.map(([deck, name, classic, text]) => (
+            <div key={deck} className="mn-ctype">
+              <img className="mn-minicard" src={cardBackUrl(deck)} alt={`${name} card back`} />
+              <div>
+                <b>{name}</b> {classic && <small>Classic: {classic}</small>}
+                <p>{text}</p>
+              </div>
             </div>
-          </div>
-          <div className="mn-ctype">
-            <img className="mn-minicard" src={cardBackUrl('tactic')} alt="Tactic card back" />
-            <div>
-              <b>Tactics</b> <small>Classic: Gambit</small>
-              <p>Happens the moment you take it, then goes to the discard pile.</p>
-            </div>
-          </div>
-          <div className="mn-ctype">
-            <img className="mn-minicard" src={cardBackUrl('expansion')} alt="Expansion card back" />
-            <div>
-              <b>Expansion</b>
-              <p>Roll one of your 2 reserve dice and add it to your fleet: in orbit of a planet with your cube, or in your scrapyard.</p>
-            </div>
-          </div>
+          ))}
         </div>
         <ul className="mn-facts">
           <li><b>Peek</b> <Tag>Community</Tag> If you take the oldest card in a row, you may first look at the top of that deck and take that card instead.</li>

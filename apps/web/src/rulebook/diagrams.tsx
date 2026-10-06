@@ -1,11 +1,9 @@
 import { createContext, useContext, useId, type ReactNode } from 'react';
 import {
-  CUBE_PAD,
   PLANET_DIAMETER,
   PLANET_FAMILY,
   TILE,
   cardBackSvg,
-  cubePadCentres,
   dataUrl,
   document,
   icon,
@@ -16,7 +14,9 @@ import {
   tileSvg,
   type CardDeck,
 } from '@quantum/art';
-import { COMBAT_DICE, CUBE_SLOT, PIP, PLAYER_COLORS } from '../theme';
+import { PlanetMarkings, PlanetNumber } from '../components/board/PlanetMarkings';
+import { PIPS } from '../components/Die3D';
+import { COMBAT_DICE, PIP, PLAYER_COLORS } from '../theme';
 
 /**
  * Building blocks for the manual's diagrams, drawn with the game's own artwork: real map tiles and
@@ -26,7 +26,7 @@ import { COMBAT_DICE, CUBE_SLOT, PIP, PLAYER_COLORS } from '../theme';
  */
 
 /** One space, in SVG units. */
-export const S = 40;
+const S = 40;
 /** SVG units per printed millimetre: the tile art and board overlays use the printed geometry. */
 const MM = S / TILE.cell;
 
@@ -36,7 +36,7 @@ export type Who = 'you' | 'foe';
 export type DieKind = Who | 'atk' | 'def';
 
 /** The game's own colours (theme.ts): the first two player colours and the combat dice. */
-export const COLOURS: Record<DieKind, { face: string; pip: string }> = {
+const COLOURS: Record<DieKind, { face: string; pip: string }> = {
   you: { face: PLAYER_COLORS[0], pip: PIP },
   foe: { face: PLAYER_COLORS[1], pip: PIP },
   atk: { face: COMBAT_DICE.attacker.color, pip: COMBAT_DICE.attacker.pip },
@@ -94,24 +94,21 @@ function useSvgId() {
 }
 
 /** A diagram's canvas: `cols` × `rows` spaces plus a margin, scaled to fit its column. */
-export function Diagram({ rows, cols, label, pad = 4, left = 0, right = 0, top = 0, bottom = 0, scale = 1.3, children }: {
+export function Diagram({ rows, cols, label, left = 0, scale = 1.3, children }: {
   rows: number;
   cols: number;
   label: string;
-  pad?: number;
-  /** Extra room (SVG units) beyond the grid. */
+  /** Extra room (SVG units) left of the grid. */
   left?: number;
-  right?: number;
-  top?: number;
-  bottom?: number;
   scale?: number;
   children: ReactNode;
 }) {
   const id = useSvgId();
-  const w = cols * S + 2 * pad + left + right;
-  const h = rows * S + 2 * pad + top + bottom;
+  const pad = 4;
+  const w = cols * S + 2 * pad + left;
+  const h = rows * S + 2 * pad;
   return (
-    <svg className="mn-svg" viewBox={`${-pad - left} ${-pad - top} ${w} ${h}`} style={{ maxWidth: w * scale }} role="img" aria-label={label}>
+    <svg className="mn-svg" viewBox={`${-pad - left} ${-pad} ${w} ${h}`} style={{ maxWidth: w * scale }} role="img" aria-label={label}>
       <DieDefs id={id} />
       <Defs.Provider value={id}>{children}</Defs.Provider>
     </svg>
@@ -139,45 +136,12 @@ export function Glow({ cells }: { cells: At[] }) {
 
 /** A planet's live markings, as the board draws them over the tile: its number and cube spaces. */
 export function PlanetMarks({ at, n, cubes = [] }: { at: At; n: number; cubes?: Who[] }) {
-  const cx = mid(at[1]);
-  const cy = mid(at[0]);
-  return <Marks cx={cx} cy={cy} n={n} cubes={cubes} mm={MM} />;
+  return <Marks cx={mid(at[1])} cy={mid(at[0])} n={n} cubes={cubes} mm={MM} />;
 }
 
 function Marks({ cx, cy, n, cubes, mm }: { cx: number; cy: number; n: number; cubes: Who[]; mm: number }) {
-  const place = numberPlacement(n);
-  const slot = CUBE_PAD.size * mm;
-  const hue = PLANET_FAMILY[n].hue;
   return (
-    <g>
-      <text
-        className="mn-planet-num"
-        x={cx + place.x * mm}
-        y={cy + (place.y + place.size * 0.4) * mm}
-        fontSize={place.size * mm}
-        stroke={`hsl(${hue} 50% 7%)`}
-        strokeWidth={place.size * 0.13 * mm}
-        textAnchor="middle"
-      >
-        {n}
-      </text>
-      {cubePadCentres(n - 6, 0, 0).map((q, i) => {
-        const owner = cubes[i];
-        return (
-          <rect
-            key={i}
-            className={owner ? 'mn-cube' : undefined}
-            x={cx + q.x * mm - slot / 2}
-            y={cy + q.y * mm - slot / 2}
-            width={slot}
-            height={slot}
-            rx={1.6 * mm}
-            fill={owner ? COLOURS[owner].face : CUBE_SLOT.fill}
-            stroke={owner ? undefined : CUBE_SLOT.stroke}
-          />
-        );
-      })}
-    </g>
+    <PlanetMarkings cx={cx} cy={cy} mm={mm} n={n} capacity={n - 6} cubes={cubes.map((w) => COLOURS[w].face)} numberClass="mn-planet-num" />
   );
 }
 
@@ -198,17 +162,7 @@ export function PlanetIcon({ n, size = 34, slots, cubes = [] }: { n: number; siz
       {slots ? (
         <Marks cx={0} cy={0} n={n} cubes={cubes} mm={1} />
       ) : (
-        <text
-          className="mn-planet-num"
-          x={d * 0.3}
-          y={d * 0.3 + font * 0.36}
-          fontSize={font}
-          stroke={`hsl(${PLANET_FAMILY[n].hue} 50% 7%)`}
-          strokeWidth={font * 0.14}
-          textAnchor="middle"
-        >
-          {n}
-        </text>
+        <PlanetNumber n={n} x={d * 0.3} y={d * 0.3 + font * 0.36} size={font} className="mn-planet-num" />
       )}
     </svg>
   );
@@ -216,21 +170,14 @@ export function PlanetIcon({ n, size = 34, slots, cubes = [] }: { n: number; siz
 
 // ------------------------------------------------------------------ dice and cubes
 
-// Pip positions on a -1..1 square, as on a real die.
-const PIPS: Record<number, [number, number][]> = {
-  1: [[0, 0]],
-  2: [[1, -1], [-1, 1]],
-  3: [[1, -1], [0, 0], [-1, 1]],
-  4: [[-1, -1], [1, -1], [-1, 1], [1, 1]],
-  5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]],
-  6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]],
-};
+/** A pip's position on a -1..1 square, from the 3D dice's 3 × 3 grid so the faces match the game's. */
+const pipAt = (i: number) => [(i % 3) - 1, Math.floor(i / 3) - 1] as const;
 
 /** A die face centred on (x, y), shaded like the game's 3D dice. */
 export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim }: {
   x: number;
   y: number;
-  v: number | '?';
+  v: number;
   size?: number;
   kind?: DieKind;
   ghost?: boolean;
@@ -245,31 +192,27 @@ export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim }: 
     return (
       <g className="mn-ghost">
         <rect x={x - h} y={y - h} width={size} height={size} rx={rx} />
-        {v !== '?' && PIPS[v].map(([px, py], i) => <circle key={i} cx={x + px * step} cy={y + py * step} r={size * 0.075} />)}
+        {PIPS[v].map(pipAt).map(([px, py], i) => <circle key={i} cx={x + px * step} cy={y + py * step} r={size * 0.075} />)}
       </g>
     );
   return (
     <g className={dim ? 'mn-die mn-dim' : 'mn-die'}>
-      <rect x={x - h} y={y - h} width={size} height={size} rx={rx} fill={face} />
-      <rect x={x - h} y={y - h} width={size} height={size} rx={rx} fill={`url(#${defs}-dk)`} />
-      <rect x={x - h} y={y - h} width={size} height={size} rx={rx} fill={`url(#${defs}-hi)`} />
+      {[face, `url(#${defs}-dk)`, `url(#${defs}-hi)`].map((fill) => (
+        <rect key={fill} x={x - h} y={y - h} width={size} height={size} rx={rx} fill={fill} />
+      ))}
       <rect x={x - h + 0.5} y={y - h + 0.5} width={size - 1} height={size - 1} rx={rx} fill="none" stroke="rgba(255,255,255,.22)" />
-      {v === '?' ? (
-        <text x={x} y={y} className="mn-die-q" fontSize={size * 0.6} fill={pip}>?</text>
-      ) : (
-        PIPS[v].map(([px, py], i) => <circle key={i} cx={x + px * step} cy={y + py * step} r={size * 0.085} fill={pip} />)
-      )}
+      {PIPS[v].map(pipAt).map(([px, py], i) => <circle key={i} cx={x + px * step} cy={y + py * step} r={size * 0.085} fill={pip} />)}
     </g>
   );
 }
 
 /** A ship on a space. */
-export function Ship({ at, v, who = 'you', ghost, dim }: { at: At; v: number | '?'; who?: Who; ghost?: boolean; dim?: boolean }) {
+export function Ship({ at, v, who = 'you', ghost, dim }: { at: At; v: number; who?: Who; ghost?: boolean; dim?: boolean }) {
   return <DieFace x={mid(at[1])} y={mid(at[0])} v={v} kind={who} ghost={ghost} dim={dim} />;
 }
 
 /** A die as a stand-alone inline icon (for text, tables and the combat sum). */
-export function DieIcon({ v, kind = 'you', size = 26 }: { v: number | '?'; kind?: DieKind; size?: number }) {
+export function DieIcon({ v, kind = 'you', size = 26 }: { v: number; kind?: DieKind; size?: number }) {
   const id = useSvgId();
   const label = kind === 'atk' ? `attack die ${v}` : kind === 'def' ? `defence die ${v}` : `ship ${v}`;
   return (
@@ -283,20 +226,30 @@ export function DieIcon({ v, kind = 'you', size = 26 }: { v: number | '?'; kind?
 }
 
 /** A cube as the board shows it: a rounded square in the player's colour; `empty` is a free cube space. */
-export function CubeIcon({ who = 'you', empty, size = 22 }: { who?: Who; empty?: boolean; size?: number }) {
+export function CubeIcon({ empty, size = 22 }: { empty?: boolean; size?: number }) {
   return (
     <svg className={empty ? 'mn-cube-icon empty' : 'mn-cube-icon'} width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
-      <rect x={3} y={3} width={18} height={18} rx={4} fill={empty ? 'none' : COLOURS[who].face} />
+      <rect x={3} y={3} width={18} height={18} rx={4} fill={empty ? 'none' : COLOURS.you.face} />
     </svg>
   );
 }
 
 /** One of the game's line icons (packages/art icons.ts). */
-export function Icon({ name, size = 20, colour = 'currentColor' }: { name: string; size?: number; colour?: string }) {
-  return <svg className="mn-icon" width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: icon(name, 12, 12, 24, colour) }} />;
+export function Icon({ name, size = 20 }: { name: string; size?: number }) {
+  return <svg className="mn-icon" width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: icon(name, 12, 12, 24, 'currentColor') }} />;
 }
 
 // ------------------------------------------------------------------ marks drawn over the map
+
+function ArrowHead({ id }: { id: string }) {
+  return (
+    <defs>
+      <marker id={id} viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" className="mn-arrowhead" />
+      </marker>
+    </defs>
+  );
+}
 
 /** A dashed route through space centres. `attack` stops it part-way into the last space, with a burst. */
 export function Path({ cells, attack }: { cells: At[]; attack?: boolean }) {
@@ -315,11 +268,7 @@ export function Path({ cells, attack }: { cells: At[]; attack?: boolean }) {
   const [ex, ey] = pts[pts.length - 1];
   return (
     <g>
-      <defs>
-        <marker id={id} viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" className="mn-arrowhead" />
-        </marker>
-      </defs>
+      <ArrowHead id={id} />
       <polyline className="mn-path" points={pts.map((p) => p.join(',')).join(' ')} markerEnd={attack ? undefined : `url(#${id})`} />
       {attack && <Burst x={ex} y={ey} />}
     </g>
@@ -333,18 +282,15 @@ export function Arrow({ x1, y1, x2, y2, curve = 0 }: { x1: number; y1: number; x
   const my = (y1 + y2) / 2 - curve;
   return (
     <g>
-      <defs>
-        <marker id={id} viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" className="mn-arrowhead" />
-        </marker>
-      </defs>
+      <ArrowHead id={id} />
       <path className="mn-path" d={`M${x1},${y1} Q${mx},${my} ${x2},${y2}`} markerEnd={`url(#${id})`} />
     </g>
   );
 }
 
 /** The flash where an attacker hits its target. */
-function Burst({ x, y, r = 9 }: { x: number; y: number; r?: number }) {
+function Burst({ x, y }: { x: number; y: number }) {
+  const r = 9;
   const pts: string[] = [];
   for (let i = 0; i < 16; i++) {
     const a = (i * Math.PI) / 8;
@@ -354,10 +300,10 @@ function Burst({ x, y, r = 9 }: { x: number; y: number; r?: number }) {
   return <polygon className="mn-burst" points={pts.join(' ')} />;
 }
 
-/** A ✓ or ✗ badge at the corner of a space. */
-export function Mark({ at, ok, corner = 'tr' }: { at: At; ok: boolean; corner?: 'tr' | 'br' | 'tl' | 'bl' }) {
-  const x = at[1] * S + (corner.includes('r') ? S - 7 : 7);
-  const y = at[0] * S + (corner.includes('b') ? S - 7 : 7);
+/** A ✓ or ✗ badge at the top-right corner of a space. */
+export function Mark({ at, ok }: { at: At; ok: boolean }) {
+  const x = at[1] * S + S - 7;
+  const y = at[0] * S + 7;
   return (
     <g className={ok ? 'mn-mark mn-ok' : 'mn-mark mn-no'}>
       <circle cx={x} cy={y} r={6.5} />
@@ -367,9 +313,9 @@ export function Mark({ at, ok, corner = 'tr' }: { at: At; ok: boolean; corner?: 
 }
 
 /** A small caption inside a diagram. */
-export function Note({ x, y, children, anchor = 'middle' }: { x: number; y: number; children: ReactNode; anchor?: 'start' | 'middle' | 'end' }) {
+export function Note({ x, y, children }: { x: number; y: number; children: ReactNode }) {
   return (
-    <text className="mn-note" x={x} y={y} textAnchor={anchor}>
+    <text className="mn-note" x={x} y={y} textAnchor="middle">
       {children}
     </text>
   );

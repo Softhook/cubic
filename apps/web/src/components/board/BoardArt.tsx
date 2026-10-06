@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { GameState } from '@quantum/engine';
-import { CUBE_PAD, PLANET_DIAMETER, PLANET_FAMILY, TILE, cubePadCentres, numberPlacement } from '@quantum/art';
+import { PLANET_DIAMETER, TILE } from '@quantum/art';
 import { tileImage } from '../../art/tileImages';
 import { tileArt } from '../../art/boardTiles';
-import { CUBE_SLOT } from '../../theme';
 import { wrapMarks, type WrapMark } from './geometry';
+import { PlanetMarkings } from './PlanetMarkings';
 
 /** Which way each board edge faces, for the wrap chevrons. */
 const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number }> = {
@@ -114,43 +114,21 @@ export function BoardArt({ game, cell }: { game: GameState; cell: number }) {
         // The planet itself is part of the tile art; this layer adds the live number and cubes, placed
         // and sized as on the printed tile.
         const R = (PLANET_DIAMETER[p.number] / 2) * mm;
-        const slot = CUBE_PAD.size * mm;
-        const slots = cubePadCentres(p.capacity, 0, 0).map((q) => ({ x: cx + q.x * mm, y: cy + q.y * mm }));
-        const at = numberPlacement(p.number);
-        const hue = PLANET_FAMILY[p.number].hue;
         return (
           <g key={p.id}>
             {p.start && game.phase === 'setup' && (
               <circle cx={cx} cy={cy} r={R * 1.12} fill="none" stroke="#fff" strokeOpacity={0.5} strokeDasharray="3 4" />
             )}
-            <text
-              x={cx + at.x * mm}
-              y={cy + (at.y + at.size * 0.4) * mm}
-              className="planet-num"
-              fontSize={at.size * mm}
-              stroke={`hsl(${hue} 50% 7%)`}
-              strokeWidth={at.size * 0.13 * mm}
-              textAnchor="middle"
-            >
-              {p.number}
-            </text>
-            {slots.map((q, i) => {
-              const owner = p.cubes[i];
-              return (
-                <rect
-                  key={i}
-                  x={q.x - slot / 2}
-                  y={q.y - slot / 2}
-                  width={slot}
-                  height={slot}
-                  rx={1.6 * mm}
-                  fill={owner === undefined ? CUBE_SLOT.fill : game.players[owner].color}
-                  stroke={owner === undefined ? CUBE_SLOT.stroke : '#fff'}
-                  strokeWidth={owner === undefined ? 1 : 1.2}
-                  className={owner === undefined ? '' : 'cube'}
-                />
-              );
-            })}
+            <PlanetMarkings
+              cx={cx}
+              cy={cy}
+              mm={mm}
+              n={p.number}
+              capacity={p.capacity}
+              cubes={p.cubes.map((o) => game.players[o].color)}
+              numberClass="planet-num"
+              cubeClass="cube"
+            />
           </g>
         );
       })}

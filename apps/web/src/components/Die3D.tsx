@@ -18,7 +18,8 @@ const FACE_ROTATION: Record<number, [number, number]> = {
   6: [0, 180],
 };
 
-const PIPS: Record<number, number[]> = {
+/** Lit pips per face, as indices into a 3 × 3 grid (row by row). */
+export const PIPS: Record<number, number[]> = {
   1: [4],
   2: [0, 8],
   3: [0, 4, 8],
