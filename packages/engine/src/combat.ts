@@ -129,7 +129,7 @@ export const combatHandlers = {
     if (!infamyTargets(s, head.player).some((p) => p.id === a.planet)) fail('Choose a planet without your cube');
     s.pending.shift();
     s.players[head.player].dominance = 1;
-    log(s, `${name(s, head.player)} seizes planet ${s.board.planets[a.planet].number} through Infamy.`, head.player, 'seize');
+    log(s, `${name(s, head.player)} seizes planet ${s.board.planets[a.planet].number} through Infamy.`, head.player, 'seize', [a.planet]);
     placeCube(s, head.player, a.planet);
     if (s.phase !== 'play' || !rulesOf(s).cards) return;
     const ownTurn = head.player === s.turn.player;

@@ -2,7 +2,7 @@ import { rng } from './rng';
 import { planet } from './planet';
 import { starfield, type Box } from './starfield';
 import { CUBE_PAD, LABEL_TEXT, NUMBER_TEXT, PLANET_DIAMETER, PLANET_FAMILY, TILE, VOID_NEBULA_HUES, type PlanetType } from './tokens';
-import { planetFlavour } from './flavour';
+import { planetFlavour, type PlanetFlavour } from './flavour';
 import { document, hex, hsl, join, n, type Fragment } from './svg';
 import type { TileSpec } from './tileset';
 
@@ -126,13 +126,18 @@ function markings(spec: TileSpec): Fragment {
   return { defs: '', body };
 }
 
+/** The made-up name and survey data printed beside a tile's planet. */
+export function tileFlavour(spec: TileSpec): PlanetFlavour {
+  const type: PlanetType = spec.type ?? PLANET_FAMILY[spec.number].types[0];
+  return planetFlavour(rng(spec.seed).fork('name'), type, spec.number);
+}
+
 /**
  * The planet's flavour label: a made-up name, catalogue number and survey data in tiny type, right
  * aligned where the spaces meet at the planet's top left, with a thin leader line to the planet.
  */
 function label(spec: TileSpec): Fragment {
-  const type: PlanetType = spec.type ?? PLANET_FAMILY[spec.number].types[0];
-  const fl = planetFlavour(rng(spec.seed).fork('name'), type, spec.number);
+  const fl = tileFlavour(spec);
   const r = PLANET_DIAMETER[spec.number] / 2;
   const right = MID - CORNER - 1.6;
   // The four lines fit the 8 mm strip between the space pads above and below (pads end 4 mm from
@@ -145,7 +150,7 @@ function label(spec: TileSpec): Fragment {
   return {
     defs: '',
     body:
-      line(top - 2.25, LABEL_TEXT.name, fl.name, `font-weight="700" letter-spacing=".35" fill="#e6eeff" fill-opacity=".75"`) +
+      line(top - 2.25, LABEL_TEXT.name, fl.name.toUpperCase(), `font-weight="700" letter-spacing=".35" fill="#e6eeff" fill-opacity=".75"`) +
       [fl.designation, fl.cls, fl.data]
         .map((t, i) => line(top - 0.3 + i * 1.75, LABEL_TEXT.line, t, `letter-spacing=".04" fill="#c7d6ff" fill-opacity=".55"`))
         .join('') +

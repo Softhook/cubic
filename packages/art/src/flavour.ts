@@ -6,7 +6,7 @@ import type { PlanetType } from './tokens';
  * nothing in the game reads it. Plain ASCII apart from "·", so any font can set it.
  */
 export interface PlanetFlavour {
-  /** A given name, e.g. "THALASSA PRIME". */
+  /** A given name, e.g. "Thalassa Prime" (the tile prints it in capitals). */
   name: string;
   /** Catalogue number, e.g. "GJ 1132 c". */
   designation: string;
@@ -43,7 +43,7 @@ function profile(type: PlanetType, number: number, r: Rng): { cls: string; data:
 }
 
 export function planetFlavour(r: Rng, type: PlanetType, number: number): PlanetFlavour {
-  const name = (r.pick(START) + r.pick(MIDDLE) + r.pick(END) + r.pick(SUFFIX)).toUpperCase();
+  const name = r.pick(START) + r.pick(MIDDLE) + r.pick(END) + r.pick(SUFFIX);
   const cat = r.pick(CATALOGUE);
   const letter = 'bcdefgh'[r.int(0, 6)];
   const { cls, data } = profile(type, number, r);

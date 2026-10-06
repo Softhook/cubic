@@ -149,7 +149,7 @@ export const setupHandlers = {
     if (!planet?.start) fail('Choose a starting planet');
     if (planet.cubes.length) fail('That starting planet is taken');
     placeCube(s, head.player, planet.id);
-    log(s, `${name(s, head.player)} starts at planet ${planet.number}.`, head.player);
+    log(s, `${name(s, head.player)} starts at planet ${planet.number}.`, head.player, undefined, [planet.id]);
     s.pending.shift();
     // Rulebook p.3: every player places a cube first, then ships are placed in player order.
     s.pending.push({ kind: 'placeShips', player: head.player, planet: planet.id });

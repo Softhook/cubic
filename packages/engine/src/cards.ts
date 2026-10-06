@@ -302,7 +302,7 @@ export const cardHandlers = {
     const to = s.board.planets[a.to];
     from.cubes.splice(from.cubes.lastIndexOf(a.owner), 1);
     to.cubes.push(a.owner);
-    log(s, `${name(s, head.player)} relocates ${name(s, a.owner)}'s cube from planet ${from.number} to planet ${to.number}.`, head.player);
+    log(s, `${name(s, head.player)} relocates ${name(s, a.owner)}'s cube from planet ${from.number} to planet ${to.number}.`, head.player, undefined, [from.id, to.id]);
   },
   unveilReroll(s, a) {
     const head = headOf(s, 'unveil', 'Not unveiling');

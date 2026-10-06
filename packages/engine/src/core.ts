@@ -9,7 +9,7 @@ import { actionsClosed, canCurious, canGainResearch, canUseAbility, infamyAt, us
 import { d6 } from './rng';
 import { rulesOf } from './rules';
 import { anySkill, hasSkill, skillRules, stealableSkill } from './skillRules';
-import { RuleError, type Action, type Die, type GameState, type LogEvent, type OncePerTurn, type Pending, type PlayerId, type TurnState } from './types';
+import { RuleError, type Action, type Die, type GameState, type LogEntry, type LogEvent, type OncePerTurn, type Pending, type PlayerId, type TurnState } from './types';
 
 export const ACTIONS_PER_TURN = 3;
 const LOG_LIMIT = 80;
@@ -30,8 +30,11 @@ export function fail(msg: string): never {
   throw new RuleError(msg);
 }
 
-export function log(s: GameState, text: string, player?: PlayerId, event?: LogEvent) {
-  s.log.push(event ? { id: ++s.logCounter, text, player, event } : { id: ++s.logCounter, text, player });
+export function log(s: GameState, text: string, player?: PlayerId, event?: LogEvent, planets?: number[]) {
+  const entry: LogEntry = { id: ++s.logCounter, text, player };
+  if (event) entry.event = event;
+  if (planets) entry.planets = planets;
+  s.log.push(entry);
   if (s.log.length > LOG_LIMIT) s.log.splice(0, s.log.length - LOG_LIMIT);
 }
 

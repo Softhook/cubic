@@ -3,7 +3,7 @@
 exports[`golden master > basic, 2 players, seed 11 1`] = `
 {
   "actions": "cf729247ef0a81cb",
-  "state": "d2d0616d4d79f03b",
+  "state": "e6da93716116e0f5",
   "steps": 101,
   "winner": 0,
 }
@@ -12,7 +12,7 @@ exports[`golden master > basic, 2 players, seed 11 1`] = `
 exports[`golden master > basic, 3 players, seed 12 1`] = `
 {
   "actions": "c1b4cb9ad15dad10",
-  "state": "c859f53e055c16d7",
+  "state": "717564f519ff2eb1",
   "steps": 195,
   "winner": 2,
 }
@@ -21,7 +21,7 @@ exports[`golden master > basic, 3 players, seed 12 1`] = `
 exports[`golden master > basic, 4 players, seed 13 1`] = `
 {
   "actions": "18d82bd575d2a7fc",
-  "state": "5a3fc6607a3d9307",
+  "state": "cbc424d256a0d025",
   "steps": 329,
   "winner": 2,
 }
@@ -30,7 +30,7 @@ exports[`golden master > basic, 4 players, seed 13 1`] = `
 exports[`golden master > community, 2 players, seed 11 1`] = `
 {
   "actions": "dcacda906e1e84aa",
-  "state": "26f74ab5dce4b91b",
+  "state": "8abe3bcf415d1114",
   "steps": 102,
   "winner": 0,
 }
@@ -39,7 +39,7 @@ exports[`golden master > community, 2 players, seed 11 1`] = `
 exports[`golden master > community, 3 players, seed 12 1`] = `
 {
   "actions": "b353cd23a638dd6a",
-  "state": "7584f7732402e648",
+  "state": "b6881cfbbccb8bfa",
   "steps": 158,
   "winner": 2,
 }
@@ -48,7 +48,7 @@ exports[`golden master > community, 3 players, seed 12 1`] = `
 exports[`golden master > community, 4 players, seed 13 1`] = `
 {
   "actions": "ffdc7bfdacacc91b",
-  "state": "d2907cd1dc5f1408",
+  "state": "7d43ab98bded3e46",
   "steps": 226,
   "winner": 2,
 }
@@ -57,7 +57,7 @@ exports[`golden master > community, 4 players, seed 13 1`] = `
 exports[`golden master > original, 2 players, seed 11 1`] = `
 {
   "actions": "54222b172019a996",
-  "state": "0a6b0b8f30cfdd0c",
+  "state": "e3920739eb55d0a4",
   "steps": 76,
   "winner": 1,
 }
@@ -66,7 +66,7 @@ exports[`golden master > original, 2 players, seed 11 1`] = `
 exports[`golden master > original, 3 players, seed 12 1`] = `
 {
   "actions": "f74facb0a62e1fa4",
-  "state": "b59248f8c8b8c39f",
+  "state": "fe072307ae42951a",
   "steps": 216,
   "winner": 2,
 }
@@ -75,7 +75,7 @@ exports[`golden master > original, 3 players, seed 12 1`] = `
 exports[`golden master > original, 4 players, seed 13 1`] = `
 {
   "actions": "2c166a4f7b90a034",
-  "state": "67dbe8711f9d8967",
+  "state": "40b4ef712efba39c",
   "steps": 312,
   "winner": 2,
 }

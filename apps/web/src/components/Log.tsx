@@ -1,5 +1,6 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
 import type { GameState } from '@quantum/engine';
+import { logText } from '../game/logText';
 
 export function Log({ game }: { game: GameState }) {
   const ref = useRef<HTMLOListElement>(null);
@@ -12,7 +13,7 @@ export function Log({ game }: { game: GameState }) {
       <ol ref={ref}>
         {game.log.slice(-40).map((e) => (
           <li key={e.id} style={{ '--pc': e.player !== undefined ? game.players[e.player].color : 'var(--muted)' } as CSSProperties}>
-            {e.text}
+            {logText(game, e)}
           </li>
         ))}
       </ol>

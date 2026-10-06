@@ -76,7 +76,7 @@ export const actionHandlers = {
     if (!check.ok) fail(check.reason ?? 'Cannot conquer');
     spend(s, 2);
     t.conquered = (t.conquered ?? 0) + 1;
-    log(s, `${name(s, t.player)} conquers planet ${s.board.planets[a.planet].number}.`, t.player, 'conquer');
+    log(s, `${name(s, t.player)} conquers planet ${s.board.planets[a.planet].number}.`, t.player, 'conquer', [a.planet]);
     placeCube(s, t.player, a.planet);
   },
   endTurn(s) {

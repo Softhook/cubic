@@ -4,6 +4,6 @@ export { CARD_CATEGORIES, CUBE_PAD, FONTS, VOID_NEBULA_HUES, NUMBER_TEXT, PLANET
 export { ICONS, icon } from './icons';
 export { starfield, type StarfieldOptions } from './starfield';
 export { planet, type PlanetOptions } from './planet';
-export { cubePadCentres, editableTileSvg, numberPlacement, tileSvg, type NumberPlacement, type TileOptions } from './tile';
+export { cubePadCentres, editableTileSvg, numberPlacement, tileFlavour, tileSvg, type NumberPlacement, type TileOptions } from './tile';
 export { SET_COUNTS, TILE_SET, assignTiles, tileSpec, type TileSpec } from './tileset';
 export { CARD, cardBackSvg, cardIllustration, cardPalette, cardSvg, deckInfo, estimateWidth, type CardDeck, type CardFace, type CardOptions, type CardPalette, type Measure } from './card';

@@ -235,6 +235,8 @@ export interface LogEntry {
   player?: PlayerId;
   text: string;
   event?: LogEvent;
+  /** Ids of the planets the text names as `planet N`, in order, so the UI can show their names. */
+  planets?: number[];
 }
 
 export interface GameState {

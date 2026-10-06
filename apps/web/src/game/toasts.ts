@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { GameState, LogEntry, LogEvent } from '@quantum/engine';
 import { sfx } from '../sound';
+import { logText } from './logText';
 
 export interface Toast {
   id: number;
@@ -41,7 +42,7 @@ export function useToasts() {
     for (const e of fresh) reaction(e).sound?.();
     const shown = fresh.flatMap((e): Toast[] => {
       const tone = reaction(e).tone;
-      return tone ? [{ id: e.id, text: e.text, player: e.player, tone }] : [];
+      return tone ? [{ id: e.id, text: logText(next, e), player: e.player, tone }] : [];
     });
     if (!shown.length) return;
     setToasts((t) => [...t, ...shown].slice(-MAX_TOASTS));
