@@ -979,6 +979,10 @@ input { font: inherit; }
   .combat-grid { grid-template-columns: 1fr; }
   .combat-vs { padding: 0; font-size: 16px; }
   .fleet-roll { gap: 18px; }
+  /* Collapsed: wrap onto more lines instead of scrolling sideways, so every card name shows. */
+  .market.collapsed { height: auto; min-height: 40px; flex-wrap: wrap; row-gap: 6px; column-gap: 10px; padding: 6px 8px; overflow: visible; }
+  .market.collapsed .market-toggle { align-self: stretch; min-height: 32px; margin: 0 0 0 -8px; }
+  .market-strip-group { flex: 0 1 auto; flex-wrap: wrap; row-gap: 5px; min-width: 0; }
 }
 
 @media (max-width: 600px) {
@@ -989,7 +993,6 @@ input { font: inherit; }
   .market { padding: 8px; }
   .market .qcard-sm { flex: none; width: 134px; } /* seven cards never fit a phone: scroll full-size ones */
   .market-toggle { margin: -8px 0 -8px -8px; }
-  .market.collapsed .market-toggle { margin: 0 0 0 -8px; }
 }
 
 /* Popups on phones: less padding, so they fit without scrolling inside them. */
