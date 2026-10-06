@@ -2,6 +2,7 @@ import { useState, type CSSProperties, type ReactNode } from 'react';
 import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
 import { defaultMap, MAPS, MODES, playerCounts, rulesOf, RULESETS, type GameMode, type GameState, type MapDef, type PlayerConfig } from '@quantum/engine';
 import { Die3D } from './Die3D';
+import { fullscreenOnPhone } from './FullscreenButton';
 import { forgetGame, onlineGames } from '../online/storage';
 import { defaultSeat } from '../game/seats';
 import { clearSavedGame, loadSavedGame } from '../game/savedGame';
@@ -88,7 +89,7 @@ function GameRow({
   return (
     <li className={yourMove ? 'my-turn' : ''}>
       {href ? (
-        <a className="game-row-open" href={href}>{body}</a>
+        <a className="game-row-open" href={href} onClick={fullscreenOnPhone}>{body}</a>
       ) : (
         <button className="game-row-open" onClick={onOpen}>{body}</button>
       )}

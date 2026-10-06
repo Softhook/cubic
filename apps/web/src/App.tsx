@@ -8,6 +8,7 @@ import { Rules } from './components/Rules';
 import { Game } from './components/GameScreen';
 import { OnlineScreen, onlineSecret } from './online/OnlineScreen';
 import { createOnlineGame } from './online/create';
+import { fullscreenOnPhone } from './components/FullscreenButton';
 
 export function App() {
   const [game, setGame] = useState<GameState | null>(devStartGame);
@@ -27,6 +28,7 @@ export function App() {
   }, []);
 
   const start = (r: LobbyResult) => {
+    fullscreenOnPhone();
     if (r.online) location.hash = `#online/${createOnlineGame(r)}`;
     else setGame(createGame({ players: r.players, mapId: r.mapId, mode: r.mode }));
   };
@@ -44,7 +46,7 @@ export function App() {
       ) : game ? (
         <LocalGame key={game.seed} initial={game} onQuit={quit} onLobby={toLobby} onRules={() => setRules(true)} />
       ) : (
-        <Lobby onStart={start} onRules={() => setRules(true)} onResume={setGame} />
+        <Lobby onStart={start} onRules={() => setRules(true)} onResume={(saved) => { fullscreenOnPhone(); setGame(saved); }} />
       )}
       {rules && <Rules onClose={() => setRules(false)} />}
     </>

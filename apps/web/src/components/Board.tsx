@@ -18,11 +18,16 @@ function useCellSize(wrap: RefObject<HTMLDivElement>, rows: number, cols: number
   useLayoutEffect(() => {
     const el = wrap.current;
     if (!el) return;
+    const fit = (width: number, height: number) => Math.max(8, Math.min(140, Math.floor(Math.min(width / cols, height / rows))));
+    // Measured before the first paint, so the map doesn't show at a default size and then shrink.
+    setCell(fit(el.clientWidth, el.clientHeight));
+    let first = true;
     let settle: ReturnType<typeof setTimeout> | undefined;
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
-      const size = Math.floor(Math.min(width / cols, height / rows));
-      setCell(Math.max(8, Math.min(140, size)));
+      setCell(fit(width, height));
+      // The observer's first call only confirms the size measured above.
+      if (first) return void (first = false);
       setResizing(true);
       clearTimeout(settle);
       settle = setTimeout(() => setResizing(false), 200);

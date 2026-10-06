@@ -19,14 +19,16 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
   // Whose decision the table waits for (battles have their own overlay).
   const waitingFor = waitingOn ?? (!head && game.phase !== 'over' ? p : null);
   const deployer = game.players.find((q) => canDeployFrom(game, q, ctl));
+  // In setup the panel is about whoever is placing, who needn't be the turn's player; name and colour agree.
+  const shown = game.phase === 'setup' && waitingOn ? waitingOn : p;
 
   return (
-    <section className="panel turn-panel" style={{ '--pc': p.color } as CSSProperties}>
+    <section className="panel turn-panel" style={{ '--pc': shown.color } as CSSProperties}>
       <div className="turn-head">
         <span className="turn-dot" />
         <div className="turn-title">
           <small>{game.phase === 'setup' ? 'Setup' : t.bonus ? 'Bonus turn' : `Turn ${t.number}`}</small>
-          <strong>{game.phase === 'setup' && waitingOn ? waitingOn.name : p.name}</strong>
+          <strong>{shown.name}</strong>
         </div>
         {game.phase === 'play' && (
           <Tip as="div" className="action-pips" tip={`${t.actionsLeft} action${t.actionsLeft === 1 ? '' : 's'} left`}>

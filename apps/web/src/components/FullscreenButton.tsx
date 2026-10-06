@@ -12,19 +12,25 @@ const supported = !!(root.requestFullscreen || root.webkitRequestFullscreen) && 
 const isFullscreen = () => !!(doc.fullscreenElement ?? doc.webkitFullscreenElement);
 const enter = () => (root.requestFullscreen ?? root.webkitRequestFullscreen)?.call(root)?.catch?.(() => {});
 
+const phone = () => supported && matchMedia('(pointer: coarse)').matches;
+
 /**
- * Phones go full screen on the first tap in a game: the address bar and system bars take a lot of a
- * small screen. Browsers only allow it from a tap, so it waits for one; once per game screen, so
- * leaving full screen sticks.
+ * Phones play full screen: the address bar and system bars take a lot of a small screen. Browsers only
+ * allow it from a tap, so the lobby calls this from the tap that starts or opens a game.
+ */
+export function fullscreenOnPhone() {
+  if (phone() && !isFullscreen()) enter();
+}
+
+/**
+ * A game opened without a lobby tap (an invite link, a reload) goes full screen on its first tap; once
+ * per game screen, so leaving full screen sticks.
  */
 export function useFullscreenOnFirstTap() {
   useEffect(() => {
-    if (!supported || !matchMedia('(pointer: coarse)').matches) return;
-    const go = () => {
-      if (!isFullscreen()) enter();
-    };
-    document.addEventListener('click', go, { once: true, capture: true });
-    return () => document.removeEventListener('click', go, { capture: true });
+    if (!phone()) return;
+    document.addEventListener('click', fullscreenOnPhone, { once: true, capture: true });
+    return () => document.removeEventListener('click', fullscreenOnPhone, { capture: true });
   }, []);
 }
 
