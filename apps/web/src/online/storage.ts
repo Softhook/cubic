@@ -1,6 +1,6 @@
 import { generateSecretKey } from 'nostr-tools/pure';
 import { gameKeys, hex, type NostrEvent } from '@quantum/online';
-import { forget, remember, stored, storedJson } from '../storage';
+import { forget, onStorageFull, remember, stored, storedJson } from '../storage';
 
 /**
  * What a browser keeps of its online games, in localStorage: its identity, every game's events
@@ -56,16 +56,35 @@ export function onlineGames(): OnlineGameEntry[] {
   return Array.isArray(list) ? list.sort((a, b) => b.seenAt - a.seenAt) : [];
 }
 
+/** Finished games kept in this browser (the most recently seen); older ones are let go. */
+const KEEP_FINISHED = 5;
+
 export function rememberGame(entry: Partial<OnlineGameEntry> & { secret: string }) {
   const list = onlineGames();
   const old = list.find((g) => g.secret === entry.secret);
   const next: OnlineGameEntry = { addedAt: Date.now(), tag: gameKeys(entry.secret).tag, ...old, ...entry, seenAt: Date.now() };
-  remember(GAMES, JSON.stringify([next, ...list.filter((g) => g.secret !== entry.secret)]));
+  const games = [next, ...list.filter((g) => g.secret !== entry.secret)];
+  // Each game's events take room in storage it shares with the game on this device.
+  const stale = games.filter((g) => g.over).slice(KEEP_FINISHED);
+  for (const g of stale) forget(eventsKey(g.tag));
+  remember(GAMES, JSON.stringify(games.filter((g) => !stale.includes(g))));
 }
 
-export function forgetGame(secret: string) {
+/** Whether the game is off the list (it may not be, when storage can't be written). */
+export function forgetGame(secret: string): boolean {
   const list = onlineGames();
   const gone = list.find((g) => g.secret === secret);
-  remember(GAMES, JSON.stringify(list.filter((g) => g.secret !== secret)));
+  // Events first: removing them frees the room to rewrite the list when storage is full.
   if (gone) forget(eventsKey(gone.tag));
+  return remember(GAMES, JSON.stringify(list.filter((g) => g.secret !== secret)));
 }
+
+// Storage full (the game on this device can't be saved, say): finished games go first, the least
+// recently seen first. Games still being played stay; they are what holds this browser's moves.
+onStorageFull(() => {
+  const oldest = onlineGames()
+    .filter((g) => g.over)
+    .at(-1);
+  // Only a list that got shorter counts, so trying again always ends.
+  return !!oldest && forgetGame(oldest.secret);
+});

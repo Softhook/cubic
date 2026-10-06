@@ -15,7 +15,16 @@ export function App() {
   // An online game is opened by its link: #online/<secret>.
   const [online, setOnline] = useState(onlineSecret);
   useEffect(() => {
-    const follow = () => setOnline(onlineSecret());
+    const follow = () => {
+      const secret = onlineSecret();
+      setOnline(secret);
+      // Leaving a game on this device (Back, or an invite link): it lives on as the saved game, to
+      // resume from the lobby. Its screen would otherwise come back at the state it started from.
+      if (secret) {
+        setGame(null);
+        setSaved(loadSavedGame());
+      }
+    };
     window.addEventListener('hashchange', follow);
     return () => window.removeEventListener('hashchange', follow);
   }, []);

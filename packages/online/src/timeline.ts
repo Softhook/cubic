@@ -197,7 +197,15 @@ export class Timeline {
       const combat = state.pending[0]?.kind === 'combat' ? (state.pending[0] as CombatPending) : null;
       r.combat = combat ? this.combatWait(state, combat) : null;
       if (combat && r.combat!.waitingOn.every((s) => r.combat!.passed.includes(s))) {
-        r.steps.push({ state: apply(state, { type: 'resolveCombat' }), post: null });
+        let resolved: GameState;
+        try {
+          resolved = apply(state, { type: 'resolveCombat' });
+        } catch (e) {
+          // An engine bug: the game stops here rather than taking the page down with it.
+          console.error('[quantum] a battle failed to resolve', e);
+          break;
+        }
+        r.steps.push({ state: resolved, post: null });
         this.undoStack = [];
         continue;
       }

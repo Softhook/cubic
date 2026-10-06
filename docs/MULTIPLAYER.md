@@ -74,7 +74,7 @@ store small signed messages for anyone. We run nothing.
 | **Engine changes can break games in progress**: replay must give the same result on every browser | `golden.test.ts` flags any behaviour change; bump `PROTOCOL` (protocol.ts) when one would alter replays, which retires older games. A player still on the old version is caught by the position hash (*Out of sync*) |
 | Relays promise nothing: they may prune old events or start refusing new keys | Every player's browser is a full copy and re-seeds the relays when it opens the game; the list in `relays.ts` is easy to change. A friend joining an idle game may need the creator to open it first |
 | Rival posts are ordered by the poster's clock | A wrong clock only decides races (two bystanders firing at once); fine between friends |
-| localStorage (~5 MB) holds every game's events (~0.5 KB each) | Plenty for dozens of games; finished games can be removed from the lobby |
+| localStorage (~5 MB) holds every game's events (~0.7 KB each), shared with the game saved on this device | Only the 5 most recently seen finished games are kept; when a write doesn't fit (the local autosave, say), the least recently seen finished games are dropped first. Games in progress are never dropped |
 
 ### Testing it
 
