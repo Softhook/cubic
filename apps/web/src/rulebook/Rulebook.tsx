@@ -1,6 +1,7 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { EXPANSION, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef } from '@quantum/engine';
 import { download } from '../files';
+import { PAPER, type Paper } from '../print/sheets';
 import css from './rulebook.css?raw';
 
 /**
@@ -43,18 +44,26 @@ function CardTable({ title, note, cards }: { title: string; note: string; cards:
 
 export function Rulebook() {
   const page = useRef<HTMLElement>(null);
+  const [paper, setPaper] = useState<Paper>('a4');
+  // After rulebook.css, so it replaces the stylesheet's A4.
+  const pageCss = `@media print { @page { size: ${PAPER[paper].w}mm ${PAPER[paper].h}mm; } }`;
 
   const downloadHtml = () => {
-    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Cubic — Rulebook</title><style>${css}</style></head><body class="rb-standalone">${page.current!.outerHTML}</body></html>`;
+    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Cubic — Rulebook</title><style>${css}${pageCss}</style></head><body class="rb-standalone">${page.current!.outerHTML}</body></html>`;
     download('cubic-rulebook.html', new Blob([html], { type: 'text/html' }));
   };
 
   return (
     <div className="rb-screen">
-      <style>{css}</style>
+      <style>{css + pageCss}</style>
       <div className="rb-toolbar">
         <a className="btn btn-ghost" href="#">← Back to game</a>
         <span className="rb-spacer" />
+        <select value={paper} onChange={(e) => setPaper(e.target.value as Paper)} aria-label="Paper">
+          {Object.entries(PAPER).map(([id, p]) => (
+            <option key={id} value={id}>{p.name}</option>
+          ))}
+        </select>
         <button className="btn" onClick={downloadHtml}>Download HTML</button>
         <button className="btn btn-primary" onClick={() => window.print()}>Save as PDF</button>
       </div>

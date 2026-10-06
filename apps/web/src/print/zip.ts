@@ -1,12 +1,4 @@
-import { rasterise } from '../files';
-
-/** Print exports for the Art Lab: bitmaps at print resolution, and ZIP archives. */
-
-/** Rasterises an SVG document of `w` × `h` mm at a print resolution. */
-export function svgToPng(svg: string, w: number, h: number, dpi: number): Promise<Blob> {
-  const px = (mm: number) => Math.round((mm / 25.4) * dpi);
-  return rasterise(svg, px(w), px(h));
-}
+/** ZIP archives, for exporting a whole set of print files at once. */
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, i) => {
   let c = i;

@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CARD, CARD_CATEGORIES, cardBackSvg, cardIllustration, cardSvg, deckInfo, type CardDeck, type CardFace } from '@quantum/art';
+import { CARD_CATEGORIES, cardBackSvg, cardIllustration, cardSvg, deckInfo, type CardDeck, type CardFace } from '@quantum/art';
 import { DECKS, cardFontCss, measure, type Deck } from './cards';
-import { download } from '../files';
-import { svgToPng, zip } from './export';
-import { PAPER, printDocument, sheetsHtml, type Paper } from './print';
+import { PIECES, type Printable } from '../print/pieces';
+import { PrintPanel } from '../print/PrintPanel';
 import { LabHeader } from './LabHeader';
 
 /**
@@ -26,10 +25,6 @@ export function CardLab() {
   const [edition, setEdition] = useState<Edition>('all');
   const [selected, setSelected] = useState('skill:agile');
   const [bleed, setBleed] = useState(true);
-  const [paper, setPaper] = useState<Paper>('a4');
-  const [copies, setCopies] = useState(true);
-  const [backs, setBacks] = useState(false);
-  const [progress, setProgress] = useState<string | null>(null);
   const [fonts, setFonts] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,60 +48,15 @@ export function CardLab() {
   const detail = useMemo(() => (fonts === null ? '' : URL.createObjectURL(new Blob([svgOf(item, { bleed })], { type: 'image/svg+xml' }))), [item, bleed, fonts]);
   useEffect(() => () => URL.revokeObjectURL(detail), [detail]);
 
-  const size = (b: boolean) => ({ w: CARD.w + (b ? 2 * CARD.bleed : 0), h: CARD.h + (b ? 2 * CARD.bleed : 0) });
   const fileName = (i: Item) => (i.face ? `${String(i.face.index).padStart(2, '0')}-${i.face.id}` : 'back');
-
-  const run = async (task: () => Promise<void>) => {
-    try {
-      await task();
-    } finally {
-      setProgress(null);
-    }
-  };
-
-  const exportOne = (dpi: number) =>
-    run(async () => {
-      setProgress('Rendering…');
-      const { w, h } = size(bleed);
-      download(`${item.deck}-${fileName(item)}${bleed ? '-bleed' : ''}-${dpi}dpi.png`, await svgToPng(svgOf(item, { bleed }), w, h, dpi));
-    });
-
-  const exportZip = () =>
-    run(async () => {
-      const items = decks.flatMap(itemsOf);
-      const { w, h } = size(bleed);
-      const files: { name: string; blob: Blob }[] = [];
-      for (const [k, i] of items.entries()) {
-        setProgress(`Rendering ${k + 1}/${items.length}`);
-        files.push({ name: `${i.deck}/${fileName(i)}.png`, blob: await svgToPng(svgOf(i, { bleed }), w, h, 300) });
-      }
-      const readme =
-        `Cubic cards, poker size ${CARD.w} × ${CARD.h} mm` +
-        (bleed ? `, with ${CARD.bleed} mm bleed on every side (${w} × ${h} mm).` : ' (trim size, no bleed).') +
-        `\nPNG at 300 dpi. Copies per card: the ×N mark on the card, or the deck list in the rulebook.\n` +
-        `Each folder's back.png is the back for every card in it.\n`;
-      files.push({ name: 'README.txt', blob: new Blob([readme], { type: 'text/plain' }) });
-      setProgress('Packing…');
-      download(`cubic-cards-${edition}${bleed ? '-bleed' : ''}.zip`, await zip(files));
-    });
-
-  const printSheets = () =>
-    run(async () => {
-      const fronts = decks.flatMap((d) => d.cards.flatMap((c) => Array<Item>(copies ? c.copies ?? 1 : 1).fill({ key: `${d.id}:${c.id}`, deck: d.id, face: c })));
-      const unique = [...new Map(fronts.map((i) => [i.key, i])).values()];
-      if (backs) unique.push(...decks.map((d) => ({ key: `${d.id}:back`, deck: d.id })));
-      const images = new Map<string, string>();
-      for (const [k, i] of unique.entries()) {
-        setProgress(`Rendering ${k + 1}/${unique.length}`);
-        images.set(i.key, URL.createObjectURL(await svgToPng(svgOf(i), CARD.w, CARD.h, 300)));
-      }
-      setProgress('Opening print dialog…');
-      const cards = fronts.map((i) => ({ front: images.get(i.key)!, back: images.get(`${i.deck}:back`) ?? '' }));
-      await printDocument(sheetsHtml(cards, paper, backs), () => images.forEach((u) => URL.revokeObjectURL(u)));
-    });
+  const printable = (i: Item): Printable => ({ name: `${i.deck}/${fileName(i)}`, svg: (b) => svgOf(i, { bleed: b }) });
+  const backOf = (d: CardDeck) => printable({ key: `${d}:back`, deck: d });
+  const sheets = (copies: boolean) =>
+    decks.flatMap((d) =>
+      d.cards.flatMap((c) => Array<{ front: Printable; back: Printable }>(copies ? c.copies ?? 1 : 1).fill({ front: printable({ key: `${d.id}:${c.id}`, deck: d.id, face: c }), back: backOf(d.id) })),
+    );
 
   const info = deckInfo(item.deck);
-  const ready = progress === null && fonts !== null;
 
   return (
     <div className="lab">
@@ -151,38 +101,19 @@ export function CardLab() {
               <>Back of every {info.label} card</>
             )}
           </p>
-          <div className="lab-controls">
-            <label><input type="checkbox" checked={bleed} onChange={(e) => setBleed(e.target.checked)} /> Bleed</label>
-            <button className="btn" disabled={!ready} onClick={() => exportOne(300)}>PNG 300 dpi</button>
-            <button className="btn" disabled={!ready} onClick={() => exportOne(600)}>PNG 600 dpi</button>
-            <button className="btn btn-ghost" onClick={() => download(`${item.deck}-${fileName(item)}${bleed ? '-bleed' : ''}.svg`, new Blob([svgOf(item, { bleed })], { type: 'image/svg+xml' }))} title="Live SVG filters: renders in browsers only">
-              SVG
-            </button>
-          </div>
-          <p className="lab-note">
-            Poker size, {CARD.w} × {CARD.h} mm{bleed ? `; with ${CARD.bleed} mm bleed ${size(true).w} × ${size(true).h} mm, as print services want it` : ' (trim)'}.
-          </p>
-
-          <h3 className="lab-sub">Whole set{edition !== 'all' && ` (${edition === 'community' ? 'Community' : 'Classic'})`}</h3>
-          <div className="lab-controls">
-            <button className="btn btn-primary" disabled={!ready} onClick={exportZip}>All cards · ZIP</button>
-            <span className="lab-note">PNG 300 dpi, one folder per deck with its back{bleed ? ', with bleed' : ''}.</span>
-          </div>
-          <div className="lab-controls">
-            <button className="btn btn-primary" disabled={!ready} onClick={printSheets}>Print sheets · PDF</button>
-            <select value={paper} onChange={(e) => setPaper(e.target.value as Paper)} aria-label="Paper">
-              {Object.entries(PAPER).map(([id, p]) => (
-                <option key={id} value={id}>{p.name}</option>
-              ))}
-            </select>
-            <label><input type="checkbox" checked={copies} onChange={(e) => setCopies(e.target.checked)} /> All copies</label>
-            <label><input type="checkbox" checked={backs} onChange={(e) => setBacks(e.target.checked)} /> Backs (duplex)</label>
-          </div>
-          <p className="lab-note">
-            9 cards per page with crop marks; choose “Save as PDF” in the print dialog and print at 100 % (no fit to page). Backs follow each page, mirrored for
-            long-edge duplex.
-          </p>
-          {progress && <p className="lab-progress">{progress}</p>}
+          <PrintPanel
+            piece={PIECES.card}
+            item={printable(item)}
+            bleed={bleed}
+            onBleed={setBleed}
+            set={decks.flatMap(itemsOf).map(printable)}
+            part={edition === 'all' ? undefined : edition === 'community' ? 'Community' : 'Classic'}
+            notes={`Copies per card: the ×N mark on the card, or the deck list in the rulebook.\nEach folder's back.png is the back for every card in it.\n`}
+            sheets={sheets}
+            copies
+            backs
+            ready={fonts !== null}
+          />
         </aside>
       </div>
     </div>

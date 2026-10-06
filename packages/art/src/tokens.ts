@@ -7,7 +7,7 @@ export const TILE = {
   size: 96,
   bleed: 3,
   /** Die-cut corner radius. */
-  corner: 2,
+  corner: 4,
   /** The rounded square marking where a die sits. */
   pad: 24,
 } as const;

@@ -228,7 +228,7 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
   let all = join(...parts);
   if (o.rounded) {
     all = {
-      defs: all.defs + `<clipPath id="${id}-corners"><rect width="${TILE.size}" height="${TILE.size}" rx="4"/></clipPath>`,
+      defs: all.defs + `<clipPath id="${id}-corners"><rect width="${TILE.size}" height="${TILE.size}" rx="${TILE.corner}"/></clipPath>`,
       body: `<g clip-path="url(#${id}-corners)">${all.body}</g>`,
     };
   }

@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
-import { TILE, TILE_SET, dataUrl, editableTileSvg, tileSvg, type PlanetType, type TileSpec } from '@quantum/art';
+import { TILE_SET, dataUrl, editableTileSvg, tileSvg, type PlanetType, type TileSpec } from '@quantum/art';
 import { blobToDataUrl, download } from '../files';
-import { svgToPng } from './export';
+import { svgToPng } from '../print/exports';
+import { PIECES, fileName, pieceSize, type Printable } from '../print/pieces';
+import { PrintPanel } from '../print/PrintPanel';
 import { LabHeader } from './LabHeader';
 
 /**
  * Art Lab, tiles page (#lab): every tile of the physical set, with controls to explore seeds and
- * planet types and to export print files. See docs/GRAPHICS.md §3.
+ * planet types and to export print files: single tiles, and print sheets of the whole set. See docs/GRAPHICS.md §3.
  */
 
 const TYPES: PlanetType[] = ['gas', 'rocky', 'ice', 'lava', 'ocean'];
@@ -18,41 +20,29 @@ export function TileLab() {
   const [selected, setSelected] = useState(TILE_SET[0].id);
   const [markings, setMarkings] = useState(true);
   const [bleed, setBleed] = useState(false);
-  const [busy, setBusy] = useState(false);
 
   const specs = useMemo(() => TILE_SET.map((t) => ({ ...t, ...overrides[t.id] })), [overrides]);
   const thumbs = useMemo(() => specs.map((t) => ({ spec: t, url: dataUrl(tileSvg(t, { markings, rounded: true })) })), [specs, markings]);
   const spec = specs.find((t) => t.id === selected)!;
   const svg = useMemo(() => tileSvg(spec, { markings, bleed }), [spec, markings, bleed]);
   const set = (o: Override) => setOverrides((all) => ({ ...all, [spec.id]: { ...all[spec.id], ...o } }));
-  const mm = TILE.size + (bleed ? 2 * TILE.bleed : 0);
-  const name = `tile-${spec.id}${bleed ? '-bleed' : ''}`;
 
-  const exportPng = async (dpi: number) => {
-    setBusy(true);
-    try {
-      download(`${name}-${dpi}dpi.png`, await svgToPng(svg, mm, mm, dpi));
-    } finally {
-      setBusy(false);
-    }
-  };
+  // Prints the set as shown: seeds and types being explored, and the markings setting, included.
+  const printable = (t: TileSpec): Printable => ({ name: t.id, svg: (b) => tileSvg(t, { markings, bleed: b }) });
+  const item = printable(spec);
 
   /** Illustrator can't render SVG filters, so the art goes in as a 600 dpi bitmap with vector markings on top. */
   const exportEditable = async () => {
-    setBusy(true);
-    try {
-      const art = await blobToDataUrl(await svgToPng(tileSvg(spec, { only: 'art', bleed }), mm, mm, 600));
-      download(`${name}-illustrator.svg`, new Blob([editableTileSvg(spec, art, { bleed, markings })], { type: 'image/svg+xml' }));
-    } finally {
-      setBusy(false);
-    }
+    const { w, h } = pieceSize(PIECES.tile, bleed);
+    const art = await blobToDataUrl(await svgToPng(tileSvg(spec, { only: 'art', bleed }), w, h, 600));
+    const name = fileName(PIECES.tile, item, { bleed, ext: 'svg' }).replace(/\.svg$/, '-illustrator.svg');
+    download(name, new Blob([editableTileSvg(spec, art, { bleed, markings })], { type: 'image/svg+xml' }));
   };
 
   return (
     <div className="lab">
       <LabHeader page="tiles">
         <label><input type="checkbox" checked={markings} onChange={(e) => setMarkings(e.target.checked)} /> Print markings</label>
-        <label><input type="checkbox" checked={bleed} onChange={(e) => setBleed(e.target.checked)} /> Bleed (detail view)</label>
       </LabHeader>
       <div className="lab-body">
         <div className="lab-grid">
@@ -91,14 +81,22 @@ export function TileLab() {
             )}
             {overrides[spec.id] && <button className="btn btn-ghost" onClick={() => setOverrides(({ [spec.id]: _, ...rest }) => rest)}>Reset</button>}
           </div>
-          <div className="lab-controls">
-            <button className="btn" disabled={busy} onClick={exportEditable} title="Art as a 600 dpi image, markings as editable vectors">SVG for Illustrator</button>
-            <button className="btn btn-ghost" onClick={() => download(`${name}.svg`, new Blob([svg], { type: 'image/svg+xml' }))} title="Live SVG filters: renders in browsers only">SVG (browser only)</button>
-            <button className="btn" disabled={busy} onClick={() => exportPng(300)}>PNG 300 dpi</button>
-            <button className="btn" disabled={busy} onClick={() => exportPng(600)}>PNG 600 dpi</button>
-          </div>
-          <p className="lab-note">{mm} × {mm} mm. Changes here are for exploring; to keep one, copy its settings:</p>
+          <p className="lab-note">Changes here are for exploring; to keep one, copy its settings:</p>
           <pre className="lab-spec">{JSON.stringify(spec)}</pre>
+          <PrintPanel
+            piece={PIECES.tile}
+            item={item}
+            bleed={bleed}
+            onBleed={setBleed}
+            set={specs.map(printable)}
+            notes={markings ? '' : 'Without print markings.\n'}
+            sheets={() => specs.map((t) => ({ front: printable(t) }))}
+            extra={(run, busy) => (
+              <button className="btn" disabled={busy} onClick={() => run(exportEditable)} title="Art as a 600 dpi image, markings as editable vectors">
+                SVG for Illustrator
+              </button>
+            )}
+          />
         </aside>
       </div>
     </div>

@@ -272,9 +272,8 @@ exported in the Art Lab (`#lab/cards`).
   services. Wrapping uses widths measured with the page's fonts (canvas `measureText`), and the same
   fonts are embedded in each SVG as data URLs, so the layout matches what was measured. Text shrinks in
   0.1 mm steps until it fits. Without the fonts (offline), cards fall back to system fonts.
-- **Exports**: one card as PNG 300/600 dpi or SVG; the whole set as a ZIP of 300 dpi PNGs, one folder
-  per deck with its back; print sheets, 3 × 3 per A4/Letter page at trim size with crop marks,
-  optionally all copies and duplex backs (mirrored columns), printed to PDF from the browser.
+- **Exports**: the Art Lab's standard print exports (§4, In the Art Lab), with a folder per deck and
+  its back in the ZIP, and print sheets optionally with all copies and duplex backs.
 
 ### Card art
 
@@ -336,7 +335,26 @@ backs:
 
 ## 4. Print pipeline
 
-### Rendering
+### In the Art Lab (built)
+
+Every printed piece goes through one module, `apps/web/src/print/`, so cards and tiles export the
+same way:
+
+- `pieces.ts` holds each piece's print spec (trim, bleed, sheet grid) and the file-name pattern:
+  `cubic-<piece>-<name>[-bleed][-<dpi>dpi].<ext>` for one face, `cubic-<pieces>[-<part>][-bleed].zip`
+  for a set.
+- `PrintPanel.tsx` is the export panel on every lab page: this face as PNG 300/600 dpi or SVG (plus
+  page extras such as SVG for Illustrator), the whole set as a ZIP of 300 dpi PNGs with a README,
+  and print sheets.
+- `sheets.ts` lays out print sheets: pieces at trim size in a grid (cards 3 × 3, tiles 2 × 2),
+  butted so one cut serves two pieces, crop marks drawn as borders so they print without
+  "Background graphics", optional backs mirrored for long-edge duplex. A4 or US Letter; the
+  rulebook offers the same papers.
+- Bleed: on for exports meant for print services; the sheets are at trim size for home printing.
+
+A new piece (player board, tokens) is a `PIECES` entry and a `Printable` per face.
+
+### Headless rendering (planned)
 
 `scripts/print.ts`, run with `npm run print -- <target>`:
 
@@ -416,7 +434,7 @@ Each phase leaves the game working and better-looking.
 - [ ] PDF and text-fit checks.
 
 **Phase 3 — Art Lab**
-- [x] Lab route (`#lab`): all 28 tiles, seed/type/rings controls, SVG, SVG for Illustrator and PNG (300/600 dpi) export.
+- [x] Lab route (`#lab`): all 28 tiles, seed/type/rings controls, and the standard print exports (§4) plus SVG for Illustrator.
 - [ ] Context view (tile vs. card vs. in-game size) and starfield/planet-only views.
 - [ ] `data/art.yaml` and pinning.
 

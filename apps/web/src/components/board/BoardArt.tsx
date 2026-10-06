@@ -49,7 +49,7 @@ export function BoardArt({ game, cell }: { game: GameState; cell: number }) {
             y={t.r * cell + 1}
             width={cell * 3 - 2}
             height={cell * 3 - 2}
-            rx={(cell * 3 * 4) / TILE.size}
+            rx={(cell * 3 * TILE.corner) / TILE.size}
             fill={images[t.id] ? 'none' : '#0b1124'}
             stroke={t.void ? 'rgba(197,155,255,.35)' : 'rgba(127,178,255,.16)'}
           />
