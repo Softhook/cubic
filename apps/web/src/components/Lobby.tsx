@@ -1,8 +1,8 @@
-import { useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
 import { defaultMap, MAPS, MODES, playerCounts, rulesOf, RULESETS, type GameMode, type GameState, type MapDef, type PlayerConfig } from '@quantum/engine';
 import { Die3D } from './Die3D';
-import { OnlineGames } from '../online/OnlineGames';
+import { forgetGame, onlineGames } from '../online/storage';
 import { remember, stored } from '../storage';
 
 export const PLAYER_COLORS = ['#4cc9f0', '#f72585', '#ffb703', '#80ed99', '#b388ff'];
@@ -60,38 +60,95 @@ function MiniMap({ map }: { map: MapDef }) {
   );
 }
 
-/** The unfinished game from a previous visit, offered for resuming. */
-function SavedGame({ game, onResume, onDiscard }: { game: GameState; onResume: () => void; onDiscard: () => void }) {
+/** One game to pick up: opened by its link (online) or a click (this device), and removable. */
+function GameRow({
+  title,
+  meta,
+  yourMove,
+  href,
+  onOpen,
+  onRemove,
+  removeLabel,
+}: {
+  title: string;
+  meta: string;
+  yourMove?: boolean;
+  href?: string;
+  onOpen?: () => void;
+  onRemove: () => void;
+  removeLabel: string;
+}) {
+  const body = (
+    <>
+      <strong>{title}</strong>
+      <span className="muted">{meta}</span>
+    </>
+  );
   return (
-    <div className="lobby-card saved-game">
-      <h2>Game in progress</h2>
-      <div className="saved-game-info">
-        <span className={`mode-badge mode-${game.mode}`}>{rulesOf(game).name}</span>
-        <strong>{game.board.mapName}</strong>
-        <span className="muted">{game.phase === 'setup' ? 'Setting up' : `Turn ${game.turn.number}`}</span>
-      </div>
-      <div className="saved-game-players">
-        {game.players.map((p, i) => (
-          <span key={i} className="saved-game-player" style={{ '--pc': p.color } as CSSProperties}>
-            <span className="player-swatch" />
-            {p.name}
-            {p.ai && <span className="muted"> · AI</span>}
-          </span>
+    <li className={yourMove ? 'my-turn' : ''}>
+      {href ? (
+        <a className="game-row-open" href={href}>{body}</a>
+      ) : (
+        <button className="game-row-open" onClick={onOpen}>{body}</button>
+      )}
+      {yourMove && <span className="tag your-turn">Your move</span>}
+      <button className="icon-btn" title={removeLabel} aria-label={removeLabel} onClick={onRemove}>
+        ×
+      </button>
+    </li>
+  );
+}
+
+/** The games to pick up: the one on this device, then the online ones (those waiting on you first). */
+function YourGames({ saved, onResume, onDiscard }: { saved: GameState | null; onResume: () => void; onDiscard: () => void }) {
+  const [games, setGames] = useState(onlineGames);
+  if (!saved && !games.length) return null;
+  const online = [...games].sort((a, b) => Number(!!b.myTurn) - Number(!!a.myTurn));
+  return (
+    <div className="lobby-card your-games">
+      <h2>Your games</h2>
+      <ul>
+        {saved && (
+          <GameRow
+            title={saved.players.map((p) => p.name).join(', ')}
+            meta={['On this device', rulesOf(saved).name, saved.board.mapName, saved.phase === 'setup' ? 'Setting up' : `Turn ${saved.turn.number}`].join(' · ')}
+            onOpen={onResume}
+            removeLabel="Discard this game"
+            onRemove={() => {
+              if (confirm('Discard the game on this device?')) onDiscard();
+            }}
+          />
+        )}
+        {online.map((g) => (
+          <GameRow
+            key={g.secret}
+            title={g.players?.join(', ') ?? 'New game'}
+            meta={['Online', g.mode, g.map, g.status].filter(Boolean).join(' · ')}
+            yourMove={g.myTurn}
+            href={`#online/${g.secret}`}
+            removeLabel="Remove from this browser"
+            onRemove={() => {
+              if (!g.over && !confirm('Remove this game from this browser? The others can go on playing; you can rejoin with the link.')) return;
+              forgetGame(g.secret);
+              setGames(onlineGames());
+            }}
+          />
         ))}
+      </ul>
+    </div>
+  );
+}
+
+/** A labelled row of the new-game form, with an optional line of explanation under it. */
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  const id = `field-${label.toLowerCase()}`;
+  return (
+    <div className="field-row">
+      <div className="field">
+        <span id={id}>{label}</span>
+        <div role="group" aria-labelledby={id}>{children}</div>
       </div>
-      <div className="modal-actions">
-        <button
-          className="btn"
-          onClick={() => {
-            if (confirm('Discard the game in progress?')) onDiscard();
-          }}
-        >
-          Discard
-        </button>
-        <button className="btn btn-primary btn-lg" onClick={onResume}>
-          Resume
-        </button>
-      </div>
+      {hint && <p className="field-hint">{hint}</p>}
     </div>
   );
 }
@@ -212,9 +269,13 @@ export function Lobby({
   // 5 players only has Community Edition maps; other rules fall back to their largest count.
   const counts = playerCounts(RULESETS[mode]);
   const count = counts.includes(wanted) ? wanted : counts[counts.length - 1];
-  const [seats, setSeats] = useState<PlayerConfig[]>(() =>
-    PLAYER_COLORS.map((color, i) => ({ name: i === 0 ? 'Commander' : AI_NAMES[i], color, ai: i !== 0, aiLevel: storedAiLevel() })),
-  );
+  // Each way of playing keeps its own seats: AI opponents on this device, friends online.
+  const [seatSets, setSeatSets] = useState<Record<'local' | 'online', PlayerConfig[]>>(() => {
+    const seat = (i: number, ai: boolean) => ({ name: i === 0 ? 'Commander' : AI_NAMES[i], color: PLAYER_COLORS[i], ai, aiLevel: storedAiLevel() });
+    return { local: PLAYER_COLORS.map((_, i) => seat(i, i !== 0)), online: PLAYER_COLORS.map((_, i) => seat(i, false)) };
+  });
+  const where = online ? 'online' : 'local';
+  const seats = seatSets[where];
   const [mapIds, setMapIds] = useState<Record<number, string>>(() => Object.fromEntries(PLAYER_COUNTS.map((n) => [n, storedMap(n)])));
   const choices = MAPS.filter((m) => m.players === count && RULESETS[mode].mapGroups.includes(m.group));
   // A remembered map the chosen rules don't use falls back to the basic map (it stays remembered).
@@ -229,10 +290,10 @@ export function Lobby({
     remember(`quantum.map.${count}`, id);
   };
   const updateSeat = (i: number, patch: Partial<PlayerConfig>) =>
-    setSeats((s) => s.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+    setSeatSets((sets) => ({ ...sets, [where]: sets[where].map((x, j) => (j === i ? { ...x, ...patch } : x)) }));
 
-  // Online, the first seat is yours, whatever it was set to; human seats after it are for friends.
-  const playing = seats.slice(0, count).map((s, i) => (online && i === 0 ? { ...s, ai: false } : s));
+  // Online, the first seat is yours; human seats after it are for friends.
+  const playing = seats.slice(0, count);
   const friendSeats = playing.filter((s, i) => isFriendSeat(s, i, online)).length;
   const canStart = !online || friendSeats > 0;
 
@@ -261,60 +322,63 @@ export function Lobby({
         <p className="tagline">Every die is a starship. Low numbers hit hard, high numbers fly fast. Place all your cubes to conquer the sector.</p>
       </div>
 
-      {saved && <SavedGame game={saved} onResume={onResume} onDiscard={onDiscard} />}
-      <OnlineGames />
+      <YourGames saved={saved} onResume={onResume} onDiscard={onDiscard} />
 
       <div className="lobby-card">
         <h2>New game</h2>
-        <label className="field">
-          <span>Play</span>
-          <div className="segmented">
-            <button className={!online ? 'on' : ''} onClick={() => setOnline(false)}>On this device</button>
-            <button className={online ? 'on' : ''} onClick={() => setOnline(true)}>Online with friends</button>
-          </div>
-        </label>
-        {online && (
-          <p className="muted lobby-note">
-            You get a link to send to your friends. Every browser keeps the game, so you can play together live or one move at a time over days. No account needed.
-          </p>
-        )}
-        <div className="modes" role="radiogroup" aria-label="Rules">
-          {MODES.map((m) => (
-            <button key={m.id} role="radio" aria-checked={m.id === mode} className={`mode ${m.id === mode ? 'on' : ''}`} onClick={() => chooseMode(m.id)}>
-              <strong>{m.name}</strong>
-              <span>{m.summary}</span>
-            </button>
-          ))}
-        </div>
+        <div className="lobby-form">
+          <Field
+            label="Play"
+            hint={
+              online
+                ? 'You get a link to send to your friends. Play together live or one move at a time over days. No account needed.'
+                : 'Against the AI, or pass the device around.'
+            }
+          >
+            <div className="segmented">
+              <button className={!online ? 'on' : ''} onClick={() => setOnline(false)}>On this device</button>
+              <button className={online ? 'on' : ''} onClick={() => setOnline(true)}>Online with friends</button>
+            </div>
+          </Field>
 
-        <label className="field">
-          <span>Players</span>
-          <div className="segmented">
-            {counts.map((n) => (
-              <button key={n} className={n === count ? 'on' : ''} onClick={() => setWanted(n)}>
-                {n}
-              </button>
+          <Field label="Rules" hint={RULESETS[mode].summary}>
+            <div className="segmented">
+              {MODES.map((m) => (
+                <button key={m.id} className={m.id === mode ? 'on' : ''} aria-pressed={m.id === mode} onClick={() => chooseMode(m.id)}>
+                  {m.name}
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <Field label="Players">
+            <div className="segmented">
+              {counts.map((n) => (
+                <button key={n} className={n === count ? 'on' : ''} aria-pressed={n === count} onClick={() => setWanted(n)}>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <div className="seats">
+            {playing.map((s, i) => (
+              <SeatRow key={i} seat={s} index={i} online={online} onChange={(patch) => updateSeat(i, patch)} />
             ))}
           </div>
-        </label>
 
-        <div className="seats">
-          {playing.map((s, i) => (
-            <SeatRow key={i} seat={s} index={i} online={online} onChange={(patch) => updateSeat(i, patch)} />
-          ))}
+          <MapPicker map={map} choices={choices} onChoose={chooseMap} />
         </div>
 
-        <MapPicker map={map} choices={choices} onChoose={chooseMap} />
-
-        {!canStart && <p className="muted lobby-note">Make at least one seat a Friend to play online.</p>}
+        {!canStart && <p className="field-hint">Make at least one seat a Friend to play online.</p>}
         <div className="modal-actions">
-          <button className="btn" onClick={onRules}>How to play</button>
           <button className="btn btn-primary btn-lg" disabled={!canStart} onClick={start}>
             {online ? 'Create online game' : 'Launch fleet'}
           </button>
         </div>
       </div>
       <nav className="lobby-links">
+        <button onClick={onRules}>How to play</button>
         <a href="#rulebook">Rulebook (PDF)</a>
         <a href="#lab/cards">Art Lab: cards &amp; tiles</a>
       </nav>
