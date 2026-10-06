@@ -4,7 +4,7 @@ make another ai level
 
 - [x] self play make sure cards are all used
 
-make card market for community edition fit
+- [x] make card market for community edition fit
 
 card crop marks pdf
 

@@ -15,6 +15,12 @@ export function CategoryIcon({ category, size = 14 }: { category: string; size?:
 export const categoryStyle = (category: string, light: boolean) =>
   ({ '--cat': cardPalette(light, CARD_CATEGORIES[category]?.hue ?? CARD_CATEGORIES.action.hue).accent }) as CSSProperties;
 
+/**
+ * Soft hyphens for names too long for a narrow market card (browsers' automatic hyphenation skips them).
+ * They only show when the name has to break.
+ */
+const NAME_BREAKS: Record<string, string> = { Reorganisation: 'Reorgan\u00ADisation' };
+
 export interface CardViewProps {
   id: string;
   size?: 'sm' | 'md' | 'lg';
@@ -48,7 +54,7 @@ export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, 
         </span>
         {badge && <span className="qcard-badge">{badge}</span>}
       </div>
-      <div className="qcard-name">{def.name}</div>
+      <div className="qcard-name">{NAME_BREAKS[def.name] ?? def.name}</div>
       <div className="qcard-sub">{def.subtitle}</div>
       <div className="qcard-text">{def.text}</div>
     </button>
