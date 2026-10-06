@@ -14,7 +14,7 @@ Goals:
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173 — hot-seat play vs AI opponents (2–4 players)
+npm run dev        # http://localhost:5173 — play vs AI, hot-seat, or online with friends
 npm test           # rules engine tests + full AI-vs-AI games
 npm run build      # typecheck + production build in apps/web/dist
 ```
@@ -22,6 +22,10 @@ npm run build      # typecheck + production build in apps/web/dist
 The first playable version uses the **proposed rulings** from
 [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md); each lives in one place in the engine,
 so changing a ruling later is a small edit.
+
+**Online with friends**, live or one move at a time over days, with no server: the lobby makes an
+invite link, and moves travel through public Nostr relays while every browser keeps the whole
+game ([MULTIPLAYER.md](docs/MULTIPLAYER.md)).
 
 **Three modes**, picked in the lobby: **Basic** (no cards — for learning),
 **Original** (2013 Command & Gambit cards) and **Community Edition** (rebalanced cards,
@@ -40,6 +44,7 @@ edition's 5-player maps are not transcribed yet, so games are limited to 4 playe
 |---|---|
 | [`packages/engine`](packages/engine) | Pure TypeScript rules engine: `(state, action) → state`, seeded RNG, legal-move generator |
 | [`packages/ai`](packages/ai) | Greedy one-ply AI that samples dice outcomes and scores positions heuristically |
+| [`packages/online`](packages/online) | Online play without a server: a game as a log of signed, encrypted posts that every browser replays |
 | [`apps/web`](apps/web) | React + Vite client: SVG board, CSS 3D dice with roll animations, synthesized sound |
 | [`docs/RULES.md`](docs/RULES.md) | The game and the full rules (CE baseline), cards, maps, divergences between versions |
 | [`docs/OPEN-QUESTIONS.md`](docs/OPEN-QUESTIONS.md) | Rules ambiguities that need a ruling before the engine can implement them |

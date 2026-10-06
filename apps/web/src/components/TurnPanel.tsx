@@ -14,6 +14,8 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
   const canAct = ctl.actionPhase;
   const hint = ctl.human ? hintFor(game, ctl.sel) : '';
   const waitingOn = head && head.kind !== 'combat' ? game.players[head.player] : null;
+  // Whose decision the table waits for (battles have their own overlay).
+  const waitingFor = waitingOn ?? (!head && game.phase !== 'over' ? p : null);
 
   return (
     <section className="panel turn-panel" style={{ '--pc': p.color } as CSSProperties}>
@@ -36,14 +38,14 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
         )}
       </div>
 
-      {(waitingOn?.ai || (!head && p.ai && game.phase === 'play')) && (
+      {waitingFor && !ctl.mine(waitingFor.id) && (
         <p className="hint thinking">
-          <span className="spinner" /> {waitingOn?.name ?? p.name} is thinking…
+          <span className="spinner" /> {waitingFor.ai ? `${waitingFor.name} is thinking…` : `Waiting for ${waitingFor.name}…`}
         </p>
       )}
       {hint && <p className="hint">{hint}</p>}
 
-      {game.phase === 'play' && !p.ai && (
+      {game.phase === 'play' && ctl.mine(p.id) && (
         <div className="turn-actions">
           {rulesOf(game).cards && (
             <button

@@ -106,11 +106,12 @@ Package: `packages/ai`
 
 Options and plan: [MULTIPLAYER.md](MULTIPLAYER.md).
 
-- [ ] Authoritative game server; clients send actions, server validates with the engine.
-- [ ] Hidden information: deck order and starting-skill draft never sent to clients.
-- [ ] Lobbies: create/join by link, seat AI players, choose map.
-- [ ] Real-time and asynchronous (play-by-notification) modes.
-- [ ] Interrupt windows with timers (missiles, Dangerous) — see open question #21.
+- [x] Serverless play between friends: a shared move log on public Nostr relays, replayed by every browser ([MULTIPLAYER.md §0](MULTIPLAYER.md#0-whats-built-a-shared-move-log-on-public-relays)).
+- [x] Lobbies: create/join by link, seat AI players, choose map.
+- [x] Real-time and asynchronous play (no notifications yet).
+- [x] Missile response window (open question #21): each player who may respond is asked, with a per-player *ask* setting; no timers.
+- [ ] Fair dice and hidden decks: needs a trusted server (today every browser holds the seed).
+- [ ] Turn notifications (email / Web Push): needs a server.
 - [ ] Missile trading / "give missile" action and table chat.
 - [ ] Reconnects, spectators, saved games and replay viewer.
 - [ ] Accounts (optional: guest play first).

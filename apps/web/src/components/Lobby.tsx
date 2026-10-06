@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
 import { defaultMap, MAPS, MODES, playerCounts, rulesOf, RULESETS, type GameMode, type GameState, type MapDef, type PlayerConfig } from '@quantum/engine';
 import { Die3D } from './Die3D';
+import { OnlineGames } from '../online/OnlineGames';
 
 export const PLAYER_COLORS = ['#4cc9f0', '#f72585', '#ffb703', '#80ed99', '#b388ff'];
 const AI_NAMES = ['Nova', 'Vex', 'Orion', 'Lyra', 'Kepler'];
@@ -11,6 +12,8 @@ export interface LobbyResult {
   players: PlayerConfig[];
   mapId: string;
   mode: GameMode;
+  /** Played online: the human seats other than the first are for friends to claim. */
+  online?: boolean;
 }
 
 function storedAiLevel(): number {
@@ -122,6 +125,7 @@ export function Lobby({
   onDiscard: () => void;
 }) {
   const [wanted, setWanted] = useState(2);
+  const [online, setOnline] = useState(false);
   const [mode, setMode] = useState<GameMode>(storedMode);
   // 5 players only has Community Edition maps; other rules fall back to their largest count.
   const counts = playerCounts(RULESETS[mode]);
@@ -145,6 +149,9 @@ export function Lobby({
 
   const update = (i: number, patch: Partial<PlayerConfig>) =>
     setSeats((s) => s.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  // Online, the first seat is yours, whatever it was set to; human seats after it are for friends.
+  const playing = seats.slice(0, count).map((s, i) => (online && i === 0 ? { ...s, ai: false } : s));
+  const friendSeats = playing.filter((s, i) => i > 0 && !s.ai).length;
 
   return (
     <div className="lobby">
@@ -159,9 +166,22 @@ export function Lobby({
       </div>
 
       {saved && <SavedGame game={saved} onResume={onResume} onDiscard={onDiscard} />}
+      <OnlineGames />
 
       <div className="lobby-card">
         <h2>New game</h2>
+        <label className="field">
+          <span>Play</span>
+          <div className="segmented">
+            <button className={!online ? 'on' : ''} onClick={() => setOnline(false)}>On this device</button>
+            <button className={online ? 'on' : ''} onClick={() => setOnline(true)}>Online with friends</button>
+          </div>
+        </label>
+        {online && (
+          <p className="muted lobby-note">
+            You get a link to send to your friends. Every browser keeps the game, so you can play together live or one move at a time over days. No account needed.
+          </p>
+        )}
         <div className="modes" role="radiogroup" aria-label="Rules">
           {MODES.map((m) => (
             <button
@@ -196,14 +216,22 @@ export function Lobby({
         </label>
 
         <div className="seats">
-          {seats.slice(0, count).map((s, i) => (
+          {playing.map((s, i) => (
             <div className="seat" key={i} style={{ '--pc': s.color } as CSSProperties}>
               <span className="player-swatch" />
-              <input value={s.name} maxLength={14} onChange={(e) => update(i, { name: e.target.value })} aria-label={`Player ${i + 1} name`} />
-              <div className="segmented small">
-                <button className={!s.ai ? 'on' : ''} onClick={() => update(i, { ai: false })}>Human</button>
-                <button className={s.ai ? 'on' : ''} onClick={() => update(i, { ai: true })}>AI</button>
-              </div>
+              {online && i > 0 && !s.ai ? (
+                <input value="" placeholder="A friend joins here" disabled aria-label={`Player ${i + 1}: a friend`} />
+              ) : (
+                <input value={s.name} maxLength={14} onChange={(e) => update(i, { name: e.target.value })} aria-label={`Player ${i + 1} name`} />
+              )}
+              {online && i === 0 ? (
+                <span className="seat-you">You</span>
+              ) : (
+                <div className="segmented small">
+                  <button className={!s.ai ? 'on' : ''} onClick={() => update(i, { ai: false })}>{online ? 'Friend' : 'Human'}</button>
+                  <button className={s.ai ? 'on' : ''} onClick={() => update(i, { ai: true })}>AI</button>
+                </div>
+              )}
               {s.ai && (
                 <select
                   className="ai-level"
@@ -272,20 +300,26 @@ export function Lobby({
           <MiniMap map={map} />
         </div>
 
+        {online && !friendSeats && <p className="muted lobby-note">Make at least one seat a Friend to play online.</p>}
         <div className="modal-actions">
           <button className="btn" onClick={onRules}>How to play</button>
           <button
             className="btn btn-primary btn-lg"
+            disabled={online && !friendSeats}
             onClick={() => {
-              if (saved && !confirm('Starting a new game discards the game in progress. Continue?')) return;
+              if (!online && saved && !confirm('Starting a new game discards the game in progress. Continue?')) return;
               onStart({
-                players: seats.slice(0, count).map((s, i) => ({ ...s, name: s.name.trim() || `Player ${i + 1}` })),
+                players: playing.map((s, i) => ({
+                  ...s,
+                  name: online && i > 0 && !s.ai ? `Player ${i + 1}` : s.name.trim() || `Player ${i + 1}`,
+                })),
                 mapId: map.id,
                 mode,
+                online,
               });
             }}
           >
-            Launch fleet
+            {online ? 'Create online game' : 'Launch fleet'}
           </button>
         </div>
       </div>

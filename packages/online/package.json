@@ -1,0 +1,14 @@
+{
+  "name": "@quantum/online",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@noble/ciphers": "^2.1.1",
+    "@noble/hashes": "^2.0.1",
+    "@quantum/engine": "*",
+    "nostr-tools": "^2.25.2"
+  }
+}

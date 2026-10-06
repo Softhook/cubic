@@ -9,6 +9,7 @@ How the code is organised, and where to make the common changes.
 | [`packages/engine`](../packages/engine) | The rules. A game is `apply(state, action) → state`: pure, deterministic (seeded RNG in the state), serialisable. | — |
 | [`packages/ai`](../packages/ai) | AI players in four levels ([AI.md](AI.md)). Chooses among `legalActions(state)`; never sees the real RNG or deck order. | engine |
 | [`packages/art`](../packages/art) | Artwork as SVG text: tiles, planets, starfields ([GRAPHICS.md](GRAPHICS.md)). Plain functions, seeded, in mm; shared by the game and print. | — |
+| [`packages/online`](../packages/online) | Online play without a server ([MULTIPLAYER.md](MULTIPLAYER.md)): a game as a log of signed, encrypted posts; `Timeline` replays it with the engine so every browser computes the same game. No network code. | engine |
 | [`apps/web`](../apps/web) | React UI. Renders a state, sends actions. Holds no rules of its own: buttons and highlights come from `legalActions` ([`game/legal.ts`](../apps/web/src/game/legal.ts)). The Art Lab is at `#lab` (tiles) and `#lab/cards`; the printable rulebook at `#rulebook`. | engine, ai, art |
 | [`data/`](../data) | Cards and maps as YAML, compiled to JSON by `npm run data`. | — |
 
@@ -62,6 +63,13 @@ In [`apps/web/src/game`](../apps/web/src/game):
 | `highlights.ts` | `highlightsFor()`: what lights up on the board, derived from the legal actions |
 | `hints.ts` | The one-line hint for the current decision or selection |
 | `legal.ts` | The legal actions indexed by type, for buttons and highlights |
+| `view.ts` | `GameView`: a game as the screen sees it, local (`useGame`) or online (`useOnlineGame`) |
+
+In [`apps/web/src/online`](../apps/web/src/online): `useOnlineGame.ts` (the game's posts: loaded,
+synced, replayed and posted; catching up on others' moves; moving AI seats), `playback.ts` (which
+move to show next while catching up, and when), `relays.ts` (the relay connections), `storage.ts`
+(identity, events and the game list in localStorage), `create.ts`, and the screens
+(`OnlineScreen.tsx`, `OnlineGames.tsx`). The game screen itself (`components/GameScreen.tsx`) is shared with local play.
 
 ## Finding bugs
 

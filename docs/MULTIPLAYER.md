@@ -1,10 +1,83 @@
 # Online multiplayer
 
-How online play could work: the architecture options, what the engine needs, the hard
-parts (hidden information, missiles, AI seats, async play) and a phased plan.
-Expands roadmap milestone **M4** ([ROADMAP.md](ROADMAP.md#m4--online-multiplayer)).
+How online play works, and the options we weighed. Expands roadmap milestone **M4**
+([ROADMAP.md](ROADMAP.md#m4--online-multiplayer)).
 
-Status: **proposal**, nothing implemented yet. Decisions still open are listed at the end.
+Status: **built (2026-10-06)**: serverless, live *and* asynchronous play between friends,
+as described in §0. Sections 1–7 are the original proposal, kept for the server options
+(fair dice, notifications, public play) should we want them later.
+
+---
+
+## 0. What's built: a shared move log on public relays
+
+Decision (2026-10-06): **no server of our own.** The site stays static (GitHub Pages); every
+player's browser keeps the whole game; moves travel through public **Nostr relays**, which
+store small signed messages for anyone. We run nothing.
+
+```
+ Alice's browser                  public relays (6)               Bob's browser
+ ┌──────────────┐  signed, encrypted  ┌───────────┐                ┌──────────────┐
+ │ log → replay │ ─────── post ─────► │  store &  │ ─── fetch / ──►│ log → replay │
+ │  (engine)    │ ◄────────────────── │  forward  │ ◄── live sub ──│  (engine)    │
+ └──────────────┘                     └───────────┘                └──────────────┘
+   localStorage: every event                                     localStorage: every event
+```
+
+- **A game is a log of posts** ([`packages/online`](../packages/online)): `create` (config,
+  seed, seats), `claim` (take an open seat), `act` (an engine `Action` for a seat), `undo`,
+  `ask` (battle preference) and `pass` (nothing to add in a battle). Every browser replays the
+  log with the engine (`createGame` + `apply`), so they all compute the same game. A full
+  4-player game replays in ~35 ms.
+- **Order.** `act`, `undo` and `ask` form a chain: each names the post it follows. If two
+  posts follow the same one (two bystanders firing at once, two browsers moving the AI),
+  the earlier wins on every browser, whatever order they arrived in (`Timeline`, tested
+  with browsers on a network that delays and reorders).
+- **Seats.** Each browser has a Nostr key (localStorage). A post counts only if its author
+  plays the seat (the earliest claim of an open seat wins), `mayAct` agrees (engine: the
+  actor, or the player named in a missile/re-roll), and `apply` accepts it. Anyone may move
+  an AI seat.
+- **AI seats** are played by the browser that made the last move; if it has gone, any other
+  browser takes over after 15 s.
+- **Missiles (open question #21).** A battle waits for every player who may respond (fire,
+  re-roll), unless their `ask` setting says otherwise: *all battles* (default), *my battles*
+  or *never*. Each responds or passes ("Done"); once all have passed, every browser
+  resolves the battle the same way. AI seats always answer, so all-AI battles resolve at once.
+- **Privacy.** The invite link `#online/<secret>` carries a 128-bit secret in the fragment,
+  which browsers never send to a server. Relays see only an encrypted blob (AES-GCM, key
+  derived from the secret), a tag derived from it, and the poster's public key.
+- **Relays** ([`relays.ts`](../apps/web/src/online/relays.ts)): six that accept bursts from new
+  keys (checked 2026-10). Each relay gets a paced send queue; rate limits pause it; a relay
+  that refuses for good (payment, web of trust) is only read from. After syncing, a browser
+  re-sends anything a relay is missing, so a game survives relays dropping old events as long
+  as one player still has it.
+- **Async.** Close the tab whenever; open the game from the lobby's *Online games* list or the
+  link and it catches up (moves you missed are replayed briefly, or skipped if many). Live
+  play works the same way, with moves arriving in about a second.
+
+### Limits (accepted trade-offs)
+
+| Limit | Why / mitigation |
+|---|---|
+| **Players can cheat with dev tools**: every browser holds the seed, so future rolls and deck order are predictable | Inherent without a trusted party. Fine between friends; a server (§2 C) fixes it |
+| No "your turn" notifications | Needs a server to send email/Web Push. The lobby shows *Your move* for games last seen waiting on you |
+| A seat lives in one browser | Moving to another device would need exporting the key (not built) |
+| Public relays may rate-limit or drop events | Six relays, paced sending, re-sending from every browser |
+| **Engine changes can break games in progress**: replay must give the same result on every browser | `golden.test.ts` flags any behaviour change; bump `PROTOCOL` (protocol.ts) when one would alter replays, which retires older games |
+| localStorage (~5 MB) holds every game's events (~0.5 KB each) | Plenty for dozens of games; finished games can be removed from the lobby |
+
+### Testing it
+
+- `packages/online/test/timeline.test.ts`: whole games between simulated browsers over a lossy,
+  reordering network (they must end identical), seat authorisation, claim races, rival moves,
+  malformed posts, and the codec.
+- `apps/web/test/playback.test.ts`: catching up on others' moves walks forward and settles,
+  undo included.
+- In the browser: create an online game, open the link in a private window (a second identity)
+  and join. The dev server listens on the local network and invite links made on it use this
+  machine's address, so a phone on the same Wi-Fi can join (encryption is plain JavaScript, so
+  it works on plain http too). In dev, `window.__quantumOnline.{state(), view(), legal(), mySeats()}` drives a game
+  from a script.
 
 ---
 

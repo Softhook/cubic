@@ -1,0 +1,61 @@
+import type { Action, CombatPending, GameMode, PlayerConfig, PlayerId } from '@quantum/engine';
+
+/**
+ * An online game is a log of posts that every player's browser keeps and replays with the engine.
+ * Bump when a change to the posts or to how they are replayed would make old games replay
+ * differently.
+ */
+export const PROTOCOL = 1;
+
+/** Which battles a player is asked to respond to (fire a missile, re-roll) before they resolve. */
+export type AskMode = 'always' | 'own' | 'never';
+
+export interface GameConfig {
+  players: PlayerConfig[];
+  mapId: string;
+  mode: GameMode;
+  /** The game's RNG seed. Every player holds it (see MULTIPLAYER.md: players are trusted). */
+  seed: number;
+}
+
+export type Body =
+  /** The first post: the game and its seats. The creator plays `creator`; `open` seats are for friends. */
+  | { t: 'create'; protocol: number; config: GameConfig; creator: PlayerId; open: PlayerId[] }
+  /** Take an open seat. The earliest claim of a seat wins. */
+  | { t: 'claim'; seat: PlayerId; name: string }
+  | { t: 'act'; seat: PlayerId; action: Action }
+  /** Take back the seat's last move, if the engine allows it (isUndoable). */
+  | { t: 'undo'; seat: PlayerId }
+  | { t: 'ask'; seat: PlayerId; ask: AskMode }
+  /** Nothing to add at this stage of a battle (see `combatStage`). */
+  | { t: 'pass'; seat: PlayerId; stage: string };
+
+/**
+ * A post, decoded. `act`, `undo` and `ask` posts form a chain: each names the post it follows
+ * (`prev`), so every browser applies them in the same order. `create`, `claim` and `pass` posts
+ * stand on their own (`prev` is null) because their order doesn't matter.
+ */
+export interface Post {
+  id: string;
+  /** Public key of the browser that signed it. */
+  author: string;
+  /** When it was posted (ms, the poster's clock). Breaks ties between rival posts. */
+  at: number;
+  prev: string | null;
+  body: Body;
+}
+
+export const CHAINED: ReadonlySet<Body['t']> = new Set(['act', 'undo', 'ask']);
+
+/**
+ * Identifies one stage of a battle: it changes whenever a missile or re-roll changes the battle,
+ * so a pass only counts for the stage it was given in.
+ */
+export function combatStage(c: CombatPending): string {
+  return `${c.id}.${c.rerolls.length}.${+c.attacker.missile}${+c.defender.missile}`;
+}
+
+/** Earlier posts win; equal times are broken by id, so every browser picks the same one. */
+export function byTime(a: Post, b: Post): number {
+  return a.at - b.at || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+}

@@ -1,11 +1,26 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, missileOffered, tryApply, type Action, type CombatPending, type CombatRole, type GameState, type PlayerState } from '@quantum/engine';
+import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, missileOffered, tryApply, type Action, type CombatPending, type CombatRole, type GameState, type PlayerId, type PlayerState } from '@quantum/engine';
 import type { Dispatch } from '../game/useGame';
+import type { GameView } from '../game/view';
 import { Die3D } from './Die3D';
 
 const REVEAL_MS = 1250;
 
-export function CombatOverlay({ game, combat, dispatch }: { game: GameState; combat: CombatPending; dispatch: Dispatch }) {
+export function CombatOverlay({
+  game,
+  combat,
+  dispatch,
+  mine,
+  online,
+}: {
+  game: GameState;
+  combat: CombatPending;
+  dispatch: Dispatch;
+  /** The players this screen responds for. */
+  mine: (p: PlayerId) => boolean;
+  /** Online: who the battle waits for; it resolves once everyone who may respond is done. */
+  online?: GameView['combat'];
+}) {
   const [revealed, setRevealed] = useState(false);
   useEffect(() => {
     setRevealed(false);
@@ -16,9 +31,16 @@ export function CombatOverlay({ game, combat, dispatch }: { game: GameState; com
   const out = combatOutcome(game, combat);
   const A = game.players[combat.attacker.player];
   const D = game.players[combat.defender.player];
-  const humans = game.players.filter((p) => !p.ai);
+  const humans = game.players.filter((p) => (online ? online.responders.includes(p.id) : mine(p.id)));
   const shooters = humans.filter((p) => p.missiles > 0);
   const autoResolve = !humans.some((p) => canRespondToCombat(game, combat, p.id));
+  const waitingNames = online?.waitingOn.map((id) => game.players[id].name).join(' and ');
+  // The battle resolves by itself shortly; restarts when a missile changes it.
+  const autobar = (
+    <div className="autobar" key={`${combat.id}-${+combat.attacker.missile}-${+combat.defender.missile}`}>
+      <span />
+    </div>
+  );
   const leader = out.attackerWins ? A : D;
 
   const side = (role: CombatRole) => {
@@ -88,10 +110,20 @@ export function CombatOverlay({ game, combat, dispatch }: { game: GameState; com
           )}
         </div>
         <div className="combat-footer">
-          {autoResolve ? (
-            <div className="autobar" key={`${combat.id}-${+combat.attacker.missile}-${+combat.defender.missile}`}>
-              <span />
-            </div>
+          {online ? (
+            online.mustAnswer ? (
+              <button className="btn btn-primary" disabled={!revealed} onClick={online.pass}>
+                {humans.some((p) => canRespondToCombat(game, combat, p.id)) ? 'Done — no response' : 'Continue'}
+              </button>
+            ) : waitingNames ? (
+              <p className="combat-waiting">
+                <span className="spinner" /> Waiting for {waitingNames}…
+              </p>
+            ) : (
+              autobar
+            )
+          ) : autoResolve ? (
+            autobar
           ) : (
             <button className="btn btn-primary" disabled={!revealed} onClick={() => dispatch({ type: 'resolveCombat' })}>
               Resolve battle

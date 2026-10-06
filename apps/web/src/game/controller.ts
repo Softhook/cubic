@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { actor, cellOf, die as getDie, key, scrapyard, type Action, type Cell, type GameState } from '@quantum/engine';
+import { actor, cellOf, die as getDie, key, scrapyard, type Action, type Cell, type GameState, type PlayerId } from '@quantum/engine';
 import { sfx } from '../sound';
 import { highlightsFor, noHighlights } from './highlights';
 import { legalFor, NO_LEGAL } from './legal';
@@ -22,11 +22,12 @@ export type Sel =
 
 const NONE: Sel = { kind: 'none' };
 
-export function useController(game: GameState, dispatch: Dispatch) {
+/** `mine`: whether this screen plays for a player (see GameView). */
+export function useController(game: GameState, dispatch: Dispatch, mine: (p: PlayerId) => boolean) {
   const [sel, setSel] = useState<Sel>(NONE);
   const head = game.pending[0];
   const who = actor(game);
-  const human = game.phase !== 'over' && !game.players[who].ai;
+  const human = game.phase !== 'over' && mine(who);
   const actionPhase = game.phase === 'play' && !head && game.turn.phase === 'actions' && human;
 
   // Clear selection whenever the turn or the pending decision changes.
@@ -140,7 +141,7 @@ export function useController(game: GameState, dispatch: Dispatch) {
     [human, highlights, head, sel, legal, dispatch, select],
   );
 
-  return { sel, select, highlights, legal, onDie, onCell, onPlanet, human, actionPhase };
+  return { sel, select, highlights, legal, onDie, onCell, onPlanet, human, actionPhase, mine };
 }
 
 export type Controller = ReturnType<typeof useController>;

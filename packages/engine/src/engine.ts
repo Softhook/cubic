@@ -42,8 +42,9 @@ const HANDLERS: Handlers = {
 /** Applies an action and returns the new state. Throws RuleError if the action is illegal. */
 export function apply(prev: GameState, action: Action): GameState {
   if (prev.phase === 'over') throw new RuleError('The game is over');
-  const handler = HANDLERS[action.type] as ((s: GameState, a: Action) => void) | undefined;
-  if (!handler) throw new RuleError(`Unknown action ${action.type}`);
+  // Own keys only: an action from another browser may name anything, `constructor` included.
+  const handler = Object.hasOwn(HANDLERS, action?.type) ? (HANDLERS[action.type] as (s: GameState, a: Action) => void) : undefined;
+  if (!handler) throw new RuleError(`Unknown action ${action?.type}`);
   const s = structuredClone(prev);
   // Scrappy's re-roll must come right after the roll: any other action gives it up.
   if (action.type !== 'scrappy') delete s.turn.scrappy;
@@ -59,6 +60,24 @@ export function tryApply(prev: GameState, action: Action): GameState | null {
   } catch (e) {
     if (e instanceof RuleError) return null;
     throw e;
+  }
+}
+
+/**
+ * Whether the player in `seat` may send `action` (online play, where every action names its seat).
+ * Missiles and combat re-rolls belong to the player named in them, who may be anyone at the table;
+ * resolving a battle is never a player's action (the table resolves it once everyone has passed);
+ * everything else belongs to `actor(state)`. Whether the action is legal is still `apply`'s call.
+ */
+export function mayAct(state: GameState, seat: PlayerId, action: Action): boolean {
+  switch (action.type) {
+    case 'resolveCombat':
+      return false;
+    case 'missile':
+    case 'reroll':
+      return action.by === seat;
+    default:
+      return actor(state) === seat;
   }
 }
 

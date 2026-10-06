@@ -10,7 +10,7 @@
     "data": "node scripts/build-data.mjs",
     "dev": "npm run data && npm run dev -w @quantum/web",
     "build": "npm run data && npm run typecheck && npm run build -w @quantum/web",
-    "typecheck": "tsc --noEmit -p packages/engine && tsc --noEmit -p packages/ai && tsc --noEmit -p packages/art && tsc --noEmit -p apps/web && tsc -p tsconfig.test.json",
+    "typecheck": "tsc --noEmit -p packages/engine && tsc --noEmit -p packages/ai && tsc --noEmit -p packages/art && tsc --noEmit -p packages/online && tsc --noEmit -p apps/web && tsc -p tsconfig.test.json",
     "test": "npm run data && vitest run",
     "test:deep": "npm run data && DEEP=1 vitest run consistency",
     "check": "npm run typecheck && npm test",

@@ -241,7 +241,8 @@ function Modal({ title, subtitle, pc, wide, children }: { title: string; subtitl
   );
 }
 
-export function GameOver({ game, onNew, onClose }: { game: GameState; onNew: () => void; onClose: () => void }) {
+/** `newLabel`: what leaving the finished game is called ("New game", or "Back to lobby" online). */
+export function GameOver({ game, onNew, onClose, newLabel = 'New game' }: { game: GameState; onNew: () => void; onClose: () => void; newLabel?: string }) {
   if (game.winner === null) return null;
   const w = game.players[game.winner];
   return (
@@ -253,7 +254,7 @@ export function GameOver({ game, onNew, onClose }: { game: GameState; onNew: () 
         <p className="modal-sub">All cubes placed after {game.turn.number} turns.</p>
         <div className="modal-actions">
           <button className="btn" onClick={onClose}>View board</button>
-          <button className="btn btn-primary" onClick={onNew}>New game</button>
+          <button className="btn btn-primary" onClick={onNew}>{newLabel}</button>
         </div>
       </div>
     </div>

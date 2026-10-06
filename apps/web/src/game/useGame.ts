@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { actor, apply, checkInvariants, isUndoable, RuleError, type Action, type GameState } from '@quantum/engine';
+import { actor, apply, checkInvariants, isUndoable, RuleError, type Action, type GameState, type PlayerId } from '@quantum/engine';
 import { sfx } from '../sound';
 import { useToasts } from './toasts';
 import { saveGame } from './savedGame';
 import { useAiDriver } from './useAiDriver';
 import { useShortcut } from './useShortcut';
+import type { GameView } from './view';
 
 /** Applies an action; false (with an error shown) if the rules refuse it. */
 export type Dispatch = (a: Action) => boolean;
@@ -14,8 +15,8 @@ function reportBug(what: string, state: GameState, action: Action, error?: unkno
   console.error(`[quantum] ${what}`, { action, error, state: JSON.stringify(state) });
 }
 
-/** The game being played: its state, `dispatch`, undo, toasts and errors. AI players move by themselves. */
-export function useGame(initial: GameState) {
+/** The game being played on this device: its state, `dispatch`, undo, toasts and errors. AI players move by themselves. */
+export function useGame(initial: GameState): GameView {
   const [game, setGame] = useState(initial);
   const [error, setError] = useState<{ id: number; text: string } | null>(null);
   const { toasts, announce } = useToasts();
@@ -91,16 +92,17 @@ export function useGame(initial: GameState) {
     (window as unknown as Record<string, unknown>).__quantum = { state: () => ref.current, load: commit, dispatch };
   }, [commit, dispatch]);
 
-  return { game, dispatch, error, toasts, undo, canUndo: undoCount > 0 };
+  const mine = useCallback((p: PlayerId) => !ref.current.players[p].ai, []);
+  return { game, dispatch, mine, error, toasts, undo: undoCount > 0 ? undo : undefined };
 }
 
 /** Ctrl/Cmd+Z undoes the last move, unless the user is typing or a dialog is open over the board. */
-function useUndoShortcut(undo: () => void) {
+export function useUndoShortcut(undo: (() => void) | undefined) {
   useShortcut(
     (e) => (e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z',
     (e) => {
       e.preventDefault();
-      undo();
+      undo?.();
     },
   );
 }
