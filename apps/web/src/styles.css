@@ -151,6 +151,7 @@ input { font: inherit; }
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  border: 0; padding: 0; cursor: pointer; /* a button: back to the lobby */
 }
 .topbar-map { color: var(--muted); font-size: 13px; }
 .topbar-actions { margin-left: auto; display: flex; gap: 4px; align-items: center; }
@@ -993,6 +994,16 @@ input { font: inherit; }
   .market { padding: 8px; }
   .market .qcard-sm { flex: none; width: 134px; } /* seven cards never fit a phone: scroll full-size ones */
   .market-toggle { margin: -8px 0 -8px -8px; }
+  /* Collapsed on a phone: one row per deck (skills, tactics, Expansion) with the chips in three equal
+     columns, so they line up; the toggle runs down the left as in the open market. */
+  .market.collapsed { display: grid; grid-template-columns: auto auto repeat(3, minmax(0, 1fr)); align-items: center; gap: 6px 6px; }
+  .market.collapsed .market-toggle { grid-row: span 3; flex-direction: column; width: 30px; padding: 0; margin: -6px 4px -6px -8px; }
+  .market.collapsed .market-toggle span { writing-mode: vertical-rl; transform: rotate(180deg); }
+  .market.collapsed .market-strip-group { display: contents; }
+  .market.collapsed .market-strip-deck { grid-column: 2; text-align: left; }
+  .market.collapsed .market-chip { grid-column: auto; max-width: none; min-width: 0; text-align: left; }
+  .market.collapsed .market-strip-deck + .market-chip { grid-column: 3; }
+  .market.collapsed .market-chip-expansion { grid-column: 3; }
 }
 
 /* Popups on phones: less padding, so they fit without scrolling inside them. */

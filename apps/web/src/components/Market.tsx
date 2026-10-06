@@ -106,7 +106,7 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   const chips = (deck: DeckKind, cards: string[]) => (
     <div className={`market-strip-group market-${deck}`}>
       <button type="button" className="market-strip-deck" title={deckTitle(deck)} onClick={() => setViewing(deck)}>
-        {decks[deck].name} <b>{decks[deck].cards.length}</b>
+        {decks[deck].name}
       </button>
       {cards.map((id, index) => {
         const def = card(id);
@@ -118,7 +118,7 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
             className={`market-chip market-chip-${kind} ${canTake(deck, index) ? 'takeable' : ''}`}
             style={categoryStyle(def.category, kind === 'skill')}
             title={`${def.name} — ${def.text}`}
-            onClick={toggle}
+            onClick={() => setViewingCard(id)}
           >
             {def.name}
           </button>
@@ -177,14 +177,14 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
     </>
   );
 
-  // Collapsed: one slim strip of card-name chips, so the board gets the space back.
+  // Collapsed: one slim strip of card-name chips, so the board gets the space back. A chip shows its card.
   const strip = (
     <>
       {chips('skill', m.skillRow)}
       {chips('tactic', m.tacticRow)}
       {cardRules.expansionPile && (
         <div className="market-strip-group">
-          <button type="button" className="market-chip market-chip-expansion" title={`${m.expansions} Expansion cards left`} onClick={toggle}>
+          <button type="button" className="market-chip market-chip-expansion" title={`${m.expansions} Expansion cards left`} onClick={() => setViewingCard(EXPANSION.id)}>
             {EXPANSION.name} ×{m.expansions}
           </button>
         </div>

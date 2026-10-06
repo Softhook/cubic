@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react';
-import { SHIP_ABILITIES, SHIP_NAMES, card, reserve, rulesOf, scrapyard, type Die, type GameState, type PlayerState } from '@quantum/engine';
+import { SHIP_ABILITIES, SHIP_NAMES, card, rulesOf, scrapyard, type Die, type GameState, type PlayerState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
 import { CategoryIcon, categoryStyle } from './Card';
@@ -46,7 +46,6 @@ function PlayerCard({
 }) {
   const active = game.phase === 'play' && game.turn.player === p.id;
   const scrap = scrapyard(game, p.id);
-  const res = reserve(game, p.id);
   const totalCubes = p.cubesLeft + game.board.planets.reduce((a, pl) => a + pl.cubes.filter((x) => x === p.id).length, 0);
   const head = game.pending[0];
   const placingStart = head?.kind === 'placeShips' && head.player === p.id && ctl.human;
@@ -78,7 +77,6 @@ function PlayerCard({
         {p.planAhead > 0 && <Tip className="stat gold" tip="Plan Ahead: all your combat rolls are 1">Plan Ahead</Tip>}
         {p.actionPenalty > 0 && <Tip className="stat bad" tip="Sabotaged: fewer actions next turn">−{p.actionPenalty} action</Tip>}
         {p.ambitionTokens > 0 && <Tip className="stat" tip="Ambition tokens">Ambition {p.ambitionTokens}/3</Tip>}
-        {rulesOf(game).cards && <Tip className="stat muted" tip="Reserve ships (brought in by Expansion cards)">Reserve {res.length}</Tip>}
       </div>
       {scrap.length > 0 && (
         <div className="scrapyard">

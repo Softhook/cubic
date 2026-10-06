@@ -5,6 +5,7 @@ import { BoardArt } from './board/BoardArt';
 import { Explosions } from './board/Explosions';
 import { shipSpots } from './board/geometry';
 import { Die3D } from './Die3D';
+import { planetNames } from '../art/boardTiles';
 import { InfoPop, useAnchorName } from './InfoPop';
 
 /**
@@ -87,7 +88,7 @@ export function Board({ game, ctl, children }: { game: GameState; ctl: Controlle
                 className={`planet-hit ${hl ? `planet-${hl.tone}` : ''}`}
                 style={{ left: p.c * cell, top: p.r * cell, width: cell, height: cell }}
                 onClick={() => ctl.onPlanet(p.id) === false && show({ planet: p.id })}
-                title={`Planet ${p.number} · ${free} of ${p.capacity} cube location${p.capacity > 1 ? 's' : ''} free`}
+                title={`${planetLabel(game, p.id)} · ${free} of ${p.capacity} cube location${p.capacity > 1 ? 's' : ''} free`}
               >
                 {hl && <span className="planet-label">{hl.label}</span>}
               </button>
@@ -180,13 +181,20 @@ function ShipInfo({ game, id }: { game: GameState; id: string }) {
   );
 }
 
-/** A planet's number, its free cube spaces and whose cubes are on it. */
+/** A planet's name and number, as the log shows it: "Thalassa Prime (9)". */
+function planetLabel(game: GameState, id: number): string {
+  const p = game.board.planets.find((x) => x.id === id)!;
+  const name = planetNames(game.board).get(id);
+  return name ? `${name} (${p.number})` : `Planet ${p.number}`;
+}
+
+/** A planet's name, its free cube spaces and whose cubes are on it. */
 function PlanetInfo({ game, id }: { game: GameState; id: number }) {
   const p = game.board.planets.find((x) => x.id === id)!;
   const free = p.capacity - p.cubes.length;
   return (
     <>
-      <div className="info-title">Planet {p.number}</div>
+      <div className="info-title">{planetLabel(game, id)}</div>
       <div>
         {free} of {p.capacity} cube space{p.capacity > 1 ? 's' : ''} free.
       </div>

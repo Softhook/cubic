@@ -37,11 +37,15 @@ export function Game({
   const [sound, setSound] = useState(soundEnabled());
   const [hideGameOver, setHideGameOver] = useState(false);
   const head = game.pending[0];
+  /** Online games go on without you; a local game is abandoned, so it asks first. */
+  const leave = () => {
+    if (online || game.phase === 'over' || confirm('Abandon this game?')) onQuit();
+  };
 
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">Cubic</div>
+        <button type="button" className="brand" title="Back to the lobby" onClick={leave}>Cubic</button>
         <div className="topbar-map">
           <span className={`mode-badge mode-${game.mode}`}>{rulesOf(game).name}</span>
           {game.board.mapName}
@@ -56,7 +60,7 @@ export function Game({
               Lobby
             </button>
           ) : (
-            <button className="btn btn-ghost" onClick={() => { if (game.phase === 'over' || confirm('Abandon this game?')) onQuit(); }}>
+            <button className="btn btn-ghost" onClick={leave}>
               New game
             </button>
           )}
