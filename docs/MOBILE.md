@@ -1,288 +1,356 @@
 # Mobile & tablet
 
-How to make the web app play well on phones and iPads: the options for the board
-(fit, scroll, zoom), the layout per screen size, and a phased plan.
+How to make the web app play well on phones and iPads: what works today, what breaks, and a
+plan sized to where the app is now.
 
-Status: **proposal**, nothing implemented yet. Decisions still open are listed at the end.
+Status: **Step 0 done, Step 1 next.** First written 2026-10-02 as a proposal. Revised
+2026-10-06 after measuring the current build in device emulation (`npm run mobile:shots`:
+Playwright + Chrome; iPhone SE, iPhone 15, Moto G55 and iPad mini, portrait and landscape).
+Not yet checked on real devices.
 
----
+**Reference devices:**
 
-## 1. Where we are
-
-The app was built desktop-first. [styles.css](../apps/web/src/styles.css) has two breakpoints
-(980px, 600px) that stack the desktop layout into one scrolling column. That makes it
-*visible* on small screens, but not *playable*:
-
-| Problem | Where | Effect on touch devices |
+| Device | CSS viewport | Notes |
 |---|---|---|
-| Board is fit-to-container with a 34px minimum cell | [Board.tsx](../apps/web/src/components/Board.tsx) `ResizeObserver` | Large maps overflow the screen on phones; ships are drawn at 56% of a cell, so ~19px tap targets |
-| Information lives in `title=` tooltips | Board, PlayerList, TurnPanel, ShipPanel, Card, Market | Ship abilities, skill text, stat meanings are **unreachable** on touch |
-| Below 980px the layout is board → market → sidebar, page scrolls | `.layout` media query | You scroll away from the board to press *End turn*, then back |
-| `:hover` lift/glow effects | `.qcard.clickable:hover`, `.ship.own:hover`, … | Effects "stick" after a tap |
-| `100vh` in modals and stage | `.modal`, `.stage` | Wrong on iOS Safari (address bar); content cut off |
-| No safe-area handling, no `touch-action` | global | Content under the notch / home indicator; double-tap zooms the page |
-| Small controls (20–32px) | `.mini-btn`, `.icon-btn`, segmented buttons | Hard to hit with a finger (guideline: 44px) |
+| **Moto G55** (Android, Chrome) | 412×915 screen, ≈ 412×800 visible | Christian's phone: the primary real-device check |
+| iPhone SE (1st gen) | 320×568 | Playwright's "iPhone SE" preset; stands in for the narrowest phones (today's SE is 375 wide) |
+| iPhone 15 | 393×852, ≈ 393×659 visible | iOS Safari specifics |
+| iPad mini | 768×1024 | tablet, both orientations |
 
-### How big does the board get?
-
-Each map tile is 3×3 cells, so a 5×5-tile map is 15×15 cells. Cell size (px) when the
-whole board is fitted to the available area. *a/b* = normal / rotated 90°.
-Target for comfortable tapping is **≥ 44px**; **< 34px** is not really playable.
-
-| Available board area | 3×3 | 3×5 | 4×4 | 4×5 | 5×5 | 7×7 |
-|---|---|---|---|---|---|---|
-| Phone portrait (≈374×560) | 41 | 24 / **37** | 31 | 24 / 31 | 24 | 17 |
-| Phone landscape (≈520×350) | 38 | **34** / 23 | 29 | 29 / 23 | 23 | 16 |
-| iPad portrait (≈790×760) | 84 | 52 | 63 | 52 | 50 | 36 |
-| iPad landscape, Basic (≈848×736) | 81 | 56 | 61 | 56 | 49 | 35 |
-| iPad landscape, Original + market (≈848×550) | 61 | 56 | 45 | 45 | 36 | 26 |
-
-Map sizes by player count (BGA set, `reference/bga/maps.json`):
-2p mostly 3×3 / 3×5; 3p spread up to 5×5; **4p mostly 5×5**, a few up to 7×7.
-
-Takeaways:
-
-- **iPad: fit-to-screen is enough** for nearly every map, provided the market doesn't eat
-  the vertical space (see the last row). Zoom is a nice-to-have.
-- **Phone: fit-to-screen only works for 2-player maps.** 3–4 player maps need zoom, a
-  scrolling board, or both.
+The Moto G55 is 1080×2400 at a device pixel ratio of ≈ 2.625. The visible height subtracts
+Chrome's address bar and Android's navigation bar, and changes as the address bar hides.
 
 ---
 
-## 2. Options for the board on small screens
+## 1. What changed since the first draft
 
-### A. Fit only, plus auto-rotate
-Keep fit-to-screen, but render the board rotated 90° when that gives bigger cells (a 3×5
-map on a portrait phone goes from 24px to 37px). Rules only care about orthogonal and
-diagonal adjacency, so a rotated board plays identically. The engine keeps its own
-coordinates; only rendering and tap→cell mapping transform them.
+Online play (shared links, async turns) makes the phone much more important. The likeliest way
+someone joins a game now is by tapping an invite link in a chat app on their phone.
 
-- ✅ Cheap; no gestures; always shows the whole board
-- ❌ Doesn't help square maps (4×4, 5×5, 7×7) — useless on phones for 3–4 players
-- ➜ **Do it anyway** — it's a free win under every other option.
+Already done, mostly as side effects of other work:
 
-### B. Native scrolling board
-Render the board at a fixed playable cell size (e.g. 48px) inside an `overflow: auto` box;
-the player swipes around it like a large image.
+| Item | Where |
+|---|---|
+| Dev server reachable on the LAN (`host: true`, LAN address used in invites) | [vite.config.ts](../apps/web/vite.config.ts) |
+| Market is collapsible, remembers the choice, opens itself during a card pick | [Market.tsx](../apps/web/src/components/Market.tsx) |
+| Cards (skills, tech, decks) open a large `CardViewer` on tap, so card text works on touch | [PlayerList.tsx](../apps/web/src/components/PlayerList.tsx), [CardViewer.tsx](../apps/web/src/components/CardViewer.tsx) |
+| Ships and highlights take the whole cell as their tap area (option G for ships) | [Board.tsx](../apps/web/src/components/Board.tsx) |
+| Fullscreen button (iPad, Android; the API doesn't exist on iPhone Safari, so the button hides there) | [FullscreenButton.tsx](../apps/web/src/components/FullscreenButton.tsx) |
+| Lobby and dialogs (fleet roll etc.) fit a 320px phone, *as long as the board doesn't widen the page* (§2, point 1) | |
+| Invite uses the native share sheet on touch devices | [OnlineScreen.tsx](../apps/web/src/online/OnlineScreen.tsx) |
 
-- ✅ Very simple; native momentum scrolling; text stays crisp
-- ❌ No overview; easy to lose track of the opponent's ships
-- ❌ Swipes on the board compete with taps on ships (tolerable) and with page scroll (bad, unless the page itself never scrolls)
-- ➜ A reasonable **stepping stone**, not the end state.
-
-### C. Pinch-zoom + pan (free camera)
-Board starts fitted. Pinch to zoom in/out, one-finger drag to pan once zoomed, double-tap to
-toggle between "fit" and "zoom here". A *Fit* button resets the view.
-
-- ✅ What people expect from maps/games on touch; overview and detail both available
-- ✅ Also useful on iPad for 7×7 maps and on desktop (wheel/trackpad zoom)
-- ❌ Most implementation work: gesture handling, tap-vs-drag thresholds, bounds clamping
-- ❌ Scaled 3D dice can blur on Safari mid-gesture (fix below)
-
-### D. Smart camera (auto-focus)
-The app moves the view for you: selecting a ship zooms/pans so its reachable cells are
-visible; combat centres on the fight; after the action it eases back to fit. Opponent/AI
-moves pan to where they happen.
-
-- ✅ Players rarely need to touch the camera at all
-- ❌ Automatic camera moves can feel like fighting the app if overdone
-- ➜ Best as a **layer on top of C**, gentle and interruptible (any manual gesture wins).
-
-### E. Two-level zoom (overview ↔ region)
-No continuous zoom. Tap an area of the overview to jump to a fixed zoom on that tile and
-its neighbours; tap *Overview* to go back.
-
-- ✅ Simpler than C; predictable; plays well with the 3×3 tile structure
-- ❌ Moves that cross regions are awkward (ship at a region edge, target in the next)
-- ❌ An extra tap before almost every action on large maps
-
-### F. Magnifier / loupe
-Hold a finger on the board; a magnified bubble shows what's under it, release to pick.
-
-- ✅ No camera state at all
-- ❌ Hold-and-release is slow for a game with many taps per turn; conflicts with long-press-for-info
-- ➜ Not recommended.
-
-### G. Bigger hit areas (complements any option)
-Make the tappable area of a ship/cell the **whole cell** (or more) even when the dice are
-drawn smaller, and resolve ambiguous taps to the nearest legal target.
-
-- ✅ Raises the effective tap target from ~19px to the full cell; at 34–40px cells, smart
-  snapping makes play workable without zooming
-- ➜ **Do it everywhere.**
-
-### Recommendation
-
-**A + G + C + D**, in that order:
-
-1. Auto-rotate and full-cell hit areas (cheap, helps immediately).
-2. Pinch-zoom/pan with a *Fit* button; enabled on every device, default zoom = fit.
-3. Gentle auto-focus: when you select a ship and its targets aren't comfortably visible
-   (cells < 44px on screen), zoom just enough to show them. Never move the camera while the
-   player's finger is down; any manual gesture cancels auto-focus until the next selection.
-4. Optional: a small mini-map inset when zoomed in (we already have a `.mini-map` component
-   in the Lobby that can be reused).
-
-B is the fallback if C proves fiddly on real devices: it's a subset of the same work
-(render at a larger `cell`, let the container scroll).
-
-### Implementation notes for C
-
-- **Gesture → transform, settle → re-render.** During a pinch/pan, apply a CSS
-  `transform: translate() scale()` to the `.board` element directly (ref + `requestAnimationFrame`,
-  no React re-render per frame). When the gesture ends, commit the zoom by changing `cell`
-  (the board re-lays out at the new size) and reset the scale to 1. This keeps SVG, text
-  and the 3D dice crisp, and the existing `cell`-based layout keeps working unchanged.
-- **Tap vs drag:** treat a pointer that moves < 8px and lifts within ~300ms as a tap;
-  anything else is a pan and must not fire `onClick` on ships/cells.
-- **Bounds:** zoom between *fit* and ~72px cells; pan clamped so the board can't leave the screen.
-- **Tap mapping:** `onBoardClick` divides by `cell`; with rotation it also has to un-rotate.
-  Put this in one `screenToCell()` helper.
-- **CSS:** `touch-action: none` on the board container (we handle gestures),
-  `touch-action: manipulation` everywhere else (kills double-tap page zoom).
-- **Library or not:** `@use-gesture/react` (~10 kB, handles pinch/drag/wheel uniformly) is
-  the pragmatic choice; hand-rolled Pointer Events is ~150 lines and no dependency.
-  `react-zoom-pan-pinch` is higher level but owns the transform, which fights the
-  "commit to `cell`" approach.
+Not started: everything else in the old Phase 1 (`100vh`, safe areas, `touch-action`, hover
+effects, 44px targets, tooltips), plus the layouts and zoom.
 
 ---
 
-## 3. Layout per screen size
+## 2. Where we are (measured)
 
-### Phone portrait (< 600px wide) — options
+Below 980px the layout is a single scrolling column (board, market, sidebar). The stage is
+`min(100vw, 70vh)` tall, and cells are fitted to it with a **34px minimum**
+([Board.tsx](../apps/web/src/components/Board.tsx) `useCellSize`). Ships are drawn at 56% of a
+cell (about 19px at the minimum), but they are tapped on the whole cell.
 
-| | Layout | Verdict |
-|---|---|---|
-| P1 | Current stacked scrolling page | ❌ Board and controls never visible together |
-| P2 | **Full-height board + fixed bottom turn bar + slide-up sheet** (tabs: Players · Cards/Market · Log) | ✅ Recommended |
-| P3 | Tabbed full screens (Board / Players / Cards) | ⚠️ Simple, but hides the board while you read |
+Cell size as rendered today. **"floor"** means the fit wanted less than 34px, so the board is
+bigger than its box:
 
-P2 in detail:
+| Device (CSS px) | 3×3 Basic 2p | 5×5 Classic 4p | 7×7 4p |
+|---|---|---|---|
+| iPhone SE portrait (320×568) | 34 (floor) | floor, board 510px wide | floor, 714px |
+| iPhone 15 portrait (393×659) | 42 | floor, board 510px wide | floor, 714px |
+| iPhone 15 landscape (734×343) | floor (fit ≈ 26) | floor | floor |
+| **Moto G55** portrait (412×800) | 44 | floor, board 510px wide | floor, 714px |
+| **Moto G55** landscape (867×340) | floor (fit ≈ 26) | floor | floor |
+| iPad mini portrait (768×1024) | 78 | 47 | floor (fit ≈ 33) |
+| iPad mini landscape (1024×768) | 72 | **floor**, because the market takes ≈ 185px | floor (fit ≈ 24) |
 
-```
-┌──────────────────────────┐
-│ CUBIC     ⓘ  🔊  ☰       │  compact top bar
-├──────────────────────────┤
-│                          │
-│          board           │  pinch / pan, Fit button in a corner
-│     (fills the space)    │
-│                     [⤢]  │
-├──────────────────────────┤
-│ ● Anna  ■■□  Move a ship │  turn bar: always visible
-│ [Research] [Undo] [End ▶]│  contextual actions (ShipPanel actions here when a ship is selected)
-├──────────────────────────┤
-│ Players · Cards · Log  ▲ │  sheet handle; drag/tap to expand over the board
-└──────────────────────────┘
-```
+What this means in practice:
 
-- The sheet opens to ~60% height; the board stays visible above it.
-- When the game needs a card pick (market), the Cards tab opens automatically.
-- The page itself never scrolls: `height: 100dvh`, only the sheet's contents scroll.
+1. **Phones, maps of 5×5 and up: the page zooms out.** A 510px board on a 393px (iPhone) or
+   412px (Moto G55) screen widens the layout viewport to 518px, so the mobile browser shrinks
+   the *whole page*, or leaves it wider than the screen. The board also overflows its stage and
+   the market cards draw over its bottom row, and dialogs centre on the wider page, so the fleet
+   roll's *Keep fleet* button is half off the screen on the G55. This is the worst bug and the
+   cheapest to fix.
+2. **Phone landscape breaks even 2-player maps** (the stage is only 240px tall).
+3. **iPad landscape with cards (Classic/Community) on 5×5** reaches the 34px floor because of
+   the market. Collapsing the market helps, but the board doesn't get bigger until the next
+   resize.
+4. **You scroll away from the board to act.** On an iPhone 15 the turn panel starts about 60px
+   above the bottom of the screen. *End turn* and the ship actions are below the fold, and the
+   page is 1,000–1,500px tall.
+5. **Ship and planet info is hover-only.** Ability text and planet capacity live in `title=`
+   (≈ 70 `title=` attributes across the components). Tapping an opponent's ship does nothing,
+   so on touch there is no way to read what it does. Your own ships show their ability in
+   ShipPanel when selected.
+6. **Touch basics still missing:** `100vh` in `.modal`; no `viewport-fit=cover` or safe-area
+   padding; no `touch-action` (double-tap zooms the page); 22 `:hover` rules that stick after a
+   tap; `.icon-btn` 32px, `.mini-btn` ≈ 18px, and 13–18 buttons under 44px on a game screen.
 
-### Phone landscape
-Board on the left (fitted to height), a ~260px panel on the right with the turn bar on top
-and the same tabs below. Short screens make this cramped for 4p maps — zoom handles it.
+Map sizes per player count (from `data/maps.yaml`), which decide how much zoom matters:
 
-### iPad portrait (600–1024px)
-Board on top (~60% height), below it the turn panel and player list **side by side**,
-log collapsible. Market as a horizontal strip that collapses to a "Cards" button when it
-isn't your card phase. No page scroll.
+| Players | Common sizes |
+|---|---|
+| 2 | 3×3, 3×5 (most); a few 4×4, 4×5 |
+| 3 | 3×3 to 5×5, spread evenly |
+| 4 | **5×5 (10 maps)**; 3×3, 3×5, 4×4; a few 6×6, 5×7, 7×7 |
+| 5 | 3×3, 5×5; one 10×1 |
 
-### iPad landscape / desktop (> 1024px)
-Current layout. Changes: sidebar 300px instead of 360px below 1280px wide; market
-collapsible (it costs ~190px of height, which is what pushes 5×5 Original maps to 36px cells).
-
-### Overlays on phones
-- **Card choice** (two `qcard-lg` side by side = 440px) → use `qcard-md` or a swipeable row.
-- **Change of Heart** (search the whole deck) → full-screen sheet with a scrolling grid.
-- **Combat** already stacks to one column below 980px; check the dice and totals fit at 374px.
-- **Rules** → full-screen on phones.
-
----
-
-## 4. Tooltips → touch-friendly info
-
-Everything currently in `title=` needs another way in. Options:
-
-1. **Long-press shows a popover** — standard on iOS/Android; doesn't interfere with taps.
-2. **Tap shows info for things that aren't actionable** (skill chips, stats, cubes, decks);
-   actionable things (ships, buttons) keep tap = act, long-press = info.
-3. **An "ⓘ inspect" toggle** in the top bar: while on, every tap shows info instead of acting.
-
-Recommendation: **1 + 2**, plus a richer *selected ship* panel (selecting a ship already
-shows its ability in ShipPanel — on phones that panel lives in the turn bar).
-
-Implementation: one `<Tip>` popover component and a `tip` prop/`data-tip` attribute that
-replaces the `title` strings. On devices with a mouse, the same component shows on hover,
-so desktop gets nicer tooltips too.
+Basic's default maps (3×3) already play OK on a portrait phone (44px cells on the Moto G55,
+42px on an iPhone 15). Most 4-player games don't.
 
 ---
 
-## 5. Plan
+## 3. Target
 
-Each phase is shippable on its own and leaves desktop unchanged or better.
+The previous draft aimed straight at "one-handed 4p on an iPhone SE". That is still the end
+goal, but a realistic order is:
 
-### Phase 0 — Test setup (½ day)
-- [ ] `vite --host` script so the dev server can be opened on a real iPhone/iPad on the LAN.
-- [ ] Dev URL shortcut to jump straight into a game: `?mode=original&map=<id>&players=4`
-      (saves going through the lobby on every check).
-- [ ] Reference devices: iPhone SE (375×667), iPhone 15 (393×852), iPad mini (744×1133),
-      iPad Air (820×1180), both orientations. Chrome DevTools device mode for quick checks,
-      **real Safari** before calling a phase done.
-- [ ] Optional: Playwright screenshot script over devices × {3×3, 5×5, 7×7} maps × {Basic, Original}.
+1. **Nothing broken on any device.** No page zoom-out, no overlap, no sticky hover, every piece
+   of information reachable by touch.
+2. **iPad great, phone good for 2–3 player maps**, which covers the "join a friend's online
+   game from a link" case.
+3. **Phone good for 4–5 player maps.** This needs board zoom and is the expensive part.
 
-### Phase 1 — Touch basics (1–2 days) · helps every device
-- [ ] `viewport-fit=cover` + `env(safe-area-inset-*)` padding; `100vh` → `100dvh`.
-- [ ] `touch-action: manipulation` globally; disable text selection and the iOS callout on game UI.
-- [ ] Wrap hover effects in `@media (hover: hover)`.
-- [ ] Minimum 44px touch targets on touch devices (`@media (pointer: coarse)`).
-- [ ] `<Tip>` component; replace every `title=` (list in §1).
-- [ ] Full-cell hit areas for ships (option G).
+---
 
-**Done when:** on an iPad you can find every piece of information without a mouse, and nothing sticks or zooms by accident.
+## 4. Plan
 
-### Phase 2 — Tablet layouts (1–2 days)
-- [ ] iPad portrait layout (board top, panels side by side, no page scroll).
-- [ ] Collapsible market; narrower sidebar on mid-size screens.
-- [ ] Board auto-rotate (option A).
+Each step can ship on its own and leaves desktop as it is or better. Sizes are rough. The
+tools and libraries named here are compared in §5.
 
-**Done when:** a full Original-mode 4-player game is comfortable on iPad in both orientations.
+| Step | Size | Gets us | Checked by |
+|---|---|---|---|
+| 0 Test setup ✅ | ½ day | One command shows every device; HTTPS on the phone | — |
+| 1 Stop the breakage | ½ day | Nothing broken anywhere (target 1) | `mobile:shots` passes; G55 by hand |
+| 2 Info on touch | 1 day | Ship and planet info by tap | iPad-size emulation; G55 |
+| 3 Phone layout | 1–2 days | No scrolling to act; landscape works (target 2) | `mobile:shots` + G55 + one BrowserStack iOS pass |
+| 4 Board zoom | 3–4 days, 1-day spike first | 4–5 player maps on phones (target 3) | G55 + one BrowserStack iOS pass |
+| 5 Home-screen app | ½–1 day | Fullscreen on iPhone, offline vs AI | Pages deploy on the G55 |
 
-### Phase 3 — Board camera (3–4 days)
-- [ ] `screenToCell()` helper (scale + rotation), used by all board taps.
-- [ ] Pinch-zoom / pan / wheel zoom / double-tap, Fit button, bounds (option C).
-- [ ] Commit-to-`cell` after gestures for crisp rendering.
-- [ ] Auto-focus on selection and combat; follow AI/opponent moves (option D).
-- [ ] Optional mini-map inset.
+Steps 1–3 come first; Step 4 is the big one and can wait until they are in.
 
-**Done when:** a 5×5 4-player map is playable on an iPhone with ships at ≥ 44px when zoomed, and no accidental moves while panning.
+### Step 0: Test setup ✅ (2026-10-06)
+- [x] **`npm run mobile:shots`** ([scripts/mobile-shots.ts](../scripts/mobile-shots.ts)): starts
+      its own dev server, opens a 2p 3×3, a 4p 5×5 and a 4p 7×7 game on the 7 device sizes from
+      §2, writes screenshots to `test-results/mobile/` (git-ignored) and prints the cell size
+      and page size for each. It **exits with 1 when a layout is broken**: page wider than the
+      screen, or board bigger than its stage. Today: 19 of 21 broken, as §2 says. `--url` checks
+      a running dev server instead, `--webkit` uses WebKit (needs
+      `npx playwright install webkit`). Takes about 45 s.
+- [x] **Dev link straight into a game** ([devStart.ts](../apps/web/src/game/devStart.ts), dev
+      server only): `?play=classic&players=4&map=tesseract&seed=1`. `play` takes a mode's id or
+      name; `map` defaults to the basic map; `seed` repeats the same dice. One human
+      (Commander) against AI. Reloading starts it again; it replaces the saved game, like any new
+      game. Not in production builds.
+- [x] **`npm run dev:https`**: the dev server with a self-signed certificate
+      (`@vitejs/plugin-basic-ssl` v1; v2 needs Vite 6). On the phone open
+      `https://<Mac's LAN address>:5173/`, accept the warning once, and the share sheet and
+      clipboard work.
+- [ ] **Moto G55 remote debugging** (one-time, by hand): on the phone, Settings → About phone →
+      tap *Build number* 7 times; then Developer options → *USB debugging* on. Connect by USB,
+      open `chrome://inspect` in Chrome on the Mac, and *inspect* the game's tab.
 
-### Phase 4 — Phone layout (2–3 days)
-- [ ] Bottom turn bar (TurnPanel + ShipPanel actions in compact form).
-- [ ] Slide-up sheet with Players / Cards / Log tabs; auto-open Cards during card picks.
-- [ ] Phone landscape variant.
-- [ ] Phone-sized overlays (card choice, Change of Heart, combat, rules, game over).
+**Done when:** one command produces the device matrix ✅, and the G55 can open the dev server
+over HTTPS with DevTools attached (the last checkbox).
 
-**Done when:** a full game, setup to game over, can be played one-handed on an iPhone SE.
+### Step 1: Stop the breakage (small, ½ day)
+- [ ] **Board never wider than its box.** In `useCellSize`
+      ([Board.tsx](../apps/web/src/components/Board.tsx)) drop the 34px floor: always fit. Tap
+      areas are already full cells, so 25px cells on a 5×5 are tight but usable, and far better
+      than a zoomed-out page; 7×7 on a phone (≈ 17px) stays poor until Step 4.
+- [ ] Stage height on phones: give the board the space it needs, e.g.
+      `height: min(100vw, calc(100dvh - topbar - turn bar))`, and in landscape let the board
+      use the full height.
+- [ ] Re-fit the board when the market collapses or expands (it's a `ResizeObserver` on the
+      wrap, so check the stage really resizes rather than overflows).
+- [ ] `viewport-fit=cover` + `env(safe-area-inset-*)` padding; `100vh` → `100dvh` (`.modal`,
+      and anywhere else that is sized by the viewport).
+- [ ] `touch-action: manipulation` on the app; `user-select: none` and
+      `-webkit-touch-callout: none` on the board and the dice.
+- [ ] Wrap the 22 `:hover` rules in `@media (hover: hover)`.
+- [ ] `@media (pointer: coarse)`: 44px minimum for `.icon-btn`, `.mini-btn`, segmented
+      buttons, topbar buttons (padding or a larger hit area via `::after`, so things don't look
+      bloated).
 
-### Phase 5 — Installable app (½–1 day, optional)
-- [ ] Web app manifest + icons + `apple-mobile-web-app-capable` → "Add to Home Screen" opens fullscreen.
-- [ ] Service worker for offline play vs the AI (everything already runs client-side).
-- [ ] Keep the screen awake during a game (Screen Wake Lock API) if it turns out to matter.
+**Done when:** `npm run mobile:shots` reports no problems (it checks the first two points
+on every device), and on the G55 a double-tap never zooms the page and nothing sticks after a
+tap.
+
+### Step 2: Info on touch (small to medium, 1 day)
+- [ ] **Tap any ship to see its info.** When tapping an opponent's ship (or your own outside
+      your action phase) does nothing today, show a small info popover instead: owner, ship
+      name, value, ability text. No conflict with play, because those taps are currently no-ops.
+- [ ] One `<Tip>` popover component (hover on mouse, tap or long-press on touch) for things
+      that aren't actionable: planet capacity, stat tracks, cubes, the ✦ "ability used" badge,
+      scrapyard dice. Then replace the `title=` strings one component at a time (Board,
+      PlayerList, TurnPanel, ShipPanel, Market first). Build it on the browser's own
+      **Popover API + CSS anchor positioning** (no dependency; §5), with a plain bottom-centre
+      fallback via `@supports` for older iOS.
+- [ ] Long-press for info on actionable things (own ships, planets) is a nice-to-have; skip
+      unless real-device testing shows it's needed.
+
+**Done when:** on an iPad you can find every piece of information without a mouse.
+
+### Step 3: Phone layout, minimal version (medium, 1–2 days)
+Keep the scrolling column, but pin what matters:
+- [ ] **Sticky bottom turn bar** on phones: current player, short prompt, the main actions
+      (End turn, Undo, the selected ship's actions). This can be the TurnPanel/ShipPanel in a
+      compact form with `position: sticky; bottom: 0`. You never have to scroll to act.
+- [ ] Board first and fully visible on load; market (collapsed by default on phones), players
+      and log below it.
+- [ ] Phone landscape: board on the left at full height, sidebar scrolling on the right
+      (a two-column grid below 980px when `orientation: landscape` and the height is small).
+- [ ] Overlays at 320–393px: check combat (dice and totals), card choice (two large cards
+      side by side), Change of Heart (whole-deck search), game over, rules.
+- [ ] iPad portrait: put the turn panel and the player list side by side under the board,
+      so the page stops being 1,800px tall.
+
+The slide-up sheet with tabs (P2 in the old draft) is the polished version of this. Do it only
+if the sticky bar turns out not to be enough. If it comes to that, don't use Vaul, which is
+unmaintained (§5).
+
+- [ ] Profile one full turn on the G55 with remote debugging: 3D dice, four `backdrop-filter`
+      blur layers, explosions. Its Dimensity 7025 is mid-range and the screen runs at 120 Hz.
+      Only optimise what the profile shows.
+
+**Done when:** a 2p Basic game and a 3p Classic game, setup to game over, can be played on
+the Moto G55 (and on an iPhone, through BrowserStack) without scrolling to act; a full 4p
+Classic game is comfortable on an iPad in both orientations. Add a check to `mobile:shots` that
+the turn bar's *End turn* is inside the screen.
+
+### Step 4: Board zoom (larger, 3–4 days)
+Needed for 4–5 player maps on phones. Start with a **one-day spike with
+`react-zoom-pan-pinch`** (§5). It now covers most of the list below out of the box
+(`zoomToElement` for auto-focus, a MiniMap, coordinate helpers), so it may well be good enough.
+Judge it on the G55 (and once on BrowserStack iOS) by three things: are dice and text crisp
+after a zoom, does a tap on a ship ever turn into a pan (or the reverse), and does it feel
+smooth at 120 Hz.
+
+If it fails, fall back to our own Pointer Events (~150 lines), using the design from the old
+draft:
+- [ ] Pinch-zoom / pan / wheel zoom / double-tap, a *Fit* button, bounds from "fit" to ≈ 64px
+      cells.
+- [ ] During the gesture, apply a CSS `transform` to `.board`; when it ends, commit by changing
+      `cell` (crisp SVG, text and dice) and reset the transform.
+- [ ] Tap vs drag: under 8px of movement and ~300ms is a tap; anything else pans and must not
+      fire ship/cell clicks. One `screenToCell()` helper for `onBoardClick`.
+- [ ] `touch-action: none` on the board only.
+
+Either way:
+- [ ] Optional: gentle auto-focus on selection (zoom just enough to show the reachable cells),
+      follow opponent and AI moves during online replays, a mini-map inset.
+- [ ] Playwright pinch tests through Chrome's DevTools protocol
+      (`Input.synthesizePinchGesture` / `Input.dispatchTouchEvent`): `page.touchscreen` only
+      does single taps. These run in Chromium only.
+
+Auto-rotating the board 90° (old option A) only helps rectangular maps (3×5, 4×5, 4×7). It's
+cheap once `screenToCell()` exists; worth adding then, not before.
+
+**Done when:** a 5×5 4-player map is playable on the Moto G55 and an iPhone with ships
+≥ 44px when zoomed in, and panning never makes a move.
+
+### Step 5: Home-screen app (small, optional)
+More useful now that online games are async: people come back to a game over days.
+- [ ] `vite-plugin-pwa` (v2, Oct 2026) for the manifest and service worker, and
+      `@vite-pwa/assets-generator` for icons from `favicon.svg`. Add `apple-mobile-web-app-capable`
+      so "Add to Home Screen" opens fullscreen. This is also the only way to get fullscreen on an
+      iPhone.
+- [ ] Service worker for offline play against the AI (everything already runs client-side).
+- [ ] **Watch out: stale clients in online games.** A cached old build replaying a log made by
+      a newer build can desync. Use `registerType: 'autoUpdate'` and check for an update when
+      the app comes back to the foreground. Then a home-screen app is never more than one
+      resume behind.
+- [ ] Check the scope and start URL with the `./` base on the GitHub Pages subpath.
+- [ ] Screen Wake Lock during a game, if it turns out to matter.
+- Turn notifications would need a push server, which goes against the no-server rule. Out of
+  scope.
 
 ### Later / ideas
-- **Pass-and-play on iPad:** a "hand over" screen between human players; optionally rotate
-  the turn bar towards the active player when the iPad lies flat between two people.
-- Haptics (`navigator.vibrate`) on combat results — Android only; iOS Safari doesn't support it.
+- Pass-and-play on iPad: a "hand over" screen between human players.
+- Haptics on combat results (Android only; iOS Safari has no `navigator.vibrate`).
 
-**Total:** roughly 8–12 days of work for phases 0–4.
+---
+
+## 5. Tools, libraries and services
+
+Researched 2026-10-06. Free options come first; nothing here needs a server of our own.
+
+### Testing
+
+| Tool | Cost | What it gives us | Use it for |
+|---|---|---|---|
+| **Moto G55 + Chrome remote debugging** (USB, `chrome://inspect` on the Mac) | free | Real Android Chrome with full DevTools on the phone's page: console, element picker, performance profiles on real hardware | Every step's real-device check; profiling |
+| **Playwright** device emulation (the installed Chrome via `channel: 'chrome'`) | free | Layout matrix in seconds; screenshots; `toHaveScreenshot` for visual regression | Step 0 script; catching layout regressions |
+| **Safari Responsive Design Mode** (Develop menu, already on the Mac) | free | Real WebKit at phone sizes. Closer to iOS than Chrome emulation, but still desktop Safari | Quick WebKit sanity checks |
+| ~~iOS Simulator~~ | free, but needs full Xcode | Real Mobile Safari | **Not used**: decided 2026-10-06 not to install Xcode |
+| **Android Emulator** (Android Studio) | free | Other Android sizes and Chrome versions | Only if a bug looks device-specific; the G55 covers Android |
+| **BrowserStack open-source programme** | free for public repos (this one is public), needs an application | Real iPhones and iPads in the cloud, manual (Live) and automated (Playwright) | Final pass of Steps 3–4 on real iOS hardware, if no iPhone is at hand |
+| **Eruda** (on-page console, loaded only with `?debug`) | free | Console and network on a phone without a cable | Friends testing online games on iPhones |
+
+**iOS without an iPhone or Xcode (decided 2026-10-06):** routine checks use Playwright's
+WebKit build and Safari's Responsive Design Mode on the Mac (both real WebKit, but desktop).
+Before calling Steps 1, 3 and 4 done, do one pass on real iPhones and iPads through
+BrowserStack's open-source programme. A friend's iPhone during an online game is a bonus
+check. The iOS-only details (safe areas, the collapsing toolbar, the long-press callout) are
+the least-tested area. Write them defensively, following the standard patterns in Step 1.
+
+What emulation can't show: real touch and pinch feel, scroll momentum, iOS toolbar resizing,
+real performance (it runs on the Mac's CPU and GPU). Hence the G55 and BrowserStack.
+
+### Secure context on the LAN
+
+The dev server on `http://192.168.x.x` is **not a secure context** on the phone. The share
+sheet, clipboard, service worker and Wake Lock are all missing there. Inviting from the phone
+currently falls back to a `prompt()`, so it looks broken in dev when it isn't. Options:
+
+- **`@vitejs/plugin-basic-ssl`**: a self-signed certificate, so you click through a warning
+  once per device. Recommended: one dev dependency behind a `dev:https` script.
+- **mkcert**: a trusted local certificate, no warning, but the root certificate has to be
+  installed on each phone. More setup than it's worth here.
+- **The GitHub Pages deploy** is already HTTPS on every push to `main`, so it's the real test
+  for share, clipboard and PWA behaviour.
+- **A tunnel** (Cloudflare quick tunnel, ngrok): HTTPS plus access off the LAN, but it puts the
+  dev server on the public internet. Only for a short session with a remote friend.
+
+### Libraries
+
+| Need | Choice | Why | Rejected |
+|---|---|---|---|
+| Board zoom (Step 4) | **`react-zoom-pan-pinch`** v4.2 (Sept 2026), spike first | Actively maintained; pinch, pan, wheel, double-tap, `zoomToElement`, MiniMap, coordinate helpers built in | `@use-gesture/react`: works, but no release in 3 years. Own Pointer Events code stays the fallback |
+| Info popovers (Step 2) | **Native Popover API + CSS anchor positioning** | Baseline in every major browser since Jan 2026 (Safari 26, Firefox 147): positioning and light-dismiss with no dependency | Floating UI: excellent, but only needed for older browsers. Tippy.js: legacy |
+| Bottom sheet (only if Step 3 needs one) | Hand-rolled, or Base UI's drawer | Small; no gestures needed if it only opens by tap | **Vaul: unmaintained** (its author says so); shadcn/ui moved its drawer off it |
+| Home-screen app (Step 5) | **`vite-plugin-pwa`** v2 + `@vite-pwa/assets-generator` | The standard for Vite; Workbox underneath; icons generated from one SVG | Hand-written service worker: more risk around update handling |
+
+Not worth it: hosted visual-testing services (Percy, Chromatic). Playwright's own screenshots
+are enough at this size. Paid device clouds beyond the free open-source programme: also not
+needed.
+
+### Playwright details
+
+- No Moto G55 preset: use
+  `{ viewport: { width: 412, height: 800 }, deviceScaleFactor: 2.625, isMobile: true, hasTouch: true }`
+  (landscape ≈ 867×340).
+- Games start from the `?play=` dev link. *Keep fleet* is disabled for 1.35 s while the dice
+  land; wait for it to be enabled, then click it from inside the page (on a too-wide page it
+  can be partly off screen). Event Horizon (7×7) is offered under Community, not Classic.
+- Launch Chrome with `--no-proxy-server`. Otherwise its proxy auto-detection adds **12 s to
+  every page load** on this Mac (the whole matrix took 5 minutes instead of 45 s).
+- Playwright's own `webkit` is desktop WebKit, not iOS Safari. Treat it as a hint, not a
+  verdict.
 
 ---
 
 ## 6. Open decisions
 
-1. **How good must the phone be?** "Fully playable incl. 4p maps" (phases 3–4 needed) vs
-   "best on tablet, phone OK for 2p" (phases 1–2 plus option A/G may be enough at first).
-2. **Zoom approach:** pinch-zoom camera (C, recommended) vs scrolling board (B, simpler).
-3. **Dependency:** OK to add `@use-gesture/react`, or keep the client dependency-free?
-4. **Installable / offline (phase 5):** wanted now, or after online multiplayer (M4)?
+1. **Order:** Steps 0–3 first (phone good for 2–3p, iPad great), with zoom later? Or is 4p on
+   a phone important enough to do Step 4 early?
+2. **Stopgap for big maps on phones before zoom:** fit at small cells (recommended above), or
+   a horizontally scrolling board at 34px (simpler, but swipes compete with the page)?
+3. **Dependencies:** `playwright` and `@vitejs/plugin-basic-ssl` are in (dev only, agreed
+   2026-10-06). Still to decide: `react-zoom-pan-pinch` (if the Step 4 spike works) and
+   `vite-plugin-pwa` (Step 5).
+4. **Home-screen app (Step 5):** now, given async online play, or later?
+5. **Run `mobile:shots` in CI?** GitHub's Ubuntu runners have Chrome, so the Pages workflow
+   could run it and fail the deploy on a broken layout. Worth it once Step 1 makes it pass;
+   until then it would block every deploy.

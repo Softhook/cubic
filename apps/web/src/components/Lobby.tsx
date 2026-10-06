@@ -6,7 +6,7 @@ import { forgetGame, onlineGames } from '../online/storage';
 import { remember, stored } from '../storage';
 import { PLAYER_COLORS } from '../theme';
 
-const AI_NAMES = ['Nova', 'Vex', 'Orion', 'Lyra', 'Kepler'];
+export const AI_NAMES = ['Nova', 'Vex', 'Orion', 'Lyra', 'Kepler'];
 const PLAYER_COUNTS = [...new Set(MAPS.map((m) => m.players))];
 
 export interface LobbyResult {

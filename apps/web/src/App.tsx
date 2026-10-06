@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createGame, type GameState } from '@quantum/engine';
 import { useGame } from './game/useGame';
 import { clearSavedGame, loadSavedGame } from './game/savedGame';
+import { devStartGame } from './game/devStart';
 import { Lobby, type LobbyResult } from './components/Lobby';
 import { Rules } from './components/Rules';
 import { Game } from './components/GameScreen';
@@ -9,7 +10,7 @@ import { OnlineScreen, onlineSecret } from './online/OnlineScreen';
 import { createOnlineGame } from './online/create';
 
 export function App() {
-  const [game, setGame] = useState<GameState | null>(null);
+  const [game, setGame] = useState<GameState | null>(devStartGame);
   const [saved, setSaved] = useState(loadSavedGame);
   const [rules, setRules] = useState(false);
   // An online game is opened by its link: #online/<secret>.

@@ -1,6 +1,7 @@
 import { networkInterfaces } from 'node:os';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 
 /** This machine's address on the local network, so online invites made in dev work on other devices. */
 function lanAddress(): string {
@@ -10,8 +11,10 @@ function lanAddress(): string {
   return '';
 }
 
-export default defineConfig(({ command }) => ({
-  plugins: [react()],
+export default defineConfig(({ command, mode }) => ({
+  // `npm run dev:https`: a self-signed certificate, so a phone on the local network gets a secure
+  // context (share sheet, clipboard, service worker). The browser warns once per device.
+  plugins: [react(), ...(mode === 'https' ? [basicSsl()] : [])],
   // Relative asset paths so the build works under a subpath (e.g. GitHub Pages /quantum/).
   base: './',
   // All addresses: IPv4 and IPv6 localhost (browsers differ in which "localhost" means), and the

@@ -9,6 +9,7 @@
   "scripts": {
     "data": "node scripts/build-data.mjs",
     "dev": "npm run data && npm run dev -w @quantum/web",
+    "dev:https": "npm run data && npm run dev:https -w @quantum/web",
     "build": "npm run data && npm run typecheck && npm run build -w @quantum/web",
     "typecheck": "tsc --noEmit -p packages/engine && tsc --noEmit -p packages/ai && tsc --noEmit -p packages/art && tsc --noEmit -p packages/online && tsc --noEmit -p apps/web && tsc -p tsconfig.test.json",
     "test": "npm run data && vitest run",
@@ -18,10 +19,12 @@
     "selfplay:cards": "npm run data && vite-node scripts/selfplay-cards.ts",
     "audit:cards": "npm run data && vite-node scripts/card-audit.ts --",
     "sweep:basic": "npm run data && vite-node scripts/basic-sweep.ts",
-    "relays:check": "vite-node scripts/relay-check.ts --"
+    "relays:check": "vite-node scripts/relay-check.ts --",
+    "mobile:shots": "npm run data && vite-node scripts/mobile-shots.ts --"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
+    "playwright": "^1.63.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0",
     "yaml": "^2.6.0"
