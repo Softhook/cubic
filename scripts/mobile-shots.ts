@@ -160,29 +160,46 @@ async function checkZoom(page: Page): Promise<{ issues: string[]; cells: number[
       const ships = [...document.querySelectorAll<HTMLElement>('.ship')].map((s) => `${s.dataset.r},${s.dataset.c}`);
       return { cell, left: board.offsetLeft, top: board.offsetTop, ships: ships.sort().join(' '), scrollY: window.scrollY };
     });
+  type State = Awaited<ReturnType<typeof state>>;
+  // CI runners are slow: polls until the gesture has landed and the board has stopped changing, rather than
+  // trusting a fixed wait.
+  const settle = async (done: (s: State) => boolean): Promise<State> => {
+    let prev = await state();
+    for (let waited = 0; waited < 3000; waited += 200) {
+      await page.waitForTimeout(200);
+      const s = await state();
+      if (done(s) && JSON.stringify(s) === JSON.stringify(prev)) return s;
+      prev = s;
+    }
+    return prev;
+  };
   const wrap = (await page.locator('.board-wrap').boundingBox())!;
   const mid = { x: Math.round(wrap.x + wrap.width / 2), y: Math.round(wrap.y + wrap.height / 2) };
   const issues: string[] = [];
 
   const fitted = await state();
   await cdp.send('Input.synthesizePinchGesture', { ...mid, scaleFactor: 2.5, relativeSpeed: 600, gestureSourceType: 'touch' });
-  await page.waitForTimeout(600); // the gesture's transform is committed as the new cell size
-  const pinched = await state();
+  // The gesture's transform is committed as the new cell size.
+  const pinched = await settle((s) => s.cell >= fitted.cell * 1.3);
   if (pinched.cell < fitted.cell * 1.3) issues.push(`pinch: spaces ${fitted.cell}px → ${pinched.cell}px`);
 
   // A slow drag, so it doesn't fling, starting off-centre so it doesn't begin on the ship just selected.
-  await cdp.send('Input.synthesizeScrollGesture', { x: mid.x - 30, y: mid.y - 30, xDistance: 60, yDistance: 60, speed: 300, gestureSourceType: 'touch', preventFling: true });
-  await page.waitForTimeout(600);
-  const panned = await state();
+  // Sent a second time if the first is lost on a slow runner; a broken pan fails both.
+  const moved = (s: State) => s.left !== pinched.left || s.top !== pinched.top;
+  let panned = pinched;
+  for (let attempt = 0; attempt < 2 && !moved(panned); attempt++) {
+    await cdp.send('Input.synthesizeScrollGesture', { x: mid.x - 30, y: mid.y - 30, xDistance: 60, yDistance: 60, speed: 300, gestureSourceType: 'touch', preventFling: true });
+    panned = await settle(moved);
+  }
   if (panned.left === pinched.left && panned.top === pinched.top) issues.push('pan: the map didn\'t move');
   if (panned.ships !== fitted.ships) issues.push('pan: a ship moved');
   if (panned.scrollY !== fitted.scrollY) issues.push(`pan: the page scrolled ${panned.scrollY - fitted.scrollY}px`);
 
   const whole = page.locator('.zoom-controls button[aria-label="Whole map"]');
   if (await whole.isVisible()) {
+    await page.waitForTimeout(500); // a click within DRAG_CLICK (400ms) of the drag is the drag's, and ignored
     await whole.tap();
-    await page.waitForTimeout(600);
-    const back = await state();
+    const back = await settle((s) => s.cell === fitted.cell);
     if (back.cell !== fitted.cell) issues.push(`whole map: spaces ${back.cell}px, fitted ${fitted.cell}px`);
   } else issues.push('zoomed in but no Whole map button');
   await cdp.detach();
