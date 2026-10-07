@@ -34,6 +34,16 @@ describe('setup', () => {
   it('is deterministic for a seed', () => {
     expect(quickStart(2, 42)).toEqual(quickStart(2, 42));
   });
+
+  it('chooses the player with the lowest starting fleet total', () => {
+    const game = createGame({ players: players(2), seed: 7, mode: 'basic' });
+    for (const d of game.dice) if (d.loc.zone === 'scrapyard') d.value = d.owner === 0 ? 6 : 1;
+
+    let state = game;
+    while (state.phase === 'setup') state = apply(state, legalActions(state)[0]);
+
+    expect(state.turn.player).toBe(1);
+  });
 });
 
 describe('movement', () => {
