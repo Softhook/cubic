@@ -110,7 +110,7 @@ export function createGame(opts: NewGameOptions): GameState {
 /** Lowest fleet total goes first (ties: random); then everyone picks a starting planet in turn order. */
 function startDeployment(s: GameState) {
   const sums = s.players.map((p) =>
-    s.dice.filter((d) => d.owner === p.id && d.loc.zone === 'scrapyard').reduce((a, d) => a + d.value, 0),
+    scrapyard(s, p.id).reduce((a, d) => a + d.value, 0),
   );
   const low = Math.min(...sums);
   const tied = s.players.filter((p) => sums[p.id] === low);
