@@ -3,7 +3,7 @@
 How to make the web app play well on phones and iPads: what works today, what breaks, and a
 plan sized to where the app is now.
 
-Status: **Steps 0, 1 and 2 done; Step 3 done in emulation (layout and every popup), its real-device checks still to do; Step 4 (zoom) brought forward and built 2026-10-07, and with it the phone-portrait bottom sheet; real-device check of both to do. Step 5 (home-screen app, offline) built 2026-10-07; check on the G55 after the next Pages deploy.** First written
+Status: **Steps 0, 1 and 2 done; Step 3 done in emulation (layout and every popup), its real-device checks still to do; Step 4 (zoom) brought forward and built 2026-10-07, and with it the phone-portrait bottom sheet; real-device check of both to do. Step 5 (home-screen app, offline, automatic updates) built and tested in Playwright (`npm run pwa:check`) 2026-10-07; the G55 checklist is in Step 5.** First written
 2026-10-02 as a proposal. Revised 2026-10-06 after measuring the build in device emulation
 (`npm run mobile:shots`: Playwright + Chrome; iPhone SE, iPhone 15, Moto G55 and iPad mini,
 portrait and landscape). On the real Moto G55 so far: the default map (fine) and Asymptote
@@ -63,6 +63,9 @@ Chrome's address bar and Android's navigation bar, and changes as the address ba
   selected ship's row never wraps (see Steps 3–4).
 - Step 1's last emulated item (market re-fit at ≥ 980px) checked: works.
 - **Step 5 built:** service worker (offline vs AI) with updates that never interrupt a game.
+- **Step 5 made testable:** the lobby shows the build (commit and time) with *Check for updates*;
+  `npm run pwa:check` tests offline play and every update path on real builds; a reload during a
+  game on this device (an update, pull to refresh) now brings the game back instead of the lobby.
 
 - **Next:** play Step 3 on the G55 (2p Basic and 3p Classic, setup to game over), then Step 4. Still to check from
   Step 1: the board re-fit when the market opens/closes on screens ≥ 980px.
@@ -371,18 +374,42 @@ More useful now that online games are async: people come back to a game over day
       get one). Precaches the whole build (12 files, ≈ 740 KB, the AI worker included); Google Fonts
       are cached on use, so from the second online visit on they work offline too (before that,
       offline falls back to system fonts).
-- [x] **Stale clients in online games.** Not the plugin's `autoUpdate`, which reloads whenever a new
-      version arrives, possibly mid-combat. Instead a new version goes live straight away if it is
+- [x] **Automatic updates, never mid-game.** Not the plugin's `autoUpdate`, which reloads whenever a
+      new version arrives, possibly mid-combat. Instead a new version goes live straight away if it is
       found within 10 s of opening, otherwise the next time the app goes to the background (the
-      reload is unseen; the saved game resumes, it is saved on every change). The app checks for a
-      new version every time it comes back to the foreground, so it is never more than one resume
-      behind.
+      reload is unseen). The app checks for a new version every time it comes back to the
+      foreground and hourly while it stays there (a desktop tab), so it is never more than one
+      resume behind. This also keeps old clients out of online games.
+- [x] **The game comes back after the reload** (fixed 2026-10-07; before, the app reopened on the
+      lobby). While a game on this device is on screen, a per-tab flag in `sessionStorage` says so,
+      and a reload resumes the saved game (it is saved on every change). Also covers pull to
+      refresh. Online games were already fine: their link is in the address.
+- [x] **Which version is this?** The lobby's last line: `Version <commit> · <build time>` (a `+`
+      after the commit: built from uncommitted changes; `dev` on the dev server) and
+      *Check for updates*, which switches to a new version at once (*Up to date*, *Offline* or
+      *Couldn't check* otherwise).
+- [x] **`npm run pwa:check`** ([scripts/pwa-check.ts](../scripts/pwa-check.ts), ≈ 45 s): builds four
+      versions, serves them one at a time under `/quantum/` with Pages' 10-minute HTTP cache, and in
+      Chrome at G55 size checks: every file is precached; offline (server down too) the app opens
+      and a game against the AI starts; a new version found on return to the app waits while you
+      play, takes over when the app goes to the background, and the game is back on screen; an app
+      just opened switches at once; *Check for updates* switches, then says *Up to date*. Run it
+      after touching [pwa.ts](../apps/web/src/pwa.ts), the PWA config or saved-game loading.
 - [x] Scope and start URL with the `./` base: served under `/quantum/` like Pages, the scope is
       `/quantum/`. Checked in Playwright: offline reload shows the lobby and a game against the AI
       starts; a new `sw.js` waits while you play, goes live when the page is hidden, and applies at
       once on a page just opened.
-- [ ] **On the G55** after the Pages deploy: *Add to Home Screen* (Chrome offers *Install*), open it
-      from the icon, play a turn in flight mode.
+- [ ] **On the G55** after the Pages deploy (check the deploy finished: the repo's *Actions* tab,
+      or `gh run list -L 1`):
+      1. Open the Pages URL in Chrome; the lobby's version is the commit just pushed
+         (`git log -1 --format=%h`). Chrome's menu → *Install app* / *Add to Home screen*.
+      2. Open it from the icon: no address bar. Start a game against the AI, play a turn.
+      3. Flight mode, swipe the app away, open it from the icon: the lobby opens, the game resumes,
+         the AI moves.
+      4. Push any change. Once deployed, open the app: within ~10 s it reloads by itself and the
+         lobby shows the new commit. Or, mid-game, switch to another app and back: the game is
+         still there, and back in the lobby the version line shows the new commit.
+      5. If it ever seems stuck on an old version: *Check for updates* in the lobby.
 - [ ] Screen Wake Lock during a game, if it turns out to matter.
 - Turn notifications would need a push server, which goes against the no-server rule. Out of
   scope.
@@ -468,9 +495,8 @@ needed.
    a phone important enough to do Step 4 early?
 2. **Stopgap for big maps on phones before zoom:** fit at small cells (recommended above), or
    a horizontally scrolling board at 34px (simpler, but swipes compete with the page)?
-3. **Dependencies:** `playwright` and `@vitejs/plugin-basic-ssl` are in (dev only, agreed
-   2026-10-06). Still to decide: `react-zoom-pan-pinch` (if the Step 4 spike works) and
-   `vite-plugin-pwa` (Step 5).
+3. **Dependencies:** `playwright`, `@vitejs/plugin-basic-ssl` and `vite-plugin-pwa` are in (dev
+   only). `react-zoom-pan-pinch` was not needed (own zoom, Step 4).
 4. **Home-screen app (Step 5):** now, given async online play, or later?
 5. **Run `mobile:shots` in CI?** GitHub's Ubuntu runners have Chrome, so the Pages workflow
    could run it and fail the deploy on a broken layout. Worth it once Step 1 makes it pass;

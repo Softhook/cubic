@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createGame, type GameState } from '@quantum/engine';
 import { useGame } from './game/useGame';
-import { clearSavedGame } from './game/savedGame';
+import { clearSavedGame, gameOnScreenBeforeReload, markGameOnScreen } from './game/savedGame';
 import { devStartGame } from './game/devStart';
 import { Lobby, type LobbyResult } from './components/Lobby';
 import { Rules } from './components/Rules';
@@ -11,10 +11,11 @@ import { createOnlineGame } from './online/create';
 import { fullscreenOnPhone } from './components/FullscreenButton';
 
 export function App() {
-  const [game, setGame] = useState<GameState | null>(devStartGame);
+  const [game, setGame] = useState<GameState | null>(() => devStartGame() ?? (onlineSecret() ? null : gameOnScreenBeforeReload()));
   const [rules, setRules] = useState(false);
   // An online game is opened by its link: #online/<secret>.
   const [online, setOnline] = useState(onlineSecret);
+  useEffect(() => markGameOnScreen(!!game && !online), [game, online]);
   useEffect(() => {
     const follow = () => {
       const secret = onlineSecret();

@@ -26,3 +26,27 @@ export function loadSavedGame(): GameState | null {
     return null;
   }
 }
+
+/**
+ * Per tab: a game on this device is on screen. A reload then brings it back instead of the lobby: a new
+ * version taking over in the background (src/pwa.ts), pull to refresh, or the browser reloading the tab.
+ */
+const ON_SCREEN = 'quantum.gameOnScreen';
+
+export function markGameOnScreen(on: boolean) {
+  try {
+    if (on) sessionStorage.setItem(ON_SCREEN, '1');
+    else sessionStorage.removeItem(ON_SCREEN);
+  } catch {
+    // no session storage: a reload shows the lobby, with the game to resume
+  }
+}
+
+/** The saved game, if it was on screen when this tab last reloaded. */
+export function gameOnScreenBeforeReload(): GameState | null {
+  try {
+    return sessionStorage.getItem(ON_SCREEN) ? loadSavedGame() : null;
+  } catch {
+    return null;
+  }
+}

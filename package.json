@@ -20,7 +20,8 @@
     "audit:cards": "npm run data && vite-node scripts/card-audit.ts --",
     "sweep:basic": "npm run data && vite-node scripts/basic-sweep.ts",
     "relays:check": "vite-node scripts/relay-check.ts --",
-    "mobile:shots": "npm run data && vite-node scripts/mobile-shots.ts --"
+    "mobile:shots": "npm run data && vite-node scripts/mobile-shots.ts --",
+    "pwa:check": "npm run data && vite-node scripts/pwa-check.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

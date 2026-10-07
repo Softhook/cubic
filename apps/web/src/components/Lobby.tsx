@@ -7,6 +7,7 @@ import { forgetGame, onlineGames } from '../online/storage';
 import { defaultSeat } from '../game/seats';
 import { clearSavedGame, loadSavedGame } from '../game/savedGame';
 import { remember, stored } from '../storage';
+import { BUILD, checkForUpdate, useUpdateStatus, type UpdateStatus } from '../pwa';
 import { PLAYER_COLORS } from '../theme';
 
 const PLAYER_COUNTS = [...new Set(MAPS.map((m) => m.players))];
@@ -390,6 +391,35 @@ export function Lobby({
       <p className="credits">
         Cubic is a reimagining of Quantum by Eric Zimmerman and its fan-made Community Edition. Non-commercial fan project.
       </p>
+      <VersionLine />
     </div>
+  );
+}
+
+const UPDATE_LABEL: Record<UpdateStatus, string | null> = {
+  off: null,
+  idle: 'Check for updates',
+  checking: 'Checking…',
+  current: 'Up to date',
+  updating: 'Updating…',
+  ready: 'Update now',
+  offline: 'Offline',
+  failed: 'Couldn’t check',
+};
+
+/** Which build this is, so a phone can tell whether the latest deploy has arrived, and a way to fetch it. */
+function VersionLine() {
+  const status = useUpdateStatus();
+  const label = UPDATE_LABEL[status];
+  const when = BUILD.time.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return (
+    <p className="version">
+      Version {BUILD.id} · {when}
+      {label && (
+        <button disabled={status === 'checking' || status === 'updating'} onClick={checkForUpdate}>
+          {label}
+        </button>
+      )}
+    </p>
   );
 }
