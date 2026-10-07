@@ -6,7 +6,7 @@ import type { Dispatch } from '../game/useGame';
 import { useShortcut } from '../game/useShortcut';
 import { CategoryIcon } from './Card';
 import { Tip } from './InfoPop';
-import { canDeployFrom, Scrapyard } from './Scrapyard';
+import { Scrapyard, turnScrapOwner } from './Scrapyard';
 import { ShipPanel } from './ShipPanel';
 
 export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl: Controller; dispatch: Dispatch; undo?: () => void }) {
@@ -19,7 +19,6 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
   const waitingOn = head && head.kind !== 'combat' ? game.players[head.player] : null;
   // Whose decision the table waits for (battles have their own overlay).
   const waitingFor = waitingOn ?? (!head && game.phase !== 'over' ? p : null);
-  const deployer = game.players.find((q) => canDeployFrom(game, q, ctl));
   // In setup the panel is about whoever is placing, who needn't be the turn's player; name and colour agree.
   const shown = game.phase === 'setup' && waitingOn ? waitingOn : p;
   // A decision on this device (advance, place an expansion, unveil) replaces the turn's buttons, which can't be used meanwhile.
@@ -52,12 +51,10 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
         </p>
       )}
       {hint && <p className="hint">{hint}</p>}
-      {/* Below 980px the turn panel sits right under the board, so the ships to deploy are in it too. */}
-      {deployer && (
-        <div className="turn-scrap">
-          <Scrapyard game={game} p={deployer} ctl={ctl} dispatch={dispatch} />
-        </div>
-      )}
+      {/* The ships to deploy are what you act with, so they're here rather than in the player list. */}
+      <div className="turn-scrap">
+        <Scrapyard game={game} p={turnScrapOwner(game, ctl)} ctl={ctl} dispatch={dispatch} />
+      </div>
 
       {game.phase === 'play' && ctl.mine(p.id) && !deciding && (
         <div className="turn-actions">

@@ -467,7 +467,8 @@ input { font: inherit; }
 .ship-panel-head .icon-btn { margin-left: auto; }
 .ship-ability { font-size: 12.5px; color: #c3cbea; margin: 8px 0 0; line-height: 1.4; }
 .ship-panel .turn-actions .btn { font-size: 12px; padding: 6px 10px; }
-.turn-scrap { display: none; }
+.turn-scrap .scrapyard { margin-top: 8px; }
+.turn-scrap:empty { display: none; }
 @keyframes fade-up { from { opacity: 0; transform: translateY(4px); } }
 
 /* ------------------------------------------------------------------ players */
@@ -532,6 +533,11 @@ input { font: inherit; }
 .skill-chip.stored-tactic.playable { outline: 1px solid var(--good); }
 
 .log { flex: 1; min-height: 140px; display: flex; flex-direction: column; }
+.log.collapsed { flex: none; min-height: 0; }
+.log-toggle { display: inline-flex; align-items: center; gap: 6px; border: 0; padding: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.log-toggle svg { transition: transform .2s; }
+.log-toggle[aria-expanded='true'] svg { transform: rotate(180deg); }
+@media (hover: hover) { .log-toggle:hover { color: var(--text); } }
 .log h3 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }
 .log ol { list-style: none; margin: 0; padding: 0; overflow-y: auto; max-height: 220px; font-size: 12px; line-height: 1.45; }
 .log li { padding: 3px 0 3px 10px; border-left: 2px solid var(--pc); margin-bottom: 3px; color: #c3cbea; animation: fade-up .25s ease-out; }
@@ -996,7 +1002,11 @@ input { font: inherit; }
   .sidebar > * { margin: 0 12px; order: 3; }
   .stage { order: 0; }
   .sidebar > .turn-panel { order: 1; }
-  .market { order: 2; }
+  /* Then the players, the market (right under the turn panel while you pick a card) and the log. */
+  .sidebar > .players { order: 2; }
+  .market { order: 3; }
+  .market.picking { order: 1; }
+  .sidebar > .log { order: 4; }
   /* The turn panel: compact, so the board and it share the first screen. The scrapyard is in it whenever you can
      deploy, and the selected ship is one row (its ability text is a tap on its name). */
   .turn-panel { padding: 8px 12px 10px; }
@@ -1004,8 +1014,6 @@ input { font: inherit; }
   .turn-panel .hint { margin-top: 4px; font-size: 12.5px; line-height: 1.35; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
   .turn-panel .turn-actions { margin-top: 6px; }
   .turn-panel .btn { padding-top: 7px; padding-bottom: 7px; }
-  .turn-scrap { display: block; }
-  .player-scrap.in-turn-bar { display: none; }
   .turn-scrap .scrapyard { margin-top: 6px; }
   .turn-panel .ship-panel { margin-top: 6px; padding: 6px 36px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; position: relative; }
   .turn-panel .ship-panel-head, .turn-panel .ship-panel .turn-actions { display: contents; }
@@ -1069,9 +1077,8 @@ input { font: inherit; }
     height: var(--below-topbar);
   }
   .layout > :not(.stage), .sidebar > * { grid-column: 2; grid-row: auto; margin: 8px 8px 0; }
-  .market { order: 1; border: 1px solid var(--line); border-radius: var(--radius); }
-  .sidebar > * { order: 2; }
-  .sidebar > .turn-panel { order: 0; position: static; background: var(--panel); }
+  .market { border: 1px solid var(--line); border-radius: var(--radius); }
+  .sidebar > .turn-panel { position: static; }
 }
 /* Narrow phones: one row each for the turn's buttons and the ship's. Undo is just its icon; the
    selected ship is highlighted on the board, so its die isn't repeated here. */

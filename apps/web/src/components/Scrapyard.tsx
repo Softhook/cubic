@@ -17,6 +17,17 @@ export function canDeployFrom(game: GameState, p: PlayerState, ctl: Controller):
   return (ctl.actionPhase && game.turn.player === p.id) || !!unveilingOf(game, p.id, ctl) || placingStart;
 }
 
+/**
+ * Whose scrapyard the turn panel shows: whoever can deploy on this device now, else whoever the table
+ * waits for in setup, else the turn's player. Their player row leaves it out.
+ */
+export function turnScrapOwner(game: GameState, ctl: Controller): PlayerState {
+  const deployer = game.players.find((q) => canDeployFrom(game, q, ctl));
+  if (deployer) return deployer;
+  const head = game.pending[0];
+  return game.players[game.phase === 'setup' && head && head.kind !== 'combat' ? head.player : game.turn.player];
+}
+
 /** A player's scrapyard: their ships off the board, which they tap to deploy when they can. */
 export function Scrapyard({ game, p, ctl, dispatch }: { game: GameState; p: PlayerState; ctl: Controller; dispatch: Dispatch }) {
   const scrap = scrapyard(game, p.id);
