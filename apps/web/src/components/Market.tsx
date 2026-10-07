@@ -251,5 +251,5 @@ function useWarmCards(game: GameState) {
   const m = game.market;
   const ids = [...m.skillRow, ...m.tacticRow, ...game.players.flatMap((p) => [...p.skills.map((s) => s.id), ...(p.storedTactics ?? [])]), ...m.skillDeck, ...m.tacticDeck];
   const sig = ids.join();
-  useEffect(() => void warmCardImages(ids), [sig]);
+  useEffect(() => warmCardImages(ids), [sig]);
 }

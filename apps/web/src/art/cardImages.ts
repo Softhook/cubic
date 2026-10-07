@@ -67,15 +67,31 @@ export function cardImage(id: string): Promise<string> {
 /** The image URL for a card that has already been drawn, if any: lets a reopened pop-up show at once. */
 export const cardImageNow = (id: string) => ready.get(id);
 
+/** The cards still to prepare in the background, first first. */
+let toWarm: string[] = [];
+let warming = false;
+
 /**
- * Prepares cards in the background (one per idle moment), so their pop-ups open at once. Fetches the
- * card fonts straight away: the first card drawn would otherwise wait for them.
+ * Prepares cards in the background (one per idle moment), so their pop-ups open at once. A new list
+ * replaces the one being worked through, so only one loop ever runs. Fetches the card fonts straight
+ * away: the first card drawn would otherwise wait for them. Returns a function that stops it.
  */
-export async function warmCardImages(ids: Iterable<string>): Promise<void> {
+export function warmCardImages(ids: Iterable<string>): () => void {
   void cardFontCss();
-  for (const id of new Set(ids)) {
-    if (images.has(id)) continue;
-    await idle(2000);
-    await cardImage(id).catch(() => {});
+  const list = [...new Set(ids)].filter((id) => !images.has(id));
+  toWarm = list;
+  if (!warming) {
+    warming = true;
+    void (async () => {
+      for (let id; (id = toWarm.shift()); ) {
+        if (images.has(id)) continue; // opened meanwhile
+        await idle(2000);
+        await cardImage(id).catch(() => {});
+      }
+      warming = false;
+    })();
   }
+  return () => {
+    if (toWarm === list) toWarm = [];
+  };
 }

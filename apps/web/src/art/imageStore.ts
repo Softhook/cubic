@@ -15,13 +15,22 @@ interface Stored {
 let database: Promise<IDBDatabase> | null = null;
 
 function openDb(): Promise<IDBDatabase> {
-  database ??= new Promise((resolve, reject) => {
+  database ??= new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, VERSION);
     req.onupgradeneeded = () => {
       for (const name of ['tiles', 'cards']) if (!req.result.objectStoreNames.contains(name)) req.result.createObjectStore(name);
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      // Let a newer version in another tab upgrade the database instead of waiting on this one.
+      req.result.onversionchange = () => req.result.close();
+      resolve(req.result);
+    };
     req.onerror = () => reject(req.error);
+    // An older tab still has the database open: draw without it rather than wait for that tab to close.
+    req.onblocked = () => reject(new Error('art store blocked by another tab'));
+  }).catch((e: unknown) => {
+    database = null; // try again next time
+    throw e;
   });
   return database;
 }

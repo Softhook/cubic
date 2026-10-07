@@ -12,6 +12,7 @@ import { fullscreenOnPhone } from './components/FullscreenButton';
 // online play (with its cryptography).
 const Rules = lazy(() => import('./components/Rules').then((m) => ({ default: m.Rules })));
 const OnlineScreen = lazy(() => import('./online/OnlineScreen').then((m) => ({ default: m.OnlineScreen })));
+let creatingOnline = false;
 
 export function App() {
   const [game, setGame] = useState<GameState | null>(() => devStartGame() ?? (onlineSecret() ? null : gameOnScreenBeforeReload()));
@@ -33,8 +34,14 @@ export function App() {
 
   const start = (r: LobbyResult) => {
     fullscreenOnPhone();
-    if (r.online) void import('./online/create').then(({ createOnlineGame }) => (location.hash = `#online/${createOnlineGame(r)}`));
-    else setGame(createGame({ players: r.players, mapId: r.mapId, mode: r.mode }));
+    if (r.online) {
+      // The online code loads first: a second tap meanwhile would create a second game.
+      if (creatingOnline) return;
+      creatingOnline = true;
+      void import('./online/create')
+        .then(({ createOnlineGame }) => (location.hash = `#online/${createOnlineGame(r)}`))
+        .finally(() => (creatingOnline = false));
+    } else setGame(createGame({ players: r.players, mapId: r.mapId, mode: r.mode }));
   };
   /** Back to the lobby; the game lives on as the saved game, to resume from there. */
   const toLobby = () => setGame(null);
