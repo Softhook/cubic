@@ -476,6 +476,7 @@ input { font: inherit; }
 /* Players and the log are reference, not where you act: no boxes of their own, so the turn panel
    stands out. Each player is a row with a bar in their colour; whose turn it is shows in the turn panel. */
 .panel.players, .panel.log { background: none; border-color: transparent; backdrop-filter: none; }
+.panel.log { padding-inline: 14px 4px; } /* the title lines up with the players' names */
 .players { display: flex; flex-direction: column; gap: 4px; padding: 0; }
 .player {
   padding: 6px 4px 6px 12px;
@@ -538,7 +539,6 @@ input { font: inherit; }
 .log-toggle { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; border: 0; padding: 0; background: none; color: var(--muted); font: inherit; text-align: left; cursor: pointer; }
 .log:not(.collapsed) .log-toggle { min-height: 32px; margin-bottom: 4px; }
 .log-title { flex: none; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; }
-.log-latest { flex: 1; min-width: 0; padding-left: 8px; border-left: 2px solid var(--pc); font-size: 12px; color: #c3cbea; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: fade-up .25s ease-out; }
 .log-toggle svg { flex: none; margin-left: auto; transition: transform .2s; }
 .log-toggle[aria-expanded='true'] svg { transform: rotate(180deg); }
 @media (hover: hover) { .log-toggle:hover { color: var(--text); } }
@@ -999,7 +999,8 @@ input { font: inherit; }
      The sidebar's panels join the column (display: contents) so the turn panel can sit between the
      board and the market. Nothing is pinned: the board is only as tall as the map, which leaves room
      for the turn panel on the first screen. */
-  .layout { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px; padding-bottom: 12px; }
+  /* align-content: rows keep their own height; stretched, a short map spread the rest down the screen. */
+  .layout { display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; gap: 12px; padding-bottom: 12px; }
   .layout > *, .sidebar > * { flex: 1 1 100%; min-width: 0; }
   .sidebar { display: contents; }
   .sidebar > * { margin: 0 12px; order: 3; }
@@ -1009,7 +1010,7 @@ input { font: inherit; }
   .sidebar > .players { order: 2; }
   .market { order: 3; }
   .market.picking { order: 1; }
-  .sidebar > .log { order: 4; }
+  .sidebar > .log { order: 4; flex: 1 1 100%; } /* collapsed too, so it spans the column like the panels above it */
   /* The turn panel: compact, so the board and it share the first screen. The scrapyard is in it whenever you can
      deploy, and the selected ship is one row (its ability text is a tap on its name). */
   .turn-panel { padding: 8px 12px 10px; }
