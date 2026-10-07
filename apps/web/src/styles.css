@@ -704,7 +704,7 @@ input { font: inherit; }
   color: var(--muted); font: inherit; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
   cursor: pointer; transition: color .15s, background .15s;
 }
-.market-toggle span { writing-mode: vertical-rl; transform: rotate(180deg); }
+.market-toggle span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
 .market-toggle svg { transform: rotate(180deg); transition: transform .2s; }
 @media (hover: hover) { .market-toggle:hover { color: var(--text); background: rgba(122,162,255,.1); outline: none; } }
 .market-toggle:focus-visible { color: var(--text); background: rgba(122,162,255,.1); outline: none; }
