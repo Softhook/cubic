@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { EXPANSION, card, cardKind, rulesOf, type DeckKind, type GameState } from '@quantum/engine';
 import type { Legal } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
-import { PHONE } from '../game/useMediaQuery';
+import { PHONE, useMediaQuery } from '../game/useMediaQuery';
 import { useShortcut } from '../game/useShortcut';
 import { remember, stored } from '../storage';
 import { CardView, categoryStyle } from './Card';
@@ -32,6 +32,7 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   const [viewingCard, setViewingCard] = useState<string | null>(null);
   const [patientChoice, setPatientChoice] = useState<{ id: string; index: number } | null>(null);
   const { open, toggle } = useCollapse(picking);
+  const list = useMediaQuery(LIST);
   useWarmCards(game);
   // A pick over, the turn panel comes back into view: in phone landscape's column you may have scrolled down to a card.
   useEffect(() => {
@@ -43,6 +44,20 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   };
   const deckTitle = (deck: DeckKind) => `${cardsLeft(decks[deck].cards.length)} in the ${decks[deck].name} deck — click to view them`;
 
+  const peekAt = (deck: DeckKind, cards: string[], index: number) => peek && index === cards.length - 1 && cards.length === 3 && decks[deck].cards.length > 0;
+  /**
+   * The cards a row shows. In the phone list, copies of a card are one row with a ×n badge (Classic can deal
+   * two Expansions); taking it takes the first copy. Elsewhere every card is its own.
+   */
+  const shown = (deck: DeckKind, cards: string[]) =>
+    cards.flatMap((id, index) => {
+      if (!list) return [{ id, index, badge: peekAt(deck, cards, index) ? 'Peek' : undefined }];
+      if (cards.indexOf(id) !== index) return [];
+      const copies = cards.flatMap((x, i) => (x === id ? [i] : []));
+      const badge = [copies.length > 1 && `×${copies.length}`, copies.some((i) => peekAt(deck, cards, i)) && 'Peek'].filter(Boolean).join(' · ');
+      return [{ id, index, badge: badge || undefined }];
+    });
+
   const row = (deck: DeckKind, cards: string[]) => (
     <div className={`market-row market-${deck}`}>
       <button type="button" className={`deck deck-${deck}`} title={deckTitle(deck)} onClick={() => setViewing(deck)}>
@@ -50,13 +65,13 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
         <span className="deck-label">{decks[deck].name}</span>
         <span className="deck-count">{decks[deck].cards.length}</span>
       </button>
-      {cards.map((id, index) => (
+      {shown(deck, cards).map(({ id, index, badge }) => (
         <CardView
           key={`${id}#${cards.slice(0, index).filter((x) => x === id).length}`}
           id={id}
           size="sm"
           className={`market-card ${canTake(deck, index) ? 'takeable' : ''}`}
-          badge={peek && index === cards.length - 1 && cards.length === 3 && decks[deck].cards.length > 0 ? 'Peek' : undefined}
+          badge={badge}
           onClick={() => clickCard(deck, index, id)}
         />
       ))}
@@ -190,7 +205,7 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
       {chips('skill', m.skillRow)}
       {chips('tactic', m.tacticRow)}
       {cardRules.expansionPile && (
-        <div className="market-strip-group">
+        <div className="market-strip-group market-strip-expansion">
           <button type="button" className="market-chip market-chip-expansion" title={`${m.expansions} Expansion cards left`} onClick={() => setViewingCard(EXPANSION.id)}>
             {EXPANSION.name} ×{m.expansions}
           </button>
@@ -209,6 +224,9 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
     </section>
   );
 }
+
+/** Where the open market is a list of cards, one a row: styles.css's phone layouts (portrait's sheet, landscape's column). */
+const LIST = '(max-width: 600px), (max-width: 980px) and (max-height: 500px) and (orientation: landscape)';
 
 const cardsLeft = (n: number) => `${n} card${n === 1 ? '' : 's'} left`;
 
