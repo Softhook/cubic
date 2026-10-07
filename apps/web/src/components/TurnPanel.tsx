@@ -3,6 +3,7 @@ import { canCurious, SHIP_NAMES, card, die, rulesOf, skillCard, type GameState, 
 import type { Controller } from '../game/controller';
 import { hintFor } from '../game/hints';
 import type { Dispatch } from '../game/useGame';
+import { useShortcut } from '../game/useShortcut';
 import { CategoryIcon } from './Card';
 import { Tip } from './InfoPop';
 import { canDeployFrom, Scrapyard } from './Scrapyard';
@@ -21,6 +22,8 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
   const deployer = game.players.find((q) => canDeployFrom(game, q, ctl));
   // In setup the panel is about whoever is placing, who needn't be the turn's player; name and colour agree.
   const shown = game.phase === 'setup' && waitingOn ? waitingOn : p;
+  // A decision on this device (advance, place an expansion, unveil) replaces the turn's buttons, which can't be used meanwhile.
+  const deciding = !!head && head.kind !== 'combat' && ctl.human && !legal.can('endTurn');
 
   return (
     <section className="panel turn-panel" style={{ '--pc': shown.color } as CSSProperties}>
@@ -56,7 +59,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
         </div>
       )}
 
-      {game.phase === 'play' && ctl.mine(p.id) && (
+      {game.phase === 'play' && ctl.mine(p.id) && !deciding && (
         <div className="turn-actions">
           {rulesOf(game).cards && (
             <button
@@ -100,6 +103,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
         </div>
       )}
 
+      {head?.kind === 'advance' && ctl.human && <AdvanceChoice dispatch={dispatch} />}
       {head?.kind === 'placeExpansion' && ctl.human && (
         <div className="turn-actions">
           <button className="btn" onClick={() => dispatch({ type: 'placeExpansion', to: null })}>Send to scrapyard</button>
@@ -113,6 +117,27 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
 
       <ShipPanel game={game} ctl={ctl} dispatch={dispatch} />
     </section>
+  );
+}
+
+/**
+ * After winning a battle: advance into the destroyed ship's space (also a tap on that space) or hold.
+ * Enter advances, unless a button has focus (then Enter presses that button).
+ */
+function AdvanceChoice({ dispatch }: { dispatch: Dispatch }) {
+  const go = (move: boolean) => dispatch({ type: 'advance', move });
+  useShortcut(
+    (e) => e.key === 'Enter' && (e.target as HTMLElement | null)?.tagName !== 'BUTTON',
+    (e) => {
+      e.preventDefault();
+      go(true);
+    },
+  );
+  return (
+    <div className="turn-actions">
+      <button className="btn" onClick={() => go(false)}>Hold position</button>
+      <button className="btn btn-primary" onClick={() => go(true)}>Advance</button>
+    </div>
   );
 }
 

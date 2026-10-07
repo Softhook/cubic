@@ -8,7 +8,7 @@ import { defaultSeat } from './seats';
  * one human (Commander) and AI opponents. `play` is a mode's id or name; `map` defaults to the
  * basic map for the player count; `seed` makes the dice the same every time. Reloading starts the
  * game again. Like any game on this device, it replaces the saved game.
- * `scene=combat|changeOfHeart|over` opens on that popup instead, `scene=turn` on your first turn (see `scene`).
+ * `scene=combat|advance|changeOfHeart|over` opens on that popup instead, `scene=turn` on your first turn (see `scene`).
  */
 export function devStartGame(): GameState | null {
   if (!import.meta.env.DEV) return null;
@@ -34,7 +34,8 @@ export function devStartGame(): GameState | null {
 
 /**
  * Plays every seat's first choice through setup and on to the human's (player 0's) first turn, then
- * opens a popup: `combat` (the human's ship attacks and may answer, e.g. with a missile in Community), `changeOfHeart` (needs a mode with cards) or
+ * opens a popup: `combat` (the human's ship attacks and may answer, e.g. with a missile in Community), `advance` (it has won and
+ * chooses whether to advance), `changeOfHeart` (needs a mode with cards) or
  * `over` (the human has won). `turn`, or a scene that can't be set up, stops at that turn.
  */
 function scene(game: GameState, name: string): GameState {
@@ -49,7 +50,7 @@ function scene(game: GameState, name: string): GameState {
     if (s.market.skillDeck.length) s.pending.unshift({ kind: 'changeOfHeart', player: 0 });
     return s;
   }
-  if (name !== 'combat') return s;
+  if (name !== 'combat' && name !== 'advance') return s;
   // Two empty spaces side by side: one of the human's ships attacks one of the next player's, trying
   // ship values until the human can answer the roll (so the battle waits, with its buttons).
   const free = [...Array(s.board.rows * s.board.cols).keys()]
@@ -68,6 +69,11 @@ function scene(game: GameState, name: string): GameState {
       const attacked = tryApply(t, { type: 'attack', die: mine.id, target: theirs.id });
       const head = attacked?.pending[0];
       if (head?.kind !== 'combat') continue;
+      if (name === 'advance') {
+        const won = tryApply(attacked!, { type: 'resolveCombat' });
+        if (won?.pending[0]?.kind === 'advance') return won;
+        continue;
+      }
       if (canRespondToCombat(attacked!, head, 0)) return attacked!;
       fallback ??= attacked;
     }

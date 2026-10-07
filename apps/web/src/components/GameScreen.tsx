@@ -9,7 +9,7 @@ import { Log } from './Log';
 import { PlayerList } from './PlayerList';
 import { TurnPanel } from './TurnPanel';
 import { CombatOverlay } from './CombatOverlay';
-import { AdvancePrompt, DecisionOverlay, GameOver } from './Overlays';
+import { DecisionOverlay, GameOver } from './Overlays';
 import { ErrorToast, Toasts } from './Toasts';
 import { FullscreenButton, useFullscreenOnFirstTap } from './FullscreenButton';
 
@@ -74,9 +74,7 @@ export function Game({
 
       <main className="layout">
         <div className="stage" style={{ '--map-ratio': game.board.rows / game.board.cols } as CSSProperties}>
-          <Board game={game} ctl={ctl}>
-            {head?.kind === 'advance' && ctl.human && <AdvancePrompt game={game} advance={head} dispatch={dispatch} />}
-          </Board>
+          <Board game={game} ctl={ctl} />
           <Toasts toasts={toasts} game={game} />
           <ErrorToast error={error} />
         </div>

@@ -1,4 +1,4 @@
-import { canProfiteer, rulesOf, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, canProfiteer, die, rulesOf, type GameState } from '@quantum/engine';
 import type { Sel } from './controller';
 
 /** One-line guidance for the current human decision. */
@@ -29,7 +29,7 @@ export function hintFor(game: GameState, sel: Sel): string {
       case 'discardSkill':
         return head.reason === 'sabotage' ? 'Sabotage! Choose a card to discard.' : 'Choose a card to discard.';
       case 'advance':
-        return 'Victory! Advance into the destroyed ship’s space, or hold your position.';
+        return `Victory! Advance your ${SHIP_NAMES[die(game, head.die).value]} into the destroyed ship’s space, or hold your position.`;
       case 'relocation':
         return sel.kind === 'relocate'
           ? 'Relocation: choose the planet to move the cube to (click its planet again for another player’s cube there).'

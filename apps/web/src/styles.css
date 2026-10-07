@@ -269,26 +269,6 @@ input { font: inherit; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .board-layer { position: absolute; inset: 0; }
-.advance-prompt {
-  position: absolute;
-  left: 50%;
-  z-index: 8;
-  transform: translate(-50%, -50%);
-  width: max-content;
-  max-width: min(380px, 92%);
-  padding: 14px 18px;
-  border-radius: 16px;
-  text-align: center;
-  background: linear-gradient(180deg, rgba(18, 26, 54, .94), rgba(11, 17, 38, .94));
-  border: 1px solid color-mix(in srgb, var(--pc) 55%, var(--line));
-  box-shadow: 0 18px 50px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .04) inset;
-  animation: advance-in .3s cubic-bezier(.2,.9,.3,1.2);
-}
-@keyframes advance-in { from { transform: translate(-50%, -50%) scale(.94); opacity: 0; } }
-.advance-prompt small { display: block; color: var(--pc); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; font-size: 11px; }
-.advance-prompt strong { display: block; margin-top: 4px; font-size: 15px; line-height: 1.4; }
-.advance-prompt .modal-actions { justify-content: center; margin-top: 12px; }
-
 .hl {
   position: absolute;
   display: grid;
@@ -458,7 +438,11 @@ input { font: inherit; }
 
 /* ------------------------------------------------------------------ turn panel */
 
-.turn-panel { border-color: color-mix(in srgb, var(--pc) 45%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--pc) 15%, transparent), 0 10px 30px rgba(0,0,0,.3); }
+.turn-panel {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pc) 14%, var(--panel-solid)), var(--panel-solid));
+  border-color: color-mix(in srgb, var(--pc) 55%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--pc) 15%, transparent), 0 10px 30px rgba(0,0,0,.35);
+}
 .turn-head { display: flex; align-items: center; gap: 10px; }
 .turn-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 12px var(--pc); flex: none; }
 .turn-title { display: flex; flex-direction: column; line-height: 1.2; }
@@ -488,15 +472,21 @@ input { font: inherit; }
 
 /* ------------------------------------------------------------------ players */
 
-.players { display: flex; flex-direction: column; gap: 8px; padding: 8px; }
+/* Players and the log are reference, not where you act: no boxes of their own, so the turn panel
+   stands out. Each player is a row with a bar in their colour; whose turn it is shows in the turn panel. */
+.panel.players, .panel.log { background: none; border-color: transparent; backdrop-filter: none; }
+.players { display: flex; flex-direction: column; gap: 4px; padding: 0; }
 .player {
-  padding: 10px;
-  border-radius: 11px;
-  border: 1px solid transparent;
-  background: rgba(255,255,255,.02);
-  transition: border-color .3s, background .3s;
+  padding: 6px 4px 6px 12px;
+  border-left: 2px solid color-mix(in srgb, var(--pc) 35%, transparent);
+  transition: border-color .3s;
 }
-.player.active { border-color: color-mix(in srgb, var(--pc) 55%, transparent); background: color-mix(in srgb, var(--pc) 7%, transparent); }
+.player.active { border-left-color: var(--pc); }
+/* Head and tracks on a line each; missiles and such, the scrapyard and the cards share one that wraps. */
+.player { display: flex; flex-wrap: wrap; align-items: center; column-gap: 10px; }
+.player-head, .player-tracks { flex: 1 1 100%; }
+.player-scrap { margin-top: 6px; }
+.player-scrap .scrapyard { margin-top: 0; }
 .player-head { display: flex; align-items: center; gap: 8px; }
 .player-head strong { font-size: 14px; }
 .player-swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--pc); box-shadow: 0 0 8px var(--pc); flex: none; }
@@ -504,13 +494,16 @@ input { font: inherit; }
 .cubes { margin-left: auto; display: flex; gap: 3px; }
 .cubes span { width: 10px; height: 10px; border-radius: 2.5px; border: 1.5px solid color-mix(in srgb, var(--pc) 60%, transparent); }
 .cubes span.placed { background: var(--pc); border-color: var(--pc); box-shadow: 0 0 6px var(--pc); }
-.player-tracks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.player-tracks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px; }
+.track { display: flex; align-items: center; gap: 6px; }
+.track .track-cells { flex: 1; margin-top: 0; }
+.player-row:empty, .player-scrap:empty { display: none; }
 .track-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
 .track-cells { display: flex; gap: 3px; margin-top: 3px; }
 .track-cells span { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.07); transition: background .4s, box-shadow .4s; }
 .track-dom .track-cells span.on { background: linear-gradient(90deg, var(--dom-1), var(--dom-2)); box-shadow: 0 0 6px color-mix(in srgb, var(--dom-2) 50%, transparent); }
 .track-res .track-cells span.on { background: linear-gradient(90deg, var(--res-1), var(--res-2)); box-shadow: 0 0 6px color-mix(in srgb, var(--res-2) 50%, transparent); }
-.player-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.player-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .stat { font-size: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.05); }
 .stat.muted { color: var(--muted); }
 .stat.gold { color: var(--gold); background: rgba(255,200,87,.1); }
@@ -522,7 +515,7 @@ input { font: inherit; }
 .scrap-die.clickable { cursor: pointer; border-color: var(--line-2); }
 @media (hover: hover) { .scrap-die.clickable:hover { border-color: var(--good); background: rgba(94,240,176,.08); } }
 .scrap-die.selected { border-color: var(--good); background: rgba(94,240,176,.15); box-shadow: 0 0 10px rgba(94,240,176,.4); }
-.skills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.skills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .skill-chip {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 11px; font-weight: 600;
@@ -1063,12 +1056,19 @@ input { font: inherit; }
 @media (max-width: 980px) and (max-height: 500px) and (orientation: landscape) {
   body { overflow: hidden; }
   .app { height: 100%; }
-  .layout { display: grid; overflow-y: auto; align-items: start; gap: 0; padding: 0 0 8px; grid-template-columns: minmax(0, 1fr) minmax(300px, 46%); }
+  .layout {
+    display: grid; overflow-y: auto; align-items: start; gap: 0; padding: 0 0 8px;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 46%);
+    /* Not the base layout's rows (1fr, auto) and areas: they gave the turn panel a squeezed row that the
+       players were drawn over. A row per panel, max-content because in a scrolling grid auto rows shrink
+       to their panel's minimum (the market's, being a scroller, is 0); the last row takes the stage. */
+    grid-template-areas: none; grid-template-rows: repeat(8, max-content) 1fr;
+  }
   .stage {
     grid-column: 1; grid-row: 1 / span 9; position: sticky; top: 0;
     height: var(--below-topbar);
   }
-  .layout > :not(.stage), .sidebar > * { grid-column: 2; margin: 8px 8px 0; }
+  .layout > :not(.stage), .sidebar > * { grid-column: 2; grid-row: auto; margin: 8px 8px 0; }
   .market { order: 1; border: 1px solid var(--line); border-radius: var(--radius); }
   .sidebar > * { order: 2; }
   .sidebar > .turn-panel { order: 0; position: static; background: var(--panel); }
