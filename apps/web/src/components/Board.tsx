@@ -5,7 +5,7 @@ import { BoardArt } from './board/BoardArt';
 import { Explosions } from './board/Explosions';
 import { shipSpots, type ShipSpots } from './board/geometry';
 import { useBoardZoom } from './board/useBoardZoom';
-import { OffscreenHints, ZoomControls, useZoomIntro } from './board/ZoomUi';
+import { OffscreenHints, ZoomControls, useFollowMoves, useZoomIntro } from './board/ZoomUi';
 import { Die3D } from './Die3D';
 import { planetNames } from '../art/boardTiles';
 import { InfoPop, useAnchorName } from './InfoPop';
@@ -29,6 +29,7 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
   const { cell, resizing } = zoom;
   const spots = shipSpots(game);
   const tip = useZoomIntro(game, ctl, zoom, !!introduce);
+  useFollowMoves(game, ctl, spots, zoom);
   const [inspect, setInspect] = useState<Inspect | null>(null);
   // The info closes itself on a tap elsewhere; a tap on the same thing again closes it too.
   const show = (what: Inspect) => setInspect((cur) => (cur && inspectKey(cur) === inspectKey(what) ? null : what));

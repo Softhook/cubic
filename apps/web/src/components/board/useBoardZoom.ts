@@ -28,6 +28,11 @@ export interface BoardZoom extends View {
   fit: () => void;
   /** Pan so the space (r, c) is in the middle, as far as the board's edges allow. */
   centreOn: (r: number, c: number) => void;
+  /**
+   * Zoomed in, pan the space (r, c) into view if it's off screen, at the same zoom. Does nothing at the
+   * whole map or while a finger or the mouse is on it, so it never fights a gesture.
+   */
+  reveal: (r: number, c: number) => void;
   /** Shows that the map zooms: in on the space (r, c) and back out again. A touch or the wheel stops it. */
   demo: (r: number, c: number) => void;
 }
@@ -102,6 +107,8 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
   const latest = useRef({ f, current, zoomed, commit, stopDemo: () => {} });
   /** Glides the map to the view `to` makes of where it's going (set by the gesture effect once mounted). */
   const glide = useRef<(to: (from: View) => View) => void>();
+  /** Whether a pointer is down on the map (set by the gesture effect). */
+  const touching = useRef<() => boolean>(() => false);
 
   // The demo runs on timers; a touch, the wheel or unmounting stops it and puts the map back.
   const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -247,6 +254,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       if (pointers.size === 0) release();
       else rebase();
     };
+    touching.current = () => pointers.size > 0;
     glide.current = (to) => {
       latest.current.stopDemo();
       clearTimeout(wheelTimer);
@@ -334,6 +342,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       stop();
       clearTimeout(wheelTimer);
       glide.current = undefined;
+      touching.current = () => false;
       el.removeEventListener('pointerdown', down);
       el.removeEventListener('pointermove', move);
       el.removeEventListener('pointerup', up);
@@ -357,5 +366,11 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     fit: () => go(() => fitted(f)),
     demo,
     centreOn: (r, c) => go((from) => centredOn(f, from.cell, r, c)),
+    reveal: (r, c) => {
+      if (!zoomed || touching.current()) return;
+      const { cell, x, y } = current;
+      const inView = x + c * cell >= 0 && x + (c + 1) * cell <= f.w && y + r * cell >= 0 && y + (r + 1) * cell <= f.h;
+      if (!inView) go((from) => centredOn(f, from.cell, r, c));
+    },
   };
 }

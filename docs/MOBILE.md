@@ -61,6 +61,7 @@ Chrome's address bar and Android's navigation bar, and changes as the address ba
 **2026-10-07:**
 - Phone portrait became map + bottom sheet, the board zooms (Step 4, brought forward), and the
   selected ship's row never wraps (see Steps 3–4).
+- Zoomed in, the map follows opponent and AI moves that land off screen (Step 4).
 - Step 1's last emulated item (market re-fit at ≥ 980px) checked: works.
 - **Step 5 built:** service worker (offline vs AI) with updates that never interrupt a game.
 - **Step 5 made testable:** the lobby shows the build (commit and time) with *Check for updates*;
@@ -354,7 +355,12 @@ the G55 shows gesture problems we can't fix.
 - [ ] **On the G55:** a pinch at the fitted size while the portrait page can scroll. If the
       fingers drift, Chrome may take it as a page scroll and cancel it part-way. The map + bottom
       sheet layout (no page scroll, the board takes every touch) is the real fix.
-- [ ] Optional: double-tap to zoom, follow opponent and AI moves, a mini-map.
+- [x] **Follow opponent and AI moves** (2026-10-07): zoomed in, a ship this screen doesn't play for that
+      moves or arrives off screen glides the map to it at the same zoom (`useFollowMoves` in
+      [ZoomUi.tsx](../apps/web/src/components/board/ZoomUi.tsx), `reveal` in useBoardZoom). Never at the whole
+      map, never while a finger is on the map, never for your own moves. Checked in G55 emulation on Event
+      Horizon against three AIs (one-off script): off-screen moves bring the map, on-screen ones don't.
+- [ ] Optional: double-tap to zoom, a mini-map.
 - [x] Pinch test in `mobile:shots` (2026-10-07): on every touch device, on your turn, a synthesised
       pinch (`Input.synthesizePinchGesture`), a one-finger pan and *Whole map*. Checks the spaces grow,
       the pan moves the map without moving a ship or scrolling the page, and *Whole map* fits it again.
@@ -498,6 +504,6 @@ needed.
 3. **Dependencies:** `playwright`, `@vitejs/plugin-basic-ssl` and `vite-plugin-pwa` are in (dev
    only). `react-zoom-pan-pinch` was not needed (own zoom, Step 4).
 4. **Home-screen app (Step 5):** now, given async online play, or later?
-5. **Run `mobile:shots` in CI?** GitHub's Ubuntu runners have Chrome, so the Pages workflow
-   could run it and fail the deploy on a broken layout. Worth it once Step 1 makes it pass;
-   until then it would block every deploy.
+5. ~~Run `mobile:shots` in CI?~~ Done 2026-10-07: the Pages workflow's `layout` job runs it in the
+   runner's Chrome next to the build, and `deploy` waits for both, so a broken layout doesn't deploy.
+   The screenshots are a run artifact (*mobile-screenshots*, kept 7 days).
