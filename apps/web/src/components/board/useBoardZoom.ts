@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { REDUCED_MOTION } from '../../game/useMediaQuery';
 import { canZoom as zoomable, centredOn, clampCell, fitted, frame, place, softCell, zoomAround, type View } from './zoomGeometry';
 
 /** A pointer that moves less than this before it lifts is a tap, not a pan. */
@@ -19,8 +20,6 @@ export interface BoardZoom extends View {
   /** The wrap's size in pixels. */
   w: number;
   h: number;
-  /** True until a resize or zoom has settled, so ships jump with the map instead of gliding. */
-  resizing: boolean;
   zoomed: boolean;
   /** Whether zooming does anything here (it doesn't when the spaces are big already). */
   canZoom: boolean;
@@ -62,32 +61,16 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
   // the map it was for.
   const map = `${rows}x${cols}`;
   const [view, setView] = useState({ zoom: 1, x: 0, y: 0, map });
-  const [resizing, setResizing] = useState(false);
-  const settle = useRef<ReturnType<typeof setTimeout>>();
-  const jump = useCallback(() => {
-    setResizing(true);
-    clearTimeout(settle.current);
-    settle.current = setTimeout(() => setResizing(false), 200);
-  }, []);
 
   useLayoutEffect(() => {
     const el = wrap.current;
     if (!el) return;
     // Measured before the first paint, so the map doesn't show at a default size and then shrink.
     setSize({ w: el.clientWidth, h: el.clientHeight });
-    let first = true;
-    const ro = new ResizeObserver(([entry]) => {
-      setSize({ w: entry.contentRect.width, h: entry.contentRect.height });
-      // The observer's first call only confirms the size measured above.
-      if (first) return void (first = false);
-      jump();
-    });
+    const ro = new ResizeObserver(([entry]) => setSize({ w: entry.contentRect.width, h: entry.contentRect.height }));
     ro.observe(el);
-    return () => {
-      ro.disconnect();
-      clearTimeout(settle.current);
-    };
-  }, [wrap, jump]);
+    return () => ro.disconnect();
+  }, [wrap]);
 
   const f = frame(size.w, size.h, rows, cols);
   const canZoom = zoomable(f);
@@ -100,7 +83,6 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       return;
     }
     setView({ zoom: v.cell / f.fit, x: v.x, y: v.y, map });
-    jump();
   };
 
   // Gesture handlers are attached once and read the latest values from here.
@@ -154,12 +136,13 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     let frame = 0; // a glide or fling under way
     let swallowUntil = 0; // clicks before this time belong to a drag
     let wheelTimer: ReturnType<typeof setTimeout> | undefined;
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    let lastWheel = -Infinity; // when the last wheel event came, so a burst measures the page once
+    let scrolls = false; // whether something around the board scrolls, as of this wheel burst
+    // The wrap's place on the page, measured when a gesture starts (the board moves, the wrap doesn't).
+    let rect = el.getBoundingClientRect();
+    const reduced = matchMedia(REDUCED_MOTION);
 
-    const local = (e: PointerEvent | WheelEvent) => {
-      const r = el.getBoundingClientRect();
-      return { x: e.clientX - r.left, y: e.clientY - r.top };
-    };
+    const local = (e: PointerEvent | WheelEvent) => ({ x: e.clientX - rect.left, y: e.clientY - rect.top });
     /** Show `v` as a transform of the committed view, clipped to the wrap. */
     const preview = (v: View) => {
       live = v;
@@ -267,7 +250,10 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       if ((e.target as Element).closest('.zoom-controls, .zoom-hint')) return;
       if (!zoomable(latest.current.f)) return;
       // A touch catches a moving map, and is only that, not a tap on what's under it.
-      if (pointers.size === 0) swallowUntil = frame ? Infinity : 0;
+      if (pointers.size === 0) {
+        swallowUntil = frame ? Infinity : 0;
+        rect = el.getBoundingClientRect();
+      }
       stop();
       clearTimeout(wheelTimer);
       pointers.set(e.pointerId, local(e));
@@ -316,7 +302,13 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     const wheel = (e: WheelEvent) => {
       latest.current.stopDemo();
       const { f, current } = latest.current;
-      if (!zoomable(f) || pointers.size || (!e.ctrlKey && scrollsAround(el))) return;
+      const now = performance.now();
+      if (now - lastWheel > WHEEL_SETTLE) {
+        scrolls = scrollsAround(el);
+        rect = el.getBoundingClientRect();
+      }
+      lastWheel = now;
+      if (!zoomable(f) || pointers.size || (!e.ctrlKey && scrolls)) return;
       e.preventDefault();
       const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
       const at = local(e);
@@ -359,7 +351,6 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     ...current,
     w: size.w,
     h: size.h,
-    resizing,
     zoomed,
     canZoom,
     zoomBy: (factor) => go((from) => zoomAround(f, from, factor, f.w / 2, f.h / 2)),

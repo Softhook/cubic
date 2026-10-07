@@ -21,16 +21,17 @@ function Track({ label, value, tone }: { label: string; value: number; tone: str
 }
 
 export function PlayerList({ game, ctl, dispatch }: { game: GameState; ctl: Controller; dispatch: Dispatch }) {
+  const inTurnPanel = turnScrapOwner(game, ctl).id;
   return (
     <section className="panel players">
       {game.players.map((p) => (
-        <PlayerCard key={p.id} game={game} p={p} ctl={ctl} dispatch={dispatch} />
+        <PlayerCard key={p.id} game={game} p={p} ctl={ctl} dispatch={dispatch} showScrap={p.id !== inTurnPanel} />
       ))}
     </section>
   );
 }
 
-function PlayerCard({ game, p, ctl, dispatch }: { game: GameState; p: PlayerState; ctl: Controller; dispatch: Dispatch }) {
+function PlayerCard({ game, p, ctl, dispatch, showScrap }: { game: GameState; p: PlayerState; ctl: Controller; dispatch: Dispatch; showScrap: boolean }) {
   const active = game.phase === 'play' && game.turn.player === p.id;
   const totalCubes = p.cubesLeft + game.board.planets.reduce((a, pl) => a + pl.cubes.filter((x) => x === p.id).length, 0);
   const [viewing, setViewing] = useState<string | null>(null);
@@ -58,7 +59,7 @@ function PlayerCard({ game, p, ctl, dispatch }: { game: GameState; p: PlayerStat
         {p.ambitionTokens > 0 && <Tip className="stat" tip="Ambition tokens">Ambition {p.ambitionTokens}/3</Tip>}
       </div>
       {/* The turn panel shows one player's scrapyard (see turnScrapOwner); the others' are here. */}
-      {turnScrapOwner(game, ctl).id !== p.id && (
+      {showScrap && (
         <div className="player-scrap">
           <Scrapyard game={game} p={p} ctl={ctl} dispatch={dispatch} />
         </div>

@@ -11,7 +11,7 @@ function unveilingOf(game: GameState, player: number, ctl: Controller): string[]
 }
 
 /** Whether `p` can deploy from their scrapyard on this device now: in their action phase, unveiling, or placing their starting ships. */
-export function canDeployFrom(game: GameState, p: PlayerState, ctl: Controller): boolean {
+function canDeployFrom(game: GameState, p: PlayerState, ctl: Controller): boolean {
   const head = game.pending[0];
   const placingStart = head?.kind === 'placeShips' && head.player === p.id && ctl.human;
   return (ctl.actionPhase && game.turn.player === p.id) || !!unveilingOf(game, p.id, ctl) || placingStart;

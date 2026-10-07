@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import type { GameState } from '@quantum/engine';
 import { PLANET_DIAMETER, TILE } from '@quantum/art';
 import { tileImage } from '../../art/tileImages';
@@ -28,8 +28,11 @@ function useTileImages(game: GameState) {
   return { tiles, images };
 }
 
-/** The map drawn in SVG: tile art, spaces, warp gates, and each planet's number and cube slots. */
-export function BoardArt({ game, cell }: { game: GameState; cell: number }) {
+/**
+ * The map drawn in SVG: tile art, spaces, warp gates, and each planet's number and cube slots. Memoised:
+ * a pan moves the board, not what's drawn on it.
+ */
+export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState; cell: number }) {
   const { rows, cols, cells, planets } = game.board;
   const { tiles, images } = useTileImages(game);
   const W = cols * cell;
@@ -134,4 +137,4 @@ export function BoardArt({ game, cell }: { game: GameState; cell: number }) {
       })}
     </svg>
   );
-}
+});

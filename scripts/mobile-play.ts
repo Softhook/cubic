@@ -19,16 +19,14 @@
  * `window.__quantum` hook, so `--url` must be a dev server.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { chromium, devices, type BrowserContextOptions, type Page } from 'playwright';
-import { createServer } from 'vite';
+import { devices, type BrowserContextOptions, type Page } from 'playwright';
 import { chooseAction } from '../packages/ai/src';
 import { scrapyard, type Action, type Cell, type GameState } from '../packages/engine/src';
-
-const motoG55 = { userAgent: devices['Pixel 7'].userAgent, deviceScaleFactor: 2.625, isMobile: true, hasTouch: true };
+import { MOTO_G55, MOTO_G55_LANDSCAPE, arg, devServer, launchChrome } from './mobile-common';
 
 const DEVICES: Record<string, BrowserContextOptions> = {
-  'moto-g55': { ...motoG55, viewport: { width: 412, height: 800 } },
-  'moto-g55-landscape': { ...motoG55, viewport: { width: 867, height: 340 } },
+  'moto-g55': MOTO_G55,
+  'moto-g55-landscape': MOTO_G55_LANDSCAPE,
   'iphone-se': devices['iPhone SE'],
 };
 
@@ -43,11 +41,6 @@ const MAX_TURNS = 120;
 /** Taps of the human's on one turn before it ends the turn regardless (random targets can wander). */
 const TAPS_PER_TURN = 14;
 const OUT = 'test-results/mobile-play';
-
-const arg = (name: string) => {
-  const i = process.argv.indexOf(name);
-  return i < 0 ? undefined : process.argv[i + 1];
-};
 
 /** What the page shows: the game's state in brief, and the next thing the human would tap (marked `data-play`). */
 interface Look {
@@ -105,14 +98,8 @@ function look(page: Page, tapsThisTurn: number, tried: string[], want: Want | nu
       let missed = false;
       const box = document.querySelector('.overlay .modal, .overlay .combat-card');
       if (want && !box && s.phase !== 'over') {
-        // Places on the map: ships by their transform, spaces and planets by left/top, all in multiples of --cell.
-        const cell = parseFloat((document.querySelector('.board') as HTMLElement).style.getPropertyValue('--cell'));
-        const at = (sel: string, { r, c }: { r: number; c: number }) =>
-          all(sel).find((x) => {
-            const st = (x as HTMLElement).style;
-            const [left, top] = st.transform ? (st.transform.match(/-?[\d.]+/g) ?? []).map(Number) : [parseFloat(st.left), parseFloat(st.top)];
-            return Math.round(left / cell) === c && Math.round(top / cell) === r;
-          });
+        // Ships, spaces and planets carry their place on the map as data-r / data-c.
+        const at = (sel: string, { r, c }: { r: number; c: number }) => all(`${sel}[data-r="${r}"][data-c="${c}"]`)[0];
         if ('ship' in want) el = at('.ship', want.ship);
         else if ('space' in want) el = at('.hl', want.space);
         else if ('planet' in want) el = at('.planet-hit', want.planet);
@@ -336,10 +323,9 @@ async function playGame(page: Page, name: string): Promise<{ issues: string[]; s
 }
 
 async function main() {
-  const server = arg('--url') ? null : await createServer({ root: 'apps/web', server: { port: 5181, host: '127.0.0.1' } });
-  await server?.listen();
-  const base = arg('--url') ?? server!.resolvedUrls!.local[0];
-  const browser = await chromium.launch({ channel: 'chrome', args: ['--no-proxy-server'] });
+  const server = await devServer(5181);
+  const { base } = server;
+  const browser = await launchChrome();
   mkdirSync(OUT, { recursive: true });
   const devicesRun = Object.entries(DEVICES).filter(([d]) => !arg('--device') || d === arg('--device'));
   const gamesRun = Object.entries(GAMES).filter(([g]) => !arg('--game') || g === arg('--game'));
@@ -365,7 +351,7 @@ async function main() {
     console.log(lines.join('\n'));
   } finally {
     await browser.close();
-    await server?.close();
+    await server.close();
   }
   console.log(`\nScreenshots in ${OUT}/`);
   if (problems) {

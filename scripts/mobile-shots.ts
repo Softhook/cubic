@@ -20,15 +20,12 @@
  * On touch screens it also pinches, pans and fits the map on your turn (checkZoom; Chrome only).
  */
 import { mkdirSync } from 'node:fs';
-import { chromium, devices, webkit, type BrowserContextOptions, type Page } from 'playwright';
-import { createServer } from 'vite';
-
-/** The user's Moto G55: 1080×2400 at a device pixel ratio of 2.625, minus Chrome's and Android's bars. */
-const motoG55 = { userAgent: devices['Pixel 7'].userAgent, deviceScaleFactor: 2.625, isMobile: true, hasTouch: true };
+import { devices, webkit, type BrowserContextOptions, type Page } from 'playwright';
+import { MOTO_G55, MOTO_G55_LANDSCAPE, devServer, launchChrome } from './mobile-common';
 
 const DEVICES: Record<string, BrowserContextOptions> = {
-  'moto-g55': { ...motoG55, viewport: { width: 412, height: 800 } },
-  'moto-g55-landscape': { ...motoG55, viewport: { width: 867, height: 340 } },
+  'moto-g55': MOTO_G55,
+  'moto-g55-landscape': MOTO_G55_LANDSCAPE,
   'iphone-se': devices['iPhone SE'],
   'iphone-15': devices['iPhone 15'],
   'iphone-15-landscape': devices['iPhone 15 landscape'],
@@ -59,11 +56,6 @@ const POPUPS: { name: string; play: string; scene: string; must: string; box?: s
 ];
 
 const OUT = 'test-results/mobile';
-
-const arg = (name: string) => {
-  const i = process.argv.indexOf(name);
-  return i < 0 ? undefined : process.argv[i + 1];
-};
 
 /**
  * Lists the shown elements matching `sel` that are off screen or under something from outside their
@@ -167,11 +159,8 @@ async function checkZoom(page: Page): Promise<{ issues: string[]; cells: number[
     page.evaluate(() => {
       const board = document.querySelector('.board') as HTMLElement;
       const cell = parseFloat(board.style.getPropertyValue('--cell'));
-      // Ships are placed by translate(c·cell, r·cell): in spaces, so a zoom doesn't count as a move.
-      const ships = [...document.querySelectorAll<HTMLElement>('.ship')].map((s) => {
-        const [x, y] = (s.style.transform.match(/-?[\d.]+/g) ?? []).map(Number);
-        return `${Math.round(y / cell)},${Math.round(x / cell)}`;
-      });
+      // In spaces, so a zoom doesn't count as a move.
+      const ships = [...document.querySelectorAll<HTMLElement>('.ship')].map((s) => `${s.dataset.r},${s.dataset.c}`);
       return { cell, left: board.offsetLeft, top: board.offsetTop, ships: ships.sort().join(' '), scrollY: window.scrollY };
     });
   const wrap = (await page.locator('.board-wrap').boundingBox())!;
@@ -254,11 +243,10 @@ async function checkPopups(newPage: () => Promise<Page>, base: string, device: s
 }
 
 async function main() {
-  const server = arg('--url') ? null : await createServer({ root: 'apps/web', server: { port: 5180, host: '127.0.0.1' } });
-  await server?.listen();
-  const base = arg('--url') ?? server!.resolvedUrls!.local[0];
+  const server = await devServer(5180);
+  const { base } = server;
   const webkitRun = process.argv.includes('--webkit');
-  const browser = webkitRun ? await webkit.launch() : await chromium.launch({ channel: 'chrome', args: ['--no-proxy-server'] });
+  const browser = webkitRun ? await webkit.launch() : await launchChrome();
   mkdirSync(OUT, { recursive: true });
 
   const problems: string[] = [];
@@ -344,7 +332,7 @@ async function main() {
     console.log(results.flat().join('\n'));
   } finally {
     await browser.close();
-    await server?.close();
+    await server.close();
   }
 
   console.log(`\nScreenshots in ${OUT}/`);

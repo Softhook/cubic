@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { COARSE } from '../game/useMediaQuery';
 
 // Safari (incl. iPad) still only ships the webkit-prefixed API.
 type FsDocument = Document & { webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => Promise<void> };
@@ -25,7 +26,7 @@ const enter = () => {
   if (request?.then) request.then(done, done);
   else done();
 };
-const phone = () => supported && matchMedia('(pointer: coarse)').matches;
+const phone = () => supported && matchMedia(COARSE).matches;
 
 /**
  * Phones drop full screen on their own: the screen locking, another app coming up, a browser dialog

@@ -65,7 +65,8 @@ export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wan
   const onPointerDown = (e: PointerEvent) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    drag.current = { y: e.clientY, from: open ? 0 : travel(), travel: travel(), moved: false };
+    const t = travel();
+    drag.current = { y: e.clientY, from: open ? 0 : t, travel: t, moved: false };
   };
   const onPointerMove = (e: PointerEvent) => {
     const d = drag.current;

@@ -26,7 +26,7 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
   const boardRef = useRef<HTMLDivElement>(null);
   const { rows, cols, planets } = game.board;
   const zoom = useBoardZoom(wrap, boardRef, rows, cols);
-  const { cell, resizing } = zoom;
+  const { cell } = zoom;
   const spots = shipSpots(game);
   const tip = useZoomIntro(game, ctl, zoom, !!introduce);
   useFollowMoves(game, ctl, spots, zoom);
@@ -59,7 +59,7 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
     <div className={`board-wrap ${zoom.zoomed ? 'zoomed' : ''}`} ref={wrap}>
       <div
         ref={boardRef}
-        className={`board ${resizing ? 'resizing' : ''}`}
+        className="board"
         style={{ left: zoom.x, top: zoom.y, width: cols * cell, height: rows * cell, '--cell': `${cell}px` } as CSSProperties}
       >
         <BoardArt game={game} cell={cell} />
@@ -69,6 +69,8 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
             <button
               key={key(c)}
               className={`hl hl-${tone}`}
+              data-r={c.r}
+              data-c={c.c}
               style={{ left: c.c * cell, top: c.r * cell, width: cell, height: cell }}
               onClick={() => ctl.onCell(c)}
               aria-label={`${tone} ${c.r},${c.c}`}
@@ -84,6 +86,8 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
               <button
                 key={p.id}
                 className={`planet-hit ${hl ? `planet-${hl.tone}` : ''}`}
+                data-r={p.r}
+                data-c={p.c}
                 style={{ left: p.c * cell, top: p.r * cell, width: cell, height: cell }}
                 onClick={() => ctl.onPlanet(p.id) === false && show({ planet: p.id })}
                 title={`${planetLabel(game, p.id)} · ${free} of ${p.capacity} cube location${p.capacity > 1 ? 's' : ''} free`}
@@ -108,7 +112,7 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
             }}
           />
           <Explosions game={game} cell={cell} />
-          {inspect && <BoardInfo key={inspectKey(inspect)} game={game} what={inspect} cell={cell} onClose={() => setInspect(null)} />}
+          {inspect && <BoardInfo key={inspectKey(inspect)} game={game} spots={spots} what={inspect} cell={cell} onClose={() => setInspect(null)} />}
         </div>
         {children}
       </div>
@@ -185,7 +189,10 @@ function Ships({
         ]
           .filter(Boolean)
           .join(' ')}
-        style={{ transform: `translate(${c * cell}px, ${r * cell}px)`, width: cell, height: cell, '--pc': game.players[d.owner].color } as CSSProperties}
+        data-r={r}
+        data-c={c}
+        // In percent of its own size (one space), so a zoom or resize doesn't count as a move and glide.
+        style={{ transform: `translate(${c * 100}%, ${r * 100}%)`, width: cell, height: cell, '--pc': game.players[d.owner].color } as CSSProperties}
         onClick={() => ctl.onDie(d.id) === false && onInfo(d.id)}
         onPointerDown={yours(d.owner) ? undefined : (e) => onPress(d.id, e.pointerType !== 'mouse')}
         onContextMenu={(e) => e.preventDefault()}
@@ -201,9 +208,9 @@ function Ships({
 }
 
 /** The info bubble for a ship or planet, anchored to its space on the map. */
-function BoardInfo({ game, what, cell, onClose }: { game: GameState; what: Inspect; cell: number; onClose: () => void }) {
+function BoardInfo({ game, spots, what, cell, onClose }: { game: GameState; spots: ShipSpots; what: Inspect; cell: number; onClose: () => void }) {
   const anchor = useAnchorName();
-  const spot = 'ship' in what ? shipSpots(game).get(what.ship) : game.board.planets.find((p) => p.id === what.planet);
+  const spot = 'ship' in what ? spots.get(what.ship) : game.board.planets.find((p) => p.id === what.planet);
   if (!spot) return null; // the ship left the map
   return (
     <>

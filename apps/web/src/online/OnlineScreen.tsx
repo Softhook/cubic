@@ -3,6 +3,7 @@ import { isSecret, type AskMode, type Replay } from '@quantum/online';
 import { Game } from '../components/GameScreen';
 import { restoreFullscreen } from '../components/FullscreenButton';
 import { useUndoShortcut } from '../game/useGame';
+import { COARSE } from '../game/useMediaQuery';
 import { inviteLink } from './create';
 import { useOnlineGame, type OnlineGame } from './useOnlineGame';
 import type { RelayStatus } from './relays';
@@ -132,7 +133,7 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
   const copy = async () => {
     const url = inviteLink(secret);
     try {
-      if (navigator.share && matchMedia('(pointer: coarse)').matches) await navigator.share({ title: 'Join my game of Cubic', url });
+      if (navigator.share && matchMedia(COARSE).matches) await navigator.share({ title: 'Join my game of Cubic', url });
       else await navigator.clipboard.writeText(url);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);

@@ -20,11 +20,11 @@ function setStatus(s: UpdateStatus) {
   listeners.forEach((l) => l());
 }
 
+const subscribe = (l: () => void) => (listeners.add(l), () => void listeners.delete(l));
+const getStatus = () => status;
+
 export function useUpdateStatus(): UpdateStatus {
-  return useSyncExternalStore(
-    (l) => (listeners.add(l), () => listeners.delete(l)),
-    () => status,
-  );
+  return useSyncExternalStore(subscribe, getStatus);
 }
 
 let checkNow: (asked: boolean) => void = () => {};

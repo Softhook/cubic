@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState } from '@quantum/engine';
+import { COARSE, REDUCED_MOTION } from '../../game/useMediaQuery';
 import type { Controller } from '../../game/controller';
 import type { ShipSpots } from './geometry';
 import type { BoardZoom } from './useBoardZoom';
@@ -45,8 +46,8 @@ export function useZoomIntro(game: GameState, ctl: Controller, zoom: BoardZoom, 
     done.current = true;
     const glowing = game.board.planets.find((p) => ctl.highlights.planets.has(p.id));
     const spot = glowing ?? { r: (game.board.rows - 1) / 2, c: (game.board.cols - 1) / 2 };
-    setTip(matchMedia('(pointer: coarse)').matches ? 'Pinch to zoom the map' : 'Scroll or press + to zoom the map');
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) zoom.demo(spot.r, spot.c);
+    setTip(matchMedia(COARSE).matches ? 'Pinch to zoom the map' : 'Scroll or press + to zoom the map');
+    if (!matchMedia(REDUCED_MOTION).matches) zoom.demo(spot.r, spot.c);
   });
   useEffect(() => {
     if (!tip) return;

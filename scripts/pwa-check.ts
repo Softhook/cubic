@@ -17,7 +17,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, relative, resolve } from 'node:path';
-import { chromium, devices, type Page } from 'playwright';
+import { type Page } from 'playwright';
+import { MOTO_G55, launchChrome } from './mobile-common';
 import { build } from 'vite';
 
 const OUT = resolve('test-results/pwa');
@@ -90,10 +91,8 @@ const onScreenGame = async (page: Page) => (await page.locator('.board').count()
 async function main() {
   await buildAll();
   await new Promise<void>((r) => server.listen(PORT, '127.0.0.1', r));
-  const browser = await chromium.launch({ channel: 'chrome', args: ['--no-proxy-server'] });
-  const context = await browser.newContext({
-    userAgent: devices['Pixel 7'].userAgent, viewport: { width: 412, height: 800 }, deviceScaleFactor: 2.625, isMobile: true, hasTouch: true,
-  });
+  const browser = await launchChrome();
+  const context = await browser.newContext(MOTO_G55);
   try {
     let page = await context.newPage();
     page.on('load', () => (openedAt = Date.now()));
