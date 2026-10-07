@@ -3,7 +3,7 @@
 How to make the web app play well on phones and iPads: what works today, what breaks, and a
 plan sized to where the app is now.
 
-Status: **Steps 0, 1 and 2 done; Step 3 done in emulation (layout and every popup), its real-device checks still to do; Step 4 (zoom) brought forward and built 2026-10-07, and with it the phone-portrait bottom sheet; real-device check of both to do.** First written
+Status: **Steps 0, 1 and 2 done; Step 3 done in emulation (layout and every popup), its real-device checks still to do; Step 4 (zoom) brought forward and built 2026-10-07, and with it the phone-portrait bottom sheet; real-device check of both to do. Step 5 (home-screen app, offline) built 2026-10-07; check on the G55 after the next Pages deploy.** First written
 2026-10-02 as a proposal. Revised 2026-10-06 after measuring the build in device emulation
 (`npm run mobile:shots`: Playwright + Chrome; iPhone SE, iPhone 15, Moto G55 and iPad mini,
 portrait and landscape). On the real Moto G55 so far: the default map (fine) and Asymptote
@@ -57,6 +57,13 @@ Chrome's address bar and Android's navigation bar, and changes as the address ba
 - **In-game popups checked (late evening):** `mobile:shots` now also opens combat, Change of Heart,
   game over and the rules on every device (dev link `&scene=combat|changeOfHeart|over|turn`). Combat
   was twice the screen's height on phones; fixed (Step 3). All 7 devices pass.
+
+**2026-10-07:**
+- Phone portrait became map + bottom sheet, the board zooms (Step 4, brought forward), and the
+  selected ship's row never wraps (see Steps 3–4).
+- Step 1's last emulated item (market re-fit at ≥ 980px) checked: works.
+- **Step 5 built:** service worker (offline vs AI) with updates that never interrupt a game.
+
 - **Next:** play Step 3 on the G55 (2p Basic and 3p Classic, setup to game over), then Step 4. Still to check from
   Step 1: the board re-fit when the market opens/closes on screens ≥ 980px.
 
@@ -208,8 +215,9 @@ Steps 1–3 come first; Step 4 is the big one and can wait until they are in.
 - [x] Stage height on phones: give the board the space it needs, e.g.
       `height: min(100vw, calc(100dvh - topbar - turn bar))`, and in landscape let the board
       use the full height.
-- [ ] Re-fit the board when the market collapses or expands (it's a `ResizeObserver` on the
-      wrap, so check the stage really resizes rather than overflows).
+- [x] Re-fit the board when the market collapses or expands. Checked 2026-10-07 (Classic 4p 5×5,
+      Playwright): the stage really resizes, e.g. 34 → 43px cells at 1024×768 when the market
+      collapses and back when it opens, never overflowing; same at 1280 and 1440.
 - [x] `viewport-fit=cover` + `env(safe-area-inset-*)` padding; `100vh` → `100dvh` (`.modal`,
       and anywhere else that is sized by the viewport).
 - [x] `touch-action: manipulation` on the app; `user-select: none` and
@@ -222,8 +230,7 @@ Steps 1–3 come first; Step 4 is the big one and can wait until they are in.
 Done 2026-10-06: `npm run mobile:shots` passes 21 of 21 (G55 cells: 3×3 44px, 5×5 26px,
 7×7 19px portrait; 31 / 18 / 13px landscape). The stage is
 `min(100vw, 100dvh − topbar − safe areas)`; the hit areas are a centred `::after`, so the
-buttons look the same. Not yet checked: the market re-fit (on phones the stage height no
-longer depends on the market, so it only matters ≥ 980px), and everything on the real G55.
+buttons look the same. The market re-fit checked 2026-10-07 (see above). Not yet checked: everything on the real G55.
 
 **Done when:** `npm run mobile:shots` reports no problems (it checks the first two points
 on every device), and on the G55 a double-tap never zooms the page and nothing sticks after a
@@ -353,18 +360,29 @@ the G55 shows gesture problems we can't fix.
 **Done when:** a 5×5 4-player map is playable on the Moto G55 and an iPhone with ships
 ≥ 44px when zoomed in, and panning never makes a move.
 
-### Step 5: Home-screen app (small, optional)
+### Step 5: Home-screen app (built 2026-10-07; G55 check to do)
 More useful now that online games are async: people come back to a game over days.
-- [ ] `vite-plugin-pwa` (v2, Oct 2026) for the manifest and service worker, and
-      `@vite-pwa/assets-generator` for icons from `favicon.svg`. Add `apple-mobile-web-app-capable`
-      so "Add to Home Screen" opens fullscreen. This is also the only way to get fullscreen on an
-      iPhone.
-- [ ] Service worker for offline play against the AI (everything already runs client-side).
-- [ ] **Watch out: stale clients in online games.** A cached old build replaying a log made by
-      a newer build can desync. Use `registerType: 'autoUpdate'` and check for an update when
-      the app comes back to the foreground. Then a home-screen app is never more than one
-      resume behind.
-- [ ] Check the scope and start URL with the `./` base on the GitHub Pages subpath.
+- [x] Manifest, icons (any + maskable) and `apple-mobile-web-app-capable` (done earlier with the
+      fullscreen work: [manifest.webmanifest](../apps/web/public/manifest.webmanifest), hand-made icons,
+      so no `@vite-pwa/assets-generator`). This is also the only way to get fullscreen on an iPhone.
+- [x] **Service worker** for offline play against the AI: `vite-plugin-pwa` v2 (`generateSW`, our own
+      manifest kept) in [vite.config.ts](../apps/web/vite.config.ts), registered in
+      [pwa.ts](../apps/web/src/pwa.ts), production builds only (the dev server and `mobile:shots` don't
+      get one). Precaches the whole build (12 files, ≈ 740 KB, the AI worker included); Google Fonts
+      are cached on use, so from the second online visit on they work offline too (before that,
+      offline falls back to system fonts).
+- [x] **Stale clients in online games.** Not the plugin's `autoUpdate`, which reloads whenever a new
+      version arrives, possibly mid-combat. Instead a new version goes live straight away if it is
+      found within 10 s of opening, otherwise the next time the app goes to the background (the
+      reload is unseen; the saved game resumes, it is saved on every change). The app checks for a
+      new version every time it comes back to the foreground, so it is never more than one resume
+      behind.
+- [x] Scope and start URL with the `./` base: served under `/quantum/` like Pages, the scope is
+      `/quantum/`. Checked in Playwright: offline reload shows the lobby and a game against the AI
+      starts; a new `sw.js` waits while you play, goes live when the page is hidden, and applies at
+      once on a page just opened.
+- [ ] **On the G55** after the Pages deploy: *Add to Home Screen* (Chrome offers *Install*), open it
+      from the icon, play a turn in flight mode.
 - [ ] Screen Wake Lock during a game, if it turns out to matter.
 - Turn notifications would need a push server, which goes against the no-server rule. Out of
   scope.
