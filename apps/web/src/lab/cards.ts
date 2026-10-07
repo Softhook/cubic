@@ -44,6 +44,17 @@ export const measure: Measure = (text, size, font) => {
   return (ctx.measureText(text).width / 100) * size;
 };
 
+let fontsReady: Promise<void> | null = null;
+
+/** Resolves once the page has the card fonts, so `measure` measures with them (never rejects). */
+export function cardFontsReady(): Promise<void> {
+  fontsReady ??= Promise.all(Object.values(FAMILIES).map(([w, f]) => document.fonts.load(`${w} 10px ${f}`))).then(
+    () => {},
+    () => {},
+  );
+  return fontsReady;
+}
+
 let fontCss: Promise<string> | null = null;
 
 /**
@@ -54,7 +65,7 @@ let fontCss: Promise<string> | null = null;
 export function cardFontCss(): Promise<string> {
   fontCss ??= (async () => {
     try {
-      await Promise.all(Object.values(FAMILIES).map(([w, f]) => document.fonts.load(`${w} 10px ${f}`)));
+      await cardFontsReady();
       const css = await (await fetch('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;1,400&family=Orbitron:wght@900&display=block')).text();
       // Latin only: the card text needs nothing else, and each subset is another file.
       const blocks = [...css.matchAll(/\/\* latin \*\/\s*(@font-face\s*\{[^}]*\})/g)].map((m) => m[1]);

@@ -1,7 +1,8 @@
 /** Online games share storage with the game on this device; finished ones make way for it. */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { forget, remember, stored } from '../src/storage';
-import { onlineGames, rememberGame, saveEvents } from '../src/online/storage';
+import { onlineGames } from '../src/online/games';
+import { rememberGame, saveEvents } from '../src/online/storage';
 
 /** localStorage holding at most `quota` characters (keys and values), like a browser's. */
 class FakeStorage {

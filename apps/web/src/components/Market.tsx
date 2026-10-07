@@ -7,6 +7,7 @@ import { useShortcut } from '../game/useShortcut';
 import { remember, stored } from '../storage';
 import { CardView, categoryStyle } from './Card';
 import { CardViewer } from './CardViewer';
+import { warmCardImages } from '../art/cardImages';
 import { Dialog } from './Dialog';
 
 export function Market({ game, dispatch, legal }: { game: GameState; dispatch: Dispatch; legal: Legal }) {
@@ -31,6 +32,7 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   const [viewingCard, setViewingCard] = useState<string | null>(null);
   const [patientChoice, setPatientChoice] = useState<{ id: string; index: number } | null>(null);
   const { open, toggle } = useCollapse(picking);
+  useWarmCards(game);
   // A pick over, the turn panel comes back into view: in phone landscape's column you may have scrolled down to a card.
   useEffect(() => {
     if (picking) return () => document.querySelector('.turn-panel')?.scrollIntoView({ block: 'nearest' });
@@ -239,4 +241,15 @@ function useCollapse(picking: boolean) {
   useShortcut((e) => !(e.metaKey || e.ctrlKey || e.altKey) && e.key.toLowerCase() === 'c', toggle);
 
   return { open, toggle };
+}
+
+/**
+ * Draws the pop-up art of the cards in play in the background: those face up and in players' hands
+ * first (the ones tapped for a closer look), then the decks.
+ */
+function useWarmCards(game: GameState) {
+  const m = game.market;
+  const ids = [...m.skillRow, ...m.tacticRow, ...game.players.flatMap((p) => [...p.skills.map((s) => s.id), ...(p.storedTactics ?? [])]), ...m.skillDeck, ...m.tacticDeck];
+  const sig = ids.join();
+  useEffect(() => void warmCardImages(ids), [sig]);
 }

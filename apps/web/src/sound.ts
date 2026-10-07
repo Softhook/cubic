@@ -12,6 +12,17 @@ function audio(): AudioContext | null {
   }
 }
 
+// Starting the audio can take ~100 ms: it is done when the page is next idle after the first touch or key
+// (browsers only let sound start after one), not inside the tap that first plays a sound.
+function warm() {
+  window.removeEventListener('pointerdown', warm, true);
+  window.removeEventListener('keydown', warm, true);
+  if ('requestIdleCallback' in window) requestIdleCallback(() => audio(), { timeout: 1000 });
+  else setTimeout(audio, 0);
+}
+window.addEventListener('pointerdown', warm, true);
+window.addEventListener('keydown', warm, true);
+
 function click(ac: AudioContext, at: number, gain: number, freq: number) {
   const len = 0.035;
   const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * len), ac.sampleRate);

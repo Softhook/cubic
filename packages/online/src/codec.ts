@@ -49,10 +49,6 @@ export function newSecret(): string {
   return b64url(crypto.getRandomValues(new Uint8Array(16)));
 }
 
-export function isSecret(s: string): boolean {
-  return /^[A-Za-z0-9_-]{22}$/.test(s);
-}
-
 const derive = (label: string, secret: string) => sha256(enc.encode(`cubic:${label}:${secret}`));
 
 export function gameKeys(secret: string): GameKeys {

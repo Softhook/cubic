@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { isSecret, type AskMode, type Replay } from '@quantum/online';
+import type { AskMode, Replay } from '@quantum/online';
 import { Game } from '../components/GameScreen';
 import { restoreFullscreen } from '../components/FullscreenButton';
 import { useUndoShortcut } from '../game/useGame';
@@ -8,12 +8,6 @@ import { inviteLink } from './create';
 import { useOnlineGame, type OnlineGame } from './useOnlineGame';
 import type { RelayStatus } from './relays';
 import { remember, stored } from '../storage';
-
-/** The secret of the online game the URL opens (#online/<secret>), if any. */
-export function onlineSecret(): string | null {
-  const m = location.hash.match(/^#online\/([^/?&]+)/);
-  return m && isSecret(m[1]) ? m[1] : null;
-}
 
 const NAME = 'quantum.online.name';
 /** How long to look for a game on the relays before saying it can't be found. */

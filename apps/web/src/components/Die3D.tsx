@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type CSSProperties } from 'react';
+import { memo, useLayoutEffect, useRef, type CSSProperties } from 'react';
 import { playRoll } from '../sound';
 import { PIP } from '../theme';
 
@@ -53,7 +53,8 @@ export interface Die3DProps {
   onClick?: () => void;
 }
 
-export function Die3D({
+/** Memoised: the map re-renders on every move, and each die is six faces of nine pips. */
+export const Die3D = memo(function Die3D({
   value,
   rolls = 0,
   size,
@@ -143,4 +144,4 @@ export function Die3D({
       </div>
     </div>
   );
-}
+});

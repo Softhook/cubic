@@ -111,7 +111,13 @@ input { font: inherit; }
 .btn-missile.decisive small { color: var(--gold); }
 .missile-note { margin: 8px 0 0; font-size: 11.5px; color: var(--muted); }
 @media (hover: hover) { .btn-missile:hover:not(:disabled) { background: rgba(255, 93, 115, .25) !important; border-color: var(--bad) !important; } }
-.btn.pulse { animation: pulse 1.6s ease-in-out infinite; }
+.btn.pulse { position: relative; }
+/* Looping animations use transform and opacity only, so the compositor runs them without repainting. */
+.btn.pulse::before {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
+  box-shadow: 0 0 0 2px rgba(122, 162, 255, .55); animation: pulse-ring 1.6s ease-in-out infinite;
+}
+@keyframes pulse-ring { 0%, 100% { opacity: 1; transform: none; } 50% { opacity: 0; transform: scale(1.14, 1.4); } }
 
 .icon-btn {
   width: 32px; height: 32px;
@@ -287,6 +293,10 @@ input { font: inherit; }
   position: absolute; z-index: 5; display: flex; align-items: center; justify-content: center; gap: 2px;
   min-width: 30px; height: 30px; padding: 0 6px; border-radius: 15px; cursor: pointer;
   border: 1px solid var(--good); background: rgba(8, 12, 28, .8); color: var(--good); font: inherit; font-size: 12px; font-weight: 700;
+  box-shadow: 0 0 2px color-mix(in srgb, var(--good) 30%, transparent);
+}
+.zoom-hint::before {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
   box-shadow: 0 0 12px color-mix(in srgb, var(--good) 45%, transparent);
   animation: hint-pulse 1.6s ease-in-out infinite;
 }
@@ -295,7 +305,7 @@ input { font: inherit; }
 .zoom-hint-right { right: 6px; top: 50%; translate: 0 -50%; }
 .zoom-hint-top { top: 6px; left: 50%; translate: -50% 0; }
 .zoom-hint-bottom { bottom: 6px; left: 50%; translate: -50% 0; }
-@keyframes hint-pulse { 50% { box-shadow: 0 0 2px color-mix(in srgb, var(--good) 30%, transparent); } }
+@keyframes hint-pulse { 50% { opacity: 0; } }
 /* A long press on the board or a die shouldn't select text or open the iOS callout. */
 .board, .die3d { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .board-svg { position: absolute; inset: 0; overflow: visible; }
@@ -303,7 +313,7 @@ input { font: inherit; }
 .planet-num { font-family: var(--body); pointer-events: none; }
 .cube { animation: cube-in .5s cubic-bezier(.3,1.6,.5,1); transform-box: fill-box; transform-origin: center; }
 @keyframes cube-in { from { transform: scale(0) rotate(-90deg); } to { transform: scale(1) rotate(0); } }
-.gate-spin { animation: spin 6s linear infinite; transform-box: fill-box; transform-origin: center; }
+.gate-spin { position: absolute; pointer-events: none; animation: spin 6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .board-layer { position: absolute; inset: 0; }
@@ -412,8 +422,13 @@ input { font: inherit; }
   .ship.own:hover .die3d { transform: translateY(-2px); }
 }
 .ship .die3d { transition: transform .2s, filter .3s; }
-.ship.selected .ship-ring { opacity: 1; inset: 4%; box-shadow: 0 0 16px var(--pc), inset 0 0 10px var(--pc); animation: sel 1.4s ease-in-out infinite; }
-@keyframes sel { 50% { box-shadow: 0 0 6px var(--pc), inset 0 0 4px var(--pc); } }
+.ship.selected .ship-ring { opacity: 1; inset: 4%; box-shadow: 0 0 6px var(--pc), inset 0 0 4px var(--pc); }
+.ship.selected .ship-ring::after {
+  content: ''; position: absolute; inset: -2px; border: 2px solid transparent; border-radius: inherit;
+  box-shadow: 0 0 16px var(--pc), inset 0 0 10px var(--pc);
+  animation: sel 1.4s ease-in-out infinite;
+}
+@keyframes sel { 50% { opacity: 0; } }
 .ship.spent .die3d { filter: saturate(.45) brightness(.72); }
 .ship-attack, .ship-target { cursor: crosshair; }
 .ship-attack .ship-ring, .ship-target .ship-ring {
@@ -659,8 +674,12 @@ input { font: inherit; }
   transition: background .3s;
 }
 .market.picking { background: linear-gradient(180deg, rgba(122,162,255,.08), rgba(5,8,19,.6)); box-shadow: inset 0 1px 0 var(--accent); }
-.market.picking .market-card.takeable { animation: deal .35s both, glowcard 1.8s ease-in-out infinite .4s; }
-@keyframes glowcard { 50% { box-shadow: 0 6px 18px rgba(0,0,0,.35), 0 0 0 2px color-mix(in srgb, var(--cat) 70%, transparent); } }
+.market.picking .market-card.takeable::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--cat) 70%, transparent);
+  animation: glowcard 1.8s ease-in-out infinite .4s;
+}
+@keyframes glowcard { 50% { opacity: 1; } }
 /* The rows are flattened into the market so its cards shrink to fit the space beside the sidebar (the
    Community Edition's seven cards overflow a laptop at full size); it only scrolls once they reach their
    minimum. Gaps are 8px within a deck's row and 14px between rows. */
@@ -698,8 +717,12 @@ input { font: inherit; }
 .market.collapsed .market-toggle { flex-direction: row; width: auto; padding: 0 12px; margin: 0 0 0 -16px; }
 .market.collapsed .market-toggle span { writing-mode: initial; transform: none; }
 .market.collapsed .market-toggle svg { transform: none; }
-.market.collapsed.picking .market-toggle { color: var(--accent); animation: togglepulse 1.6s ease-in-out infinite; }
-@keyframes togglepulse { 50% { background: rgba(122,162,255,.2); } }
+.market.collapsed.picking .market-toggle { position: relative; color: var(--accent); }
+.market.collapsed.picking .market-toggle::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: rgba(122,162,255,.2); animation: togglepulse 1.6s ease-in-out infinite;
+}
+@keyframes togglepulse { 50% { opacity: 1; } }
 .market-strip-group { display: flex; align-items: center; gap: 5px; flex: none; }
 .market-strip-deck { border: 0; background: none; color: var(--muted); font: inherit; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; cursor: pointer; padding: 0 2px; white-space: nowrap; }
 .market-strip-deck b { color: var(--text); font-size: 12px; letter-spacing: 0; }
@@ -835,8 +858,8 @@ input { font: inherit; }
 .combat-verdict strong { color: var(--pc); }
 .combat-footer { margin-top: 14px; display: flex; justify-content: center; min-height: 36px; align-items: center; }
 .autobar { width: 220px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; }
-.autobar span { display: block; height: 100%; background: var(--accent); animation: autobar 2.6s linear both; }
-@keyframes autobar { from { width: 0; } to { width: 100%; } }
+.autobar span { display: block; height: 100%; background: var(--accent); transform-origin: left; animation: autobar 2.6s linear both; }
+@keyframes autobar { from { transform: scaleX(0); } }
 
 .toasts { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; z-index: 60; width: min(520px, 90%); }
 .toast {

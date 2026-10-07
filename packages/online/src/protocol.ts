@@ -7,6 +7,11 @@ import type { Action, CombatPending, GameMode, GameState, PlayerConfig, PlayerId
  */
 export const PROTOCOL = 1;
 
+/** Whether `s` has the form of a game secret (codec's `newSecret`), as an invite link carries it. */
+export function isSecret(s: string): boolean {
+  return /^[A-Za-z0-9_-]{22}$/.test(s);
+}
+
 /** Which battles a player is asked to respond to (fire a missile, re-roll) before they resolve. */
 export type AskMode = 'always' | 'own' | 'never';
 

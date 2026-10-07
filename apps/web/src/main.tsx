@@ -1,7 +1,5 @@
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
-import { Lab } from './lab/Lab';
-import { Rulebook } from './rulebook/Rulebook';
 import { warmTileImages } from './art/tileImages';
 import { startServiceWorker } from './pwa';
 import './styles.css';
@@ -20,5 +18,9 @@ if (page === 'game') void warmTileImages();
 // Production builds only: in dev it would cache what the dev server serves.
 if (import.meta.env.PROD) startServiceWorker();
 
-// No StrictMode: its double-invoked effects would restart dice animations mid-tumble.
-createRoot(document.getElementById('root')!).render(page === 'lab' ? <Lab /> : page === 'rulebook' ? <Rulebook /> : <App />);
+// No StrictMode: its double-invoked effects would restart dice animations mid-tumble. The Art Lab and the
+// printable rulebook are loaded only when opened, so the game starts without them.
+const root = createRoot(document.getElementById('root')!);
+if (page === 'lab') void import('./lab/Lab').then(({ Lab }) => root.render(<Lab />));
+else if (page === 'rulebook') void import('./rulebook/Rulebook').then(({ Rulebook }) => root.render(<Rulebook />));
+else root.render(<App />);

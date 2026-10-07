@@ -22,7 +22,8 @@
     "relays:check": "vite-node scripts/relay-check.ts --",
     "mobile:shots": "npm run data && vite-node scripts/mobile-shots.ts --",
     "mobile:play": "npm run data && vite-node scripts/mobile-play.ts --",
-    "pwa:check": "npm run data && vite-node scripts/pwa-check.ts"
+    "pwa:check": "npm run data && vite-node scripts/pwa-check.ts",
+    "perf:probe": "npm run data && vite-node scripts/perf-probe.ts --"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
