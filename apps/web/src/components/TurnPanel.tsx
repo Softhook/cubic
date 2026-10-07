@@ -27,7 +27,6 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
   return (
     <section className="panel turn-panel" style={{ '--pc': shown.color } as CSSProperties}>
       <div className="turn-head">
-        <span className="turn-dot" />
         <div className="turn-title">
           {(game.phase === 'setup' || t.bonus) && <small>{game.phase === 'setup' ? 'Setup' : 'Bonus turn'}</small>}
           <strong>{shown.name}</strong>

@@ -38,7 +38,6 @@ function PlayerCard({ game, p, ctl, dispatch }: { game: GameState; p: PlayerStat
   return (
     <div className={`player ${active ? 'active' : ''}`} style={{ '--pc': p.color } as CSSProperties}>
       <div className="player-head">
-        <span className="player-swatch" />
         <strong>{p.name}</strong>
         {p.ai && <span className="tag">AI</span>}
         <Tip className="cubes" tip={`${totalCubes - p.cubesLeft} of ${totalCubes} cubes placed`}>

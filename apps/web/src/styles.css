@@ -492,7 +492,6 @@ input { font: inherit; }
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--pc) 15%, transparent), 0 10px 30px rgba(0,0,0,.35);
 }
 .turn-head { display: flex; align-items: center; gap: 10px; }
-.turn-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 12px var(--pc); flex: none; }
 .turn-title { display: flex; flex-direction: column; line-height: 1.2; }
 .turn-title small { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
 .turn-title strong { font-family: var(--display); font-size: 16px; letter-spacing: .04em; }
