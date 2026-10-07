@@ -3,6 +3,8 @@ import { rulesOf } from '@quantum/engine';
 import { useController } from '../game/controller';
 import type { GameView } from '../game/view';
 import { setSoundEnabled, soundEnabled } from '../sound';
+import { SHEET, useMediaQuery } from '../game/useMediaQuery';
+import { BottomSheet } from './BottomSheet';
 import { Board } from './Board';
 import { Market } from './Market';
 import { Log } from './Log';
@@ -16,7 +18,8 @@ import { FullscreenButton, useFullscreenOnFirstTap } from './FullscreenButton';
 /**
  * The game screen, for a game on this device or online. `side` goes at the top of the sidebar,
  * `overlay` over everything; online, leaving doesn't end the game. `onLobby` (the title) goes back to
- * the lobby without ending it.
+ * the lobby without ending it. On a phone held upright the sidebar and market are a bottom sheet over
+ * the map instead, with the turn panel showing at rest.
  */
 export function Game({
   view,
@@ -41,6 +44,9 @@ export function Game({
   const [hideGameOver, setHideGameOver] = useState(false);
   useFullscreenOnFirstTap();
   const head = game.pending[0];
+  const sheet = useMediaQuery(SHEET);
+  const cards = rulesOf(game).cards;
+  const turnPanel = <TurnPanel game={game} ctl={ctl} dispatch={dispatch} undo={undo} />;
   /** Online games go on without you; a local game is abandoned, so it asks first. */
   const leave = () => {
     if (online || game.phase === 'over' || confirm('Abandon this game?')) onQuit();
@@ -72,19 +78,32 @@ export function Game({
         </div>
       </header>
 
-      <main className="layout">
+      <main className={`layout ${sheet ? 'sheet-layout' : ''}`}>
+        {/* First in both layouts, so turning the phone keeps the board (and its zoom). */}
         <div className="stage" style={{ '--map-ratio': game.board.rows / game.board.cols } as CSSProperties}>
-          <Board game={game} ctl={ctl} />
+          {/* Choosing a starting planet is the first moment the map is yours to look at: show it zooms then. */}
+          <Board game={game} ctl={ctl} introduce={game.phase === 'setup' && ctl.highlights.planets.size > 0} />
           <Toasts toasts={toasts} game={game} />
           <ErrorToast error={error} />
         </div>
-        <aside className="sidebar">
-          {side}
-          <TurnPanel game={game} ctl={ctl} dispatch={dispatch} undo={undo} />
-          <PlayerList game={game} ctl={ctl} dispatch={dispatch} />
-          <Log game={game} />
-        </aside>
-        {rulesOf(game).cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} />}
+        {sheet ? (
+          <BottomSheet peek={turnPanel} wantOpen={!!cards && (ctl.legal.can('takeCard') || ctl.legal.can('patientTactic'))}>
+            {side}
+            <PlayerList game={game} ctl={ctl} dispatch={dispatch} />
+            {cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} />}
+            <Log game={game} />
+          </BottomSheet>
+        ) : (
+          <>
+            <aside className="sidebar">
+              {side}
+              {turnPanel}
+              <PlayerList game={game} ctl={ctl} dispatch={dispatch} />
+              <Log game={game} />
+            </aside>
+            {cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} />}
+          </>
+        )}
       </main>
 
       {head?.kind === 'combat' && <CombatOverlay key={head.id} game={game} combat={head} dispatch={dispatch} mine={view.mine} online={online ? (view.combat ?? NO_RESPONSE) : undefined} />}

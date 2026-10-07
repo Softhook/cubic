@@ -1,10 +1,11 @@
-import { useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { SHIP_ABILITIES, SHIP_NAMES, die, key, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { Explosions } from './board/Explosions';
 import { shipSpots } from './board/geometry';
-import { useBoardZoom, type BoardZoom } from './board/useBoardZoom';
+import { ZOOM_LEARNED, useBoardZoom, type BoardZoom } from './board/useBoardZoom';
+import { stored } from '../storage';
 import { Die3D } from './Die3D';
 import { planetNames } from '../art/boardTiles';
 import { InfoPop, useAnchorName } from './InfoPop';
@@ -17,14 +18,16 @@ const inspectKey = (i: Inspect) => ('ship' in i ? `ship:${i.ship}` : `planet:${i
  * The map: artwork underneath (SVG), then clickable layers for highlighted spaces, planets and
  * ships, then explosions. What is clickable comes from the controller's highlights; a tap on a ship
  * or planet that isn't shows its info instead. It fits its box, and zooms and pans (useBoardZoom).
- * `children` float over the map (positioned in percent of its size).
+ * `children` float over the map (positioned in percent of its size). `introduce` (the start of a game)
+ * shows that it zooms, until the player has zoomed once.
  */
-export function Board({ game, ctl, children }: { game: GameState; ctl: Controller; children?: ReactNode }) {
+export function Board({ game, ctl, introduce, children }: { game: GameState; ctl: Controller; introduce?: boolean; children?: ReactNode }) {
   const wrap = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const { rows, cols, planets } = game.board;
   const zoom = useBoardZoom(wrap, boardRef, rows, cols);
   const { cell, resizing } = zoom;
+  const tip = useZoomIntro(game, ctl, zoom, !!introduce);
   const [inspect, setInspect] = useState<Inspect | null>(null);
   // The info closes itself on a tap elsewhere; a tap on the same thing again closes it too.
   const show = (what: Inspect) => setInspect((cur) => (cur && inspectKey(cur) === inspectKey(what) ? null : what));
@@ -83,6 +86,7 @@ export function Board({ game, ctl, children }: { game: GameState; ctl: Controlle
       </div>
       {zoom.canZoom && <ZoomControls zoom={zoom} />}
       {zoom.zoomed && <OffscreenHints game={game} ctl={ctl} zoom={zoom} />}
+      {tip && <div className="zoom-tip" role="status">{tip}</div>}
     </div>
   );
 }
@@ -107,6 +111,33 @@ function ZoomControls({ zoom }: { zoom: BoardZoom }) {
       )}
     </div>
   );
+}
+
+/** How long the "pinch to zoom" tip shows, from the start of the demo. */
+const TIP_MS = 4200;
+
+/**
+ * Once per board, when `introduce` first holds and zooming does something here: zooms in on a glowing
+ * planet (or the middle of the map) and back out, under a tip saying how to zoom. Not once the player
+ * has zoomed (ZOOM_LEARNED); with reduced motion, only the tip. Returns the tip's text while it shows.
+ */
+function useZoomIntro(game: GameState, ctl: Controller, zoom: BoardZoom, introduce: boolean): string | null {
+  const [tip, setTip] = useState<string | null>(null);
+  const done = useRef(false);
+  useEffect(() => {
+    if (done.current || !introduce || !zoom.canZoom || stored(ZOOM_LEARNED)) return;
+    done.current = true;
+    const glowing = game.board.planets.find((p) => ctl.highlights.planets.has(p.id));
+    const spot = glowing ?? { r: (game.board.rows - 1) / 2, c: (game.board.cols - 1) / 2 };
+    setTip(matchMedia('(pointer: coarse)').matches ? 'Pinch to zoom the map' : 'Scroll or press + to zoom the map');
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) zoom.demo(spot.r, spot.c);
+  });
+  useEffect(() => {
+    if (!tip) return;
+    const t = setTimeout(() => setTip(null), TIP_MS);
+    return () => clearTimeout(t);
+  }, [tip]);
+  return tip;
 }
 
 type Side = 'left' | 'right' | 'top' | 'bottom';

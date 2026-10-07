@@ -3,7 +3,7 @@
 How to make the web app play well on phones and iPads: what works today, what breaks, and a
 plan sized to where the app is now.
 
-Status: **Steps 0, 1 and 2 done; Step 3 done in emulation (layout and every popup), its real-device checks still to do; Step 4 (zoom) brought forward and built 2026-10-07, real-device check to do.** First written
+Status: **Steps 0, 1 and 2 done; Step 3 done in emulation (layout and every popup), its real-device checks still to do; Step 4 (zoom) brought forward and built 2026-10-07, and with it the phone-portrait bottom sheet; real-device check of both to do.** First written
 2026-10-02 as a proposal. Revised 2026-10-06 after measuring the build in device emulation
 (`npm run mobile:shots`: Playwright + Chrome; iPhone SE, iPhone 15, Moto G55 and iPad mini,
 portrait and landscape). On the real Moto G55 so far: the default map (fine) and Asymptote
@@ -286,9 +286,15 @@ Keep the scrolling column, but pin what matters:
       need to scroll it to act. The open market sits under the bar until you scroll (not during a
       pick, see above).
 
-The slide-up sheet with tabs (P2 in the old draft) is the polished version of this. Do it only
-if the sticky bar turns out not to be enough. If it comes to that, don't use Vaul, which is
-unmaintained (§5).
+- [x] **Phone portrait: map + bottom sheet** (2026-10-07, replacing the scrolling column, which
+      itself had replaced the sticky bar). Below 700px wide, upright, nothing scrolls but the sheet:
+      the map fills the screen above the sheet's resting height, and the sheet
+      ([BottomSheet.tsx](../apps/web/src/components/BottomSheet.tsx), hand-rolled, no Vaul) shows the
+      turn panel at rest; drag or tap its handle for the online panel, players, market and log (the
+      market first while you pick a card; the sheet opens by itself then). A tap on the dimmed map
+      or Esc shuts it. Its resting height only grows during a game, so the map doesn't jump when
+      the turn panel gains the ship row. With no page scroll, every touch on the map is the zoom's
+      (Step 4). Landscape, tablets and desktop are unchanged.
 
 - [ ] Check one full turn on the G55 for smoothness (no remote profiling, see Step 0): 3D dice,
       four `backdrop-filter` blur layers, explosions. Its Dimensity 7025 is mid-range and the screen runs at 120 Hz.

@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { remember } from '../../storage';
 
 /** Zoomed in, a space is at most this big. */
 const MAX_CELL = 80;
@@ -10,6 +11,8 @@ const TAP_SLOP = 8;
 const WHEEL_SETTLE = 150;
 /** The click a browser sends right after a drag ends, within this long, is the drag's and is ignored. */
 const DRAG_CLICK = 400;
+/** Set once the player has zoomed: the start-of-game demo has done its job. */
+export const ZOOM_LEARNED = 'quantum.zoomLearned';
 
 export interface View {
   /** The space's size in pixels. */
@@ -32,6 +35,8 @@ export interface BoardZoom extends View {
   fit: () => void;
   /** Pan so the space (r, c) is in the middle, as far as the board's edges allow. */
   centreOn: (r: number, c: number) => void;
+  /** Shows that the map zooms: in on the space (r, c) and back out again. A touch or the wheel stops it. */
+  demo: (r: number, c: number) => void;
 }
 
 /** Whether something around `el` scrolls vertically: then a plain wheel over the board scrolls it, not the zoom. */
@@ -102,6 +107,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       if (board.current) board.current.style.transform = ''; // nothing to redraw; just drop the preview
       return;
     }
+    if (v.cell !== current.cell) remember(ZOOM_LEARNED, '1');
     setView({ zoom: v.cell / fitCell, x: v.x, y: v.y, map });
     jump();
   };
@@ -113,8 +119,33 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
   };
 
   // Gesture handlers are attached once and read the latest values from here.
-  const latest = useRef({ current, canZoom, zoomed, place, clampCell, zoomAround, commit });
-  latest.current = { current, canZoom, zoomed, place, clampCell, zoomAround, commit };
+  const latest = useRef({ current, canZoom, zoomed, place, clampCell, zoomAround, commit, stopDemo: () => {} });
+
+  // The demo runs on timers; a touch, the wheel or unmounting stops it and puts the map back.
+  const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const stopDemo = useCallback(() => {
+    if (!demoTimers.current.length) return;
+    demoTimers.current.forEach(clearTimeout);
+    demoTimers.current = [];
+    wrap.current?.classList.remove('gesture');
+    if (board.current) Object.assign(board.current.style, { transition: '', transform: '' });
+  }, [wrap, board]);
+  const demo = (r: number, c: number) => {
+    const el = board.current;
+    if (!el || !canZoom || zoomed) return;
+    stopDemo();
+    const cell = Math.min(maxCell, current.cell * 2);
+    const to = place(cell, size.w / 2 - (c + 0.5) * cell, size.h / 2 - (r + 0.5) * cell);
+    const at = (ms: number, step: () => void) => demoTimers.current.push(setTimeout(step, ms));
+    wrap.current?.classList.add('gesture');
+    el.style.transition = 'transform .9s cubic-bezier(.45, 0, .25, 1)';
+    at(30, () => (el.style.transform = `translate(${to.x - current.x}px, ${to.y - current.y}px) scale(${cell / current.cell})`));
+    at(2100, () => (el.style.transform = ''));
+    at(3050, stopDemo);
+  };
+
+  latest.current = { current, canZoom, zoomed, place, clampCell, zoomAround, commit, stopDemo };
+  useLayoutEffect(() => stopDemo, [stopDemo]);
 
   // The committed view has been drawn: drop the gesture's transform.
   useLayoutEffect(() => {
@@ -163,6 +194,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
 
     const down = (e: PointerEvent) => {
       swallowUntil = 0;
+      latest.current.stopDemo();
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       if ((e.target as Element).closest('.zoom-controls, .zoom-hint')) return;
       if (!latest.current.canZoom) return;
@@ -208,6 +240,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       e.preventDefault();
     };
     const wheel = (e: WheelEvent) => {
+      latest.current.stopDemo();
       const { canZoom, zoomAround, current } = latest.current;
       if (!canZoom || pointers.size || (!e.ctrlKey && scrollsAround(el))) return;
       e.preventDefault();
@@ -247,6 +280,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     canZoom,
     zoomBy: (factor) => commit(zoomAround(current, factor, size.w / 2, size.h / 2)),
     fit: () => commit(place(fitCell, 0, 0)),
+    demo,
     centreOn: (r, c) => commit(place(current.cell, size.w / 2 - (c + 0.5) * current.cell, size.h / 2 - (r + 0.5) * current.cell)),
   };
 }

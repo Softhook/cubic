@@ -14,3 +14,6 @@ export function useMediaQuery(query: string): boolean {
 
 /** Phone-sized screens, portrait or landscape; the same query styles.css uses to shrink popups. */
 export const PHONE = '(max-width: 600px), (max-height: 500px)';
+
+/** Phones held upright: the map above a bottom sheet (GameScreen); the same query styles.css uses for it. */
+export const SHEET = '(max-width: 699px) and (orientation: portrait)';
