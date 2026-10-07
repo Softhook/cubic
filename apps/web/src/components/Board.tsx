@@ -1,45 +1,13 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode, type RefObject } from 'react';
+import { useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { SHIP_ABILITIES, SHIP_NAMES, die, key, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { Explosions } from './board/Explosions';
 import { shipSpots } from './board/geometry';
+import { useBoardZoom, type BoardZoom } from './board/useBoardZoom';
 import { Die3D } from './Die3D';
 import { planetNames } from '../art/boardTiles';
 import { InfoPop, useAnchorName } from './InfoPop';
-
-/**
- * The size of a board space in pixels: as large as fits the container, within limits. `resizing` stays
- * true until the size has settled, so ships jump to their new spots with the map instead of gliding there.
- */
-function useCellSize(wrap: RefObject<HTMLDivElement>, rows: number, cols: number): { cell: number; resizing: boolean } {
-  const [cell, setCell] = useState(64);
-  const [resizing, setResizing] = useState(false);
-  useLayoutEffect(() => {
-    const el = wrap.current;
-    if (!el) return;
-    const fit = (width: number, height: number) => Math.max(8, Math.min(140, Math.floor(Math.min(width / cols, height / rows))));
-    // Measured before the first paint, so the map doesn't show at a default size and then shrink.
-    setCell(fit(el.clientWidth, el.clientHeight));
-    let first = true;
-    let settle: ReturnType<typeof setTimeout> | undefined;
-    const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      setCell(fit(width, height));
-      // The observer's first call only confirms the size measured above.
-      if (first) return void (first = false);
-      setResizing(true);
-      clearTimeout(settle);
-      settle = setTimeout(() => setResizing(false), 200);
-    });
-    ro.observe(el);
-    return () => {
-      ro.disconnect();
-      clearTimeout(settle);
-    };
-  }, [wrap, rows, cols]);
-  return { cell, resizing };
-}
 
 /** A ship or planet whose info is showing, after a tap that had nothing else to do. */
 type Inspect = { ship: string } | { planet: number };
@@ -48,13 +16,15 @@ const inspectKey = (i: Inspect) => ('ship' in i ? `ship:${i.ship}` : `planet:${i
 /**
  * The map: artwork underneath (SVG), then clickable layers for highlighted spaces, planets and
  * ships, then explosions. What is clickable comes from the controller's highlights; a tap on a ship
- * or planet that isn't shows its info instead. `children` float over the map (positioned in percent
- * of its size).
+ * or planet that isn't shows its info instead. It fits its box, and zooms and pans (useBoardZoom).
+ * `children` float over the map (positioned in percent of its size).
  */
 export function Board({ game, ctl, children }: { game: GameState; ctl: Controller; children?: ReactNode }) {
   const wrap = useRef<HTMLDivElement>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
   const { rows, cols, planets } = game.board;
-  const { cell, resizing } = useCellSize(wrap, rows, cols);
+  const zoom = useBoardZoom(wrap, boardRef, rows, cols);
+  const { cell, resizing } = zoom;
   const [inspect, setInspect] = useState<Inspect | null>(null);
   // The info closes itself on a tap elsewhere; a tap on the same thing again closes it too.
   const show = (what: Inspect) => setInspect((cur) => (cur && inspectKey(cur) === inspectKey(what) ? null : what));
@@ -67,8 +37,12 @@ export function Board({ game, ctl, children }: { game: GameState; ctl: Controlle
   };
 
   return (
-    <div className="board-wrap" ref={wrap}>
-      <div className={`board ${resizing ? 'resizing' : ''}`} style={{ width: cols * cell, height: rows * cell, '--cell': `${cell}px` } as CSSProperties}>
+    <div className={`board-wrap ${zoom.zoomed ? 'zoomed' : ''}`} ref={wrap}>
+      <div
+        ref={boardRef}
+        className={`board ${resizing ? 'resizing' : ''}`}
+        style={{ left: zoom.x, top: zoom.y, width: cols * cell, height: rows * cell, '--cell': `${cell}px` } as CSSProperties}
+      >
         <BoardArt game={game} cell={cell} />
 
         <div className="board-layer" onClick={onBoardClick}>
@@ -107,8 +81,73 @@ export function Board({ game, ctl, children }: { game: GameState; ctl: Controlle
         </div>
         {children}
       </div>
+      {zoom.canZoom && <ZoomControls zoom={zoom} />}
+      {zoom.zoomed && <OffscreenHints game={game} ctl={ctl} zoom={zoom} />}
     </div>
   );
+}
+
+/**
+ * Zoom in and out, and back to the whole map. On touch screens (where you pinch) only the last, and only
+ * while zoomed, so the buttons don't cover the corner space of the whole map.
+ */
+function ZoomControls({ zoom }: { zoom: BoardZoom }) {
+  return (
+    <div className="zoom-controls">
+      <button type="button" className="zoom-step" title="Zoom in" aria-label="Zoom in" onClick={() => zoom.zoomBy(1.5)}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      </button>
+      <button type="button" className="zoom-step" title="Zoom out" aria-label="Zoom out" disabled={!zoom.zoomed} onClick={() => zoom.zoomBy(1 / 1.5)}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
+      </button>
+      {zoom.zoomed && (
+        <button type="button" title="Whole map" aria-label="Whole map" onClick={zoom.fit}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
+type Side = 'left' | 'right' | 'top' | 'bottom';
+const ARROWS: Record<Side, string> = { left: 'm15 6-6 6 6 6', right: 'm9 6 6 6-6 6', top: 'm6 15 6-6 6 6', bottom: 'm6 9 6 6 6-6' };
+
+/**
+ * Zoomed in: an arrow at each edge beyond which something is highlighted (a space, planet or ship you
+ * can pick), with how many; a tap brings the nearest into view.
+ */
+function OffscreenHints({ game, ctl, zoom }: { game: GameState; ctl: Controller; zoom: BoardZoom }) {
+  const spots = shipSpots(game);
+  const targets = [
+    ...[...ctl.highlights.cells.values()].map((h) => h.cell),
+    ...game.board.planets.filter((p) => ctl.highlights.planets.has(p.id)),
+    ...[...ctl.highlights.dice.keys()].flatMap((id) => spots.get(id) ?? []),
+  ];
+  // What's on screen, in spaces.
+  const left = -zoom.x / zoom.cell, right = (zoom.w - zoom.x) / zoom.cell;
+  const top = -zoom.y / zoom.cell, bottom = (zoom.h - zoom.y) / zoom.cell;
+  const midR = (top + bottom) / 2, midC = (left + right) / 2;
+  const beyond = new Map<Side, { r: number; c: number; d: number }[]>();
+  for (const { r, c } of targets) {
+    const over: [Side, number][] = [
+      ['left', left - (c + 0.5)],
+      ['right', c + 0.5 - right],
+      ['top', top - (r + 0.5)],
+      ['bottom', r + 0.5 - bottom],
+    ];
+    const [side, by] = over.reduce((a, b) => (b[1] > a[1] ? b : a));
+    if (by <= 0) continue;
+    beyond.set(side, [...(beyond.get(side) ?? []), { r, c, d: Math.hypot(r + 0.5 - midR, c + 0.5 - midC) }]);
+  }
+  return [...beyond].map(([side, list]) => {
+    const near = list.reduce((a, b) => (b.d < a.d ? b : a));
+    return (
+      <button key={side} type="button" className={`zoom-hint zoom-hint-${side}`} aria-label={`${list.length} more ${side === 'top' ? 'above' : side === 'bottom' ? 'below' : `to the ${side}`}`} onClick={() => zoom.centreOn(near.r, near.c)}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ARROWS[side]} /></svg>
+        {list.length > 1 && <span>{list.length}</span>}
+      </button>
+    );
+  });
 }
 
 /** Every ship on the map, as a die; selected, highlighted, spent or in combat. */

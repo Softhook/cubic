@@ -3,7 +3,7 @@
 How to make the web app play well on phones and iPads: what works today, what breaks, and a
 plan sized to where the app is now.
 
-Status: **Steps 0, 1 and 2 done; Step 3 done in emulation (layout and every popup), its real-device checks still to do.** First written
+Status: **Steps 0, 1 and 2 done; Step 3 done in emulation (layout and every popup), its real-device checks still to do; Step 4 (zoom) brought forward and built 2026-10-07, real-device check to do.** First written
 2026-10-02 as a proposal. Revised 2026-10-06 after measuring the build in device emulation
 (`npm run mobile:shots`: Playwright + Chrome; iPhone SE, iPhone 15, Moto G55 and iPad mini,
 portrait and landscape). On the real Moto G55 so far: the default map (fine) and Asymptote
@@ -299,33 +299,37 @@ the Moto G55 (and on an iPhone, through BrowserStack) without scrolling to act; 
 Classic game is comfortable on an iPad in both orientations. `mobile:shots` checks that *End
 turn* (or, on another player's turn, the turn panel's head) is on screen ✅.
 
-### Step 4: Board zoom (larger, 3–4 days)
-Needed for 4–5 player maps on phones. Start with a **one-day spike with
-`react-zoom-pan-pinch`** (§5). It now covers most of the list below out of the box
-(`zoomToElement` for auto-focus, a MiniMap, coordinate helpers), so it may well be good enough.
-Judge it on the G55 (and once on BrowserStack iOS) by three things: are dice and text crisp
-after a zoom, does a tap on a ship ever turn into a pan (or the reverse), and does it feel
-smooth at 120 Hz.
+### Step 4: Board zoom (brought forward 2026-10-07; built, real-device check to do)
+Brought forward because the phone layout's spacing can't be settled until the map can zoom (the
+map + bottom sheet layout depends on it).
 
-If it fails, fall back to our own Pointer Events (~150 lines), using the design from the old
-draft:
-- [ ] Pinch-zoom / pan / wheel zoom / double-tap, a *Fit* button, bounds from "fit" to ≈ 64px
-      cells.
-- [ ] During the gesture, apply a CSS `transform` to `.board`; when it ends, commit by changing
-      `cell` (crisp SVG, text and dice) and reset the transform.
-- [ ] Tap vs drag: under 8px of movement and ~300ms is a tap; anything else pans and must not
-      fire ship/cell clicks. One `screenToCell()` helper for `onBoardClick`.
-- [ ] `touch-action: none` on the board only.
+**Own Pointer Events, not `react-zoom-pan-pinch`** (decided 2026-10-07). The library keeps the board
+under a CSS `transform: scale()`, so 3D dice (`preserve-3d`) and text are rasterised at the fitted
+size and go soft when zoomed, and `onBoardClick`'s cell maths would have to undo the scale. Ours
+commits the zoom as `cell`, so everything redraws crisp, and it fits in one hook
+([useBoardZoom.ts](../apps/web/src/components/board/useBoardZoom.ts), ≈ 250 lines). Revisit only if
+the G55 shows gesture problems we can't fix.
 
-Either way:
-- [ ] Optional: gentle auto-focus on selection (zoom just enough to show the reachable cells),
-      follow opponent and AI moves during online replays, a mini-map inset.
-- [ ] Playwright pinch tests through Chrome's DevTools protocol
-      (`Input.synthesizePinchGesture` / `Input.dispatchTouchEvent`): `page.touchscreen` only
-      does single taps. These run in Chromium only.
-
-Auto-rotating the board 90° (old option A) only helps rectangular maps (3×5, 4×5, 4×7). It's
-cheap once `screenToCell()` exists; worth adding then, not before.
+- [x] Pinch (touch), drag to pan once zoomed (touch or mouse), wheel zoom (Ctrl / trackpad pinch,
+      or any wheel when nothing around the board scrolls). Bounds: the fitted size to 80px spaces;
+      no zoom where that's less than 15% bigger.
+- [x] During a gesture a CSS `transform` on `.board` (the wrap clips); when it ends (the wheel:
+      150 ms still), commit by changing `cell` and drop the transform.
+- [x] Tap vs drag: under 8px of movement is a tap; a drag swallows the click that follows it
+      (within 400 ms). A mouse released outside the map ends its drag.
+- [x] `touch-action: none` on the board while zoomed; `pan-x pan-y` at the fitted size, so the
+      page still scrolls over it.
+- [x] Buttons: zoom in / out / whole map with a mouse; on touch only *Whole map*, while zoomed (so
+      they don't cover the corner space).
+- [x] Zoomed in: an arrow at each edge beyond which something is highlighted (spaces, planets,
+      ships you can pick), with a count; a tap pans to the nearest.
+- [x] A map of another size starts at the whole map.
+- [ ] **On the G55:** a pinch at the fitted size while the portrait page can scroll. If the
+      fingers drift, Chrome may take it as a page scroll and cancel it part-way. The map + bottom
+      sheet layout (no page scroll, the board takes every touch) is the real fix.
+- [ ] Optional: double-tap to zoom, follow opponent and AI moves, a mini-map.
+- [ ] Playwright pinch tests in `mobile:shots` (`Input.synthesizePinchGesture` works; checked by
+      hand 2026-10-07).
 
 **Done when:** a 5×5 4-player map is playable on the Moto G55 and an iPhone with ships
 ≥ 44px when zoomed in, and panning never makes a move.
