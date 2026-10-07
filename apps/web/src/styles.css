@@ -993,24 +993,18 @@ input { font: inherit; }
 @media (max-width: 980px) {
   body { overflow: auto; }
   .app { height: auto; min-height: 100%; grid-template-columns: minmax(0, 1fr); }
-  /* One scrolling column: board, market, the sidebar's panels, and the turn panel last. The sidebar's
-     panels join the column (display: contents) so the turn panel can stick to the bottom of the screen:
-     pinned there while you're higher up the page, in its own place at the end, so it never hides the
-     log. Flex, not grid: a sticky grid item can't leave its grid area. */
+  /* One scrolling column: board, the turn panel right under it, market, the sidebar's other panels.
+     The sidebar's panels join the column (display: contents) so the turn panel can sit between the
+     board and the market. Nothing is pinned: the board is only as tall as the map, which leaves room
+     for the turn panel on the first screen. */
   .layout { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px; padding-bottom: 12px; }
   .layout > *, .sidebar > * { flex: 1 1 100%; min-width: 0; }
   .sidebar { display: contents; }
-  .sidebar > * { margin: 0 12px; order: 2; }
+  .sidebar > * { margin: 0 12px; order: 3; }
   .stage { order: 0; }
-  .market { order: 1; }
-  /* While you pick a card the market is where you act, so the bar lets go of the screen. */
-  .layout:has(.market.picking) > .sidebar > .turn-panel { position: static; }
-  .sidebar > .turn-panel {
-    order: 3; position: sticky; bottom: calc(6px + env(safe-area-inset-bottom)); z-index: 5;
-    background: color-mix(in srgb, var(--panel-solid) 94%, transparent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--pc) 15%, transparent), 0 -6px 28px rgba(0,0,0,.55);
-  }
-  /* The turn bar: compact, so it covers as little as possible. The scrapyard is in it whenever you can
+  .sidebar > .turn-panel { order: 1; }
+  .market { order: 2; }
+  /* The turn panel: compact, so the board and it share the first screen. The scrapyard is in it whenever you can
      deploy, and the selected ship is one row (its ability text is a tap on its name). */
   .turn-panel { padding: 8px 12px 10px; }
   .turn-title { flex-direction: row; align-items: baseline; gap: 8px; }
@@ -1025,9 +1019,9 @@ input { font: inherit; }
   .turn-panel .ship-ability { display: none; }
   .turn-panel .ship-panel-head .icon-btn { position: absolute; right: -6px; top: 8px; } /* never wraps onto a row of its own */
   .turn-panel .ship-name { margin-right: 4px; line-height: 1.2; }
-  /* As tall as the screen allows below the topbar: square in portrait, the full height in landscape.
+  /* As tall as the map at full width (--map-ratio is rows / cols), within the screen below the topbar.
      In portrait, room is kept below it for the turn panel. */
-  .stage { height: min(100vw, var(--below-topbar)); padding: 4px; }
+  .stage { height: min(calc((100vw - 8px) * var(--map-ratio, 1) + 8px), var(--below-topbar)); padding: 4px; }
   .fleet-roll { gap: 18px; }
   /* Collapsed: wrap onto more lines instead of scrolling sideways, so every card name shows. */
   .market.collapsed { height: auto; min-height: 40px; flex-wrap: wrap; row-gap: 6px; column-gap: 10px; padding: 6px 8px; overflow: visible; }
@@ -1056,7 +1050,7 @@ input { font: inherit; }
 }
 
 @media (max-width: 980px) and (orientation: portrait) {
-  .stage { height: min(100vw, calc(var(--below-topbar) - 160px)); }
+  .stage { height: min(calc((100vw - 8px) * var(--map-ratio, 1) + 8px), calc(var(--below-topbar) - 160px)); }
 }
 /* Tablet portrait: players and log side by side, so the page isn't 1,800px tall. */
 @media (min-width: 700px) and (max-width: 980px) {

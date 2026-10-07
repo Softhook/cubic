@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import { rulesOf } from '@quantum/engine';
 import { useController } from '../game/controller';
 import type { GameView } from '../game/view';
@@ -73,7 +73,7 @@ export function Game({
       </header>
 
       <main className="layout">
-        <div className="stage">
+        <div className="stage" style={{ '--map-ratio': game.board.rows / game.board.cols } as CSSProperties}>
           <Board game={game} ctl={ctl}>
             {head?.kind === 'advance' && ctl.human && <AdvancePrompt game={game} advance={head} dispatch={dispatch} />}
           </Board>

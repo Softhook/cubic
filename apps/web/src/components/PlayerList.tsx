@@ -57,7 +57,7 @@ function PlayerCard({ game, p, ctl, dispatch }: { game: GameState; p: PlayerStat
         {p.actionPenalty > 0 && <Tip className="stat bad" tip="Sabotaged: fewer actions next turn">−{p.actionPenalty} action</Tip>}
         {p.ambitionTokens > 0 && <Tip className="stat" tip="Ambition tokens">Ambition {p.ambitionTokens}/3</Tip>}
       </div>
-      {/* Below 980px the turn bar shows the deploying player's scrapyard, so this copy hides there. */}
+      {/* Below 980px the turn panel shows the deploying player's scrapyard, so this copy hides there. */}
       <div className={`player-scrap ${canDeployFrom(game, p, ctl) ? 'in-turn-bar' : ''}`}>
         <Scrapyard game={game} p={p} ctl={ctl} dispatch={dispatch} />
       </div>

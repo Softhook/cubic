@@ -49,7 +49,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
         </p>
       )}
       {hint && <p className="hint">{hint}</p>}
-      {/* Below 980px the turn panel is the sticky turn bar, so the ships to deploy are in it too. */}
+      {/* Below 980px the turn panel sits right under the board, so the ships to deploy are in it too. */}
       {deployer && (
         <div className="turn-scrap">
           <Scrapyard game={game} p={deployer} ctl={ctl} dispatch={dispatch} />
