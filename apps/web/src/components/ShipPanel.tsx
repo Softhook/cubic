@@ -31,20 +31,20 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
         );
       case 2:
         return (
-          <button className="btn" disabled={!legal.can('carry', mine)} onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id })}>
-            Carry &amp; move
+          <button className="btn" disabled={!legal.can('carry', mine)} onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id })} aria-label="Carry & move">
+            <Label long="Carry & move" short="Carry" />
           </button>
         );
       case 3:
         return (
-          <button className="btn" disabled={!legal.can('swap', mine)} onClick={() => ctl.select({ kind: 'swap', die: d.id })}>
-            Switch places
+          <button className="btn" disabled={!legal.can('swap', mine)} onClick={() => ctl.select({ kind: 'swap', die: d.id })} aria-label="Switch places">
+            <Label long="Switch places" short="Switch" />
           </button>
         );
       case 4:
         return ([3, 5] as const).map((value) => (
-          <button key={value} className="btn" disabled={!legal.can('change', (a) => mine(a) && a.value === value)} onClick={() => dispatch({ type: 'change', die: d.id, value })}>
-            Become {value}
+          <button key={value} className="btn" disabled={!legal.can('change', (a) => mine(a) && a.value === value)} onClick={() => dispatch({ type: 'change', die: d.id, value })} aria-label={`Become ${value}`} title={`Become ${value}`}>
+            <Label long={`Become ${value}`} short={`→ ${value}`} />
           </button>
         ));
       case 6:
@@ -80,13 +80,13 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
           Reconfigure
         </button>
         {tacticalId && legal.can('tactical', (a) => mine(a) && !a.passenger) && (
-          <button className="btn" onClick={() => ctl.select({ kind: 'tactical', die: d.id })} title={card(tacticalId).text}>
-            Tactical step
+          <button className="btn" onClick={() => ctl.select({ kind: 'tactical', die: d.id })} title={card(tacticalId).text} aria-label="Tactical step">
+            <Label long="Tactical step" short="Tactical" />
           </button>
         )}
         {tacticalId && legal.can('tactical', (a) => mine(a) && !!a.passenger) && (
-          <button className="btn" onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id, tactical: true })} title={`${card(tacticalId).text} The Flagship may transport a ship over that 1 space.`}>
-            Tactical carry
+          <button className="btn" onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id, tactical: true })} title={`${card(tacticalId).text} The Flagship may transport a ship over that 1 space.`} aria-label="Tactical carry">
+            <Label long="Tactical carry" short="Tac. carry" />
           </button>
         )}
         {onBoard && hasSkill(game, me, 'flexible') && (
@@ -101,11 +101,21 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
           </button>
         )}
         {legal.can('resourceful', mine) && (
-          <button className="btn" onClick={() => dispatch({ type: 'resourceful', die: d.id })} title={card('resourceful').text}>
-            Sacrifice +1 action
+          <button className="btn" onClick={() => dispatch({ type: 'resourceful', die: d.id })} title={card('resourceful').text} aria-label="Sacrifice +1 action">
+            <Label long="Sacrifice +1 action" short="Sacrifice" />
           </button>
         )}
       </div>
     </div>
+  );
+}
+
+/** A button's label, and a shorter one for when the selected ship's row is narrow (a phone's turn panel). */
+function Label({ long, short }: { long: string; short: string }) {
+  return (
+    <>
+      <span className="label-long">{long}</span>
+      <span className="label-short">{short}</span>
+    </>
   );
 }

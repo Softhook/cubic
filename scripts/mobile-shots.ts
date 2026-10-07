@@ -17,6 +17,7 @@
  * Then each device opens the in-game popups (`-combat`, `-changeOfHeart`, `-over`, `-rules`, see
  * POPUPS): the popup must fit the screen, and its buttons must be on screen without scrolling inside
  * it (Change of Heart and the rules scroll their content, so only their heading and × must show).
+ * On touch screens it also pinches, pans and fits the map on your turn (checkZoom; Chrome only).
  */
 import { mkdirSync } from 'node:fs';
 import { chromium, devices, webkit, type BrowserContextOptions, type Page } from 'playwright';
@@ -110,6 +111,31 @@ async function playToMyTurn(page: Page) {
     myTurn = step === 'mine';
   }
   if (!myTurn) return { issues, deployChecked, myTurn };
+  // Where the selected ship is a row in the turn panel (below 980px), each of your ships and its actions must fit
+  // that one row, without wrapping or scrolling the buttons (the name may be cut short).
+  const ownShips = await page.locator('.ship.own').count();
+  for (let i = 0; i < ownShips; i++) {
+    await page.evaluate((i) => (document.querySelectorAll('.ship.own')[i] as HTMLElement).click(), i);
+    await page.waitForTimeout(250);
+    const row = await page.evaluate(() => {
+      const panel = document.querySelector<HTMLElement>('.turn-panel .ship-panel');
+      if (!panel || getComputedStyle(panel).display !== 'flex') return null;
+      const name = panel.querySelector('.ship-name strong')?.textContent ?? 'ship';
+      const tops = [...panel.querySelectorAll('.ship-panel-head > :not(.icon-btn), .turn-actions .btn')].flatMap((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width ? [r.top + r.height / 2] : []; // not shown at this size
+      });
+      const actions = panel.querySelector('.turn-actions')!;
+      return {
+        name,
+        wraps: Math.max(...tops) - Math.min(...tops) > 6,
+        scrolls: actions.scrollWidth > actions.clientWidth + 1,
+      };
+    });
+    if (row?.wraps) issues.push(`ship row: ${row.name} wraps`);
+    if (row?.scrolls) issues.push(`ship row: ${row.name}'s buttons don't fit (they scroll)`);
+    await page.evaluate(() => (document.querySelector('.turn-panel .ship-panel .icon-btn') as HTMLElement | null)?.click());
+  }
   await page.evaluate(() => (document.querySelector('.ship.own') as HTMLElement | null)?.click());
   await page.waitForTimeout(500);
   issues.push(...(await unreachable(page, '.turn-actions .btn-primary, .turn-panel .ship-panel button')).map((t) => `your turn: ${t}`));
@@ -120,6 +146,55 @@ async function playToMyTurn(page: Page) {
   });
   if (overlap > 2) issues.push(`your turn: turn bar covers ${Math.round(overlap)}px of the board`);
   return { issues, deployChecked, myTurn };
+}
+
+/**
+ * On your turn, on a touch screen where the map zooms: pinches out on the map, pans it with one finger, then taps
+ * *Whole map*. The spaces must grow, the pan must move the map without moving a ship or scrolling the page, and
+ * *Whole map* must bring back the fitted size. Chrome only (the gestures are synthesised through the DevTools
+ * protocol). Returns null where it doesn't apply.
+ */
+async function checkZoom(page: Page): Promise<{ issues: string[]; cells: number[] } | null> {
+  if (!(await page.locator('.zoom-controls').count())) return null;
+  const cdp = await page.context().newCDPSession(page);
+  const state = () =>
+    page.evaluate(() => {
+      const board = document.querySelector('.board') as HTMLElement;
+      const cell = parseFloat(board.style.getPropertyValue('--cell'));
+      // Ships are placed by translate(c·cell, r·cell): in spaces, so a zoom doesn't count as a move.
+      const ships = [...document.querySelectorAll<HTMLElement>('.ship')].map((s) => {
+        const [x, y] = (s.style.transform.match(/-?[\d.]+/g) ?? []).map(Number);
+        return `${Math.round(y / cell)},${Math.round(x / cell)}`;
+      });
+      return { cell, left: board.offsetLeft, top: board.offsetTop, ships: ships.sort().join(' '), scrollY: window.scrollY };
+    });
+  const wrap = (await page.locator('.board-wrap').boundingBox())!;
+  const mid = { x: Math.round(wrap.x + wrap.width / 2), y: Math.round(wrap.y + wrap.height / 2) };
+  const issues: string[] = [];
+
+  const fitted = await state();
+  await cdp.send('Input.synthesizePinchGesture', { ...mid, scaleFactor: 2.5, relativeSpeed: 600, gestureSourceType: 'touch' });
+  await page.waitForTimeout(600); // the gesture's transform is committed as the new cell size
+  const pinched = await state();
+  if (pinched.cell < fitted.cell * 1.3) issues.push(`pinch: spaces ${fitted.cell}px → ${pinched.cell}px`);
+
+  // A slow drag, so it doesn't fling, starting off-centre so it doesn't begin on the ship just selected.
+  await cdp.send('Input.synthesizeScrollGesture', { x: mid.x - 30, y: mid.y - 30, xDistance: 60, yDistance: 60, speed: 300, gestureSourceType: 'touch', preventFling: true });
+  await page.waitForTimeout(600);
+  const panned = await state();
+  if (panned.left === pinched.left && panned.top === pinched.top) issues.push('pan: the map didn\'t move');
+  if (panned.ships !== fitted.ships) issues.push('pan: a ship moved');
+  if (panned.scrollY !== fitted.scrollY) issues.push(`pan: the page scrolled ${panned.scrollY - fitted.scrollY}px`);
+
+  const whole = page.locator('.zoom-controls button[aria-label="Whole map"]');
+  if (await whole.isVisible()) {
+    await whole.tap();
+    await page.waitForTimeout(600);
+    const back = await state();
+    if (back.cell !== fitted.cell) issues.push(`whole map: spaces ${back.cell}px, fitted ${fitted.cell}px`);
+  } else issues.push('zoomed in but no Whole map button');
+  await cdp.detach();
+  return { issues: issues.map((i) => `zoom ${i}`), cells: [fitted.cell, pinched.cell] };
 }
 
 /** Opens each of POPUPS on a new page and lists what doesn't fit. */
@@ -163,7 +238,8 @@ async function main() {
   const server = arg('--url') ? null : await createServer({ root: 'apps/web', server: { port: 5180, host: '127.0.0.1' } });
   await server?.listen();
   const base = arg('--url') ?? server!.resolvedUrls!.local[0];
-  const browser = process.argv.includes('--webkit') ? await webkit.launch() : await chromium.launch({ channel: 'chrome', args: ['--no-proxy-server'] });
+  const webkitRun = process.argv.includes('--webkit');
+  const browser = webkitRun ? await webkit.launch() : await chromium.launch({ channel: 'chrome', args: ['--no-proxy-server'] });
   mkdirSync(OUT, { recursive: true });
 
   const problems: string[] = [];
@@ -234,7 +310,10 @@ async function main() {
         if (!turn.myTurn) issues.push('never reached your turn');
         issues.push(...turn.issues);
         await page.screenshot({ path: `${OUT}/${name}-turn.png` });
-        lines.push(`${name.padEnd(36)} cell ${String(m.cell).padStart(3)}px  page ${m.pageWidth}×${m.pageHeight}  ${issues.length ? '✗ ' + issues.join('; ') : '✓'}`);
+        const zoom = turn.myTurn && options.hasTouch && !webkitRun ? await checkZoom(page) : null;
+        if (zoom) issues.push(...zoom.issues);
+        const pinch = zoom ? `  pinch → ${Math.round(zoom.cells[1])}px` : '';
+        lines.push(`${name.padEnd(36)} cell ${String(m.cell).padStart(3)}px  page ${m.pageWidth}×${m.pageHeight}${pinch}  ${issues.length ? '✗ ' + issues.join('; ') : '✓'}`);
         problems.push(...issues.map((i) => `${name}: ${i}`));
         await ctx.close();
       }

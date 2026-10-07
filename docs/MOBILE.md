@@ -295,6 +295,12 @@ Keep the scrolling column, but pin what matters:
       or Esc shuts it. Its resting height only grows during a game, so the map doesn't jump when
       the turn panel gains the ship row. With no page scroll, every touch on the map is the zoom's
       (Step 4). Landscape, tablets and desktop are unchanged.
+- [x] **The selected ship's row is always one line** (2026-10-07): its name and every action button. In a narrow
+      turn panel (container query, ≤ 540px: phone portrait and the landscape column) the die is left out (the
+      ship glows on the board), buttons are tighter and long labels get short ones (*→ 3*, *Switch*, *Carry*,
+      *Tactical*, *Sacrifice*; the full text stays as `aria-label`). The name is cut short before the buttons
+      shrink; only if they still don't fit (rare skill combinations) do they scroll sideways. `mobile:shots`
+      selects each of your ships and fails if a row wraps or its buttons scroll.
 - [x] **Zoom feel** (2026-10-07): the zoom buttons, "whole map", the edge arrows and mouse-wheel
       notches glide (eased, ~250ms) instead of jumping; a flung map carries on and slows down;
       pulled past an edge or the zoom limits it rubber-bands and springs back. Still to try on the G55.
@@ -339,8 +345,10 @@ the G55 shows gesture problems we can't fix.
       fingers drift, Chrome may take it as a page scroll and cancel it part-way. The map + bottom
       sheet layout (no page scroll, the board takes every touch) is the real fix.
 - [ ] Optional: double-tap to zoom, follow opponent and AI moves, a mini-map.
-- [ ] Playwright pinch tests in `mobile:shots` (`Input.synthesizePinchGesture` works; checked by
-      hand 2026-10-07).
+- [x] Pinch test in `mobile:shots` (2026-10-07): on every touch device, on your turn, a synthesised
+      pinch (`Input.synthesizePinchGesture`), a one-finger pan and *Whole map*. Checks the spaces grow,
+      the pan moves the map without moving a ship or scrolling the page, and *Whole map* fits it again.
+      Chrome only. All 30 touch device × map cases pass (iPad Alpha Sector doesn't zoom: spaces big already).
 
 **Done when:** a 5×5 4-player map is playable on the Moto G55 and an iPhone with ships
 ≥ 44px when zoomed in, and panning never makes a move.

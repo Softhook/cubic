@@ -505,6 +505,7 @@ input { font: inherit; }
 .ship-panel-head .icon-btn { margin-left: auto; }
 .ship-ability { font-size: 12.5px; color: #c3cbea; margin: 8px 0 0; line-height: 1.4; }
 .ship-panel .turn-actions .btn { font-size: 12px; padding: 6px 10px; }
+.ship-panel .label-short { display: none; }
 .turn-scrap .scrapyard { margin-top: 8px; }
 .turn-scrap:empty { display: none; }
 @keyframes fade-up { from { opacity: 0; transform: translateY(4px); } }
@@ -1058,11 +1059,28 @@ input { font: inherit; }
   .turn-panel .turn-actions { margin-top: 6px; }
   .turn-panel .btn { padding-top: 7px; padding-bottom: 7px; }
   .turn-scrap .scrapyard { margin-top: 6px; }
-  .turn-panel .ship-panel { margin-top: 6px; padding: 6px 36px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; position: relative; }
-  .turn-panel .ship-panel-head, .turn-panel .ship-panel .turn-actions { display: contents; }
+  /* The selected ship and its actions are always one row: the name gives way first (cut short, its flex-shrink
+     far above the buttons'), and if the buttons still don't fit, they scroll sideways. */
+  .turn-panel .ship-panel { margin-top: 6px; padding: 6px 36px 0 0; display: flex; align-items: center; gap: 6px; position: relative; }
+  .turn-panel .ship-panel-head { display: contents; }
+  .turn-panel .ship-panel-head .die3d { flex: none; }
   .turn-panel .ship-ability { display: none; }
-  .turn-panel .ship-panel-head .icon-btn { position: absolute; right: -6px; top: 8px; } /* never wraps onto a row of its own */
-  .turn-panel .ship-name { margin-right: 4px; line-height: 1.2; }
+  .turn-panel .ship-panel-head .icon-btn { position: absolute; right: -6px; top: 8px; }
+  .turn-panel .ship-name { flex: 0 1000 auto; min-width: 48px; margin-right: 4px; line-height: 1.2; }
+  .turn-panel .ship-name > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .turn-panel .ship-panel .turn-actions { flex: 0 1 auto; min-width: 0; margin: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .turn-panel .ship-panel .turn-actions::-webkit-scrollbar { display: none; }
+  .turn-panel .ship-panel .btn { flex: none; white-space: nowrap; }
+  .turn-panel { container: turn-panel / inline-size; }
+  /* A narrow turn panel (phones, and the column beside the map in landscape): the selected ship is highlighted on
+     the board, so its die isn't repeated here; tighter buttons, and short labels for the long ones. */
+  @container turn-panel (max-width: 540px) {
+    .turn-panel .ship-panel-head .die3d { display: none; }
+    .turn-panel .ship-panel, .turn-panel .ship-panel .turn-actions { gap: 4px; }
+    .turn-panel .ship-panel .turn-actions .btn { padding: 6px 8px; }
+    .ship-panel .label-long { display: none; }
+    .ship-panel .label-short { display: inline; }
+  }
   /* As tall as the map at full width (--map-ratio is rows / cols), within the screen below the topbar.
      In portrait, room is kept below it for the turn panel. */
   .stage { height: min(calc((100vw - 8px) * var(--map-ratio, 1) + 8px), var(--below-topbar)); padding: 4px; }
@@ -1161,13 +1179,12 @@ body:has(.sheet-layout) { overflow: hidden; }
   .market { border: 1px solid var(--line); border-radius: var(--radius); }
   .sidebar > .turn-panel { position: static; }
 }
-/* Narrow phones: one row each for the turn's buttons and the ship's. Undo is just its icon; the
-   selected ship is highlighted on the board, so its die isn't repeated here. */
+/* Narrow phones: one row each for the turn's buttons and the ship's. Undo is just its icon, and the ship's
+   name is one line. */
 @media (max-width: 400px) {
   .turn-panel .hint { -webkit-line-clamp: 2; line-clamp: 2; }
   .turn-panel .undo-label { display: none; }
-  .turn-panel .ship-panel-head .die3d, .turn-panel .ship-name small { display: none; }
-  .turn-panel .ship-panel .btn { padding: 6px 8px; }
+  .turn-panel .ship-name small { display: none; }
 }
 
 /* Popups on phones: less padding, so they fit without scrolling inside them. */
