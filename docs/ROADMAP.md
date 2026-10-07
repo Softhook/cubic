@@ -19,31 +19,17 @@ so the card/tile pipeline later reuses it rather than duplicating it.
 
 ## M0 — Foundations
 
-- [ ] **Decide the ruleset baseline** — print edition (current proposal) vs stolksdorf CE. Record in [RULES.md](RULES.md).
-- [ ] **Work through 🔴 items in [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)** — these block the engine.
-- [x] **Get the original 2013 rulebook** — mirrored in `reference/original-2013/`; Basic mode audited against it.
+Done: ruleset baseline (CE print edition; Basic and Original follow the 2013 rules, see [RULES.md](RULES.md)), no 🔴 items left in [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md), the 2013 rulebook (`reference/original-2013/`), the npm-workspaces monorepo, a GitHub remote and Actions (Pages deploy, gated on build, typecheck and the mobile layout check).
+
 - [ ] **Name & IP check** — "Quantum" is the publisher's title; game mechanics aren't copyrightable but names, art and trade dress are. Pick a working title for anything public, and don't reuse original or found art.
 - [ ] **Contact stolksdorf and WaterGoesRed** — credit, permission to build on their text/maps, interest in collaborating.
-- [ ] **Choose a license** for our code (e.g. MIT) and content (e.g. CC BY-NC-SA).
-- [ ] **Tech stack decision** (proposal below).
-- [x] Set up the monorepo (npm workspaces), typecheck and tests.
-- [ ] CI, a GitHub remote, and this backlog as issues.
+- [ ] **Choose a license** for our code (e.g. MIT) and content (e.g. CC BY-NC-SA). There is no LICENSE file yet.
+- [ ] **CI:** run `npm test` and `npm run pwa:check` before deploying (today only the build and `mobile:shots` run).
+- [ ] This backlog as GitHub issues (optional).
 
-### Proposed stack
+### Stack (as built)
 
-| Layer | Proposal | Why |
-|---|---|---|
-| Language | **TypeScript** everywhere | One rules engine shared by client, server and AI |
-| Rules engine | Plain TS package, **no framework**: pure `(state, action) → state + events`, seeded RNG | Deterministic, replayable, testable, fast enough for AI search |
-| Client | React + Vite, board rendered in **SVG** (Canvas/Pixi only if needed for animation) | SVG is crisp, styleable, and the same art pipeline as print |
-| Server | Node + WebSockets (Colyseus, PartyKit, or a small custom server) | Authoritative state; hidden info (deck order) stays server-side |
-| Persistence | Postgres (or SQLite to start) storing game seed + action log | A game is fully reconstructable from its log |
-| AI | Runs on the engine in a Web Worker (client) or worker thread (server) | Doesn't block UI |
-
-*Alternative considered:* boardgame.io gives multiplayer + MCTS bots for free, but
-it's lightly maintained and its move model fits Quantum's interrupts (missiles,
-Dangerous) awkwardly. Keeping our engine framework-agnostic lets us adopt it later
-if wanted.
+TypeScript throughout. `packages/engine`: a pure `(state, action) → state` rules engine with a seeded RNG, so a game is reproducible from its seed and action log. `apps/web`: React + Vite, board in SVG, deployed to GitHub Pages as a PWA. `packages/ai`: runs in a Web Worker. `packages/online`: no server; a shared move log on public Nostr relays ([MULTIPLAYER.md](MULTIPLAYER.md)). `packages/art`: print and in-game art.
 
 ---
 
@@ -51,78 +37,57 @@ if wanted.
 
 Package: `packages/engine`
 
-- [x] **Data loading** — typed loaders + validation for `cards.yaml` and `maps.yaml`.
-- [x] **Board model** — tiles → grid of spaces; planets, void, gaps; adjacency (orthogonal / surrounding / Warp Gate links).
-- [x] **Game state** — players (dice with ids, dominance, research, skills, missiles, reserve, scrapyard), cubes on planets, decks, face-up rows, turn/phase, per-die per-turn flags.
-- [x] **Seeded RNG** — all dice and shuffles through one RNG in the state.
-- [x] **Setup** — map, decks, starting skill draft, fleet roll + one re-roll, first player, deployment.
-- [x] **Actions** — Move/Attack (pathfinding), Deploy, Reconfigure, Research, Conquer (sum check, capacity).
-- [x] **Combat** — attack/defence roll pipeline (see open question #10), repel/destroy, dominance, scrapyard re-roll.
-- [x] **Ship abilities** — all six, with once-per-die tracking.
-- [x] **Infamy, Quantum Entanglement, Void research, win check.**
-- [x] **Phase 2** — conqueror/researcher cards, card protocol, slide & refill, Peek.
-- [x] **Decisions / interrupts** — model "pending decision" states (choose card, missile window, Dangerous prompt, Prideful steal, discard-down-to-limit) so UI and AI use the same mechanism.
-- [x] **Game modes** — Basic (no cards), Original (2013), Community Edition.
-- [x] **Original cards** — all 31 Command and 6 Gambit cards.
-- [ ] **Skills** — *27 of 35 done; remaining: Calculating, Clever, Curious, Devious, Patient, Prideful, Profiteering, Ruthless.* Implement all 35 via a hook/trigger system (start of turn, on destroy, on combat roll, on conquer check, on scrapyard, movement modifiers, action-count modifiers).
-- [x] **Tactics** — all 9; Expansion.
-- [x] **Legal action generator** — `legalActions(state)`; required by the UI (highlighting) and AI.
-- [ ] **Event log + replay** — *a text log exists; structured events + replay viewer still to do.* — every state change emits events; replaying seed + actions reproduces the game.
-- [ ] **Tests** — *basic movement/conquer/combat tests and AI-vs-AI fuzz games exist; per-card scenario tests still to do.* a scenario test per rule and per card; property tests (random legal play never crashes, invariants hold: dice count = 7, cubes ≤ capacity, tracks in 1–6).
-- [x] **Map stat check** — `mapStats()` recomputes slack/shared from layouts; `maps.test.ts` checks every map.
+Done: data loading, board model, game state, seeded RNG, setup, all actions, combat, ship abilities, Infamy, Quantum Entanglement, Void research, win check, Phase 2 cards, pending decisions/interrupts, the three game modes (Basic, Original, Community Edition), all 37 Original cards, all 35 CE Skills, 9 Tactics and Expansion, `legalActions()`, map stat checks, and a text game log. Tests: per-card scenario tests (Original and CE), golden games, consistency/property tests, and the card audit (AI games checked at every step).
+
+- [ ] **Replay viewer** — replaying seed + actions already reproduces a game (online play relies on it); there's no viewer to step through one. A structured event stream (rather than the text log) would help it.
 
 ## M2 — Local play (hot-seat)
 
 Package: `apps/web`
 
-- [x] Board renderer (SVG): tiles, planets with cube slots, dice as ships with clear type icons, void, gates.
-- [x] Player panel: dominance/research tracks, skills, missiles, scrapyard, reserve.
-- [x] Card rows (Skill / Tactic / Expansion) with Peek interaction.
-- [x] Action UX: click ship → highlight legal moves/attacks; conquer button lights up when a sum matches.
-- [x] Combat UX: dice roll animation, missile window, result.
-- [ ] Rules help in-context (hover a card or ship for its rule; link to RULES.md sections).
-- [x] Turn log panel; undo of deterministic moves within a turn (never past a roll, battle or card).
-- [x] Map picker with stats; player count 2–4. All 70 official, add-on and BGA maps *(the CE booklet's fan and 5-player maps not yet)*.
-- [ ] Mobile-friendly layout — options and plan in [MOBILE.md](MOBILE.md).
+Done: SVG board, player panel, card market with Peek, action and combat UX, missile window, turn log, undo within a turn, map picker with stats for 2–5 players (all 84 maps: basic, advanced, add-on, BGA and the CE booklet's 5-player maps), tap for ship/planet/card info, the in-app rulebook.
+
+- [ ] **Mobile** — built and passing in emulation (Steps 0–5 in [MOBILE.md](MOBILE.md), including zoom, the phone-portrait bottom sheet and the offline PWA); the real-device pass on the Moto G55 is still to do.
+- [ ] Any CE booklet fan maps not already in from BGA (check against the booklet).
 
 ## M3 — AI opponent
 
 Package: `packages/ai`
 
-- [x] **Level 0 — Random legal**: baseline + fuzzing the engine.
-- [x] **Difficulty levels** — four levels, picked per seat in the lobby; see [AI.md](AI.md).
-  - [x] **1 Cadet** — greedy one-action heuristic (the original AI).
-  - [x] **2 Captain** — exact odds for re-rolls and combat; evaluation with whose turn is next, path-based reach and threats.
-  - [x] **3 Commodore** — expectimax over the whole turn, with an evaluation budget.
-  - [x] **4 Admiral** — wider turn search, Flagship transports, best plans checked against the opponent's reply.
-- [x] AI runs in a Web Worker; `npm run ai:match` benchmarks levels by self-play.
-- [x] Card-pick policy (which Skill/Tactic to take) and missile/Dangerous reaction policy.
-- [ ] **Tune the evaluation by self-play** (weights are hand-set) and rate cards individually.
-- [ ] **Search across turns**: Monte Carlo Tree Search with chance nodes for dice and *determinization* (ISMCTS) for hidden deck order. Time-boxed per move.
-- [ ] "Explain move" — AI shows why it did something (from the heuristic terms).
-- [ ] *Optional:* LLM-driven persona (taunts, commentary, post-game review) layered on top of the search AI — not used for move selection.
+Done: four levels picked per seat (1 Cadet, 2 Captain, 3 Commodore, 4 Admiral; see [AI.md](AI.md)), running in a Web Worker; card-pick, missile and Dangerous policies; `npm run ai:match` benchmarks.
+
+Open, in the order of [AI.md § Next steps](AI.md#next-steps):
+
+- [ ] **Tune the evaluation by self-play** (weights are hand-set).
+- [ ] **Value cards individually** (every skill is worth the same today); ideally from measured win rates (M5).
+- [ ] Missiles in the search; a faster engine for search (copy-on-write board).
+- [ ] **Search across turns**: MCTS with chance nodes and determinized decks, time-boxed per move.
+- [ ] Better play with more than 2 players (who attacks whom).
+- [ ] "Explain move" — show why the AI did something (from the evaluation's terms).
+- [ ] *Optional:* LLM-driven persona (taunts, commentary, post-game review), not used for move selection.
 
 ## M4 — Online multiplayer
 
 Options and plan: [MULTIPLAYER.md](MULTIPLAYER.md).
 
-- [x] Serverless play between friends: a shared move log on public Nostr relays, replayed by every browser ([MULTIPLAYER.md §0](MULTIPLAYER.md#0-whats-built-a-shared-move-log-on-public-relays)).
-- [x] Lobbies: create/join by link, seat AI players, choose map.
-- [x] Real-time and asynchronous play (no notifications yet).
-- [x] Missile response window (open question #21): each player who may respond is asked, with a per-player *ask* setting; no timers.
+Done: serverless play between friends via a shared move log on public Nostr relays ([MULTIPLAYER.md §0](MULTIPLAYER.md#0-whats-built-a-shared-move-log-on-public-relays)); lobbies by link with AI seats and map choice; real-time and asynchronous play; reconnecting (the log is replayed); the missile response window with a per-player *ask* setting; local autosave of the game on this device.
+
 - [ ] Fair dice and hidden decks: needs a trusted server (today every browser holds the seed).
 - [ ] Turn notifications (email / Web Push): needs a server.
 - [ ] Missile trading / "give missile" action and table chat.
-- [ ] Reconnects, spectators, saved games and replay viewer.
+- [ ] Spectators and a replay viewer for finished games.
+- [ ] A smoke test that plays an online game between two browsers through the real relays (could run on GitHub Actions).
 - [ ] Accounts (optional: guest play first).
 
 ## M5 — Balance lab
 
-- [ ] Headless runner: thousands of AI-vs-AI games per config.
-- [ ] Reports: win rate by seat, by map, by skill held, by tactic taken; game length.
-- [ ] Use it to settle CE "playtesting" cards (Devious, Patient, Prideful, Profiteering, Ruthless, Tyrannical, Show of Force, Black Market) and Aggression keep/remove.
-- [ ] Validate map stats and find degenerate maps.
+Done: headless runners (`npm run ai:match` win rates by seat and level, `npm run sweep:basic` per map, `npm run selfplay:cards` win and pick rates per card, `npm run audit:cards` card coverage and anomalies); map stats recomputed and checked for every map.
+
+- [ ] Use the runs to settle CE "playtesting" cards (Devious, Patient, Prideful, Profiteering, Ruthless, Tyrannical, Show of Force, Black Market) and Aggression keep/remove. Needs far more games than so far (see the overnight run below).
+- [ ] Find degenerate maps (the Basic sweep reports game length and seat results per map; not yet for Classic or CE).
 - [ ] **Intelligent (CE) looks overpowered.** "Add or subtract 1 from the planet number" means a single 6 ship conquers any 7 planet on its own (7 − 1 = 6), and every planet gets two extra targets. Measure its win rate; candidate nerfs: once per turn, or only add/subtract when two or more ships are in orbit. (Noted 2026-10-03.)
+- [ ] **Card oracles for the rest of the cards.** The audit (`packages/engine/test/audit.ts`) checks a card's effect against its text only for the cards in `CHECKED_EFFECTS` (28/45 CE, 18/37 Original); the others are only played, so a wrong effect that doesn't crash goes unnoticed however many games run. Unchecked CE: Agile, Composed, Cunning, Devious, Ferocious, Flexible, Ingenious, Intelligent, Pioneering, Rational, Resourceful, Steadfast, Stealthy, Strategic, Tactical, Talented, Tyrannical. Unchecked Original: Agile, Cerebral, Cruel, Cunning, Eager, Energetic, Ferocious, Flexible, Ingenious, Intelligent, Nomadic, Rational, Relentless, Resourceful, Scrappy, Stealthy, Strategic, Tactical, Tyrannical. Do this before the overnight run below, or it only proves those cards don't crash. (Noted 2026-10-07.)
+- [ ] **Overnight card run on GitHub Actions, at Level 3.** A manually started workflow (`workflow_dispatch`, inputs: games, mode, level, shards; e.g. `gh workflow run selfplay.yml -f games=2000 -f mode=original -f level=3 -f shards=20`), run now and then rather than on a schedule. Two parts: (1) correctness: many seeds with skills *dealt* (the audit's `deal`), so every card is in play many times, reporting anomalies and "held, never fired"; (2) balance: *drafted* self-play, merging win and pick rates across shards, with confidence intervals (the 100-game Level 4 report had cards taken 1–8 times, too few to judge). `scripts/selfplay-cards.ts` needs a seed offset per shard (seeds are fixed at `6000 + g`), to log anomalies and carry on rather than exit on the first, and JSON output for a merge job that writes the job summary. Time a few Level 3 games locally first to size games per shard (6 h job limit). (Noted 2026-10-07.)
 
 ## M6 — Design system: cards, tiles, boards, print
 
@@ -130,21 +95,21 @@ The reason the existing fan cards look poor is that each was made by hand. We'll
 them **generated from data** with a consistent visual language. Plan for shared in-game and
 print rendering: [GRAPHICS.md](GRAPHICS.md).
 
-- [ ] **Art direction** — mood board, palette, typography (replace the dice-pip font approach with proper icons), faction identities (4–5 factions, colours that work for colour-blind players).
-- [ ] **Iconography** — ship types 1–6, actions, dominance, research, missile, cube, card categories (movement / action / combat / conquer / research / ship / card).
-- [ ] **Card template** — SVG/HTML templates fed by `cards.yaml`: name, subtitle, rules text, category icon, art slot, deck back. Shared by the web app and print.
+Done: `packages/art` (tokens, seeded RNG, mm units), procedural tiles, planets and starfields; the Art Lab (`#lab`) with card and tile labs; cards drawn from `cards.yaml` at poker size; print exports (PNG/SVG/ZIP, with or without bleed) and A4/US Letter sheets with crop marks, saved as PDF from the print dialog; the in-app rulebook with diagrams. [GRAPHICS.md § Phases](GRAPHICS.md#5-phases) has the detailed list (its checkboxes are behind on Phase 2).
+
+- [ ] **Art direction** — mood board, palette, typography, faction identities (4–5 factions, colours that work for colour-blind players).
+- [ ] **Iconography** — a proper icon set: ship types 1–6, actions, dominance, research, missile, cube, card categories.
 - [ ] **Card art** — commission an illustrator, or a consistent AI-assisted pipeline with human art direction; one illustration per unique card (45: 35 Skills, 9 Tactics, Expansion) plus 3 card backs. Track licensing per image.
-- [ ] **Map tiles** — planet tiles 7/8/9/10, void tile, starting markers; tile backs.
+- [ ] **Map tiles** — pin the chosen seeds for all 30 tiles (`data/art.yaml`); tile backs and starting markers; print one test tile at 100 % with real dice and cubes.
 - [ ] **Player board** — tracks, skill slots, scrapyard, reserve, cheat sheet.
-- [ ] **Rulebook** — typeset from RULES.md with diagrams generated from engine states.
-- [ ] **Print pipeline** — render to PDF with bleed and crop marks (e.g. Playwright/Chromium). Target specs: poker cards 63.5×88.9 mm with 3 mm bleed; tile size TBD. Vendors to evaluate: The Game Crafter, MakePlayingCards, Printer Studio, DriveThruCards.
-- [ ] **Print-and-play** output (A4 + US Letter) and a print-on-demand output.
+- [ ] **Rulebook for print** — typeset, with diagrams rendered from engine states.
+- [ ] **Print-on-demand** — choose vendors (The Game Crafter, MakePlayingCards, Printer Studio, DriveThruCards) and set trim/bleed to their specs; physical proof.
 - [ ] **Components** — dice (custom engraved 1–6 ship icons?), cubes, missile & gate tokens, box.
 
 ---
 
 ## Next three things to do
 
-1. Play a few games and note anything that feels wrong — that's the fastest way to settle the 🔴 open questions.
-2. Implement the remaining 8 skills (Calculating needs a new interrupt prompt).
-3. Transcribe the CE booklet's fan and 5-player maps (most 2–4p ones are already in from BGA).
+1. Play Step 3–5 of [MOBILE.md](MOBILE.md) on the Moto G55 (whole games, zoom, bottom sheet, install and offline).
+2. Add `npm test` and `npm run pwa:check` to the GitHub workflow.
+3. Card oracles for the unchecked cards, then the first overnight Level 3 card run (M5).
