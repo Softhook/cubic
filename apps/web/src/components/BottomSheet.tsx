@@ -11,7 +11,8 @@ const TAP_SLOP = 6;
  * closes again after.
  *
  * The resting height is set on the parent as `--sheet-rest`, for the map to stop above it. It only grows
- * (until the screen's width changes), so the map doesn't jump when the turn panel gains a row.
+ * (until the screen's width changes), so the map doesn't jump when the turn panel gains a row; the peek
+ * keeps that height too (`--peek-min`), so a shorter turn panel leaves space, never a glimpse of the rest.
  */
 export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wantOpen: boolean; children: ReactNode }) {
   const [open, setOpen] = useState(wantOpen);
@@ -24,23 +25,27 @@ export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wan
   useShortcut((e) => open && e.key === 'Escape', () => setOpen(false));
 
   const sheet = useRef<HTMLDivElement>(null);
-  const rest = useRef<HTMLDivElement>(null);
+  const peekBox = useRef<HTMLDivElement>(null);
   const restHeight = useRef({ h: 0, width: 0 });
   useLayoutEffect(() => {
     const el = sheet.current;
-    const after = rest.current;
-    if (!el || !after) return;
+    const box = peekBox.current;
+    const content = box?.firstElementChild as HTMLElement | null;
+    if (!el || !box || !content) return;
     const measure = () => {
       const r = restHeight.current;
       if (el.clientWidth !== r.width) Object.assign(r, { h: 0, width: el.clientWidth });
-      const h = Math.max(r.h, after.offsetTop);
+      // The handle, the turn panel at its own height, and the space under it.
+      const h = Math.max(r.h, Math.ceil(box.offsetTop + content.offsetHeight + parseFloat(getComputedStyle(box).paddingBottom)));
       if (h === r.h) return;
       r.h = h;
       el.parentElement?.style.setProperty('--sheet-rest', `${h}px`);
+      // A shorter turn panel leaves the peek at this height, so what's below it never shows while shut.
+      box.style.setProperty('--peek-min', `${h - box.offsetTop}px`);
     };
     measure();
     const ro = new ResizeObserver(measure);
-    for (const child of el.children) if (child !== after) ro.observe(child);
+    ro.observe(content);
     ro.observe(el);
     return () => {
       ro.disconnect();
@@ -100,9 +105,11 @@ export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wan
         >
           <span />
         </button>
-        <div className="sheet-peek">{peek}</div>
-        {/* Shut, what shows of it can't be tabbed to or tapped (React 18 has no `inert` prop). */}
-        <div className="sheet-rest" ref={rest} {...(open ? {} : { inert: '' })}>
+        <div className="sheet-peek" ref={peekBox}>
+          {peek}
+        </div>
+        {/* Shut, it's off screen: nothing in it can be tabbed to (React 18 has no `inert` prop). */}
+        <div className="sheet-rest" {...(open ? {} : { inert: '' })}>
           {children}
         </div>
       </div>

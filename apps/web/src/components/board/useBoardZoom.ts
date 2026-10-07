@@ -1,5 +1,4 @@
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { remember } from '../../storage';
 
 /** Zoomed in, a space is at most this big. */
 const MAX_CELL = 80;
@@ -11,8 +10,6 @@ const TAP_SLOP = 8;
 const WHEEL_SETTLE = 150;
 /** The click a browser sends right after a drag ends, within this long, is the drag's and is ignored. */
 const DRAG_CLICK = 400;
-/** Set once the player has zoomed: the start-of-game demo has done its job. */
-export const ZOOM_LEARNED = 'quantum.zoomLearned';
 
 export interface View {
   /** The space's size in pixels. */
@@ -107,7 +104,6 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       if (board.current) board.current.style.transform = ''; // nothing to redraw; just drop the preview
       return;
     }
-    if (v.cell !== current.cell) remember(ZOOM_LEARNED, '1');
     setView({ zoom: v.cell / fitCell, x: v.x, y: v.y, map });
     jump();
   };

@@ -172,9 +172,9 @@ async function main() {
     const results = await Promise.all(Object.entries(DEVICES).map(async ([device, options]) => {
       const lines: string[] = [];
       for (const g of GAMES) {
-        const ctx = await browser.newContext({ ...options, ignoreHTTPSErrors: true }); // dev:https is self-signed
-        // As if the player has zoomed before, so the start-of-game zoom demo doesn't play while the board is measured.
-        await ctx.addInitScript(() => localStorage.setItem('quantum.zoomLearned', '1'));
+        // dev:https is self-signed. Reduced motion: the start-of-game zoom demo shows only its tip, so the
+        // board is measured at rest.
+        const ctx = await browser.newContext({ ...options, ignoreHTTPSErrors: true, reducedMotion: 'reduce' });
         const page = await ctx.newPage();
         await page.goto(`${base}?play=${g.play}&players=${g.players}&map=${g.map}&seed=1`);
         await page.waitForSelector('.board');

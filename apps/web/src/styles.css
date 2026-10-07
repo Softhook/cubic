@@ -1121,13 +1121,13 @@ input { font: inherit; }
 }
 .sheet-handle span { width: 40px; height: 4px; border-radius: 2px; background: var(--line-2); transition: background .2s; }
 .sheet-handle:focus-visible span, .sheet.open .sheet-handle span { background: var(--muted); }
-.sheet-peek { flex: none; padding: 0 10px 10px; }
+.sheet-peek { flex: none; padding: 0 10px 10px; min-height: var(--peek-min, 0); }
+.sheet.open .sheet-peek { min-height: 0; } /* open, the rest follows the turn panel straight away */
 .sheet-rest { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 12px; padding: 2px 12px 16px; overscroll-behavior: contain; }
 .sheet.open .sheet-rest { overflow-y: auto; }
 .sheet-rest > .market { border: 1px solid var(--line); border-radius: var(--radius); }
-/* In the order written (the scrolling layout's `order`s don't apply here), but a card to pick comes first. */
+/* In the order written: market, players, log (the scrolling layout's `order`s don't apply here). */
 .sheet-rest > * { order: 0; }
-.sheet-rest > .market.picking { order: -1; }
 
 /* Tablet portrait: players and log side by side, so the page isn't 1,800px tall. */
 @media (min-width: 700px) and (max-width: 980px) {

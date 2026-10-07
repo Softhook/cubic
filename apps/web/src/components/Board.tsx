@@ -4,8 +4,7 @@ import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { Explosions } from './board/Explosions';
 import { shipSpots } from './board/geometry';
-import { ZOOM_LEARNED, useBoardZoom, type BoardZoom } from './board/useBoardZoom';
-import { stored } from '../storage';
+import { useBoardZoom, type BoardZoom } from './board/useBoardZoom';
 import { Die3D } from './Die3D';
 import { planetNames } from '../art/boardTiles';
 import { InfoPop, useAnchorName } from './InfoPop';
@@ -19,7 +18,7 @@ const inspectKey = (i: Inspect) => ('ship' in i ? `ship:${i.ship}` : `planet:${i
  * ships, then explosions. What is clickable comes from the controller's highlights; a tap on a ship
  * or planet that isn't shows its info instead. It fits its box, and zooms and pans (useBoardZoom).
  * `children` float over the map (positioned in percent of its size). `introduce` (the start of a game)
- * shows that it zooms, until the player has zoomed once.
+ * shows that it zooms.
  */
 export function Board({ game, ctl, introduce, children }: { game: GameState; ctl: Controller; introduce?: boolean; children?: ReactNode }) {
   const wrap = useRef<HTMLDivElement>(null);
@@ -117,15 +116,16 @@ function ZoomControls({ zoom }: { zoom: BoardZoom }) {
 const TIP_MS = 4200;
 
 /**
- * Once per board, when `introduce` first holds and zooming does something here: zooms in on a glowing
- * planet (or the middle of the map) and back out, under a tip saying how to zoom. Not once the player
- * has zoomed (ZOOM_LEARNED); with reduced motion, only the tip. Returns the tip's text while it shows.
+ * Once per game, when `introduce` first holds and zooming does something here: zooms in on a glowing
+ * planet (or the middle of the map) and back out, under a tip saying how to zoom; every game, as a
+ * reminder. With reduced motion, only the tip. Returns the tip's text while it shows.
  */
 function useZoomIntro(game: GameState, ctl: Controller, zoom: BoardZoom, introduce: boolean): string | null {
   const [tip, setTip] = useState<string | null>(null);
   const done = useRef(false);
+  if (game.phase !== 'setup') done.current = false; // ready for the next game's setup
   useEffect(() => {
-    if (done.current || !introduce || !zoom.canZoom || stored(ZOOM_LEARNED)) return;
+    if (done.current || !introduce || !zoom.canZoom) return;
     done.current = true;
     const glowing = game.board.planets.find((p) => ctl.highlights.planets.has(p.id));
     const spot = glowing ?? { r: (game.board.rows - 1) / 2, c: (game.board.cols - 1) / 2 };

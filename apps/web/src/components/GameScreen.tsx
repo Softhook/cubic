@@ -19,7 +19,7 @@ import { FullscreenButton, useFullscreenOnFirstTap } from './FullscreenButton';
  * The game screen, for a game on this device or online. `side` goes at the top of the sidebar,
  * `overlay` over everything; online, leaving doesn't end the game. `onLobby` (the title) goes back to
  * the lobby without ending it. On a phone held upright the sidebar and market are a bottom sheet over
- * the map instead, with the turn panel showing at rest.
+ * the map instead, with the turn panel showing at rest and the market first under it.
  */
 export function Game({
   view,
@@ -89,8 +89,8 @@ export function Game({
         {sheet ? (
           <BottomSheet peek={turnPanel} wantOpen={!!cards && (ctl.legal.can('takeCard') || ctl.legal.can('patientTactic'))}>
             {side}
-            <PlayerList game={game} ctl={ctl} dispatch={dispatch} />
             {cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} />}
+            <PlayerList game={game} ctl={ctl} dispatch={dispatch} />
             <Log game={game} />
           </BottomSheet>
         ) : (

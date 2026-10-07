@@ -290,8 +290,8 @@ Keep the scrolling column, but pin what matters:
       itself had replaced the sticky bar). Below 700px wide, upright, nothing scrolls but the sheet:
       the map fills the screen above the sheet's resting height, and the sheet
       ([BottomSheet.tsx](../apps/web/src/components/BottomSheet.tsx), hand-rolled, no Vaul) shows the
-      turn panel at rest; drag or tap its handle for the online panel, players, market and log (the
-      market first while you pick a card; the sheet opens by itself then). A tap on the dimmed map
+      turn panel at rest; drag or tap its handle for the online panel, market, players and log (the
+      sheet opens by itself while you pick a card). A tap on the dimmed map
       or Esc shuts it. Its resting height only grows during a game, so the map doesn't jump when
       the turn panel gains the ship row. With no page scroll, every touch on the map is the zoom's
       (Step 4). Landscape, tablets and desktop are unchanged.
