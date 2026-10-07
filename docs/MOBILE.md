@@ -291,10 +291,13 @@ Keep the scrolling column, but pin what matters:
       the map fills the screen above the sheet's resting height, and the sheet
       ([BottomSheet.tsx](../apps/web/src/components/BottomSheet.tsx), hand-rolled, no Vaul) shows the
       turn panel at rest; drag or tap its handle for the online panel, market, players and log (the
-      sheet opens by itself while you pick a card). A tap on the dimmed map
+      sheet opens by itself while you pick a card, scrolled to the market, which stays first). A tap on the dimmed map
       or Esc shuts it. Its resting height only grows during a game, so the map doesn't jump when
       the turn panel gains the ship row. With no page scroll, every touch on the map is the zoom's
       (Step 4). Landscape, tablets and desktop are unchanged.
+- [x] **Zoom feel** (2026-10-07): the zoom buttons, "whole map", the edge arrows and mouse-wheel
+      notches glide (eased, ~250ms) instead of jumping; a flung map carries on and slows down;
+      pulled past an edge or the zoom limits it rubber-bands and springs back. Still to try on the G55.
 
 - [ ] Check one full turn on the G55 for smoothness (no remote profiling, see Step 0): 3D dice,
       four `backdrop-filter` blur layers, explosions. Its Dimensity 7025 is mid-range and the screen runs at 120 Hz.

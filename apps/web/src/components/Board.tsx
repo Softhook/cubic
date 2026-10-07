@@ -187,6 +187,8 @@ function Ships({ game, ctl, cell, onInfo }: { game: GameState; ctl: Controller; 
   const combat = head?.kind === 'combat' ? head : null;
   const me = game.turn.player;
   const spots = shipSpots(game);
+  // Your ships: those of the seats this screen plays; sharing a screen, those of whoever's turn it is.
+  const yours = (owner: number) => ctl.mine(owner) && (owner === me || !ctl.mine(me));
   return game.dice.map((d) => {
     const at = spots.get(d.id);
     if (!at) return null;
@@ -207,6 +209,7 @@ function Ships({ game, ctl, cell, onInfo }: { game: GameState; ctl: Controller; 
           spent && 'spent',
           fighting && 'fighting',
           ctl.actionPhase && d.owner === me && 'own',
+          yours(d.owner) && 'yours',
         ]
           .filter(Boolean)
           .join(' ')}

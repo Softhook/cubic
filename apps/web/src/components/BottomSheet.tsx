@@ -25,6 +25,11 @@ export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wan
   useShortcut((e) => open && e.key === 'Escape', () => setOpen(false));
 
   const sheet = useRef<HTMLDivElement>(null);
+  const rest = useRef<HTMLDivElement>(null);
+  // Opened for a card to pick: the market (first in the rest) shows under the turn panel, wherever it was scrolled.
+  useLayoutEffect(() => {
+    if (wanted && rest.current) rest.current.scrollTop = 0;
+  }, [wanted]);
   const peekBox = useRef<HTMLDivElement>(null);
   const restHeight = useRef({ h: 0, width: 0 });
   useLayoutEffect(() => {
@@ -109,7 +114,7 @@ export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wan
           {peek}
         </div>
         {/* Shut, it's off screen: nothing in it can be tabbed to (React 18 has no `inert` prop). */}
-        <div className="sheet-rest" {...(open ? {} : { inert: '' })}>
+        <div className="sheet-rest" ref={rest} {...(open ? {} : { inert: '' })}>
           {children}
         </div>
       </div>

@@ -263,6 +263,7 @@ input { font: inherit; }
 .board-wrap.zoomed, .board-wrap.gesture { overflow: hidden; }
 .board-wrap.zoomed:active { cursor: grabbing; }
 .board { position: absolute; transform-origin: 0 0; }
+.board-wrap.gesture .board { will-change: transform; }
 .zoom-controls { position: absolute; right: 6px; bottom: 6px; z-index: 6; display: flex; flex-direction: column; gap: 4px; }
 .zoom-controls button {
   width: 32px; height: 32px; display: grid; place-items: center; padding: 0; cursor: pointer;
@@ -389,9 +390,11 @@ input { font: inherit; }
   inset: 10%;
   border-radius: 26%;
   border: 2px solid var(--pc);
-  opacity: .28;
+  opacity: 0;
   transition: opacity .2s, box-shadow .2s, inset .2s;
 }
+/* A faint ring marks your own ships; others' only show one when they're highlighted or fighting. */
+.ship.yours .ship-ring { opacity: .28; }
 .ship.own { cursor: pointer; }
 @media (hover: hover) { .ship.own:hover .ship-ring { opacity: .7; } }
 @media (hover: hover) { .ship.own:hover .die3d { transform: translateY(-2px); } }
@@ -1126,8 +1129,8 @@ input { font: inherit; }
 .sheet-rest { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 12px; padding: 2px 12px 16px; overscroll-behavior: contain; }
 .sheet.open .sheet-rest { overflow-y: auto; }
 .sheet-rest > .market { border: 1px solid var(--line); border-radius: var(--radius); }
-/* In the order written: market, players, log (the scrolling layout's `order`s don't apply here). */
-.sheet-rest > * { order: 0; }
+/* In the order written: market, players, log (the scrolling layout's `order`s, picking's too, don't apply here). */
+.sheet-rest > *, .sheet-rest > .market.picking { order: 0; }
 
 /* Tablet portrait: players and log side by side, so the page isn't 1,800px tall. */
 @media (min-width: 700px) and (max-width: 980px) {
