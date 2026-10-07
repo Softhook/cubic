@@ -58,9 +58,9 @@ export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wan
     };
   }, []);
 
-  // Dragging the handle moves the sheet with the finger; letting go snaps it open or shut.
+  // Dragging the handle moves the sheet with the finger; letting go snaps it open or shut. A tap toggles it
+  // on the pointer's release: on a touch screen a drag is followed by no click, so clicks only count from the keyboard.
   const drag = useRef<{ y: number; from: number; travel: number; moved: boolean } | null>(null);
-  const tapped = useRef(false);
   const travel = () => (sheet.current ? sheet.current.offsetHeight - restHeight.current.h : 0);
   const onPointerDown = (e: PointerEvent) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -76,21 +76,18 @@ export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wan
     sheet.current.style.transition = 'none';
     sheet.current.style.transform = `translateY(${Math.min(d.travel, Math.max(0, d.from + dy))}px)`;
   };
-  const onPointerUp = (e: PointerEvent) => {
+  /** The drag is over: let go (`e`), or taken by the browser (none), when the sheet goes back to where it was. */
+  const endDrag = (e?: PointerEvent) => {
     const d = drag.current;
     drag.current = null;
     if (!d || !sheet.current) return;
     sheet.current.style.transition = '';
     sheet.current.style.transform = '';
-    if (!d.moved) return; // a tap: the click toggles
-    tapped.current = true; // the click that follows a drag isn't a tap
+    if (!e) return;
+    if (!d.moved) return setOpen(!open);
     const at = Math.min(d.travel, Math.max(0, d.from + e.clientY - d.y));
     // Past a third of the way from where it started is far enough.
     setOpen(open ? at < d.travel / 3 : at < (d.travel * 2) / 3);
-  };
-  const onClick = () => {
-    if (tapped.current) return void (tapped.current = false);
-    setOpen(!open);
   };
 
   return (
@@ -104,9 +101,9 @@ export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wan
           aria-expanded={open}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          onClick={onClick}
+          onPointerUp={endDrag}
+          onPointerCancel={() => endDrag()}
+          onClick={(e) => e.detail === 0 && setOpen(!open)}
         >
           <span />
         </button>

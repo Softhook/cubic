@@ -315,8 +315,10 @@ map + bottom sheet layout depends on it).
 **Own Pointer Events, not `react-zoom-pan-pinch`** (decided 2026-10-07). The library keeps the board
 under a CSS `transform: scale()`, so 3D dice (`preserve-3d`) and text are rasterised at the fitted
 size and go soft when zoomed, and `onBoardClick`'s cell maths would have to undo the scale. Ours
-commits the zoom as `cell`, so everything redraws crisp, and it fits in one hook
-([useBoardZoom.ts](../apps/web/src/components/board/useBoardZoom.ts), ≈ 250 lines). Revisit only if
+commits the zoom as `cell`, so everything redraws crisp. The gestures are one hook
+([useBoardZoom.ts](../apps/web/src/components/board/useBoardZoom.ts)), its geometry pure functions
+([zoomGeometry.ts](../apps/web/src/components/board/zoomGeometry.ts), unit-tested), and the buttons,
+edge arrows and demo [ZoomUi.tsx](../apps/web/src/components/board/ZoomUi.tsx). Revisit only if
 the G55 shows gesture problems we can't fix.
 
 - [x] Pinch (touch), drag to pan once zoomed (touch or mouse), wheel zoom (Ctrl / trackpad pinch,

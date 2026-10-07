@@ -1033,7 +1033,8 @@ input { font: inherit; }
 @media (max-width: 980px) {
   body { overflow: auto; }
   .app { height: auto; min-height: 100%; grid-template-columns: minmax(0, 1fr); }
-  /* One scrolling column: board, the turn panel right under it, market, the sidebar's other panels.
+  /* One scrolling column (tablets, and phones on their side that aren't short; a phone held upright has
+     the bottom sheet instead): board, the turn panel right under it, market, the sidebar's other panels.
      The sidebar's panels join the column (display: contents) so the turn panel can sit between the
      board and the market. Nothing is pinned: the board is only as tall as the map, which leaves room
      for the turn panel on the first screen. */
@@ -1095,16 +1096,16 @@ input { font: inherit; }
 @media (max-width: 980px) and (orientation: portrait) {
   .stage { height: min(calc((100vw - 8px) * var(--map-ratio, 1) + 8px), calc(var(--below-topbar) - 160px)); }
 }
-/* Phone held upright (SHEET in useMediaQuery.ts): nothing scrolls but the sheet. The map fills the
-   screen above the sheet's resting height (--sheet-rest, set by BottomSheet), so every touch on it is a
-   pinch or a pan; the sheet (the turn panel at rest; the online panel, market, players and log when
+/* Phone held upright (`.sheet-layout`, when SHEET in useMediaQuery.ts matches): nothing scrolls but the
+   sheet. The map fills the screen above the sheet's resting height (--sheet-rest, set by BottomSheet), and
+   every touch on it is the zoom's (a pinch, or a pan once zoomed; never the browser's scroll or
+   pull-to-refresh); the sheet (the turn panel at rest; the online panel, market, players and log when
    opened) slides up over it. */
-@media (max-width: 699px) and (orientation: portrait) {
-  body { overflow: hidden; }
-  .app { height: 100%; min-height: 0; }
-  .layout.sheet-layout { display: block; position: relative; overflow: hidden; padding: 0; min-height: 0; }
-  .sheet-layout .stage { position: absolute; inset: 0 0 var(--sheet-rest, 180px); height: auto; padding: 4px; }
-}
+body:has(.sheet-layout) { overflow: hidden; }
+.app:has(> .sheet-layout) { height: 100%; min-height: 0; }
+.layout.sheet-layout { display: block; position: relative; overflow: hidden; padding: 0; min-height: 0; }
+.sheet-layout .stage { position: absolute; inset: 0 0 var(--sheet-rest, 180px); height: auto; padding: 4px; }
+.sheet-layout .board-wrap { touch-action: none; }
 .sheet-backdrop { position: absolute; inset: 0; z-index: 19; background: rgba(2, 4, 12, .55); opacity: 0; pointer-events: none; transition: opacity .25s; }
 .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
 .sheet {
@@ -1119,10 +1120,11 @@ input { font: inherit; }
 }
 .sheet.open { transform: none; }
 .sheet-handle {
-  flex: none; display: grid; place-items: center; width: 100%; height: 22px; padding: 0;
+  /* 36px: near the 44px touch target, without pushing the turn panel far down. */
+  flex: none; display: grid; place-items: center; width: 100%; height: 36px; padding: 0;
   border: 0; background: none; cursor: grab; touch-action: none;
 }
-.sheet-handle span { width: 40px; height: 4px; border-radius: 2px; background: var(--line-2); transition: background .2s; }
+.sheet-handle span { width: 48px; height: 5px; border-radius: 3px; background: var(--line-2); transition: background .2s; }
 .sheet-handle:focus-visible span, .sheet.open .sheet-handle span { background: var(--muted); }
 .sheet-peek { flex: none; padding: 0 10px 10px; min-height: var(--peek-min, 0); }
 .sheet.open .sheet-peek { min-height: 0; } /* open, the rest follows the turn panel straight away */

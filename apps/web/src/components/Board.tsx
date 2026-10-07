@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
+import { useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { SHIP_ABILITIES, SHIP_NAMES, die, key, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { Explosions } from './board/Explosions';
-import { shipSpots } from './board/geometry';
-import { useBoardZoom, type BoardZoom } from './board/useBoardZoom';
+import { shipSpots, type ShipSpots } from './board/geometry';
+import { useBoardZoom } from './board/useBoardZoom';
+import { OffscreenHints, ZoomControls, useZoomIntro } from './board/ZoomUi';
 import { Die3D } from './Die3D';
 import { planetNames } from '../art/boardTiles';
 import { InfoPop, useAnchorName } from './InfoPop';
@@ -26,6 +27,7 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
   const { rows, cols, planets } = game.board;
   const zoom = useBoardZoom(wrap, boardRef, rows, cols);
   const { cell, resizing } = zoom;
+  const spots = shipSpots(game);
   const tip = useZoomIntro(game, ctl, zoom, !!introduce);
   const [inspect, setInspect] = useState<Inspect | null>(null);
   // The info closes itself on a tap elsewhere; a tap on the same thing again closes it too.
@@ -77,116 +79,24 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
           })}
 
           {/* Mouse users also get `title=` on ships and planets; touch screens get the tap. */}
-          <Ships game={game} ctl={ctl} cell={cell} onInfo={(id) => show({ ship: id })} />
+          <Ships game={game} ctl={ctl} spots={spots} cell={cell} onInfo={(id) => show({ ship: id })} />
           <Explosions game={game} cell={cell} />
           {inspect && <BoardInfo key={inspectKey(inspect)} game={game} what={inspect} cell={cell} onClose={() => setInspect(null)} />}
         </div>
         {children}
       </div>
       {zoom.canZoom && <ZoomControls zoom={zoom} />}
-      {zoom.zoomed && <OffscreenHints game={game} ctl={ctl} zoom={zoom} />}
+      {zoom.zoomed && <OffscreenHints game={game} ctl={ctl} spots={spots} zoom={zoom} />}
       {tip && <div className="zoom-tip" role="status">{tip}</div>}
     </div>
   );
 }
 
-/**
- * Zoom in and out, and back to the whole map. On touch screens (where you pinch) only the last, and only
- * while zoomed, so the buttons don't cover the corner space of the whole map.
- */
-function ZoomControls({ zoom }: { zoom: BoardZoom }) {
-  return (
-    <div className="zoom-controls">
-      <button type="button" className="zoom-step" title="Zoom in" aria-label="Zoom in" onClick={() => zoom.zoomBy(1.5)}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-      </button>
-      <button type="button" className="zoom-step" title="Zoom out" aria-label="Zoom out" disabled={!zoom.zoomed} onClick={() => zoom.zoomBy(1 / 1.5)}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
-      </button>
-      {zoom.zoomed && (
-        <button type="button" title="Whole map" aria-label="Whole map" onClick={zoom.fit}>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
-        </button>
-      )}
-    </div>
-  );
-}
-
-/** How long the "pinch to zoom" tip shows, from the start of the demo. */
-const TIP_MS = 4200;
-
-/**
- * Once per game, when `introduce` first holds and zooming does something here: zooms in on a glowing
- * planet (or the middle of the map) and back out, under a tip saying how to zoom; every game, as a
- * reminder. With reduced motion, only the tip. Returns the tip's text while it shows.
- */
-function useZoomIntro(game: GameState, ctl: Controller, zoom: BoardZoom, introduce: boolean): string | null {
-  const [tip, setTip] = useState<string | null>(null);
-  const done = useRef(false);
-  if (game.phase !== 'setup') done.current = false; // ready for the next game's setup
-  useEffect(() => {
-    if (done.current || !introduce || !zoom.canZoom) return;
-    done.current = true;
-    const glowing = game.board.planets.find((p) => ctl.highlights.planets.has(p.id));
-    const spot = glowing ?? { r: (game.board.rows - 1) / 2, c: (game.board.cols - 1) / 2 };
-    setTip(matchMedia('(pointer: coarse)').matches ? 'Pinch to zoom the map' : 'Scroll or press + to zoom the map');
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) zoom.demo(spot.r, spot.c);
-  });
-  useEffect(() => {
-    if (!tip) return;
-    const t = setTimeout(() => setTip(null), TIP_MS);
-    return () => clearTimeout(t);
-  }, [tip]);
-  return tip;
-}
-
-type Side = 'left' | 'right' | 'top' | 'bottom';
-const ARROWS: Record<Side, string> = { left: 'm15 6-6 6 6 6', right: 'm9 6 6 6-6 6', top: 'm6 15 6-6 6 6', bottom: 'm6 9 6 6 6-6' };
-
-/**
- * Zoomed in: an arrow at each edge beyond which something is highlighted (a space, planet or ship you
- * can pick), with how many; a tap brings the nearest into view.
- */
-function OffscreenHints({ game, ctl, zoom }: { game: GameState; ctl: Controller; zoom: BoardZoom }) {
-  const spots = shipSpots(game);
-  const targets = [
-    ...[...ctl.highlights.cells.values()].map((h) => h.cell),
-    ...game.board.planets.filter((p) => ctl.highlights.planets.has(p.id)),
-    ...[...ctl.highlights.dice.keys()].flatMap((id) => spots.get(id) ?? []),
-  ];
-  // What's on screen, in spaces.
-  const left = -zoom.x / zoom.cell, right = (zoom.w - zoom.x) / zoom.cell;
-  const top = -zoom.y / zoom.cell, bottom = (zoom.h - zoom.y) / zoom.cell;
-  const midR = (top + bottom) / 2, midC = (left + right) / 2;
-  const beyond = new Map<Side, { r: number; c: number; d: number }[]>();
-  for (const { r, c } of targets) {
-    const over: [Side, number][] = [
-      ['left', left - (c + 0.5)],
-      ['right', c + 0.5 - right],
-      ['top', top - (r + 0.5)],
-      ['bottom', r + 0.5 - bottom],
-    ];
-    const [side, by] = over.reduce((a, b) => (b[1] > a[1] ? b : a));
-    if (by <= 0) continue;
-    beyond.set(side, [...(beyond.get(side) ?? []), { r, c, d: Math.hypot(r + 0.5 - midR, c + 0.5 - midC) }]);
-  }
-  return [...beyond].map(([side, list]) => {
-    const near = list.reduce((a, b) => (b.d < a.d ? b : a));
-    return (
-      <button key={side} type="button" className={`zoom-hint zoom-hint-${side}`} aria-label={`${list.length} more ${side === 'top' ? 'above' : side === 'bottom' ? 'below' : `to the ${side}`}`} onClick={() => zoom.centreOn(near.r, near.c)}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ARROWS[side]} /></svg>
-        {list.length > 1 && <span>{list.length}</span>}
-      </button>
-    );
-  });
-}
-
 /** Every ship on the map, as a die; selected, highlighted, spent or in combat. */
-function Ships({ game, ctl, cell, onInfo }: { game: GameState; ctl: Controller; cell: number; onInfo: (id: string) => void }) {
+function Ships({ game, ctl, spots, cell, onInfo }: { game: GameState; ctl: Controller; spots: ShipSpots; cell: number; onInfo: (id: string) => void }) {
   const head = game.pending[0];
   const combat = head?.kind === 'combat' ? head : null;
   const me = game.turn.player;
-  const spots = shipSpots(game);
   // Your ships: those of the seats this screen plays; sharing a screen, those of whoever's turn it is.
   const yours = (owner: number) => ctl.mine(owner) && (owner === me || !ctl.mine(me));
   return game.dice.map((d) => {

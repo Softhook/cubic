@@ -1,7 +1,10 @@
 import { cellOf, delta, onBoard, type Board, type GameState } from '@quantum/engine';
 
+/** Where each ship on the map is drawn, by id, in cell units. */
+export type ShipSpots = Map<string, { r: number; c: number }>;
+
 /** Where each ship on the map is drawn, in cell units (an attacker sits part-way into its target). */
-export function shipSpots(game: GameState): Map<string, { r: number; c: number }> {
+export function shipSpots(game: GameState): ShipSpots {
   const head = game.pending[0];
   const combat = head?.kind === 'combat' ? head : null;
   const spots = new Map<string, { r: number; c: number }>();

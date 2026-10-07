@@ -1,9 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { canZoom as zoomable, centredOn, clampCell, fitted, frame, place, softCell, zoomAround, type View } from './zoomGeometry';
 
-/** Zoomed in, a space is at most this big. */
-const MAX_CELL = 80;
-/** Zoom only where it makes the spaces at least this much bigger; otherwise the board just fits. */
-const MIN_GAIN = 1.15;
 /** A pointer that moves less than this before it lifts is a tap, not a pan. */
 const TAP_SLOP = 8;
 /** The wheel's zoom is drawn as a transform and committed once the wheel has been still this long. */
@@ -17,14 +14,6 @@ const FLING_MIN = 0.25;
 /** How long the buttons' zoom, a wheel notch and the spring back from past an edge take (ms). */
 const GLIDE_MS = 260;
 const WHEEL_GLIDE_MS = 180;
-
-export interface View {
-  /** The space's size in pixels. */
-  cell: number;
-  /** The board's top-left corner, in pixels from the wrap's. */
-  x: number;
-  y: number;
-}
 
 export interface BoardZoom extends View {
   /** The wrap's size in pixels. */
@@ -41,12 +30,6 @@ export interface BoardZoom extends View {
   centreOn: (r: number, c: number) => void;
   /** Shows that the map zooms: in on the space (r, c) and back out again. A touch or the wheel stops it. */
   demo: (r: number, c: number) => void;
-}
-
-/** How far a pull of `over` px past an edge moves the map: less and less, never more than `room`. */
-function rubber(over: number, room: number): number {
-  if (!over || room <= 0) return 0;
-  return Math.sign(over) * (1 - 1 / ((Math.abs(over) * 0.55) / room + 1)) * room;
 }
 
 /** Whether something around `el` scrolls vertically: then a plain wheel over the board scrolls it, not the zoom. */
@@ -101,45 +84,22 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     };
   }, [wrap, jump]);
 
-  const fitCell = Math.max(8, Math.min(140, Math.floor(Math.min(size.w / cols, size.h / rows))));
-  const canZoom = MAX_CELL >= fitCell * MIN_GAIN;
-  const maxCell = canZoom ? MAX_CELL : fitCell;
-  const clampCell = (c: number) => Math.min(maxCell, Math.max(fitCell, c));
-  /**
-   * Centred along an axis the board fits in; otherwise kept covering the wrap. With `give` (under a finger)
-   * it goes past those limits, less and less the further it's pulled, and springs back when let go.
-   */
-  const place = (cell: number, x: number, y: number, give = false): View => {
-    const axis = (pos: number, length: number, room: number) => {
-      const lo = length <= room ? (room - length) / 2 : room - length;
-      const hi = length <= room ? lo : 0;
-      const at = Math.min(hi, Math.max(lo, pos));
-      return give ? at + rubber(pos - at, room) : at;
-    };
-    return { cell, x: axis(x, cols * cell, size.w), y: axis(y, rows * cell, size.h) };
-  };
-  /** Pinched past the closest or furthest zoom, the map gives a little and springs back when let go. */
-  const softCell = (c: number) => (!canZoom ? fitCell : c > maxCell ? maxCell * (c / maxCell) ** 0.3 : c < fitCell ? fitCell * (c / fitCell) ** 0.3 : c);
+  const f = frame(size.w, size.h, rows, cols);
+  const canZoom = zoomable(f);
   const zoomed = canZoom && view.map === map && view.zoom > 1.001;
-  const current = zoomed ? place(clampCell(fitCell * view.zoom), view.x, view.y) : place(fitCell, 0, 0);
+  const current = zoomed ? place(f, clampCell(f, f.fit * view.zoom), view.x, view.y) : fitted(f);
 
   const commit = (v: View) => {
     if (v.cell === current.cell && v.x === current.x && v.y === current.y) {
       if (board.current) board.current.style.transform = ''; // nothing to redraw; just drop the preview
       return;
     }
-    setView({ zoom: v.cell / fitCell, x: v.x, y: v.y, map });
+    setView({ zoom: v.cell / f.fit, x: v.x, y: v.y, map });
     jump();
-  };
-  /** Zoom `from` by `factor`, keeping the point (fx, fy) of the wrap where it is. */
-  const zoomAround = (from: View, factor: number, fx: number, fy: number): View => {
-    const cell = clampCell(from.cell * factor);
-    const s = cell / from.cell;
-    return place(cell, fx - (fx - from.x) * s, fy - (fy - from.y) * s);
   };
 
   // Gesture handlers are attached once and read the latest values from here.
-  const latest = useRef({ current, canZoom, zoomed, place, softCell, zoomAround, commit, stopDemo: () => {} });
+  const latest = useRef({ f, current, zoomed, commit, stopDemo: () => {} });
   /** Glides the map to the view `to` makes of where it's going (set by the gesture effect once mounted). */
   const glide = useRef<(to: (from: View) => View) => void>();
 
@@ -156,8 +116,8 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     const el = board.current;
     if (!el || !canZoom || zoomed) return;
     stopDemo();
-    const cell = Math.min(maxCell, current.cell * 2);
-    const to = place(cell, size.w / 2 - (c + 0.5) * cell, size.h / 2 - (r + 0.5) * cell);
+    const cell = Math.min(f.max, current.cell * 2);
+    const to = centredOn(f, cell, r, c);
     const at = (ms: number, step: () => void) => demoTimers.current.push(setTimeout(step, ms));
     wrap.current?.classList.add('gesture');
     el.style.transition = 'transform .9s cubic-bezier(.45, 0, .25, 1)';
@@ -166,7 +126,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     at(3050, stopDemo);
   };
 
-  latest.current = { current, canZoom, zoomed, place, softCell, zoomAround, commit, stopDemo };
+  latest.current = { f, current, zoomed, commit, stopDemo };
   useLayoutEffect(() => stopDemo, [stopDemo]);
 
   // The committed view has been drawn: drop the gesture's transform.
@@ -247,7 +207,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
         last = now;
         const v = live!;
         const want = { x: v.x + vx * dt, y: v.y + vy * dt };
-        const next = latest.current.place(v.cell, want.x, want.y);
+        const next = place(latest.current.f, v.cell, want.x, want.y);
         if (next.x !== want.x) vx = 0;
         if (next.y !== want.y) vy = 0;
         const decay = Math.exp(-dt / FLING_DECAY);
@@ -263,7 +223,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     const release = () => {
       if (swallowUntil === Infinity) swallowUntil = performance.now() + DRAG_CLICK;
       if (!live) return finish();
-      const settled = latest.current.zoomAround(live, 1, focus.x, focus.y);
+      const settled = zoomAround(latest.current.f, live, 1, focus.x, focus.y);
       if (Math.abs(settled.cell - live.cell) > 0.01 || Math.abs(settled.x - live.x) > 0.5 || Math.abs(settled.y - live.y) > 0.5) return tween(settled, GLIDE_MS);
       const now = performance.now();
       const recent = track.filter((p) => now - p.t < 100);
@@ -297,7 +257,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       latest.current.stopDemo();
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       if ((e.target as Element).closest('.zoom-controls, .zoom-hint')) return;
-      if (!latest.current.canZoom) return;
+      if (!zoomable(latest.current.f)) return;
       // A touch catches a moving map, and is only that, not a tap on what's under it.
       if (pointers.size === 0) swallowUntil = frame ? Infinity : 0;
       stop();
@@ -310,7 +270,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       // The button was let go where we didn't see it (outside the window, say): that drag is over.
       if (e.pointerType === 'mouse' && e.buttons === 0) return lift(e.pointerId);
       pointers.set(e.pointerId, local(e));
-      const { place, softCell, zoomed } = latest.current;
+      const { f, zoomed } = latest.current;
       const pts = [...pointers.values()];
       const was = [...pointers.keys()].map((id) => start.get(id)!);
       let next: View;
@@ -318,18 +278,18 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
         const [a, b] = pts;
         const [a0, b0] = was;
         const s = Math.hypot(a.x - b.x, a.y - b.y) / Math.max(1, Math.hypot(a0.x - b0.x, a0.y - b0.y));
-        const cell = softCell(base.cell * s);
+        const cell = softCell(f, base.cell * s);
         const k = cell / base.cell;
         const m0 = { x: (a0.x + b0.x) / 2, y: (a0.y + b0.y) / 2 };
         const m1 = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
         focus = m1;
-        next = place(cell, m1.x - (m0.x - base.x) * k, m1.y - (m0.y - base.y) * k, true);
+        next = place(f, cell, m1.x - (m0.x - base.x) * k, m1.y - (m0.y - base.y) * k, true);
       } else {
         // One pointer pans, but only a zoomed board, and only once it has moved more than a tap would.
         const [p] = pts;
         const [p0] = was;
         if (!live && (!zoomed || Math.hypot(p.x - p0.x, p.y - p0.y) < TAP_SLOP)) return;
-        next = place(base.cell, base.x + p.x - p0.x, base.y + p.y - p0.y, true);
+        next = place(f, base.cell, base.x + p.x - p0.x, base.y + p.y - p0.y, true);
         const now = performance.now();
         track = [...track.filter((q) => now - q.t < 100), { t: now, x: next.x, y: next.y }];
       }
@@ -347,13 +307,13 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     };
     const wheel = (e: WheelEvent) => {
       latest.current.stopDemo();
-      const { canZoom, zoomAround, current } = latest.current;
-      if (!canZoom || pointers.size || (!e.ctrlKey && scrollsAround(el))) return;
+      const { f, current } = latest.current;
+      if (!zoomable(f) || pointers.size || (!e.ctrlKey && scrollsAround(el))) return;
       e.preventDefault();
       const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-      const f = local(e);
+      const at = local(e);
       const from = goal ?? live ?? current;
-      const next = zoomAround(from, Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.002)), f.x, f.y);
+      const next = zoomAround(f, from, Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.002)), at.x, at.y);
       if (next.cell === from.cell && next.x === from.x && next.y === from.y) return;
       clearTimeout(wheelTimer);
       const settle = () => void (wheelTimer = setTimeout(finish, WHEEL_SETTLE));
@@ -393,9 +353,9 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     resizing,
     zoomed,
     canZoom,
-    zoomBy: (factor) => go((from) => zoomAround(from, factor, size.w / 2, size.h / 2)),
-    fit: () => go(() => place(fitCell, 0, 0)),
+    zoomBy: (factor) => go((from) => zoomAround(f, from, factor, f.w / 2, f.h / 2)),
+    fit: () => go(() => fitted(f)),
     demo,
-    centreOn: (r, c) => go((from) => place(from.cell, size.w / 2 - (c + 0.5) * from.cell, size.h / 2 - (r + 0.5) * from.cell)),
+    centreOn: (r, c) => go((from) => centredOn(f, from.cell, r, c)),
   };
 }
