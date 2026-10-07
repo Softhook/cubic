@@ -899,7 +899,7 @@ input { font: inherit; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: calc(7vh + var(--safe-top)) 16px 32px;
+  padding: calc(16px + var(--safe-top)) 16px 32px;
   gap: 20px;
 }
 .lobby-hero { text-align: center; }
