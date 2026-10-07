@@ -7,7 +7,7 @@ type FsElement = HTMLElement & { webkitRequestFullscreen?: () => Promise<void> }
 const doc = document as FsDocument;
 const root = document.documentElement as FsElement;
 
-// The installed app opens full screen on Android (manifest `display_override`) and stays that way, so
+// The installed app opens full screen on Android (manifest `display`) and stays that way, so
 // there is nothing to do or toggle; where it opens `standalone` instead, it goes full screen the same
 // way as the browser.
 const supported = !!(root.requestFullscreen || root.webkitRequestFullscreen) && !matchMedia('(display-mode: fullscreen)').matches;
