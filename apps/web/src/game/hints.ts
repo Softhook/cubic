@@ -58,5 +58,5 @@ export function hintFor(game: GameState, sel: Sel): string {
     case 'carryDrop':
       return 'Choose where to drop the passenger.';
   }
-  return 'Select a ship. Planets glow when your orbiting ships add up to the planet number.';
+  return 'Select a ship';
 }

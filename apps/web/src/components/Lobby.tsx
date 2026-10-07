@@ -325,7 +325,7 @@ export function Lobby({
           ))}
         </div>
         <h1>Cubic</h1>
-        <p className="tagline">Every die is a starship. Low numbers hit hard, high numbers fly fast. Place all your cubes to conquer the sector.</p>
+        <p className="tagline">Every die is a starship</p>
       </div>
 
       <YourGames saved={saved} onResume={() => saved && onResume(saved)} onDiscard={discard} />
