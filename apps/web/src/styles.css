@@ -533,12 +533,15 @@ input { font: inherit; }
 .skill-chip.stored-tactic.playable { outline: 1px solid var(--good); }
 
 .log { flex: 1; min-height: 140px; display: flex; flex-direction: column; }
-.log.collapsed { flex: none; min-height: 0; }
-.log-toggle { display: inline-flex; align-items: center; gap: 6px; border: 0; padding: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
-.log-toggle svg { transition: transform .2s; }
+.log.collapsed { flex: none; min-height: 0; padding-block: 2px; }
+/* The whole row is the toggle (44px high), not just its title. */
+.log-toggle { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; border: 0; padding: 0; background: none; color: var(--muted); font: inherit; text-align: left; cursor: pointer; }
+.log:not(.collapsed) .log-toggle { min-height: 32px; margin-bottom: 4px; }
+.log-title { flex: none; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; }
+.log-latest { flex: 1; min-width: 0; padding-left: 8px; border-left: 2px solid var(--pc); font-size: 12px; color: #c3cbea; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: fade-up .25s ease-out; }
+.log-toggle svg { flex: none; margin-left: auto; transition: transform .2s; }
 .log-toggle[aria-expanded='true'] svg { transform: rotate(180deg); }
 @media (hover: hover) { .log-toggle:hover { color: var(--text); } }
-.log h3 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }
 .log ol { list-style: none; margin: 0; padding: 0; overflow-y: auto; max-height: 220px; font-size: 12px; line-height: 1.45; }
 .log li { padding: 3px 0 3px 10px; border-left: 2px solid var(--pc); margin-bottom: 3px; color: #c3cbea; animation: fade-up .25s ease-out; }
 

@@ -18,14 +18,17 @@ export function canDeployFrom(game: GameState, p: PlayerState, ctl: Controller):
 }
 
 /**
- * Whose scrapyard the turn panel shows: whoever can deploy on this device now, else whoever the table
- * waits for in setup, else the turn's player. Their player row leaves it out.
+ * Whose scrapyard the turn panel shows: the ships this device plays with, so they stay in one place
+ * rather than moving between the panel and a player row as turns pass. That's whoever can deploy now,
+ * else the acting player if they play here (several players sharing a device), else the first player
+ * who does; a screen that plays for nobody shows the acting player's. Their player row leaves it out.
  */
 export function turnScrapOwner(game: GameState, ctl: Controller): PlayerState {
   const deployer = game.players.find((q) => canDeployFrom(game, q, ctl));
   if (deployer) return deployer;
   const head = game.pending[0];
-  return game.players[game.phase === 'setup' && head && head.kind !== 'combat' ? head.player : game.turn.player];
+  const acting = game.players[game.phase === 'setup' && head && head.kind !== 'combat' ? head.player : game.turn.player];
+  return ctl.mine(acting.id) ? acting : (game.players.find((q) => ctl.mine(q.id)) ?? acting);
 }
 
 /** A player's scrapyard: their ships off the board, which they tap to deploy when they can. */
