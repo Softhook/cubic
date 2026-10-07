@@ -30,7 +30,7 @@ jobs:
           path: apps/web/dist
 
   # Phone and tablet layouts in emulation (docs/MOBILE.md): a broken layout fails the run and nothing deploys.
-  # Uses the runner's own Google Chrome. The screenshots are kept for a week, to see what broke.
+  # Uses the runner's own Google Chrome. When it fails, the screenshots are kept for a week, to see what broke.
   layout:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -42,7 +42,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run mobile:shots
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: mobile-screenshots

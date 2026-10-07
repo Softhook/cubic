@@ -87,7 +87,10 @@ async function playToMyTurn(page: Page) {
   const issues: string[] = [];
   let deployChecked = false;
   let myTurn = false;
-  for (let i = 0; i < 150 && !myTurn; i++) {
+  // The AI players' opening turns: about a minute here, but GitHub's runner shares 4 cores between every device's
+  // browser and AI, so it gets four.
+  const tries = process.env.CI ? 600 : 150;
+  for (let i = 0; i < tries && !myTurn; i++) {
     await page.waitForTimeout(400);
     if (!deployChecked && (await page.locator('.turn-scrap .scrap-die.clickable').count())) {
       deployChecked = true;
