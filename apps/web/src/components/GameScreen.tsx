@@ -44,7 +44,11 @@ export function Game({
   const head = game.pending[0];
   const sheet = useMediaQuery(SHEET);
   const cards = rulesOf(game).cards;
+  // The same panels in both layouts, in a different order.
   const turnPanel = <TurnPanel game={game} ctl={ctl} dispatch={dispatch} undo={undo} />;
+  const market = cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} />;
+  const players = <PlayerList game={game} ctl={ctl} dispatch={dispatch} />;
+  const log = <Log game={game} />;
 
   return (
     <div className="app">
@@ -71,19 +75,19 @@ export function Game({
         {sheet ? (
           <BottomSheet peek={turnPanel} wantOpen={!!cards && (ctl.legal.can('takeCard') || ctl.legal.can('patientTactic'))}>
             {side}
-            {cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} />}
-            <PlayerList game={game} ctl={ctl} dispatch={dispatch} />
-            <Log game={game} />
+            {market}
+            {players}
+            {log}
           </BottomSheet>
         ) : (
           <>
             <aside className="sidebar">
               {side}
               {turnPanel}
-              <PlayerList game={game} ctl={ctl} dispatch={dispatch} />
-              <Log game={game} />
+              {players}
+              {log}
             </aside>
-            {cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} />}
+            {market}
           </>
         )}
       </main>

@@ -62,6 +62,8 @@ export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wan
   // on the pointer's release: on a touch screen a drag is followed by no click, so clicks only count from the keyboard.
   const drag = useRef<{ y: number; from: number; travel: number; moved: boolean } | null>(null);
   const travel = () => (sheet.current ? sheet.current.offsetHeight - restHeight.current.h : 0);
+  /** How far down the sheet is with the finger at `y`: 0 open, `travel` shut. */
+  const offset = (d: NonNullable<typeof drag.current>, y: number) => Math.min(d.travel, Math.max(0, d.from + y - d.y));
   const onPointerDown = (e: PointerEvent) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -71,11 +73,10 @@ export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wan
   const onPointerMove = (e: PointerEvent) => {
     const d = drag.current;
     if (!d || !sheet.current) return;
-    const dy = e.clientY - d.y;
-    if (!d.moved && Math.abs(dy) < TAP_SLOP) return;
+    if (!d.moved && Math.abs(e.clientY - d.y) < TAP_SLOP) return;
     d.moved = true;
     sheet.current.style.transition = 'none';
-    sheet.current.style.transform = `translateY(${Math.min(d.travel, Math.max(0, d.from + dy))}px)`;
+    sheet.current.style.transform = `translateY(${offset(d, e.clientY)}px)`;
   };
   /** The drag is over: let go (`e`), or taken by the browser (none), when the sheet goes back to where it was. */
   const endDrag = (e?: PointerEvent) => {
@@ -86,7 +87,7 @@ export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wan
     sheet.current.style.transform = '';
     if (!e) return;
     if (!d.moved) return setOpen(!open);
-    const at = Math.min(d.travel, Math.max(0, d.from + e.clientY - d.y));
+    const at = offset(d, e.clientY);
     // Past a third of the way from where it started is far enough.
     setOpen(open ? at < d.travel / 3 : at < (d.travel * 2) / 3);
   };

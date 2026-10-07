@@ -7,6 +7,13 @@ const g55 = { userAgent: devices['Pixel 7'].userAgent, deviceScaleFactor: 2.625,
 export const MOTO_G55: BrowserContextOptions = { ...g55, viewport: { width: 412, height: 800 } };
 export const MOTO_G55_LANDSCAPE: BrowserContextOptions = { ...g55, viewport: { width: 867, height: 340 } };
 
+/** The phones every layout check runs on: the G55 both ways up, and a small iPhone. */
+export const PHONES: Record<string, BrowserContextOptions> = {
+  'moto-g55': MOTO_G55,
+  'moto-g55-landscape': MOTO_G55_LANDSCAPE,
+  'iphone-se': devices['iPhone SE'],
+};
+
 /** The value after `--name` on the command line. */
 export const arg = (name: string) => {
   const i = process.argv.indexOf(name);
@@ -27,3 +34,19 @@ export async function devServer(port: number): Promise<{ base: string; close: ()
  * Chrome's proxy auto-detection, which otherwise costs 12 s on every page.
  */
 export const launchChrome = () => chromium.launch({ channel: 'chrome', args: ['--no-proxy-server'] });
+
+/** The dev-only link that starts a game straight away (apps/web/src/game/devStart.ts), so `base` must be a dev server. */
+export function playUrl(base: string, game: { play: string; players: number; map?: string; seed?: number; scene?: string }): string {
+  const q = new URLSearchParams({ play: game.play, players: String(game.players), seed: String(game.seed ?? 1) });
+  if (game.map) q.set('map', game.map);
+  if (game.scene) q.set('scene', game.scene);
+  return `${base}?${q}`;
+}
+
+/** Ends a run: where the screenshots are, and exit code 1 when anything was found. */
+export function finish(out: string, problems: number, what = 'problem') {
+  console.log(`\nScreenshots in ${out}/`);
+  if (!problems) return;
+  console.log(`${problems} ${what}${problems > 1 ? 's' : ''}.`);
+  process.exit(1);
+}

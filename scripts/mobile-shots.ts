@@ -6,9 +6,8 @@
  *   npm run mobile:shots -- --url https://…/     # or checks a running one (e.g. the Pages deploy)
  *   npm run mobile:shots -- --webkit             # WebKit instead of Chrome (npx playwright install webkit)
  *
- * Uses the installed Google Chrome, so Playwright needs no browser download. `--no-proxy-server`
- * skips Chrome's proxy auto-detection, which otherwise costs 12 s on every page. Games start from the
- * dev-only `?play=` link (apps/web/src/game/devStart.ts), so `--url` must be a dev server.
+ * Uses the installed Google Chrome (launchChrome). Games start from the dev-only `?play=` link
+ * (playUrl), so `--url` must be a dev server.
  * Screenshots go to test-results/mobile/ (the game, each setup popup as `-popupN`, and your first turn
  * with a ship selected as `-turn`). Exits with 1 when a layout is broken: the board wider or taller
  * than its stage, a page wider than the screen (the phone then zooms the page out), a setup popup
@@ -21,12 +20,10 @@
  */
 import { mkdirSync } from 'node:fs';
 import { devices, webkit, type BrowserContextOptions, type Page } from 'playwright';
-import { MOTO_G55, MOTO_G55_LANDSCAPE, devServer, launchChrome } from './mobile-common';
+import { PHONES, devServer, finish, launchChrome, playUrl } from './mobile-common';
 
 const DEVICES: Record<string, BrowserContextOptions> = {
-  'moto-g55': MOTO_G55,
-  'moto-g55-landscape': MOTO_G55_LANDSCAPE,
-  'iphone-se': devices['iPhone SE'],
+  ...PHONES,
   'iphone-15': devices['iPhone 15'],
   'iphone-15-landscape': devices['iPhone 15 landscape'],
   'ipad-mini': devices['iPad Mini'],
@@ -197,7 +194,7 @@ async function checkPopups(newPage: () => Promise<Page>, base: string, device: s
   const issues: string[] = [];
   for (const pop of POPUPS) {
     const page = await newPage();
-    await page.goto(`${base}?play=${pop.play}&players=2&seed=1&scene=${pop.scene}`);
+    await page.goto(playUrl(base, { play: pop.play, players: 2, scene: pop.scene }));
     await page.waitForSelector('.board');
     if (pop.name === 'rules') await page.locator('.topbar button', { hasText: 'Rules' }).evaluate((b: HTMLElement) => b.click());
     const box = page.locator(pop.box ?? '.overlay .modal, .overlay .combat-card').first();
@@ -259,7 +256,7 @@ async function main() {
         // board is measured at rest.
         const ctx = await browser.newContext({ ...options, ignoreHTTPSErrors: true, reducedMotion: 'reduce' });
         const page = await ctx.newPage();
-        await page.goto(`${base}?play=${g.play}&players=${g.players}&map=${g.map}&seed=1`);
+        await page.goto(playUrl(base, g));
         await page.waitForSelector('.board');
         const name = `${device}-${g.map}`;
         const screen = options.viewport!;
@@ -335,11 +332,7 @@ async function main() {
     await server.close();
   }
 
-  console.log(`\nScreenshots in ${OUT}/`);
-  if (problems.length) {
-    console.log(`${problems.length} layout problem${problems.length > 1 ? 's' : ''}.`);
-    process.exit(1);
-  }
+  finish(OUT, problems.length, 'layout problem');
 }
 
 void main();

@@ -19,16 +19,10 @@
  * `window.__quantum` hook, so `--url` must be a dev server.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { devices, type BrowserContextOptions, type Page } from 'playwright';
+import { type Page } from 'playwright';
 import { chooseAction } from '../packages/ai/src';
 import { scrapyard, type Action, type Cell, type GameState } from '../packages/engine/src';
-import { MOTO_G55, MOTO_G55_LANDSCAPE, arg, devServer, launchChrome } from './mobile-common';
-
-const DEVICES: Record<string, BrowserContextOptions> = {
-  'moto-g55': MOTO_G55,
-  'moto-g55-landscape': MOTO_G55_LANDSCAPE,
-  'iphone-se': devices['iPhone SE'],
-};
+import { PHONES, arg, devServer, finish, launchChrome, playUrl } from './mobile-common';
 
 const GAMES: Record<string, { play: string; players: number; map?: string }> = {
   'basic-2p': { play: 'basic', players: 2 },
@@ -327,7 +321,7 @@ async function main() {
   const { base } = server;
   const browser = await launchChrome();
   mkdirSync(OUT, { recursive: true });
-  const devicesRun = Object.entries(DEVICES).filter(([d]) => !arg('--device') || d === arg('--device'));
+  const devicesRun = Object.entries(PHONES).filter(([d]) => !arg('--device') || d === arg('--device'));
   const gamesRun = Object.entries(GAMES).filter(([g]) => !arg('--game') || g === arg('--game'));
 
   let problems = 0;
@@ -337,8 +331,7 @@ async function main() {
       runs.map(async ({ device, options, game, g }) => {
         const ctx = await browser.newContext({ ...options, reducedMotion: 'reduce' });
         const page = await ctx.newPage();
-        const seed = Number(arg('--seed') ?? 1);
-        await page.goto(`${base}?play=${g.play}&players=${g.players}${g.map ? `&map=${g.map}` : ''}&seed=${seed}`);
+        await page.goto(playUrl(base, { ...g, seed: Number(arg('--seed') ?? 1) }));
         await page.waitForSelector('.board');
         await page.waitForFunction(() => '__quantum' in window);
         const name = `${device}-${game}`;
@@ -353,11 +346,7 @@ async function main() {
     await browser.close();
     await server.close();
   }
-  console.log(`\nScreenshots in ${OUT}/`);
-  if (problems) {
-    console.log(`${problems} problem${problems > 1 ? 's' : ''}.`);
-    process.exit(1);
-  }
+  finish(OUT, problems);
 }
 
 void main();
