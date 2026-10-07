@@ -1,4 +1,4 @@
-import { actor, apply, legalActions, type Action, type GameState, type PlayerId } from '@quantum/engine';
+import { actor, apply, deployTargets, legalActions, scrapyard, type Action, type GameState, type Pending, type PlayerId } from '@quantum/engine';
 import { outcomes } from './chance';
 import { candidates } from './patient';
 import { evaluate } from './evaluate';
@@ -230,7 +230,8 @@ function quickSettle(state: GameState): GameState {
   let s = state;
   for (let i = 0; i < 6 && s.pending.length && s.phase !== 'over'; i++) {
     const head = s.pending[0];
-    const a: Action | undefined = head.kind === 'combat' ? { type: 'resolveCombat' } : legalActions(s)[0];
+    // Unveil's first option is always Done; asking legalActions would test every placement first.
+    const a: Action | undefined = head.kind === 'combat' ? { type: 'resolveCombat' } : head.kind === 'unveil' ? { type: 'unveilDone' } : legalActions(s)[0];
     if (!a) break;
     s = apply(s, a);
   }
@@ -238,14 +239,17 @@ function quickSettle(state: GameState): GameState {
 }
 
 /**
- * Settling Unveil the Fleet (and Reorganization): the next ship's placements, or Done when none is left.
- * Unveil is many steps, and trying every re-roll and every ship at each of them made one AI decision take
- * minutes with five ships to place. The root (`choose`) still weighs every re-roll and every ship.
+ * Settling Unveil the Fleet (and Reorganization): the next ship onto the first space it may take, or Done when
+ * none is left, so every option at the root is played out alike and cheaply. Unveil is many steps, each with up to
+ * a hundred spaces (a skill that deploys anywhere isolated): trying them all at each step made one AI decision
+ * take minutes. Where each ship goes is still chosen properly, one ship per decision, at the root (`choose`).
  */
 function unveilPlacements(s: GameState): Action[] {
-  const deploys = legalActions(s).filter((a) => a.type === 'unveilDeploy');
-  const next = deploys[0]?.die;
-  return next ? deploys.filter((a) => a.die === next) : [{ type: 'unveilDone' }];
+  // Built directly: legalActions would build and test every placement to take the first.
+  const head = s.pending[0] as Extract<Pending, { kind: 'unveil' }>;
+  const die = scrapyard(s, head.player).find((d) => !head.reorganize || head.rerolled.includes(d.id));
+  const [to] = die ? deployTargets(s, head.player) : [];
+  return [die && to ? { type: 'unveilDeploy', die: die.id, to } : { type: 'unveilDone' }];
 }
 
 function seed(random: () => number): number {

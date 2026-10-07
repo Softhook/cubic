@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EXPANSION, card, cardKind, rulesOf, type DeckKind, type GameState } from '@quantum/engine';
 import type { Legal } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
@@ -31,6 +31,12 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   const [viewingCard, setViewingCard] = useState<string | null>(null);
   const [patientChoice, setPatientChoice] = useState<{ id: string; index: number } | null>(null);
   const { open, toggle } = useCollapse(picking);
+  // A pick over, the turn panel comes back into view: in phone landscape's column you may have scrolled down to a card.
+  const wasPicking = useRef(picking);
+  useEffect(() => {
+    if (wasPicking.current && !picking) document.querySelector('.turn-panel')?.scrollIntoView({ block: 'nearest' });
+    wasPicking.current = picking;
+  }, [picking]);
   const decks: Record<DeckKind, { name: string; cards: string[] }> = {
     skill: { name: cardRules.terms.skillDeck, cards: m.skillDeck },
     tactic: { name: cardRules.terms.tacticDeck, cards: m.tacticDeck },

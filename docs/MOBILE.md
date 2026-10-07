@@ -74,11 +74,20 @@ Chrome's address bar and Android's navigation bar, and changes as the address ba
     of a row was off screen. Now each deck is a row of three cards sharing the width (Step 3). It was the same
     on the iPad (Community's seven cards): while you pick, a row that doesn't fit wraps. `mobile:shots` now
     opens a pick on every device (`-pick`, `-pickClassic`).
-  - **The AI took minutes over Unveil the Fleet** (4p Community, all its ships destroyed): about 4½ minutes
-    with five ships to place, "thinking…" all the while. Its search tried every re-roll and every ship at
-    each step of the play-out; now it places one ship at a time there, and states share the board's cells
-    instead of copying them (most of the AI's time went on copying). About 20 s on the Mac now, no step
-    over 4 s; every AI decision is faster, which matters more on a phone.
+  - **The AI took minutes over Unveil the Fleet** (4p Community, all its ships destroyed), "thinking…" all
+    the while: about 4½ minutes with five ships to place, and 3½ for one step with a skill that deploys to
+    any isolated space (a hundred spaces per ship). Looking ahead, it tried every re-roll, ship and space at
+    every step; now it looks ahead with the remaining ships on their first space (where each goes is still
+    chosen, one per decision). Also, states share the board's cells instead of copying them, which was most
+    of the AI's time. Now about 10 s for five ships on the Mac, no step over about 2 s; every AI decision
+    is faster, which matters more on a phone.
+  - **A die could take a tap meant for something else:** a 3D die turned to show some faces has one face
+    edge-on, which Chrome hit-tests as a thin invisible line reaching well beyond the die. On the iPhone SE
+    such a line crossed the planet above a selected ship, so *Conquer* did nothing, by touch or mouse. The
+    cube no longer takes taps (its box and the ship's space still do). `mobile:play` now requires a tap on the
+    map to reach the ship, space or planet itself.
+  - **Phone landscape: after taking a card lower in the column, the turn panel stayed scrolled out of view.**
+    It now scrolls back into view when the pick ends.
 - **Next:** play Step 3 on the G55 (2p Basic and 3p Classic, setup to game over), then Step 4. Still to check from
   Step 1: the board re-fit when the market opens/closes on screens ≥ 980px.
 

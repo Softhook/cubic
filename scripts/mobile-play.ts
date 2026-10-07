@@ -157,6 +157,12 @@ function look(page: Page, tapsThisTurn: number, tried: string[], want: Want | nu
       let target: Look['target'] = null;
       if (el) {
         el.setAttribute('data-play', '1');
+        // A card to take may be below the fold of the sheet or column, which the player scrolls up to (seven
+        // Community cards don't fit a phone's height); off to the side is still a problem (mobile-shots' rule).
+        if (el.closest('.market')) {
+          const b = el.getBoundingClientRect();
+          if (b.top < 0 || b.bottom > innerHeight) el.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+        }
         const r = el.getBoundingClientRect();
         const x = r.left + r.width / 2;
         const y = r.top + r.height / 2;
@@ -164,10 +170,10 @@ function look(page: Page, tapsThisTurn: number, tried: string[], want: Want | nu
         let problem: string | null = null;
         if (r.top < -1 || r.left < -1 || r.bottom > innerHeight + 1 || r.right > innerWidth + 1) problem = 'off screen';
         else {
-          // The board takes taps on its layer (spaces and planets aren't hit-tested themselves); panels take
-          // them anywhere inside; a popup's own dice may overlap a little.
+          // On the map the tap must reach the ship, space or planet itself (a neighbouring die once took taps
+          // meant for a planet); panels take them anywhere inside; a popup's own dice may overlap a little.
           const hit = document.elementFromPoint(x, y);
-          const home = el.closest('.board-wrap, .overlay .modal, .combat-card, .panel, .sheet') ?? el;
+          const home = el.closest('.overlay .modal, .combat-card, .panel, .sheet') ?? el;
           if (!hit || !home.contains(hit)) problem = `covered by .${hit?.className.toString().split(' ').join('.')}`;
         }
         target = { label, x, y, problem };

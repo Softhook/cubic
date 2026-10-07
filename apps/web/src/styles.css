@@ -220,6 +220,9 @@ input { font: inherit; }
 /* Keep the die permanently composited: promoting layers mid-tumble under the overlay's
    backdrop-filter can flash a white frame (seen on the setup re-roll). */
 .die3d-hop, .die3d-cube { width: 100%; height: 100%; transform-style: preserve-3d; will-change: transform; }
+/* The cube isn't a tap target (the flat .die3d box and whatever holds it are): a face turned edge-on is hit-tested
+   as a thin line reaching far beyond the die, which took taps meant for a planet above a ship showing a 3. */
+.die3d-hop { pointer-events: none; }
 .die3d-cube { position: relative; }
 .die3d-face {
   position: absolute;
