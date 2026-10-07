@@ -1,21 +1,8 @@
 // Tiny synthesized sound kit (no audio files). All sounds are short and quiet.
 
-import { remember, stored } from './storage';
-
 let ctx: AudioContext | null = null;
-let enabled = stored('quantum.sound') !== 'off';
-
-export function soundEnabled() {
-  return enabled;
-}
-
-export function setSoundEnabled(on: boolean) {
-  enabled = on;
-  remember('quantum.sound', on ? 'on' : 'off');
-}
 
 function audio(): AudioContext | null {
-  if (!enabled) return null;
   try {
     ctx ??= new AudioContext();
     if (ctx.state === 'suspended') void ctx.resume();

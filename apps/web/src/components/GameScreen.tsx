@@ -2,7 +2,6 @@ import { useState, type CSSProperties, type ReactNode } from 'react';
 import { rulesOf } from '@quantum/engine';
 import { useController } from '../game/controller';
 import type { GameView } from '../game/view';
-import { setSoundEnabled, soundEnabled } from '../sound';
 import { SHEET, useMediaQuery } from '../game/useMediaQuery';
 import { BottomSheet } from './BottomSheet';
 import { Board } from './Board';
@@ -40,17 +39,12 @@ export function Game({
 }) {
   const { game, dispatch, error, toasts, undo } = view;
   const ctl = useController(game, dispatch, view.mine);
-  const [sound, setSound] = useState(soundEnabled());
   const [hideGameOver, setHideGameOver] = useState(false);
   useFullscreenOnFirstTap();
   const head = game.pending[0];
   const sheet = useMediaQuery(SHEET);
   const cards = rulesOf(game).cards;
   const turnPanel = <TurnPanel game={game} ctl={ctl} dispatch={dispatch} undo={undo} />;
-  /** Online games go on without you; a local game is abandoned, so it asks first. */
-  const leave = () => {
-    if (online || game.phase === 'over' || confirm('Abandon this game?')) onQuit();
-  };
 
   return (
     <div className="app">
@@ -61,19 +55,7 @@ export function Game({
           {game.board.mapName}
         </div>
         <div className="topbar-actions">
-          <button className="icon-btn" title={sound ? 'Mute' : 'Unmute'} onClick={() => { setSoundEnabled(!sound); setSound(!sound); }}>
-            {sound ? '🔊' : '🔈'}
-          </button>
           <button className="btn btn-ghost" onClick={onRules}>Rules</button>
-          {online ? (
-            <button className="btn btn-ghost" title="Back to the lobby. The game goes on; open it again from there or with its link." onClick={onQuit}>
-              Lobby
-            </button>
-          ) : (
-            <button className="btn btn-ghost" onClick={leave}>
-              New game
-            </button>
-          )}
           <FullscreenButton />
         </div>
       </header>

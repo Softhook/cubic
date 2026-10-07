@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { isSecret, type AskMode, type Replay } from '@quantum/online';
 import { Game } from '../components/GameScreen';
+import { restoreFullscreen } from '../components/FullscreenButton';
 import { useUndoShortcut } from '../game/useGame';
 import { inviteLink } from './create';
 import { useOnlineGame, type OnlineGame } from './useOnlineGame';
@@ -135,9 +136,11 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
       else await navigator.clipboard.writeText(url);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      prompt('Send this link to your friends:', url);
+    } catch (e) {
+      // Closing the share sheet without sharing isn't a failure.
+      if (!(e instanceof DOMException && e.name === 'AbortError')) prompt('Send this link to your friends:', url);
     }
+    restoreFullscreen();
   };
   const ok = g.relays.connected > 0;
   const unsent = g.relays.unsent;
