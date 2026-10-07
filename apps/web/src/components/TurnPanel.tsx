@@ -29,11 +29,12 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
       <div className="turn-head">
         <span className="turn-dot" />
         <div className="turn-title">
-          <small>{game.phase === 'setup' ? 'Setup' : t.bonus ? 'Bonus turn' : `Turn ${t.number}`}</small>
+          {(game.phase === 'setup' || t.bonus) && <small>{game.phase === 'setup' ? 'Setup' : 'Bonus turn'}</small>}
           <strong>{shown.name}</strong>
         </div>
         {game.phase === 'play' && (
           <Tip as="div" className="action-pips" tip={`${t.actionsLeft} action${t.actionsLeft === 1 ? '' : 's'} left`}>
+            <small>Actions</small>
             {Array.from({ length: Math.max(3, t.actionsLeft) }, (_, i) => (
               <span key={i} className={i < t.actionsLeft ? 'on' : ''} />
             ))}

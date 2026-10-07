@@ -42,6 +42,7 @@ function PlayerCard({ game, p, ctl, dispatch }: { game: GameState; p: PlayerStat
         <strong>{p.name}</strong>
         {p.ai && <span className="tag">AI</span>}
         <Tip className="cubes" tip={`${totalCubes - p.cubesLeft} of ${totalCubes} cubes placed`}>
+          <small>Cubes {totalCubes - p.cubesLeft}/{totalCubes}</small>
           {Array.from({ length: totalCubes }, (_, i) => (
             <span key={i} className={i < totalCubes - p.cubesLeft ? 'placed' : ''} />
           ))}

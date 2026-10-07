@@ -1,5 +1,5 @@
-import { useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-import { SHIP_ABILITIES, SHIP_NAMES, die, key, type GameState } from '@quantum/engine';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
+import { SHIP_ABILITIES, SHIP_NAMES, die, key, moveOptions, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { Explosions } from './board/Explosions';
@@ -32,6 +32,20 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
   const [inspect, setInspect] = useState<Inspect | null>(null);
   // The info closes itself on a tap elsewhere; a tap on the same thing again closes it too.
   const show = (what: Inspect) => setInspect((cur) => (cur && inspectKey(cur) === inspectKey(what) ? null : what));
+  // Another player's ship shows how far it can move: while a finger is on it, or while a mouse click's info is open.
+  const [held, setHeld] = useState<string | null>(null);
+  const viaMouse = useRef(false);
+  useEffect(() => {
+    if (!held) return;
+    const off = () => setHeld(null);
+    window.addEventListener('pointerup', off);
+    window.addEventListener('pointercancel', off);
+    return () => {
+      window.removeEventListener('pointerup', off);
+      window.removeEventListener('pointercancel', off);
+    };
+  }, [held]);
+  const reachOf = held ?? (inspect && 'ship' in inspect && viaMouse.current && !yoursOf(game, ctl)(die(game, inspect.ship).owner) ? inspect.ship : null);
 
   // A click on empty board (no highlight there) still reaches the controller, to clear a selection.
   const onBoardClick = (e: MouseEvent<HTMLDivElement>) => {
@@ -78,8 +92,20 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
             );
           })}
 
+          {reachOf && <Reach game={game} id={reachOf} cell={cell} />}
+
           {/* Mouse users also get `title=` on ships and planets; touch screens get the tap. */}
-          <Ships game={game} ctl={ctl} spots={spots} cell={cell} onInfo={(id) => show({ ship: id })} />
+          <Ships
+            game={game}
+            ctl={ctl}
+            spots={spots}
+            cell={cell}
+            onInfo={(id) => show({ ship: id })}
+            onPress={(id, touch) => {
+              viaMouse.current = !touch;
+              if (touch) setHeld(id);
+            }}
+          />
           <Explosions game={game} cell={cell} />
           {inspect && <BoardInfo key={inspectKey(inspect)} game={game} what={inspect} cell={cell} onClose={() => setInspect(null)} />}
         </div>
@@ -92,13 +118,48 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
   );
 }
 
-/** Every ship on the map, as a die; selected, highlighted, spent or in combat. */
-function Ships({ game, ctl, spots, cell, onInfo }: { game: GameState; ctl: Controller; spots: ShipSpots; cell: number; onInfo: (id: string) => void }) {
+/** Your ships: those of the seats this screen plays; sharing a screen, those of whoever's turn it is. */
+const yoursOf = (game: GameState, ctl: Controller) => (owner: number) => ctl.mine(owner) && (owner === game.turn.player || !ctl.mine(game.turn.player));
+
+/**
+ * The spaces another player's ship could move to with a plain move: its movement (with its owner's
+ * skills) in straight steps, not its own ship ability (the Interceptor's diagonal). Only shown, not clickable.
+ */
+function Reach({ game, id, cell }: { game: GameState; id: string; cell: number }) {
+  const d = game.dice.find((x) => x.id === id);
+  if (d?.loc.zone !== 'board') return null;
+  const cells = [...moveOptions(game, id).moves.values()].filter((m) => !m.diagonal);
+  return (
+    <div className="reach" style={{ '--pc': game.players[d.owner].color } as CSSProperties}>
+      {cells.map(({ cell: c }) => (
+        <span key={key(c)} style={{ left: c.c * cell, top: c.r * cell, width: cell, height: cell }}>
+          <span />
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Every ship on the map, as a die; selected, highlighted, spent or in combat. `onPress`: a pointer went down on another player's ship. */
+function Ships({
+  game,
+  ctl,
+  spots,
+  cell,
+  onInfo,
+  onPress,
+}: {
+  game: GameState;
+  ctl: Controller;
+  spots: ShipSpots;
+  cell: number;
+  onInfo: (id: string) => void;
+  onPress: (id: string, touch: boolean) => void;
+}) {
   const head = game.pending[0];
   const combat = head?.kind === 'combat' ? head : null;
   const me = game.turn.player;
-  // Your ships: those of the seats this screen plays; sharing a screen, those of whoever's turn it is.
-  const yours = (owner: number) => ctl.mine(owner) && (owner === me || !ctl.mine(me));
+  const yours = yoursOf(game, ctl);
   return game.dice.map((d) => {
     const at = spots.get(d.id);
     if (!at) return null;
@@ -125,6 +186,8 @@ function Ships({ game, ctl, spots, cell, onInfo }: { game: GameState; ctl: Contr
           .join(' ')}
         style={{ transform: `translate(${c * cell}px, ${r * cell}px)`, width: cell, height: cell, '--pc': game.players[d.owner].color } as CSSProperties}
         onClick={() => ctl.onDie(d.id) === false && onInfo(d.id)}
+        onPointerDown={yours(d.owner) ? undefined : (e) => onPress(d.id, e.pointerType !== 'mouse')}
+        onContextMenu={(e) => e.preventDefault()}
         aria-label={`${game.players[d.owner].name}'s ${SHIP_NAMES[d.value]} (${d.value})`}
         title={`${game.players[d.owner].name} · ${SHIP_NAMES[d.value]} (${d.value})\n${SHIP_ABILITIES[d.value].name}: ${SHIP_ABILITIES[d.value].text}`}
       >
