@@ -45,7 +45,10 @@ export function apply(prev: GameState, action: Action): GameState {
   // Own keys only: an action from another browser may name anything, `constructor` included.
   const handler = Object.hasOwn(HANDLERS, action?.type) ? (HANDLERS[action.type] as (s: GameState, a: Action) => void) : undefined;
   if (!handler) throw new RuleError(`Unknown action ${action?.type}`);
-  const s = structuredClone(prev);
+  // The board's cells never change after the board is built, so states share them: copying them was
+  // most of the AI's time (an Unveil with five ships to place took minutes).
+  const s: GameState = structuredClone({ ...prev, board: { ...prev.board, cells: [] } });
+  s.board.cells = prev.board.cells;
   // Scrappy's re-roll must come right after the roll: any other action gives it up.
   if (action.type !== 'scrappy') delete s.turn.scrappy;
   handler(s, action);

@@ -8,7 +8,7 @@ import { defaultSeat } from './seats';
  * one human (Commander) and AI opponents. `play` is a mode's id or name; `map` defaults to the
  * basic map for the player count; `seed` makes the dice the same every time. Reloading starts the
  * game again. Like any game on this device, it replaces the saved game.
- * `scene=combat|advance|changeOfHeart|over` opens on that popup instead, `scene=turn` on your first turn (see `scene`).
+ * `scene=combat|advance|changeOfHeart|takeCard|over` opens on that popup instead, `scene=turn` on your first turn (see `scene`).
  */
 export function devStartGame(): GameState | null {
   if (!import.meta.env.DEV) return null;
@@ -35,7 +35,7 @@ export function devStartGame(): GameState | null {
 /**
  * Plays every seat's first choice through setup and on to the human's (player 0's) first turn, then
  * opens a popup: `combat` (the human's ship attacks and may answer, e.g. with a missile in Community), `advance` (it has won and
- * chooses whether to advance), `changeOfHeart` (needs a mode with cards) or
+ * chooses whether to advance), `changeOfHeart` (needs a mode with cards), `takeCard` (a card to pick from the market, likewise) or
  * `over` (the human has won). `turn`, or a scene that can't be set up, stops at that turn.
  */
 function scene(game: GameState, name: string): GameState {
@@ -48,6 +48,10 @@ function scene(game: GameState, name: string): GameState {
   if (name === 'over') return { ...s, phase: 'over', winner: 0 };
   if (name === 'changeOfHeart') {
     if (s.market.skillDeck.length) s.pending.unshift({ kind: 'changeOfHeart', player: 0 });
+    return s;
+  }
+  if (name === 'takeCard') {
+    if (s.market.skillRow.length) s.pending.unshift({ kind: 'takeCard', player: 0, count: 1 });
     return s;
   }
   if (name !== 'combat' && name !== 'advance') return s;

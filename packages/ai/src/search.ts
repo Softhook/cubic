@@ -186,7 +186,7 @@ export class Search {
       const who = actor(s);
       let pick: GameState | null = null;
       let top = -Infinity;
-      for (const a of legalActions(s)) {
+      for (const a of head.kind === 'unveil' ? unveilPlacements(s) : legalActions(s)) {
         const outs = outcomes(s, a, this.seeds.slice(0, 1));
         if (!outs) continue;
         // Nested decisions are settled with the first option, to keep this cheap.
@@ -235,6 +235,17 @@ function quickSettle(state: GameState): GameState {
     s = apply(s, a);
   }
   return s;
+}
+
+/**
+ * Settling Unveil the Fleet (and Reorganization): the next ship's placements, or Done when none is left.
+ * Unveil is many steps, and trying every re-roll and every ship at each of them made one AI decision take
+ * minutes with five ships to place. The root (`choose`) still weighs every re-roll and every ship.
+ */
+function unveilPlacements(s: GameState): Action[] {
+  const deploys = legalActions(s).filter((a) => a.type === 'unveilDeploy');
+  const next = deploys[0]?.die;
+  return next ? deploys.filter((a) => a.die === next) : [{ type: 'unveilDone' }];
 }
 
 function seed(random: () => number): number {

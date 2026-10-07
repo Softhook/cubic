@@ -3,7 +3,7 @@
 How to make the web app play well on phones and iPads: what works today, what breaks, and a
 plan sized to where the app is now.
 
-Status: **Steps 0, 1 and 2 done; Step 3 done in emulation (layout and every popup), its real-device checks still to do; Step 4 (zoom) brought forward and built 2026-10-07, and with it the phone-portrait bottom sheet; real-device check of both to do. Step 5 (home-screen app, offline, automatic updates) built and tested in Playwright (`npm run pwa:check`) 2026-10-07; the G55 checklist is in Step 5.** First written
+Status: **Steps 0, 1 and 2 done; Step 3 done in emulation (layout, every popup and card pick, and whole games played by tapping with `npm run mobile:play`), its real-device checks still to do; Step 4 (zoom) brought forward and built 2026-10-07, and with it the phone-portrait bottom sheet; real-device check of both to do. Step 5 (home-screen app, offline, automatic updates) built and tested in Playwright (`npm run pwa:check`) 2026-10-07; the G55 checklist is in Step 5.** First written
 2026-10-02 as a proposal. Revised 2026-10-06 after measuring the build in device emulation
 (`npm run mobile:shots`: Playwright + Chrome; iPhone SE, iPhone 15, Moto G55 and iPad mini,
 portrait and landscape). On the real Moto G55 so far: the default map (fine) and Asymptote
@@ -68,6 +68,17 @@ Chrome's address bar and Android's navigation bar, and changes as the address ba
   `npm run pwa:check` tests offline play and every update path on real builds; a reload during a
   game on this device (an update, pull to refresh) now brings the game back instead of the lobby.
 
+- **Whole games played in emulation:** `npm run mobile:play` (Step 0) taps through 2p Basic, 3p Classic and
+  4p Community games, setup to game over, on the G55 (both orientations) and the iPhone SE. It found:
+  - **A card pick hid cards on phones:** the open market was one sideways-scrolling strip, so the third card
+    of a row was off screen. Now each deck is a row of three cards sharing the width (Step 3). It was the same
+    on the iPad (Community's seven cards): while you pick, a row that doesn't fit wraps. `mobile:shots` now
+    opens a pick on every device (`-pick`, `-pickClassic`).
+  - **The AI took minutes over Unveil the Fleet** (4p Community, all its ships destroyed): about 4½ minutes
+    with five ships to place, "thinking…" all the while. Its search tried every re-roll and every ship at
+    each step of the play-out; now it places one ship at a time there, and states share the board's cells
+    instead of copying them (most of the AI's time went on copying). About 20 s on the Mac now, no step
+    over 4 s; every AI decision is faster, which matters more on a phone.
 - **Next:** play Step 3 on the G55 (2p Basic and 3p Classic, setup to game over), then Step 4. Still to check from
   Step 1: the board re-fit when the market opens/closes on screens ≥ 980px.
 
@@ -195,6 +206,13 @@ Steps 1–3 come first; Step 4 is the big one and can wait until they are in.
       your ships, the scrapyard must be on screen and not covered; with a ship selected, so must
       *End turn* and the ship's buttons, and the turn bar must not cover the board (screenshot
       `-turn`). Devices run in parallel: about 2 minutes.
+- [x] **`npm run mobile:play`** ([scripts/mobile-play.ts](../scripts/mobile-play.ts), 2026-10-07): plays
+      whole games by tapping, on the G55 (both orientations) and the iPhone SE: 2p Basic, 3p Classic, 4p
+      Community. On your turn the level-1 AI chooses (so you conquer, research and take cards) and the script
+      taps it out; every decision, popup and card pick is taken by a tap. Reports every tap on something off
+      screen or covered, a game that stops moving (saving its state as `-stuck.json`), page errors, and a game
+      that doesn't end. Screenshots of the first of each kind of decision in `test-results/mobile-play/`.
+      `--device`, `--game`, `--seed`, `--random` (random taps only). Takes 5–10 minutes, so it isn't in CI.
 - [x] **Dev link straight into a game** ([devStart.ts](../apps/web/src/game/devStart.ts), dev
       server only): `?play=classic&players=4&map=tesseract&seed=1`. `play` takes a mode's id or
       name; `map` defaults to the basic map; `seed` repeats the same dice. One human
@@ -316,6 +334,14 @@ Keep the scrolling column, but pin what matters:
       notches glide (eased, ~250ms) instead of jumping; a flung map carries on and slows down;
       pulled past an edge or the zoom limits it rubber-bands and springs back. Still to try on the G55.
 
+- [x] **Card picks on phones** (2026-10-07): the open market was one strip that scrolled sideways, so the
+      third card of a row was off screen. Below 600px wide and in phone landscape, each deck is a row: its name
+      and count on a line, then three cards sharing the width (taller rather than narrower). Community's
+      seventh card (Expansion) is below the fold of the sheet, which scrolls. Wider screens wrap a row that
+      doesn't fit onto a line of its own while you pick (the iPad's Community market), and keep one strip
+      otherwise.
+- [x] **Whole games in emulation** (2026-10-07): `mobile:play` plays 2p Basic, 3p Classic and 4p Community
+      to game over on the G55 (both orientations) and the iPhone SE, with nothing off screen or covered.
 - [ ] Check one full turn on the G55 for smoothness (no remote profiling, see Step 0): 3D dice,
       four `backdrop-filter` blur layers, explosions. Its Dimensity 7025 is mid-range and the screen runs at 120 Hz.
       Only optimise what the profile shows.
@@ -471,7 +497,7 @@ currently falls back to a `prompt()`, so it looks broken in dev when it isn't. O
 
 | Need | Choice | Why | Rejected |
 |---|---|---|---|
-| Board zoom (Step 4) | **`react-zoom-pan-pinch`** v4.2 (Sept 2026), spike first | Actively maintained; pinch, pan, wheel, double-tap, `zoomToElement`, MiniMap, coordinate helpers built in | `@use-gesture/react`: works, but no release in 3 years. Own Pointer Events code stays the fallback |
+| Board zoom (Step 4) | ~~`react-zoom-pan-pinch`~~ own Pointer Events (decided 2026-10-07, see Step 4) | The library's CSS scale blurs the 3D dice and text | `@use-gesture/react`: no release in 3 years |
 | Info popovers (Step 2) | **Native Popover API + CSS anchor positioning** | Baseline in every major browser since Jan 2026 (Safari 26, Firefox 147): positioning and light-dismiss with no dependency | Floating UI: excellent, but only needed for older browsers. Tippy.js: legacy |
 | Bottom sheet (only if Step 3 needs one) | Hand-rolled, or Base UI's drawer | Small; no gestures needed if it only opens by tap | **Vaul: unmaintained** (its author says so); shadcn/ui moved its drawer off it |
 | Home-screen app (Step 5) | **`vite-plugin-pwa`** v2 + `@vite-pwa/assets-generator` | The standard for Vite; Workbox underneath; icons generated from one SVG | Hand-written service worker: more risk around update handling |

@@ -46,12 +46,15 @@ const GAMES = [
 
 /**
  * The in-game popups, opened through the dev link's `scene` (the rules from the topbar on your turn). `must` lists
- * what has to be on screen without scrolling inside the popup.
+ * what has to be on screen without scrolling inside the popup. A card pick isn't a popup: the market opens (on a
+ * phone, in the bottom sheet) and every card you may take must be on screen, which a sideways scroll broke.
  */
-const POPUPS = [
+const POPUPS: { name: string; play: string; scene: string; must: string; box?: string }[] = [
   { name: 'combat', play: 'community', scene: 'combat', must: '.combat-card h2, .combat-total, .combat-card button' },
   { name: 'changeOfHeart', play: 'community', scene: 'changeOfHeart', must: '.modal h2, .modal .qcard:first-child' },
   { name: 'over', play: 'basic', scene: 'over', must: '.modal h2, .modal button' },
+  { name: 'pick', play: 'community', scene: 'takeCard', must: '.market .takeable', box: '.market' },
+  { name: 'pickClassic', play: 'original', scene: 'takeCard', must: '.market .takeable', box: '.market' },
   { name: 'rules', play: 'basic', scene: 'turn', must: '.dialog > h2, .dialog-close' },
 ];
 
@@ -208,7 +211,7 @@ async function checkPopups(newPage: () => Promise<Page>, base: string, device: s
     await page.goto(`${base}?play=${pop.play}&players=2&seed=1&scene=${pop.scene}`);
     await page.waitForSelector('.board');
     if (pop.name === 'rules') await page.locator('.topbar button', { hasText: 'Rules' }).evaluate((b: HTMLElement) => b.click());
-    const box = page.locator('.overlay .modal, .overlay .combat-card').first();
+    const box = page.locator(pop.box ?? '.overlay .modal, .overlay .combat-card').first();
     if (!(await box.waitFor({ timeout: 5000 }).then(() => true, () => false))) {
       issues.push(`${pop.name}: never opened`);
       await page.context().close();
@@ -219,13 +222,26 @@ async function checkPopups(newPage: () => Promise<Page>, base: string, device: s
     const found = await box.evaluate((el, must) => {
       const b = el.getBoundingClientRect();
       const out: string[] = [];
-      if (b.top < -1 || b.left < -1 || b.bottom > innerHeight + 1 || b.right > innerWidth + 1) out.push(`${Math.round(b.width)}×${Math.round(b.height)} box, larger than the screen`);
+      // The market isn't a popup: it may run past the screen's foot, and Community's seven cards don't fit a phone's
+      // height at a readable size. Its cards must never be off to the side (a sideways scroll hid the third card of
+      // a row); above or below the screen is fine when the panel or page they're in scrolls up and down.
+      const popup = !el.matches('.market');
+      const scrollsUpDown = (t: Element) => {
+        for (let a = t.parentElement; a; a = a.parentElement) {
+          const y = getComputedStyle(a).overflowY;
+          if ((y === 'auto' || y === 'scroll') && a.scrollHeight > a.clientHeight + 1) return true;
+        }
+        return document.scrollingElement!.scrollHeight > innerHeight + 1;
+      };
+      if (popup && (b.top < -1 || b.left < -1 || b.bottom > innerHeight + 1 || b.right > innerWidth + 1)) out.push(`${Math.round(b.width)}×${Math.round(b.height)} box, larger than the screen`);
       const top = Math.max(0, b.top), bottom = Math.min(innerHeight, b.bottom), left = Math.max(0, b.left), right = Math.min(innerWidth, b.right);
       const items = [...el.querySelectorAll(must)];
       if (!items.length) out.push(`nothing matches ${must}`);
       for (const t of items) {
         const r = t.getBoundingClientRect();
-        if (r.top < top - 1 || r.bottom > bottom + 1 || r.left < left - 1 || r.right > right + 1) {
+        const sideways = r.left < left - 1 || r.right > right + 1;
+        const upDown = r.top < top - 1 || r.bottom > bottom + 1;
+        if (sideways || (upDown && (popup || !scrollsUpDown(t)))) {
           out.push(`"${(t.getAttribute('aria-label') ?? t.textContent ?? '').trim().slice(0, 30)}" off screen`);
         }
       }
