@@ -71,28 +71,39 @@ export function startServiceWorker() {
     void update(true); // the new worker takes over, and the page reloads when it does
   };
 
+  // `updating` is never a dead end: a switch-over lost while Android froze the app in the background
+  // leaves the new version waiting, and a download that failed (say, mid-deploy) leaves nothing, so
+  // every check looks again rather than trusting the status.
   checkNow = (ask) => {
-    if (status === 'updating' || status === 'checking') return;
+    if (status === 'checking') return;
     asked ||= ask;
-    if (!registration) return;
+    const r = registration;
+    if (!r) return;
+    if (r.waiting) {
+      // Downloaded but not yet live: switch now if asked, else the next time the app is hidden.
+      if (ask) applyNow();
+      else setStatus('ready');
+      return;
+    }
     if (!navigator.onLine) {
       if (ask) setStatus('offline');
       return;
     }
     if (ask) setStatus('checking');
-    registration.update().then(
+    r.update().then(
       () => {
-        if (status !== 'checking') return; // ready (or updating) by now
+        if (status === 'ready') return; // onNeedRefresh came first
         // Found one: it is downloading, and onNeedRefresh follows once it has.
-        setStatus(registration!.installing || registration!.waiting ? 'updating' : 'current');
+        if (r.installing) setStatus('updating');
+        else if (status === 'checking' || status === 'updating') setStatus(ask ? 'current' : 'idle');
       },
-      () => ask && setStatus('failed'), // the server unreachable: try again next time
+      () => setStatus(ask ? 'failed' : 'idle'), // the server unreachable: try again next time
     );
   };
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      if (status === 'ready') applyNow();
+      if (status === 'ready' || registration?.waiting) applyNow();
     } else {
       checkNow(false);
     }
