@@ -285,10 +285,14 @@ Lab (`#lab/aid`).
   action chips, pips and ship details. Hierarchy: the ship dice first, then the die pads, then the
   actions; rules are a line each.
 - **Readable**: no text under `MIN_TEXT` (2 mm, about 6 pt); a test checks every size.
+- **Cube rail**: down the left edge, seven pads (the most cubes any map gives) styled like the
+  planets' 11 mm cube pads, spread over the full height; the win condition, "Place your last cube to
+  win", runs up beside them.
 - **Die pads**: dominance (left) and research (right), each the 24 mm of a tile's space pad, for the
   19 mm dice, with what moves the die and what happens at 6.
 - **The turn**: "3 actions" with three action chips, each action with its cost in chips and one
-  line of rules; then combat, missiles (Community; Classic shows defeat instead) and cards.
+  line of rules; then combat, missiles (Community; Classic shows defeat instead), the per-ship
+  limit (one move, one ability a turn) and cards.
 - **The fleet**: each ship on its die face (`shipDie` in
   [`kit/starships.ts`](../packages/art/src/kit/starships.ts)), with its power under it but no name:
   starships as white outlines with no fill, the pips around them, and the centre pip of 1, 3 and 5

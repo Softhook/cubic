@@ -187,6 +187,14 @@ describe('player aid', () => {
     expect(playerAidSvg({ edition: 'classic' })).not.toContain('MISSILE');
   });
 
+  it('has a pad for each of up to 7 cubes, with the win condition beside them', () => {
+    for (const edition of ['community', 'classic'] as const) {
+      const svg = playerAidSvg({ edition });
+      expect(svg.match(new RegExp(`width="${CUBE_PAD.size}" height="${CUBE_PAD.size}"`, 'g'))).toHaveLength(7);
+      expect(svg).toContain('PLACE YOUR LAST CUBE TO WIN');
+    }
+  });
+
   it('draws six different ships on their dice', () => {
     const ships = [1, 2, 3, 4, 5, 6].map((v) => shipDie('s', v, 0, 0, 19, 200).body);
     expect(new Set(ships).size).toBe(6);

@@ -2,12 +2,13 @@ import { estimateWidth, type Measure } from './card';
 import { icon } from './icons';
 import { shipDie } from './kit/starships';
 import { document, esc, hsl, n, type Fragment } from './svg';
-import { DOMINANCE, FONTS, RESEARCH, TILE } from './tokens';
+import { CUBE_PAD, DOMINANCE, FONTS, RESEARCH, TILE } from './tokens';
 
 /**
- * The player aid: an A6 board, landscape, the same for every player. Its two pads hold the dominance
- * and research dice (19 mm); between them, the three actions; along the bottom, the six ships on
- * their die faces with what each can do.
+ * The player aid: an A6 board, landscape, the same for every player. Down the left edge, a rail of
+ * seven cube pads holds the player's cubes, with the win condition beside it; then the two pads for
+ * the dominance and research dice (19 mm), and between them the three actions; along the bottom,
+ * the six ships on their die faces with what each can do.
  *
  * Kept deliberately quiet: one flat ground, one accent colour, no boxes. The ship dice are the largest
  * thing on it, then the die pads, then the actions. No text is smaller than `MIN_TEXT`.
@@ -55,7 +56,7 @@ const SHIPS: { value: number; ability: string; text: string }[] = [
 ];
 
 const actions = (edition: AidEdition): { name: string; cost: number; text: string }[] => [
-  { name: 'Conquer', cost: 2, text: 'Orbiting ships add up to the planet' },
+  { name: 'Conquer', cost: 2, text: 'Your orbiting ships sum to exactly the planet' },
   { name: 'Deploy', cost: 1, text: 'Scrapyard ship to an orbit of your cube' },
   { name: 'Move / Attack', cost: 1, text: 'Up to the ship’s value; attack ends it' },
   { name: 'Reconfigure', cost: 1, text: edition === 'community' ? 'Re-roll to a value not seen this turn' : 'Re-roll a ship to a new value' },
@@ -65,7 +66,8 @@ const actions = (edition: AidEdition): { name: string; cost: number; text: strin
 const rules = (edition: AidEdition): [label: string, text: string][] => [
   ['Combat', 'Die + ship value: lower wins, ties to attacker'],
   edition === 'community' ? ['Missile', 'Any time: one combat roll becomes 1'] : ['Defeat', 'The ship is re-rolled into the scrapyard'],
-  ['Cards', '1 per planet conquered · 1 at research 6'],
+  ['Ships', 'Each: one move and one ability a turn'],
+  ['Cards', 'At turn end: 1 per conquest · 1 at research 6'],
 ];
 
 // ---------------------------------------------------------------------------
@@ -99,18 +101,13 @@ function line(x: number, y: number, s: string, size: number, width: number, meas
   return text(x, y, s, Math.max(MIN_TEXT, Math.min(size, width / w)), o);
 }
 
-/** Greedy word wrap to `width` mm. */
+/** One line if it fits in `width` mm, else two lines of about equal length (no lone "a 5" or "free"). */
 function wrap(s: string, size: number, width: number, measure: Measure): string[] {
-  const lines: string[] = [];
-  let cur = '';
-  for (const word of s.split(' ')) {
-    const next = cur ? `${cur} ${word}` : word;
-    if (cur && measure(next, size, 'body') > width) {
-      lines.push(cur);
-      cur = word;
-    } else cur = next;
-  }
-  return cur ? [...lines, cur] : lines;
+  if (measure(s, size, 'body') <= width) return [s];
+  const words = s.split(' ');
+  const splits = words.slice(1).map((_, i) => [words.slice(0, i + 1).join(' '), words.slice(i + 1).join(' ')]);
+  const longer = (l: string[]) => Math.max(...l.map((t) => measure(t, size, 'body')));
+  return splits.reduce((best, l) => (longer(l) < longer(best) ? l : best));
 }
 
 // ---------------------------------------------------------------------------
@@ -141,6 +138,9 @@ function diePad(cx: number, cy: number, hue: number, kind: 'dominance' | 'resear
   );
 }
 
+/** The most cubes any map gives a player. */
+const MAX_CUBES = 7;
+
 /** The player aid as a standalone SVG document. */
 export function playerAidSvg(o: AidOptions = {}): string {
   const edition = o.edition ?? 'community';
@@ -155,8 +155,19 @@ export function playerAidSvg(o: AidOptions = {}): string {
   out.push(`<rect x="${-b}" y="${-b}" width="${W + 2 * b}" height="${H + 2 * b}" fill="${GROUND}"/>`);
   defs.push(`<radialGradient id="${id}-glow"><stop offset="0" stop-color="${hsl(HUE, 100, 65)}" stop-opacity=".6"/><stop offset="1" stop-color="${hsl(HUE, 100, 65)}" stop-opacity="0"/></radialGradient>`);
 
+  // --- The cube rail: a pad per cube, spread over the full height, with the win condition alongside.
+  // The pads are the planets' cube pads in the die pads' quiet fill; the text runs up the rail, like a spine.
+  const pad = CUBE_PAD.size;
+  const step = (H - 2 * M - pad) / (MAX_CUBES - 1);
+  for (let i = 0; i < MAX_CUBES; i++) {
+    out.push(`<rect x="${M}" y="${n(M + i * step)}" width="${pad}" height="${pad}" rx="1.6" fill="${hsl(228, 32, 12)}" stroke="${hsl(224, 20, 52)}" stroke-width=".3"/>`);
+  }
+  const spine = M + pad + 3.6;
+  out.push(`<g transform="rotate(-90 ${n(spine)} ${n(H / 2)})">${text(spine, H / 2, 'Place your last cube to win', 2.4, { font: 'bold', fill: WHITE, anchor: 'middle', track: 0.16, upper: true })}</g>`);
+  const left = spine + 4;
+
   // --- Dominance and research: label, pad, what moves the die, what 6 does.
-  const colW = 30;
+  const colW = 26;
   const side = (x: number, kind: 'dominance' | 'research') => {
     const h = kind === 'dominance' ? DOMINANCE : RESEARCH;
     const tone = hsl(h, 85, 70);
@@ -166,7 +177,7 @@ export function playerAidSvg(o: AidOptions = {}): string {
     const lines =
       kind === 'dominance'
         ? { gain: ['+1 per enemy destroyed', '−1 per ship lost'], six: 'At 6 · Infamy', then: ['Place a cube on any', 'planet, reset to 1'] }
-        : { gain: ['+1 per Research action'], six: 'At 6 · Breakthrough', then: ['Take a card in your', 'card phase, reset to 1'] };
+        : { gain: ['+1 per Research action'], six: 'At 6 · Breakthrough', then: ['Take a card at the', 'end of turn, reset to 1'] };
     let y = M + 34.6;
     for (const t of lines.gain) {
       out.push(line(cx, y, t, 2.3, colW, measure, { fill: WHITE, anchor: 'middle' }));
@@ -176,37 +187,36 @@ export function playerAidSvg(o: AidOptions = {}): string {
     out.push(line(cx, y, lines.six, 2.4, colW, measure, { font: 'bold', fill: tone, anchor: 'middle' }));
     lines.then.forEach((t, i) => out.push(line(cx, y + 3.3 + i * 3, t, 2.2, colW, measure, { fill: MUTED, anchor: 'middle' })));
   };
-  side(M, 'dominance');
+  side(left, 'dominance');
   side(W - M - colW, 'research');
 
   // --- The turn, in the middle column.
-  const x0 = M + colW + 5;
-  const cw = W - 2 * x0;
+  const x0 = left + colW + 4;
+  const cw = W - M - colW - 4 - x0;
   out.push(text(x0, M + 4.6, '3 actions', 3.2, { font: 'bold', fill: WHITE, upper: true, track: 0.06 }));
   for (let i = 0; i < 3; i++) out.push(hex(x0 + cw - 2 - i * 4.6, M + 3.5, 1.95, `${id}-glow`));
   out.push(`<path d="M${n(x0)} ${n(M + 7.6)}H${n(x0 + cw)}" stroke="${HAIR}" stroke-width=".25"/>`);
   const textX = x0 + 7.4;
   actions(edition).forEach((a, i) => {
-    const y = M + 12.4 + i * 6.55;
+    const y = M + 12.2 + i * 6.2;
     for (let k = 0; k < a.cost; k++) out.push(hex(x0 + 1.4 + k * 2.9, y - 0.8, 1.3, `${id}-glow`));
     out.push(text(textX, y, a.name, 2.6, { font: 'bold', fill: WHITE }));
     out.push(line(textX, y + 2.9, a.text, 2.2, x0 + cw - textX, measure, { fill: MUTED }));
   });
-  out.push(`<path d="M${n(x0)} ${n(M + 44.4)}H${n(x0 + cw)}" stroke="${HAIR}" stroke-width=".25"/>`);
-  const ruleX = x0 + 15;
+  out.push(`<path d="M${n(x0)} ${n(M + 42.6)}H${n(x0 + cw)}" stroke="${HAIR}" stroke-width=".25"/>`);
+  const ruleX = x0 + 13;
   rules(edition).forEach(([label, s], i) => {
-    const y = M + 48.3 + i * 3.3;
+    const y = M + 46.4 + i * 3.1;
     out.push(text(x0, y, label, 2.1, { font: 'bold', fill: WHITE, track: 0.08, upper: true }));
     out.push(line(ruleX, y, s, 2.2, x0 + cw - ruleX, measure, { fill: MUTED }));
   });
 
   // --- The fleet: six die faces, strongest to fastest, and what each can do.
-  const fleetY = 67.4;
-  const size = 19;
-  const gap = (W - 2 * M - 6 * size) / 5;
-  out.push(`<path d="M${M} ${n(fleetY - 3.4)}H${W - M}" stroke="${HAIR}" stroke-width=".25"/>`);
+  const fleetY = 67.6;
+  const size = 17;
+  const gap = (W - M - left - 6 * size) / 5;
   for (const [i, s] of SHIPS.entries()) {
-    const cx = M + size / 2 + i * (size + gap);
+    const cx = left + size / 2 + i * (size + gap);
     const d = shipDie(`${id}-d${s.value}`, s.value, cx, fleetY + size / 2, size, HUE);
     defs.push(d.defs);
     out.push(d.body);
