@@ -1,7 +1,7 @@
 import { icon } from '../icons';
 import { ACTION_HUE, COMBAT_DICE, DOMINANCE, FONTS, INK, RESEARCH } from '../tokens';
 import { esc, hsl, n, type Fragment } from '../svg';
-import { f, line } from './core';
+import { f, line, rotate } from './core';
 import { glow } from './effects';
 import { poly } from './props';
 import { die, PIPS } from './ships';
@@ -94,7 +94,7 @@ export function combatDie(cx: number, cy: number, s: number, value: number, role
   const attack = role === 'attack';
   const { color, pip } = COMBAT_DICE[attack ? 'attacker' : 'defender'];
   const edge = attack ? pip : hsl(225, 30, 70);
-  const tr = o.rot ? ` transform="rotate(${n(o.rot)} ${n(cx)} ${n(cy)})"` : '';
+  const tr = rotate(o.rot, cx, cy);
   const face = (dy = 0) => `x="${n(cx - h)}" y="${n(cy - h + dy)}" width="${n(s)}" height="${n(s)}" rx="${n(s * 0.2)}"`;
   const pips = (r: number, fill: string) => PIPS[value].map(([x, y]) => `<circle cx="${n(cx - h + x * s)}" cy="${n(cy - h + y * s)}" r="${n(s * r)}" fill="${fill}"/>`).join('');
   if (o.ghost) return `<g${tr} opacity=".5"><rect ${face()} fill="none" stroke="${edge}" stroke-width=".25" stroke-dasharray=".8 .6"/>${pips(0.075, edge)}</g>`;
@@ -114,16 +114,17 @@ export function miniCard(id: string, cx: number, cy: number, w: number, hue: num
   const h = w * 1.4;
   const x = cx - w / 2;
   const y = cy - h / 2;
-  const tr = o.rot ? ` transform="rotate(${n(o.rot)} ${n(cx)} ${n(cy)})"` : '';
+  const tr = rotate(o.rot, cx, cy);
+  const frame = `x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}"`;
   const state = o.state ?? 'normal';
-  if (state === 'ghost') return f(`<g${tr}><rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="${n(w * 0.1)}" fill="${hsl(hue, 80, 60, 0.06)}" stroke="${hsl(hue, 80, 72)}" stroke-width=".25" stroke-dasharray=".9 .6"/></g>`);
+  if (state === 'ghost') return f(`<g${tr}><rect ${frame} rx="${n(w * 0.1)}" fill="${hsl(hue, 80, 60, 0.06)}" stroke="${hsl(hue, 80, 72)}" stroke-width=".25" stroke-dasharray=".9 .6"/></g>`);
   const paper = o.dark ? hsl(228, 45, 10) : hsl(225, 30, 93);
   const inner = o.dark ? hsl(hue, 70, 70) : hsl(hue, 70, 35);
   if (state === 'back') {
     return {
       defs: `<radialGradient id="${id}-b"><stop offset="0" stop-color="${hsl(hue, 80, 45)}"/><stop offset="1" stop-color="${hsl(228, 50, 10)}"/></radialGradient>`,
       body:
-        `<g${tr}><rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="${n(w * 0.1)}" fill="url(#${id}-b)" stroke="${hsl(hue, 80, 70)}" stroke-width=".25"/>` +
+        `<g${tr}><rect ${frame} rx="${n(w * 0.1)}" fill="url(#${id}-b)" stroke="${hsl(hue, 80, 70)}" stroke-width=".25"/>` +
         `<rect x="${n(x + w * 0.1)}" y="${n(y + w * 0.1)}" width="${n(w * 0.8)}" height="${n(h - w * 0.2)}" rx="${n(w * 0.06)}" fill="none" stroke="${hsl(hue, 80, 75)}" stroke-width=".15" opacity=".6"/>` +
         die(cx, cy, w * 0.2, 6, hue, { pips: false }) +
         `</g>`,
@@ -143,17 +144,17 @@ export function miniCard(id: string, cx: number, cy: number, w: number, hue: num
     defs:
       g.defs +
       `<linearGradient id="${id}-art" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="${hsl(hue + 30, 60, 16)}"/><stop offset=".7" stop-color="${hsl(hue, 70, 34)}"/><stop offset="1" stop-color="${hsl(hue, 60, 22)}"/></linearGradient>` +
-      `<clipPath id="${id}-face"><rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="${n(r)}"/></clipPath>`,
+      `<clipPath id="${id}-face"><rect ${frame} rx="${n(r)}"/></clipPath>`,
     body:
       (state === 'glow' ? g.body : '') +
       `<g${tr}>${halo}` +
       `<g clip-path="url(#${id}-face)">` +
-      `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" fill="${paper}"/>` +
+      `<rect ${frame} fill="${paper}"/>` +
       `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(artH)}" fill="url(#${id}-art)"/>` +
       stars +
       `<rect x="${n(x)}" y="${n(ey - w * 0.012)}" width="${n(w)}" height="${n(w * 0.024)}" fill="${hsl(hue, 80, 55)}"/>` +
       `</g>` +
-      `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="${n(r)}" fill="none" stroke="${hsl(hue, 80, 60)}" stroke-width=".2"/>` +
+      `<rect ${frame} rx="${n(r)}" fill="none" stroke="${hsl(hue, 80, 60)}" stroke-width=".2"/>` +
       `<circle cx="${n(cx)}" cy="${n(ey)}" r="${n(er)}" fill="${paper}" stroke="${hsl(hue, 80, 55)}" stroke-width="${n(w * 0.018)}"/>` +
       icon(o.icon ?? 'action', cx, ey, er * 1.2, hsl(hue, 80, o.dark ? 65 : 45), 2.6) +
       line(cx - w * 0.26, y + h * 0.69, cx + w * 0.26, y + h * 0.69, o.dark ? hsl(225, 60, 90) : hsl(228, 40, 14), w * 0.05) +

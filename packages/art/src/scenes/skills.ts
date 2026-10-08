@@ -1,8 +1,9 @@
 import { hsl, n } from '../svg';
+import { FONTS, INK } from '../tokens';
 import {
   arrowPath, at, beam, burst, chip, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard,
-  RESEARCH, route, scrapyard, shield, ship, shipOn, slash, space, sparkles, track, trackSlot, trails, world, wreck, missile,
-  badge, bolt, crest, dial, orbit, pillar, token,
+  RESEARCH, route, scrapyard, shield, ship, shipOn, forbidden, slash, space, sparkles, track, trackSlot, trails, world, wreck, missile,
+  badge, bolt, crest, dial, flask, orbit, pillar, token,
 } from '../kit';
 import type { Illustration } from '../illustrations';
 
@@ -93,7 +94,7 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         const x = sx + Math.cos(a) * 10.5;
         const y = sy + Math.sin(a) * 8.5;
         dial += v === 6 ? `<circle cx="${n(x)}" cy="${n(y)}" r="2.3" fill="${hsl(hue, 90, 60)}" stroke="#fff" stroke-width=".3"/>` : '';
-        dial += `<text x="${n(x)}" y="${n(y + 0.1)}" font-family="Orbitron, sans-serif" font-weight="900" font-size="2.6" fill="${v === 6 ? hsl(228, 45, 8) : hsl(hue, 80, 80)}" text-anchor="middle" dominant-baseline="central">${v}</text>`;
+        dial += `<text x="${n(x)}" y="${n(y + 0.1)}" font-family="${FONTS.title}" font-weight="900" font-size="2.6" fill="${v === 6 ? INK :hsl(hue, 80, 80)}" text-anchor="middle" dominant-baseline="central">${v}</text>`;
       }
       return [
         f(scrapyard(cx, cy + 2, 18, 9, hue)),
@@ -173,8 +174,8 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         world(`${id}-w`, r.fork('w'), nx + 2, ny + 2, 10, 7),
         f(arcs),
         ship(`${id}-s`, sx, sy, 4.4, 2, p1),
-        f(`<g opacity=".9">${icon('combat', ...at(box, 0.12, 0.26), 3.4, hsl(0, 50, 65))}${slash(...at(box, 0.12, 0.26), 2.8)}</g>`),
-        f(`<g opacity=".9">${icon('conquer', ...at(box, 0.24, 0.26), 3.4, hsl(0, 50, 65))}${slash(...at(box, 0.24, 0.26), 2.8)}</g>`),
+        f(forbidden('combat', ...at(box, 0.12, 0.26))),
+        f(forbidden('conquer', ...at(box, 0.24, 0.26))),
         f(chip(...at(box, 0.86, 0.7), 3.4, 'new')),
       ];
     },
@@ -377,21 +378,16 @@ export const SKILL_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, box }) => {
       const [cx, cy] = at(box, 0.46, 0.6);
       const s = 0.85;
-      const body = `M${n(cx - 3 * s)} ${n(cy - 14 * s)}V${n(cy - 6 * s)}L${n(cx - 10 * s)} ${n(cy + 8 * s)}Q${n(cx - 11 * s)} ${n(cy + 11 * s)} ${n(cx - 8 * s)} ${n(cy + 11 * s)}H${n(cx + 8 * s)}Q${n(cx + 11 * s)} ${n(cy + 11 * s)} ${n(cx + 10 * s)} ${n(cy + 8 * s)}L${n(cx + 3 * s)} ${n(cy - 6 * s)}V${n(cy - 14 * s)}`;
       const marks = [4, 5, 6].map((v, k) => {
         const y = cy + 6 * s - k * 4.5 * s - 1;
-        return line(cx + 3, y, cx + 7, y, hsl(RESEARCH, 100, 85), 0.3) + `<text x="${n(cx + 9)}" y="${n(y)}" font-family="Orbitron, sans-serif" font-weight="900" font-size="2.4" fill="${hsl(RESEARCH, 100, 85)}" dominant-baseline="central">${v}</text>`;
+        return line(cx + 3, y, cx + 7, y, hsl(RESEARCH, 100, 85), 0.3) + `<text x="${n(cx + 9)}" y="${n(y)}" font-family="${FONTS.title}" font-weight="900" font-size="2.4" fill="${hsl(RESEARCH, 100, 85)}" dominant-baseline="central">${v}</text>`;
       }).join('');
       let bubbles = '';
       const rr = r.fork('b');
       for (let i = 0; i < 9; i++) bubbles += `<circle cx="${n(cx + rr.range(-4, 4))}" cy="${n(cy - 14 * s - rr.range(1, 10))}" r="${n(rr.range(0.4, 1.1))}" fill="none" stroke="${hsl(RESEARCH, 100, 85)}" stroke-width=".25"/>`;
       return [
         glow(`${id}-g`, cx, cy + 4, 14, 12, RESEARCH, 0.5),
-        {
-          defs: `<clipPath id="${id}-cl"><path d="${body}Z"/></clipPath>`,
-          body: `<g clip-path="url(#${id}-cl)"><rect x="${n(cx - 15)}" y="${n(cy + 6 * s - 0.5)}" width="30" height="20" fill="${hsl(RESEARCH, 90, 55, 0.75)}"/></g>`,
-        },
-        f(`<path d="${body}" fill="none" stroke="${hsl(RESEARCH, 60, 88)}" stroke-width=".45" stroke-linejoin="round"/>` + marks + bubbles),
+        flask(`${id}-cl`, cx, cy, s, cy + 6 * s - 0.5, marks + bubbles),
         f(sparkles(r.fork('sp'), cx, cy - 18, 2, 6, 4, hsl(RESEARCH, 100, 88))),
       ];
     },

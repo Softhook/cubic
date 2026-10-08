@@ -1,5 +1,5 @@
 import { hsl, n, type Fragment } from '../svg';
-import { f } from './core';
+import { f, rotate } from './core';
 import { glow } from './effects';
 
 /** Pip positions on a unit face. */
@@ -35,7 +35,7 @@ export function die(cx: number, cy: number, s: number, value: number, hue: numbe
   const k = 0.866 * s;
   const h = s / 2;
   const base = `M${n(cx)} ${n(cy - s)}L${n(cx + k)} ${n(cy - h)}L${n(cx + k)} ${n(cy + h)}L${n(cx)} ${n(cy + s)}L${n(cx - k)} ${n(cy + h)}L${n(cx - k)} ${n(cy - h)}Z`;
-  const attrs = (o.opacity !== undefined ? ` opacity="${n(o.opacity)}"` : '') + (o.rotate ? ` transform="rotate(${n(o.rotate)} ${n(cx)} ${n(cy)})"` : '');
+  const attrs = (o.opacity !== undefined ? ` opacity="${n(o.opacity)}"` : '') + rotate(o.rotate, cx, cy);
   if (o.ghost) {
     const edges = `M${n(cx)} ${n(cy)}L${n(cx)} ${n(cy + s)}M${n(cx)} ${n(cy)}L${n(cx - k)} ${n(cy - h)}M${n(cx)} ${n(cy)}L${n(cx + k)} ${n(cy - h)}`;
     return (

@@ -1,6 +1,7 @@
 import type { Rng } from '../rng';
 import { hsl, n, type Fragment } from '../svg';
 import { MISSILE_HUE } from '../tokens';
+import { icon } from '../icons';
 import { f, line } from './core';
 
 /** A soft glow, e.g. under a ship or at an impact. */
@@ -104,6 +105,10 @@ export const missile = (x: number, y: number, angle: number, scale = 1, hue = MI
 /** A slash through something: disabled, forbidden. */
 export const slash = (cx: number, cy: number, r: number, colour = hsl(0, 95, 62)) =>
   `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="none" stroke="${colour}" stroke-width=".45"/>` + line(cx - r * 0.7, cy + r * 0.7, cx + r * 0.7, cy - r * 0.7, colour, 0.45);
+
+/** An icon struck through: what a card forbids ("no combat", "no conquering"). */
+export const forbidden = (name: string, cx: number, cy: number, opacity = 0.9) =>
+  `<g opacity="${n(opacity)}">${icon(name, cx, cy, 3.4, hsl(0, 50, 65))}${slash(cx, cy, 2.8)}</g>`;
 
 /** Little four-point sparkles around a point. */
 export function sparkles(r2: Rng, cx: number, cy: number, d0: number, d1: number, count: number, colour = '#fff'): string {

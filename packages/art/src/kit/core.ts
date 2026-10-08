@@ -26,3 +26,6 @@ export const f = (body: string, defs = ''): Fragment => ({ defs, body });
 
 export const line = (x1: number, y1: number, x2: number, y2: number, stroke: string, w: number, extra = '') =>
   `<line x1="${n(x1)}" y1="${n(y1)}" x2="${n(x2)}" y2="${n(y2)}" stroke="${stroke}" stroke-width="${n(w)}" stroke-linecap="round"${extra}/>`;
+
+/** A ` transform` attribute turning a piece `deg` degrees about (cx, cy); empty when it isn't turned. */
+export const rotate = (deg: number | undefined, cx: number, cy: number) => (deg ? ` transform="rotate(${n(deg)} ${n(cx)} ${n(cy)})"` : '');

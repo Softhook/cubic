@@ -49,7 +49,7 @@ interface Surface {
   extraDefs: string;
 }
 
-function surface(o: PlanetOptions, hue: number, rng: Rng, region: string): Surface {
+function surface(o: PlanetOptions, hue: number, rng: Rng): Surface {
   const s = o.r / 17;
   const f = (x: number) => n(x / s);
   const { id, cx, cy, r } = o;
@@ -142,14 +142,12 @@ function surface(o: PlanetOptions, hue: number, rng: Rng, region: string): Surfa
       }
       return {
         filter:
-          `<filter id="${id}-surface" ${region} color-interpolation-filters="sRGB">` +
           turbulence(`${f(0.012)} ${f(bandFreq)}`, 3, seed, 'bands') +
           turbulence(f(0.09), 2, rng.noiseSeed(), 'swirl') +
           `<feDisplacementMap in="bands" in2="swirl" scale="${n(rng.range(pale ? 2 : 3, pale ? 4 : 6) * s)}" xChannelSelector="R" yChannelSelector="G" result="d"/>` +
           greyFromRed('d') +
           stretch(pale ? 2 : 2.6) +
-          gradientMap(stops) +
-          `</filter>`,
+          gradientMap(stops),
         extra,
         extraDefs,
       };
@@ -174,12 +172,10 @@ function surface(o: PlanetOptions, hue: number, rng: Rng, region: string): Surfa
       }
       return {
         filter:
-          `<filter id="${id}-surface" ${region} color-interpolation-filters="sRGB">` +
           turbulence(f(0.11), 5, seed, 't') +
           greyFromRed('t') +
           stretch(2.2) +
-          gradientMap(stops) +
-          `</filter>`,
+          gradientMap(stops),
         extra,
         extraDefs:
           `<radialGradient id="${id}-crater" fx=".38" fy=".38">` +
@@ -212,15 +208,13 @@ function surface(o: PlanetOptions, hue: number, rng: Rng, region: string): Surfa
       }
       return {
         filter:
-          `<filter id="${id}-surface" ${region} color-interpolation-filters="sRGB">` +
           turbulence(f(rng.range(0.05, 0.09)), 4, seed, 't') +
           greyFromRed('t') +
           stretch(rng.range(1.8, 2.6)) +
           gradientMap(stops, '', 'base') +
           turbulence(f(rng.range(0.06, 0.12)), 3, rng.noiseSeed(), 'r', 'turbulence') +
           ridges(cracks, rng.range(7, 12), 'r', 'cracks') +
-          `<feComposite in="cracks" in2="base" operator="over"/>` +
-          `</filter>`,
+          `<feComposite in="cracks" in2="base" operator="over"/>`,
         extra: '',
         extraDefs: '',
       };
@@ -237,7 +231,6 @@ function surface(o: PlanetOptions, hue: number, rng: Rng, region: string): Surfa
       const magma: Hsl = [hue + rng.range(2, 26), 100, rng.range(50, 60)];
       return {
         filter:
-          `<filter id="${id}-surface" ${region} color-interpolation-filters="sRGB">` +
           turbulence(f(rng.range(0.07, 0.13)), 4, seed, 't') +
           greyFromRed('t') +
           stretch(2) +
@@ -245,8 +238,7 @@ function surface(o: PlanetOptions, hue: number, rng: Rng, region: string): Surfa
           turbulence(f(rng.range(0.04, 0.1)), 3, rng.noiseSeed(), 'r', 'turbulence') +
           ridges(magma, rng.range(2.8, 8), 'r', 'magma') +
           `<feGaussianBlur in="magma" stdDeviation="${n(rng.range(0.5, 1.2) * s)}" result="glow"/>` +
-          `<feMerge><feMergeNode in="crust"/><feMergeNode in="glow"/><feMergeNode in="magma"/></feMerge>` +
-          `</filter>`,
+          `<feMerge><feMergeNode in="crust"/><feMergeNode in="glow"/><feMergeNode in="magma"/></feMerge>`,
         extra: '',
         extraDefs: '',
       };
@@ -280,15 +272,13 @@ function surface(o: PlanetOptions, hue: number, rng: Rng, region: string): Surfa
       }
       return {
         filter:
-          `<filter id="${id}-surface" ${region} color-interpolation-filters="sRGB">` +
           turbulence(f(rng.range(0.04, 0.08)), 6, seed, 't') +
           greyFromRed('t') +
           stretch(rng.range(2, 2.8)) +
           gradientMap(stops, '', 'ground') +
           turbulence(`${f(0.05)} ${f(0.12)}`, 4, rng.noiseSeed(), 'c') +
           `<feColorMatrix in="c" result="clouds" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 ${n(-rng.range(1.9, 2.8))}"/>` +
-          `<feComposite in="clouds" in2="ground" operator="over"/>` +
-          `</filter>`,
+          `<feComposite in="clouds" in2="ground" operator="over"/>`,
         extra,
         extraDefs,
       };
@@ -305,7 +295,7 @@ export function planet(o: PlanetOptions): Fragment {
   const look = rng.fork('look');
   const hue = PLANET_FAMILY[o.number].hue + look.range(-8, 8);
   const region = `filterUnits="userSpaceOnUse" x="${n(cx - r)}" y="${n(cy - r)}" width="${n(2 * r)}" height="${n(2 * r)}"`;
-  const surf = surface(o, hue, rng.fork('surface'), region);
+  const surf = surface(o, hue, rng.fork('surface'));
   const tilt = look.range(-28, 28);
   const rings = o.rings ?? look.chance(o.type === 'gas' ? 0.45 : 0.12);
   const [bh, bs, bl] = SPACE_BASE;
@@ -314,7 +304,7 @@ export function planet(o: PlanetOptions): Fragment {
 
   let defs =
     `<clipPath id="${id}-disc"><circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}"/></clipPath>` +
-    surf.filter +
+    `<filter id="${id}-surface" ${region} color-interpolation-filters="sRGB">${surf.filter}</filter>` +
     surf.extraDefs +
     `<radialGradient id="${id}-halo"><stop offset=".55" stop-color="${hsl(bh, bs, bl)}" stop-opacity=".8"/><stop offset="1" stop-color="${hsl(bh, bs, bl)}" stop-opacity="0"/></radialGradient>` +
     `<radialGradient id="${id}-glow"><stop offset=".78" stop-color="${hsl(hue, 80, 65)}" stop-opacity=".4"/><stop offset="1" stop-color="${hsl(hue, 80, 65)}" stop-opacity="0"/></radialGradient>` +

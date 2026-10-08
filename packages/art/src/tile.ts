@@ -1,7 +1,7 @@
 import { rng } from './rng';
 import { planet } from './planet';
 import { starfield, type Box } from './starfield';
-import { CUBE_PAD, LABEL_TEXT, NUMBER_TEXT, PLANET_DIAMETER, PLANET_FAMILY, TILE, VOID_NEBULA_HUES, type PlanetType } from './tokens';
+import { CUBE_PAD, FONTS, LABEL_TEXT, NUMBER_TEXT, PLANET_DIAMETER, PLANET_FAMILY, TILE, VOID_NEBULA_HUES, type PlanetType } from './tokens';
 import { planetFlavour, type PlanetFlavour } from './flavour';
 import { dieCut, document, hex, hsl, join, n, type Fragment } from './svg';
 import type { TileSpec } from './tileset';
@@ -138,7 +138,7 @@ function markings(spec: TileSpec, spacesOnly = false): Fragment {
     // White with a dark outline reads on any planet surface and on the space around it. The outline
     // is a second copy underneath; the baseline sits 0.4 em below the centre so the digits are centred.
     const text = (paint: string) =>
-      `<text x="${n(MID + at.x)}" y="${n(MID + at.y + at.size * 0.4)}" ${paint} font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="${n(at.size)}" letter-spacing="${n(-0.03 * at.size)}" text-anchor="middle">${spec.number}</text>`;
+      `<text x="${n(MID + at.x)}" y="${n(MID + at.y + at.size * 0.4)}" ${paint} font-family="${FONTS.body}" font-weight="800" font-size="${n(at.size)}" letter-spacing="${n(-0.03 * at.size)}" text-anchor="middle">${spec.number}</text>`;
     body += text(`fill="none" stroke="${hex(hue, 50, 7)}" stroke-width="${n(at.size * 0.13)}" stroke-linejoin="round"`) + text(`fill="#fff"`);
   }
   return { defs: '', body };

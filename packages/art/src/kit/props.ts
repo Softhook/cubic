@@ -1,5 +1,5 @@
 import type { Rng } from '../rng';
-import { DOMINANCE, FONTS } from '../tokens';
+import { DOMINANCE, FONTS, RESEARCH } from '../tokens';
 import { hsl, n, type Fragment } from '../svg';
 import { icon } from '../icons';
 import { f, line } from './core';
@@ -16,6 +16,21 @@ export function pillar(id: string, x: number, top: number, y: number, hue: numbe
   return {
     defs: `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hsl(hue, 90, 75)}" stop-opacity="0"/><stop offset="1" stop-color="${hsl(hue, 90, 82)}" stop-opacity="${n(a)}"/></linearGradient>`,
     body: `<path d="M${n(x - w)} ${n(top)}H${n(x + w)}L${n(x + w * 1.6)} ${n(y)}H${n(x - w * 1.6)}Z" fill="url(#${id})"/>`,
+  };
+}
+
+/**
+ * A research flask at (cx, cy), scale `s` (1 is 22 mm tall), filled from its base up to `level` with
+ * research violet. `extra` is drawn over the glass (marks, bubbles).
+ */
+export function flask(id: string, cx: number, cy: number, s: number, level: number, extra = ''): Fragment {
+  const body = `M${n(cx - 3 * s)} ${n(cy - 14 * s)}V${n(cy - 6 * s)}L${n(cx - 10 * s)} ${n(cy + 8 * s)}Q${n(cx - 11 * s)} ${n(cy + 11 * s)} ${n(cx - 8 * s)} ${n(cy + 11 * s)}H${n(cx + 8 * s)}Q${n(cx + 11 * s)} ${n(cy + 11 * s)} ${n(cx + 10 * s)} ${n(cy + 8 * s)}L${n(cx + 3 * s)} ${n(cy - 6 * s)}V${n(cy - 14 * s)}`;
+  return {
+    defs: `<clipPath id="${id}"><path d="${body}Z"/></clipPath>`,
+    body:
+      `<g clip-path="url(#${id})"><rect x="${n(cx - 11 * s)}" y="${n(level)}" width="${n(22 * s)}" height="${n(cy + 11 * s - level)}" fill="${hsl(RESEARCH, 90, 55, 0.75)}"/></g>` +
+      `<path d="${body}" fill="none" stroke="${hsl(RESEARCH, 60, 88)}" stroke-width=".45" stroke-linejoin="round"/>` +
+      extra,
   };
 }
 

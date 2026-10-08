@@ -1,9 +1,9 @@
 import { hsl, n, type Fragment } from '../svg';
-import { ACTION_HUE } from '../tokens';
+import { ACTION_HUE, INK } from '../tokens';
 import {
   arrowPath, at, beam, burst, chip, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard,
-  panel, RESEARCH, scrapyard, shield, ship, shipOn, slash, space, sparkles, trails, world, worldOn, wreck,
-  crest, dial, motes, orbit, pillar,
+  panel, RESEARCH, scrapyard, shield, ship, shipOn, forbidden, space, sparkles, trails, world, worldOn, wreck,
+  crest, dial, flask, motes, orbit, pillar,
 } from '../kit';
 import type { Illustration } from '../illustrations';
 import { SKILL_SCENES } from './skills';
@@ -140,7 +140,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         ship(`${id}-s`, cx, cy, 5.2, 3, p1),
         f(cell(cx + 13, cy - 4, false) + cell(cx + 19, cy - 4, true)),
         glow(`${id}-g`, cx + 19, cy - 4, 5, 6, hue, 0.5),
-        f(icon('action', cx + 19, cy - 4, 3, hsl(228, 45, 8), 2.6)),
+        f(icon('action', cx + 19, cy - 4, 3, INK, 2.6)),
         f(sparkles(r.fork('sp'), cx + 19, cy - 4, 4, 7, 3)),
       ];
     },
@@ -155,7 +155,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         world(`${id}-w2`, r.fork('w2'), ...at(box, 0.6, 0.38), 5, 8),
         arrowPath(`${id}-p`, `M${n(pts[0][0])} ${n(pts[0][1])}C${n(pts[1][0] - 10)} ${n(pts[1][1])} ${n(pts[1][0] + 8)} ${n(pts[1][1] - 6)} ${n(pts[2][0] - 4)} ${n(pts[2][1])}S${n(pts[3][0] - 8)} ${n(pts[3][1] + 4)} ${n(pts[3][0] - 3)} ${n(pts[3][1] + 1)}`, hsl(hue, 90, 80), { w: 0.4, dash: true }),
         ship(`${id}-s`, ...pts[3], 3.6, 1, p1),
-        f(`<g opacity=".85">${icon('combat', ...at(box, 0.12, 0.26), 3.4, hsl(0, 50, 65))}${slash(...at(box, 0.12, 0.26), 2.8)}</g>`),
+        f(forbidden('combat', ...at(box, 0.12, 0.26), 0.85)),
         f(chip(...at(box, 0.84, 0.72), 3, 'new')),
       ];
     },
@@ -301,17 +301,11 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, box, p2 }) => {
       const [wx, wy] = at(box, 0.24, 0.42);
       const [fx, fy] = at(box, 0.66, 0.56);
-      const s = 0.75;
-      const body = `M${n(fx - 3 * s)} ${n(fy - 14 * s)}V${n(fy - 6 * s)}L${n(fx - 10 * s)} ${n(fy + 8 * s)}Q${n(fx - 11 * s)} ${n(fy + 11 * s)} ${n(fx - 8 * s)} ${n(fy + 11 * s)}H${n(fx + 8 * s)}Q${n(fx + 11 * s)} ${n(fy + 11 * s)} ${n(fx + 10 * s)} ${n(fy + 8 * s)}L${n(fx + 3 * s)} ${n(fy - 6 * s)}V${n(fy - 14 * s)}`;
       return [
         ...wreck(`${id}-w`, wx, wy, 7, p2, RESEARCH, r.fork('w')),
         f(die(wx, wy, 2.8, 4, p2, { opacity: 0.45, rotate: 20 })),
         f(motes(r.fork('m'), wx + 4, wy, fx, fy - 11, 14, RESEARCH, 2)),
-        {
-          defs: `<clipPath id="${id}-cl"><path d="${body}Z"/></clipPath>`,
-          body: `<g clip-path="url(#${id}-cl)"><rect x="${n(fx - 10)}" y="${n(fy)}" width="20" height="12" fill="${hsl(RESEARCH, 90, 55, 0.75)}"/></g>`,
-        },
-        f(`<path d="${body}" fill="none" stroke="${hsl(RESEARCH, 60, 88)}" stroke-width=".45" stroke-linejoin="round"/>`),
+        flask(`${id}-cl`, fx, fy, 0.75, fy),
         f(glyph(fx + 12, fy + 2, '+3', 4.4, hsl(RESEARCH, 100, 85))),
       ];
     },
