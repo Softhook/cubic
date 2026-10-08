@@ -191,6 +191,9 @@ input { font: inherit; }
   background: rgba(5, 8, 19, .35);
 }
 .market { grid-area: market; }
+/* Tablets on their side (an iPad's 1180px): a narrower sidebar, so the market's seven cards fit on one line
+   at a readable width beside it. */
+@media (max-width: 1280px) { .layout { grid-template-columns: minmax(0, 1fr) 300px; } }
 
 .panel {
   background: var(--panel);
@@ -676,7 +679,6 @@ input { font: inherit; }
   padding: 10px 16px 14px;
   border-top: 1px solid var(--line);
   background: linear-gradient(180deg, rgba(5,8,19,.2), rgba(5,8,19,.6));
-  overflow-x: auto;
   transition: background .3s;
 }
 .market.picking { background: linear-gradient(180deg, rgba(122,162,255,.08), rgba(5,8,19,.6)); box-shadow: inset 0 1px 0 var(--accent); }
@@ -686,19 +688,19 @@ input { font: inherit; }
   animation: glowcard 1.8s ease-in-out infinite .4s;
 }
 @keyframes glowcard { 50% { opacity: 1; } }
-/* The rows are flattened into the market so its cards shrink to fit the space beside the sidebar (the
-   Community Edition's seven cards overflow a laptop at full size); it only scrolls once they reach their
-   minimum. Gaps are 8px within a deck's row and 14px between rows. */
-.market-row { display: contents; }
-/* While you pick, every card must show: a deck's row that doesn't fit wraps onto a line of its own instead of
-   scrolling sideways (an iPad's Community market), and the board re-fits to the taller market. */
-.market.picking { flex-wrap: wrap; row-gap: 12px; overflow-x: visible; }
-.market.picking .market-row { display: flex; align-items: flex-end; gap: 8px; min-width: 0; }
+/* Every card shows without scrolling. The cards shrink to fit the space beside the sidebar (the Community
+   Edition's seven cards overflow a laptop at full size, and an iPad's at their minimum too), all alike: a row
+   starts at its minimum width (its deck and --cards cards of --card-min) and the rows share what's left by
+   their number of cards. Only a row that doesn't fit at its minimum wraps onto a line of its own, and the
+   board re-fits to the taller market. Gaps are 8px within a deck's row and 14px between rows. */
+.market { --card-min: 90px; flex-wrap: wrap; row-gap: 12px; }
+.market-row { display: flex; align-items: flex-end; gap: 8px; min-width: 0; --fixed: 56px; flex: var(--cards, 3) 1 calc(var(--fixed) + var(--cards, 3) * (var(--card-min) + 8px)); }
+.market-expansion { --fixed: -2px; }
 .market .deck, .market-expansion > .qcard, .market-refresh { margin-left: 6px; }
 .market-card.empty { opacity: .3; }
 /* 134px fits the longest names, e.g. Reorganisation, on one line; narrower cards scale their type down to a
    readable floor, and a name that still doesn't fit breaks at its soft hyphen (NAME_BREAKS in Card.tsx). */
-.market .qcard-sm { flex: 0 1 134px; width: auto; min-width: 96px; container-type: inline-size; }
+.market .qcard-sm { flex: 1 1 0; width: auto; min-width: var(--card-min); max-width: 134px; container-type: inline-size; }
 .market .qcard-sm .qcard-name { font-size: max(10.5px, min(12.5px, 11cqi)); overflow-wrap: anywhere; }
 .market .qcard-sm .qcard-text { font-size: max(9px, min(10px, 8.6cqi)); }
 .market .qcard-sm.long .qcard-text { font-size: max(8.8px, min(9.2px, 7.9cqi)); }
@@ -765,6 +767,20 @@ input { font: inherit; }
 .deck-tactic .deck-stack { background: repeating-linear-gradient(45deg, #2a1d47 0 6px, #1d1433 6px 12px); border: 1px solid rgba(185,140,255,.3); }
 .deck-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
 .deck-count { font-weight: 700; font-size: 13px; }
+
+/* Beside the sidebar (wider than the column layouts below), the market and the sidebar reach the screen's bottom
+   edge and keep their content above the home indicator (an iPad on its side), rather than leaving a bare strip
+   under them. Nothing scrolls around the map here either, so a touch on it is the zoom's straight away, without
+   Safari first waiting to see whether it starts a scroll. */
+@media (min-width: 981px) {
+  #root:has(> .app) { padding-bottom: 0; }
+  .sidebar { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+  .market { padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+  .market-toggle { margin-bottom: calc(-14px - env(safe-area-inset-bottom)); }
+  .market.collapsed { padding-bottom: env(safe-area-inset-bottom); }
+  .market.collapsed .market-toggle { margin-bottom: calc(0px - env(safe-area-inset-bottom)); }
+  .board-wrap { touch-action: none; }
+}
 
 /* ------------------------------------------------------------------ overlays */
 
@@ -1223,7 +1239,7 @@ input { font: inherit; }
 
   /* Open: each deck's cards as a list, one card a row with its whole text, so nothing is cut off and short
      cards stay short. A deck's name and count above its cards open the deck. */
-  .market .market-row, .market.picking .market-row { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+  .market .market-row { display: flex; flex: none; flex-direction: column; align-items: stretch; gap: 6px; }
   .market-row + .market-row, .market-expansion { margin-top: 4px; }
   .market .deck { flex-direction: row; justify-content: flex-start; align-items: baseline; gap: 8px; width: auto; height: auto; min-height: 22px; padding: 0 2px; margin: 0; }
   .market .deck-stack { display: none; }
@@ -1231,7 +1247,7 @@ input { font: inherit; }
   .market .deck-count::after { content: ' left \203A'; }
   .market .qcard-sm {
     display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'name top' 'text text'; gap: 3px 10px; align-items: baseline;
-    flex: none; width: auto; min-width: 0; height: auto; padding: 7px 10px 8px 13px; border-radius: 10px; container-type: normal; box-shadow: none;
+    flex: none; width: auto; min-width: 0; max-width: none; height: auto; padding: 7px 10px 8px 13px; border-radius: 10px; container-type: normal; box-shadow: none;
   }
   .market .qcard-sm::before { right: auto; bottom: 0; width: 4px; height: auto; }
   .market .qcard-top { grid-area: top; justify-content: flex-end; gap: 6px; }

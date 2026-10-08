@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { EXPANSION, card, cardKind, rulesOf, type DeckKind, type GameState } from '@quantum/engine';
 import type { Legal } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
@@ -59,7 +59,7 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
     });
 
   const row = (deck: DeckKind, cards: string[]) => (
-    <div className={`market-row market-${deck}`}>
+    <div className={`market-row market-${deck}`} style={{ '--cards': shown(deck, cards).length } as CSSProperties}>
       <button type="button" className={`deck deck-${deck}`} title={deckTitle(deck)} onClick={() => setViewing(deck)}>
         <div className="deck-stack" />
         <span className="deck-label">{decks[deck].name}</span>
@@ -171,7 +171,7 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
       {row('skill', m.skillRow)}
       {row('tactic', m.tacticRow)}
       {cardRules.expansionPile && (
-        <div className="market-row market-expansion">
+        <div className="market-row market-expansion" style={{ '--cards': 1 } as CSSProperties}>
           <CardView
             id={EXPANSION.id}
             size="sm"
