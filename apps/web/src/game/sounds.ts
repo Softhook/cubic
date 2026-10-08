@@ -43,10 +43,10 @@ export function soundsFor(prev: GameState, next: GameState, fresh: LogEntry[]): 
   const then = new Set<Sound>();
 
   // Cards played resolve first; their effects (ships, missiles) follow a beat later.
-  const played = fresh.filter((e) => e.event === 'cardPlayed');
-  for (const id of played.length ? next.market.tacticDiscard.slice(-played.length) : []) {
-    first.add(TACTIC_SOUNDS[effectOf(id)] ?? 'card');
-  }
+  // A played Tactic is the last on the discards, unless the same step shuffled them back into the deck.
+  const played = fresh.filter((e) => e.event === 'cardPlayed').length;
+  const ids = played ? next.market.tacticDiscard.slice(-played) : [];
+  for (let i = 0; i < played; i++) first.add((ids[i] && TACTIC_SOUNDS[effectOf(ids[i])]) || 'card');
   for (const e of fresh) {
     const s = e.event && EVENT_SOUNDS[e.event];
     if (s) first.add(s);
@@ -56,6 +56,9 @@ export function soundsFor(prev: GameState, next: GameState, fresh: LogEntry[]): 
 
   // Ships: flown, arrived, destroyed, swapped or renumbered.
   const before = new Map(prev.dice.map((d) => [d.id, d]));
+  // Reorganization takes the ships it re-rolls off the map: a recall, not a loss (its roll is the dice's own clatter).
+  const head = prev.pending[0];
+  const recalling = head?.kind === 'unveil' && !!head.reorganize;
   const moved: { from: Cell; to: Cell }[] = [];
   let destroyed = 0;
   for (const d of next.dice) {
@@ -65,8 +68,9 @@ export function soundsFor(prev: GameState, next: GameState, fresh: LogEntry[]): 
     const to = onBoard(d);
     if (from && to && !sameCell(from, to)) moved.push({ from, to });
     else if (!from && to) effects.add('warpIn');
-    else if (from && !to) destroyed++;
-    else if (d.value !== p.value && d.rolls === p.rolls) effects.add('retune');
+    else if (from && !to) {
+      if (!recalling) destroyed++;
+    } else if (d.value !== p.value && d.rolls === p.rolls) effects.add('retune');
   }
   const swapped = moved.some((a) => moved.some((b) => a !== b && sameCell(a.from, b.to) && sameCell(a.to, b.from)));
   if (swapped) effects.add('swap');

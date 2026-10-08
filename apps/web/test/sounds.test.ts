@@ -10,8 +10,10 @@ const start = () => arrange(quickStart(2, 1, 'basic'), { p0d0: [0, 0, 6], p0d1: 
 const die = (s: GameState, id: string) => s.dice.find((d) => d.id === id)!;
 const entry = (s: GameState, event: LogEntry['event']): LogEntry => ({ id: s.logCounter + 1, text: '', event });
 
-function step(change: (s: GameState) => LogEntry[] | void) {
+/** `change` turns the step's start (after `setup`) into its end. */
+function step(change: (s: GameState) => LogEntry[] | void, setup?: (s: GameState) => void) {
   const prev = start();
+  setup?.(prev);
   const next = structuredClone(prev);
   const fresh = change(next) ?? [];
   return soundsFor(prev, next, fresh);
@@ -37,6 +39,19 @@ describe('soundsFor', () => {
     });
     expect(first).toEqual(['explode']);
     expect(destroyed).toBe(2);
+  });
+
+  it('hears no explosion for a ship Reorganization takes off the map', () => {
+    const { first, destroyed } = step(
+      (s) => void (die(s, 'p0d0').loc = { zone: 'scrapyard' }),
+      (s) => void s.pending.unshift({ kind: 'unveil', player: 0, rerolled: [], reorganize: true }),
+    );
+    expect(first).toEqual([]);
+    expect(destroyed).toBe(0);
+  });
+
+  it('still hears a card played when its discards were shuffled back into the deck', () => {
+    expect(step((s) => [entry(s, 'cardPlayed')]).first).toEqual(['card']);
   });
 
   it('hears a ship renumbered without a roll', () => {

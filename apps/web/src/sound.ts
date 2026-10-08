@@ -65,6 +65,12 @@ function click(ac: AudioContext, at: number, gain: number, freq: number) {
   src.start(at);
 }
 
+/** A click `delay` seconds from now, as `tone` and `noise` take theirs. */
+function tick(gain: number, freq: number, delay = 0) {
+  const ac = audio();
+  if (ac) click(ac, ac.currentTime + delay, gain, freq);
+}
+
 /** Dice clattering on a table: clicks that slow down and soften. */
 export function playRoll(count = 1) {
   const ac = audio();
@@ -167,10 +173,6 @@ export const sfx = {
     tone(330, 0.09, 'square', 0.025, 0.08, 440);
     noise(0.04, 0.1, { delay: 0.17, type: 'bandpass', from: 3200, q: 2.5, rise: 0.003 });
   },
-  hit: () => {
-    tone(140, 0.35, 'triangle', 0.18, 0, 50);
-    tone(90, 0.25, 'sine', 0.12, 0.02);
-  },
   /** A ship destroyed. `count` > 1 stagger a few booms. */
   explode: (count = 1) => {
     for (let i = 0; i < Math.min(count, 3); i++) boom(i * 0.16, i ? 0.8 : 1);
@@ -234,9 +236,7 @@ export const sfx = {
   },
   /** Change of Heart: a deck being riffled. */
   shuffle: () => {
-    const ac = audio();
-    if (!ac) return;
-    for (let i = 0; i < 18; i++) click(ac, ac.currentTime + i * 0.025 + Math.random() * 0.01, 0.08, 3000 + Math.random() * 3000);
+    for (let i = 0; i < 18; i++) tick(0.08, 3000 + Math.random() * 3000, i * 0.025 + Math.random() * 0.01);
   },
   /** Momentum: a spin-up that keeps getting faster. */
   momentum: () => {
@@ -256,8 +256,7 @@ export const sfx = {
   powerDown: () => {
     tone(700, 0.8, 'sawtooth', 0.035, 0, 60);
     noise(0.8, 0.04, { type: 'lowpass', from: 4000, to: 200 });
-    const ac = audio();
-    if (ac) [0.15, 0.22, 0.4].forEach((d) => click(ac, ac.currentTime + d, 0.12, 900));
+    [0.15, 0.22, 0.4].forEach((d) => tick(0.12, 900, d));
   },
   /** Show of Force: a klaxon while a target is chosen. */
   alarm: () => [0, 0.22, 0.44, 0.66].forEach((d, i) => tone(i % 2 ? 440 : 560, 0.2, 'square', 0.025, d)),
