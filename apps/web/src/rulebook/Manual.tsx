@@ -521,7 +521,7 @@ export function Manual({ dark }: { dark?: boolean }) {
       </section>
 
       <footer className="mn-credits">
-        Cubic is a non-commercial reimagining of <i>Quantum</i> by Eric Zimmerman (FunForge, 2013) and its fan-made Community Edition. Quantum is a trademark
+        Cubic by Christian Nold is a non-commercial reimagining of <i>Quantum</i> by Eric Zimmerman (FunForge, 2013) and its fan-made Community Edition. Quantum is a trademark
         of its owners; this manual is an independent text.
       </footer>
     </article>

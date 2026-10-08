@@ -391,7 +391,7 @@ export function Lobby({
         <a href="#lab/cards">Art Lab: cards &amp; tiles</a>
       </nav>
       <p className="credits">
-        Cubic is a reimagining of Quantum by Eric Zimmerman and its fan-made Community Edition. Non-commercial fan project.
+        Cubic by Chrstian Nold is a reimagining of Quantum by Eric Zimmerman and its fan-made Community Edition. Non-commercial fan project.
       </p>
       <VersionLine />
     </div>

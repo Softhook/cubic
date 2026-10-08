@@ -59,6 +59,7 @@ export function Game({
           {game.board.mapName}
         </div>
         <div className="topbar-actions">
+          <button className="btn btn-ghost" onClick={onLobby}>Lobby</button>
           <button className="btn btn-ghost" onClick={onRules}>Rules</button>
           <FullscreenButton />
         </div>
