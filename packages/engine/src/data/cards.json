@@ -7,6 +7,7 @@
       "text": "All of your ships have +1 movement.",
       "category": "movement",
       "ce_status": "unchanged",
+      "classic": "o-agile",
       "count": 1
     },
     {
@@ -25,6 +26,7 @@
       "text": "At the start of your turn, you may gain 2 Research.",
       "category": "research",
       "ce_status": "revised",
+      "classic": "o-brilliant",
       "count": 1
     },
     {
@@ -34,7 +36,9 @@
       "text": "For Combat rolls, roll twice and use the lower number.",
       "category": "combat",
       "ce_status": "new",
-      "count": 1
+      "classic": "o-relentless",
+      "count": 1,
+      "notes": "Same idea as classic Relentless (a second go at your combat roll); the CE lists it as new."
     },
     {
       "id": "calculating",
@@ -43,7 +47,9 @@
       "text": "When a ship is placed in your scrapyard, choose its ship number.",
       "category": "ship",
       "ce_status": "new",
-      "count": 1
+      "classic": "o-clever",
+      "count": 1,
+      "notes": "Same idea as classic Clever (choose a ship number instead of rolling), whose name the CE gave to a new effect; the CE lists it as new."
     },
     {
       "id": "clever",
@@ -52,6 +58,7 @@
       "text": "After reconfiguring, you may increase or decrease the ship number by 1.",
       "category": "ship",
       "ce_status": "changed",
+      "classic": "o-clever",
       "count": 1
     },
     {
@@ -61,6 +68,7 @@
       "text": "Once per turn, you may lose 1 Dominance and gain 3 Research.",
       "category": "research",
       "ce_status": "revised",
+      "classic": "o-cerebral",
       "count": 1,
       "notes": "Renamed from Cerebral."
     },
@@ -71,6 +79,7 @@
       "text": "Once per turn, you may use one ship ability a second time.",
       "category": "action",
       "ce_status": "revised",
+      "classic": "o-cunning",
       "count": 1
     },
     {
@@ -80,6 +89,7 @@
       "text": "At the end of your turn, if you did not Attack or Conquer, gain an additional Move or Research action.",
       "category": "action",
       "ce_status": "changed",
+      "classic": "o-curious",
       "count": 1
     },
     {
@@ -89,6 +99,7 @@
       "text": "When you defend, before players roll combat dice, you can decide to destroy both ships (there is no dominance effect).",
       "category": "combat",
       "ce_status": "unchanged",
+      "classic": "o-dangerous",
       "count": 1
     },
     {
@@ -107,6 +118,7 @@
       "text": "-1 to your Combat rolls.",
       "category": "combat",
       "ce_status": "revised",
+      "classic": "o-ferocious",
       "count": 1
     },
     {
@@ -116,6 +128,7 @@
       "text": "Once per turn, you may increase or decrease one of your ship numbers by 1.",
       "category": "ship",
       "ce_status": "revised",
+      "classic": "o-flexible",
       "count": 1
     },
     {
@@ -125,6 +138,7 @@
       "text": "The first time you destroy an enemy ship each turn, gain 1 action.",
       "category": "action",
       "ce_status": "revised",
+      "classic": "o-warlike",
       "count": 1,
       "notes": "Renamed from Warlike."
     },
@@ -135,7 +149,9 @@
       "text": "Gain an additional Deploy action each turn.",
       "category": "action",
       "ce_status": "new",
-      "count": 1
+      "classic": "o-eager",
+      "count": 1,
+      "notes": "Same idea as classic Eager (free deploy); the CE lists it as new."
     },
     {
       "id": "ingenious",
@@ -144,6 +160,7 @@
       "text": "When Conquering, you may use spaces diagonal to a planet.",
       "category": "conquer",
       "ce_status": "revised",
+      "classic": "o-ingenious",
       "count": 1
     },
     {
@@ -153,6 +170,7 @@
       "text": "When Conquering, you may add or subtract 1 from the planet number.",
       "category": "conquer",
       "ce_status": "revised",
+      "classic": "o-intelligent",
       "count": 1
     },
     {
@@ -180,6 +198,7 @@
       "text": "The first time you destroy an enemy ship each turn, gain 3 Research.",
       "category": "research",
       "ce_status": "revised",
+      "classic": "o-plundering",
       "count": 1
     },
     {
@@ -189,6 +208,7 @@
       "text": "Your Research resets at 4, 5, or 6.",
       "category": "research",
       "ce_status": "revised",
+      "classic": "o-precocious",
       "count": 1
     },
     {
@@ -216,6 +236,7 @@
       "text": "Your Combat rolls are 3.",
       "category": "combat",
       "ce_status": "revised",
+      "classic": "o-rational",
       "count": 1
     },
     {
@@ -225,6 +246,7 @@
       "text": "The first time you destroy an enemy ship each turn, gain 1 additional Dominance.",
       "category": "combat",
       "ce_status": "changed",
+      "classic": "o-ravenous",
       "count": 1
     },
     {
@@ -234,6 +256,7 @@
       "text": "Once per turn, you may destroy one of your ships and gain 1 Action.",
       "category": "action",
       "ce_status": "revised",
+      "classic": "o-resourceful",
       "count": 1
     },
     {
@@ -243,6 +266,7 @@
       "text": "You cannot lose Dominance. You cannot gain Research.",
       "category": "conquer",
       "ce_status": "changed",
+      "classic": "o-righteous",
       "count": 1
     },
     {
@@ -261,6 +285,7 @@
       "text": "Your ships can move or move/attack more than once per turn (each move counts as an action).",
       "category": "movement",
       "ce_status": "unchanged",
+      "classic": "o-energetic",
       "count": 1,
       "notes": "Renamed from Energetic."
     },
@@ -271,6 +296,7 @@
       "text": "You may deploy to any space that is not adjacent to a ship.",
       "category": "ship",
       "ce_status": "revised",
+      "classic": "o-stealthy",
       "count": 1
     },
     {
@@ -280,6 +306,7 @@
       "text": "During combat, if your ship is adjacent to one or more friendly ships, -2 to your Combat roll.",
       "category": "combat",
       "ce_status": "revised",
+      "classic": "o-strategic",
       "count": 1
     },
     {
@@ -289,6 +316,7 @@
       "text": "When you are attacked, ties go in your favour and you destroy your attacker if you win (and gain dominance).",
       "category": "combat",
       "ce_status": "unchanged",
+      "classic": "o-stubborn",
       "count": 1
     },
     {
@@ -298,6 +326,7 @@
       "text": "Once per turn, you may move/attack 1 space with a ship even if it's already moved.",
       "category": "action",
       "ce_status": "revised",
+      "classic": "o-tactical",
       "count": 1
     },
     {
@@ -316,6 +345,7 @@
       "text": "You may use your Dominance number as an additional ship number when Conquering.",
       "category": "conquer",
       "ce_status": "playtesting",
+      "classic": "o-tyrannical",
       "count": 1
     }
   ],
@@ -327,6 +357,7 @@
       "text": "Immediately add 2 to dominance.",
       "category": "combat",
       "ce_status": "original",
+      "classic": "o-aggression",
       "count": 2,
       "notes": "Removed in stolksdorf CE (replaced by Show of Force); kept in the print edition."
     },
@@ -356,6 +387,7 @@
       "text": "Immediately take another turn, but with 2 actions instead of 3 (treat it as a brand-new turn).",
       "category": "action",
       "ce_status": "original",
+      "classic": "o-momentum",
       "count": 2
     },
     {
@@ -374,6 +406,7 @@
       "text": "Every opponent's next turn has 1 fewer action.",
       "category": "action",
       "ce_status": "changed",
+      "classic": "o-sabotage",
       "count": 2,
       "notes": "Original: all other players discard a Command card."
     },
@@ -393,6 +426,7 @@
       "text": "Destroy all your ships. You may reroll any ships in your scrapyard once. Deploy any number of ships.",
       "category": "ship",
       "ce_status": "new",
+      "classic": "o-reorganization",
       "count": 2,
       "notes": "Replaces Reorganisation."
     },
@@ -415,6 +449,7 @@
       "text": "Immediately roll a reserve ship and put it in orbital position on a planet with one of your cubes or in your scrapyard.",
       "category": "expansion",
       "ce_status": "changed",
+      "classic": "o-expansion",
       "notes": "Original: 8 cards shuffled into the Gambit deck. CE: separate deck sized to player count.",
       "count": 6
     }

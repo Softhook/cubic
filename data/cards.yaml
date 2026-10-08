@@ -8,6 +8,9 @@
 #   new         — added by the Community Edition
 #   playtesting — added/changed by the CE and still flagged as unbalanced
 #   unchanged   — original card kept as-is by the CE
+# `classic` (Community cards only) names the 2013 card this one redesigns: same name, a rename, a
+# replacement, or a card the CE lists as new that carries a 2013 card's idea under a new name (each
+# of those says so in its notes). Community cards without it are the CE's own designs.
 # `category` (every card) sets its accent colour and icon, in the game and in print: movement, action,
 # combat, conquer, research, ship, card or expansion. Tactics and Gambits take the category of their effect.
 # Rule interpretations for each card live in docs/OPEN-QUESTIONS.md.
@@ -19,6 +22,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "All of your ships have +1 movement."
     category: movement
     ce_status: unchanged
+    classic: o-agile
     count: 1
   - id: ambitious
     name: Ambitious
@@ -33,6 +37,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "At the start of your turn, you may gain 2 Research."
     category: research
     ce_status: revised
+    classic: o-brilliant
     count: 1
   - id: brutal
     name: Brutal
@@ -40,20 +45,25 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "For Combat rolls, roll twice and use the lower number."
     category: combat
     ce_status: new
+    classic: o-relentless
     count: 1
+    notes: "Same idea as classic Relentless (a second go at your combat roll); the CE lists it as new."
   - id: calculating
     name: Calculating
     subtitle: "Controlled scrapping"
     text: "When a ship is placed in your scrapyard, choose its ship number."
     category: ship
     ce_status: new
+    classic: o-clever
     count: 1
+    notes: "Same idea as classic Clever (choose a ship number instead of rolling), whose name the CE gave to a new effect; the CE lists it as new."
   - id: clever
     name: Clever
     subtitle: "Flexible modification"
     text: "After reconfiguring, you may increase or decrease the ship number by 1."
     category: ship
     ce_status: changed
+    classic: o-clever
     count: 1
   - id: composed
     name: Composed
@@ -61,6 +71,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "Once per turn, you may lose 1 Dominance and gain 3 Research."
     category: research
     ce_status: revised
+    classic: o-cerebral
     count: 1
     notes: "Renamed from Cerebral."
   - id: cunning
@@ -69,6 +80,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "Once per turn, you may use one ship ability a second time."
     category: action
     ce_status: revised
+    classic: o-cunning
     count: 1
   - id: curious
     name: Curious
@@ -76,6 +88,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "At the end of your turn, if you did not Attack or Conquer, gain an additional Move or Research action."
     category: action
     ce_status: changed
+    classic: o-curious
     count: 1
   - id: dangerous
     name: Dangerous
@@ -83,6 +96,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "When you defend, before players roll combat dice, you can decide to destroy both ships (there is no dominance effect)."
     category: combat
     ce_status: unchanged
+    classic: o-dangerous
     count: 1
   - id: devious
     name: Devious
@@ -97,6 +111,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "-1 to your Combat rolls."
     category: combat
     ce_status: revised
+    classic: o-ferocious
     count: 1
   - id: flexible
     name: Flexible
@@ -104,6 +119,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "Once per turn, you may increase or decrease one of your ship numbers by 1."
     category: ship
     ce_status: revised
+    classic: o-flexible
     count: 1
   - id: hostile
     name: Hostile
@@ -111,6 +127,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "The first time you destroy an enemy ship each turn, gain 1 action."
     category: action
     ce_status: revised
+    classic: o-warlike
     count: 1
     notes: "Renamed from Warlike."
   - id: industrious
@@ -119,13 +136,16 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "Gain an additional Deploy action each turn."
     category: action
     ce_status: new
+    classic: o-eager
     count: 1
+    notes: "Same idea as classic Eager (free deploy); the CE lists it as new."
   - id: ingenious
     name: Ingenious
     subtitle: "Conquer from corners"
     text: "When Conquering, you may use spaces diagonal to a planet."
     category: conquer
     ce_status: revised
+    classic: o-ingenious
     count: 1
   - id: intelligent
     name: Intelligent
@@ -133,6 +153,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "When Conquering, you may add or subtract 1 from the planet number."
     category: conquer
     ce_status: revised
+    classic: o-intelligent
     count: 1
   - id: patient
     name: Patient
@@ -154,6 +175,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "The first time you destroy an enemy ship each turn, gain 3 Research."
     category: research
     ce_status: revised
+    classic: o-plundering
     count: 1
   - id: precocious
     name: Precocious
@@ -161,6 +183,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "Your Research resets at 4, 5, or 6."
     category: research
     ce_status: revised
+    classic: o-precocious
     count: 1
   - id: prideful
     name: Prideful
@@ -182,6 +205,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "Your Combat rolls are 3."
     category: combat
     ce_status: revised
+    classic: o-rational
     count: 1
   - id: ravenous
     name: Ravenous
@@ -189,6 +213,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "The first time you destroy an enemy ship each turn, gain 1 additional Dominance."
     category: combat
     ce_status: changed
+    classic: o-ravenous
     count: 1
   - id: resourceful
     name: Resourceful
@@ -196,6 +221,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "Once per turn, you may destroy one of your ships and gain 1 Action."
     category: action
     ce_status: revised
+    classic: o-resourceful
     count: 1
   - id: righteous
     name: Righteous
@@ -203,6 +229,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "You cannot lose Dominance. You cannot gain Research."
     category: conquer
     ce_status: changed
+    classic: o-righteous
     count: 1
   - id: ruthless
     name: Ruthless
@@ -217,6 +244,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "Your ships can move or move/attack more than once per turn (each move counts as an action)."
     category: movement
     ce_status: unchanged
+    classic: o-energetic
     count: 1
     notes: "Renamed from Energetic."
   - id: stealthy
@@ -225,6 +253,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "You may deploy to any space that is not adjacent to a ship."
     category: ship
     ce_status: revised
+    classic: o-stealthy
     count: 1
   - id: strategic
     name: Strategic
@@ -232,6 +261,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "During combat, if your ship is adjacent to one or more friendly ships, -2 to your Combat roll."
     category: combat
     ce_status: revised
+    classic: o-strategic
     count: 1
   - id: stubborn
     name: Stubborn
@@ -239,6 +269,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "When you are attacked, ties go in your favour and you destroy your attacker if you win (and gain dominance)."
     category: combat
     ce_status: unchanged
+    classic: o-stubborn
     count: 1
   - id: tactical
     name: Tactical
@@ -246,6 +277,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "Once per turn, you may move/attack 1 space with a ship even if it's already moved."
     category: action
     ce_status: revised
+    classic: o-tactical
     count: 1
   - id: talented
     name: Talented
@@ -260,6 +292,7 @@ skills:  # deck: light, 1 copy each, permanent, max 3 per player (5 with Talente
     text: "You may use your Dominance number as an additional ship number when Conquering."
     category: conquer
     ce_status: playtesting
+    classic: o-tyrannical
     count: 1
 
 tactics:  # deck: dark, one-shot, resolve immediately then discard
@@ -269,6 +302,7 @@ tactics:  # deck: dark, one-shot, resolve immediately then discard
     text: "Immediately add 2 to dominance."
     category: combat
     ce_status: original
+    classic: o-aggression
     count: 2
     notes: "Removed in stolksdorf CE (replaced by Show of Force); kept in the print edition."
   - id: black-market
@@ -292,6 +326,7 @@ tactics:  # deck: dark, one-shot, resolve immediately then discard
     text: "Immediately take another turn, but with 2 actions instead of 3 (treat it as a brand-new turn)."
     category: action
     ce_status: original
+    classic: o-momentum
     count: 2
   - id: plan-ahead
     name: Plan Ahead
@@ -306,6 +341,7 @@ tactics:  # deck: dark, one-shot, resolve immediately then discard
     text: "Every opponent's next turn has 1 fewer action."
     category: action
     ce_status: changed
+    classic: o-sabotage
     count: 2
     notes: "Original: all other players discard a Command card."
   - id: show-of-force
@@ -321,6 +357,7 @@ tactics:  # deck: dark, one-shot, resolve immediately then discard
     text: "Destroy all your ships. You may reroll any ships in your scrapyard once. Deploy any number of ships."
     category: ship
     ce_status: new
+    classic: o-reorganization
     count: 2
     notes: "Replaces Reorganisation."
   - id: warp-gate
@@ -339,6 +376,7 @@ expansion:  # always face-up; use players + 1 cards per game
     text: "Immediately roll a reserve ship and put it in orbital position on a planet with one of your cubes or in your scrapyard."
     category: expansion
     ce_status: changed
+    classic: o-expansion
     notes: "Original: 8 cards shuffled into the Gambit deck. CE: separate deck sized to player count."
     count: 6
 

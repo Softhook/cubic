@@ -13,6 +13,8 @@ export interface CardDef {
   notes?: string;
   /** Rule implementation this card uses; defaults to its id. Shared when two editions' cards behave the same. */
   effect?: string;
+  /** Community cards: the 2013 card this one redesigns (data/cards.yaml). */
+  classic?: string;
 }
 
 export type GameMode = 'basic' | 'original' | 'community';

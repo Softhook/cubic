@@ -10,6 +10,9 @@ const cards = parse(readFileSync(new URL('data/cards.yaml', root), 'utf8'));
 for (const [deck, list] of Object.entries(cards)) {
   for (const c of list) if (!c.category) throw new Error(`data/cards.yaml: ${deck} card ${c.id} has no category`);
 }
+const classicIds = new Set([...cards.original_command, ...cards.original_gambit].map((c) => c.id));
+for (const c of [...cards.skills, ...cards.tactics, ...cards.expansion])
+  if (c.classic !== undefined && !classicIds.has(c.classic)) throw new Error(`data/cards.yaml: ${c.id} has classic ${c.classic}, not a 2013 card`);
 writeFileSync(new URL('cards.json', out), JSON.stringify(cards, null, 2) + '\n');
 
 const { maps } = parse(readFileSync(new URL('data/maps.yaml', root), 'utf8'));

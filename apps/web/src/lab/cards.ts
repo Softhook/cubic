@@ -1,5 +1,5 @@
 import { FONTS, type CardDeck, type CardFace, type Measure } from '@quantum/art';
-import { EXPANSION, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef } from '@quantum/engine';
+import { EXPANSION, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, card, effectOf, isOriginalCard, type CardDef } from '@quantum/engine';
 import { blobToDataUrl } from '../files';
 
 /** Every printed card, by deck, from the game's card data. */
@@ -29,6 +29,52 @@ export function faceOf(id: string): CardFace {
   const face = byId.get(id);
   if (!face) throw new Error(`Unknown card ${id}`);
   return face;
+}
+
+/** A Community card that redesigns a 2013 card (its `classic` in data/cards.yaml). */
+export interface Redesign {
+  classic: CardFace;
+  community: CardFace;
+  /** Plays by the same rules in this game (shared effect): only the wording changed. */
+  sameRules: boolean;
+  /** A new name for the same idea: Cerebral → Composed, Eager → Industrious. */
+  renamed: boolean;
+}
+
+const cardsOf = (edition: Deck['edition']) => DECKS.filter((d) => d.edition === edition).flatMap((d) => d.cards);
+
+/** The cards by lineage: Community redesigns of 2013 cards, and each edition's own designs. */
+export const LINEAGE = (() => {
+  const redesigns: Redesign[] = [];
+  const communityOnly: CardFace[] = [];
+  for (const c of cardsOf('community')) {
+    const from = card(c.id).classic;
+    if (!from) {
+      communityOnly.push(c);
+      continue;
+    }
+    const classic = faceOf(from);
+    redesigns.push({ classic, community: c, sameRules: effectOf(from) === effectOf(c.id), renamed: classic.name !== c.name });
+  }
+  const redesigned = new Set(redesigns.map((r) => r.classic.id));
+  return {
+    redesigns,
+    reworded: redesigns.filter((r) => !r.renamed && r.sameRules),
+    reworked: redesigns.filter((r) => !r.renamed && !r.sameRules),
+    renamed: redesigns.filter((r) => r.renamed),
+    communityOnly,
+    classicOnly: cardsOf('original').filter((c) => !redesigned.has(c.id)),
+  };
+})();
+
+/** Where a card stands between the editions: what it redesigns, or what redesigned it (a classic card can have two heirs). */
+export function lineageNote(face: CardFace): string {
+  const how = (r: Redesign) => `${r.renamed ? 'renamed, ' : ''}${r.sameRules ? 'same rules' : 'rules changed'}`;
+  const from = LINEAGE.redesigns.find((r) => r.community.id === face.id);
+  if (from) return `Redesign of classic ${from.classic.name} (${how(from)})`;
+  const heirs = LINEAGE.redesigns.filter((r) => r.classic.id === face.id);
+  if (heirs.length) return `Redesigned as ${heirs.map((r) => `${r.community.name} (${how(r)})`).join(' and ')}`;
+  return isOriginalCard(face.id) ? 'Classic only: not in the Community Edition' : 'Community original: new in the Community Edition';
 }
 
 /** The fonts cards are set in, as the page loads them (index.html). */

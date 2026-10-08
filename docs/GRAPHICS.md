@@ -242,7 +242,10 @@ tile.
 ### Cards
 
 Built: `cardSvg` / `cardBackSvg` in [`packages/art/src/card.ts`](../packages/art/src/card.ts), shown and
-exported in the Art Lab (`#lab/cards`).
+exported in the Art Lab (`#lab/cards`). The lab groups cards by lineage, from each Community card's
+`classic` in `data/cards.yaml`. It shows the redesigns side by side with the 2013 card they come from
+(reworded: same rules; reworked: rules changed; renamed: the same idea under a new name), then Community originals, Classic-only cards, and
+the backs. The print set is still picked by edition, so a print run is always a whole deck.
 
 - **Size**: poker, 63.5 × 88.9 mm, 3 mm bleed (69.5 × 94.9 mm), 3 mm corner, 3.5 mm safe zone.
 - **Two looks by deck**: permanent cards (CE Skills, Classic Commands) are light; one-shot cards
