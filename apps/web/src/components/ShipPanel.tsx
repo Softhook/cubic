@@ -49,8 +49,8 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
         ));
       case 6:
         return (
-          <button className="btn" disabled={!legal.can('freeReconfigure', mine)} onClick={() => dispatch({ type: 'freeReconfigure', die: d.id })}>
-            Free Reconfigure
+          <button className="btn" disabled={!legal.can('freeReconfigure', mine)} onClick={() => dispatch({ type: 'freeReconfigure', die: d.id })} aria-label="Free Reconfigure">
+            <Label long="Free Reconfigure" short="Reconfigure" />
           </button>
         );
     }
