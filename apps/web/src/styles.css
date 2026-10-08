@@ -931,6 +931,25 @@ input { font: inherit; }
   filter: drop-shadow(0 0 30px rgba(122,162,255,.35));
 }
 .tagline { color: #b9c3e6; max-width: 520px; margin: 10px auto 0; line-height: 1.55; }
+/* On iPhone and iPad, how to play full screen (Lobby.tsx). */
+.home-hint {
+  width: min(520px, 100%);
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 8px 12px 16px; border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 20%, var(--panel-solid));
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.home-hint-body { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.home-hint strong { font-size: 14px; font-weight: 700; color: var(--text); }
+.home-hint-steps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--accent); font-size: 13px; }
+.home-hint-step {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  background: rgba(5, 8, 19, .45); color: var(--text); font-weight: 600;
+}
+.home-hint-step svg { color: var(--accent); }
+.home-hint .icon-btn { flex: none; color: var(--text); }
+
 .lobby-card {
   width: min(520px, 100%);
   padding: 22px;
