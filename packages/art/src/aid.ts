@@ -49,7 +49,7 @@ export interface AidOptions {
 const SHIPS: { value: number; ability: string; text: string }[] = [
   { value: 1, ability: 'Free attack', text: 'Attack an adjacent enemy' },
   { value: 2, ability: 'Carry', text: 'Move with a ship aboard' },
-  { value: 3, ability: 'Switch', text: 'Swap with any of your ships' },
+  { value: 3, ability: 'Swap', text: 'Trade places with any of your ships' },
   { value: 4, ability: 'Change', text: 'Turn into a 3 or a 5' },
   { value: 5, ability: 'Diagonal', text: 'Move and attack diagonally' },
   { value: 6, ability: 'Free re-roll', text: 'Reconfigure for free' },
@@ -173,7 +173,7 @@ export function playerAidSvg(o: AidOptions = {}): string {
   // --- The turn, in the middle column.
   const x0 = M + colW + 5;
   const cw = W - 2 * x0;
-  out.push(text(x0, M + 4.6, 'Up to 3 actions', 3.2, { font: 'bold', fill: WHITE, upper: true, track: 0.06 }));
+  out.push(text(x0, M + 4.6, '3 actions', 3.2, { font: 'bold', fill: WHITE, upper: true, track: 0.06 }));
   for (let i = 0; i < 3; i++) out.push(chip(x0 + cw - 2 - i * 4.6, M + 3.5, 1.95, HUE));
   out.push(`<path d="M${n(x0)} ${n(M + 7.6)}H${n(x0 + cw)}" stroke="${HAIR}" stroke-width=".25"/>`);
   const textX = x0 + 7.4;

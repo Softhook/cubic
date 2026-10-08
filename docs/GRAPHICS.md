@@ -287,11 +287,11 @@ Lab (`#lab/aid`).
 - **Readable**: no text under `MIN_TEXT` (2 mm, about 6 pt); a test checks every size.
 - **Die pads**: dominance (left) and research (right), each the 24 mm of a tile's space pad, for the
   19 mm dice, with what moves the die and what happens at 6.
-- **The turn**: "Up to 3 actions" with three action chips, each action with its cost in chips and one
+- **The turn**: "3 actions" with three action chips, each action with its cost in chips and one
   line of rules; then combat, missiles (Community; Classic shows defeat instead) and cards.
 - **The fleet**: each ship on its die face (`shipDie` in
   [`kit/starships.ts`](../packages/art/src/kit/starships.ts)), with its power under it but no name:
-  flat two-tone starships lit from the left, the pips around them, and the centre pip of 1, 3 and 5
+  starships as white outlines with no fill, the pips around them, and the centre pip of 1, 3 and 5
   as the ship's core.
 
 ### Card art
