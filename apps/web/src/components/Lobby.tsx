@@ -3,7 +3,7 @@ import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
 import { defaultMap, MAPS, MODES, playerCounts, rulesOf, RULESETS, type GameMode, type GameState, type MapDef, type PlayerConfig } from '@quantum/engine';
 import { Die3D } from './Die3D';
 import { fullscreenOnPhone, useFullscreenOnFirstTap } from './FullscreenButton';
-import { forgetGame, onlineGames } from '../online/games';
+import { forgetFinishedGames, forgetGame, onlineGames } from '../online/games';
 import { defaultSeat } from '../game/seats';
 import { clearSavedGame, loadSavedGame } from '../game/savedGame';
 import { remember, stored } from '../storage';
@@ -105,7 +105,8 @@ function GameRow({
 
 /** The games to pick up: the one on this device, then the online ones (those waiting on you first). */
 function YourGames({ saved, onResume, onDiscard }: { saved: GameState | null; onResume: () => void; onDiscard: () => void }) {
-  const [games, setGames] = useState(onlineGames);
+  // Finished games are done with: they leave the list once the lobby shows again.
+  const [games, setGames] = useState(forgetFinishedGames);
   if (!saved && !games.length) return null;
   const online = [...games].sort((a, b) => Number(!!b.myTurn) - Number(!!a.myTurn));
   return (
