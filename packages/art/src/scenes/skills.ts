@@ -2,7 +2,7 @@ import { hsl, n } from '../svg';
 import {
   arrowPath, at, beam, burst, chip, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard,
   RESEARCH, route, scrapyard, shield, ship, shipOn, slash, space, sparkles, track, trackSlot, trails, world, wreck, missile,
-  badge, bolt, dial, flag, orbit, pillar, poly, } from '../kit';
+  badge, bolt, crest, dial, orbit, pillar, token, } from '../kit';
 import type { Illustration } from '../illustrations';
 
 /** Community Edition Skills: one scene per card, showing what the card does. */
@@ -27,17 +27,17 @@ export const SKILL_SCENES: Record<string, Illustration> = {
 
   ambitious: {
     caption: 'an extra action, paid for with a token on the card: two tokens down, the third is the last',
-    draw: ({ id, r, hue, box, p1 }) => {
+    draw: ({ id, r, hue, box }) => {
       const [cx, cy] = at(box, 0.34, 0.52);
       const card = miniCard(`${id}-c`, cx, cy, 15, hue, { rot: -8, icon: 'action' });
       const pads = [-4.4, 0, 4.4].map((dx) => [cx + dx * 0.99 + 0.8, cy + 8 - dx * 0.14] as const);
       let tokens = pads.map(([x, y]) => `<ellipse cx="${n(x)}" cy="${n(y)}" rx="2" ry="1.2" fill="none" stroke="${hsl(hue, 80, 45)}" stroke-width=".25" stroke-dasharray=".6 .4"/>`).join('');
-      tokens += cube(pads[0][0], pads[0][1] - 1.4, 1.6, p1) + cube(pads[1][0], pads[1][1] - 1.4, 1.6, p1);
+      tokens += token(pads[0][0], pads[0][1] - 0.3, 1.8) + token(pads[1][0], pads[1][1] - 0.3, 1.8);
       const [tx, ty] = at(box, 0.78, 0.42);
       return [
         card,
         f(tokens),
-        f(cube(pads[2][0] + 1, pads[2][1] - 7, 1.6, p1, { opacity: 0.85 })),
+        f(token(pads[2][0] + 1, pads[2][1] - 6, 1.8, { opacity: 0.85 })),
         arrowPath(`${id}-drop`, `M${n(pads[2][0] + 1)} ${n(pads[2][1] - 4.5)}V${n(pads[2][1] - 2.2)}`, hsl(hue, 90, 80), { w: 0.3 }),
         glow(`${id}-glow`, tx, ty, 11, 11, hue, 0.45),
         f(chip(tx, ty, 6, 'new') + glyph(tx, ty + 11, '+1', 4.4, hsl(hue, 100, 85))),
@@ -76,7 +76,7 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         ...beam(`${id}-b`, ax + 2, ay - 2, bx - 3, by + 1.5, hue, 1.2),
         ship(`${id}-e`, bx, by, 4.6, 3, p2),
         burst(`${id}-x`, bx - 3, by + 1.5, 6, hue, 8, r),
-        f(combatDie(dx - 5, dy + 1, 7, 5, hue, { rot: -14, struck: true }) + combatDie(dx + 5, dy + 3, 7, 2, hue, { rot: 9, glow: true })),
+        f(combatDie(dx - 5, dy + 1, 7, 5, 'attack', { rot: -14, struck: true }) + combatDie(dx + 5, dy + 3, 7, 2, 'attack', { rot: 9, glow: true })),
       ];
     },
   },
@@ -133,8 +133,8 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       return [
         glow(`${id}-a`, ax, ay, 10, 10, DOMINANCE, 0.4),
         glow(`${id}-b`, bx, by, 10, 10, RESEARCH, 0.55),
-        f(`<path d="${poly(ax, ay, 8)}" fill="${hsl(DOMINANCE, 60, 12, 0.7)}" stroke="${hsl(DOMINANCE, 90, 70)}" stroke-width=".35"/>` + icon('dominance', ax, ay, 7, hsl(DOMINANCE, 100, 75))),
-        f(`<path d="${poly(bx, by, 8)}" fill="${hsl(RESEARCH, 60, 14, 0.7)}" stroke="${hsl(RESEARCH, 90, 75)}" stroke-width=".35"/>` + icon('research', bx, by, 7, hsl(RESEARCH, 100, 85))),
+        f(crest(ax, ay, 7, true)),
+        f(`<circle cx="${n(bx)}" cy="${n(by)}" r="7.36" fill="${hsl(RESEARCH, 60, 14, 0.7)}" stroke="${hsl(RESEARCH, 90, 75)}" stroke-width=".35"/>` + icon('research', bx, by, 7, hsl(RESEARCH, 100, 85))),
         arrowPath(`${id}-t`, `M${n(ax + 9)} ${n(ay - 3)}Q${n((ax + bx) / 2)} ${n(ay - 10)} ${n(bx - 9)} ${n(by - 3)}`, hsl(RESEARCH, 90, 82), { w: 0.45 }),
         f(glyph(ax, ay + 12, '−1', 4.2, hsl(DOMINANCE, 100, 75)) + glyph(bx, by + 12, '+3', 4.2, hsl(RESEARCH, 100, 85))),
         f(sparkles(r.fork('sp'), bx, by, 9, 12, 3)),
@@ -345,7 +345,7 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         ship(`${id}-s`, cx - 21, cy, 4.2, 5, p1),
         f(glyph(cx - 13, cy, '+', 4.4, hsl(hue, 100, 85))),
         glow(`${id}-g`, cx - 4, cy, 6, 6, RESEARCH, 0.5),
-        f(`<path d="${poly(cx - 4, cy, 4.8)}" fill="${hsl(RESEARCH, 60, 16)}" stroke="${hsl(RESEARCH, 100, 80)}" stroke-width=".35"/>` + icon('research', cx - 4, cy - 1.2, 3.2, hsl(RESEARCH, 100, 85)) + glyph(cx - 4, cy + 2.2, '3', 2.4, hsl(RESEARCH, 100, 90))),
+        f(`<circle cx="${n(cx - 4)}" cy="${n(cy)}" r="4.42" fill="${hsl(RESEARCH, 60, 16)}" stroke="${hsl(RESEARCH, 100, 80)}" stroke-width=".35"/>` + icon('research', cx - 4, cy - 1.2, 3.2, hsl(RESEARCH, 100, 85)) + glyph(cx - 4, cy + 2.2, '3', 2.4, hsl(RESEARCH, 100, 90))),
         f(glyph(cx + 5, cy, '=', 4.4, hsl(hue, 100, 85))),
         world(`${id}-w`, r.fork('w'), cx + 17, cy, 7.5, 8),
         f(glyph(cx + 17, cy + 0.3, '8', 5.4, '#fff')),
@@ -422,7 +422,7 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         f(cube(px - 3, py - 9.5, 2.4, p1)),
         f(`<path d="M${n(px + 6)} ${n(py - 6)}Q${n(px + 16)} ${n(py - 22)} ${n(mx - 4)} ${n(my + 2)}" fill="none" stroke="${hsl(30, 100, 70)}" stroke-width=".5" stroke-dasharray=".6 .6" opacity=".8"/>`),
         glow(`${id}-g`, mx, my, 9, 6, hue, 0.5),
-        f(missile(mx, my, -25, hue, 2)),
+        f(missile(mx, my, -25, 2)),
         f(sparkles(r.fork('sp'), mx, my, 4, 8, 4)),
       ];
     },
@@ -435,20 +435,20 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       return [
         glow(`${id}-g`, cx, cy, 15, 15, hue, 0.35),
         f([0, 60, 120].map((rot, k) => `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(16 - k)}" ry="${n(5.5 - k * 0.5)}" fill="none" stroke="${hsl(hue, 90, 70 + k * 6)}" stroke-width=".35" transform="rotate(${rot} ${n(cx)} ${n(cy)})"/>`).join('')),
-        f(combatDie(cx, cy, 8, 3, hue)),
+        f(combatDie(cx, cy, 8, 3, 'attack')),
         f(sparkles(r.fork('sp'), cx, cy, 13, 17, 5)),
       ];
     },
   },
 
   ravenous: {
-    caption: 'a ship with a fresh kill mark painted on: two banners fly, not one',
+    caption: 'a ship with a fresh kill: two dominance crests rise, not one',
     draw: ({ id, r, box, p1, p2 }) => {
       const [sx, sy] = at(box, 0.36, 0.56);
       return [
         glow(`${id}-g`, sx, sy, 10, 9, DOMINANCE, 0.45),
         ship(`${id}-s`, sx, sy, 6, 6, p1),
-        f(flag(sx + 10, sy + 1, 0.9) + flag(sx + 17, sy + 3, 0.9)),
+        f(crest(sx + 11, sy - 6, 3.2) + crest(sx + 18.5, sy - 3, 3.2)),
         f(glyph(sx + 13.5, sy - 13, '+1+1', 3.6, hsl(DOMINANCE, 100, 80))),
         ...wreck(`${id}-w`, ...at(box, 0.86, 0.3), 5, p2, 24, r.fork('w')),
       ];
@@ -566,7 +566,7 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         ...beam(`${id}-bm`, g.x(0, 0) + 2, g.y(0, 0) - 4, ex - 2.5, ey + 1.5, hue, 1),
         ship(`${id}-e`, ex, ey, 3.6, 4, p2),
         burst(`${id}-x`, ex - 2.5, ey + 1.5, 5, hue, 7, r),
-        f(combatDie(...at(box, 0.82, 0.68), 6.4, 2, hue, { glow: true, rot: 8 }) + glyph(at(box, 0.82, 0.68)[0] - 9, at(box, 0.82, 0.68)[1], '−2', 4.4, hsl(hue, 100, 80))),
+        f(combatDie(...at(box, 0.82, 0.68), 6.4, 2, 'defence', { glow: true, rot: 8 }) + glyph(at(box, 0.82, 0.68)[0] - 9, at(box, 0.82, 0.68)[1], '−2', 4.4, hsl(hue, 100, 80))),
       ];
     },
   },
@@ -584,7 +584,7 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         ship(`${id}-d`, dx, dy, 4.8, 4, p1),
         shield(`${id}-sh`, dx, dy, 9, 9.5, p1),
         burst(`${id}-x`, dx - 7.5, dy + 2, 4, p1, 6, r),
-        f(combatDie(cx - 4, cy, 5.5, 4, hue, { rot: -8 }) + glyph(cx + 1, cy + 0.4, '=', 3.6, '#fff') + combatDie(cx + 6, cy, 5.5, 4, p1, { rot: 6, glow: true })),
+        f(combatDie(cx - 4, cy, 5.5, 4, 'attack', { rot: -8 }) + glyph(cx + 1, cy + 0.4, '=', 3.6, '#fff') + combatDie(cx + 6, cy, 5.5, 4, 'defence', { rot: 6, glow: true })),
       ];
     },
   },
@@ -626,7 +626,7 @@ export const SKILL_SCENES: Record<string, Illustration> = {
   },
 
   tyrannical: {
-    caption: 'the dominance track joins the orbit as one more ship number',
+    caption: 'the dominance crest joins the orbit as one more ship number',
     draw: ({ id, r, hue, box, p1 }) => {
       const [cx, cy] = at(box, 0.62, 0.62);
       const [tx, ty] = at(box, 0.06, 0.3);
@@ -638,7 +638,7 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         f(`<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="14" ry="8" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".25" stroke-dasharray="1 1.2"/>`),
         world(`${id}-w`, r.fork('w'), cx, cy, 8, 10),
         glow(`${id}-gg`, gx, gy, 6, 6, DOMINANCE, 0.5),
-        f(die(gx, gy, 3.6, 4, DOMINANCE, { opacity: 0.9 })),
+        f(crest(gx, gy, 3.6) + glyph(gx, gy + 6.4, '4', 3.6, hsl(DOMINANCE, 100, 78))),
         ship(`${id}-s1`, cx + 13, cy + 1, 3.6, 3, p1),
         ship(`${id}-s2`, cx + 2, cy - 11, 3.2, 3, p1),
       ];

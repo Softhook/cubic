@@ -266,8 +266,11 @@ exported in the Art Lab (`#lab/cards`).
   layouts, cubes are plain dice, the board is an isometric holo-grid the dice stand on, planets and
   skies come from the tile generators. Rules quantities are flat HUD readouts over the scene, always
   drawn the same way: research (violet) and dominance (red-orange) tracks, hexagonal action chips
-  (always yellow, `ACTION_HUE`, with the bolt, whatever the card's colour),
-  white combat dice, small cards. Numbers in the art are numerals only (`+1`, `×2`, `−2`), so the
+  (always yellow, `ACTION_HUE`, with the bolt, whatever the card's colour; a hexagon means an action and
+  nothing else, so other badges are round), the dominance crest (`crest`: the crown on a red-orange medallion; never a cube or die), a cube only
+  ever a player's cube on a planet (counters on cards are grey `token`s),
+  combat dice (black to attack, white to defend, as in the game; `COMBAT_DICE`), the red missile
+  (`missile`, also drawn in the manual and the game), small cards. Numbers in the art are numerals only (`+1`, `×2`, `−2`), so the
   art needs no translation.
 - **Text is SVG**, not HTML as first planned, so one file per card goes to PNG/ZIP and to print
   services. Wrapping uses widths measured with the page's fonts (canvas `measureText`), and the same

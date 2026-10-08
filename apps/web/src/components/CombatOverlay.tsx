@@ -4,6 +4,7 @@ import type { Dispatch } from '../game/useGame';
 import type { GameView } from '../game/view';
 import { PHONE, useMediaQuery } from '../game/useMediaQuery';
 import { COMBAT_DICE } from '../theme';
+import { MissileIcon } from './Card';
 import { Die3D } from './Die3D';
 
 const REVEAL_MS = 1250;
@@ -213,7 +214,7 @@ function MissileButton({
   return (
     <button className={`btn btn-missile ${flips ? 'decisive' : ''}`} onClick={() => dispatch(action)}>
       <span>
-        🚀 {named ? `${shooter.name}: ` : ''}
+        <MissileIcon /> {named ? `${shooter.name}: ` : ''}
         {fighting ? 'Fire missile — your roll becomes 1' : `Help ${game.players[side.player].name} — roll becomes 1`}
       </span>
       <small>{verdict}</small>

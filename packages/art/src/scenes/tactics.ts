@@ -1,8 +1,8 @@
 import { hsl, n } from '../svg';
 import {
-  arrowPath, at, burst, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard, missile,
+  arrowPath, at, burst, chips, combatDie, crest, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard, missile,
   panel, scrapyard, ship, shipOn, space, sparkles, trails, world, wreck,
-  orbit, poly, rings,
+  orbit, rings,
   crate,
 } from '../kit';
 import type { Illustration } from '../illustrations';
@@ -25,7 +25,7 @@ export const TACTIC_SCENES: Record<string, Illustration> = {
       return [
         glow(`${id}-g`, cx, cy, 16, 16, DOMINANCE, 0.5),
         f(rings(cx, cy, 9, 4, 4, DOMINANCE, 1, 0.6)),
-        f(`<path d="${poly(cx, cy, 7.5)}" fill="${hsl(DOMINANCE, 80, 45)}" stroke="${hsl(DOMINANCE, 100, 80)}" stroke-width=".4"/>` + icon('dominance', cx, cy, 7, '#fff', 2.4)),
+        f(crest(cx, cy, 7.5)),
         f(glyph(...at(box, 0.82, 0.42), '+2', 7, hsl(DOMINANCE, 100, 78))),
         f(sparkles(r.fork('sp'), cx, cy, 10, 20, 6)),
       ];
@@ -41,7 +41,7 @@ export const TACTIC_SCENES: Record<string, Illustration> = {
         glow(`${id}-g`, cx, cy - s / 2, 14, 7, 42, 0.6, 60),
         f(crate(cx, cy, s)),
         glow(`${id}-m`, cx + 2, cy - s - 6, 12, 8, hue, 0.4),
-        f(missile(cx + 9, cy - s - 9, -35, hue, 1.6) + missile(cx + 12, cy - s - 2, -15, hue, 1.6)),
+        f(missile(cx + 9, cy - s - 9, -35, 1.6) + missile(cx + 12, cy - s - 2, -15, 1.6)),
         f(glyph(...at(box, 0.84, 0.3), '+2', 6, hsl(hue, 100, 80))),
         f(sparkles(r.fork('sp'), cx + 6, cy - s - 4, 8, 13, 4)),
       ];
@@ -91,7 +91,7 @@ export const TACTIC_SCENES: Record<string, Illustration> = {
         shipOn(`${id}-s`, g, 0, 0, 3.6, 3, p1),
         ...targets.map(([i, j], k) => shipOn(`${id}-e${k}`, g, i, j, 3, [5, 2, 6][k], p2, { opacity: 0.75 })),
         ...targets.map(([i, j], k) => arrowPath(`${id}-a${k}`, `M${n(g.x(0, 0))} ${n(g.y(0, 0) - 3)}L${n(g.x(i, j) * 0.85 + g.x(0, 0) * 0.15)} ${n(g.y(i, j) * 0.85 + g.y(0, 0) * 0.15 - 3)}`, hsl(hue, 90, 80), { w: 0.35, dash: true })),
-        f(targets.map(([i, j]) => combatDie(g.x(i, j) + 4, g.y(i, j) - 7, 3.4, 1, hue, { glow: true })).join('')),
+        f(targets.map(([i, j]) => combatDie(g.x(i, j) + 4, g.y(i, j) - 7, 3.4, 1, 'attack', { glow: true })).join('')),
         f(sparkles(r.fork('sp'), cx, cy, 6, 18, 4)),
       ];
     },

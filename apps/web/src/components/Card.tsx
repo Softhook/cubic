@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { CARD_CATEGORIES, ICONS, cardPalette } from '@quantum/art';
+import { CARD_CATEGORIES, ICONS, cardPalette, missile } from '@quantum/art';
 import { card, cardKind, effectOf, isOriginalCard } from '@quantum/engine';
 
 /** A card category's icon (the same drawing as on the printed cards). */
@@ -22,6 +22,11 @@ export function ActionHex({ size = 20, off = false }: { size?: number; off?: boo
       <g transform="translate(5.4 5.4) scale(.55)" fill="none" stroke={off ? 'currentColor' : '#0b1020'} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICONS.action }} />
     </svg>
   );
+}
+
+/** A missile: the same drawing as on the cards, pointing up and to the right. */
+export function MissileIcon({ size = 16 }: { size?: number }) {
+  return <svg className="missile-icon" width={size} height={size} viewBox="-3.6 -3.6 7.2 7.2" aria-hidden dangerouslySetInnerHTML={{ __html: missile(0.5, -0.5, -45) }} />;
 }
 
 /** Sets `--cat` to a category's accent colour, as printed on a light (permanent) or dark (one-shot) card. */

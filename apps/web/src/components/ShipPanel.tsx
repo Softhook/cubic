@@ -50,7 +50,7 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
       case 6:
         return (
           <button className="btn" disabled={!legal.can('freeReconfigure', mine)} onClick={() => dispatch({ type: 'freeReconfigure', die: d.id })}>
-            Free re-roll
+            Free Reconfigure
           </button>
         );
     }

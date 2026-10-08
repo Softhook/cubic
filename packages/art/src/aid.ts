@@ -47,12 +47,12 @@ export interface AidOptions {
 // What it says
 
 const SHIPS: { value: number; ability: string; text: string }[] = [
-  { value: 1, ability: 'Free attack', text: 'Attack an adjacent enemy' },
-  { value: 2, ability: 'Carry', text: 'Move with a ship aboard' },
+  { value: 1, ability: 'Free Attack', text: 'Attack an adjacent enemy' },
+  { value: 2, ability: 'Carry & Move', text: 'Move with a ship aboard' },
   { value: 3, ability: 'Swap', text: 'Trade places with any of your ships' },
-  { value: 4, ability: 'Change', text: 'Turn into a 3 or a 5' },
-  { value: 5, ability: 'Diagonal', text: 'Move and attack diagonally' },
-  { value: 6, ability: 'Free re-roll', text: 'Reconfigure for free' },
+  { value: 4, ability: 'Change to 3 or 5', text: 'Turn the die, no roll' },
+  { value: 5, ability: 'Move Diagonally', text: 'Move and attack diagonally' },
+  { value: 6, ability: 'Free Reconfigure', text: 'Re-roll without an action' },
 ];
 
 const actions = (edition: AidEdition): { name: string; cost: number; text: string }[] => [

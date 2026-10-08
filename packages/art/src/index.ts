@@ -1,6 +1,6 @@
 export { hash, rng, type Rng } from './rng';
 export { dataUrl, document, type Fragment } from './svg';
-export { CARD_CATEGORIES, CUBE_PAD, FONTS, VOID_NEBULA_HUES, NUMBER_TEXT, PLANET_DIAMETER, PLANET_FAMILY, SPACE_BASE, TILE, type PlanetType } from './tokens';
+export { CARD_CATEGORIES, COMBAT_DICE, CUBE_PAD, PLAYER_HUES, FONTS, VOID_NEBULA_HUES, NUMBER_TEXT, PLANET_DIAMETER, PLANET_FAMILY, SPACE_BASE, TILE, type PlanetType } from './tokens';
 export { ICONS, icon } from './icons';
 export { starfield, type StarfieldOptions } from './starfield';
 export { planet, type PlanetOptions } from './planet';
@@ -8,3 +8,5 @@ export { cubePadCentres, editableTileSvg, numberPlacement, tileFlavour, tileSvg,
 export { SET_COUNTS, TILE_SET, assignTiles, tileSpec, type TileSpec } from './tileset';
 export { CARD, cardBackSvg, cardIllustration, cardPalette, cardSvg, deckInfo, estimateWidth, type CardDeck, type CardFace, type CardOptions, type CardPalette, type Measure } from './card';
 export { AID, MIN_TEXT, playerAidSvg, type AidEdition, type AidOptions } from './aid';
+export { missile } from './kit/effects';
+export { shipDie } from './kit/starships';

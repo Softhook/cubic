@@ -87,7 +87,7 @@ export const SHIP_NAMES: Record<number, string> = {
 export const SHIP_ABILITIES: Record<number, { name: string; text: string }> = {
   1: { name: 'Free Attack', text: 'Attack an adjacent enemy without using this ship’s move.' },
   2: { name: 'Carry & Move', text: 'Carry one of your nearby ships as part of a move, then drop it next to you.' },
-  3: { name: 'Switch Places', text: 'Swap places with any of your other ships.' },
+  3: { name: 'Swap', text: 'Swap places with any of your other ships.' },
   4: { name: 'Change to 3 or 5', text: 'Turn into a Destroyer or an Interceptor.' },
   5: { name: 'Move Diagonally', text: 'May move and attack diagonally (used automatically when needed).' },
   6: { name: 'Free Reconfigure', text: 'Re-roll this ship for free.' },

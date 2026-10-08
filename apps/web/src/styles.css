@@ -18,11 +18,11 @@
   --bad: #ff5d73;
   --gold: #ffc857;
   --violet: #b98cff;
-  /* Player tracks: Dominance red-orange, Research blue. */
+  /* Player tracks: Dominance red-orange, Research violet. */
   --dom-1: #ff8a5c;
   --dom-2: #ff5d73;
-  --res-1: #5cc8ff;
-  --res-2: #7aa2ff;
+  --res-1: hsl(256 90% 72%);
+  --res-2: hsl(268 90% 66%);
   --radius: 14px;
   --display: 'Orbitron', 'Inter', system-ui, sans-serif;
   --body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -569,6 +569,7 @@ input { font: inherit; }
 .track-dom .track-cells span.on { background: linear-gradient(90deg, var(--dom-1), var(--dom-2)); box-shadow: 0 0 6px color-mix(in srgb, var(--dom-2) 50%, transparent); }
 .track-res .track-cells span.on { background: linear-gradient(90deg, var(--res-1), var(--res-2)); box-shadow: 0 0 6px color-mix(in srgb, var(--res-2) 50%, transparent); }
 .player-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.missile-icon { display: inline-block; vertical-align: -0.2em; flex: none; }
 .stat { font-size: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.05); }
 .stat.muted { color: var(--muted); }
 .stat.gold { color: var(--gold); background: rgba(255,200,87,.1); }

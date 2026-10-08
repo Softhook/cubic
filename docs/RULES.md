@@ -148,7 +148,7 @@ The die's value is its ship type. Movement = value. In combat, lower totals win.
 |:-:|---|:-:|---|
 | **1** | Battlestation | 1 | **Free Attack** — move 1 space to attack an orthogonally adjacent enemy. Can give the battlestation a second attack in the same turn. |
 | **2** | Flagship | 2 | **Carry & Move** — pick up one of your ships from a surrounding space, use the flagship's move to travel at least 1 space, then drop the passenger in any surrounding space. The flagship can't attack during this move; the passenger may then move/attack normally. *(Part of a Move action.)* |
-| **3** | Destroyer | 3 | **Switch Places** — swap with any of your other ships on the map. |
+| **3** | Destroyer | 3 | **Swap** — swap with any of your other ships on the map. |
 | **4** | Frigate | 4 | **Change to 3 or 5** — turn into a Destroyer or Interceptor. |
 | **5** | Interceptor | 5 | **Move Diagonally** — may also move and attack diagonally. *(Part of a Move action.)* |
 | **6** | Scout | 6 | **Free Reconfigure** — re-roll until you get a new number. |

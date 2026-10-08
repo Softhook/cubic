@@ -3,7 +3,7 @@ import { ACTION_HUE } from '../tokens';
 import {
   arrowPath, at, beam, burst, chip, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard,
   panel, RESEARCH, scrapyard, shield, ship, shipOn, slash, space, sparkles, trails, world, worldOn, wreck,
-  dial, motes, orbit, pillar, poly, } from '../kit';
+  crest, dial, motes, orbit, pillar, } from '../kit';
 import type { Illustration } from '../illustrations';
 import { SKILL_SCENES } from './skills';
 import { TACTIC_SCENES } from './tactics';
@@ -122,7 +122,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         ship(`${id}-a`, ax, ay, 4, 6, p1),
         ship(`${id}-e`, ex, ey, 4, 2, p2),
         glow(`${id}-g`, dx, dy, 11, 11, 0, 0.35),
-        f(combatDie(dx, dy, 8, 1, p2, { rot: 14 })),
+        f(combatDie(dx, dy, 8, 1, 'defence', { rot: 14 })),
         loop(`${id}-l`, dx, dy, 9, hsl(0, 100, 70), 0.6, -100, 300),
         f(line(ax + 3, ay - 4, dx - 9, dy + 3, hsl(hue, 90, 70), 0.3, ' stroke-dasharray=".6 .9"')),
       ];
@@ -218,8 +218,8 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       return [
         shield(`${id}-sh`, cx, cy, 11, 11, p1),
         ship(`${id}-s`, cx, cy, 5.2, 6, p1),
-        f(`<path d="${poly(cx - 18, cy - 4, 5)}" fill="${hsl(hue, 70, 22)}" stroke="${hsl(hue, 100, 75)}" stroke-width=".35"/>` + icon('combat', cx - 18, cy - 5, 4, hsl(hue, 100, 82)) + glyph(cx - 18, cy + 4, '−1', 2.8, hsl(hue, 100, 85))),
-        f(`<path d="${poly(cx + 18, cy - 4, 5)}" fill="${hsl(hue, 70, 22)}" stroke="${hsl(hue, 100, 75)}" stroke-width=".35"/>` + icon('shield', cx + 18, cy - 5, 4, hsl(hue, 100, 82)) + glyph(cx + 18, cy + 4, '−1', 2.8, hsl(hue, 100, 85))),
+        f(`<circle cx="${n(cx - 18)}" cy="${n(cy - 4)}" r="4.6" fill="${hsl(hue, 70, 22)}" stroke="${hsl(hue, 100, 75)}" stroke-width=".35"/>` + icon('combat', cx - 18, cy - 5, 4, hsl(hue, 100, 82)) + glyph(cx - 18, cy + 4, '−1', 2.8, hsl(hue, 100, 85))),
+        f(`<circle cx="${n(cx + 18)}" cy="${n(cy - 4)}" r="4.6" fill="${hsl(hue, 70, 22)}" stroke="${hsl(hue, 100, 75)}" stroke-width=".35"/>` + icon('shield', cx + 18, cy - 5, 4, hsl(hue, 100, 82)) + glyph(cx + 18, cy + 4, '−1', 2.8, hsl(hue, 100, 85))),
         f(sparkles(r.fork('sp'), cx, cy, 11, 14, 3)),
       ];
     },
@@ -345,7 +345,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       const [cx, cy] = at(box, 0.5, 0.5);
       return [
         glow(`${id}-g`, cx, cy, 24, 10, hue, 0.3),
-        f([-14, 0, 14].map((dx, i) => combatDie(cx + dx, cy + (i === 1 ? -2 : 1), 8, 3, hue, { rot: [-8, 0, 8][i] })).join('')),
+        f([-14, 0, 14].map((dx, i) => combatDie(cx + dx, cy + (i === 1 ? -2 : 1), 8, 3, i === 1 ? 'defence' : 'attack', { rot: [-8, 0, 8][i] })).join('')),
         f(line(cx - 22, cy + 8, cx + 22, cy + 8, hsl(hue, 80, 70), 0.3, ' stroke-dasharray="1 1"')),
         ship(`${id}-s`, cx, cy + 13, 2.4, 3, p1, { opacity: 0.7 }),
       ];
@@ -407,7 +407,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
   },
 
   'o-righteous': {
-    caption: 'the dominance banner chained to an anchor: losses cannot drag it down',
+    caption: 'the dominance crest chained to an anchor: losses cannot drag it down',
     draw: ({ id, box }) => {
       const [cx, cy] = at(box, 0.5, 0.3);
       const ay = cy + 17;
@@ -415,7 +415,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       for (let k = 0; k < 6; k++) chain += `<ellipse cx="${n(cx)}" cy="${n(cy + 4 + k * 2.2)}" rx="${k % 2 ? 0.5 : 0.9}" ry="1.2" fill="none" stroke="${hsl(220, 15, 75)}" stroke-width=".35"/>`;
       return [
         glow(`${id}-g`, cx, cy, 8, 8, DOMINANCE, 0.5),
-        f(`<path d="${poly(cx, cy, 4.2)}" fill="${hsl(DOMINANCE, 80, 45)}" stroke="${hsl(DOMINANCE, 100, 80)}" stroke-width=".35"/>` + icon('dominance', cx, cy, 4.4, '#fff', 2.6)),
+        f(crest(cx, cy, 4.4)),
         f(chain),
         f(`<path d="M${n(cx)} ${n(ay - 3)}V${n(ay + 5)}M${n(cx - 3)} ${n(ay - 1)}H${n(cx + 3)}M${n(cx - 6)} ${n(ay + 1)}Q${n(cx - 5)} ${n(ay + 6)} ${n(cx)} ${n(ay + 6)}Q${n(cx + 5)} ${n(ay + 6)} ${n(cx + 6)} ${n(ay + 1)}" fill="none" stroke="${hsl(220, 20, 80)}" stroke-width=".8" stroke-linecap="round"/><circle cx="${n(cx)}" cy="${n(ay - 4.2)}" r="1.2" fill="none" stroke="${hsl(220, 20, 80)}" stroke-width=".5"/>`),
         f(glyph(cx + 14, cy, '−0', 4.4, hsl(DOMINANCE, 100, 78))),
@@ -430,7 +430,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       const spots = [[0.2, 0.42, 'ship', 2], [0.5, 0.6, 'combat', 4], [0.8, 0.4, 'ship', 5], [0.36, 0.78, 'combat', 1], [0.68, 0.82, 'ship', 3]] as const;
       spots.forEach(([fx, fy, kind, v], k) => {
         const [x, y] = at(box, fx, fy);
-        out.push(kind === 'ship' ? ship(`${id}-s${k}`, x, y, 3.4, v, p1) : f(combatDie(x, y, 5.5, v, hue, { rot: (k - 2) * 8 })));
+        out.push(kind === 'ship' ? ship(`${id}-s${k}`, x, y, 3.4, v, p1) : f(combatDie(x, y, 5.5, v, 'attack', { rot: (k - 2) * 8 })));
         out.push(loop(`${id}-l${k}`, x, y, kind === 'ship' ? 6.5 : 5.5, hsl(hue, 90, 80), 0.35, k * 40, 270));
       });
       return out;
@@ -507,7 +507,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
   },
 
   'o-tyrannical': {
-    caption: 'a drop of research poured from the flask hardens into a dominance cube',
+    caption: 'a drop of research poured from the flask hardens into a dominance crest',
     draw: ({ id, r, box }) => {
       const [fx, fy] = at(box, 0.28, 0.4);
       const [cx, cy] = at(box, 0.66, 0.66);
@@ -516,7 +516,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         f(`<g transform="rotate(50 ${n(fx)} ${n(fy)})">${icon('research', fx, fy, 10, hsl(RESEARCH, 100, 85), 2)}</g>`),
         f(`<path d="M${n(fx + 6)} ${n(fy + 1)}Q${n(cx - 4)} ${n(fy)} ${n(cx)} ${n(cy - 6)}" fill="none" stroke="${hsl(RESEARCH, 100, 75)}" stroke-width=".8" stroke-linecap="round"/>`),
         glow(`${id}-cg`, cx, cy, 7, 7, DOMINANCE, 0.6),
-        f(cube(cx, cy, 3, DOMINANCE)),
+        f(crest(cx, cy, 4.2)),
         f(glyph(fx, fy + 11, '−1', 3.8, hsl(RESEARCH, 100, 85)) + glyph(cx + 10, cy, '+1', 4, hsl(DOMINANCE, 100, 78))),
         f(sparkles(r.fork('sp'), cx, cy, 4, 7, 3)),
       ];
@@ -543,7 +543,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
   // Gambits
 
   'o-aggression': {
-    caption: 'a fleet raises its banner before a world: dominance +2',
+    caption: 'a fleet raises the dominance crest before a world: dominance +2',
     draw: ({ id, r, box, p1 }) => {
       const [px, py] = at(box, 0.7, 0.8);
       const fleet = [[0.14, 0.7], [0.3, 0.8], [0.26, 0.56]];
@@ -553,7 +553,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         world(`${id}-w`, r.fork('w'), px, py, 10, 10),
         ...fleet.map(([a, b], k) => ship(`${id}-s${k}`, ...at(box, a, b), 3.6, [5, 3, 6][k], p1)),
         glow(`${id}-fg`, fx + 5, fy - 7, 10, 9, DOMINANCE, 0.55),
-        f(line(fx, fy + 2, fx, fy - 13, hsl(DOMINANCE, 30, 90), 0.5) + `<path d="M${n(fx)} ${n(fy - 13)}h10l-2.5 3.5 2.5 3.5H${n(fx)}z" fill="${hsl(DOMINANCE, 95, 60)}" stroke="${hsl(DOMINANCE, 100, 82)}" stroke-width=".3"/>`),
+        f(crest(fx + 5, fy - 7, 5.5)),
         f(glyph(...at(box, 0.3, 0.34), '+2', 7, hsl(DOMINANCE, 100, 75))),
         f(sparkles(r.fork('sp'), fx + 5, fy - 7, 6, 12, 4)),
       ];

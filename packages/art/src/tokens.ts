@@ -73,6 +73,12 @@ export const INK = 'hsl(228 45% 8%)';
 export const RESEARCH = 268;
 export const DOMINANCE = 12;
 
+/** The two combat dice, in print and in the game: black for the attacker, white for the defender. */
+export const COMBAT_DICE = {
+  attacker: { color: '#1b1f2e', pip: '#ff6b81' },
+  defender: { color: '#f4f6fb', pip: '#14192b' },
+} as const;
+
 /** Player hues for ships in the card illustrations, close to the game's default player colours (Lobby). */
 export const PLAYER_HUES = [196, 328, 42, 140];
 
@@ -93,3 +99,6 @@ export const CARD_CATEGORIES: Record<string, { hue: number; label: string }> = {
 
 /** Actions are always a yellow hexagon with a bolt (the action category's hue), on every card and the player aid. */
 export const ACTION_HUE = CARD_CATEGORIES.action.hue;
+
+/** Missiles are always drawn in the combat red, whatever the card's colour. */
+export const MISSILE_HUE = CARD_CATEGORIES.combat.hue;

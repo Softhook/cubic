@@ -1,7 +1,7 @@
 import type { CSSProperties, MouseEvent, ReactNode } from 'react';
 import type { CardDeck } from '@quantum/art';
 import { MODES, SHIP_ABILITIES, SHIP_NAMES } from '@quantum/engine';
-import { ActionHex } from '../components/Card';
+import { ActionHex, MissileIcon } from '../components/Card';
 import { PLAYER_COLORS } from '../theme';
 import { Arrow, CubeIcon, Diagram, DieFace, DieIcon, Dots, Glow, Icon, Mark, Note, Path, PlanetIcon, PlanetMarks, Ship, Tile, cardBackUrl, reachable, type At } from './diagrams';
 
@@ -69,7 +69,7 @@ function Action({ name, cost, tag, wide, figure, children }: { name: string; cos
   );
 }
 
-/** A 1–6 track coloured like the player panel's (Dominance red, Research blue), with a reward at 6. */
+/** A 1–6 track coloured like the player panel's (Dominance red, Research violet), with a reward at 6. */
 function Track({ at, next, end, tone }: { at: number; next?: boolean; end: ReactNode; tone: 'dom' | 'res' }) {
   return (
     <div className={`mn-track mn-track-${tone}`}>
@@ -445,7 +445,7 @@ export function Manual({ dark }: { dark?: boolean }) {
           </div>
           <div className="mn-box">
             <h3>Missiles <Tag>Community</Tag></h3>
-            <p className="mn-missile"><Icon name="missile" size={24} /> <span>→</span> <DieIcon v={1} kind="atk" size={28} /> <span>or</span> <DieIcon v={1} kind="def" size={28} /></p>
+            <p className="mn-missile"><MissileIcon size={28} /> <span>→</span> <DieIcon v={1} kind="atk" size={28} /> <span>or</span> <DieIcon v={1} kind="def" size={28} /></p>
             <p>At any moment, any player may spend a missile to turn <b>any</b> combat roll into a 1. Everyone starts with one.</p>
           </div>
         </div>

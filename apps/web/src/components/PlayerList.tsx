@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { card, rulesOf, type GameState, type PlayerState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
-import { CategoryIcon, categoryStyle } from './Card';
+import { CategoryIcon, MissileIcon, categoryStyle } from './Card';
 import { CardViewer } from './CardViewer';
 import { Tip } from './InfoPop';
 import { Scrapyard, turnScrapOwner } from './Scrapyard';
@@ -53,7 +53,7 @@ function PlayerCard({ game, p, ctl, dispatch, showScrap }: { game: GameState; p:
         {rulesOf(game).cards && <Track label="Research" value={p.research} tone="res" />}
       </div>
       <div className="player-row">
-        {rulesOf(game).startingMissiles > 0 && <Tip className="stat" tip="Missiles: set any combat roll to 1">🚀 {p.missiles}</Tip>}
+        {rulesOf(game).startingMissiles > 0 && <Tip className="stat" tip="Missiles: set any combat roll to 1"><MissileIcon size={14} /> {p.missiles}</Tip>}
         {p.planAhead > 0 && <Tip className="stat gold" tip="Plan Ahead: all your combat rolls are 1">Plan Ahead</Tip>}
         {p.actionPenalty > 0 && <Tip className="stat bad" tip="Sabotaged: fewer actions next turn">−{p.actionPenalty} action</Tip>}
         {p.ambitionTokens > 0 && <Tip className="stat" tip="Ambition tokens">Ambition {p.ambitionTokens}/3</Tip>}

@@ -1,5 +1,5 @@
 import { icon } from '../icons';
-import { ACTION_HUE, DOMINANCE, FONTS, INK, RESEARCH } from '../tokens';
+import { ACTION_HUE, COMBAT_DICE, DOMINANCE, FONTS, INK, RESEARCH } from '../tokens';
 import { esc, hsl, n, type Fragment } from '../svg';
 import { f, line } from './core';
 import { glow } from './effects';
@@ -92,17 +92,19 @@ export function chips(cx: number, cy: number, r: number, states: Parameters<type
   return states.map((st, i) => chip(cx + (i - (states.length - 1) / 2) * step, cy, r, st)).join('');
 }
 
-/** A combat die: flat and white, to tell it from the ships. */
-export function combatDie(cx: number, cy: number, s: number, value: number, hue: number, o: { rot?: number; ghost?: boolean; struck?: boolean; glow?: boolean } = {}): string {
+/** A combat die, flat to tell it from the ships: black with red pips to attack, white to defend, as in the game. */
+export function combatDie(cx: number, cy: number, s: number, value: number, role: 'attack' | 'defence', o: { rot?: number; ghost?: boolean; struck?: boolean; glow?: boolean } = {}): string {
   const h = s / 2;
+  const { color, pip } = COMBAT_DICE[role === 'attack' ? 'attacker' : 'defender'];
+  const edge = role === 'attack' ? pip : hsl(225, 30, 70);
   const tr = o.rot ? ` transform="rotate(${n(o.rot)} ${n(cx)} ${n(cy)})"` : '';
-  if (o.ghost) return `<g${tr} opacity=".5"><rect x="${n(cx - h)}" y="${n(cy - h)}" width="${n(s)}" height="${n(s)}" rx="${n(s * 0.2)}" fill="none" stroke="${hsl(hue, 70, 80)}" stroke-width=".25" stroke-dasharray=".8 .6"/>${PIPS[value].map(([x, y]) => `<circle cx="${n(cx - h + x * s)}" cy="${n(cy - h + y * s)}" r="${n(s * 0.075)}" fill="${hsl(hue, 70, 80)}"/>`).join('')}</g>`;
-  const halo = o.glow ? `<rect x="${n(cx - h - 0.7)}" y="${n(cy - h - 0.7)}" width="${n(s + 1.4)}" height="${n(s + 1.4)}" rx="${n(s * 0.26)}" fill="none" stroke="${hsl(hue, 100, 70)}" stroke-width=".4"/>` : '';
+  if (o.ghost) return `<g${tr} opacity=".5"><rect x="${n(cx - h)}" y="${n(cy - h)}" width="${n(s)}" height="${n(s)}" rx="${n(s * 0.2)}" fill="none" stroke="${edge}" stroke-width=".25" stroke-dasharray=".8 .6"/>${PIPS[value].map(([x, y]) => `<circle cx="${n(cx - h + x * s)}" cy="${n(cy - h + y * s)}" r="${n(s * 0.075)}" fill="${edge}"/>`).join('')}</g>`;
+  const halo = o.glow ? `<rect x="${n(cx - h - 0.7)}" y="${n(cy - h - 0.7)}" width="${n(s + 1.4)}" height="${n(s + 1.4)}" rx="${n(s * 0.26)}" fill="none" stroke="${role === 'attack' ? pip : '#fff'}" stroke-width=".4"/>` : '';
   return (
     `<g${tr}>${halo}` +
-    `<rect x="${n(cx - h)}" y="${n(cy - h + s * 0.08)}" width="${n(s)}" height="${n(s)}" rx="${n(s * 0.2)}" fill="${hsl(228, 40, 30)}"/>` +
-    `<rect x="${n(cx - h)}" y="${n(cy - h)}" width="${n(s)}" height="${n(s)}" rx="${n(s * 0.2)}" fill="${hsl(220, 25, 96)}" stroke="${hsl(hue, 80, 55)}" stroke-width=".25"/>` +
-    PIPS[value].map(([x, y]) => `<circle cx="${n(cx - h + x * s)}" cy="${n(cy - h + y * s)}" r="${n(s * 0.08)}" fill="${hsl(hue, 70, 30)}"/>`).join('') +
+    `<rect x="${n(cx - h)}" y="${n(cy - h + s * 0.08)}" width="${n(s)}" height="${n(s)}" rx="${n(s * 0.2)}" fill="${hsl(228, 40, role === 'attack' ? 4 : 30)}"/>` +
+    `<rect x="${n(cx - h)}" y="${n(cy - h)}" width="${n(s)}" height="${n(s)}" rx="${n(s * 0.2)}" fill="${color}" stroke="${edge}" stroke-width=".25"/>` +
+    PIPS[value].map(([x, y]) => `<circle cx="${n(cx - h + x * s)}" cy="${n(cy - h + y * s)}" r="${n(s * 0.08)}" fill="${pip}"/>`).join('') +
     (o.struck ? line(cx - h * 1.1, cy + h * 1.1, cx + h * 1.1, cy - h * 1.1, hsl(0, 95, 62), 0.45) : '') +
     `</g>`
   );

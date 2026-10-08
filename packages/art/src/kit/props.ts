@@ -1,6 +1,7 @@
 import type { Rng } from '../rng';
 import { DOMINANCE, FONTS } from '../tokens';
 import { hsl, n, type Fragment } from '../svg';
+import { icon } from '../icons';
 import { f, line } from './core';
 import { glow } from './effects';
 
@@ -18,10 +19,17 @@ export function pillar(id: string, x: number, top: number, y: number, hue: numbe
   };
 }
 
-/** A banner on a pole, its foot at (x, y). */
-export const flag = (x: number, y: number, s: number, hue = DOMINANCE) =>
-  line(x, y, x, y - 11 * s, hsl(hue, 30, 90), 0.45 * s) +
-  `<path d="M${n(x)} ${n(y - 11 * s)}h${n(8 * s)}l${n(-2 * s)} ${n(3 * s)} ${n(2 * s)} ${n(3 * s)}H${n(x)}z" fill="${hsl(hue, 95, 60)}" stroke="${hsl(hue, 100, 82)}" stroke-width=".3"/>`;
+/** The dominance crest: the crown on a round medallion (round, so it is never read as an action hexagon). `dim` is the unlit one. */
+export const crest = (cx: number, cy: number, r: number, dim = false) =>
+  `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="${dim ? hsl(DOMINANCE, 60, 12, 0.7) : hsl(DOMINANCE, 80, 45)}" stroke="${hsl(DOMINANCE, dim ? 90 : 100, dim ? 70 : 80)}" stroke-width="${n(Math.max(0.3, r * 0.05))}"/>` +
+  icon('dominance', cx, cy, r * 1.1, dim ? hsl(DOMINANCE, 100, 75) : '#fff', 2.4);
+
+/** A plain round token, as put on a card to count uses: neutral grey, so it is never read as a player's cube. */
+export const token = (cx: number, cy: number, r: number, o: { opacity?: number } = {}) =>
+  `<g${o.opacity !== undefined ? ` opacity="${n(o.opacity)}"` : ''}>` +
+  `<ellipse cx="${n(cx)}" cy="${n(cy + r * 0.28)}" rx="${n(r)}" ry="${n(r * 0.6)}" fill="${hsl(220, 15, 42)}"/>` +
+  `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(r)}" ry="${n(r * 0.6)}" fill="${hsl(220, 15, 82)}" stroke="#fff" stroke-width=".15"/>` +
+  `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(r * 0.6)}" ry="${n(r * 0.36)}" fill="none" stroke="${hsl(220, 15, 60)}" stroke-width=".15"/></g>`;
 
 /** Concentric pulse rings. */
 export function rings(cx: number, cy: number, r0: number, step: number, count: number, hue: number, ry = 1, w = 0.5): string {

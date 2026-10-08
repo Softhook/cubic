@@ -93,12 +93,13 @@ export function shipDie(id: string, value: number, cx: number, cy: number, size:
     })
     .join('');
   // The Battlestation is round, so it is drawn smaller to sit inside the corners.
-  const ship = starship(value, cx, cy, size * (value === 1 ? 0.64 : 0.78));
+  // Line and blur scale with the die, so it looks the same at any size (0.18 mm on the aid's 17 mm dice).
+  const ship = starship(value, cx, cy, size * (value === 1 ? 0.64 : 0.78), size * 0.0106);
   const box = `x="${n(cx - size / 2)}" y="${n(cy - size / 2)}" width="${n(size)}" height="${n(size)}" rx="${n(size * 0.16)}"`;
   return {
     defs:
       // A slight blur, so the outline reads as a soft hologram rather than a hard line.
-      `<filter id="${id}-soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation=".12"/></filter>` +
+      `<filter id="${id}-soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${n(size * 0.007)}"/></filter>` +
       `<radialGradient id="${id}-glow"><stop offset="0" stop-color="${hsl(hue, 100, 65)}" stop-opacity=".6"/><stop offset="1" stop-color="${hsl(hue, 100, 65)}" stop-opacity="0"/></radialGradient>`,
     body: `<rect ${box} fill="${hsl(228, 32, 14)}"/><rect ${box} fill="none" stroke="${hsl(hue, 70, 60)}" stroke-width="${n(size * 0.012)}" stroke-opacity=".5"/>` + `<g filter="url(#${id}-soft)" opacity=".82">${ship}</g>` + pips,
   };

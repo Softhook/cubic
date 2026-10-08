@@ -16,7 +16,7 @@ export const ICONS: Record<string, string> = {
   missile: '<path d="M5 19l3-3M14 4l6 0 0 6-9 9-6-6z"/><path d="M8 13l3 3"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   shield: '<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/>',
-  dominance: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  dominance: '<path d="M3 7l4.5 5L12 5l4.5 7L21 7l-2 11H5z"/><path d="M5 21h14"/>',
 };
 
 export const icon = (name: string, cx: number, cy: number, size: number, colour: string, width = 2.2) =>

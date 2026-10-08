@@ -9,7 +9,9 @@ import {
   icon,
   numberPlacement,
   planet,
+  PLAYER_HUES,
   rng,
+  shipDie,
   tileSpec,
   tileSvg,
   type CardDeck,
@@ -173,7 +175,7 @@ export function PlanetIcon({ n, size = 34, slots, cubes = [] }: { n: number; siz
 /** A pip's position on a -1..1 square, from the 3D dice's 3 × 3 grid so the faces match the game's. */
 const pipAt = (i: number) => [(i % 3) - 1, Math.floor(i / 3) - 1] as const;
 
-/** A die face centred on (x, y), shaded like the game's 3D dice. */
+/** A die face centred on (x, y): a ship as on the player aid, or a combat die shaded like the game's 3D dice. */
 export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim }: {
   x: number;
   y: number;
@@ -184,6 +186,7 @@ export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim }: 
   dim?: boolean;
 }) {
   const defs = useContext(Defs);
+  const id = useSvgId();
   const h = size / 2;
   const step = size * 0.27;
   const { face, pip } = COLOURS[kind];
@@ -195,6 +198,11 @@ export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim }: 
         {PIPS[v].map(pipAt).map(([px, py], i) => <circle key={i} cx={x + px * step} cy={y + py * step} r={size * 0.075} />)}
       </g>
     );
+  if (kind === 'you' || kind === 'foe') {
+    // Ships are drawn as on the player aid: the starship on its die face, in the player's colour.
+    const ship = shipDie(id, v, x, y, size, PLAYER_HUES[kind === 'you' ? 0 : 1]);
+    return <g className={dim ? 'mn-die mn-dim' : 'mn-die'} dangerouslySetInnerHTML={{ __html: `<defs>${ship.defs}</defs>${ship.body}` }} />;
+  }
   return (
     <g className={dim ? 'mn-die mn-dim' : 'mn-die'}>
       {[face, `url(#${defs}-dk)`, `url(#${defs}-hi)`].map((fill) => (

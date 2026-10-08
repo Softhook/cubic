@@ -9,11 +9,8 @@ export const PLAYER_COLORS = ['#4cc9f0', '#f72585', '#ffb703', '#80ed99', '#b388
 /** Pips on a ship die. */
 export const PIP = '#0a0f1e';
 
-/** The two combat dice: black for the attacker, white for the defender. */
-export const COMBAT_DICE = {
-  attacker: { color: '#1b1f2e', pip: '#ff6b81' },
-  defender: { color: '#f4f6fb', pip: '#14192b' },
-} as const;
+/** The two combat dice: black for the attacker, white for the defender (shared with the card art). */
+export { COMBAT_DICE } from '@quantum/art';
 
 /** A free cube space on a planet. */
 export const CUBE_SLOT = { fill: 'rgba(0,0,0,.42)', stroke: 'rgba(255,255,255,.75)' } as const;

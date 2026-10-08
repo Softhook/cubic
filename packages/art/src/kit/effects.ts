@@ -1,5 +1,6 @@
 import type { Rng } from '../rng';
 import { hsl, n, type Fragment } from '../svg';
+import { MISSILE_HUE } from '../tokens';
 import { f, line } from './core';
 
 /** A soft glow, e.g. under a ship or at an impact. */
@@ -92,8 +93,8 @@ export function shield(id: string, cx: number, cy: number, rx: number, ry: numbe
   };
 }
 
-/** A missile, pointing along `angle` (degrees) from its nose at (x, y). */
-export const missile = (x: number, y: number, angle: number, hue: number, scale = 1) =>
+/** A missile, pointing along `angle` (degrees) from its nose at (x, y): the one drawing for missiles, on cards, in the manual and in the game. */
+export const missile = (x: number, y: number, angle: number, scale = 1, hue = MISSILE_HUE) =>
   `<g transform="translate(${n(x)} ${n(y)}) rotate(${n(angle)}) scale(${n(scale)})">` +
   `<path d="M-3.4 -.6L-4.6 -1.7H-3.6L-2.2 -.6ZM-3.4 .6L-4.6 1.7H-3.6L-2.2 .6Z" fill="${hsl(hue, 80, 50)}" stroke="${hsl(220, 30, 20)}" stroke-width=".15"/>` +
   `<path d="M3.6 0C3 -.5 2.2 -.6 1.6 -.6H-3.6V.6H1.6C2.2 .6 3 .5 3.6 0Z" fill="${hsl(220, 15, 88)}" stroke="${hsl(220, 30, 20)}" stroke-width=".18"/>` +
