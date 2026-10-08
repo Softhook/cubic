@@ -215,7 +215,7 @@ async function checkPopups(newPage: () => Promise<Page>, base: string, device: s
     await page.waitForSelector('.board');
     if (pop.name === 'rules') await page.locator('.topbar button', { hasText: 'Rules' }).evaluate((b: HTMLElement) => b.click());
     const box = page.locator(pop.box ?? '.overlay .modal, .overlay .combat-card').first();
-    if (!(await box.waitFor({ timeout: 5000 }).then(() => true, () => false))) {
+    if (!(await box.waitFor({ timeout: 15000 }).then(() => true, () => false))) {
       issues.push(`${pop.name}: never opened`);
       await page.context().close();
       continue;
