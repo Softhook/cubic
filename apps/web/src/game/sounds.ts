@@ -1,4 +1,4 @@
-import { effectOf, type Die, type GameState, type LogEntry, type LogEvent } from '@quantum/engine';
+import { effectOf, type Cell, type Die, type GameState, type LogEntry, type LogEvent } from '@quantum/engine';
 import { sfx } from '../sound';
 
 type Sound = keyof typeof sfx;
@@ -35,7 +35,7 @@ const TACTIC_SOUNDS: Record<string, Sound> = {
 };
 
 const onBoard = (d: Die) => (d.loc.zone === 'board' ? d.loc : null);
-const sameCell = (a: { r: number; c: number }, b: { r: number; c: number }) => a.r === b.r && a.c === b.c;
+const sameCell = (a: Cell, b: Cell) => a.r === b.r && a.c === b.c;
 
 /** What the step from `prev` to `next` sounds like. `fresh`: the log entries it added. */
 export function soundsFor(prev: GameState, next: GameState, fresh: LogEntry[]): { first: Sound[]; then: Sound[]; destroyed: number } {
@@ -51,11 +51,12 @@ export function soundsFor(prev: GameState, next: GameState, fresh: LogEntry[]): 
     const s = e.event && EVENT_SOUNDS[e.event];
     if (s) first.add(s);
   }
+  // With nothing to go first, the effects themselves do.
   const effects = first.size ? then : first;
 
   // Ships: flown, arrived, destroyed, swapped or renumbered.
   const before = new Map(prev.dice.map((d) => [d.id, d]));
-  const moved: { from: { r: number; c: number }; to: { r: number; c: number } }[] = [];
+  const moved: { from: Cell; to: Cell }[] = [];
   let destroyed = 0;
   for (const d of next.dice) {
     const p = before.get(d.id);

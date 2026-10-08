@@ -89,14 +89,21 @@ export const Die3D = memo(function Die3D({
   const flatten = !tumbleOnMount && !APPLE_TOUCH;
   const [moving, setMoving] = useState(!flatten);
   const settle = useRef<number>();
+  const clatter = useRef<number>();
   const frame = useRef<number>();
+  /** Drop a move still waiting on a new cube. */
+  const cancelFrame = () => {
+    if (frame.current) cancelAnimationFrame(frame.current);
+    frame.current = undefined;
+  };
   useEffect(() => () => {
     clearTimeout(settle.current);
-    if (frame.current) cancelAnimationFrame(frame.current);
+    clearTimeout(clatter.current);
+    cancelFrame();
   }, []);
   /** Run `go` once the cube just built has been on screen for a frame. */
   const afterPaint = (go: () => void) => {
-    if (frame.current) cancelAnimationFrame(frame.current);
+    cancelFrame();
     frame.current = requestAnimationFrame(() => {
       frame.current = requestAnimationFrame(() => {
         frame.current = undefined;
@@ -134,22 +141,20 @@ export const Die3D = memo(function Die3D({
       ],
       { duration: 1000, delay: delay * 1000, easing: 'ease-out' },
     );
-    if (sound) window.setTimeout(() => playRoll(), delay * 1000);
+    if (sound) clatter.current = window.setTimeout(() => playRoll(), delay * 1000);
   };
 
   useLayoutEffect(() => {
     const el = cube.current;
     if (!mounted.current) {
       mounted.current = true;
-      if (tumbleOnMount && el) {
-        // Start from a random orientation without transition, then tumble to the value.
-        el.style.transition = 'none';
+      if (!el) return;
+      el.style.transition = 'none';
+      if (tumbleOnMount) {
+        // Start from a random orientation, then tumble to the value.
         el.style.transform = `rotateX(${Math.random() * 360}deg) rotateY(${Math.random() * 360}deg)`;
         afterPaint(tumble);
-      } else if (el) {
-        el.style.transition = 'none';
-        el.style.transform = rotation(value);
-      }
+      } else el.style.transform = rotation(value);
       return;
     }
     const rolled = rolls !== lastRolls.current;
@@ -168,8 +173,7 @@ export const Die3D = memo(function Die3D({
     if (built) afterPaint(go);
     else {
       // A move still waiting on a new cube is overtaken by this one.
-      if (frame.current) cancelAnimationFrame(frame.current);
-      frame.current = undefined;
+      cancelFrame();
       go();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

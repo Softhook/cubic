@@ -1208,7 +1208,7 @@ input { font: inherit; }
   .stage { --map-h: calc((100vw - 8px) * var(--map-ratio, 1) + 8px); height: min(var(--map-h), var(--below-topbar)); padding: 4px; }
   .fleet-roll { gap: 18px; }
   /* Collapsed: wrap onto more lines instead of scrolling sideways, so every card name shows. */
-  .market.collapsed { height: auto; min-height: 40px; flex-wrap: wrap; row-gap: 6px; column-gap: 10px; padding: 6px 8px; overflow: visible; }
+  .market.collapsed { row-gap: 6px; column-gap: 10px; padding: 6px 8px; }
   .market.collapsed .market-toggle { align-self: stretch; min-height: 32px; margin: 0 0 0 -8px; }
   .market-strip-group, .market-strip-line { flex: 0 1 auto; flex-wrap: wrap; row-gap: 5px; min-width: 0; }
   .market.collapsed > .market-strip-group, .market-strip-line { min-height: 0; }
@@ -1260,7 +1260,7 @@ input { font: inherit; }
 
   /* Collapsed: a row of three cards per deck, in equal columns (white skills, dark tactics, so no deck names). A long name wraps onto a second line rather than being cut short. The Expansion pile shows
      in the open market. */
-  .market.collapsed { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 6px; height: auto; padding: 0 10px 10px; }
+  .market.collapsed { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 6px; padding: 0 10px 10px; }
   .market.collapsed .market-toggle { grid-column: 1 / -1; }
   .market.collapsed .market-strip-group, .market.collapsed .market-strip-line { display: contents; }
   .market.collapsed .market-strip-deck { display: none; }

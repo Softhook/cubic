@@ -41,8 +41,11 @@ export function forgetGame(secret: string): boolean {
 
 /** Takes finished games off the list (and their events out of storage); returns what's left. */
 export function forgetFinishedGames(): OnlineGameEntry[] {
-  for (const g of onlineGames()) if (g.over) forgetGame(g.secret);
-  return onlineGames();
+  const list = onlineGames();
+  const left = list.filter((g) => !g.over);
+  if (left.length === list.length) return list;
+  for (const g of list) if (g.over) forget(eventsKey(g.tag));
+  return saveOnlineGames(left) ? left : onlineGames();
 }
 
 // Storage full (the game on this device can't be saved, say): finished games go first, the least

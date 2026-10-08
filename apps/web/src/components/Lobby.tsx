@@ -7,7 +7,7 @@ import { forgetFinishedGames, forgetGame, onlineGames } from '../online/games';
 import { defaultSeat } from '../game/seats';
 import { clearSavedGame, loadSavedGame } from '../game/savedGame';
 import { remember, stored } from '../storage';
-import { APPLE_TOUCH } from '../platform';
+import { APPLE_TOUCH, FROM_HOME_SCREEN } from '../platform';
 import { BUILD, checkForUpdate, useUpdateStatus, type UpdateStatus } from '../pwa';
 import { PLAYER_COLORS } from '../theme';
 
@@ -392,23 +392,19 @@ export function Lobby({
         <a href="#lab/cards">Art Lab: cards &amp; tiles</a>
       </nav>
       <p className="credits">
-        Cubic by Chrstian Nold is a reimagining of Quantum by Eric Zimmerman and its fan-made Community Edition. Non-commercial fan project.
+        Cubic by Christian Nold is a reimagining of Quantum by Eric Zimmerman and its fan-made Community Edition. Non-commercial fan project.
       </p>
       <VersionLine />
     </div>
   );
 }
 
-/** Opened from the Home Screen (iOS sets `navigator.standalone`) rather than in the browser. */
-const fromHomeScreen = () =>
-  (navigator as Navigator & { standalone?: boolean }).standalone === true || matchMedia('(display-mode: standalone)').matches;
-
 /**
  * iPhone and iPad have no full screen for a page (FullscreenButton) and no install prompt, so the lobby says how
  * to get the next best thing: added to the Home Screen, the game opens without Safari's bars. Until dismissed.
  */
 function HomeScreenHint() {
-  const [shown, setShown] = useState(() => APPLE_TOUCH && !fromHomeScreen() && !stored('quantum.homeScreenHint'));
+  const [shown, setShown] = useState(() => APPLE_TOUCH && !FROM_HOME_SCREEN && !stored('quantum.homeScreenHint'));
   if (!shown) return null;
   const dismiss = () => {
     remember('quantum.homeScreenHint', 'dismissed');

@@ -58,25 +58,28 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
       return [{ id, index, badge: badge || undefined }];
     });
 
-  const row = (deck: DeckKind, cards: string[]) => (
-    <div className={`market-row market-${deck}`} style={{ '--cards': shown(deck, cards).length } as CSSProperties}>
-      <button type="button" className={`deck deck-${deck}`} title={deckTitle(deck)} onClick={() => setViewing(deck)}>
-        <div className="deck-stack" />
-        <span className="deck-label">{decks[deck].name}</span>
-        <span className="deck-count">{decks[deck].cards.length}</span>
-      </button>
-      {shown(deck, cards).map(({ id, index, badge }) => (
-        <CardView
-          key={`${id}#${cards.slice(0, index).filter((x) => x === id).length}`}
-          id={id}
-          size="sm"
-          className={`market-card ${canTake(deck, index) ? 'takeable' : ''}`}
-          badge={badge}
-          onClick={() => clickCard(deck, index, id)}
-        />
-      ))}
-    </div>
-  );
+  const row = (deck: DeckKind, cards: string[]) => {
+    const rowCards = shown(deck, cards);
+    return (
+      <div className={`market-row market-${deck}`} style={{ '--cards': rowCards.length } as CSSProperties}>
+        <button type="button" className={`deck deck-${deck}`} title={deckTitle(deck)} onClick={() => setViewing(deck)}>
+          <div className="deck-stack" />
+          <span className="deck-label">{decks[deck].name}</span>
+          <span className="deck-count">{decks[deck].cards.length}</span>
+        </button>
+        {rowCards.map(({ id, index, badge }) => (
+          <CardView
+            key={`${id}#${cards.slice(0, index).filter((x) => x === id).length}`}
+            id={id}
+            size="sm"
+            className={`market-card ${canTake(deck, index) ? 'takeable' : ''}`}
+            badge={badge}
+            onClick={() => clickCard(deck, index, id)}
+          />
+        ))}
+      </div>
+    );
+  };
 
   const viewer = viewing && (
     <CardViewer

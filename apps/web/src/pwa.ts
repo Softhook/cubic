@@ -90,14 +90,20 @@ export function startServiceWorker() {
       return;
     }
     if (ask) setStatus('checking');
+    // Nothing new: the answer if the player's check is still out (only theirs sets `checking`, so a
+    // background check ending first doesn't take it), and a stale `updating` goes back to idle.
+    const settle = (answer: UpdateStatus) => {
+      if (status === 'checking') setStatus(answer);
+      else if (status === 'updating') setStatus('idle');
+    };
     r.update().then(
       () => {
         if (status === 'ready') return; // onNeedRefresh came first
         // Found one: it is downloading, and onNeedRefresh follows once it has.
         if (r.installing) setStatus('updating');
-        else if (status === 'checking' || status === 'updating') setStatus(ask ? 'current' : 'idle');
+        else settle('current');
       },
-      () => setStatus(ask ? 'failed' : 'idle'), // the server unreachable: try again next time
+      () => settle('failed'), // the server unreachable: try again next time
     );
   };
 

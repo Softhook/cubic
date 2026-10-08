@@ -1,7 +1,7 @@
 /** Online games share storage with the game on this device; finished ones make way for it. */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { forget, remember, stored } from '../src/storage';
-import { onlineGames } from '../src/online/games';
+import { forgetFinishedGames, onlineGames } from '../src/online/games';
 import { rememberGame, saveEvents } from '../src/online/storage';
 
 /** localStorage holding at most `quota` characters (keys and values), like a browser's. */
@@ -71,6 +71,15 @@ describe('online games in storage', () => {
     expect(remember('quantum.savedGame', 's'.repeat(2_000_000))).toBe(false);
     expect(onlineGames().map((g) => g.secret)).toEqual([secret(0)]);
     expect(stored('quantum.savedGame')).toBeNull();
+  });
+
+  it('lets the lobby forget every finished game and its events', () => {
+    addGame(0, true);
+    addGame(1, false);
+    addGame(2, true);
+    expect(forgetFinishedGames().map((g) => g.secret)).toEqual([secret(1)]);
+    expect(onlineGames().map((g) => g.secret)).toEqual([secret(1)]);
+    expect([...store.data.keys()].filter((k) => k.startsWith('quantum.online.events.')).length).toBe(1);
   });
 
   it('ends when storage refuses every write', () => {
