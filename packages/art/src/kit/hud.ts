@@ -57,8 +57,9 @@ export function track(x: number, y: number, kind: 'research' | 'dominance', valu
 /** Where slot `i` (1–6) of a track drawn at (x, y) sits. */
 export const trackSlot = (x: number, i: number, cell = 3.2) => x + cell * 1.4 + (i - 1) * (cell * 1.3) + cell / 2;
 
-/** One action: a hexagonal chip with the action bolt. */
-export function chip(cx: number, cy: number, r: number, hue: number, state: 'lit' | 'dim' | 'new' | 'broken' | 'spent' = 'lit'): string {
+/** One action: a hexagonal chip with the action bolt (`bolt: false` leaves the hexagon plain). */
+export function chip(cx: number, cy: number, r: number, hue: number, state: 'lit' | 'dim' | 'new' | 'broken' | 'spent' = 'lit', bolt = true): string {
+  const mark = (colour: string, size: number, w: number) => (bolt ? icon('action', cx, cy, size, colour, w) : '');
   let d = '';
   for (let i = 0; i < 6; i++) {
     const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
@@ -66,12 +67,12 @@ export function chip(cx: number, cy: number, r: number, hue: number, state: 'lit
   }
   d += 'Z';
   if (state === 'dim' || state === 'spent')
-    return `<path d="${d}" fill="${hsl(228, 50, 8, 0.6)}" stroke="${hsl(hue, 60, 60)}" stroke-width=".25" stroke-dasharray="${state === 'spent' ? '.7 .5' : 'none'}" opacity=".7"/>` + icon('action', cx, cy, r * 1.1, hsl(hue, 50, 60), 2);
+    return `<path d="${d}" fill="${hsl(228, 50, 8, 0.6)}" stroke="${hsl(hue, 60, 60)}" stroke-width=".25" stroke-dasharray="${state === 'spent' ? '.7 .5' : 'none'}" opacity=".7"/>` + mark(hsl(hue, 50, 60), r * 1.1, 2);
   if (state === 'broken') {
     const crack = `M${n(cx - r * 0.2)} ${n(cy - r)}L${n(cx + r * 0.15)} ${n(cy - r * 0.3)}L${n(cx - r * 0.25)} ${n(cy + r * 0.1)}L${n(cx + r * 0.2)} ${n(cy + r)}`;
     return (
       `<g opacity=".85"><path d="${d}" fill="${hsl(228, 50, 8, 0.7)}" stroke="${hsl(0, 85, 60)}" stroke-width=".3"/>` +
-      icon('action', cx, cy, r * 1.1, hsl(0, 40, 45), 2) +
+      mark(hsl(0, 40, 45), r * 1.1, 2) +
       `<path d="${crack}" fill="none" stroke="${hsl(0, 100, 70)}" stroke-width=".35" stroke-linejoin="round"/></g>`
     );
   }
@@ -80,14 +81,14 @@ export function chip(cx: number, cy: number, r: number, hue: number, state: 'lit
     halo +
     `<path d="${d}" fill="${hsl(hue, 90, state === 'new' ? 62 : 52)}" stroke="${hsl(hue, 100, 85)}" stroke-width=".3"/>` +
     `<path d="M${n(cx - r * 0.6)} ${n(cy - r * 0.62)}L${n(cx + r * 0.2)} ${n(cy - r * 0.92)}" stroke="#fff" stroke-width=".25" opacity=".5" stroke-linecap="round"/>` +
-    icon('action', cx, cy, r * 1.15, INK, 2.4)
+    mark(INK, r * 1.15, 2.4)
   );
 }
 
 /** A row of action chips centred on (cx, cy). */
-export function chips(cx: number, cy: number, r: number, hue: number, states: Parameters<typeof chip>[4][]): string {
+export function chips(cx: number, cy: number, r: number, hue: number, states: Parameters<typeof chip>[4][], bolt = true): string {
   const step = r * 2.2;
-  return states.map((st, i) => chip(cx + (i - (states.length - 1) / 2) * step, cy, r, hue, st)).join('');
+  return states.map((st, i) => chip(cx + (i - (states.length - 1) / 2) * step, cy, r, hue, st, bolt)).join('');
 }
 
 /** A combat die: flat and white, to tell it from the ships. */
@@ -126,18 +127,35 @@ export function miniCard(id: string, cx: number, cy: number, w: number, hue: num
         `</g>`,
     };
   }
-  const halo = state === 'glow' ? `<rect x="${n(x - 0.8)}" y="${n(y - 0.8)}" width="${n(w + 1.6)}" height="${n(h + 1.6)}" rx="${n(w * 0.14)}" fill="none" stroke="${hsl(hue, 100, 80)}" stroke-width=".35"/>` : '';
+  const halo = state === 'glow' ? `<rect x="${n(x - 0.8)}" y="${n(y - 0.8)}" width="${n(w + 1.6)}" height="${n(h + 1.6)}" rx="${n(w * 0.12)}" fill="none" stroke="${hsl(hue, 100, 80)}" stroke-width=".35"/>` : '';
   const g = glow(`${id}-g`, cx, cy, w * 1.1, h * 0.85, hue, state === 'glow' ? 0.5 : 0, 60);
+  // Laid out like a real card face: art to the top and side edges, an accent line under it, the
+  // category emblem straddling art and panel, then the name and rules as lines.
+  const r = w * 0.08;
+  const artH = h * 0.49;
+  const ey = y + artH;
+  const er = w * 0.12;
+  const stars = [[0.2, 0.18], [0.72, 0.12], [0.84, 0.36], [0.36, 0.34], [0.58, 0.26]]
+    .map(([a, b], i) => `<circle cx="${n(x + w * a)}" cy="${n(y + h * b)}" r="${n(w * (i % 2 ? 0.012 : 0.018))}" fill="#fff" opacity=".8"/>`).join('');
   return {
-    defs: g.defs + `<linearGradient id="${id}-art" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${hsl(hue, 70, 30)}"/><stop offset="1" stop-color="${hsl(hue + 40, 60, 14)}"/></linearGradient>`,
+    defs:
+      g.defs +
+      `<linearGradient id="${id}-art" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="${hsl(hue + 30, 60, 16)}"/><stop offset=".7" stop-color="${hsl(hue, 70, 34)}"/><stop offset="1" stop-color="${hsl(hue, 60, 22)}"/></linearGradient>` +
+      `<clipPath id="${id}-face"><rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="${n(r)}"/></clipPath>`,
     body:
       (state === 'glow' ? g.body : '') +
       `<g${tr}>${halo}` +
-      `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="${n(w * 0.1)}" fill="${paper}" stroke="${hsl(hue, 80, 60)}" stroke-width=".25"/>` +
-      `<rect x="${n(x + w * 0.08)}" y="${n(y + w * 0.08)}" width="${n(w * 0.84)}" height="${n(h * 0.45)}" rx="${n(w * 0.06)}" fill="url(#${id}-art)"/>` +
-      `<circle cx="${n(cx)}" cy="${n(y + h * 0.53)}" r="${n(w * 0.13)}" fill="${paper}" stroke="${hsl(hue, 80, 55)}" stroke-width=".18"/>` +
-      icon(o.icon ?? 'action', cx, y + h * 0.53, w * 0.16, hsl(hue, 80, 50), 2.6) +
-      [0.7, 0.78, 0.86].map((t, i) => line(x + w * 0.2, y + h * t, x + w * (i === 1 ? 0.7 : 0.8), y + h * t, inner, w * 0.035, ' opacity=".55"')).join('') +
+      `<g clip-path="url(#${id}-face)">` +
+      `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" fill="${paper}"/>` +
+      `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(artH)}" fill="url(#${id}-art)"/>` +
+      stars +
+      `<rect x="${n(x)}" y="${n(ey - w * 0.012)}" width="${n(w)}" height="${n(w * 0.024)}" fill="${hsl(hue, 80, 55)}"/>` +
+      `</g>` +
+      `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="${n(r)}" fill="none" stroke="${hsl(hue, 80, 60)}" stroke-width=".2"/>` +
+      `<circle cx="${n(cx)}" cy="${n(ey)}" r="${n(er)}" fill="${paper}" stroke="${hsl(hue, 80, 55)}" stroke-width="${n(w * 0.018)}"/>` +
+      icon(o.icon ?? 'action', cx, ey, er * 1.2, hsl(hue, 80, o.dark ? 65 : 45), 2.6) +
+      line(cx - w * 0.26, y + h * 0.69, cx + w * 0.26, y + h * 0.69, o.dark ? hsl(225, 60, 90) : hsl(228, 40, 14), w * 0.05) +
+      [0.79, 0.86].map((t, i) => line(cx - w * (i ? 0.22 : 0.32), y + h * t, cx + w * (i ? 0.22 : 0.32), y + h * t, inner, w * 0.03, ' opacity=".5"')).join('') +
       `</g>`,
   };
 }

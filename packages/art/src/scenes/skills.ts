@@ -1,8 +1,8 @@
 import { hsl, n } from '../svg';
 import {
   arrowPath, at, beam, burst, chip, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard,
-  reticle, RESEARCH, route, scrapyard, shield, ship, shipOn, slash, space, sparkles, track, trackSlot, trails, world, worldOn, wreck, missile,
-} from '../kit';
+  RESEARCH, route, scrapyard, shield, ship, shipOn, slash, space, sparkles, track, trackSlot, trails, world, wreck, missile,
+  badge, bolt, dial, flag, orbit, pillar, poly, } from '../kit';
 import type { Illustration } from '../illustrations';
 
 /** Community Edition Skills: one scene per card, showing what the card does. */
@@ -14,7 +14,6 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       const g = iso(cx, cy + 1, 6.4);
       const path: [number, number][] = [[0, 2], [0, 1], [0, 0], [0, -1], [0, -2]];
       return [
-        world(`${id}-w`, r.fork('w'), box.x + 10, box.y + 12, 5.5),
         grid(`${id}-g`, g, -2, 2, -2, 2, hue),
         f(path.slice(1, 4).map(([i, j]) => space(g, i, j, hue, { a: 0.22 })).join('') + space(g, 0, -2, hue, { a: 0.5, light: 72 })),
         shipOn(`${id}-a`, g, 0, 2, 3.4, 4, p1, { ghost: true }),
@@ -48,16 +47,20 @@ export const SKILL_SCENES: Record<string, Illustration> = {
   },
 
   brilliant: {
-    caption: 'dawn over a world, the start of the turn: the research track jumps two slots',
+    caption: 'the research flask lights up at the start of the turn: +2',
     draw: ({ id, r, box }) => {
-      const [x, y] = at(box, 0.5, 1.02);
-      const [tx, ty] = at(box, 0.17, 0.33);
+      const [ix, iy] = at(box, 0.34, 0.48);
+      const [gx, gy] = at(box, 0.66, 0.48);
+      let rays = '';
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        rays += line(ix + Math.cos(a) * 7, iy + Math.sin(a) * 7, ix + Math.cos(a) * 10, iy + Math.sin(a) * 10, hsl(RESEARCH, 100, 80), 0.3, ' opacity=".7"');
+      }
       return [
-        glow(`${id}-sun`, x + 14, y - 15, 26, 13, 38, 0.75, 70),
-        world(`${id}-w`, r.fork('w'), x - 4, y + 30, 44, 8),
-        f(`<path d="M${n(x - 40)} ${n(y - 13)}Q${n(x + 4)} ${n(y - 17.5)} ${n(x + 50)} ${n(y - 8)}" fill="none" stroke="${hsl(42, 100, 85)}" stroke-width=".35" opacity=".7"/>`),
-        f(track(tx, ty, 'research', 4, { from: 2, numbers: true, cell: 4 })),
-        f(glyph(trackSlot(tx, 4, 4) + 7, ty - 6.5, '+2', 4.8, hsl(RESEARCH, 100, 85))),
+        glow(`${id}-g`, ix, iy, 11, 11, RESEARCH, 0.6, 66),
+        f(rays + icon('research', ix, iy, 9, hsl(RESEARCH, 100, 90), 2)),
+        f(glyph(gx, gy, '+2', 11, hsl(RESEARCH, 100, 85))),
+        f(sparkles(r.fork('sp'), gx, gy, 7, 11, 4)),
       ];
     },
   },
@@ -93,7 +96,6 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       }
       return [
         f(scrapyard(cx, cy + 2, 18, 9, hue)),
-        f(die(cx - 6.5, cy + 2, 2.6, 2, p1, { opacity: 0.7 }) + die(cx + 7, cy + 3.5, 2.6, 5, p1, { opacity: 0.7 })),
         f(`<ellipse cx="${n(sx)}" cy="${n(sy)}" rx="10.5" ry="8.5" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".25" stroke-dasharray="1 .8"/>` + dial),
         arrowPath(`${id}-dn`, `M${n(sx)} ${n(sy + 5.8)}V${n(cy - 2)}`, hsl(hue, 90, 80), { w: 0.35, dash: true }),
         ship(`${id}-s`, sx, sy, 4.2, 6, p1),
@@ -124,18 +126,18 @@ export const SKILL_SCENES: Record<string, Illustration> = {
   },
 
   composed: {
-    caption: 'one point of dominance traded for three of research',
+    caption: 'two emblems and a trade between them: one dominance out, three research in',
     draw: ({ id, r, box }) => {
-      const [x, y1] = at(box, 0.14, 0.3);
-      const y2 = y1 + 12;
-      const lost = trackSlot(x, 4, 3.6);
-      const gain = trackSlot(x, 4, 3.6);
+      const [ax, ay] = at(box, 0.26, 0.45);
+      const [bx, by] = at(box, 0.74, 0.45);
       return [
-        world(`${id}-w`, r.fork('w'), box.x + box.w - 6, box.y + box.h - 4, 9),
-        f(track(x, y1, 'dominance', 3, { from: 4, cell: 3.6 })),
-        f(track(x, y2, 'research', 5, { from: 2, cell: 3.6 })),
-        arrowPath(`${id}-ar`, `M${n(lost)} ${n(y1 + 2.6)}Q${n(lost + 5)} ${n((y1 + y2) / 2)} ${n(gain + 2)} ${n(y2 - 2.8)}`, hsl(RESEARCH, 90, 82), { w: 0.4 }),
-        f(glyph(lost - 6, (y1 + y2) / 2, '−1', 3.6, hsl(DOMINANCE, 100, 75)) + glyph(gain + 11, (y1 + y2) / 2 + 0.4, '+3', 3.6, hsl(RESEARCH, 100, 85))),
+        glow(`${id}-a`, ax, ay, 10, 10, DOMINANCE, 0.4),
+        glow(`${id}-b`, bx, by, 10, 10, RESEARCH, 0.55),
+        f(`<path d="${poly(ax, ay, 8)}" fill="${hsl(DOMINANCE, 60, 12, 0.7)}" stroke="${hsl(DOMINANCE, 90, 70)}" stroke-width=".35"/>` + icon('dominance', ax, ay, 7, hsl(DOMINANCE, 100, 75))),
+        f(`<path d="${poly(bx, by, 8)}" fill="${hsl(RESEARCH, 60, 14, 0.7)}" stroke="${hsl(RESEARCH, 90, 75)}" stroke-width=".35"/>` + icon('research', bx, by, 7, hsl(RESEARCH, 100, 85))),
+        arrowPath(`${id}-t`, `M${n(ax + 9)} ${n(ay - 3)}Q${n((ax + bx) / 2)} ${n(ay - 10)} ${n(bx - 9)} ${n(by - 3)}`, hsl(RESEARCH, 90, 82), { w: 0.45 }),
+        f(glyph(ax, ay + 12, '−1', 4.2, hsl(DOMINANCE, 100, 75)) + glyph(bx, by + 12, '+3', 4.2, hsl(RESEARCH, 100, 85))),
+        f(sparkles(r.fork('sp'), bx, by, 9, 12, 3)),
       ];
     },
   },
@@ -153,7 +155,6 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         glow(`${id}-g`, cx, cy - 6, 14, 12, hue, 0.4),
         f(echo),
         ship(`${id}-s`, cx, cy, 5.2, 5, p1),
-        loop(`${id}-l`, cx, cy - 2, 12, hsl(hue, 90, 80), 0.45, -150, 280),
         f(glyph(...at(box, 0.8, 0.4), '×2', 6.5, hsl(hue, 100, 85))),
         f(sparkles(r.fork('sp'), cx, cy - 10, 6, 11, 4)),
       ];
@@ -161,33 +162,33 @@ export const SKILL_SCENES: Record<string, Illustration> = {
   },
 
   curious: {
-    caption: 'weapons cold, scanners on: a ship surveys a world and earns an extra Move or Research',
+    caption: 'weapons cold, a lone ship turns its sensors to a world and learns from it',
     draw: ({ id, r, hue, box, p1 }) => {
-      const [sx, sy] = at(box, 0.24, 0.62);
-      const [px, py] = at(box, 0.7, 0.45);
+      const [sx, sy] = at(box, 0.24, 0.66);
+      const [nx, ny] = at(box, 0.7, 0.36);
+      let arcs = '';
+      for (let i = 1; i <= 4; i++) arcs += `<path d="M${n(sx + 3 + i * 4)} ${n(sy - 2 - i * 3.5)}a${n(i * 3)} ${n(i * 3)} 0 0 1 ${n(i * 2.5)} ${n(i * 3)}" fill="none" stroke="${hsl(hue, 90, 80)}" stroke-width=".3" opacity="${n(1 - i * 0.18)}"/>`;
       return [
-        f(`<path d="M${n(sx + 3)} ${n(sy - 2)}L${n(px - 7)} ${n(py - 11)}L${n(px - 4)} ${n(py + 10)}Z" fill="${hsl(hue, 90, 70, 0.14)}"/>` + [0.3, 0.55, 0.8].map((t) => `<path d="M${n(sx + 3 + (px - 7 - sx - 3) * t)} ${n(sy - 2 + (py - 11 - sy + 2) * t)}L${n(sx + 3 + (px - 4 - sx - 3) * t)} ${n(sy - 2 + (py + 10 - sy + 2) * t)}" stroke="${hsl(hue, 90, 80)}" stroke-width=".2" opacity=".6"/>`).join('')),
-        world(`${id}-w`, r.fork('w'), px + 2, py, 10, 7),
-        ship(`${id}-s`, sx, sy, 4.6, 2, p1),
-        f(`<g opacity=".9">${reticle(sx - 1, sy + 9, 2, hsl(0, 70, 70))}${slash(sx - 1, sy + 9, 3)}</g>`),
-        f(chips(...at(box, 0.24, 0.28), 2.8, hue, ['new']) + icon('movement', at(box, 0.24, 0.28)[0] - 7, at(box, 0.24, 0.28)[1], 3.4, hsl(hue, 90, 80)) + icon('research', at(box, 0.24, 0.28)[0] + 7, at(box, 0.24, 0.28)[1], 3.4, hsl(RESEARCH, 90, 80))),
+        world(`${id}-w`, r.fork('w'), nx + 2, ny + 2, 10, 7),
+        f(arcs),
+        ship(`${id}-s`, sx, sy, 4.4, 2, p1),
+        f(`<g opacity=".9">${icon('combat', ...at(box, 0.12, 0.26), 3.4, hsl(0, 50, 65))}${slash(...at(box, 0.12, 0.26), 2.8)}</g>`),
+        f(`<g opacity=".9">${icon('conquer', ...at(box, 0.24, 0.26), 3.4, hsl(0, 50, 65))}${slash(...at(box, 0.24, 0.26), 2.8)}</g>`),
+        f(chip(...at(box, 0.86, 0.7), 3.4, hue, 'new')),
       ];
     },
   },
 
   dangerous: {
-    caption: 'the defender detonates as the attacker closes in: both ships are lost',
+    caption: 'two ships break apart together, before any dice are thrown',
     draw: ({ id, r, box, p1, p2 }) => {
-      const [ax, ay] = at(box, 0.3, 0.55);
-      const [dx, dy] = at(box, 0.58, 0.45);
-      let rings = '';
-      for (let i = 1; i <= 3; i++) rings += `<circle cx="${n(dx)}" cy="${n(dy)}" r="${n(5 + i * 4.5)}" fill="none" stroke="${hsl(28, 100, 70)}" stroke-width="${n(0.7 - i * 0.15)}" opacity="${n(1 - i * 0.25)}"/>`;
+      const [ax, ay] = at(box, 0.3, 0.5);
+      const [bx, by] = at(box, 0.62, 0.42);
       return [
-        ...trails(`${id}-t`, r.fork('t'), ax, ay, 1, -0.3, 14, 2, hsl(p2, 80, 70), 4),
-        f(rings),
-        ...wreck(`${id}-a`, ax, ay, 6, p2, 20, r.fork('a')),
-        ...wreck(`${id}-d`, dx, dy, 11, p1, 34, r.fork('d')),
-        f(die(ax, ay, 3.6, 6, p2, { opacity: 0.55, rotate: -25 }) + die(dx + 1.5, dy - 1, 4, 2, p1, { opacity: 0.4, rotate: 30 })),
+        f(bolt(r.fork('b'), ax + 3, ay - 1, bx - 3, by + 1, 30, 5, 1.6)),
+        ...wreck(`${id}-a`, ax, ay, 6.5, p2, 24, r.fork('a')),
+        ...wreck(`${id}-b`, bx, by, 6.5, p1, 24, r.fork('bb')),
+        f(die(ax, ay, 3.2, 4, p2, { opacity: 0.5, rotate: -25 }) + die(bx, by, 3.2, 2, p1, { opacity: 0.5, rotate: 20 })),
       ];
     },
   },
@@ -214,20 +215,18 @@ export const SKILL_SCENES: Record<string, Illustration> = {
   },
 
   ferocious: {
-    caption: 'a combat roll of 4 knocked down to 3',
+    caption: 'a ship in a red rage, its shot carrying a −1 on every roll',
     draw: ({ id, r, hue, box, p1, p2 }) => {
-      const [ax, ay] = at(box, 0.15, 0.68);
-      const [bx, by] = at(box, 0.88, 0.22);
-      const [dx, dy] = at(box, 0.5, 0.5);
+      const [ax, ay] = at(box, 0.26, 0.58);
+      const [bx, by] = at(box, 0.82, 0.32);
       return [
-        ship(`${id}-a`, ax, ay, 3.8, 6, p1),
-        ...beam(`${id}-b`, ax + 2, ay - 2, bx - 2, by + 1.5, hue, 0.9),
-        ship(`${id}-e`, bx, by, 3.6, 1, p2),
-        burst(`${id}-x`, bx - 2, by + 1.5, 5, hue, 8, r),
-        f(combatDie(dx - 8, dy + 1, 6.5, 4, hue, { ghost: true, rot: -8 })),
-        arrowPath(`${id}-ar`, `M${n(dx - 3.5)} ${n(dy + 1)}H${n(dx + 2)}`, hsl(hue, 90, 80), { w: 0.45 }),
-        f(combatDie(dx + 7, dy + 1, 7.5, 3, hue, { glow: true, rot: 6 })),
-        f(glyph(dx + 0, dy - 6.5, '−1', 5, hsl(hue, 100, 80))),
+        glow(`${id}-aura`, ax, ay, 12, 10, hue, 0.55),
+        f(sparkles(r.fork('emb'), ax, ay, 5, 10, 6, hsl(hue, 100, 75))),
+        ...beam(`${id}-b`, ax, ay, bx - 2, by + 1.5, hue, 1.4),
+        ship(`${id}-a`, ax, ay, 6, 6, p1),
+        ship(`${id}-e`, bx, by, 3.6, 2, p2),
+        burst(`${id}-x`, bx - 2, by + 1.5, 5.5, hue, 8, r),
+        f(badge((ax + bx) / 2 + 2, (ay + by) / 2 - 6, 3, '−1', hue)),
       ];
     },
   },
@@ -266,209 +265,192 @@ export const SKILL_SCENES: Record<string, Illustration> = {
   },
 
   industrious: {
-    caption: 'two ships beamed down in one turn: a second deployment',
+    caption: 'two drop pods streak down onto the board at once',
     draw: ({ id, r, hue, box, p1 }) => {
-      const [cx, cy] = at(box, 0.5, 0.5);
-      const g = iso(cx, cy + 3, 6.2);
-      const cells: [number, number][] = [[-1, 1], [1, -1]];
-      const out = [grid(`${id}-g`, g, -2, 2, -2, 2, hue), f(cells.map(([i, j]) => space(g, i, j, hue, { a: 0.4 })).join(''))];
-      cells.forEach(([i, j], k) => {
+      const [cx, cy] = at(box, 0.5, 0.64);
+      const g = iso(cx, cy, 6);
+      const spots: [number, number][] = [[-1, 1], [1, 0]];
+      const out = [grid(`${id}-g`, g, -2, 2, -2, 2, hue, 0.4)];
+      spots.forEach(([i, j], k) => {
         const x = g.x(i, j);
-        const y = g.y(i, j);
-        out.push({
-          defs: `<linearGradient id="${id}-col${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hsl(hue, 90, 75)}" stop-opacity="0"/><stop offset="1" stop-color="${hsl(hue, 90, 80)}" stop-opacity=".55"/></linearGradient>`,
-          body: `<path d="M${n(x - 3)} ${n(box.y - 2)}H${n(x + 3)}L${n(x + 5)} ${n(y)}H${n(x - 5)}Z" fill="url(#${id}-col${k})"/>`,
-        });
-        out.push(shipOn(`${id}-s${k}`, g, i, j, 3.8, k ? 4 : 1, p1, k ? { opacity: 0.75 } : {}));
-        out.push(f(sparkles(r.fork(`sp${k}`), x, y - 5, 3, 7, 3)));
+        const y = g.y(i, j) - 2;
+        out.push(f(space(g, i, j, hue, { a: 0.4 })));
+        out.push(...trails(`${id}-t${k}`, r.fork(`t${k}`), x + 0.6, y - 1, -0.3, 1, 22, 1.2, hsl(30, 100, 70), 5));
+        out.push(glow(`${id}-h${k}`, x, y + 2, 6, 3, 30, 0.6, 62));
+        out.push(shipOn(`${id}-s${k}`, g, i, j, 3.6, [1, 4][k], p1));
       });
-      out.push(f(glyph(...at(box, 0.5, 0.2), '×2', 5, hsl(hue, 100, 85))));
+      out.push(f(glyph(...at(box, 0.84, 0.26), '×2', 5, hsl(hue, 100, 85))));
       return out;
     },
   },
 
   ingenious: {
-    caption: 'ships on the corners of a planet count toward conquering it',
+    caption: 'seen from above, a planet and its eight neighbours: ships on the corners now count',
     draw: ({ id, r, hue, box, p1 }) => {
-      const [cx, cy] = at(box, 0.5, 0.52);
-      const g = iso(cx, cy, 7);
-      const diag: [number, number][] = [[-1, 1], [1, -1]];
+      const [cx, cy] = at(box, 0.5, 0.48);
+      const c = 9.5;
+      let cells = '';
+      for (let i = -1; i <= 1; i++)
+        for (let j = -1; j <= 1; j++) {
+          const corner = i && j;
+          cells += `<rect x="${n(cx + i * c - c / 2 + 0.4)}" y="${n(cy + j * c - c / 2 + 0.4)}" width="${n(c - 0.8)}" height="${n(c - 0.8)}" rx="1" fill="${corner ? hsl(hue, 90, 62, 0.28) : hsl(hue, 80, 50, 0.06)}" stroke="${hsl(hue, 80, corner ? 78 : 60)}" stroke-width="${corner ? 0.3 : 0.18}"${corner ? '' : ' stroke-dasharray=".6 .5"'}/>`;
+        }
+      const shipAt = (i: number, j: number, v: number) => die(cx + i * c, cy + j * c, 2.4, v, p1);
       return [
-        grid(`${id}-g`, g, -2, 2, -2, 2, hue),
-        f(diag.map(([i, j]) => space(g, i, j, hue, { a: 0.45, light: 70 })).join('') + [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([i, j]) => space(g, i, j, hue, { a: 0.06, dash: true })).join('')),
-        ...worldOn(`${id}-w`, r.fork('w'), g, 0, 0, 4.8, hue, 9),
-        f(diag.map(([i, j]) => line(g.x(i, j) * 0.6 + g.x(0, 0) * 0.4, g.y(i, j) * 0.6 + g.y(0, 0) * 0.4 - 3, g.x(0, 0) * 0.85 + g.x(i, j) * 0.15, g.y(0, 0) - 3.5, hsl(hue, 100, 82), 0.4, ' stroke-dasharray="1 .7"')).join('')),
-        shipOn(`${id}-s0`, g, -1, 1, 3.6, 3, p1),
-        shipOn(`${id}-s1`, g, 1, -1, 3.6, 4, p1),
+        f(cells),
+        world(`${id}-w`, r.fork('w'), cx, cy, 4.2, 9),
+        f(shipAt(-1, -1, 2) + shipAt(1, -1, 3) + shipAt(1, 1, 4)),
+        f([[-1, -1], [1, -1], [1, 1]].map(([i, j]) => line(cx + i * c * 0.72, cy + j * c * 0.72, cx + i * c * 0.38, cy + j * c * 0.38, hsl(hue, 100, 82), 0.4, ' stroke-dasharray=".8 .6"')).join('')),
       ];
     },
   },
 
   intelligent: {
-    caption: 'a 9 world taken with an orbit adding up to 10: off by one is close enough',
+    caption: 'an 8-world taken with an orbit of 9: one off, and it still counts',
     draw: ({ id, r, hue, box, p1 }) => {
-      const [cx, cy] = at(box, 0.42, 0.5);
-      const pts = [[-15, 2], [13, -6]] as const;
+      const [cx, cy] = at(box, 0.46, 0.52);
       return [
-        f(`<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="16" ry="10" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".25" stroke-dasharray="1 1.2"/>`),
-        world(`${id}-w`, r.fork('w'), cx, cy, 9, 9),
-        ship(`${id}-a`, cx + pts[0][0], cy + pts[0][1], 4, 4, p1),
-        ship(`${id}-b`, cx + pts[1][0], cy + pts[1][1], 4, 6, p1),
-        f(glyph(cx, cy + 0.5, '9', 6, '#fff')),
-        f(`<g>${glyph(...at(box, 0.84, 0.36), '±1', 7, hsl(hue, 100, 80))}</g>`),
-        f(glyph(...at(box, 0.84, 0.62), '4+6', 3, hsl(hue, 80, 85))),
+        f(orbit(cx, cy, 17, 10, hue)),
+        world(`${id}-w`, r.fork('w'), cx, cy, 9, 8),
+        ship(`${id}-a`, cx - 16, cy + 3, 3.8, 4, p1),
+        ship(`${id}-b`, cx + 14, cy - 6, 3.8, 5, p1),
+        f(glyph(cx, cy + 0.4, '8', 6, '#fff')),
+        f(badge(cx + 24, cy + 6, 3.4, '9', hue)),
+        f(glyph(cx + 24, cy - 2, '≈', 4.4, hsl(hue, 100, 85))),
       ];
     },
   },
 
   patient: {
-    caption: 'a Tactic held in stasis, waiting for the end of the turn',
+    caption: 'the turn loop comes round, and at the very end a held Tactic is played',
     draw: ({ id, r, hue, box }) => {
-      const [cx, cy] = at(box, 0.5, 0.5);
-      let ticks = '';
-      for (let i = 0; i < 24; i++) {
-        const a = (i / 24) * Math.PI * 2;
-        const r0 = i % 6 ? 15.5 : 14.5;
-        ticks += line(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0, cx + Math.cos(a) * 16.5, cy + Math.sin(a) * 16.5, hsl(hue, 80, 75), i % 6 ? 0.2 : 0.4);
-      }
-      let hex = '';
-      for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
-        hex += `${i ? 'L' : 'M'}${n(cx + Math.cos(a) * 12.5)} ${n(cy + Math.sin(a) * 12.5)}`;
-      }
+      const [cx, cy] = at(box, 0.36, 0.5);
+      const [kx, ky] = at(box, 0.78, 0.46);
       return [
-        glow(`${id}-g`, cx, cy, 15, 15, hue, 0.35),
-        f(`<path d="${hex}Z" fill="${hsl(hue, 90, 60, 0.08)}" stroke="${hsl(hue, 90, 75)}" stroke-width=".3"/>` + ticks),
-        f(`<path d="M${n(cx)} ${n(cy - 16)}A16 16 0 0 1 ${n(cx + 16)} ${n(cy)}" fill="none" stroke="#fff" stroke-width=".6" stroke-linecap="round"/>`),
-        miniCard(`${id}-c`, cx, cy, 11, 352, { dark: true, icon: 'combat', rot: 6 }),
-        f(sparkles(r.fork('sp'), cx, cy, 16, 19, 4)),
+        f(dial(cx, cy, 11, hue, 24, 8)),
+        loop(`${id}-l`, cx, cy, 8, hsl(hue, 100, 80), 0.6, -90, 330),
+        f(chips(cx, cy, 1.6, hue, ['spent', 'spent', 'spent'])),
+        arrowPath(`${id}-ar`, `M${n(cx + 12)} ${n(cy - 4)}Q${n(kx - 6)} ${n(cy - 10)} ${n(kx - 7)} ${n(ky - 3)}`, hsl(hue, 90, 82), { w: 0.4, dash: true }),
+        miniCard(`${id}-c`, kx, ky, 11, 352, { dark: true, icon: 'combat', rot: 8, state: 'glow' }),
+        f(sparkles(r.fork('sp'), kx, ky, 8, 12, 3)),
       ];
     },
   },
 
   pioneering: {
-    caption: 'the research track stands in for a ship in orbit around a world',
+    caption: 'a ship plus your research add up to the planet: 5 + 3 = 8',
     draw: ({ id, r, hue, box, p1 }) => {
-      const [cx, cy] = at(box, 0.62, 0.62);
-      const [tx, ty] = at(box, 0.08, 0.3);
-      const gx = cx - 13;
-      const gy = cy - 5;
+      const [cx, cy] = at(box, 0.5, 0.48);
       return [
-        f(track(tx, ty, 'research', 3, { numbers: true })),
-        arrowPath(`${id}-b`, `M${n(trackSlot(tx, 3))} ${n(ty + 2.2)}Q${n(trackSlot(tx, 3))} ${n(gy - 2)} ${n(gx - 4.5)} ${n(gy)}`, hsl(RESEARCH, 90, 80), { w: 0.35, dash: true }),
-        f(`<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="14" ry="8" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".25" stroke-dasharray="1 1.2"/>`),
-        world(`${id}-w`, r.fork('w'), cx, cy, 8, 8),
-        glow(`${id}-gg`, gx, gy, 6, 6, RESEARCH, 0.5),
-        f(die(gx, gy, 3.6, 3, RESEARCH, { opacity: 0.85 })),
-        ship(`${id}-s`, cx + 13, cy + 2, 3.8, 5, p1),
-        f(sparkles(r.fork('sp'), gx, gy, 4, 6, 3)),
+        ship(`${id}-s`, cx - 21, cy, 4.2, 5, p1),
+        f(glyph(cx - 13, cy, '+', 4.4, hsl(hue, 100, 85))),
+        glow(`${id}-g`, cx - 4, cy, 6, 6, RESEARCH, 0.5),
+        f(`<path d="${poly(cx - 4, cy, 4.8)}" fill="${hsl(RESEARCH, 60, 16)}" stroke="${hsl(RESEARCH, 100, 80)}" stroke-width=".35"/>` + icon('research', cx - 4, cy - 1.2, 3.2, hsl(RESEARCH, 100, 85)) + glyph(cx - 4, cy + 2.2, '3', 2.4, hsl(RESEARCH, 100, 90))),
+        f(glyph(cx + 5, cy, '=', 4.4, hsl(hue, 100, 85))),
+        world(`${id}-w`, r.fork('w'), cx + 17, cy, 7.5, 8),
+        f(glyph(cx + 17, cy + 0.3, '8', 5.4, '#fff')),
       ];
     },
   },
 
   plundering: {
-    caption: "a destroyed enemy's wreck salvaged as three research",
+    caption: 'three data cores burst out of the wreck and fly into the research flask',
     draw: ({ id, r, box, p2 }) => {
-      const [wx, wy] = at(box, 0.25, 0.58);
-      const [tx, ty] = at(box, 0.38, 0.3);
-      let motes = '';
-      const rr = r.fork('m');
-      for (let i = 0; i < 14; i++) {
-        const t = rr.range(0.1, 0.95);
-        const ex = trackSlot(tx, 5);
-        const x = wx + (ex - wx) * t + Math.sin(t * 6) * 2;
-        const y = wy + (ty + 3 - wy) * t;
-        motes += `<circle cx="${n(x)}" cy="${n(y)}" r="${n(rr.range(0.25, 0.6))}" fill="${hsl(RESEARCH, 100, 82)}" opacity="${n(0.4 + t * 0.6)}"/>`;
-      }
+      const [wx, wy] = at(box, 0.3, 0.62);
+      const [ix, iy] = at(box, 0.72, 0.32);
+      const cores = [[-8, -8], [0, -10], [8, -7]];
       return [
         ...wreck(`${id}-w`, wx, wy, 9, p2, 280, r.fork('w')),
-        f(die(wx, wy, 3.6, 4, p2, { opacity: 0.45, rotate: 25 })),
-        f(motes),
-        f(track(tx, ty, 'research', 5, { from: 2 })),
-        f(glyph(trackSlot(tx, 5) + 1, ty + 7, '+3', 4.6, hsl(RESEARCH, 100, 85))),
+        f(die(wx, wy, 3.4, 5, p2, { opacity: 0.45, rotate: -15 })),
+        ...cores.map(([dx, dy], k) => arrowPath(`${id}-a${k}`, `M${n(wx + dx * 0.4)} ${n(wy + dy * 0.4)}Q${n(wx + dx)} ${n(wy + dy - 6)} ${n(ix - 5 + k * 2)} ${n(iy + 3)}`, hsl(RESEARCH, 90, 80), { w: 0.3, dash: true })),
+        ...cores.map(([dx, dy], k) => glow(`${id}-c${k}`, wx + dx, wy + dy, 2.6, 2.6, RESEARCH, 0.95, 72)),
+        glow(`${id}-i`, ix, iy, 9, 9, RESEARCH, 0.45),
+        f(icon('research', ix, iy, 8, hsl(RESEARCH, 100, 88), 2)),
+        f(glyph(ix + 11, iy + 1, '+3', 4.4, hsl(RESEARCH, 100, 85))),
       ];
     },
   },
 
   precocious: {
-    caption: 'the research track breaks through early, at 4, 5 or 6',
+    caption: 'a flask marked 4, 5 and 6 bubbles over at the first line',
     draw: ({ id, r, box }) => {
-      const [tx, ty] = at(box, 0.1, 0.45);
-      const c = 4.6;
-      const x4 = trackSlot(tx, 4, c);
+      const [cx, cy] = at(box, 0.46, 0.6);
+      const s = 0.85;
+      const body = `M${n(cx - 3 * s)} ${n(cy - 14 * s)}V${n(cy - 6 * s)}L${n(cx - 10 * s)} ${n(cy + 8 * s)}Q${n(cx - 11 * s)} ${n(cy + 11 * s)} ${n(cx - 8 * s)} ${n(cy + 11 * s)}H${n(cx + 8 * s)}Q${n(cx + 11 * s)} ${n(cy + 11 * s)} ${n(cx + 10 * s)} ${n(cy + 8 * s)}L${n(cx + 3 * s)} ${n(cy - 6 * s)}V${n(cy - 14 * s)}`;
+      const marks = [4, 5, 6].map((v, k) => {
+        const y = cy + 6 * s - k * 4.5 * s - 1;
+        return line(cx + 3, y, cx + 7, y, hsl(RESEARCH, 100, 85), 0.3) + `<text x="${n(cx + 9)}" y="${n(y)}" font-family="Orbitron, sans-serif" font-weight="900" font-size="2.4" fill="${hsl(RESEARCH, 100, 85)}" dominant-baseline="central">${v}</text>`;
+      }).join('');
+      let bubbles = '';
+      const rr = r.fork('b');
+      for (let i = 0; i < 9; i++) bubbles += `<circle cx="${n(cx + rr.range(-4, 4))}" cy="${n(cy - 14 * s - rr.range(1, 10))}" r="${n(rr.range(0.4, 1.1))}" fill="none" stroke="${hsl(RESEARCH, 100, 85)}" stroke-width=".25"/>`;
       return [
-        burst(`${id}-b`, x4, ty, 13, RESEARCH, 10, r),
-        f(track(tx, ty, 'research', 4, { numbers: true, cell: c, hot: [4, 5, 6] })),
-        arrowPath(`${id}-l`, `M${n(x4)} ${n(ty - 4.5)}C${n(x4)} ${n(ty - 13)} ${n(trackSlot(tx, 1, c))} ${n(ty - 13)} ${n(trackSlot(tx, 1, c))} ${n(ty - 5)}`, hsl(RESEARCH, 90, 82), { w: 0.45 }),
-        f(sparkles(r.fork('sp'), x4, ty, 6, 11, 5)),
+        glow(`${id}-g`, cx, cy + 4, 14, 12, RESEARCH, 0.5),
+        {
+          defs: `<clipPath id="${id}-cl"><path d="${body}Z"/></clipPath>`,
+          body: `<g clip-path="url(#${id}-cl)"><rect x="${n(cx - 15)}" y="${n(cy + 6 * s - 0.5)}" width="30" height="20" fill="${hsl(RESEARCH, 90, 55, 0.75)}"/></g>`,
+        },
+        f(`<path d="${body}" fill="none" stroke="${hsl(RESEARCH, 60, 88)}" stroke-width=".45" stroke-linejoin="round"/>` + marks + bubbles),
+        f(sparkles(r.fork('sp'), cx, cy - 18, 2, 6, 4, hsl(RESEARCH, 100, 88))),
       ];
     },
   },
 
   prideful: {
-    caption: 'dominance breaks through early, but an enemy can haul the card away',
+    caption: 'dominance blazing early at 4, while an enemy tractor beam reaches for the card',
     draw: ({ id, r, hue, box, p2 }) => {
-      const [tx, ty] = at(box, 0.12, 0.3);
-      const [cx, cy] = at(box, 0.26, 0.68);
-      const [ex, ey] = at(box, 0.82, 0.62);
+      const [tx, ty] = at(box, 0.1, 0.28);
+      const [cx, cy] = at(box, 0.3, 0.68);
+      const [ex, ey] = at(box, 0.82, 0.66);
       return [
         burst(`${id}-b`, trackSlot(tx, 4), ty, 9, DOMINANCE, 8, r),
         f(track(tx, ty, 'dominance', 4, { numbers: true, hot: [4, 5, 6] })),
-        f(`<path d="M${n(cx + 5)} ${n(cy - 3)}L${n(ex - 3)} ${n(ey - 2)}L${n(ex - 3)} ${n(ey + 2)}L${n(cx + 5)} ${n(cy + 5)}Z" fill="${hsl(p2, 90, 65, 0.16)}"/>`),
-        miniCard(`${id}-c`, cx, cy, 10, hue, { rot: 14, icon: 'conquer' }),
+        f(`<path d="M${n(ex - 3)} ${n(ey - 1)}L${n(cx + 6)} ${n(cy - 7)}L${n(cx + 6)} ${n(cy + 7)}Z" fill="${hsl(p2, 90, 65, 0.18)}"/>` + [0.3, 0.6].map((t) => line(ex - 3 + (cx + 6 - ex + 3) * t, ey - 1 + (cy - 7 - ey + 1) * t, ex - 3 + (cx + 6 - ex + 3) * t, ey - 1 + (cy + 7 - ey + 1) * t, hsl(p2, 90, 80), 0.2, ' opacity=".6"')).join('')),
+        miniCard(`${id}-c`, cx, cy, 10, hue, { rot: -10, icon: 'conquer' }),
         ship(`${id}-e`, ex, ey, 4.4, 6, p2),
       ];
     },
   },
 
   profiteering: {
-    caption: 'a conquest pays out in a missile instead of a card',
+    caption: 'a world you take launches a missile into your arsenal',
     draw: ({ id, r, hue, box, p1 }) => {
-      const [px, py] = at(box, 0.25, 0.55);
-      const [cx, cy] = at(box, 0.56, 0.35);
-      const [mx, my] = at(box, 0.84, 0.6);
+      const [px, py] = at(box, 0.3, 0.66);
+      const [mx, my] = at(box, 0.78, 0.26);
       return [
-        world(`${id}-w`, r.fork('w'), px, py, 9, 10),
-        f(cube(px + 3, py - 5, 2.4, p1)),
-        miniCard(`${id}-c`, cx, cy, 8, 24, { state: 'ghost', rot: -10 }),
-        arrowPath(`${id}-ar`, `M${n(cx + 4)} ${n(cy + 4)}Q${n(mx - 4)} ${n(cy + 1)} ${n(mx - 3)} ${n(my - 5)}`, hsl(hue, 90, 80), { w: 0.4, dash: true }),
-        glow(`${id}-g`, mx, my, 9, 7, hue, 0.45),
-        f(missile(mx + 4, my - 2, -30, hue, 1.9)),
-        f(sparkles(r.fork('sp'), mx, my, 5, 9, 4)),
+        world(`${id}-w`, r.fork('w'), px, py, 10, 9),
+        f(cube(px - 3, py - 9.5, 2.4, p1)),
+        f(`<path d="M${n(px + 6)} ${n(py - 6)}Q${n(px + 16)} ${n(py - 22)} ${n(mx - 4)} ${n(my + 2)}" fill="none" stroke="${hsl(30, 100, 70)}" stroke-width=".5" stroke-dasharray=".6 .6" opacity=".8"/>`),
+        glow(`${id}-g`, mx, my, 9, 6, hue, 0.5),
+        f(missile(mx, my, -25, hue, 2)),
+        f(sparkles(r.fork('sp'), mx, my, 4, 8, 4)),
       ];
     },
   },
 
   rational: {
-    caption: 'dice tumble everywhere, but this combat roll is always 3',
+    caption: 'a 3 held still at the centre of spinning rings',
     draw: ({ id, r, hue, box }) => {
       const [cx, cy] = at(box, 0.5, 0.5);
-      const rr = r.fork('d');
-      let ghosts = '';
-      [[-20, -8], [-17, 9], [18, -9], [20, 8], [-7, -14], [9, 14]].forEach(([dx, dy]) => (ghosts += combatDie(cx + dx, cy + dy, 4.5, rr.int(1, 6), hue, { ghost: true, rot: rr.range(-40, 40) })));
-      const br = (sx: number, sy: number) => `<path d="M${n(cx + sx * 8)} ${n(cy + sy * 4)}V${n(cy + sy * 8)}H${n(cx + sx * 4)}" fill="none" stroke="${hsl(hue, 90, 80)}" stroke-width=".5"/>`;
       return [
-        f(ghosts),
-        glow(`${id}-g`, cx, cy, 11, 11, hue, 0.4),
-        f(combatDie(cx, cy, 9, 3, hue) + br(-1, -1) + br(1, -1) + br(-1, 1) + br(1, 1)),
-        f(icon('lock', cx + 9, cy - 9, 3.4, hsl(hue, 90, 85))),
+        glow(`${id}-g`, cx, cy, 15, 15, hue, 0.35),
+        f([0, 60, 120].map((rot, k) => `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(16 - k)}" ry="${n(5.5 - k * 0.5)}" fill="none" stroke="${hsl(hue, 90, 70 + k * 6)}" stroke-width=".35" transform="rotate(${rot} ${n(cx)} ${n(cy)})"/>`).join('')),
+        f(combatDie(cx, cy, 8, 3, hue)),
+        f(sparkles(r.fork('sp'), cx, cy, 13, 17, 5)),
       ];
     },
   },
 
   ravenous: {
-    caption: 'a kill feeds dominance twice: the usual point, and one more',
-    draw: ({ id, r, hue, box, p1, p2 }) => {
-      const [ax, ay] = at(box, 0.14, 0.7);
-      const [wx, wy] = at(box, 0.42, 0.62);
-      const [tx, ty] = at(box, 0.36, 0.3);
+    caption: 'a ship with a fresh kill mark painted on: two banners fly, not one',
+    draw: ({ id, r, box, p1, p2 }) => {
+      const [sx, sy] = at(box, 0.36, 0.56);
       return [
-        ship(`${id}-a`, ax, ay, 4, 6, p1),
-        ...beam(`${id}-b`, ax + 2, ay - 1.5, wx - 1, wy, hue, 1),
-        ...wreck(`${id}-w`, wx, wy, 7, p2, DOMINANCE, r.fork('w')),
-        f(track(tx, ty, 'dominance', 5, { from: 3 })),
-        arrowPath(`${id}-ar`, `M${n(wx + 4)} ${n(wy - 4)}Q${n(trackSlot(tx, 5))} ${n(wy - 4)} ${n(trackSlot(tx, 5))} ${n(ty + 3)}`, hsl(DOMINANCE, 90, 78), { w: 0.4, dash: true }),
-        f(glyph(trackSlot(tx, 5) + 7, wy - 2, '+1', 4.6, hsl(DOMINANCE, 100, 80))),
+        glow(`${id}-g`, sx, sy, 10, 9, DOMINANCE, 0.45),
+        ship(`${id}-s`, sx, sy, 6, 6, p1),
+        f(flag(sx + 10, sy + 1, 0.9) + flag(sx + 17, sy + 3, 0.9)),
+        f(glyph(sx + 13.5, sy - 13, '+1+1', 3.6, hsl(DOMINANCE, 100, 80))),
+        ...wreck(`${id}-w`, ...at(box, 0.86, 0.3), 5, p2, 24, r.fork('w')),
       ];
     },
   },
@@ -491,14 +473,16 @@ export const SKILL_SCENES: Record<string, Illustration> = {
   righteous: {
     caption: 'dominance behind a shield that nothing gets through, research locked away',
     draw: ({ id, r, box }) => {
-      const [tx, ty] = at(box, 0.14, 0.42);
-      const [rx, ry] = at(box, 0.14, 0.76);
-      const mid = trackSlot(tx, 3.5);
+      // Both tracks centred across the art; a track is about 30 mm wide, its middle 13.7 mm in.
+      const mid = box.x + box.w / 2;
+      const tx = mid - 13.7;
+      const [, ty] = at(box, 0, 0.42);
+      const [, ry] = at(box, 0, 0.76);
       return [
-        shield(`${id}-sh`, mid + 1, ty, 21, 7, 200),
+        shield(`${id}-sh`, mid, ty, 21, 7, 200),
         f(track(tx, ty, 'dominance', 4)),
-        f(track(rx, ry, 'research', 2, { dim: true }) + slash(trackSlot(rx, 3.5) + 13, ry, 2.6)),
-        f(icon('shield', mid + 1, ty - 9.5, 3.6, hsl(200, 100, 80))),
+        f(track(tx, ry, 'research', 2, { dim: true }) + slash(trackSlot(tx, 6) + 5.5, ry, 2.6)),
+        f(icon('shield', mid, ty - 9.5, 3.6, hsl(200, 100, 80))),
         f(sparkles(r.fork('sp'), mid, ty, 22, 27, 3)),
       ];
     },
@@ -544,20 +528,25 @@ export const SKILL_SCENES: Record<string, Illustration> = {
   },
 
   stealthy: {
-    caption: 'a ship decloaks deep in empty space, far from anyone',
+    caption: 'every ship has a ring of forbidden spaces; one open space far away takes the deployment',
     draw: ({ id, r, hue, box, p1, p2 }) => {
       const [cx, cy] = at(box, 0.5, 0.5);
-      const g = iso(cx, cy + 1, 5.2);
-      const others: [number, number, number][] = [[1, 2, p2], [2, 1, p2], [-2, 1, p1]];
-      let zones = '';
-      for (const [i, j] of others) for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) if (di || dj) zones += space(g, i + di, j + dj, 0, { a: 0.12, light: 55, dash: true });
+      const c = 4.6;
+      let cells = '';
+      const ships: [number, number, number][] = [[-3, -1, p2], [-2, 1, p2], [2, 1, p1], [3, -1, p2]];
+      const blocked = (i: number, j: number) => ships.some(([a, b]) => Math.abs(a - i) <= 1 && Math.abs(b - j) <= 1);
+      for (let i = -5; i <= 5; i++)
+        for (let j = -2; j <= 2; j++) {
+          const target = i === 0 && j === -2;
+          const b = blocked(i, j);
+          cells += `<rect x="${n(cx + i * c - c / 2 + 0.3)}" y="${n(cy + j * c - c / 2 + 0.3)}" width="${n(c - 0.6)}" height="${n(c - 0.6)}" rx=".6" fill="${target ? hsl(hue, 90, 62, 0.5) : b ? hsl(0, 80, 50, 0.16) : hsl(hue, 60, 50, 0.05)}" stroke="${target ? hsl(hue, 100, 85) : b ? hsl(0, 80, 65, 0.5) : hsl(hue, 60, 60, 0.3)}" stroke-width=".18"/>`;
+        }
       return [
-        grid(`${id}-g`, g, -3, 3, -3, 3, hue),
-        f(zones + space(g, -1, -2, hue, { a: 0.45, light: 70 })),
-        ...others.map(([i, j, h], k) => shipOn(`${id}-o${k}`, g, i, j, 3, k + 2, h)),
-        glow(`${id}-sg`, g.x(-1, -2), g.y(-1, -2) - 2, 8, 6, hue, 0.45),
-        shipOn(`${id}-s`, g, -1, -2, 3.6, 6, p1, { opacity: 0.7 }),
-        f(sparkles(r.fork('sp'), g.x(-1, -2), g.y(-1, -2) - 3, 3, 7, 5)),
+        f(cells),
+        f(ships.map(([i, j, h]) => die(cx + i * c, cy + j * c, 1.8, 3, h)).join('')),
+        pillar(`${id}-p`, cx, box.y - 2, cy - 2 * c, hue, 1.4, 0.6),
+        f(die(cx, cy - 2 * c, 2, 6, p1)),
+        f(sparkles(r.fork('sp'), cx, cy - 2 * c, 2, 5, 4)),
       ];
     },
   },
@@ -601,20 +590,18 @@ export const SKILL_SCENES: Record<string, Illustration> = {
   },
 
   tactical: {
-    caption: 'a ship that already moved makes one more short hop, straight into an attack',
+    caption: 'three spaces already flown, then one more step straight into an attack',
     draw: ({ id, r, hue, box, p1, p2 }) => {
-      const [cx, cy] = at(box, 0.5, 0.5);
-      const g = iso(cx, cy + 1, 6.4);
+      const g = iso(...at(box, 0.18, 0.4), 6.2);
       return [
-        grid(`${id}-g`, g, -2, 2, -2, 2, hue),
-        f([[2, 1], [1, 1], [0, 1]].map(([i, j]) => space(g, i, j, hue, { a: 0.1, dash: true })).join('')),
-        route(`${id}-old`, g, [[2, 1], [1, 1], [0, 1], [0, 0]], hsl(hue, 60, 70), { dash: true, head: false, lift: 1, w: 0.4 }),
-        f(space(g, 0, -1, hue, { a: 0.4 })),
-        shipOn(`${id}-e`, g, 0, -1, 3.6, 5, p2),
-        burst(`${id}-x`, g.x(0, -1), g.y(0, -1) - 2.5, 7.5, 352, 8, r),
-        shipOn(`${id}-s`, g, 0, 0, 3.6, 2, p1),
-        arrowPath(`${id}-hop`, `M${n(g.x(0, 0) + 1)} ${n(g.y(0, 0) - 8)}Q${n((g.x(0, 0) + g.x(0, -1)) / 2)} ${n(g.y(0, 0) - 13)} ${n(g.x(0, -1) - 1)} ${n(g.y(0, -1) - 7)}`, hsl(hue, 100, 82), { w: 0.55 }),
-        f(glyph(g.x(0, -1) + 8, g.y(0, -1) - 9, '+1', 4.4, hsl(hue, 100, 85))),
+        grid(`${id}-g`, g, -1, 5, -1, 1, hue, 0.4),
+        f([0, 1, 2].map((k) => space(g, k, 0, hue, { a: 0.08, dash: true })).join('') + space(g, 4, 0, hue, { a: 0.4 })),
+        route(`${id}-old`, g, [[0, 0], [1, 0], [2, 0], [3, 0]], hsl(hue, 50, 65), { lift: 1, dash: true, head: false, w: 0.4 }),
+        shipOn(`${id}-e`, g, 4, 0, 3.6, 5, p2),
+        burst(`${id}-x`, g.x(4, 0), g.y(4, 0) - 2.5, 7, 352, 8, r),
+        shipOn(`${id}-s`, g, 3, 0, 3.6, 2, p1),
+        arrowPath(`${id}-hop`, `M${n(g.x(3, 0) + 1)} ${n(g.y(3, 0) - 8)}Q${n((g.x(3, 0) + g.x(4, 0)) / 2)} ${n(g.y(3, 0) - 12)} ${n(g.x(4, 0) - 1)} ${n(g.y(4, 0) - 7)}`, hsl(hue, 100, 82), { w: 0.55 }),
+        f(glyph(g.x(4, 0) + 7, g.y(4, 0) - 9, '1', 4.2, hsl(hue, 100, 85))),
       ];
     },
   },

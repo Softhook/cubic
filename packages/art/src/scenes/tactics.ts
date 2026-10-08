@@ -1,7 +1,9 @@
 import { hsl, n } from '../svg';
 import {
   arrowPath, at, burst, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard, missile,
-  panel, scrapyard, ship, shipOn, space, sparkles, streak, track, trackSlot, trails, world, wreck,
+  panel, scrapyard, ship, shipOn, space, sparkles, trails, world, wreck,
+  orbit, poly, rings,
+  crate,
 } from '../kit';
 import type { Illustration } from '../illustrations';
 
@@ -17,20 +19,15 @@ function gate(id: string, x: number, y: number, s: number, hue: number, tilt: nu
 /** Community Edition Tactics and the Expansion card. */
 export const TACTIC_SCENES: Record<string, Illustration> = {
   aggression: {
-    caption: 'a flag raised over a conquered world: dominance jumps by two',
-    draw: ({ id, r, box, p1 }) => {
-      const [px, py] = at(box, 0.26, 0.74);
-      const [tx, ty] = at(box, 0.48, 0.4);
-      const fx = px + 1;
-      const fy = py - 9;
+    caption: 'a dominance emblem roars out shockwaves: +2, at once',
+    draw: ({ id, r, box }) => {
+      const [cx, cy] = at(box, 0.42, 0.5);
       return [
-        world(`${id}-w`, r.fork('w'), px, py, 9, 9),
-        f(cube(px - 4, py - 7.5, 2.2, p1)),
-        glow(`${id}-fg`, fx + 4, fy - 6, 7, 7, DOMINANCE, 0.5),
-        f(line(fx, fy + 1, fx, fy - 11, hsl(DOMINANCE, 30, 90), 0.5) + `<path d="M${n(fx)} ${n(fy - 11)}h8l-2 3 2 3H${n(fx)}z" fill="${hsl(DOMINANCE, 95, 60)}" stroke="${hsl(DOMINANCE, 100, 82)}" stroke-width=".3"/>`),
-        f(track(tx, ty, 'dominance', 5, { from: 3, numbers: true })),
-        f(glyph(trackSlot(tx, 5) + 1, ty + 7.5, '+2', 5, hsl(DOMINANCE, 100, 78))),
-        f(sparkles(r.fork('sp'), fx + 4, fy - 6, 6, 11, 4)),
+        glow(`${id}-g`, cx, cy, 16, 16, DOMINANCE, 0.5),
+        f(rings(cx, cy, 9, 4, 4, DOMINANCE, 1, 0.6)),
+        f(`<path d="${poly(cx, cy, 7.5)}" fill="${hsl(DOMINANCE, 80, 45)}" stroke="${hsl(DOMINANCE, 100, 80)}" stroke-width=".4"/>` + icon('dominance', cx, cy, 7, '#fff', 2.4)),
+        f(glyph(...at(box, 0.82, 0.42), '+2', 7, hsl(DOMINANCE, 100, 78))),
+        f(sparkles(r.fork('sp'), cx, cy, 10, 20, 6)),
       ];
     },
   },
@@ -40,17 +37,9 @@ export const TACTIC_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, hue, box }) => {
       const [cx, cy] = at(box, 0.45, 0.62);
       const s = 8;
-      const k = 0.866 * s;
-      const crate =
-        `<path d="M${n(cx)} ${n(cy - s)}L${n(cx + k)} ${n(cy - s / 2)}L${n(cx + k)} ${n(cy + s / 2)}L${n(cx)} ${n(cy + s)}L${n(cx - k)} ${n(cy + s / 2)}L${n(cx - k)} ${n(cy - s / 2)}Z" fill="${hsl(30, 25, 22)}" stroke="${hsl(30, 40, 50)}" stroke-width=".3"/>` +
-        `<path d="M${n(cx - k)} ${n(cy - s / 2)}L${n(cx)} ${n(cy)}L${n(cx + k)} ${n(cy - s / 2)}M${n(cx)} ${n(cy)}V${n(cy + s)}" fill="none" stroke="${hsl(30, 40, 50)}" stroke-width=".3"/>` +
-        `<path d="M${n(cx)} ${n(cy)}L${n(cx + k)} ${n(cy - s / 2)}L${n(cx + k)} ${n(cy + s / 2)}L${n(cx)} ${n(cy + s)}Z" fill="${hsl(30, 25, 14)}"/>` +
-        `<path d="M${n(cx - k)} ${n(cy - s / 2)}L${n(cx)} ${n(cy)}L${n(cx)} ${n(cy + s)}L${n(cx - k)} ${n(cy + s / 2)}Z" fill="${hsl(30, 25, 26)}"/>` +
-        [0.3, 0.65].map((t) => line(cx - k, cy - s / 2 + s * t, cx, cy + s * t, hsl(42, 90, 55), 0.5, ' opacity=".8"')).join('') +
-        `<path d="M${n(cx - k)} ${n(cy - s / 2)}L${n(cx - k - 3)} ${n(cy - s - 3)}L${n(cx - 3)} ${n(cy - s * 1.5)}L${n(cx)} ${n(cy - s)}Z" fill="${hsl(30, 25, 30)}" stroke="${hsl(30, 40, 50)}" stroke-width=".3"/>`;
       return [
         glow(`${id}-g`, cx, cy - s / 2, 14, 7, 42, 0.6, 60),
-        f(crate),
+        f(crate(cx, cy, s)),
         glow(`${id}-m`, cx + 2, cy - s - 6, 12, 8, hue, 0.4),
         f(missile(cx + 9, cy - s - 9, -35, hue, 1.6) + missile(cx + 12, cy - s - 2, -15, hue, 1.6)),
         f(glyph(...at(box, 0.84, 0.3), '+2', 6, hsl(hue, 100, 80))),
@@ -78,61 +67,46 @@ export const TACTIC_SCENES: Record<string, Illustration> = {
   },
 
   momentum: {
-    caption: 'the turn comes round again, with two actions instead of three',
+    caption: 'a ship whips round a world and comes back for a second, shorter turn',
     draw: ({ id, r, hue, box, p1 }) => {
-      const [cx, cy] = at(box, 0.42, 0.52);
-      const [kx, ky] = at(box, 0.8, 0.32);
+      const [px, py] = at(box, 0.56, 0.52);
       return [
-        glow(`${id}-g`, cx, cy, 15, 15, hue, 0.35),
-        loop(`${id}-l`, cx, cy, 13, hsl(hue, 100, 75), 0.9, -40, 300),
-        loop(`${id}-l2`, cx, cy, 15.5, hsl(hue, 90, 80), 0.25, 140, 200),
-        ...trails(`${id}-t`, r.fork('t'), cx - 1, cy, 1, -0.15, 14, 2, hsl(hue, 90, 75), 5),
-        ship(`${id}-s`, cx, cy, 5.2, 2, p1),
-        f(panel(kx - 8.6, ky - 4, 17.2, 8, hue) + chips(kx, ky, 2.6, hue, ['lit', 'lit', 'spent'])),
+        world(`${id}-w`, r.fork('w'), px, py, 8),
+        arrowPath(`${id}-path`, `M${n(box.x - 2)} ${n(py + 12)}Q${n(px - 6)} ${n(py + 14)} ${n(px + 12)} ${n(py + 2)}Q${n(px + 16)} ${n(py - 10)} ${n(px)} ${n(py - 12)}Q${n(px - 14)} ${n(py - 13)} ${n(px - 24)} ${n(py - 6)}`, hsl(hue, 90, 80), { w: 0.45, dash: true }),
+        ...trails(`${id}-t`, r.fork('t'), px - 25, py - 6, -1, 0.4, 10, 1.4, hsl(hue, 90, 75), 4),
+        ship(`${id}-s`, px - 26, py - 5, 4, 2, p1),
+        f(panel(...at(box, 0.68, 0.14), 13, 7, hue) + chips(at(box, 0.68, 0.14)[0] + 6.5, at(box, 0.68, 0.14)[1] + 3.5, 2.2, hue, ['new', 'new'])),
       ];
     },
   },
 
   'plan-ahead': {
-    caption: 'until your next turn ends, every combat roll is the perfect 1: the ship becomes the missile',
+    caption: 'a holographic plan of the next two turns: every attack marked with a 1',
     draw: ({ id, r, hue, box, p1, p2 }) => {
-      const [sx, sy] = at(box, 0.55, 0.52);
-      const [tx, ty] = at(box, 0.82, 0.34);
-      const [dx, dy] = at(box, 0.22, 0.48);
+      const [cx, cy] = at(box, 0.5, 0.56);
+      const g = iso(cx, cy, 6);
+      const targets: [number, number][] = [[1, -2], [2, 1], [-2, 0]];
       return [
-        ...trails(`${id}-t`, r.fork('t'), sx - 2, sy + 1, 1, -0.45, 26, 2.6, hsl(28, 100, 70), 8),
-        burst(`${id}-fl`, sx - 5, sy + 3.4, 4, 30, 6, r),
-        ship(`${id}-e`, tx, ty, 3.6, 4, p2),
-        f(`<circle cx="${n(tx)}" cy="${n(ty)}" r="6" fill="none" stroke="${hsl(hue, 100, 70)}" stroke-width=".35" stroke-dasharray="2.5 1.2"/>`),
-        ship(`${id}-s`, sx, sy, 4.4, 1, p1, { rotate: -25 }),
-        f(combatDie(dx, dy, 8, 1, hue, { glow: true, rot: -6 })),
-        f(`<circle cx="${n(dx)}" cy="${n(dy)}" r="9" fill="none" stroke="${hsl(hue, 80, 75)}" stroke-width=".3" stroke-dasharray=".4 1.1"/>` + `<path d="M${n(dx)} ${n(dy - 9)}A9 9 0 1 1 ${n(dx - 9)} ${n(dy)}" fill="none" stroke="#fff" stroke-width=".45" stroke-linecap="round"/>`),
+        grid(`${id}-g`, g, -3, 3, -3, 3, hue, 0.45),
+        shipOn(`${id}-s`, g, 0, 0, 3.6, 3, p1),
+        ...targets.map(([i, j], k) => shipOn(`${id}-e${k}`, g, i, j, 3, [5, 2, 6][k], p2, { opacity: 0.75 })),
+        ...targets.map(([i, j], k) => arrowPath(`${id}-a${k}`, `M${n(g.x(0, 0))} ${n(g.y(0, 0) - 3)}L${n(g.x(i, j) * 0.85 + g.x(0, 0) * 0.15)} ${n(g.y(i, j) * 0.85 + g.y(0, 0) * 0.15 - 3)}`, hsl(hue, 90, 80), { w: 0.35, dash: true })),
+        f(targets.map(([i, j]) => combatDie(g.x(i, j) + 4, g.y(i, j) - 7, 3.4, 1, hue, { glow: true })).join('')),
+        f(sparkles(r.fork('sp'), cx, cy, 6, 18, 4)),
       ];
     },
   },
 
   sabotage: {
-    caption: "an opponent's console shorts out: their next turn is one action short",
+    caption: "a wire snips in an opponent's console and the third action goes dark",
     draw: ({ id, r, hue, box, p2 }) => {
-      const [cx, cy] = at(box, 0.5, 0.42);
-      let bolt = '';
-      const rr = r.fork('b');
-      let x = cx + 1;
-      let y = box.y - 2;
-      let d = `M${n(x)} ${n(y)}`;
-      while (y < cy - 4) {
-        x += rr.range(-2.5, 2.5);
-        y += rr.range(2, 3.5);
-        d += `L${n(x)} ${n(y)}`;
-      }
-      bolt = `<path d="${d}" fill="none" stroke="${hsl(hue, 100, 82)}" stroke-width=".6" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="#fff" stroke-width=".2"/>`;
+      const [cx, cy] = at(box, 0.5, 0.36);
       return [
-        f(panel(cx - 15, cy - 6, 30, 12, p2, 0.85) + chips(cx, cy, 3.6, p2, ['lit', 'lit', 'broken'])),
-        f(bolt),
-        burst(`${id}-x`, cx + 8, cy - 1, 6, hue, 8, r),
-        f(sparkles(r.fork('sp'), cx + 8, cy, 4, 9, 6, hsl(hue, 100, 80))),
-        f(die(...at(box, 0.2, 0.78), 3, 5, p2, { opacity: 0.6 }) + die(...at(box, 0.82, 0.8), 3, 2, p2, { opacity: 0.6 })),
-        f(glyph(cx, cy + 11, '−1', 4.6, hsl(hue, 100, 80))),
+        f(panel(cx - 14, cy - 5, 28, 10, p2, 0.85) + chips(cx, cy, 3.4, p2, ['lit', 'lit', 'dim'], false)),
+        f(`<path d="M${n(cx + 7.5)} ${n(cy + 5)}C${n(cx + 7.5)} ${n(cy + 10)} ${n(cx + 2)} ${n(cy + 11)} ${n(cx + 1)} ${n(cy + 14)}" fill="none" stroke="${hsl(0, 80, 60)}" stroke-width=".5"/><path d="M${n(cx + 1)} ${n(cy + 17)}C${n(cx)} ${n(cy + 20)} ${n(cx - 4)} ${n(cy + 21)} ${n(cx - 6)} ${n(cy + 23)}" fill="none" stroke="${hsl(0, 80, 60)}" stroke-width=".5"/>`),
+        burst(`${id}-x`, cx + 1, cy + 15.5, 3.4, hue, 7, r),
+        f(sparkles(r.fork('sp'), cx + 1, cy + 15.5, 2, 5, 4, hsl(hue, 100, 80))),
+        f(glyph(cx + 18, cy + 14, '−1', 4.6, hsl(hue, 100, 80))),
       ];
     },
   },
@@ -198,20 +172,18 @@ export const TACTIC_SCENES: Record<string, Illustration> = {
   },
 
   expansion: {
-    caption: 'a reserve ship rolled straight into orbit around a world you hold',
+    caption: 'a reserve die thrown in from off the map, tumbling into orbit',
     draw: ({ id, r, hue, box, p1 }) => {
-      const [cx, cy] = at(box, 0.6, 0.56);
-      const tumble = [[-30, -8, 2.4, 0.3, -40, 2], [-24, -4, 2.8, 0.5, 30, 5], [-18, -1, 3.2, 0.75, -10, 3]] as const;
+      const [px, py] = at(box, 0.66, 0.56);
+      const pts = [[-36, -14, 2.2, 0.3, -40, 2], [-28, -9, 2.7, 0.55, 30, 6], [-20, -4, 3.1, 0.8, -15, 1]] as const;
       return [
-        f(`<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="16" ry="8" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".25" stroke-dasharray="1 1.2"/>`),
-        world(`${id}-w`, r.fork('w'), cx, cy, 9),
-        f(cube(cx + 3, cy - 6.5, 2.2, p1)),
-        burst(`${id}-b`, cx - 34, cy - 10, 6, hue, 4, r),
-        f(tumble.map(([dx, dy, s, o, rot, v]) => die(cx + dx, cy + dy, s, v, p1, { opacity: o, rotate: rot })).join('')),
-        streak(`${id}-tr`, cx - 34, cy - 10, cx - 14, cy + 1, hsl(hue, 90, 75), 0.6),
-        ship(`${id}-s`, cx - 12, cy + 2, 3.6, 4, p1),
-        ship(`${id}-o`, cx + 15, cy - 1, 3.2, 6, p1, { opacity: 0.8 }),
-        f(icon('expansion', cx - 12, cy - 6.5, 3, '#fff', 3)),
+        f(orbit(px, py, 15, 7.5, hue)),
+        world(`${id}-w`, r.fork('w'), px, py, 8.5),
+        f(cube(px + 3, py - 6.5, 2.2, p1)),
+        f(`<path d="M${n(px - 40)} ${n(py - 16)}Q${n(px - 24)} ${n(py - 14)} ${n(px - 14)} ${n(py + 1)}" fill="none" stroke="${hsl(hue, 90, 75)}" stroke-width=".35" stroke-dasharray="1 1"/>`),
+        f(pts.map(([dx, dy, s, o, rot, v]) => die(px + dx, py + dy, s, v, p1, { opacity: o, rotate: rot })).join('')),
+        ship(`${id}-s`, px - 13, py + 3, 3.6, 4, p1),
+        f(icon('expansion', ...at(box, 0.14, 0.72), 4, hsl(hue, 100, 80), 3)),
       ];
     },
   },

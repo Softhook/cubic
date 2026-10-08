@@ -262,7 +262,7 @@ exported in the Art Lab (`#lab/cards`).
   original), keyed by card id; each has a one-line caption the Art Lab shows under the card. Original
   cards that do the same as a CE card get a different picture of the same idea. A test checks that
   every card has a scene and no two draw the same.
-- **One drawing kit** (`packages/art/src/kit/`: ships, board, hud, effects) keeps the set consistent: ships are isometric dice with real pip
+- **One drawing kit** (`packages/art/src/kit/`: ships, board, hud, effects, props) keeps the set consistent: ships are isometric dice with real pip
   layouts, cubes are plain dice, the board is an isometric holo-grid the dice stand on, planets and
   skies come from the tile generators. Rules quantities are flat HUD readouts over the scene, always
   drawn the same way: research (violet) and dominance (red-orange) tracks, hexagonal action chips,
