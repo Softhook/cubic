@@ -1,6 +1,5 @@
 import { estimateWidth, type Measure } from './card';
 import { icon } from './icons';
-import { chip } from './kit/hud';
 import { shipDie } from './kit/starships';
 import { document, esc, hsl, n, type Fragment } from './svg';
 import { DOMINANCE, FONTS, RESEARCH, TILE } from './tokens';
@@ -124,6 +123,15 @@ const HAIR = hsl(224, 20, 30);
 /** The one accent: the game's own cyan, the same for every player. */
 const HUE = 194;
 
+/** One action: a plain hexagon in the accent colour, with the same soft glow as the dice's pips (`glow` is that gradient's id). */
+function hex(cx: number, cy: number, r: number, glow: string): string {
+  const pts = [...Array(6)].map((_, i) => {
+    const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+    return `${n(cx + Math.cos(a) * r)} ${n(cy + Math.sin(a) * r)}`;
+  });
+  return `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r * 1.8)}" fill="url(#${glow})"/><path d="M${pts.join('L')}Z" fill="${hsl(HUE, 100, 70)}"/>`;
+}
+
 /** A die pad: where the dominance or research die sits, the 24 mm of a tile's space (a 19 mm die with room round it). */
 function diePad(cx: number, cy: number, hue: number, kind: 'dominance' | 'research'): string {
   const s = TILE.pad;
@@ -145,6 +153,7 @@ export function playerAidSvg(o: AidOptions = {}): string {
   const accent = hsl(HUE, 90, 66);
 
   out.push(`<rect x="${-b}" y="${-b}" width="${W + 2 * b}" height="${H + 2 * b}" fill="${GROUND}"/>`);
+  defs.push(`<radialGradient id="${id}-glow"><stop offset="0" stop-color="${hsl(HUE, 100, 65)}" stop-opacity=".6"/><stop offset="1" stop-color="${hsl(HUE, 100, 65)}" stop-opacity="0"/></radialGradient>`);
 
   // --- Dominance and research: label, pad, what moves the die, what 6 does.
   const colW = 30;
@@ -174,12 +183,12 @@ export function playerAidSvg(o: AidOptions = {}): string {
   const x0 = M + colW + 5;
   const cw = W - 2 * x0;
   out.push(text(x0, M + 4.6, '3 actions', 3.2, { font: 'bold', fill: WHITE, upper: true, track: 0.06 }));
-  for (let i = 0; i < 3; i++) out.push(chip(x0 + cw - 2 - i * 4.6, M + 3.5, 1.95, HUE));
+  for (let i = 0; i < 3; i++) out.push(hex(x0 + cw - 2 - i * 4.6, M + 3.5, 1.95, `${id}-glow`));
   out.push(`<path d="M${n(x0)} ${n(M + 7.6)}H${n(x0 + cw)}" stroke="${HAIR}" stroke-width=".25"/>`);
   const textX = x0 + 7.4;
   actions(edition).forEach((a, i) => {
     const y = M + 12.4 + i * 6.55;
-    for (let k = 0; k < a.cost; k++) out.push(chip(x0 + 1.4 + k * 2.9, y - 0.8, 1.3, HUE));
+    for (let k = 0; k < a.cost; k++) out.push(hex(x0 + 1.4 + k * 2.9, y - 0.8, 1.3, `${id}-glow`));
     out.push(text(textX, y, a.name, 2.6, { font: 'bold', fill: WHITE }));
     out.push(line(textX, y + 2.9, a.text, 2.2, x0 + cw - textX, measure, { fill: MUTED }));
   });
