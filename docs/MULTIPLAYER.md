@@ -68,7 +68,7 @@ store small signed messages for anyone. We run nothing.
 | Limit | Why / mitigation |
 |---|---|
 | **Players can cheat with dev tools**: every browser holds the seed, so future rolls and deck order are predictable | Inherent without a trusted party. Fine between friends; a server (§2 C) fixes it |
-| No "your turn" notifications | Needs a server to send email/Web Push. The lobby shows *Your move* for games last seen waiting on you |
+| No "your turn" notifications | The lobby shows *Your move* for games last seen waiting on you. Options, from none to a small stateless forwarder: [Turn notifications](#turn-notifications-proposed-2026-10-08) |
 | A seat lives in one browser | Moving to another device would need exporting the key (not built). Safari may clear a site's storage after ~7 days without a visit, losing the seat; we ask for persistent storage, which helps elsewhere |
 | Public relays may rate-limit or drop events | Six relays, paced sending, re-sending from every browser |
 | **Engine changes can break games in progress**: replay must give the same result on every browser | `golden.test.ts` flags any behaviour change; bump `PROTOCOL` (protocol.ts) when one would alter replays, which retires older games. A player still on the old version is caught by the position hash (*Out of sync*) |
@@ -88,6 +88,100 @@ store small signed messages for anyone. We run nothing.
   machine's address, so a phone on the same Wi-Fi can join (encryption is plain JavaScript, so
   it works on plain http too). In dev, `window.__quantumOnline.{state(), view(), legal(), mySeats()}` drives a game
   from a script.
+
+### Turn notifications (proposed, 2026-10-08)
+
+Not built. Today a player learns it is their move only by opening the game or the lobby (*Your
+move*, as last seen). The hard case is a phone with the app closed: iOS suspends a backgrounded
+page within seconds, so nothing in the page can listen for moves.
+
+**Can a browser push straight to another browser?** Web Push needs a POST to the recipient's push
+service. Checked 2026-10 with a CORS preflight from another origin:
+
+| Push service | Browsers | Cross-origin POST from a page |
+|---|---|---|
+| Mozilla (`updates.push.services.mozilla.com`) | Firefox | Allowed |
+| Google (`fcm.googleapis.com`) | Chrome, Android, Edge | Refused |
+| Apple (`web.push.apple.com`) | Safari, iOS | Refused |
+| ntfy.sh (a public push service, not Web Push) | ntfy app | Allowed (any origin) |
+
+So browser-to-browser Web Push reaches only Firefox players. Three options, cheapest first:
+
+1. **While the app is open (nothing to run).** When `myTurn` turns true in a hidden page: a
+   `Notification`, "● Your move" in the title, `navigator.setAppBadge`. The lobby keeps one light
+   relay subscription over every game in progress, so game B alerts while game A or the lobby is on
+   screen. Good on desktop, fair on Android, on-screen only on iOS. Worth doing whatever else we pick.
+2. **ntfy.sh (nothing to run; players install the ntfy app).** Each player picks a random topic and
+   carries it in an encrypted post; the mover's browser POSTs "Your move in …" to it (one `fetch`,
+   CORS is open). Keeps "we run nothing", at the cost of a second app and a QR code to subscribe.
+3. **Web Push to our own app, through a stateless forwarder.** Real notifications from the Quantum
+   icon. Described below.
+
+#### Option 3: Web Push through a forwarder
+
+```
+ Bob's app (once)                      Alice's browser (after her move)      Forwarder          Push service           Bob's phone
+ pushManager.subscribe(VAPID public)
+   → {endpoint, p256dh, auth}
+ encrypted `push` post to the log ───► sees "now Bob's turn",
+                                       POST {subscription, text} ─────────► VAPID-signs,
+                                                                            encrypts text ─────► delivers ───────────► SW 'push'
+                                                                                                                      → showNotification
+```
+
+1. **Subscribe.** Bob taps *Notify me* in the game (iOS asks for permission only on a tap). The
+   service worker calls `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })`
+   with our VAPID public key and gets a subscription: an endpoint on Apple's, Google's or Mozilla's
+   push service, and two keys to encrypt to.
+2. **Share it.** Bob's browser posts it as a new `push` post, signed by his seat and encrypted like
+   the rest, so only the game's players can read it. The latest one per seat counts (a new device,
+   or a `pushsubscriptionchange` renewal). Replay ignores `push` posts, so they leave the game
+   unchanged and need no `PROTOCOL` bump.
+3. **Send.** The browser whose post made it someone else's turn sends, so each change of turn is
+   sent once with no coordination. A browser moving an AI seat alerts the human who is next; in a
+   battle, each bystander it waits on is alerted. It POSTs `{ subscription, title, body, tag }` to
+   the forwarder.
+4. **Forward.** The forwarder does what a page can't for Chrome and Safari: signs a short-lived
+   VAPID JWT (ES256) with the private key only it holds, encrypts the text to Bob's keys (RFC 8291,
+   `aes128gcm`), and POSTs to the endpoint. It returns the push service's status and stores nothing.
+5. **Show.** A `push` handler in the service worker calls `showNotification(title, { body, tag:
+   gameTag })` (the tag makes quick moves replace one notification); `notificationclick` opens or
+   focuses the game's link. iOS requires every push to show a notification, which we do anyway.
+
+**Changes.** `workbox.importScripts: ['push-sw.js']` in `vite.config.ts` and a small
+`public/push-sw.js` (the generated service worker and the update flow in `pwa.ts` stay as they
+are); the `push` post type in `protocol.ts`, carried but not replayed by the timeline; a *Notify me*
+toggle per seat and the "my post changed the turn, so send" check in `useOnlineGame.ts`; the
+forwarder in a new `apps/push/`, deployed apart from GitHub Pages.
+
+**Where to host the forwarder.**
+
+| Host | Fit | Notes |
+|---|---|---|
+| **Cloudflare Workers** (recommended) | Best | Free tier 100k requests/day, far beyond our needs; no cold start; web crypto; `wrangler deploy`; the VAPID key as a secret; a rate-limit binding |
+| Deno Deploy | As good | Free tier, web crypto, deploys from GitHub |
+| Vercel / Netlify Functions | Fine | Node, so the `web-push` npm package works as is; slower cold starts |
+| Val Town | Quickest to try | Paste a function, get a URL; better for a prototype than for keeps |
+| Firebase Cloud Messaging | Poor | Google's own layer: its SDK on the client, and still a server to send |
+
+`web-push` needs Node's `crypto`, so on Workers or Deno we would use a web-crypto port or write the
+RFC 8291 encryption and VAPID signing ourselves (~150 lines).
+
+**Abuse.** The forwarder is a public URL, so it forwards only to known push hosts
+(`*.push.apple.com`, `fcm.googleapis.com`, `*.push.services.mozilla.com`, `*.notify.windows.com`),
+caps the text, checks `Origin` (weak but free) and limits pushes per endpoint (e.g. 30 an hour). The
+real protection is that a push only reaches subscriptions made with our VAPID key, and an endpoint
+is only found inside an encrypted game log.
+
+**Privacy.** The forwarder and the push service see the text. To show them almost nothing, send
+only "Your move" and the game's tag, and let the service worker look up the game's name in IndexedDB
+(service workers can't read localStorage, so the lobby would mirror its list there).
+
+**Limits.** On iOS, only 16.4 and later, installed to the home screen (ties in with phase 5 of
+[MOBILE.md](MOBILE.md)); a Safari tab gets nothing. A forwarder that is down stops alerts, not games:
+moves still go through the relays. An expired subscription (the push service answers 410) can't be
+repaired by the sender; Bob's app re-subscribes and posts a new one the next time it opens. And "we
+run nothing" becomes "we run one stateless function", a change to the decision above.
 
 ---
 
@@ -327,7 +421,8 @@ anything random happens or the turn passes. That matches the current hot-seat be
 ### Notifications (async play)
 "It's your turn" via **email** (works everywhere) and **Web Push**. Note: on iPhone/iPad,
 Web Push only works when the app is installed to the home screen — this ties in with
-phase 5 of [MOBILE.md](MOBILE.md).
+phase 5 of [MOBILE.md](MOBILE.md). For the serverless build, see
+[Turn notifications](#turn-notifications-proposed-2026-10-08) in §0.
 
 ---
 
