@@ -52,12 +52,10 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
     setSel(s);
   }, []);
 
-  /** Sends a ship somewhere; on success, plays the move sound and clears the selection. */
+  /** Sends a ship somewhere; on success, clears the selection. */
   const place = useCallback(
     (a: Action) => {
-      if (!dispatch(a)) return;
-      sfx.move();
-      setSel(NONE);
+      if (dispatch(a)) setSel(NONE);
     },
     [dispatch],
   );
@@ -100,7 +98,7 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
       if (head?.kind === 'placeShips') {
         // Place the selected ship, or the next one in the scrapyard.
         const d = sel.kind === 'scrap' ? sel.die : scrapyard(game, head.player)[0]?.id;
-        if (d && dispatch({ type: 'placeShip', die: d, to: cell })) sfx.move();
+        if (d) dispatch({ type: 'placeShip', die: d, to: cell });
         return setSel(NONE);
       }
       if (head?.kind === 'unveil' && sel.kind === 'scrap') {

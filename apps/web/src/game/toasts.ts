@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { GameState, LogEntry, LogEvent } from '@quantum/engine';
-import { sfx } from '../sound';
 import { logText } from './logText';
+import { playSounds } from './sounds';
 
 export interface Toast {
   id: number;
@@ -10,25 +10,25 @@ export interface Toast {
   tone: 'info' | 'good' | 'bad' | 'gold';
 }
 
-/** How the UI reacts to each logged event: a toast tone and a sound (either may be absent). */
-const REACTIONS: Record<LogEvent, { tone?: Toast['tone']; sound?: () => void }> = {
-  victory: { tone: 'gold', sound: () => sfx.win() },
-  infamy: { tone: 'gold' },
-  seize: { tone: 'gold', sound: () => sfx.cube() },
-  conquer: { tone: 'good', sound: () => sfx.cube() },
-  startPlanet: { sound: () => sfx.cube() },
-  battleWon: { tone: 'good', sound: () => sfx.hit() },
-  repelled: { tone: 'bad', sound: () => sfx.repel() },
-  missile: { tone: 'bad', sound: () => sfx.missile() },
-  shipDestroyed: { tone: 'bad', sound: () => sfx.hit() },
-  cardTaken: { tone: 'info', sound: () => sfx.card() },
-  cardPlayed: { tone: 'info', sound: () => sfx.card() },
-  expansion: { tone: 'info', sound: () => sfx.card() },
-  discard: { tone: 'info' },
-  breakthrough: { tone: 'info' },
+/** The toast tone for each logged event (none: no toast). Sounds are in sounds.ts. */
+const TONES: Record<LogEvent, Toast['tone'] | undefined> = {
+  victory: 'gold',
+  infamy: 'gold',
+  seize: 'gold',
+  conquer: 'good',
+  startPlanet: undefined,
+  battleWon: 'good',
+  repelled: 'bad',
+  missile: 'bad',
+  shipDestroyed: 'bad',
+  cardTaken: 'info',
+  cardPlayed: 'info',
+  expansion: 'info',
+  discard: 'info',
+  breakthrough: 'info',
 };
 
-const reaction = (e: LogEntry) => (e.event ? REACTIONS[e.event] : {});
+const toneOf = (e: LogEntry) => (e.event ? TONES[e.event] : undefined);
 
 const MAX_TOASTS = 4;
 const TOAST_MS = 4200;
@@ -39,9 +39,9 @@ export function useToasts() {
 
   const announce = useCallback((prev: GameState, next: GameState) => {
     const fresh = next.log.filter((e) => e.id > (prev.log.at(-1)?.id ?? 0));
-    for (const e of fresh) reaction(e).sound?.();
+    playSounds(prev, next, fresh);
     const shown = fresh.flatMap((e): Toast[] => {
-      const tone = reaction(e).tone;
+      const tone = toneOf(e);
       return tone ? [{ id: e.id, text: logText(next, e), player: e.player, tone }] : [];
     });
     if (!shown.length) return;

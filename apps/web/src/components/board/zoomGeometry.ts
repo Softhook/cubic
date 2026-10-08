@@ -1,9 +1,9 @@
 /** The board zoom's geometry (useBoardZoom): where the board may be, for a wrap of a given size. Pure, so it's tested. */
 
-/** Zoomed in, a space is at most this big. */
+/** Zoomed in, a space is at most this big, or `MAX_ZOOM` times its fitted size where that is bigger. */
 const MAX_CELL = 80;
-/** Zoom only where it makes the spaces at least this much bigger; otherwise the board just fits. */
-const MIN_GAIN = 1.15;
+/** How far in a big screen zooms, where the fitted spaces are near `MAX_CELL` or past it already. */
+const MAX_ZOOM = 1.8;
 
 export interface View {
   /** The space's size in pixels. */
@@ -21,16 +21,16 @@ export interface Frame {
   h: number;
   /** The space's size when the whole board fits. */
   fit: number;
-  /** Zoomed all the way in; `fit` where zooming wouldn't help. */
+  /** Zoomed all the way in. */
   max: number;
 }
 
 export function frame(w: number, h: number, rows: number, cols: number): Frame {
   const fit = Math.max(8, Math.min(140, Math.floor(Math.min(w / cols, h / rows))));
-  return { rows, cols, w, h, fit, max: MAX_CELL >= fit * MIN_GAIN ? MAX_CELL : fit };
+  return { rows, cols, w, h, fit, max: Math.max(MAX_CELL, Math.round(fit * MAX_ZOOM)) };
 }
 
-/** Whether zooming does anything here (it doesn't when the spaces are big already). */
+/** Whether zooming does anything here. */
 export const canZoom = (f: Frame) => f.max > f.fit;
 
 export const clampCell = (f: Frame, cell: number) => Math.min(f.max, Math.max(f.fit, cell));

@@ -12,11 +12,11 @@ describe('frame', () => {
     expect(canZoom(phone)).toBe(true);
   });
 
-  it("doesn't zoom where the spaces are nearly big enough already", () => {
+  it('zooms a big screen’s spaces to 1.8× their fitted size', () => {
     const desk = frame(700, 700, 9, 9); // 77px spaces
-    expect(desk.max).toBe(desk.fit);
-    expect(canZoom(desk)).toBe(false);
-    expect(softCell(desk, 200)).toBe(desk.fit);
+    expect(desk.max).toBe(139);
+    expect(canZoom(desk)).toBe(true);
+    expect(zoomAround(desk, fitted(desk), 10, 350, 350).cell).toBe(139);
   });
 });
 
