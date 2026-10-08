@@ -1002,6 +1002,11 @@ input { font: inherit; }
 .lab-grid.cards .lab-thumb img, .lab-card-ph { aspect-ratio: 63.5 / 88.9; width: 100%; display: block; }
 .lab-card-ph { background: var(--panel-solid); border-radius: 6px; }
 .lab-detail > img.lab-card, .lab-detail > .lab-card { aspect-ratio: auto; width: min(100%, 360px); align-self: center; filter: drop-shadow(0 12px 30px rgba(0, 0, 0, .5)); }
+.lab-aid-page { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 420px); gap: 24px; padding: 20px; align-items: start; }
+.lab-aid { width: 100%; aspect-ratio: 148 / 105; display: block; filter: drop-shadow(0 12px 30px rgba(0, 0, 0, .5)); }
+.lab-aid-ph { background: var(--panel-solid); border-radius: 6px; }
+.lab-aid-side { display: flex; flex-direction: column; gap: 12px; }
+@media (max-width: 800px) { .lab-aid-page { grid-template-columns: 1fr; } }
 .lab-sub { font-family: var(--display); font-size: 13px; letter-spacing: .04em; margin: 8px 0 0; }
 .lab-progress { margin: 0; font-size: 13px; color: var(--gold); }
 .lab-spec { margin: 0; padding: 8px 10px; font-size: 11.5px; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 6px; white-space: pre-wrap; word-break: break-all; }

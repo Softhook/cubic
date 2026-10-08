@@ -1,4 +1,4 @@
-import { CARD, TILE } from '@quantum/art';
+import { AID, CARD, TILE } from '@quantum/art';
 
 /**
  * The printed pieces, and the one convention every print file follows: size, bleed, sheet layout and
@@ -6,7 +6,7 @@ import { CARD, TILE } from '@quantum/art';
  */
 
 export interface Piece {
-  id: 'card' | 'tile';
+  id: 'card' | 'tile' | 'aid';
   /** For file names: `cubic-cards-…`. */
   plural: string;
   /** Trim size, mm. */
@@ -22,6 +22,7 @@ export interface Piece {
 export const PIECES = {
   card: { id: 'card', plural: 'cards', w: CARD.w, h: CARD.h, bleed: CARD.bleed, cols: 3, rows: 3 },
   tile: { id: 'tile', plural: 'tiles', w: TILE.size, h: TILE.size, bleed: TILE.bleed, cols: 2, rows: 2 },
+  aid: { id: 'aid', plural: 'aids', w: AID.w, h: AID.h, bleed: AID.bleed, cols: 1, rows: 2 },
 } as const satisfies Record<string, Piece>;
 
 /** One printable face: a card front, a deck's back, a tile. */

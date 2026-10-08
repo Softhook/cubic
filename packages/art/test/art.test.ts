@@ -8,6 +8,8 @@ import { ICONS } from '../src/icons';
 import { CARD_CATEGORIES } from '../src/tokens';
 import { ILLUSTRATIONS } from '../src/illustrations';
 import { rng } from '../src/rng';
+import { MIN_TEXT, playerAidSvg } from '../src/aid';
+import { shipDie } from '../src/kit/starships';
 
 /** Gap between a box (centre, half-width, half-height) and a square (centre, half-size). */
 const boxGap = (cx: number, cy: number, hw: number, hh: number, x: number, y: number, h: number) =>
@@ -152,5 +154,42 @@ describe('card art', () => {
   it('is poker size, with bleed when asked', () => {
     expect(cardSvg(faces[0])).toContain('width="63.5mm" height="88.9mm"');
     expect(cardSvg(faces[0], { bleed: true })).toContain('width="69.5mm" height="94.9mm"');
+  });
+});
+
+describe('player aid', () => {
+  it('renders both editions without bad numbers', () => {
+    for (const edition of ['community', 'classic'] as const) {
+      const svg = playerAidSvg({ edition, bleed: true });
+      expect(svg).not.toMatch(/NaN|undefined|Infinity/);
+      expect(svg).toContain(`viewBox="-3 -3 154 111"`);
+    }
+  });
+
+  it('keeps every line of text readable', () => {
+    for (const edition of ['community', 'classic'] as const) {
+      const sizes = [...playerAidSvg({ edition }).matchAll(/font-size="([\d.]+)"/g)].map((m) => Number(m[1]));
+      expect(sizes.length).toBeGreaterThan(20);
+      expect(Math.min(...sizes)).toBeGreaterThanOrEqual(MIN_TEXT);
+    }
+  });
+
+  it('has a pad that fits a 19 mm die for dominance and for research', () => {
+    expect(TILE.pad).toBeGreaterThanOrEqual(DIE + 4);
+    const svg = playerAidSvg();
+    expect(svg).toContain('DOMINANCE');
+    expect(svg).toContain('RESEARCH');
+    expect(svg.match(/width="24" height="24"/g)).toHaveLength(2);
+  });
+
+  it('only mentions missiles in the Community Edition', () => {
+    expect(playerAidSvg({ edition: 'community' })).toContain('MISSILE');
+    expect(playerAidSvg({ edition: 'classic' })).not.toContain('MISSILE');
+  });
+
+  it('draws six different ships on their dice', () => {
+    const ships = [1, 2, 3, 4, 5, 6].map((v) => shipDie('s', v, 0, 0, 19, 200).body);
+    expect(new Set(ships).size).toBe(6);
+    for (const s of ships) expect(s).not.toMatch(/NaN|undefined/);
   });
 });

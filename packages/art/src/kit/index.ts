@@ -6,6 +6,7 @@
  */
 export * from './core';
 export * from './ships';
+export * from './starships';
 export * from './effects';
 export * from './board';
 export * from './hud';

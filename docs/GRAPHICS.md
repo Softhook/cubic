@@ -275,6 +275,25 @@ exported in the Art Lab (`#lab/cards`).
 - **Exports**: the Art Lab's standard print exports (§4, In the Art Lab), with a folder per deck and
   its back in the ZIP, and print sheets optionally with all copies and duplex backs.
 
+### Player aid
+
+Built: `playerAidSvg` in [`packages/art/src/aid.ts`](../packages/art/src/aid.ts), shown and exported in the Art
+Lab (`#lab/aid`).
+
+- **Size**: A6 landscape, 148 × 105 mm, 3 mm bleed; print sheets put two on an A4 or US Letter page ("All copies" prints four).
+- **One board for every player**: one flat ground, no boxes, one accent (the game's cyan) on the
+  action chips, pips and ship details. Hierarchy: the ship dice first, then the die pads, then the
+  actions; rules are a line each.
+- **Readable**: no text under `MIN_TEXT` (2 mm, about 6 pt); a test checks every size.
+- **Die pads**: dominance (left) and research (right), each the 24 mm of a tile's space pad, for the
+  19 mm dice, with what moves the die and what happens at 6.
+- **The turn**: "Up to 3 actions" with three action chips, each action with its cost in chips and one
+  line of rules; then combat, missiles (Community; Classic shows defeat instead) and cards.
+- **The fleet**: each ship on its die face (`shipDie` in
+  [`kit/starships.ts`](../packages/art/src/kit/starships.ts)), with its power under it but no name:
+  flat two-tone starships lit from the left, the pips around them, and the centre pip of 1, 3 and 5
+  as the ship's core.
+
 ### Card art
 
 The art window takes either:
@@ -375,7 +394,7 @@ Because the print route is a normal page, it can be opened in a browser to check
 | `cards-pnp` | Print-and-play sheets, 3×3 cards, crop marks, duplex backs mirrored | A4 and US Letter |
 | `tiles` | One file per tile (30) with bleed, plus backs | 102 × 102 mm |
 | `tiles-pnp` | Tiles 2 × 2 per page with crop marks | A4 and US Letter |
-| `player-board` | Player board / reference sheet | A4 or A5 |
+| `player-board` | Player board / reference sheet (the A6 player aid is built, §2 Player aid) | A4 or A5 |
 | `proof` | Contact sheet of everything at reduced size, for review | A4 |
 
 Card and tile **trim, bleed and safe zone** live in tokens, with the vendor's numbers once chosen
