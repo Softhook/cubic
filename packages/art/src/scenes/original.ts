@@ -1,4 +1,5 @@
 import { hsl, n, type Fragment } from '../svg';
+import { ACTION_HUE } from '../tokens';
 import {
   arrowPath, at, beam, burst, chip, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard,
   panel, RESEARCH, scrapyard, shield, ship, shipOn, slash, space, sparkles, trails, world, worldOn, wreck,
@@ -8,7 +9,7 @@ import { SKILL_SCENES } from './skills';
 import { TACTIC_SCENES } from './tactics';
 
 /** A spent chip with a 0 under it: "this costs no action". */
-const freeChip = (x: number, y: number, r: number, hue: number) => chip(x, y, r, hue, 'spent') + glyph(x, y + r * 2, '0', r * 1.1, hsl(hue, 100, 85));
+const freeChip = (x: number, y: number, r: number) => chip(x, y, r, 'spent') + glyph(x, y + r * 2, '0', r * 1.1, hsl(ACTION_HUE, 100, 85));
 
 /**
  * The original (2013) Command and Gambit cards. Where one is the same card as in the Community
@@ -39,7 +40,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
 
   'o-arrogant': {
     caption: 'your fleet sweeps past in formation, dwarfing a lonely pair of enemy ships',
-    draw: ({ id, r, hue, box, p1, p2 }) => {
+    draw: ({ id, r, box, p1, p2 }) => {
       const out = [];
       const pos = [[0.14, 0.5], [0.26, 0.38], [0.26, 0.62], [0.38, 0.26], [0.38, 0.5], [0.38, 0.74]];
       pos.forEach(([a, b], k) => {
@@ -48,7 +49,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         out.push(ship(`${id}-s${k}`, x, y, 3, [6, 4, 5, 3, 2, 1][k], p1));
       });
       out.push(ship(`${id}-e0`, ...at(box, 0.82, 0.66), 2.6, 2, p2, { opacity: 0.7 }), ship(`${id}-e1`, ...at(box, 0.9, 0.78), 2.6, 5, p2, { opacity: 0.7 }));
-      out.push(f(chip(...at(box, 0.82, 0.24), 3.8, hue, 'new')));
+      out.push(f(chip(...at(box, 0.82, 0.24), 3.8, 'new')));
       return out;
     },
   },
@@ -57,7 +58,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
 
   'o-cerebral': {
     caption: 'the trade costs no action: an unlit chip marked 0 beside the swap',
-    draw: ({ id, r, hue, box }) => {
+    draw: ({ id, r, box }) => {
       const [ax, ay] = at(box, 0.24, 0.42);
       const [bx, by] = at(box, 0.62, 0.42);
       return [
@@ -66,7 +67,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         glow(`${id}-g`, bx, by, 8, 8, RESEARCH, 0.5),
         f(icon('research', bx, by, 8, hsl(RESEARCH, 100, 88), 2)),
         f(glyph(ax, ay + 9, '−1', 3.6, hsl(DOMINANCE, 100, 75)) + glyph(bx, by + 9, '+3', 3.6, hsl(RESEARCH, 100, 85))),
-        f(freeChip(...at(box, 0.86, 0.36), 3.2, hue)),
+        f(freeChip(...at(box, 0.86, 0.36), 3.2)),
         f(sparkles(r.fork('sp'), bx, by, 6, 9, 3)),
       ];
     },
@@ -105,7 +106,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         ship(`${id}-b`, bx, by, 4.6, 4, p1),
         f(glyph((ax + bx) / 2, ay + 1, '=', 6, hsl(hue, 100, 85))),
         glow(`${id}-cg`, kx, ky, 8, 8, hue, 0.5),
-        f(chip(kx, ky, 4, hue, 'new')),
+        f(chip(kx, ky, 4, 'new')),
         f(sparkles(r.fork('sp'), (ax + bx) / 2, ay - 9, 2, 6, 3)),
       ];
     },
@@ -154,7 +155,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         arrowPath(`${id}-p`, `M${n(pts[0][0])} ${n(pts[0][1])}C${n(pts[1][0] - 10)} ${n(pts[1][1])} ${n(pts[1][0] + 8)} ${n(pts[1][1] - 6)} ${n(pts[2][0] - 4)} ${n(pts[2][1])}S${n(pts[3][0] - 8)} ${n(pts[3][1] + 4)} ${n(pts[3][0] - 3)} ${n(pts[3][1] + 1)}`, hsl(hue, 90, 80), { w: 0.4, dash: true }),
         ship(`${id}-s`, ...pts[3], 3.6, 1, p1),
         f(`<g opacity=".85">${icon('combat', ...at(box, 0.12, 0.26), 3.4, hsl(0, 50, 65))}${slash(...at(box, 0.12, 0.26), 2.8)}</g>`),
-        f(chip(...at(box, 0.84, 0.72), 3, hue, 'new')),
+        f(chip(...at(box, 0.84, 0.72), 3, 'new')),
       ];
     },
   },
@@ -189,7 +190,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         },
         shipOn(`${id}-s`, g, 0, 0, 3.8, 6, p1),
         f(sparkles(r.fork('sp'), cx, cy - 5, 3, 7, 3)),
-        f(panel(kx - 9.5, ky - 4.5, 19, 9, hue) + chips(kx, ky, 2.9, hue, ['lit', 'lit', 'lit'])),
+        f(panel(kx - 9.5, ky - 4.5, 19, 9, hue) + chips(kx, ky, 2.9, ['lit', 'lit', 'lit'])),
         f(glyph(kx, ky + 9, '0', 4, hsl(hue, 100, 85))),
       ];
     },
@@ -205,7 +206,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         ...wreck(`${id}-w1`, ...pts[1], 5.5, p2, 24, r.fork('w1')),
         ...wreck(`${id}-w2`, ...pts[2], 5.5, p2, 24, r.fork('w2')),
         ship(`${id}-s`, ...pts[3], 4, 2, p1),
-        f(chip(pts[1][0], pts[1][1] - 8, 1.8, hue) + chip(pts[2][0], pts[2][1] - 8, 1.8, hue)),
+        f(chip(pts[1][0], pts[1][1] - 8, 1.8) + chip(pts[2][0], pts[2][1] - 8, 1.8)),
       ];
     },
   },
@@ -233,7 +234,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         arrowPath(`${id}-tw`, `M${n(cx - 8)} ${n(cy - 9)}A12 12 0 0 1 ${n(cx + 9)} ${n(cy - 8)}`, hsl(hue, 100, 82), { w: 0.6 }),
         ship(`${id}-s`, cx, cy, 4.4, 3, p1),
         f(glyph(cx + 14, cy - 11, '±1', 3.6, hsl(hue, 100, 85))),
-        f(freeChip(...at(box, 0.82, 0.38), 3.4, hue)),
+        f(freeChip(...at(box, 0.82, 0.38), 3.4)),
         f(sparkles(r.fork('sp'), cx, cy, 11, 14, 3)),
       ];
     },
@@ -399,7 +400,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         }),
         ship(`${id}-s`, ...nodes[0], 3.4, 4, p1),
         f(scrapyard(nodes[1][0], nodes[1][1] + 1, 9, 5, hue) + die(nodes[1][0], nodes[1][1] - 1, 1.8, 2, p1, { rotate: 20 })),
-        f(chip(...nodes[2], 3.4, hue, 'new')),
+        f(chip(...nodes[2], 3.4, 'new')),
         f(sparkles(r.fork('sp'), cx, cy, 2, 6, 3)),
       ];
     },
@@ -500,7 +501,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         burst(`${id}-x`, g.x(1, 0), g.y(1, 0) - 2.5, 6, 352, 7, r),
         shipOn(`${id}-s`, g, 0, 0, 3.8, 6, p1),
         arrowPath(`${id}-a`, `M${n(g.x(0, 0) + 2)} ${n(g.y(0, 0) - 8)}Q${n((g.x(0, 0) + g.x(1, 0)) / 2 + 1)} ${n(g.y(0, 0) - 11)} ${n(g.x(1, 0))} ${n(g.y(1, 0) - 7)}`, hsl(hue, 100, 85), { w: 0.55 }),
-        f(chip(...at(box, 0.15, 0.3), 3.2, hue, 'spent') + glyph(at(box, 0.15, 0.3)[0], at(box, 0.15, 0.3)[1] + 6.5, '0', 3.2, hsl(hue, 100, 85))),
+        f(freeChip(...at(box, 0.15, 0.3), 3.2)),
       ];
     },
   },
@@ -532,7 +533,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         f(die(wx, wy, 3, 1, p2, { opacity: 0.4, rotate: 40 })),
         glow(`${id}-aura`, sx, sy, 10, 10, hue, 0.45),
         ship(`${id}-s`, sx, sy, 5, 6, p1),
-        f(chip(sx, sy - 13, 3.6, hue, 'new')),
+        f(chip(sx, sy - 13, 3.6, 'new')),
         arrowPath(`${id}-up`, `M${n(sx)} ${n(sy - 6.5)}V${n(sy - 8.6)}`, hsl(hue, 100, 85), { w: 0.4 }),
         f(sparkles(r.fork('sp'), sx, sy - 6, 6, 12, 4)),
       ];
@@ -573,7 +574,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         ...trails(`${id}-t`, r.fork('t'), cx + 9, cy - 1, 1, -0.1, 24, 2, hsl(hue, 90, 75), 6),
         f(ring),
         ship(`${id}-s`, cx + 11, cy - 1.5, 4.4, 2, p1),
-        f(chips(kx, ky, 2.4, hue, ['lit', 'lit'])),
+        f(chips(kx, ky, 2.4, ['lit', 'lit'])),
         f(sparkles(r.fork('sp'), cx, cy, 10, 16, 5)),
       ];
     },

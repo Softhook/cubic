@@ -1,6 +1,7 @@
 import type { CSSProperties, MouseEvent, ReactNode } from 'react';
 import type { CardDeck } from '@quantum/art';
 import { MODES, SHIP_ABILITIES, SHIP_NAMES } from '@quantum/engine';
+import { ActionHex } from '../components/Card';
 import { PLAYER_COLORS } from '../theme';
 import { Arrow, CubeIcon, Diagram, DieFace, DieIcon, Dots, Glow, Icon, Mark, Note, Path, PlanetIcon, PlanetMarks, Ship, Tile, cardBackUrl, reachable, type At } from './diagrams';
 
@@ -48,7 +49,7 @@ function Cost({ n }: { n: number }) {
   const label = `${n} action${n > 1 ? 's' : ''}`;
   return (
     <span className="mn-cost" aria-label={label}>
-      {Array.from({ length: n }, (_, i) => <i key={i} />)}
+      {Array.from({ length: n }, (_, i) => <ActionHex key={i} size={16} />)}
       <span>{label}</span>
     </span>
   );

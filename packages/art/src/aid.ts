@@ -2,7 +2,7 @@ import { estimateWidth, type Measure } from './card';
 import { icon } from './icons';
 import { shipDie } from './kit/starships';
 import { document, esc, hsl, n, type Fragment } from './svg';
-import { CUBE_PAD, DOMINANCE, FONTS, RESEARCH, TILE } from './tokens';
+import { ACTION_HUE, CUBE_PAD, DOMINANCE, FONTS, INK, RESEARCH, TILE } from './tokens';
 
 /**
  * The player aid: an A6 board, landscape, the same for every player. Down the left edge, a rail of
@@ -10,8 +10,8 @@ import { CUBE_PAD, DOMINANCE, FONTS, RESEARCH, TILE } from './tokens';
  * the dominance and research dice (19 mm), and between them the three actions; along the bottom,
  * the six ships on their die faces with what each can do.
  *
- * Kept deliberately quiet: one flat ground, one accent colour, no boxes. The ship dice are the largest
- * thing on it, then the die pads, then the actions. No text is smaller than `MIN_TEXT`.
+ * Kept deliberately quiet: one flat ground, one accent colour (actions take the cards' yellow), no boxes.
+ * The ship dice are the largest thing on it, then the die pads, then the actions. No text is smaller than `MIN_TEXT`.
  */
 
 export const AID = {
@@ -120,13 +120,13 @@ const HAIR = hsl(224, 20, 30);
 /** The one accent: the game's own cyan, the same for every player. */
 const HUE = 194;
 
-/** One action: a plain hexagon in the accent colour, with the same soft glow as the dice's pips (`glow` is that gradient's id). */
+/** One action: a yellow hexagon with the action bolt, as on the cards (`glow` is its soft halo's gradient id). */
 function hex(cx: number, cy: number, r: number, glow: string): string {
   const pts = [...Array(6)].map((_, i) => {
     const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
     return `${n(cx + Math.cos(a) * r)} ${n(cy + Math.sin(a) * r)}`;
   });
-  return `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r * 1.8)}" fill="url(#${glow})"/><path d="M${pts.join('L')}Z" fill="${hsl(HUE, 100, 70)}"/>`;
+  return `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r * 1.8)}" fill="url(#${glow})"/><path d="M${pts.join('L')}Z" fill="${hsl(ACTION_HUE, 95, 58)}"/>` + icon('action', cx, cy, r * 1.2, INK, 2.8);
 }
 
 /** A die pad: where the dominance or research die sits, the 24 mm of a tile's space (a 19 mm die with room round it). */
@@ -153,7 +153,7 @@ export function playerAidSvg(o: AidOptions = {}): string {
   const accent = hsl(HUE, 90, 66);
 
   out.push(`<rect x="${-b}" y="${-b}" width="${W + 2 * b}" height="${H + 2 * b}" fill="${GROUND}"/>`);
-  defs.push(`<radialGradient id="${id}-glow"><stop offset="0" stop-color="${hsl(HUE, 100, 65)}" stop-opacity=".6"/><stop offset="1" stop-color="${hsl(HUE, 100, 65)}" stop-opacity="0"/></radialGradient>`);
+  defs.push(`<radialGradient id="${id}-glow"><stop offset="0" stop-color="${hsl(ACTION_HUE, 100, 60)}" stop-opacity=".5"/><stop offset="1" stop-color="${hsl(ACTION_HUE, 100, 60)}" stop-opacity="0"/></radialGradient>`);
 
   // --- The cube rail: a pad per cube, spread over the full height, with the win condition alongside.
   // The pads are the planets' cube pads in the die pads' quiet fill; the text runs up the rail, like a spine.
@@ -194,12 +194,12 @@ export function playerAidSvg(o: AidOptions = {}): string {
   const x0 = left + colW + 4;
   const cw = W - M - colW - 4 - x0;
   out.push(text(x0, M + 4.6, '3 actions', 3.2, { font: 'bold', fill: WHITE, upper: true, track: 0.06 }));
-  for (let i = 0; i < 3; i++) out.push(hex(x0 + cw - 2 - i * 4.6, M + 3.5, 1.95, `${id}-glow`));
+  for (let i = 0; i < 3; i++) out.push(hex(x0 + cw - 2.2 - i * 5, M + 3.5, 2.25, `${id}-glow`));
   out.push(`<path d="M${n(x0)} ${n(M + 7.6)}H${n(x0 + cw)}" stroke="${HAIR}" stroke-width=".25"/>`);
-  const textX = x0 + 7.4;
+  const textX = x0 + 7.8;
   actions(edition).forEach((a, i) => {
     const y = M + 12.2 + i * 6.2;
-    for (let k = 0; k < a.cost; k++) out.push(hex(x0 + 1.4 + k * 2.9, y - 0.8, 1.3, `${id}-glow`));
+    for (let k = 0; k < a.cost; k++) out.push(hex(x0 + 1.6 + k * 3.6, y - 0.8, 1.6, `${id}-glow`));
     out.push(text(textX, y, a.name, 2.6, { font: 'bold', fill: WHITE }));
     out.push(line(textX, y + 2.9, a.text, 2.2, x0 + cw - textX, measure, { fill: MUTED }));
   });

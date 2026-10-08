@@ -75,7 +75,7 @@ export const TACTIC_SCENES: Record<string, Illustration> = {
         arrowPath(`${id}-path`, `M${n(box.x - 2)} ${n(py + 12)}Q${n(px - 6)} ${n(py + 14)} ${n(px + 12)} ${n(py + 2)}Q${n(px + 16)} ${n(py - 10)} ${n(px)} ${n(py - 12)}Q${n(px - 14)} ${n(py - 13)} ${n(px - 24)} ${n(py - 6)}`, hsl(hue, 90, 80), { w: 0.45, dash: true }),
         ...trails(`${id}-t`, r.fork('t'), px - 25, py - 6, -1, 0.4, 10, 1.4, hsl(hue, 90, 75), 4),
         ship(`${id}-s`, px - 26, py - 5, 4, 2, p1),
-        f(panel(...at(box, 0.68, 0.14), 13, 7, hue) + chips(at(box, 0.68, 0.14)[0] + 6.5, at(box, 0.68, 0.14)[1] + 3.5, 2.2, hue, ['new', 'new'])),
+        f(panel(...at(box, 0.68, 0.14), 13, 7, hue) + chips(at(box, 0.68, 0.14)[0] + 6.5, at(box, 0.68, 0.14)[1] + 3.5, 2.2, ['new', 'new'])),
       ];
     },
   },
@@ -102,7 +102,7 @@ export const TACTIC_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, hue, box, p2 }) => {
       const [cx, cy] = at(box, 0.5, 0.36);
       return [
-        f(panel(cx - 14, cy - 5, 28, 10, p2, 0.85) + chips(cx, cy, 3.4, p2, ['lit', 'lit', 'dim'], false)),
+        f(panel(cx - 14, cy - 5, 28, 10, p2, 0.85) + chips(cx, cy, 3.4, ['lit', 'lit', 'dim'])),
         f(`<path d="M${n(cx + 7.5)} ${n(cy + 5)}C${n(cx + 7.5)} ${n(cy + 10)} ${n(cx + 2)} ${n(cy + 11)} ${n(cx + 1)} ${n(cy + 14)}" fill="none" stroke="${hsl(0, 80, 60)}" stroke-width=".5"/><path d="M${n(cx + 1)} ${n(cy + 17)}C${n(cx)} ${n(cy + 20)} ${n(cx - 4)} ${n(cy + 21)} ${n(cx - 6)} ${n(cy + 23)}" fill="none" stroke="${hsl(0, 80, 60)}" stroke-width=".5"/>`),
         burst(`${id}-x`, cx + 1, cy + 15.5, 3.4, hue, 7, r),
         f(sparkles(r.fork('sp'), cx + 1, cy + 15.5, 2, 5, 4, hsl(hue, 100, 80))),

@@ -508,10 +508,10 @@ input { font: inherit; }
 .turn-title { display: flex; flex-direction: column; line-height: 1.2; }
 .turn-title small { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
 .turn-title strong { font-family: var(--display); font-size: 16px; letter-spacing: .04em; }
-.action-pips { margin-left: auto; display: flex; align-items: center; gap: 5px; }
+.action-pips { margin-left: auto; display: flex; align-items: center; gap: 3px; }
 .action-pips small { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin-right: 2px; }
-.action-pips span { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--pc); opacity: .35; transition: all .3s; }
-.action-pips span.on { background: var(--pc); opacity: 1; box-shadow: 0 0 8px var(--pc); }
+.action-pips .action-hex { color: var(--pc); opacity: .35; transition: all .3s; }
+.action-pips .action-hex.on { opacity: 1; filter: drop-shadow(0 0 4px var(--pc)); }
 .action-pips em { font-style: normal; font-size: 10px; color: var(--good); margin-left: 4px; }
 .hint { margin: 10px 0 0; font-size: 13px; color: #c3cbea; line-height: 1.45; }
 .hint.thinking { display: flex; align-items: center; gap: 8px; color: var(--muted); }

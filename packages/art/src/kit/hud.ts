@@ -1,5 +1,5 @@
 import { icon } from '../icons';
-import { DOMINANCE, FONTS, INK, RESEARCH } from '../tokens';
+import { ACTION_HUE, DOMINANCE, FONTS, INK, RESEARCH } from '../tokens';
 import { esc, hsl, n, type Fragment } from '../svg';
 import { f, line } from './core';
 import { glow } from './effects';
@@ -57,9 +57,10 @@ export function track(x: number, y: number, kind: 'research' | 'dominance', valu
 /** Where slot `i` (1–6) of a track drawn at (x, y) sits. */
 export const trackSlot = (x: number, i: number, cell = 3.2) => x + cell * 1.4 + (i - 1) * (cell * 1.3) + cell / 2;
 
-/** One action: a hexagonal chip with the action bolt (`bolt: false` leaves the hexagon plain). */
-export function chip(cx: number, cy: number, r: number, hue: number, state: 'lit' | 'dim' | 'new' | 'broken' | 'spent' = 'lit', bolt = true): string {
-  const mark = (colour: string, size: number, w: number) => (bolt ? icon('action', cx, cy, size, colour, w) : '');
+/** One action: a yellow hexagonal chip with the action bolt, on every card whatever its colour. */
+export function chip(cx: number, cy: number, r: number, state: 'lit' | 'dim' | 'new' | 'broken' | 'spent' = 'lit'): string {
+  const hue = ACTION_HUE;
+  const mark = (colour: string, size: number, w: number) => icon('action', cx, cy, size, colour, w);
   let d = '';
   for (let i = 0; i < 6; i++) {
     const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
@@ -86,9 +87,9 @@ export function chip(cx: number, cy: number, r: number, hue: number, state: 'lit
 }
 
 /** A row of action chips centred on (cx, cy). */
-export function chips(cx: number, cy: number, r: number, hue: number, states: Parameters<typeof chip>[4][], bolt = true): string {
+export function chips(cx: number, cy: number, r: number, states: Parameters<typeof chip>[3][]): string {
   const step = r * 2.2;
-  return states.map((st, i) => chip(cx + (i - (states.length - 1) / 2) * step, cy, r, hue, st, bolt)).join('');
+  return states.map((st, i) => chip(cx + (i - (states.length - 1) / 2) * step, cy, r, st)).join('');
 }
 
 /** A combat die: flat and white, to tell it from the ships. */

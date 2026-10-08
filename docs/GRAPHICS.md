@@ -265,7 +265,8 @@ exported in the Art Lab (`#lab/cards`).
 - **One drawing kit** (`packages/art/src/kit/`: ships, board, hud, effects, props) keeps the set consistent: ships are isometric dice with real pip
   layouts, cubes are plain dice, the board is an isometric holo-grid the dice stand on, planets and
   skies come from the tile generators. Rules quantities are flat HUD readouts over the scene, always
-  drawn the same way: research (violet) and dominance (red-orange) tracks, hexagonal action chips,
+  drawn the same way: research (violet) and dominance (red-orange) tracks, hexagonal action chips
+  (always yellow, `ACTION_HUE`, with the bolt, whatever the card's colour),
   white combat dice, small cards. Numbers in the art are numerals only (`+1`, `×2`, `−2`), so the
   art needs no translation.
 - **Text is SVG**, not HTML as first planned, so one file per card goes to PNG/ZIP and to print
@@ -282,8 +283,8 @@ Lab (`#lab/aid`).
 
 - **Size**: A6 landscape, 148 × 105 mm, 3 mm bleed; print sheets put two on an A4 or US Letter page ("All copies" prints four).
 - **One board for every player**: one flat ground, no boxes, one accent (the game's cyan) on the
-  action chips, pips and ship details. Hierarchy: the ship dice first, then the die pads, then the
-  actions; rules are a line each.
+  pips and ship details; the action chips are the cards' yellow hexagons with the bolt (`ACTION_HUE`).
+  Hierarchy: the ship dice first, then the die pads, then the actions; rules are a line each.
 - **Readable**: no text under `MIN_TEXT` (2 mm, about 6 pt); a test checks every size.
 - **Cube rail**: down the left edge, seven pads (the most cubes any map gives) styled like the
   planets' 11 mm cube pads, spread over the full height; the win condition, "Place your last cube to

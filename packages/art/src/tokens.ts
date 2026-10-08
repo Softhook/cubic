@@ -90,3 +90,6 @@ export const CARD_CATEGORIES: Record<string, { hue: number; label: string }> = {
   card: { hue: 24, label: 'Cards' },
   expansion: { hue: 172, label: 'Expansion' },
 };
+
+/** Actions are always a yellow hexagon with a bolt (the action category's hue), on every card and the player aid. */
+export const ACTION_HUE = CARD_CATEGORIES.action.hue;

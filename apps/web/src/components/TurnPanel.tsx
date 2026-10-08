@@ -4,7 +4,7 @@ import type { Controller } from '../game/controller';
 import { hintFor } from '../game/hints';
 import type { Dispatch } from '../game/useGame';
 import { useShortcut } from '../game/useShortcut';
-import { CategoryIcon } from './Card';
+import { ActionHex, CategoryIcon } from './Card';
 import { Tip } from './InfoPop';
 import { Scrapyard, turnScrapOwner } from './Scrapyard';
 import { ShipPanel } from './ShipPanel';
@@ -35,7 +35,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
           <Tip as="div" className="action-pips" tip={`${t.actionsLeft} action${t.actionsLeft === 1 ? '' : 's'} left`}>
             <small>Actions</small>
             {Array.from({ length: Math.max(3, t.actionsLeft) }, (_, i) => (
-              <span key={i} className={i < t.actionsLeft ? 'on' : ''} />
+              <ActionHex key={i} off={i >= t.actionsLeft} />
             ))}
             {t.freeDeploys > 0 && <Tip as="em" tip="Free deploy (Industrious)">+1 deploy</Tip>}
             {t.freeMoves > 0 && <Tip as="em" tip="Free move (Curious): only if you don't attack this turn; attacking afterwards costs an action for it">+1 move</Tip>}
