@@ -12,6 +12,7 @@ import { idle, storeImage, storedImage } from './imageStore';
 const SIZE = 576;
 
 const images = new Map<string, Promise<string>>();
+const decoded = new Map<string, Promise<string>>();
 
 // WebP keeps the stored tiles small; browsers that can't encode it give PNG instead.
 const draw = (svg: string) => rasterise(svg, SIZE, SIZE, 'image/webp', 0.92);
@@ -42,12 +43,18 @@ export function tileImage(id: string): Promise<string> {
  * A tile's image URL once the image is decoded at full size, for the map. Drawn as large as it gets
  * (zoomed in), the browser would otherwise decode each tile then, on the first zoom, and drop frames.
  */
-export async function decodedTileImage(id: string): Promise<string> {
-  const url = await tileImage(id);
-  const img = new Image();
-  img.src = url;
-  await img.decode().catch(() => {});
-  return url;
+export function decodedTileImage(id: string): Promise<string> {
+  let image = decoded.get(id);
+  if (!image) {
+    image = tileImage(id).then(async (url) => {
+      const img = new Image();
+      img.src = url;
+      await img.decode().catch(() => {});
+      return url;
+    });
+    decoded.set(id, image);
+  }
+  return image;
 }
 
 /** Prepares every tile in the set in the background (one per idle moment), so the first game starts at once. */

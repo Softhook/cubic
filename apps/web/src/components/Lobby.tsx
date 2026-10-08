@@ -2,6 +2,7 @@ import { useState, type CSSProperties, type ReactNode } from 'react';
 import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
 import { defaultMap, MAPS, MODES, playerCounts, rulesOf, RULESETS, type GameMode, type GameState, type MapDef, type PlayerConfig } from '@quantum/engine';
 import { Die3D } from './Die3D';
+import { Segmented } from './Segmented';
 import { fullscreenOnPhone, useFullscreenOnFirstTap } from './FullscreenButton';
 import { forgetFinishedGames, forgetGame, onlineGames } from '../online/games';
 import { defaultSeat } from '../game/seats';
@@ -186,10 +187,7 @@ function SeatRow({
       {online && index === 0 ? (
         <span className="seat-you">You</span>
       ) : (
-        <div className="segmented small">
-          <button className={!seat.ai ? 'on' : ''} onClick={() => onChange({ ai: false })}>{online ? 'Friend' : 'Human'}</button>
-          <button className={seat.ai ? 'on' : ''} onClick={() => onChange({ ai: true })}>AI</button>
-        </div>
+        <Segmented small options={[[false, online ? 'Friend' : 'Human'], [true, 'AI']]} value={!!seat.ai} onPick={(ai) => onChange({ ai })} />
       )}
       {seat.ai && (
         <select
@@ -344,30 +342,15 @@ export function Lobby({
                 : 'Against the AI, or pass the device around.'
             }
           >
-            <div className="segmented">
-              <button className={!online ? 'on' : ''} onClick={() => setOnline(false)}>On this device</button>
-              <button className={online ? 'on' : ''} onClick={() => setOnline(true)}>Online with friends</button>
-            </div>
+            <Segmented options={[[false, 'On this device'], [true, 'Online with friends']]} value={online} onPick={setOnline} />
           </Field>
 
           <Field label="Rules" hint={RULESETS[mode].summary}>
-            <div className="segmented">
-              {MODES.map((m) => (
-                <button key={m.id} className={m.id === mode ? 'on' : ''} aria-pressed={m.id === mode} onClick={() => chooseMode(m.id)}>
-                  {m.name}
-                </button>
-              ))}
-            </div>
+            <Segmented options={MODES.map((m) => [m.id, m.name] as const)} value={mode} onPick={chooseMode} />
           </Field>
 
           <Field label="Players">
-            <div className="segmented">
-              {counts.map((n) => (
-                <button key={n} className={n === count ? 'on' : ''} aria-pressed={n === count} onClick={() => setWanted(n)}>
-                  {n}
-                </button>
-              ))}
-            </div>
+            <Segmented options={counts.map((n) => [n, n] as const)} value={count} onPick={setWanted} />
           </Field>
 
           <div className="seats">

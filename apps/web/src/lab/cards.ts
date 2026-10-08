@@ -103,7 +103,7 @@ let fontCss: Promise<string> | null = null;
 /**
  * The card fonts as `@font-face` rules with the font files inlined. An SVG drawn as an image can't
  * reach the page's fonts, so exports carry their own. Empty when offline: cards then fall back to
- * system fonts.
+ * system fonts, and the first call after the browser is back online tries again.
  */
 export function cardFontCss(): Promise<string> {
   fontCss ??= (async () => {
@@ -125,6 +125,7 @@ export function cardFontCss(): Promise<string> {
       );
       return out.join('');
     } catch {
+      addEventListener('online', () => (fontCss = null), { once: true });
       return '';
     }
   })();

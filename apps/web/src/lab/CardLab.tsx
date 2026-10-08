@@ -4,6 +4,7 @@ import { DECKS, LINEAGE, cardFontCss, cardsOf, lineageNote, measure, type Deck, 
 import { PIECES, type Printable } from '../print/pieces';
 import { PrintPanel } from '../print/PrintPanel';
 import { LabHeader } from './LabHeader';
+import { Segmented } from '../components/Segmented';
 
 /**
  * Art Lab, cards page (#lab/cards): every advance card at poker size (63.5 × 88.9 mm) with its
@@ -57,17 +58,6 @@ const countNote = (cards: CardFace[]) => {
   const n = totalCopies(cards);
   return `${cards.length} cards${n > cards.length ? `, ${n} with copies` : ''}`;
 };
-
-/** A segmented control over `[value, label]` options. */
-function Segmented<T extends string>({ options, value, onPick, label }: { options: [T, string][]; value: T; onPick: (v: T) => void; label?: string }) {
-  return (
-    <div className="segmented small" aria-label={label}>
-      {options.map(([v, l]) => (
-        <button key={v} className={v === value ? 'on' : ''} onClick={() => onPick(v)}>{l}</button>
-      ))}
-    </div>
-  );
-}
 
 export function CardLab() {
   const [view, setView] = useState<View>('all');
@@ -148,11 +138,11 @@ export function CardLab() {
   return (
     <div className="lab">
       <LabHeader page="cards">
-        <Segmented options={VIEWS} value={view} onPick={pickView} label="Cards by lineage" />
-        <Segmented options={EDITION_VIEWS} value={view} onPick={pickView} label="Cards by edition" />
+        <Segmented small options={VIEWS} value={view} onPick={pickView} label="Cards by lineage" />
+        <Segmented small options={EDITION_VIEWS} value={view} onPick={pickView} label="Cards by edition" />
         <span className="lab-sort">
           Sort
-          <Segmented options={SORTS} value={sort} onPick={setSort} />
+          <Segmented small options={SORTS} value={sort} onPick={setSort} />
         </span>
       </LabHeader>
       <div className="lab-body">
@@ -190,7 +180,7 @@ export function CardLab() {
           </p>
           <div className="lab-controls">
             <span className="lab-note">Print set</span>
-            <Segmented options={EDITIONS} value={edition} onPick={setEdition} />
+            <Segmented small options={EDITIONS} value={edition} onPick={setEdition} />
           </div>
           <PrintPanel
             piece={PIECES.card}

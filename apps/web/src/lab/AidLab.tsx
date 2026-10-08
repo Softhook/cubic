@@ -4,6 +4,7 @@ import { cardFontCss, measure } from './cards';
 import { PIECES, type Printable } from '../print/pieces';
 import { PrintPanel } from '../print/PrintPanel';
 import { LabHeader } from './LabHeader';
+import { Segmented } from '../components/Segmented';
 
 /** How many boards "All copies" prints: one per player, for the largest player count. */
 const PLAYERS = 4;
@@ -32,13 +33,7 @@ export function AidLab() {
   return (
     <div className="lab">
       <LabHeader page="aid">
-        <div className="segmented small">
-          {(['community', 'classic'] as AidEdition[]).map((e) => (
-            <button key={e} className={e === edition ? 'on' : ''} onClick={() => setEdition(e)}>
-              {e === 'community' ? 'Community' : 'Classic'}
-            </button>
-          ))}
-        </div>
+        <Segmented<AidEdition> small options={[['community', 'Community'], ['classic', 'Classic']]} value={edition} onPick={setEdition} />
       </LabHeader>
       <div className="lab-aid-page">
         {detail ? <img className="lab-aid" src={detail} alt="Player aid" /> : <span className="lab-aid lab-aid-ph" />}

@@ -141,6 +141,7 @@ export const Die3D = memo(function Die3D({
       ],
       { duration: 1000, delay: delay * 1000, easing: 'ease-out' },
     );
+    clearTimeout(clatter.current); // a roll still waiting to sound is overtaken by this one
     if (sound) clatter.current = window.setTimeout(() => playRoll(), delay * 1000);
   };
 

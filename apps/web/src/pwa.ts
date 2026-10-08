@@ -90,11 +90,10 @@ export function startServiceWorker() {
       return;
     }
     if (ask) setStatus('checking');
-    // Nothing new: the answer if the player's check is still out (only theirs sets `checking`, so a
-    // background check ending first doesn't take it), and a stale `updating` goes back to idle.
+    // Nothing new. The player's check gives its answer; a background check only clears a stale
+    // `updating`, and leaves alone a check the player started meanwhile (`checking`).
     const settle = (answer: UpdateStatus) => {
-      if (status === 'checking') setStatus(answer);
-      else if (status === 'updating') setStatus('idle');
+      if (ask ? status === 'checking' : status === 'updating') setStatus(ask ? answer : 'idle');
     };
     r.update().then(
       () => {

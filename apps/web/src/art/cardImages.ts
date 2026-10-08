@@ -16,6 +16,12 @@ const HEIGHT = Math.round((WIDTH * CARD.h) / CARD.w);
 
 const images = new Map<string, Promise<string>>();
 const ready = new Map<string, string>();
+/** Cards drawn without their fonts (offline): drawn again when next asked for, once back online. */
+const fontless = new Set<string>();
+addEventListener('online', () => {
+  for (const id of fontless) images.delete(id);
+  fontless.clear();
+});
 
 /**
  * Cards are drawn a few at a time, in the order asked for, so a deck's pop-up fills in from its first
@@ -31,24 +37,26 @@ const release = () => {
   else drawing--;
 };
 
-async function draw(id: string): Promise<string> {
+/** A card's image URL, and whether it has its fonts. */
+async function draw(id: string): Promise<{ url: string; final: boolean }> {
   const face = faceOf(id);
   // The layout is measured with the page's fonts; the key leaves out the embedded font files.
   await cardFontsReady();
   const key = `${hash(cardSvg(face, { rounded: true, measure }))}:${WIDTH}`;
   const stored = await storedImage('cards', id, key).catch(() => undefined);
-  if (stored) return URL.createObjectURL(stored);
+  if (stored) return { url: URL.createObjectURL(stored), final: true };
   const fontCss = await cardFontCss();
+  const final = !!fontCss;
   const svg = cardSvg(face, { rounded: true, measure, fontCss });
   await slot();
   try {
     const blob = await rasterise(svg, WIDTH, HEIGHT, 'image/webp', 0.92);
     // Without its fonts (offline) a card falls back to system lettering: shown, but not kept.
-    if (fontCss) storeImage('cards', id, key, blob).catch(() => {});
-    return URL.createObjectURL(blob);
+    if (final) storeImage('cards', id, key, blob).catch(() => {});
+    return { url: URL.createObjectURL(blob), final };
   } catch {
     // If drawing fails, fall back to the SVG itself (slower to show, same look).
-    return dataUrl(svg);
+    return { url: dataUrl(svg), final };
   } finally {
     release();
   }
@@ -58,7 +66,11 @@ async function draw(id: string): Promise<string> {
 export function cardImage(id: string): Promise<string> {
   let image = images.get(id);
   if (!image) {
-    image = draw(id).then((url) => (ready.set(id, url), url));
+    image = draw(id).then(({ url, final }) => {
+      ready.set(id, url);
+      if (!final) fontless.add(id);
+      return url;
+    });
     images.set(id, image);
   }
   return image;
