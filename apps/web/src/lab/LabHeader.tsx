@@ -15,7 +15,7 @@ export function LabHeader({ page, children }: { page: string; children?: ReactNo
         {PAGES.map((p) => (
           <a key={p.id} href={p.href} className={p.id === page ? 'on' : ''}>{p.name}</a>
         ))}
-        <a href="#rulebook">Manual</a>
+        <a href={`#rulebook?from=${PAGES.find((p) => p.id === page)!.href.slice(1)}`}>Manual</a>
       </nav>
       <div className="lab-head-controls">{children}</div>
       <a className="btn btn-ghost" href="#">Back to game</a>

@@ -17,7 +17,14 @@ function gameColours() {
   return `:root{${GAME_VARS.map((v) => `${v}:${root.getPropertyValue(v).trim()}`).join(';')}}`;
 }
 
+/** Where "Back" goes: the Art Lab page that opened the manual (#rulebook?from=lab/cards), else the game. */
+function backLink() {
+  const from = new URLSearchParams(location.hash.split('?')[1]).get('from');
+  return from?.startsWith('lab') ? { href: `#${from}`, label: 'Back to Art Lab' } : { href: '#', label: 'Back to game' };
+}
+
 export function Rulebook() {
+  const back = backLink();
   const page = useRef<HTMLDivElement>(null);
   const [paper, setPaper] = useState<Paper>('a4');
   // After rulebook.css, so it replaces the stylesheet's A4.
@@ -32,7 +39,7 @@ export function Rulebook() {
     <div className="rb-screen">
       <style>{css + pageCss}</style>
       <div className="rb-toolbar">
-        <a className="btn btn-ghost" href="#">← Back to game</a>
+        <a className="btn btn-ghost" href={back.href}>← {back.label}</a>
         <span className="rb-spacer" />
         <select value={paper} onChange={(e) => setPaper(e.target.value as Paper)} aria-label="Paper">
           {Object.entries(PAPER).map(([id, p]) => (
