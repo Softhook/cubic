@@ -7,7 +7,7 @@ import { PIP } from '../theme';
  * the viewer. When `rolls` changes the die tumbles: several extra full turns on both
  * axes with an ease-out, plus a hop, so it always lands on the engine's result.
  *
- * At rest only the front face shows, so a still die is that one face, drawn flat: a cube is eight
+ * At rest only the front face shows, so a still die is that one face, drawn flat: a cube is eleven
  * composited layers, and a map of them made every frame of a zoom or pan slower. The cube is built
  * when the die starts to move (at the face it showed) and goes again once it has landed. Dice that
  * tumble on mount (the fleet, battle and lobby rolls) keep theirs: they roll again under a modal's
@@ -159,6 +159,10 @@ export const Die3D = memo(function Die3D({
           <div className="die3d-cube" ref={cube}>
             {FACES.map((f) => (
               <Face key={f.n} n={f.n} className={f.cls} />
+            ))}
+            {/* The die's solid inside, seen through the gaps the faces' rounded corners leave at the cube's corners. */}
+            {['x', 'y', 'z'].map((axis) => (
+              <div key={axis} className={`die3d-core ${axis}`} />
             ))}
           </div>
         ) : (

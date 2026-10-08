@@ -246,6 +246,11 @@ input { font: inherit; }
 .die3d-face.left   { transform: rotateY(-90deg) translateZ(var(--half)); }
 .die3d-face.top    { transform: rotateX(90deg) translateZ(var(--half)); }
 .die3d-face.bottom { transform: rotateX(-90deg) translateZ(var(--half)); }
+/* Three planes crossing at the cube's centre: through the corner gaps the die looks solid, not hollow (the page
+   behind showed through, black on the dark map). They reach only the middle of each edge, so the corners stay round. */
+.die3d-core { position: absolute; inset: 0; background: color-mix(in srgb, var(--die-color) 70%, black); }
+.die3d-core.x { transform: rotateY(90deg); }
+.die3d-core.y { transform: rotateX(90deg); }
 /* A die at rest (Die3D): its front face alone, flat, at the size the cube's perspective draws it (7 / 6.5), and
    not in a 3D scene, which would make it a layer of its own. */
 .die3d-face.still  { transform: scale(1.0769); backface-visibility: visible; }
@@ -915,6 +920,8 @@ input { font: inherit; }
   font-family: var(--display);
   font-weight: 900;
   font-size: clamp(40px, 8vw, 72px);
+  /* A set line height, not `normal`: the fallback font's is shorter than Orbitron's, so the page below jumped as it loaded. */
+  line-height: 1.25;
   letter-spacing: .22em;
   text-transform: uppercase;
   background: linear-gradient(90deg, #8fd3ff, #b98cff 60%, #ff8ad8);
