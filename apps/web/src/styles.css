@@ -719,7 +719,13 @@ input { font: inherit; }
 .market-toggle svg { transform: rotate(180deg); transition: transform .2s; }
 @media (hover: hover) { .market-toggle:hover { color: var(--text); background: rgba(122,162,255,.1); outline: none; } }
 .market-toggle:focus-visible { color: var(--text); background: rgba(122,162,255,.1); outline: none; }
-.market.collapsed { align-items: center; gap: 12px; padding-top: 0; padding-bottom: 0; height: 40px; }
+/* Collapsed: one 40px line of chips. A strip too narrow for it drops the deck names (the chips' colours tell
+   the decks apart; the open market has the decks), and then wraps onto a second line of 40px rather than
+   scrolling sideways, its tactics and Expansion pile together (an iPad's Community market). */
+.market.collapsed { align-items: center; gap: 0 12px; padding-top: 0; padding-bottom: 0; min-height: 40px; flex-wrap: wrap; overflow: visible; container: market-strip / inline-size; }
+.market.collapsed > .market-strip-group, .market-strip-line { min-height: 40px; }
+.market-strip-line { display: flex; align-items: center; gap: 12px; flex: none; }
+@container market-strip (max-width: 940px) { .market-strip-deck { display: none; } }
 .market.collapsed .market-toggle { flex-direction: row; width: auto; padding: 0 12px; margin: 0 0 0 -16px; }
 .market.collapsed .market-toggle span { writing-mode: initial; transform: none; }
 .market.collapsed .market-toggle svg { transform: none; }
@@ -1049,17 +1055,23 @@ input { font: inherit; }
 .lab-progress { margin: 0; font-size: 13px; color: var(--gold); }
 .lab-spec { margin: 0; padding: 8px 10px; font-size: 11.5px; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 6px; white-space: pre-wrap; word-break: break-all; }
 @media (max-width: 800px) { .lab-body { grid-template-columns: 1fr; } .lab-detail { position: static; order: -1; } }
+/* No label in the header breaks over two lines. */
+.lab-head h1, .lab-tabs a, .lab-head > .btn, .lab-head-controls .segmented button { white-space: nowrap; }
+/* Tablets: the page's controls don't fit beside the tabs, so they get a row of their own under them. */
+@media (max-width: 1280px) {
+  .lab-head { flex-wrap: wrap; gap: 10px 18px; }
+  .lab-head > .btn { margin-left: auto; }
+  .lab-head-controls { order: 1; flex-basis: 100%; min-width: 0; margin-left: 0; gap: 8px 12px; }
+}
 /* Phones: the header wraps — title and the way back on top, then the tabs, then the page's controls;
    a segmented control still too wide scrolls sideways rather than pushing the page wider. */
 @media (max-width: 800px) {
-  .lab-head { flex-wrap: wrap; gap: 10px 12px; padding: calc(10px + var(--safe-top)) 16px 10px; }
-  .lab-head h1 { white-space: nowrap; }
-  .lab-head > .btn { order: 1; margin-left: auto; }
+  .lab-head { gap: 10px 12px; padding: calc(10px + var(--safe-top)) 16px 10px; }
+  .lab-head > .btn { order: 1; }
   .lab-tabs { order: 2; flex-basis: 100%; overflow-x: auto; scrollbar-width: none; }
-  .lab-tabs a { white-space: nowrap; }
-  .lab-head-controls { order: 3; flex-basis: 100%; min-width: 0; margin-left: 0; gap: 8px 12px; }
+  .lab-head-controls { order: 3; }
   .lab-head-controls .segmented { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
-  .lab-head-controls .segmented button { white-space: nowrap; flex-shrink: 0; }
+  .lab-head-controls .segmented button { flex-shrink: 0; }
   .lab-body, .lab-aid-page { padding: 16px; }
 }
 
@@ -1182,7 +1194,9 @@ input { font: inherit; }
   /* Collapsed: wrap onto more lines instead of scrolling sideways, so every card name shows. */
   .market.collapsed { height: auto; min-height: 40px; flex-wrap: wrap; row-gap: 6px; column-gap: 10px; padding: 6px 8px; overflow: visible; }
   .market.collapsed .market-toggle { align-self: stretch; min-height: 32px; margin: 0 0 0 -8px; }
-  .market-strip-group { flex: 0 1 auto; flex-wrap: wrap; row-gap: 5px; min-width: 0; }
+  .market-strip-group, .market-strip-line { flex: 0 1 auto; flex-wrap: wrap; row-gap: 5px; min-width: 0; }
+  .market.collapsed > .market-strip-group, .market-strip-line { min-height: 0; }
+  .market-strip-line { column-gap: 10px; }
 }
 
 @media (max-width: 600px) {
@@ -1232,7 +1246,7 @@ input { font: inherit; }
      in the open market. */
   .market.collapsed { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 6px; height: auto; padding: 0 10px 10px; }
   .market.collapsed .market-toggle { grid-column: 1 / -1; }
-  .market.collapsed .market-strip-group { display: contents; }
+  .market.collapsed .market-strip-group, .market.collapsed .market-strip-line { display: contents; }
   .market.collapsed .market-strip-deck { display: none; }
   .market.collapsed .market-toggle { grid-row: 1; }
   /* Community's Expansion pile: a chip in the header row's last column, lined up with the cards under it (the

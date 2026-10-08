@@ -200,17 +200,20 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   );
 
   // Collapsed: one slim strip of card-name chips, so the board gets the space back. A chip shows its card.
+  // The Expansion pile goes with the tactics, so a strip too narrow for one line wraps them together.
   const strip = (
     <>
       {chips('skill', m.skillRow)}
-      {chips('tactic', m.tacticRow)}
-      {cardRules.expansionPile && (
-        <div className="market-strip-group market-strip-expansion">
-          <button type="button" className="market-chip market-chip-expansion" title={`${m.expansions} Expansion cards left`} onClick={() => setViewingCard(EXPANSION.id)}>
-            {EXPANSION.name} ×{m.expansions}
-          </button>
-        </div>
-      )}
+      <div className="market-strip-line">
+        {chips('tactic', m.tacticRow)}
+        {cardRules.expansionPile && (
+          <div className="market-strip-group market-strip-expansion">
+            <button type="button" className="market-chip market-chip-expansion" title={`${m.expansions} Expansion cards left`} onClick={() => setViewingCard(EXPANSION.id)}>
+              {EXPANSION.name} ×{m.expansions}
+            </button>
+          </div>
+        )}
+      </div>
     </>
   );
 
