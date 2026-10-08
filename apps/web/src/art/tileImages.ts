@@ -38,6 +38,18 @@ export function tileImage(id: string): Promise<string> {
   return image;
 }
 
+/**
+ * A tile's image URL once the image is decoded at full size, for the map. Drawn as large as it gets
+ * (zoomed in), the browser would otherwise decode each tile then, on the first zoom, and drop frames.
+ */
+export async function decodedTileImage(id: string): Promise<string> {
+  const url = await tileImage(id);
+  const img = new Image();
+  img.src = url;
+  await img.decode().catch(() => {});
+  return url;
+}
+
 /** Prepares every tile in the set in the background (one per idle moment), so the first game starts at once. */
 export async function warmTileImages(): Promise<void> {
   for (const t of TILE_SET) {

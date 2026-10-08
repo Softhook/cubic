@@ -246,6 +246,10 @@ input { font: inherit; }
 .die3d-face.left   { transform: rotateY(-90deg) translateZ(var(--half)); }
 .die3d-face.top    { transform: rotateX(90deg) translateZ(var(--half)); }
 .die3d-face.bottom { transform: rotateX(-90deg) translateZ(var(--half)); }
+/* A die at rest (Die3D): its front face alone, flat, at the size the cube's perspective draws it (7 / 6.5), and
+   not in a 3D scene, which would make it a layer of its own. */
+.die3d-face.still  { transform: scale(1.0769); backface-visibility: visible; }
+.die3d-hop:has(> .still) { transform-style: flat; }
 .pip { border-radius: 50%; margin: 17%; }
 .pip.on {
   background: radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--die-pip) 70%, white 10%), var(--die-pip));
@@ -266,8 +270,9 @@ input { font: inherit; }
 /* Clipped while zoomed, and during a gesture (the first pinch starts from the whole map). */
 .board-wrap.zoomed, .board-wrap.gesture { overflow: hidden; }
 .board-wrap.zoomed:active { cursor: grabbing; }
-.board { position: absolute; transform-origin: 0 0; }
-.board-wrap.gesture .board { will-change: transform; }
+/* Always its own layer: a gesture moves and scales it on the compositor (useBoardZoom), and a pan that ends
+   only moves it, without repainting the map. Promoted per gesture, the map was drawn again as each began and ended. */
+.board { position: absolute; transform-origin: 0 0; will-change: transform; }
 .zoom-controls { position: absolute; right: 6px; bottom: 6px; z-index: 6; display: flex; flex-direction: column; gap: 4px; }
 .zoom-controls button {
   width: 32px; height: 32px; display: grid; place-items: center; padding: 0; cursor: pointer;

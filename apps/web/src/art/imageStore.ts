@@ -56,6 +56,31 @@ export async function storeImage(store: Store, id: string, key: string, blob: Bl
   });
 }
 
-/** Resolves when the page is idle (or after `timeout` ms regardless), for drawing in the background. */
-export const idle = (timeout = 500) =>
+const nextIdle = (timeout: number) =>
   new Promise<void>((resolve) => ('requestIdleCallback' in window ? requestIdleCallback(() => resolve(), { timeout }) : setTimeout(resolve, 16)));
+
+/**
+ * When the player last touched, dragged, scrolled or zoomed. A pinch leaves idle time between its frames,
+ * but drawing one card or tile takes far longer than that: it would drop the gesture's frames.
+ */
+let lastInput = -Infinity;
+const QUIET_MS = 1000;
+const touched = () => void (lastInput = performance.now());
+const listen = { capture: true, passive: true };
+for (const type of ['pointerdown', 'wheel', 'touchmove']) addEventListener(type, touched, listen);
+addEventListener('pointermove', (e) => e.buttons && touched(), listen);
+
+/**
+ * Resolves when the page is idle (or after `timeout` ms regardless) and the player has left the page
+ * alone for a moment, for drawing in the background.
+ */
+export async function idle(timeout = 500): Promise<void> {
+  for (;;) {
+    const wait = lastInput + QUIET_MS - performance.now();
+    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+    else {
+      await nextIdle(timeout);
+      if (performance.now() - lastInput >= QUIET_MS) return;
+    }
+  }
+}

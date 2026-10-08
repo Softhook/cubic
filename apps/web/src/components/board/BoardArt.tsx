@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { GameState } from '@quantum/engine';
 import { PLANET_DIAMETER, TILE } from '@quantum/art';
-import { tileImage } from '../../art/tileImages';
+import { decodedTileImage } from '../../art/tileImages';
 import { tileArt } from '../../art/boardTiles';
 import { wrapMarks, type WrapMark } from './geometry';
 import { PlanetMarkings } from './PlanetMarkings';
@@ -20,7 +20,7 @@ function useTileImages(game: GameState) {
   const [images, setImages] = useState<Record<string, string>>({});
   useEffect(() => {
     let live = true;
-    for (const t of tiles) tileImage(t.id).then((url) => live && setImages((m) => (m[t.id] === url ? m : { ...m, [t.id]: url })));
+    for (const t of tiles) decodedTileImage(t.id).then((url) => live && setImages((m) => (m[t.id] === url ? m : { ...m, [t.id]: url })));
     return () => {
       live = false;
     };

@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useRef, type CSSProperties } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { playRoll } from '../sound';
 import { PIP } from '../theme';
 
@@ -6,6 +6,12 @@ import { PIP } from '../theme';
  * A CSS 3D die. Faces sit on a cube; the cube rotates so the face for `value` points at
  * the viewer. When `rolls` changes the die tumbles: several extra full turns on both
  * axes with an ease-out, plus a hop, so it always lands on the engine's result.
+ *
+ * At rest only the front face shows, so a still die is that one face, drawn flat: a cube is eight
+ * composited layers, and a map of them made every frame of a zoom or pan slower. The cube is built
+ * when the die starts to move (at the face it showed) and goes again once it has landed. Dice that
+ * tumble on mount (the fleet, battle and lobby rolls) keep theirs: they roll again under a modal's
+ * backdrop-filter, where layers made mid-roll can flash a white frame.
  */
 
 // Rotation that brings each face to the front (front=1, top=2, right=3, left=4, bottom=5, back=6).
@@ -53,7 +59,7 @@ export interface Die3DProps {
   onClick?: () => void;
 }
 
-/** Memoised: the map re-renders on every move, and each die is six faces of nine pips. */
+/** Memoised: the map re-renders on every move, and a die is up to six faces of nine pips. */
 export const Die3D = memo(function Die3D({
   value,
   rolls = 0,
@@ -71,16 +77,25 @@ export const Die3D = memo(function Die3D({
   const hop = useRef<HTMLDivElement>(null);
   const spins = useRef({ x: 0, y: 0 });
   const lastRolls = useRef(rolls);
+  const lastValue = useRef(value);
   const mounted = useRef(false);
+  const [moving, setMoving] = useState(!!tumbleOnMount);
+  const settle = useRef<number>();
+  useEffect(() => () => clearTimeout(settle.current), []);
 
+  const rotation = (v: number) => {
+    const [bx, by] = FACE_ROTATION[v] ?? [0, 0];
+    return `rotateX(${bx + spins.current.x}deg) rotateY(${by + spins.current.y}deg)`;
+  };
+
+  /** Turn the cube to `value` over `duration` ms, then lay the die flat again (unless it rolls in a modal). */
   const setRotation = (duration: number) => {
     const el = cube.current;
     if (!el) return;
-    const [bx, by] = FACE_ROTATION[value] ?? [0, 0];
-    el.style.transition = duration
-      ? `transform ${duration}ms cubic-bezier(.12,.72,.22,1) ${delay}s`
-      : 'none';
-    el.style.transform = `rotateX(${bx + spins.current.x}deg) rotateY(${by + spins.current.y}deg)`;
+    el.style.transition = `transform ${duration}ms cubic-bezier(.12,.72,.22,1) ${delay}s`;
+    el.style.transform = rotation(value);
+    clearTimeout(settle.current);
+    if (!tumbleOnMount) settle.current = window.setTimeout(() => setMoving(false), delay * 1000 + duration + 50);
   };
 
   const tumble = () => {
@@ -101,26 +116,34 @@ export const Die3D = memo(function Die3D({
   };
 
   useLayoutEffect(() => {
+    const el = cube.current;
     if (!mounted.current) {
       mounted.current = true;
-      if (tumbleOnMount) {
+      if (tumbleOnMount && el) {
         // Start from a random orientation without transition, then tumble to the value.
-        const el = cube.current;
-        if (el) {
-          el.style.transition = 'none';
-          el.style.transform = `rotateX(${Math.random() * 360}deg) rotateY(${Math.random() * 360}deg)`;
-          void el.offsetWidth;
-        }
+        el.style.transition = 'none';
+        el.style.transform = `rotateX(${Math.random() * 360}deg) rotateY(${Math.random() * 360}deg)`;
+        void el.offsetWidth;
         tumble();
-      } else setRotation(0);
+      }
       return;
     }
-    if (rolls !== lastRolls.current) {
-      lastRolls.current = rolls;
-      tumble();
-    } else setRotation(450);
+    const rolled = rolls !== lastRolls.current;
+    if (!rolled && value === lastValue.current) return;
+    // A still die builds its cube first; this runs again once it's there (before anything is painted).
+    if (!el) return setMoving(true);
+    if (!el.style.transform) {
+      // Just built: start from the face the die was showing.
+      el.style.transition = 'none';
+      el.style.transform = rotation(lastValue.current);
+      void el.offsetWidth;
+    }
+    lastRolls.current = rolls;
+    lastValue.current = value;
+    if (rolled) tumble();
+    else setRotation(450);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, rolls]);
+  }, [value, rolls, moving]);
 
   const style = {
     '--die-size': `${size}px`,
@@ -132,16 +155,26 @@ export const Die3D = memo(function Die3D({
     <div className={`die3d ${className}`} style={style} title={title} onClick={onClick}>
       <div className="die3d-shadow" />
       <div className="die3d-hop" ref={hop}>
-        <div className="die3d-cube" ref={cube}>
-          {FACES.map((f) => (
-            <div key={f.n} className={`die3d-face ${f.cls}`}>
-              {Array.from({ length: 9 }, (_, i) => (
-                <span key={i} className={PIPS[f.n].includes(i) ? 'pip on' : 'pip'} />
-              ))}
-            </div>
-          ))}
-        </div>
+        {moving ? (
+          <div className="die3d-cube" ref={cube}>
+            {FACES.map((f) => (
+              <Face key={f.n} n={f.n} className={f.cls} />
+            ))}
+          </div>
+        ) : (
+          <Face n={value} className="still" />
+        )}
       </div>
     </div>
   );
 });
+
+function Face({ n, className }: { n: number; className: string }) {
+  return (
+    <div className={`die3d-face ${className}`}>
+      {Array.from({ length: 9 }, (_, i) => (
+        <span key={i} className={PIPS[n].includes(i) ? 'pip on' : 'pip'} />
+      ))}
+    </div>
+  );
+}
