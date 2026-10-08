@@ -41,28 +41,25 @@ export interface Redesign {
   renamed: boolean;
 }
 
-const cardsOf = (edition: Deck['edition']) => DECKS.filter((d) => d.edition === edition).flatMap((d) => d.cards);
+/** Every card of one edition, in deck order. */
+export const cardsOf = (edition: Deck['edition']) => DECKS.filter((d) => d.edition === edition).flatMap((d) => d.cards);
 
 /** The cards by lineage: Community redesigns of 2013 cards, and each edition's own designs. */
 export const LINEAGE = (() => {
-  const redesigns: Redesign[] = [];
-  const communityOnly: CardFace[] = [];
-  for (const c of cardsOf('community')) {
+  const community = cardsOf('community');
+  const redesigns = community.flatMap((c): Redesign[] => {
     const from = card(c.id).classic;
-    if (!from) {
-      communityOnly.push(c);
-      continue;
-    }
+    if (!from) return [];
     const classic = faceOf(from);
-    redesigns.push({ classic, community: c, sameRules: effectOf(from) === effectOf(c.id), renamed: classic.name !== c.name });
-  }
+    return [{ classic, community: c, sameRules: effectOf(from) === effectOf(c.id), renamed: classic.name !== c.name }];
+  });
   const redesigned = new Set(redesigns.map((r) => r.classic.id));
   return {
     redesigns,
     reworded: redesigns.filter((r) => !r.renamed && r.sameRules),
     reworked: redesigns.filter((r) => !r.renamed && !r.sameRules),
     renamed: redesigns.filter((r) => r.renamed),
-    communityOnly,
+    communityOnly: community.filter((c) => !card(c.id).classic),
     classicOnly: cardsOf('original').filter((c) => !redesigned.has(c.id)),
   };
 })();

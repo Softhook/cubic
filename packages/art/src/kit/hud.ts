@@ -3,6 +3,7 @@ import { ACTION_HUE, COMBAT_DICE, DOMINANCE, FONTS, INK, RESEARCH } from '../tok
 import { esc, hsl, n, type Fragment } from '../svg';
 import { f, line } from './core';
 import { glow } from './effects';
+import { poly } from './props';
 import { die, PIPS } from './ships';
 
 /** Big numerals and signs over the art ("+1", "×2", "3"): numbers only, so the art needs no translation. */
@@ -61,12 +62,7 @@ export const trackSlot = (x: number, i: number, cell = 3.2) => x + cell * 1.4 + 
 export function chip(cx: number, cy: number, r: number, state: 'lit' | 'dim' | 'new' | 'broken' | 'spent' = 'lit'): string {
   const hue = ACTION_HUE;
   const mark = (colour: string, size: number, w: number) => icon('action', cx, cy, size, colour, w);
-  let d = '';
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
-    d += `${i ? 'L' : 'M'}${n(cx + Math.cos(a) * r)} ${n(cy + Math.sin(a) * r)}`;
-  }
-  d += 'Z';
+  const d = poly(cx, cy, r);
   if (state === 'dim' || state === 'spent')
     return `<path d="${d}" fill="${hsl(228, 50, 8, 0.6)}" stroke="${hsl(hue, 60, 60)}" stroke-width=".25" stroke-dasharray="${state === 'spent' ? '.7 .5' : 'none'}" opacity=".7"/>` + mark(hsl(hue, 50, 60), r * 1.1, 2);
   if (state === 'broken') {
@@ -95,16 +91,19 @@ export function chips(cx: number, cy: number, r: number, states: Parameters<type
 /** A combat die, flat to tell it from the ships: black with red pips to attack, white to defend, as in the game. */
 export function combatDie(cx: number, cy: number, s: number, value: number, role: 'attack' | 'defence', o: { rot?: number; ghost?: boolean; struck?: boolean; glow?: boolean } = {}): string {
   const h = s / 2;
-  const { color, pip } = COMBAT_DICE[role === 'attack' ? 'attacker' : 'defender'];
-  const edge = role === 'attack' ? pip : hsl(225, 30, 70);
+  const attack = role === 'attack';
+  const { color, pip } = COMBAT_DICE[attack ? 'attacker' : 'defender'];
+  const edge = attack ? pip : hsl(225, 30, 70);
   const tr = o.rot ? ` transform="rotate(${n(o.rot)} ${n(cx)} ${n(cy)})"` : '';
-  if (o.ghost) return `<g${tr} opacity=".5"><rect x="${n(cx - h)}" y="${n(cy - h)}" width="${n(s)}" height="${n(s)}" rx="${n(s * 0.2)}" fill="none" stroke="${edge}" stroke-width=".25" stroke-dasharray=".8 .6"/>${PIPS[value].map(([x, y]) => `<circle cx="${n(cx - h + x * s)}" cy="${n(cy - h + y * s)}" r="${n(s * 0.075)}" fill="${edge}"/>`).join('')}</g>`;
-  const halo = o.glow ? `<rect x="${n(cx - h - 0.7)}" y="${n(cy - h - 0.7)}" width="${n(s + 1.4)}" height="${n(s + 1.4)}" rx="${n(s * 0.26)}" fill="none" stroke="${role === 'attack' ? pip : '#fff'}" stroke-width=".4"/>` : '';
+  const face = (dy = 0) => `x="${n(cx - h)}" y="${n(cy - h + dy)}" width="${n(s)}" height="${n(s)}" rx="${n(s * 0.2)}"`;
+  const pips = (r: number, fill: string) => PIPS[value].map(([x, y]) => `<circle cx="${n(cx - h + x * s)}" cy="${n(cy - h + y * s)}" r="${n(s * r)}" fill="${fill}"/>`).join('');
+  if (o.ghost) return `<g${tr} opacity=".5"><rect ${face()} fill="none" stroke="${edge}" stroke-width=".25" stroke-dasharray=".8 .6"/>${pips(0.075, edge)}</g>`;
+  const halo = o.glow ? `<rect x="${n(cx - h - 0.7)}" y="${n(cy - h - 0.7)}" width="${n(s + 1.4)}" height="${n(s + 1.4)}" rx="${n(s * 0.26)}" fill="none" stroke="${attack ? pip : '#fff'}" stroke-width=".4"/>` : '';
   return (
     `<g${tr}>${halo}` +
-    `<rect x="${n(cx - h)}" y="${n(cy - h + s * 0.08)}" width="${n(s)}" height="${n(s)}" rx="${n(s * 0.2)}" fill="${hsl(228, 40, role === 'attack' ? 4 : 30)}"/>` +
-    `<rect x="${n(cx - h)}" y="${n(cy - h)}" width="${n(s)}" height="${n(s)}" rx="${n(s * 0.2)}" fill="${color}" stroke="${edge}" stroke-width=".25"/>` +
-    PIPS[value].map(([x, y]) => `<circle cx="${n(cx - h + x * s)}" cy="${n(cy - h + y * s)}" r="${n(s * 0.08)}" fill="${pip}"/>`).join('') +
+    `<rect ${face(s * 0.08)} fill="${hsl(228, 40, attack ? 4 : 30)}"/>` +
+    `<rect ${face()} fill="${color}" stroke="${edge}" stroke-width=".25"/>` +
+    pips(0.08, pip) +
     (o.struck ? line(cx - h * 1.1, cy + h * 1.1, cx + h * 1.1, cy - h * 1.1, hsl(0, 95, 62), 0.45) : '') +
     `</g>`
   );

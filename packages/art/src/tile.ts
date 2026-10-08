@@ -3,7 +3,7 @@ import { planet } from './planet';
 import { starfield, type Box } from './starfield';
 import { CUBE_PAD, LABEL_TEXT, NUMBER_TEXT, PLANET_DIAMETER, PLANET_FAMILY, TILE, VOID_NEBULA_HUES, type PlanetType } from './tokens';
 import { planetFlavour, type PlanetFlavour } from './flavour';
-import { document, hex, hsl, join, n, type Fragment } from './svg';
+import { dieCut, document, hex, hsl, join, n, type Fragment } from './svg';
 import type { TileSpec } from './tileset';
 
 export interface TileOptions {
@@ -244,14 +244,8 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
   if (!isVoid && o.only !== 'art') parts.push(label(spec));
   if (o.markings && o.only !== 'art') parts.push(marks());
 
-  let all = join(...parts);
-  if (o.rounded) {
-    all = {
-      defs: all.defs + `<clipPath id="${id}-corners"><rect width="${TILE.size}" height="${TILE.size}" rx="${TILE.corner}"/></clipPath>`,
-      body: `<g clip-path="url(#${id}-corners)">${all.body}</g>`,
-    };
-  }
-  return document(all, area);
+  const all = join(...parts);
+  return document(o.rounded ? dieCut(all, id, TILE.size, TILE.size, TILE.corner) : all, area);
 }
 
 /**

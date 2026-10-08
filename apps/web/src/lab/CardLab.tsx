@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CARD_CATEGORIES, cardBackSvg, cardIllustration, cardSvg, deckInfo, type CardDeck, type CardFace } from '@quantum/art';
-import { DECKS, LINEAGE, cardFontCss, lineageNote, measure, type Deck, type Redesign } from './cards';
+import { DECKS, LINEAGE, cardFontCss, cardsOf, lineageNote, measure, type Deck, type Redesign } from './cards';
 import { PIECES, type Printable } from '../print/pieces';
 import { PrintPanel } from '../print/PrintPanel';
 import { LabHeader } from './LabHeader';
@@ -18,6 +18,8 @@ type View = 'all' | 'redesigns' | 'community-only' | 'classic-only' | Edition;
 type Sort = 'deck' | 'name' | 'category';
 
 const EDITION_LABEL: Record<Edition, string> = { community: 'Community', original: 'Classic' };
+const EDITION_TITLE: Record<Edition, string> = { community: 'Community Edition', original: 'Classic' };
+const isEdition = (v: View): v is Edition => v in EDITION_LABEL;
 const VIEWS: [View, string][] = [['all', 'All'], ['redesigns', 'Redesigns'], ['community-only', 'Community originals'], ['classic-only', 'Classic only']];
 const EDITION_VIEWS = Object.entries(EDITION_LABEL) as [Edition, string][];
 const EDITIONS: ['all' | Edition, string][] = [['all', 'All'], ...EDITION_VIEWS];
@@ -49,9 +51,10 @@ const SORTERS: Record<Sort, (a: CardFace, b: CardFace) => number> = {
   category: (a, b) => categoryRank(a) - categoryRank(b) || byName(a, b),
 };
 
-const copiesOf = (cards: CardFace[]) => cards.reduce((s, c) => s + (c.copies ?? 1), 0);
+const copiesOf = (c: CardFace) => c.copies ?? 1;
+const totalCopies = (cards: CardFace[]) => cards.reduce((s, c) => s + copiesOf(c), 0);
 const countNote = (cards: CardFace[]) => {
-  const n = copiesOf(cards);
+  const n = totalCopies(cards);
   return `${cards.length} cards${n > cards.length ? `, ${n} with copies` : ''}`;
 };
 
@@ -99,31 +102,31 @@ export function CardLab() {
   const printable = (i: Item): Printable => ({ name: `${i.deck}/${fileName(i)}`, svg: (b) => svgOf(i, { bleed: b }) });
   const sheets = (copies: boolean) =>
     decks.flatMap((d) =>
-      d.cards.flatMap((c) => Array<{ front: Printable; back: Printable }>(copies ? c.copies ?? 1 : 1).fill({ front: printable(itemOf(c)), back: printable(backOf(d.id)) })),
+      d.cards.flatMap((c) => Array<{ front: Printable; back: Printable }>(copies ? copiesOf(c) : 1).fill({ front: printable(itemOf(c)), back: printable(backOf(d.id)) })),
     );
 
   const info = deckInfo(item.deck);
   const lineage = item.face && lineageNote(item.face);
   const show = (v: View) => view === 'all' || view === v;
-  const sorted = (cards: CardFace[]) => [...cards].sort(SORTERS[sort]);
-  const shownEdition = view === 'community' || view === 'original' ? view : null;
+  const order = SORTERS[sort];
+  const shownEdition = isEdition(view) ? view : null;
   // Showing one edition whole makes it the print set too.
   const pickView = (v: View) => {
     setView(v);
-    if (v === 'community' || v === 'original') setEdition(v);
+    if (isEdition(v)) setEdition(v);
   };
 
   const thumb = (i: Item) => (
     <button key={i.key} className={`lab-thumb ${i.key === item.key ? 'on' : ''}`} onClick={() => setSelected(i.key)}>
       {thumbs.get(i.key) ? <img src={thumbs.get(i.key)} alt={i.face?.name ?? 'Back'} loading="lazy" /> : <span className="lab-card-ph" />}
-      <span>{i.face ? i.face.name : `${deckInfo(i.deck).label} back`}{i.face?.copies && i.face.copies > 1 ? ` ×${i.face.copies}` : ''}</span>
+      <span>{i.face ? i.face.name : `${deckInfo(i.deck).label} back`}{i.face && copiesOf(i.face) > 1 ? ` ×${copiesOf(i.face)}` : ''}</span>
     </button>
   );
   const pairs = (title: string, about: string, list: Redesign[], rules = false) => (
     <section className="lab-deck">
       <h2>{title} <span className="muted">· {list.length} pairs · {about}</span></h2>
       <div className="lab-grid pairs">
-        {[...list].sort((a, b) => SORTERS[sort](a.community, b.community)).map((r) => (
+        {[...list].sort((a, b) => order(a.community, b.community)).map((r) => (
           <div key={r.community.id} className="lab-pair">
             {thumb(itemOf(r.classic))}
             <span className="lab-pair-arrow" aria-hidden>→</span>
@@ -138,7 +141,7 @@ export function CardLab() {
     byDeck(cards).map(({ deck, cards }) => (
       <section key={`${title}:${deck.id}`} className="lab-deck">
         <h2>{title} <span className="muted">· {deck.name} · {countNote(cards)}</span></h2>
-        <div className="lab-grid cards">{sorted(cards).map((c) => thumb(itemOf(c)))}</div>
+        <div className="lab-grid cards">{[...cards].sort(order).map((c) => thumb(itemOf(c)))}</div>
       </section>
     ));
 
@@ -164,7 +167,7 @@ export function CardLab() {
           )}
           {show('community-only') && singles('Community originals', LINEAGE.communityOnly)}
           {show('classic-only') && singles('Classic only', LINEAGE.classicOnly)}
-          {shownEdition && singles(shownEdition === 'community' ? 'Community Edition' : 'Classic', DECKS.filter((d) => d.edition === shownEdition).flatMap((d) => d.cards))}
+          {shownEdition && singles(EDITION_TITLE[shownEdition], cardsOf(shownEdition))}
           {(view === 'all' || shownEdition) && (
             <section className="lab-deck">
               <h2>Backs <span className="muted">· one per deck</span></h2>
@@ -178,7 +181,7 @@ export function CardLab() {
             {item.face ? (
               <>
                 {info.label} ({info.kind.toLowerCase()}) · {CARD_CATEGORIES[item.face.category]?.label} · {cardIllustration(item.face)}
-                {item.face.copies && item.face.copies > 1 ? ` · ${item.face.copies} copies` : ''}
+                {copiesOf(item.face) > 1 ? ` · ${copiesOf(item.face)} copies` : ''}
                 {lineage && <><br />{lineage}</>}
               </>
             ) : (

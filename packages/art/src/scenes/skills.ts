@@ -2,7 +2,8 @@ import { hsl, n } from '../svg';
 import {
   arrowPath, at, beam, burst, chip, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard,
   RESEARCH, route, scrapyard, shield, ship, shipOn, slash, space, sparkles, track, trackSlot, trails, world, wreck, missile,
-  badge, bolt, crest, dial, orbit, pillar, token, } from '../kit';
+  badge, bolt, crest, dial, orbit, pillar, token,
+} from '../kit';
 import type { Illustration } from '../illustrations';
 
 /** Community Edition Skills: one scene per card, showing what the card does. */

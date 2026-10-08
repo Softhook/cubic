@@ -1,7 +1,8 @@
 import { estimateWidth, type Measure } from './card';
 import { icon } from './icons';
+import { poly } from './kit/props';
 import { shipDie } from './kit/starships';
-import { document, esc, hsl, n, type Fragment } from './svg';
+import { dieCut, document, esc, hsl, n, type Fragment } from './svg';
 import { ACTION_HUE, CUBE_PAD, DOMINANCE, FONTS, INK, RESEARCH, TILE } from './tokens';
 
 /**
@@ -117,23 +118,21 @@ const GROUND = hsl(228, 40, 8);
 const WHITE = hsl(220, 30, 96);
 const MUTED = hsl(224, 18, 74);
 const HAIR = hsl(224, 20, 30);
+/** The quiet fill of every pad on the aid: cubes and dice. */
+const PAD = hsl(228, 32, 12);
 /** The one accent: the game's own cyan, the same for every player. */
 const HUE = 194;
 
 /** One action: a yellow hexagon with the action bolt, as on the cards (`glow` is its soft halo's gradient id). */
 function hex(cx: number, cy: number, r: number, glow: string): string {
-  const pts = [...Array(6)].map((_, i) => {
-    const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
-    return `${n(cx + Math.cos(a) * r)} ${n(cy + Math.sin(a) * r)}`;
-  });
-  return `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r * 1.8)}" fill="url(#${glow})"/><path d="M${pts.join('L')}Z" fill="${hsl(ACTION_HUE, 95, 58)}"/>` + icon('action', cx, cy, r * 1.2, INK, 2.8);
+  return `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r * 1.8)}" fill="url(#${glow})"/><path d="${poly(cx, cy, r)}" fill="${hsl(ACTION_HUE, 95, 58)}"/>` + icon('action', cx, cy, r * 1.2, INK, 2.8);
 }
 
 /** A die pad: where the dominance or research die sits, the 24 mm of a tile's space (a 19 mm die with room round it). */
 function diePad(cx: number, cy: number, hue: number, kind: 'dominance' | 'research'): string {
   const s = TILE.pad;
   return (
-    `<rect x="${n(cx - s / 2)}" y="${n(cy - s / 2)}" width="${s}" height="${s}" rx="3.6" fill="${hsl(228, 32, 12)}" stroke="${hsl(hue, 80, 62)}" stroke-width=".4"/>` +
+    `<rect x="${n(cx - s / 2)}" y="${n(cy - s / 2)}" width="${s}" height="${s}" rx="3.6" fill="${PAD}" stroke="${hsl(hue, 80, 62)}" stroke-width=".4"/>` +
     icon(kind, cx, cy, 7, hsl(hue, 60, 40), 1.5)
   );
 }
@@ -160,7 +159,7 @@ export function playerAidSvg(o: AidOptions = {}): string {
   const pad = CUBE_PAD.size;
   const step = (H - 2 * M - pad) / (MAX_CUBES - 1);
   for (let i = 0; i < MAX_CUBES; i++) {
-    out.push(`<rect x="${M}" y="${n(M + i * step)}" width="${pad}" height="${pad}" rx="1.6" fill="${hsl(228, 32, 12)}" stroke="${hsl(224, 20, 52)}" stroke-width=".3"/>`);
+    out.push(`<rect x="${M}" y="${n(M + i * step)}" width="${pad}" height="${pad}" rx="1.6" fill="${PAD}" stroke="${hsl(224, 20, 52)}" stroke-width=".3"/>`);
   }
   const spine = M + pad + 3.6;
   out.push(`<g transform="rotate(-90 ${n(spine)} ${n(H / 2)})">${text(spine, H / 2, 'Place your last cube to win', 2.4, { font: 'bold', fill: WHITE, anchor: 'middle', track: 0.16, upper: true })}</g>`);
@@ -193,9 +192,10 @@ export function playerAidSvg(o: AidOptions = {}): string {
   // --- The turn, in the middle column.
   const x0 = left + colW + 4;
   const cw = W - M - colW - 4 - x0;
+  const rule = (y: number) => `<path d="M${n(x0)} ${n(y)}H${n(x0 + cw)}" stroke="${HAIR}" stroke-width=".25"/>`;
   out.push(text(x0, M + 4.6, '3 actions', 3.2, { font: 'bold', fill: WHITE, upper: true, track: 0.06 }));
   for (let i = 0; i < 3; i++) out.push(hex(x0 + cw - 2.2 - i * 5, M + 3.5, 2.25, `${id}-glow`));
-  out.push(`<path d="M${n(x0)} ${n(M + 7.6)}H${n(x0 + cw)}" stroke="${HAIR}" stroke-width=".25"/>`);
+  out.push(rule(M + 7.6));
   const textX = x0 + 7.8;
   actions(edition).forEach((a, i) => {
     const y = M + 12.2 + i * 6.2;
@@ -203,7 +203,7 @@ export function playerAidSvg(o: AidOptions = {}): string {
     out.push(text(textX, y, a.name, 2.6, { font: 'bold', fill: WHITE }));
     out.push(line(textX, y + 2.9, a.text, 2.2, x0 + cw - textX, measure, { fill: MUTED }));
   });
-  out.push(`<path d="M${n(x0)} ${n(M + 42.6)}H${n(x0 + cw)}" stroke="${HAIR}" stroke-width=".25"/>`);
+  out.push(rule(M + 42.6));
   const ruleX = x0 + 13;
   rules(edition).forEach(([label, s], i) => {
     const y = M + 46.4 + i * 3.1;
@@ -225,12 +225,6 @@ export function playerAidSvg(o: AidOptions = {}): string {
     wrap(s.text, 2.1, size + gap - 0.8, measure).forEach((t, k) => out.push(text(cx, ty + 3.2 + k * 2.75, t, 2.1, { fill: MUTED, anchor: 'middle' })));
   }
 
-  let all: Fragment = { defs: (o.fontCss ? `<style>${o.fontCss}</style>` : '') + defs.join(''), body: out.join('') };
-  if (o.rounded) {
-    all = {
-      defs: all.defs + `<clipPath id="${id}-corners"><rect width="${W}" height="${H}" rx="${AID.corner}"/></clipPath>`,
-      body: `<g clip-path="url(#${id}-corners)">${all.body}</g>`,
-    };
-  }
-  return document(all, { x: -b, y: -b, w: W + 2 * b, h: H + 2 * b });
+  const all: Fragment = { defs: (o.fontCss ? `<style>${o.fontCss}</style>` : '') + defs.join(''), body: out.join('') };
+  return document(o.rounded ? dieCut(all, id, W, H, AID.corner) : all, { x: -b, y: -b, w: W + 2 * b, h: H + 2 * b });
 }

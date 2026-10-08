@@ -189,8 +189,8 @@ export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim }: 
   const id = useSvgId();
   const h = size / 2;
   const step = size * 0.27;
-  const { face, pip } = COLOURS[kind];
   const rx = size * 0.16;
+  const cls = dim ? 'mn-die mn-dim' : 'mn-die';
   if (ghost)
     return (
       <g className="mn-ghost">
@@ -201,10 +201,11 @@ export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim }: 
   if (kind === 'you' || kind === 'foe') {
     // Ships are drawn as on the player aid: the starship on its die face, in the player's colour.
     const ship = shipDie(id, v, x, y, size, PLAYER_HUES[kind === 'you' ? 0 : 1]);
-    return <g className={dim ? 'mn-die mn-dim' : 'mn-die'} dangerouslySetInnerHTML={{ __html: `<defs>${ship.defs}</defs>${ship.body}` }} />;
+    return <g className={cls} dangerouslySetInnerHTML={{ __html: `<defs>${ship.defs}</defs>${ship.body}` }} />;
   }
+  const { face, pip } = COLOURS[kind];
   return (
-    <g className={dim ? 'mn-die mn-dim' : 'mn-die'}>
+    <g className={cls}>
       {[face, `url(#${defs}-dk)`, `url(#${defs}-hi)`].map((fill) => (
         <rect key={fill} x={x - h} y={y - h} width={size} height={size} rx={rx} fill={fill} />
       ))}

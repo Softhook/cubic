@@ -3,7 +3,8 @@ import { ACTION_HUE } from '../tokens';
 import {
   arrowPath, at, beam, burst, chip, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard,
   panel, RESEARCH, scrapyard, shield, ship, shipOn, slash, space, sparkles, trails, world, worldOn, wreck,
-  crest, dial, motes, orbit, pillar, } from '../kit';
+  crest, dial, motes, orbit, pillar,
+} from '../kit';
 import type { Illustration } from '../illustrations';
 import { SKILL_SCENES } from './skills';
 import { TACTIC_SCENES } from './tactics';
@@ -184,10 +185,7 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       return [
         grid(`${id}-g`, g, -2, 2, -2, 2, hue, 0.45),
         f(space(g, 0, 0, hue, { a: 0.45 })),
-        {
-          defs: `<linearGradient id="${id}-col" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hsl(hue, 90, 75)}" stop-opacity="0"/><stop offset="1" stop-color="${hsl(hue, 90, 80)}" stop-opacity=".55"/></linearGradient>`,
-          body: `<path d="M${n(cx - 3)} ${n(box.y - 2)}H${n(cx + 3)}L${n(cx + 5)} ${n(cy)}H${n(cx - 5)}Z" fill="url(#${id}-col)"/>`,
-        },
+        pillar(`${id}-col`, cx, box.y - 2, cy, hue),
         shipOn(`${id}-s`, g, 0, 0, 3.8, 6, p1),
         f(sparkles(r.fork('sp'), cx, cy - 5, 3, 7, 3)),
         f(panel(kx - 9.5, ky - 4.5, 19, 9, hue) + chips(kx, ky, 2.9, ['lit', 'lit', 'lit'])),

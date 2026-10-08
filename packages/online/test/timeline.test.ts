@@ -280,7 +280,11 @@ describe('codec', () => {
     expect(decodeEvent(other, event)).toBeNull();
     // As received from a relay: plain JSON (nostr-tools caches a successful check on the object).
     const wire = () => JSON.parse(JSON.stringify(event)) as typeof event;
-    expect(decodeEvent(keys, { ...wire(), content: event.content.slice(0, -2) + 'AA' })).toBeNull();
+    // Change one character mid-ciphertext, always to a different one. (Overwriting the tail with a fixed
+    // string was a no-op 1 time in 256: the last base64 character of this content holds only 2 bits.)
+    const i = event.content.length >> 1;
+    const tampered = event.content.slice(0, i) + (event.content[i] === 'A' ? 'B' : 'A') + event.content.slice(i + 1);
+    expect(decodeEvent(keys, { ...wire(), content: tampered })).toBeNull();
     expect(decodeEvent(keys, { ...wire(), pubkey: getPublicKey(generateSecretKey()) })).toBeNull();
   });
 

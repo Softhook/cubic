@@ -1,6 +1,6 @@
 import { hash, rng, type Rng } from './rng';
 import { starfield, type Box } from './starfield';
-import { document, esc, hsl, join, n, type Fragment } from './svg';
+import { dieCut, document, esc, hsl, join, n, type Fragment } from './svg';
 import { CARD_CATEGORIES, FONTS, INK, PLAYER_HUES } from './tokens';
 import { icon } from './icons';
 import { die, glow } from './kit';
@@ -115,13 +115,7 @@ const fontStyle = (o: { fontCss?: string }) => (o.fontCss ? `<style>${o.fontCss}
 
 /** The card as a document, with die-cut corners when `rounded`. */
 function finish(all: Fragment, area: Box, id: string, rounded?: boolean): string {
-  if (rounded) {
-    all = {
-      defs: all.defs + clipRect(`${id}-corners`, { x: 0, y: 0, w: CARD.w, h: CARD.h }, CARD.corner),
-      body: `<g clip-path="url(#${id}-corners)">${all.body}</g>`,
-    };
-  }
-  return document(all, area);
+  return document(rounded ? dieCut(all, id, CARD.w, CARD.h, CARD.corner) : all, area);
 }
 
 // ---------------------------------------------------------------------------

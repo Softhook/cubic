@@ -78,5 +78,11 @@ export function document(f: Fragment, view: { x: number; y: number; w: number; h
   );
 }
 
+/** Clips a printed piece to its die-cut corners (`w` × `h` trim, corner radius `r`), for on-screen previews. */
+export const dieCut = (f: Fragment, id: string, w: number, h: number, r: number): Fragment => ({
+  defs: f.defs + `<clipPath id="${id}-corners"><rect width="${n(w)}" height="${n(h)}" rx="${n(r)}"/></clipPath>`,
+  body: `<g clip-path="url(#${id}-corners)">${f.body}</g>`,
+});
+
 /** An SVG document as a `data:` URL, for `<img>` and SVG `<image>`. */
 export const dataUrl = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
