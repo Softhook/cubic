@@ -1,5 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { playRoll } from '../sound';
+import { APPLE_TOUCH } from '../platform';
 import { PIP } from '../theme';
 
 /**
@@ -12,6 +13,11 @@ import { PIP } from '../theme';
  * when the die starts to move (at the face it showed) and goes again once it has landed. Dice that
  * tumble on mount (the fleet, battle and lobby rolls) keep theirs: they roll again under a modal's
  * backdrop-filter, where layers made mid-roll can flash a white frame.
+ *
+ * On an iPhone or iPad every die keeps its cube. Safari draws a cube's new layers wrong for a frame or two
+ * (a hard-edged die that then turns into the real one) and skips the start of a tumble while it makes them,
+ * and its flat face doesn't quite match the cube's, so building one per roll and dropping it after showed.
+ * A newly built cube also waits two frames before it moves, so the tumble starts once it is on screen.
  */
 
 // Rotation that brings each face to the front (front=1, top=2, right=3, left=4, bottom=5, back=6).
@@ -79,23 +85,39 @@ export const Die3D = memo(function Die3D({
   const lastRolls = useRef(rolls);
   const lastValue = useRef(value);
   const mounted = useRef(false);
-  const [moving, setMoving] = useState(!!tumbleOnMount);
+  /** Whether the cube goes once the die has landed. */
+  const flatten = !tumbleOnMount && !APPLE_TOUCH;
+  const [moving, setMoving] = useState(!flatten);
   const settle = useRef<number>();
-  useEffect(() => () => clearTimeout(settle.current), []);
+  const frame = useRef<number>();
+  useEffect(() => () => {
+    clearTimeout(settle.current);
+    if (frame.current) cancelAnimationFrame(frame.current);
+  }, []);
+  /** Run `go` once the cube just built has been on screen for a frame. */
+  const afterPaint = (go: () => void) => {
+    if (frame.current) cancelAnimationFrame(frame.current);
+    frame.current = requestAnimationFrame(() => {
+      frame.current = requestAnimationFrame(() => {
+        frame.current = undefined;
+        go();
+      });
+    });
+  };
 
   const rotation = (v: number) => {
     const [bx, by] = FACE_ROTATION[v] ?? [0, 0];
     return `rotateX(${bx + spins.current.x}deg) rotateY(${by + spins.current.y}deg)`;
   };
 
-  /** Turn the cube to `value` over `duration` ms, then lay the die flat again (unless it rolls in a modal). */
+  /** Turn the cube to `value` over `duration` ms, then lay the die flat again (unless it keeps its cube). */
   const setRotation = (duration: number) => {
     const el = cube.current;
     if (!el) return;
     el.style.transition = `transform ${duration}ms cubic-bezier(.12,.72,.22,1) ${delay}s`;
     el.style.transform = rotation(value);
     clearTimeout(settle.current);
-    if (!tumbleOnMount) settle.current = window.setTimeout(() => setMoving(false), delay * 1000 + duration + 50);
+    if (flatten) settle.current = window.setTimeout(() => setMoving(false), delay * 1000 + duration + 50);
   };
 
   const tumble = () => {
@@ -123,8 +145,10 @@ export const Die3D = memo(function Die3D({
         // Start from a random orientation without transition, then tumble to the value.
         el.style.transition = 'none';
         el.style.transform = `rotateX(${Math.random() * 360}deg) rotateY(${Math.random() * 360}deg)`;
-        void el.offsetWidth;
-        tumble();
+        afterPaint(tumble);
+      } else if (el) {
+        el.style.transition = 'none';
+        el.style.transform = rotation(value);
       }
       return;
     }
@@ -132,16 +156,22 @@ export const Die3D = memo(function Die3D({
     if (!rolled && value === lastValue.current) return;
     // A still die builds its cube first; this runs again once it's there (before anything is painted).
     if (!el) return setMoving(true);
-    if (!el.style.transform) {
+    const built = !el.style.transform;
+    if (built) {
       // Just built: start from the face the die was showing.
       el.style.transition = 'none';
       el.style.transform = rotation(lastValue.current);
-      void el.offsetWidth;
     }
     lastRolls.current = rolls;
     lastValue.current = value;
-    if (rolled) tumble();
-    else setRotation(450);
+    const go = rolled ? tumble : () => setRotation(450);
+    if (built) afterPaint(go);
+    else {
+      // A move still waiting on a new cube is overtaken by this one.
+      if (frame.current) cancelAnimationFrame(frame.current);
+      frame.current = undefined;
+      go();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, rolls, moving]);
 

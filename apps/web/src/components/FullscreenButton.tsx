@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { COARSE } from '../game/useMediaQuery';
+import { APPLE_TOUCH } from '../platform';
 
 // Safari (incl. iPad) still only ships the webkit-prefixed API.
 type FsDocument = Document & { webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => Promise<void> };
@@ -10,8 +11,9 @@ const root = document.documentElement as FsElement;
 
 // The installed app opens full screen on Android (manifest `display`) and stays that way, so
 // there is nothing to do or toggle; where it opens `standalone` instead, it goes full screen the same
-// way as the browser.
-const supported = !!(root.requestFullscreen || root.webkitRequestFullscreen) && !matchMedia('(display-mode: fullscreen)').matches;
+// way as the browser. Not on an iPad: Safari's full screen there misbehaves, and the iPhone has none.
+const supported =
+  !!(root.requestFullscreen || root.webkitRequestFullscreen) && !matchMedia('(display-mode: fullscreen)').matches && !APPLE_TOUCH;
 const isFullscreen = () => !!(doc.fullscreenElement ?? doc.webkitFullscreenElement);
 /** Whether full screen was asked for and not left on purpose, to restore it when the phone drops it. */
 let wanted = false;
