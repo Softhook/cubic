@@ -23,20 +23,20 @@ import { anySkill, skillRules, stealableSkill } from './skillRules';
 import type { Cell, Die, GameState, PlayerId } from './types';
 
 /**
- * The attacker has moved `from` next to the defender. A defender with Dangerous may first destroy
- * both ships; otherwise both combat dice are rolled now.
+ * The attacker has moved `from` next to the defender, or, `ranged` (Shoot), fires from there at 2 spaces.
+ * A defender with Dangerous may first destroy both ships; otherwise both combat dice are rolled now.
  */
-export function startCombat(s: GameState, attacker: Die, defender: Die, from: Cell) {
+export function startCombat(s: GameState, attacker: Die, defender: Die, from: Cell, ranged = false) {
   if (attacker.owner === s.turn.player) payForAttack(s);
   attacker.loc = { zone: 'board', r: from.r, c: from.c };
   s.turn.attacked = true;
   log(s, `${name(s, attacker.owner)}'s ${shipName(attacker)} attacks ${name(s, defender.owner)}'s ${shipName(defender)}.`, attacker.owner);
   if (anySkill(s, defender.owner, (r) => r.combat?.destroyBoth)) {
-    s.pending.unshift({ kind: 'dangerous', player: defender.owner, attacker: attacker.id, defender: defender.id, from });
-  } else rollCombat(s, attacker, defender, from);
+    s.pending.unshift({ kind: 'dangerous', player: defender.owner, attacker: attacker.id, defender: defender.id, from, ...(ranged && { ranged }) });
+  } else rollCombat(s, attacker, defender, from, ranged);
 }
 
-function rollCombat(s: GameState, attacker: Die, defender: Die, from: Cell) {
+function rollCombat(s: GameState, attacker: Die, defender: Die, from: Cell, ranged?: boolean) {
   const rollFor = (p: PlayerId) => Array.from({ length: combatDice(s, p) }, () => d6(s));
   s.pending.unshift({
     kind: 'combat',
@@ -46,6 +46,7 @@ function rollCombat(s: GameState, attacker: Die, defender: Die, from: Cell) {
     from,
     at: cellOf(defender)!,
     rerolls: [],
+    ...(ranged && { ranged: true as const }),
   });
 }
 
@@ -70,7 +71,7 @@ function resolveCombat(s: GameState, combat: PendingOf<'combat'>) {
   if (out.attackerWins) {
     log(s, `${name(s, A)} wins the battle (${out.attacker.total} vs ${out.defender.total}).`, A, 'battleWon');
     destroyShip(s, def);
-    s.pending.unshift({ kind: 'advance', player: A, die: att.id, to: combat.at });
+    if (!combat.ranged) s.pending.unshift({ kind: 'advance', player: A, die: att.id, to: combat.at });
     onDestroy(s, A, D);
   } else if (out.stubborn) {
     log(s, `${name(s, D)} holds firm and destroys the attacker (${out.defender.total} vs ${out.attacker.total}).`, D, 'battleWon');
@@ -110,7 +111,7 @@ export const combatHandlers = {
     s.pending.shift();
     const att = die(s, head.attacker);
     const def = die(s, head.defender);
-    if (!a.destroy) return rollCombat(s, att, def, head.from);
+    if (!a.destroy) return rollCombat(s, att, def, head.from, head.ranged);
     log(s, `${name(s, head.player)} is Dangerous: both ships are destroyed.`, head.player, 'shipDestroyed');
     destroyShip(s, def);
     destroyShip(s, att);

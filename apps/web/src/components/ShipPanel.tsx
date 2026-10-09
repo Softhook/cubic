@@ -1,4 +1,4 @@
-import { SHIP_ABILITIES, SHIP_NAMES, canMoveDie, canUseAbility, card, die, hasSkill, movementRange, skillCard, type GameState } from '@quantum/engine';
+import { canMoveDie, canUseAbility, card, die, hasSkill, movementRange, shipOf, skillCard, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
 import { Die3D } from './Die3D';
@@ -17,7 +17,10 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
   const secondUse = !used && !!t.abilityUsed[d.id];
   const tacticalId = skillCard(game, me, 'tactical') ?? skillCard(game, me, 'tactical-original');
   const mine = (a: { die: string }) => a.die === d.id;
-  const ability = SHIP_ABILITIES[d.value];
+  const ship = shipOf(game, d.value);
+  const ability = ship.ability;
+  // Picket and Beacon always work; Shoot goes with the ship's move, not a once-per-turn ability.
+  const passive = ship.power === 'picket' || ship.power === 'beacon' || ship.power === 'shoot';
   const cancel = () => ctl.select({ kind: 'none' });
   // The cards in the odds shown on the ships it may attack (the same for most targets).
   const factors = [
@@ -31,33 +34,41 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
   const oddsNote = factors.length ? `Attack odds count ${factors.join(' · ')}` : null;
 
   const abilityButton = () => {
-    if (!onBoard || used) return null;
-    switch (d.value) {
-      case 1:
+    if (!onBoard) return null;
+    if (ship.power === 'shoot') {
+      return (
+        <button className="btn" disabled={!legal.can('shoot', mine)} onClick={() => ctl.select({ kind: 'shoot', die: d.id })} title={ability.text}>
+          Shoot
+        </button>
+      );
+    }
+    if (used) return null;
+    switch (ship.power) {
+      case 'strike':
         return (
           <button className="btn" disabled={!legal.can('freeAttack', mine)} onClick={() => ctl.select({ kind: 'freeAttack', die: d.id })}>
             Free attack
           </button>
         );
-      case 2:
+      case 'transport':
         return (
           <button className="btn" disabled={!legal.can('carry', mine)} onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id })} aria-label="Carry & move">
             <Label long="Carry & move" short="Carry" />
           </button>
         );
-      case 3:
+      case 'warp':
         return (
           <button className="btn" disabled={!legal.can('swap', mine)} onClick={() => ctl.select({ kind: 'swap', die: d.id })} aria-label="Switch places">
             <Label long="Switch places" short="Switch" />
           </button>
         );
-      case 4:
+      case 'modify':
         return ([3, 5] as const).map((value) => (
           <button key={value} className="btn" disabled={!legal.can('change', (a) => mine(a) && a.value === value)} onClick={() => dispatch({ type: 'change', die: d.id, value })} aria-label={`Become ${value}`} title={`Become ${value}`}>
             <Label long={`Become ${value}`} short={`→ ${value}`} />
           </button>
         ));
-      case 6:
+      case 'freeReconfigure':
         return (
           <button className="btn" disabled={!legal.can('freeReconfigure', mine)} onClick={() => dispatch({ type: 'freeReconfigure', die: d.id })} aria-label="Free Reconfigure">
             <Label long="Free Reconfigure" short="Reconfigure" />
@@ -74,12 +85,12 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
         {/* On phones the ability text below is hidden: a tap on the name shows it. */}
         <Tip as="div" className="ship-name" tip={
             <>
-              <span>{`${ability.name}: ${used ? 'used this turn' : ability.text}`}</span>
+              <span>{`${ability.name}: ${used && !passive ? 'used this turn' : ability.text}`}</span>
               {oddsNote && <span className="muted">{oddsNote}</span>}
             </>
           }
         >
-          <strong>{SHIP_NAMES[d.value]}</strong>
+          <strong>{ship.name}</strong>
           <small>
             {onBoard ? `Moves ${movementRange(game, d)} · ${canMoveDie(game, d) ? 'ready' : 'already moved'}` : 'In scrapyard'}
           </small>
@@ -87,8 +98,8 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
         <button className="icon-btn" onClick={cancel} aria-label="Deselect">×</button>
       </div>
       <p className="ship-ability">
-        <b>{ability.name}</b> {used ? '— used this turn' : `— ${ability.text}`}
-        {secondUse && <em className="muted"> (second use via Cunning)</em>}
+        <b>{ability.name}</b> {used && !passive ? '— used this turn' : `— ${ability.text}`}
+        {secondUse && !passive && <em className="muted"> (second use via Cunning)</em>}
       </p>
       {oddsNote && <p className="ship-odds-note">{oddsNote}</p>}
       <div className="turn-actions">

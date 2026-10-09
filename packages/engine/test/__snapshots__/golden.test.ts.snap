@@ -54,6 +54,33 @@ exports[`golden master > community, 4 players, seed 13 1`] = `
 }
 `;
 
+exports[`golden master > cubic, 2 players, seed 11 1`] = `
+{
+  "actions": "1ad8e0c13c519408",
+  "state": "df3993d4fb8151d4",
+  "steps": 233,
+  "winner": 0,
+}
+`;
+
+exports[`golden master > cubic, 3 players, seed 12 1`] = `
+{
+  "actions": "ed13a62985271245",
+  "state": "deae8646f6628c47",
+  "steps": 372,
+  "winner": 0,
+}
+`;
+
+exports[`golden master > cubic, 4 players, seed 13 1`] = `
+{
+  "actions": "2e9326d1b3add293",
+  "state": "2ebea7d14f4320fe",
+  "steps": 597,
+  "winner": 1,
+}
+`;
+
 exports[`golden master > original, 2 players, seed 11 1`] = `
 {
   "actions": "54222b172019a996",

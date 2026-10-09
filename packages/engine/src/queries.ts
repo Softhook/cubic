@@ -13,9 +13,10 @@ import {
   stepNeighbours,
   surrounding,
 } from './board';
+import { addBeaconTargets, picketZone } from './cubicRules';
 import { card, effectOf } from './data';
 import { cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
-import { rulesOf } from './rules';
+import { hasPower, rulesOf } from './rules';
 import { activeSkills, anySkill, ruleOf, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
 import type { Cell, CombatPending, CombatRole, Die, GameState, OncePerTurn, Planet, PlayerId, TurnState } from './types';
 
@@ -123,8 +124,10 @@ export function canScrappy(state: GameState): boolean {
 // ---------------------------------------------------------------------------
 // Movement
 
+/** The die value counts up to the mode's cap (Cubic: 3); skill bonuses add to that (PROTOTYPING.md §2). */
 export function movementRange(state: GameState, d: Die): number {
-  return d.value + skillRules(state, d.owner).reduce((n, r) => n + (r.movement ?? 0), 0);
+  const base = Math.min(rulesOf(state).maxMovement ?? 6, d.value);
+  return base + skillRules(state, d.owner).reduce((n, r) => n + (r.movement ?? 0), 0);
 }
 
 export interface MoveOptions {
@@ -139,9 +142,19 @@ export interface MoveOptions {
  * (see board.ts grid): this runs for every ship in every position the AI scores. `found` lists
  * them in the order they were first reached, the start first. `ignore` lists occupied spaces
  * treated as empty. With `through` (Devious), the ship may pass through that player's enemies'
- * ships at no cost; such spaces are marked in `passing`, as it can't stop there.
+ * ships at no cost; such spaces are marked in `passing`, as it can't stop there. The search doesn't
+ * go on from a space in `zone` (Cubic Picket: cubicRules.ts picketZone), other than the start.
  */
-function reach(state: GameState, start: Cell, range: number, diagonal: boolean, ignore: Cell[] = [], through?: PlayerId, at = shipsByIndex(state)) {
+function reach(
+  state: GameState,
+  start: Cell,
+  range: number,
+  diagonal: boolean,
+  ignore: Cell[] = [],
+  through?: PlayerId,
+  at = shipsByIndex(state),
+  zone?: Uint8Array,
+) {
   const g = grid(state.board);
   const ignored = ignore.map((p) => p.r * g.cols + p.c);
   const steps = new Int32Array(g.size).fill(-1);
@@ -176,7 +189,7 @@ function reach(state: GameState, start: Cell, range: number, diagonal: boolean, 
   };
   while (head < queue.length) {
     const cur = queue[head++];
-    if (steps[cur] >= range) continue;
+    if (steps[cur] >= range || (zone?.[cur] && cur !== from)) continue;
     for (const nb of near[cur]) visit(cur, nb);
     const partner = gate(cur);
     if (partner >= 0) visit(cur, partner);
@@ -235,14 +248,15 @@ export function moveIndexes(state: GameState, ship: string | Die, at = shipsByIn
   if (!start) return result;
   const range = movementRange(state, d);
   const passes: boolean[] = [false];
-  if (d.value === 5 && canUseAbility(state, d)) passes.push(true);
+  if (hasPower(state, d, 'manoeuvre') && canUseAbility(state, d)) passes.push(true);
+  const zone = picketZone(state, d.owner, at);
 
   // Devious: normal moves only, not Transport or the Tactical step (decided 2026-10-03, OPEN-QUESTIONS #65).
   const through = anySkill(state, d.owner, (r) => r.moveThroughEnemies) ? d.owner : undefined;
   const g = grid(state.board);
   const gate = gates(state, g);
   for (const diagonal of passes) {
-    const { found, steps, passing } = reach(state, start, range, diagonal, [], through, at);
+    const { found, steps, passing } = reach(state, start, range, diagonal, [], through, at, zone);
     for (const i of found) {
       if (steps[i] === 0 || passing[i] || result.moves.has(i)) continue;
       result.moves.set(i, { steps: steps[i], diagonal });
@@ -300,7 +314,8 @@ export function shipReach(state: GameState, d: Die, at: (Die | undefined)[]): Sh
   const from = start.r * g.cols + start.c;
   // The gates inline rather than gates(): a call per step is measurable here.
   const [gateA, gateB] = gateIndexes(state, g);
-  const diagonals = d.value === 5 && canUseAbility(state, d);
+  const diagonals = hasPower(state, d, 'manoeuvre') && canUseAbility(state, d);
+  const zone = picketZone(state, d.owner, at);
   for (let pass = 0; pass < (diagonals ? 2 : 1); pass++) {
     const near = pass ? g.around : g.ortho;
     // Plain breadth-first search: without Devious every step costs 1.
@@ -313,6 +328,8 @@ export function shipReach(state: GameState, d: Die, at: (Die | undefined)[]): Sh
       const cur = QUEUE[head++];
       const steps = STEPS[cur];
       if (steps >= range) continue;
+      // Picket: a ship stopped next to an enemy Frigate may still attack from there, but not move on.
+      const stopped = zone !== undefined && zone[cur] === 1 && cur !== from;
       const list = near[cur];
       for (let k = 0; k <= list.length; k++) {
         const nb = k < list.length ? list[k] : cur === gateA ? gateB : cur === gateB ? gateA : -1;
@@ -322,7 +339,7 @@ export function shipReach(state: GameState, d: Die, at: (Die | undefined)[]): Sh
           if (ship.owner !== d.owner && !result.attacks.includes(ship)) result.attacks.push(ship);
           continue;
         }
-        if (STEPS[nb] >= 0 || !g.space[nb]) continue;
+        if (stopped || STEPS[nb] >= 0 || !g.space[nb]) continue;
         STEPS[nb] = steps + 1;
         QUEUE[tail++] = nb;
         if (!result.moves[nb]) {
@@ -400,7 +417,7 @@ export function tacticalOptions(state: GameState, dieId: string): TacticalOption
   if (!start) return result;
   const straight = stepNeighbours(state, start, false);
   const near = straight.map((cell) => ({ cell, diagonal: false }));
-  if (d.value === 5 && canUseAbility(state, d)) {
+  if (hasPower(state, d, 'manoeuvre') && canUseAbility(state, d)) {
     for (const cell of stepNeighbours(state, start, true))
       if (!straight.some((p) => same(p, cell))) near.push({ cell, diagonal: true });
   }
@@ -473,6 +490,7 @@ export function deployTargets(state: GameState, player: PlayerId): Cell[] {
       if (isEmptySpace(state, p)) targets.set(key(p), p);
     }
   }
+  addBeaconTargets(state, player, targets); // Cubic Scout (cubicRules.ts)
   if (anySkill(state, player, (r) => r.deployIsolated)) {
     for (const p of spaces(state.board)) {
       if (isEmptySpace(state, p) && !linked(state, p).some((q) => dieAt(state, q))) targets.set(key(p), p);

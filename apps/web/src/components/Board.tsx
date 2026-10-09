@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-import { SHIP_ABILITIES, SHIP_NAMES, die, key, moveOptions, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, die, key, moveOptions, shipOf, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { Explosions } from './board/Explosions';
@@ -219,7 +219,7 @@ function Ships({
         title={
           attack
             ? [`Attack ${who}: ${percent(attack.chance)} to win`, ...attack.factors.attacker.map((f) => `You: ${f}`), ...attack.factors.defender.map((f) => `Them: ${f}`)].join('\n')
-            : `${who}\n${SHIP_ABILITIES[d.value].name}: ${SHIP_ABILITIES[d.value].text}`
+            : `${who}\n${shipOf(game, d.value).ability.name}: ${shipOf(game, d.value).ability.text}`
         }
       >
         <div className="ship-ring" />
@@ -249,7 +249,7 @@ function BoardInfo({ game, spots, what, cell, onClose }: { game: GameState; spot
 /** What a ship is: whose, which, and its ability. */
 function ShipInfo({ game, id }: { game: GameState; id: string }) {
   const d = die(game, id);
-  const ability = SHIP_ABILITIES[d.value];
+  const ability = shipOf(game, d.value).ability;
   const p = game.players[d.owner];
   return (
     <>

@@ -17,6 +17,7 @@ import {
   spendPeaceful,
   type Handlers,
 } from './core';
+import { firedFirst, noteMove } from './cubic';
 import { die } from './lookups';
 import { canGainResearch, canMoveDie, canReconfigure, conquerCheck, deployTargets, deploysFree, moveIndexes } from './queries';
 import { rulesOf } from './rules';
@@ -29,7 +30,9 @@ export const actionHandlers = {
     if (!canMoveDie(s, d)) fail('This ship already moved this turn');
     const opt = moveIndexes(s, d).moves.get(cellIndex(s.board, a.to));
     if (!opt) fail('Out of range');
-    spendMove(s);
+    // Cubic Shoot (cubic.ts): an Interceptor that fired first moves for free.
+    if (!firedFirst(s, d)) spendMove(s);
+    noteMove(s, d);
     if (opt.diagonal) markAbility(s, d); // Interceptor manoeuvre
     d.loc = { zone: 'board', ...a.to };
     markMoved(s, d);
@@ -38,6 +41,7 @@ export const actionHandlers = {
     requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     if (!canMoveDie(s, d)) fail('This ship already moved this turn');
+    if (firedFirst(s, d)) fail('This ship already fired this turn');
     const opt = moveIndexes(s, d).attacks.get(a.target);
     if (!opt) fail('Target out of range');
     spend(s, 1);

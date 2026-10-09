@@ -47,6 +47,8 @@ export function hintFor(game: GameState, sel: Sel): string {
       return 'Choose another of your ships to switch places with.';
     case 'freeAttack':
       return 'Choose an adjacent enemy to attack for free.';
+    case 'shoot':
+      return 'Shoot: choose an enemy 1 or 2 spaces away in a straight line, diagonals included. Your Interceptor stays put, and can still move before or after.';
     case 'tactical':
       return 'Tactical: move one space, or attack an adjacent enemy.';
     case 'nomadic':

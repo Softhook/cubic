@@ -146,6 +146,11 @@ export interface TurnState {
   storedTacticPlayed?: boolean;
   /** Whether an action was spent this turn (free abilities don't count). */
   acted?: boolean;
+  /**
+   * Shoot (Cubic Interceptor): a ship's move and its shot cost one action, in either order. `fired`:
+   * it shot first, so its move is free; `moved`: it moved first, so its shot is free; `done`: both.
+   */
+  shoot?: Record<string, 'fired' | 'moved' | 'done'>;
 }
 
 /** Effects limited to once per turn. 'cunning' is the second use of a ship ability. */
@@ -173,6 +178,8 @@ export interface CombatPending {
   at: Cell;
   /** Re-roll effects already used in this battle (Cruel, Relentless, Scrappy: once each). */
   rerolls: string[];
+  /** A Shoot (Cubic): the attacker fired from 2 spaces away and doesn't advance if it wins. */
+  ranged?: true;
 }
 
 export type Pending =
@@ -183,7 +190,7 @@ export type Pending =
   | { kind: 'placeShips'; player: PlayerId; planet: number }
   | CombatPending
   /** Dangerous: before the dice are rolled, the defender may destroy both ships. */
-  | { kind: 'dangerous'; player: PlayerId; attacker: string; defender: string; from: Cell }
+  | { kind: 'dangerous'; player: PlayerId; attacker: string; defender: string; from: Cell; ranged?: true }
   /**
    * Clever: the player chooses the number of a ship that was just rolled (Original: any but `avoid`,
    * for a Reconfigure; Community Edition: one of `options`, the reconfigured number ± 1).
@@ -271,6 +278,8 @@ export type Action =
   // phase 1 actions
   | { type: 'move'; die: string; to: Cell }
   | { type: 'attack'; die: string; target: string }
+  /** Cubic Interceptor: attack a ship 2 spaces away in a straight line, before or after its move (cubic.ts). */
+  | { type: 'shoot'; die: string; target: string }
   | { type: 'deploy'; die: string; to: Cell }
   | { type: 'reconfigure'; die: string }
   | { type: 'research' }

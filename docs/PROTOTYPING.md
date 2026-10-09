@@ -333,9 +333,49 @@ the same question from opposite ends: what should a big ship be for?
 ## 7. Next steps
 
 - [x] Rule on the movement cap: it caps the die value, before skill bonuses and powers
-- [ ] Add the Cubic mode with `maxMovement: 3` and a scenario test
-- [ ] Add Cubic to the golden and consistency tests
+- [x] Add the Cubic mode with `maxMovement: 3` and a scenario test
+- [x] Add Cubic to the golden and consistency tests
 - [ ] Write the per-game stats script (CSV, including moves and power uses per ship value)
-- [ ] Refactor: ship table per mode (§4 step 2)
-- [ ] Prototype Picket and Beacon; measure big-ship usage against Community
+- [x] Refactor: ship table per mode (§4 step 2)
+- [x] Prototype Picket, Shoot and Beacon; first measure of big-ship usage against Community (below)
 - [ ] Prototype Kinetic ships as a separate experiment
+
+## 8. What was built (2026-10-09)
+
+Cubic is in the lobby: Community Edition plus the movement cap, with **Picket** (4), **Shoot** (5)
+and **Beacon** (6) replacing Modify, Manoeuvre and Free Reconfigure. The 1, 2 and 3 are unchanged.
+Rulings made while building it:
+
+- **Adjacency is all 8 surrounding spaces** for Picket and Beacon. Warp Gates don't count.
+- **Picket** applies to normal moves only (not Transport, Warp or the Tactical step). A ship that
+  starts in a zone may leave, but stops in the next zone space it enters.
+- **Shoot** (first built as Strafe, renamed and reworked the same day) attacks an enemy 1 or 2
+  spaces away in a straight line, orthogonal or diagonal, from where the Interceptor stands. At 2,
+  the space in between must be empty (a ship, planet or void blocks it). Its move and its shot cost **one action together, in either
+  order**: shoot first (1 action) and the move is free, or move first (1 action) and the shot is
+  free. A ship that shot can't also attack, and it shoots at most once a turn. The shooter never
+  advances. Normal combat applies, missiles and re-rolls included.
+
+Code: `RuleSet.ships` (the ship table, `CLASSIC_SHIPS` / `CUBIC_SHIPS` in data.ts) and
+`hasPower()` replace the `d.value === N` checks. `RuleSet.maxMovement` is read by
+`movementRange`. All Cubic-only code lives in two files, so the official modes never reach it:
+[cubicRules.ts](../packages/engine/src/cubicRules.ts) has Picket (`picketZone()`, used by `reach()` and
+`shipReach()`) and Beacon (`addBeaconTargets()`, used by `deployTargets`), and
+[cubic.ts](../packages/engine/src/cubic.ts) has the `shoot` action with `shootTargets()` and `shotCost()`.
+`turn.shoot` tracks the order, and a `ranged` battle skips the advance. Each hook returns early when
+no ship in the mode has its power. A test in cubic.test.ts pins Basic, Classic and Community to the
+classic ships with no movement cap, and their golden replays are unchanged. Scenarios are in [cubic.test.ts](../packages/engine/test/cubic.test.ts).
+
+**First self-play numbers** (level 2 vs level 2, 2 players):
+
+| | Community | Cubic |
+|---|:-:|:-:|
+| Turns per game (`ai:match`, 60 games) | 17.9 | 17.1 |
+| Attacks (30 games) | 208 | 134 |
+| 4s / 6s on the map at turn ends (30 games) | 273 / 171 | 496 / 445 |
+| Enemy moves that ended in a Picket zone (30 games) | — | 20 of 534 moves |
+| Shoot possible / used (15 games, range 1–2 with diagonals) | — | 63 / 15 (4 shoot-then-move) |
+
+Games did not get longer, so the 30% threshold in §5 isn't hit. 4s and 6s now stay on the map. Picket
+bites in about 4% of moves. **Shoot:** with exact range 2 in orthogonal lines it was possible twice in 15 games and never used.
+At range 1–2 with diagonals the AI uses it about once a game. The AI's evaluation knows nothing of Shoot or Beacon threats yet (§4 step 7).

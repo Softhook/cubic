@@ -2,6 +2,7 @@
 import { same, spaces } from './board';
 import { actor, tryApply } from './engine';
 import type { PendingOf } from './core';
+import { firedFirst, shootTargets, shotCost } from './cubic';
 import { reserve, scrapyard, shipsOnBoard } from './lookups';
 import {
   actionsClosed,
@@ -28,7 +29,7 @@ import {
   tacticalOptions,
   usedThisTurn,
 } from './queries';
-import { rulesOf } from './rules';
+import { hasPower, rulesOf } from './rules';
 import { anySkill, hasSkill } from './skillRules';
 import type { Action, Die, GameState, Pending } from './types';
 
@@ -150,26 +151,30 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
   const nomadic = actions > 0 && hasSkill(s, me, 'nomadic') && !usedThisTurn(s, 'nomadic');
 
   for (const d of shipsOnBoard(s, me)) {
-    if (canPayMove && canMoveDie(s, d)) {
+    // Shoot: an Interceptor that fired first moves for free, but may not attack too.
+    const fired = firedFirst(s, d);
+    if ((canPayMove || fired) && canMoveDie(s, d)) {
       const moves = moveOptions(s, d.id);
       for (const m of moves.moves.values()) out.push({ type: 'move', die: d.id, to: m.cell });
-      if (canAttack(1)) for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
+      if (!fired && canAttack(1)) for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
     }
+    const shot = shotCost(s, d);
+    if (shot && canAttack(shot === 'paid' ? 1 : 0)) for (const x of shootTargets(s, d.id)) out.push({ type: 'shoot', die: d.id, target: x.id });
     if (actions > 0 && canReconfigure(s, d)) out.push({ type: 'reconfigure', die: d.id });
     if ((hasSkill(s, me, 'tactical') || (hasSkill(s, me, 'tactical-original') && canMoveDie(s, d))) && !usedThisTurn(s, 'tactical')) {
       const tac = tacticalOptions(s, d.id);
       for (const m of tac.moves) out.push({ type: 'tactical', die: d.id, to: m.cell });
       if (canAttack(0)) for (const x of tac.attacks) out.push({ type: 'tactical', die: d.id, target: x.die.id });
-      if (d.value === 2 && opts.includeCarry && canUseAbility(s, d)) {
+      if (hasPower(s, d, 'transport') && opts.includeCarry && canUseAbility(s, d)) {
         for (const c of carries(s, d, 1)) out.push({ type: 'tactical', die: d.id, ...c });
       }
     }
     if (canUseAbility(s, d)) {
-      if (d.value === 1 && canAttack(0)) for (const x of freeAttackTargets(s, d.id)) out.push({ type: 'freeAttack', die: d.id, target: x.id });
-      if (d.value === 3) for (const o of shipsOnBoard(s, me)) if (o.id !== d.id) out.push({ type: 'swap', die: d.id, other: o.id });
-      if (d.value === 4) out.push({ type: 'change', die: d.id, value: 3 }, { type: 'change', die: d.id, value: 5 });
-      if (d.value === 6) out.push({ type: 'freeReconfigure', die: d.id });
-      if (d.value === 2 && opts.includeCarry && canPayMove && canMoveDie(s, d)) {
+      if (hasPower(s, d, 'strike') && canAttack(0)) for (const x of freeAttackTargets(s, d.id)) out.push({ type: 'freeAttack', die: d.id, target: x.id });
+      if (hasPower(s, d, 'warp')) for (const o of shipsOnBoard(s, me)) if (o.id !== d.id) out.push({ type: 'swap', die: d.id, other: o.id });
+      if (hasPower(s, d, 'modify')) out.push({ type: 'change', die: d.id, value: 3 }, { type: 'change', die: d.id, value: 5 });
+      if (hasPower(s, d, 'freeReconfigure')) out.push({ type: 'freeReconfigure', die: d.id });
+      if (hasPower(s, d, 'transport') && opts.includeCarry && canPayMove && canMoveDie(s, d)) {
         for (const c of carries(s, d)) out.push({ type: 'carry', die: d.id, ...c });
       }
     }

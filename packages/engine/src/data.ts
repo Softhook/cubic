@@ -17,7 +17,7 @@ export interface CardDef {
   classic?: string;
 }
 
-export type GameMode = 'basic' | 'original' | 'community';
+export type GameMode = 'basic' | 'original' | 'community' | 'cubic';
 
 
 export interface MapDef {
@@ -77,20 +77,55 @@ export function isOriginalCard(id: string): boolean {
 }
 
 
-export const SHIP_NAMES: Record<number, string> = {
-  1: 'Battlestation',
-  2: 'Flagship',
-  3: 'Destroyer',
-  4: 'Frigate',
-  5: 'Interceptor',
-  6: 'Scout',
+/**
+ * What a ship's power does, as the hook the rules look for: ship identity is "has power X", not a die
+ * value, so a mode can give a value a different power (RuleSet.ships).
+ */
+export type ShipPower =
+  | 'strike'
+  | 'transport'
+  | 'warp'
+  | 'modify'
+  | 'manoeuvre'
+  | 'freeReconfigure'
+  /** Cubic 4: enemy ships that move into a surrounding space must stop there. */
+  | 'picket'
+  /** Cubic 5: move, then attack a ship 2 spaces away in a straight line. */
+  | 'shoot'
+  /** Cubic 6: its owner may deploy into its surrounding spaces. */
+  | 'beacon';
+
+export interface ShipDef {
+  name: string;
+  power: ShipPower;
+  /** The power's name and rules text, for the UI. */
+  ability: { name: string; text: string };
+}
+
+/** A mode's ships by die value, 1 to 6. */
+export type ShipTable = Record<number, ShipDef>;
+
+export const CLASSIC_SHIPS: ShipTable = {
+  1: { name: 'Battlestation', power: 'strike', ability: { name: 'Free Attack', text: 'Attack an adjacent enemy without using this ship’s move.' } },
+  2: { name: 'Flagship', power: 'transport', ability: { name: 'Carry & Move', text: 'Carry one of your nearby ships as part of a move, then drop it next to you.' } },
+  3: { name: 'Destroyer', power: 'warp', ability: { name: 'Swap', text: 'Swap places with any of your other ships.' } },
+  4: { name: 'Frigate', power: 'modify', ability: { name: 'Change to 3 or 5', text: 'Turn into a Destroyer or an Interceptor.' } },
+  5: { name: 'Interceptor', power: 'manoeuvre', ability: { name: 'Move Diagonally', text: 'May move and attack diagonally (used automatically when needed).' } },
+  6: { name: 'Scout', power: 'freeReconfigure', ability: { name: 'Free Reconfigure', text: 'Re-roll this ship for free.' } },
 };
 
-export const SHIP_ABILITIES: Record<number, { name: string; text: string }> = {
-  1: { name: 'Free Attack', text: 'Attack an adjacent enemy without using this ship’s move.' },
-  2: { name: 'Carry & Move', text: 'Carry one of your nearby ships as part of a move, then drop it next to you.' },
-  3: { name: 'Swap', text: 'Swap places with any of your other ships.' },
-  4: { name: 'Change to 3 or 5', text: 'Turn into a Destroyer or an Interceptor.' },
-  5: { name: 'Move Diagonally', text: 'May move and attack diagonally (used automatically when needed).' },
-  6: { name: 'Free Reconfigure', text: 'Re-roll this ship for free.' },
+/** Cubic (docs/PROTOTYPING.md §5): the 4, 5 and 6 control space, strike at range and extend reach. */
+export const CUBIC_SHIPS: ShipTable = {
+  ...CLASSIC_SHIPS,
+  4: { name: 'Frigate', power: 'picket', ability: { name: 'Picket', text: 'An enemy ship that moves into any of the 8 spaces around this ship must stop there. It may still attack from there.' } },
+  5: { name: 'Interceptor', power: 'shoot', ability: { name: 'Shoot', text: 'Attack an enemy 1 or 2 spaces away in a straight line, diagonals included (at 2, over an empty space). It stays where it is. Shooting and moving cost one action together, in either order.' } },
+  6: { name: 'Scout', power: 'beacon', ability: { name: 'Beacon', text: 'You may deploy into any empty space around this ship.' } },
 };
+
+/** The ships' names in every mode. */
+export const SHIP_NAMES: Record<number, string> = Object.fromEntries(Object.entries(CLASSIC_SHIPS).map(([v, s]) => [v, s.name]));
+
+/** The classic ship powers; a mode's own are in rulesOf(state).ships (see shipAbility). */
+export const SHIP_ABILITIES: Record<number, { name: string; text: string }> = Object.fromEntries(
+  Object.entries(CLASSIC_SHIPS).map(([v, s]) => [v, s.ability]),
+);

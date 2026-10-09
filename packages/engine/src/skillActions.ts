@@ -24,6 +24,7 @@ import {
 } from './core';
 import { cellOf, die } from './lookups';
 import { canGainResearch, canMoveDie, canScrappy, nomadicTargets, tacticalOptions } from './queries';
+import { hasPower } from './rules';
 import { hasSkill } from './skillRules';
 
 export const skillHandlers = {
@@ -83,7 +84,7 @@ export const skillHandlers = {
     };
     if (a.passenger) {
       // Flagship Transport over the 1 space (forum consensus, BGG thread 1093051).
-      if (d.value !== 2) fail('Only a Flagship can transport');
+      if (!hasPower(s, d, 'transport')) fail('Only a Flagship can transport');
       if (!a.to || !a.drop) fail('Invalid carry');
       const fly = transport(s, d, a.passenger, a.to, a.drop, 1);
       use();

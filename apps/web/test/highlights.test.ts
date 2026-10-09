@@ -50,7 +50,7 @@ describe('highlightsFor', () => {
 
   it('matches the legal actions in every action-phase position of full AI games', () => {
     let checked = 0;
-    for (const mode of ['basic', 'original', 'community'] as const) {
+    for (const mode of ['basic', 'original', 'community', 'cubic'] as const) {
       playAiGame({
         mode,
         players: 2,

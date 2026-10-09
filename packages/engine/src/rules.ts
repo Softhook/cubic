@@ -1,5 +1,5 @@
-import { MAPS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef, type GameMode } from './data';
-import type { GameState } from './types';
+import { CLASSIC_SHIPS, CUBIC_SHIPS, MAPS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef, type GameMode, type ShipDef, type ShipPower, type ShipTable } from './data';
+import type { Die, GameState } from './types';
 
 /**
  * Everything that differs between rule sets lives here. The engine and the UI ask the rule set
@@ -24,6 +24,12 @@ export interface RuleSet {
   reconfigure: 'different' | 'unseen';
   /** Map groups (data/maps.yaml) this mode can be played on. */
   mapGroups: string[];
+  /** Each die value's ship: its name and power. */
+  ships: ShipTable;
+  /** The most a ship's die value counts for movement; skill bonuses add to it (PROTOTYPING.md §2). */
+  maxMovement?: number;
+  /** A rule set we're still testing: playable from the lobby, but left out of the rulebook. */
+  experimental?: boolean;
 }
 
 export interface CardRules {
@@ -50,6 +56,26 @@ export interface CardRules {
 /** Maps published for the boxed game: the box, the 2013 rulebook, and the add-on pack. */
 const OFFICIAL_MAPS = ['basic', 'advanced', 'addon'];
 
+const COMMUNITY: RuleSet = {
+  id: 'community',
+  name: 'Community',
+  title: 'Community Edition',
+  summary: 'Rebalanced cards, missiles, a starting skill and card peeking.',
+  cards: {
+    skills: SKILLS,
+    tactics: TACTICS,
+    startingSkillDraft: true,
+    peek: true,
+    expansionPile: true,
+    refresh: false,
+    terms: { skill: 'skill', skills: 'skills', skillDeck: 'Skills', tacticDeck: 'Tactics' },
+  },
+  startingMissiles: 1,
+  reconfigure: 'unseen',
+  mapGroups: [...OFFICIAL_MAPS, 'bga', 'ce'],
+  ships: CLASSIC_SHIPS,
+};
+
 export const RULESETS: Record<GameMode, RuleSet> = {
   basic: {
     id: 'basic',
@@ -60,6 +86,7 @@ export const RULESETS: Record<GameMode, RuleSet> = {
     startingMissiles: 0,
     reconfigure: 'different',
     mapGroups: OFFICIAL_MAPS,
+    ships: CLASSIC_SHIPS,
   },
   original: {
     id: 'original',
@@ -78,24 +105,19 @@ export const RULESETS: Record<GameMode, RuleSet> = {
     startingMissiles: 0,
     reconfigure: 'different',
     mapGroups: OFFICIAL_MAPS,
+    ships: CLASSIC_SHIPS,
   },
-  community: {
-    id: 'community',
-    name: 'Community',
-    title: 'Community Edition',
-    summary: 'Rebalanced cards, missiles, a starting skill and card peeking.',
-    cards: {
-      skills: SKILLS,
-      tactics: TACTICS,
-      startingSkillDraft: true,
-      peek: true,
-      expansionPile: true,
-      refresh: false,
-      terms: { skill: 'skill', skills: 'skills', skillDeck: 'Skills', tacticDeck: 'Tactics' },
-    },
-    startingMissiles: 1,
-    reconfigure: 'unseen',
-    mapGroups: [...OFFICIAL_MAPS, 'bga', 'ce'],
+  community: COMMUNITY,
+  /** Our own rules (docs/PROTOTYPING.md): Community Edition with short moves and new 4, 5 and 6 powers. */
+  cubic: {
+    ...COMMUNITY,
+    id: 'cubic',
+    name: 'Cubic',
+    title: 'Cubic',
+    summary: 'Community Edition with moves capped at 3 and new Frigate, Interceptor and Scout powers.',
+    ships: CUBIC_SHIPS,
+    maxMovement: 3,
+    experimental: true,
   },
 };
 
@@ -104,10 +126,25 @@ export function rulesOf(state: GameState): RuleSet {
   return RULESETS[state.mode];
 }
 
+/** The ship a die value is in this game's rules. */
+export function shipOf(state: GameState, value: number): ShipDef {
+  return rulesOf(state).ships[value];
+}
+
+/** Whether a ship has this power in this game's rules. */
+export function hasPower(state: GameState, d: Die, power: ShipPower): boolean {
+  return rulesOf(state).ships[d.value]?.power === power;
+}
+
+/** Whether any ship has this power in this game's rules. */
+export function modeHasPower(state: GameState, power: ShipPower): boolean {
+  return Object.values(rulesOf(state).ships).some((s) => s.power === power);
+}
+
 /** Player counts a rule set has maps for. */
 export function playerCounts(rules: RuleSet): number[] {
   return [...new Set(MAPS.filter((m) => rules.mapGroups.includes(m.group)).map((m) => m.players))].sort((a, b) => a - b);
 }
 
 /** Rule sets in menu order. */
-export const MODES: RuleSet[] = [RULESETS.basic, RULESETS.original, RULESETS.community];
+export const MODES: RuleSet[] = [RULESETS.basic, RULESETS.original, RULESETS.community, RULESETS.cubic];

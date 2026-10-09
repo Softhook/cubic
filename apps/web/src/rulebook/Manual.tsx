@@ -531,8 +531,9 @@ export function Manual({ dark }: { dark?: boolean }) {
 const Yes = () => <span className="mn-yes">✓</span>;
 const No = () => <span className="mn-none">—</span>;
 
-/** What changes between rule sets, read from RULESETS so it can't disagree with the engine. */
+/** What changes between rule sets, read from RULESETS so it can't disagree with the engine. Experimental modes (Cubic) are left out. */
 function RuleSetTable() {
+  const modes = MODES.filter((m) => !m.experimental);
   const rows: [string, (m: (typeof MODES)[number]) => ReactNode][] = [
     ['Cards', (m) => (m.cards ? `${m.cards.terms.skillDeck} & ${m.cards.terms.tacticDeck}${m.cards.expansionPile ? ' + Expansion pile' : ''}` : <No />)],
     ['Research action', (m) => (m.cards ? <Yes /> : <No />)],
@@ -548,7 +549,7 @@ function RuleSetTable() {
         <thead>
           <tr>
             <th />
-            {MODES.map((m) => (
+            {modes.map((m) => (
               <th key={m.id}>
                 {m.name}
                 <small>{m.summary}</small>
@@ -560,7 +561,7 @@ function RuleSetTable() {
           {rows.map(([label, cell]) => (
             <tr key={label}>
               <th>{label}</th>
-              {MODES.map((m) => (
+              {modes.map((m) => (
                 <td key={m.id}>{cell(m)}</td>
               ))}
             </tr>
