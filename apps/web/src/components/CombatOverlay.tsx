@@ -3,6 +3,7 @@ import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, miss
 import type { Dispatch } from '../game/useGame';
 import type { GameView } from '../game/view';
 import { PHONE, useMediaQuery } from '../game/useMediaQuery';
+import { useShortcut } from '../game/useShortcut';
 import { COMBAT_DICE } from '../theme';
 import { MissileIcon } from './Card';
 import { Die3D } from './Die3D';
@@ -14,6 +15,7 @@ export function CombatOverlay({
   combat,
   dispatch,
   mine,
+  aiResponding,
   online,
 }: {
   game: GameState;
@@ -21,6 +23,8 @@ export function CombatOverlay({
   dispatch: Dispatch;
   /** The players this screen responds for. */
   mine: (p: PlayerId) => boolean;
+  /** On this device: an AI is about to respond, so the battle can't be resolved yet. */
+  aiResponding: boolean;
   /** Online: who the battle waits for; it resolves once everyone who may respond is done. */
   online?: GameView['combat'];
 }) {
@@ -39,11 +43,25 @@ export function CombatOverlay({
   const shooters = humans.filter((p) => p.missiles > 0);
   const autoResolve = !humans.some((p) => canRespondToCombat(game, combat, p.id));
   const waitingNames = online?.waitingOn.map((id) => game.players[id].name).join(' and ');
-  // The battle resolves by itself shortly; restarts when a missile changes it.
-  const autobar = (
-    <div className="autobar" key={`${combat.id}-${+combat.attacker.missile}-${+combat.defender.missile}`}>
-      <span />
-    </div>
+  // A battle nobody here can change stays up until OK (or a click beside it), so the player can
+  // see how it went: online, it moves on once decided; here, OK resolves it. Only a game with no
+  // humans resolves its battles by itself.
+  const ok = online
+    ? !online.mustAnswer && !waitingNames
+      ? online.dismiss
+      : undefined
+    : autoResolve && game.players.some((p) => !p.ai)
+      ? () => dispatch({ type: 'resolveCombat' })
+      : undefined;
+  const ready = revealed && !aiResponding;
+  // Enter or Escape is OK too; not held down (it would carry on into the next choice), nor on a
+  // focused button (Enter presses that already).
+  useShortcut(
+    (e) => ready && !!ok && !e.repeat && (e.key === 'Enter' || e.key === 'Escape') && (e.target as HTMLElement | null)?.tagName !== 'BUTTON',
+    (e) => {
+      e.preventDefault();
+      ok?.();
+    },
   );
   const leader = out.attackerWins ? A : D;
 
@@ -52,6 +70,11 @@ export function CombatOverlay({
     const p = game.players[s.player];
     const total = role === 'attacker' ? out.attacker : out.defender;
     const winning = revealed && (role === 'attacker') === out.attackerWins;
+    // The dice show the ship and the roll; listed are only what else counts: a card that sets the
+    // roll (not a missile: its die says so) and bonuses.
+    const natural = Math.min(...s.dice);
+    const [rollPart, , ...bonuses] = total.parts;
+    const setBy = !s.missile && total.roll !== natural ? rollPart.label : null;
     return (
       <div className={`combat-side ${role} ${winning ? 'winning' : ''}`} style={{ '--pc': p.color } as CSSProperties}>
         <div className="combat-who">
@@ -74,17 +97,23 @@ export function CombatOverlay({
               delay={role === 'attacker' ? 0 : 0.12}
               sound={role === 'attacker'}
             />
-            <span>{role === 'attacker' ? 'Attack die' : 'Defence die'}</span>
+            <span>{s.missile ? 'Missile' : role === 'attacker' ? 'Attack die' : 'Defence die'}</span>
           </div>
         </div>
         <ul className={`combat-parts ${revealed ? 'show' : ''}`}>
-          {total.parts.map((part, i) => (
+          {setBy && (
+            <li>
+              <span>{setBy}</span>
+              <b>roll {total.roll}</b>
+            </li>
+          )}
+          {bonuses.map((part, i) => (
             <li key={i}>
               <span>{part.label}</span>
-              <b>{part.value > 0 && i > 0 ? `+${part.value}` : part.value}</b>
+              <b>{part.value > 0 ? `+${part.value}` : `−${-part.value}`}</b>
             </li>
           ))}
-          {s.dice.length > 1 && <li className="muted">Brutal: rolled {s.dice.join(' & ')}</li>}
+          {s.dice.length > 1 && !setBy && !s.missile && <li className="muted">Brutal: rolled {s.dice.join(' & ')}</li>}
         </ul>
         <div className={`combat-total ${revealed ? 'show' : ''}`}>{revealed ? total.total : '?'}</div>
         {revealed && humans.map((p) => <RerollButton key={p.id} game={game} combat={combat} role={role} by={p} named={humans.length > 1} dispatch={dispatch} />)}
@@ -97,7 +126,7 @@ export function CombatOverlay({
   };
 
   return (
-    <div className="overlay combat-overlay">
+    <div className="overlay combat-overlay" onClick={(e) => ready && e.target === e.currentTarget && ok?.()}>
       <div className="combat-card">
         <h2>Battle</h2>
         <div className="combat-grid">
@@ -114,22 +143,25 @@ export function CombatOverlay({
           )}
         </div>
         <div className="combat-footer">
-          {online ? (
-            online.mustAnswer ? (
-              <button className="btn btn-primary" disabled={!revealed} onClick={online.pass}>
-                {humans.some((p) => canRespondToCombat(game, combat, p.id)) ? 'Done — no response' : 'Continue'}
-              </button>
-            ) : waitingNames ? (
-              <p className="combat-waiting">
-                <span className="spinner" /> Waiting for {waitingNames}…
-              </p>
-            ) : (
-              autobar
-            )
+          {online?.mustAnswer ? (
+            <button className="btn btn-primary" disabled={!revealed} onClick={online.pass}>
+              {humans.some((p) => canRespondToCombat(game, combat, p.id)) ? 'Done — no response' : 'Continue'}
+            </button>
+          ) : waitingNames ? (
+            <p className="combat-waiting">
+              <span className="spinner" /> Waiting for {waitingNames}…
+            </p>
+          ) : ok ? (
+            <button className="btn btn-primary" disabled={!ready} onClick={ok}>
+              OK
+            </button>
           ) : autoResolve ? (
-            autobar
+            // The battle resolves by itself shortly; restarts when a missile changes it.
+            <div className="autobar" key={`${combat.id}-${+combat.attacker.missile}-${+combat.defender.missile}`}>
+              <span />
+            </div>
           ) : (
-            <button className="btn btn-primary" disabled={!revealed} onClick={() => dispatch({ type: 'resolveCombat' })}>
+            <button className="btn btn-primary" disabled={!ready} onClick={() => dispatch({ type: 'resolveCombat' })}>
               Resolve battle
             </button>
           )}

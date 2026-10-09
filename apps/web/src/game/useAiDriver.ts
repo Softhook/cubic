@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { actor, canRespondToCombat, type GameState } from '@quantum/engine';
 import { chooseCombatResponse } from '@quantum/ai';
 import { aiLevelOf, think } from './aiClient';
@@ -16,26 +16,31 @@ function aiDelay(s: GameState): number {
 
 /** Pause before an AI fires a missile or re-rolls in combat. */
 const COMBAT_RESPONSE_MS = 1700;
-/** Pause before an all-AI combat (no human may respond) resolves. */
+/** Pause before a battle resolves in a game with no humans (otherwise a human dismisses it). */
 const COMBAT_RESOLVE_MS = 2600;
 
 /**
  * Plays for the AI players: whenever it is an AI's turn or decision, asks it for an action and
  * dispatches it after a short delay. During combat, gives every AI that may respond (missile,
- * re-roll) its chance, then resolves the battle unless a human may still respond.
+ * re-roll) its chance; a human then resolves the battle (CombatOverlay), unless there is none.
+ *
+ * Returns whether an AI is about to respond to the battle on screen, so a human doesn't resolve
+ * it first.
  */
-export function useAiDriver(game: GameState, dispatch: Dispatch) {
+export function useAiDriver(game: GameState, dispatch: Dispatch): boolean {
   // Combat stages at which an AI has already been asked to respond.
   const asked = useRef(new Set<string>());
+  // The combat stage an AI is about to respond to.
+  const [responding, setResponding] = useState<string | null>(null);
+  const head = game.pending[0];
+  const stage = head?.kind === 'combat' ? `${head.id}:${head.rerolls.length}:${+head.attacker.missile}${+head.defender.missile}` : null;
 
   useEffect(() => {
     if (game.phase === 'over') return;
-    const head = game.pending[0];
     let timer: number | undefined;
 
-    if (head?.kind === 'combat') {
+    if (head?.kind === 'combat' && stage) {
       // Asked again after anything changes the battle (a re-roll or a missile).
-      const stage = `${head.id}:${head.rerolls.length}:${+head.attacker.missile}${+head.defender.missile}`;
       for (const p of game.players) {
         const k = `${stage}:${p.id}`;
         if (!p.ai || !canRespondToCombat(game, head, p.id) || asked.current.has(k)) continue;
@@ -44,14 +49,16 @@ export function useAiDriver(game: GameState, dispatch: Dispatch) {
           asked.current.add(k);
           continue;
         }
+        setResponding(stage);
         timer = window.setTimeout(() => {
           asked.current.add(k);
+          // Cleared even if the move is refused, so the battle can't wait on it for ever.
+          setResponding(null);
           dispatch(m);
         }, COMBAT_RESPONSE_MS);
         return () => window.clearTimeout(timer);
       }
-      const humanMayRespond = game.players.some((p) => !p.ai && canRespondToCombat(game, head, p.id));
-      if (!humanMayRespond) timer = window.setTimeout(() => dispatch({ type: 'resolveCombat' }), COMBAT_RESOLVE_MS);
+      if (game.players.every((p) => p.ai)) timer = window.setTimeout(() => dispatch({ type: 'resolveCombat' }), COMBAT_RESOLVE_MS);
       return () => window.clearTimeout(timer);
     }
 
@@ -69,4 +76,6 @@ export function useAiDriver(game: GameState, dispatch: Dispatch) {
       window.clearTimeout(timer);
     };
   }, [game, dispatch]);
+
+  return !!stage && responding === stage;
 }

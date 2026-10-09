@@ -20,7 +20,7 @@ import { sfx } from '../sound';
 import { aiLevelOf, think } from '../game/aiClient';
 import { useToasts } from '../game/toasts';
 import type { GameView } from '../game/view';
-import { nextStep } from './playback';
+import { battleStage, nextStep } from './playback';
 import { identity, keepStorage, loadEvents, rememberGame, saveEvents } from './storage';
 import { RelayLink, type RelayStatus } from './relays';
 
@@ -54,7 +54,7 @@ export function useOnlineGame(secret: string): OnlineGame {
   const { me, replay, relays, failure, post } = usePostLog(secret);
   const mySeats = useMemo(() => replay?.seats.filter((s) => s.owner === me).map((s) => s.id) ?? [], [replay, me]);
   const head = replay?.steps.at(-1)!.state ?? null;
-  const { shown, live, toasts } = usePlayback(replay, me);
+  const { shown, live, toasts, dismissBattle } = usePlayback(replay, me);
   useAiSeats(replay, me, post);
 
   useEffect(() => {
@@ -100,16 +100,22 @@ export function useOnlineGame(secret: string): OnlineGame {
       undo: live && undoSeat !== null && mySeats.includes(undoSeat) ? () => post({ t: 'undo', seat: undoSeat }) : undefined,
       toasts,
       error,
-      combat: c
+      // While catching up, a battle waits for nobody: it is being replayed.
+      combat: battleStage(shown.state)
         ? {
-            responders: mySeats.filter((s) => !c.passed.includes(s)),
+            responders: c ? mySeats.filter((s) => !c.passed.includes(s)) : [],
             mustAnswer: mustAnswer.length > 0,
-            waitingOn: c.waitingOn.filter((s) => !c.passed.includes(s) && !mySeats.includes(s)),
-            pass: () => mustAnswer.forEach((seat) => post({ t: 'pass', seat, stage: c.stage })),
+            waitingOn: c ? c.waitingOn.filter((s) => !c.passed.includes(s) && !mySeats.includes(s)) : [],
+            pass: () => {
+              // Having answered, the player has seen the battle: no need to dismiss it as well.
+              dismissBattle();
+              mustAnswer.forEach((seat) => post({ t: 'pass', seat, stage: c!.stage }));
+            },
+            dismiss: dismissBattle,
           }
         : undefined,
     };
-  }, [replay, shown, live, mySeats, dispatch, post, toasts, error]);
+  }, [replay, shown, live, mySeats, dispatch, post, toasts, error, dismissBattle]);
 
   // Dev-only hook for browser tests: window.__quantumOnline.{state(), view(), legal(), mySeats()}.
   const latest = useRef({ head, view, mySeats });
@@ -229,13 +235,16 @@ function usePlayback(replay: Replay | null, me: string) {
   const { toasts, announce } = useToasts();
   const [shown, setShown] = useState<Step | null>(null);
   const shownAt = useRef(0);
+  // The battle stage the player has dismissed: playback moves on from that battle once it ends.
+  const [dismissed, setDismissed] = useState<string | null>(null);
+  const dismissBattle = useCallback(() => setDismissed(shown && battleStage(shown.state)), [shown]);
 
   // A layout effect, so a step shown at once (this browser's own move) replaces the previous one
   // before the screen is painted: no frame where the game looks like it's catching up.
   useLayoutEffect(() => {
     if (!replay) return;
     const own = (p: Post) => p.author === me && 'seat' in p.body && !replay.seats[p.body.seat]?.ai;
-    const next = nextStep(replay.steps, shown, own, performance.now() - shownAt.current);
+    const next = nextStep(replay.steps, shown, own, performance.now() - shownAt.current, dismissed);
     if (!next) return;
     const show = () => {
       if (next.announce && shown) announce(shown.state, next.step.state);
@@ -245,9 +254,9 @@ function usePlayback(replay: Replay | null, me: string) {
     if (next.delay === 0) return show();
     const t = window.setTimeout(show, next.delay);
     return () => window.clearTimeout(t);
-  }, [replay, shown, me, announce]);
+  }, [replay, shown, me, announce, dismissed]);
 
-  return { shown, live: !!shown && shown === replay?.steps.at(-1), toasts };
+  return { shown, live: !!shown && shown === replay?.steps.at(-1), toasts, dismissBattle };
 }
 
 /**

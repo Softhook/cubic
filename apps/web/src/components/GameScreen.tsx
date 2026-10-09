@@ -93,13 +93,10 @@ export function Game({
         )}
       </main>
 
-      {head?.kind === 'combat' && <CombatOverlay key={head.id} game={game} combat={head} dispatch={dispatch} mine={view.mine} online={online ? (view.combat ?? NO_RESPONSE) : undefined} />}
+      {head?.kind === 'combat' && <CombatOverlay key={head.id} game={game} combat={head} dispatch={dispatch} mine={view.mine} aiResponding={!!view.aiResponding} online={online ? view.combat : undefined} />}
       <DecisionOverlay game={game} dispatch={dispatch} human={ctl.human} />
       {game.phase === 'over' && !hideGameOver && <GameOver game={game} onNew={onQuit} onClose={() => setHideGameOver(true)} newLabel={online ? 'Back to lobby' : undefined} />}
       {overlay}
     </div>
   );
 }
-
-/** Online, a battle on screen that waits for nobody (it is being replayed, or resolves by itself). */
-const NO_RESPONSE: NonNullable<GameView['combat']> = { responders: [], mustAnswer: false, waitingOn: [], pass: () => {} };
