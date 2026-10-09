@@ -17,10 +17,9 @@ import {
   spendPeaceful,
   type Handlers,
 } from './core';
-import { firedFirst, noteMove } from './cubic';
 import { die } from './lookups';
 import { canGainResearch, canMoveDie, canReconfigure, conquerCheck, deployTargets, deploysFree, moveIndexes } from './queries';
-import { rulesOf } from './rules';
+import { modeHooks, rulesOf } from './rules';
 import { endTurn } from './turn';
 
 export const actionHandlers = {
@@ -30,9 +29,8 @@ export const actionHandlers = {
     if (!canMoveDie(s, d)) fail('This ship already moved this turn');
     const opt = moveIndexes(s, d).moves.get(cellIndex(s.board, a.to));
     if (!opt) fail('Out of range');
-    // Cubic Shoot (cubic.ts): an Interceptor that fired first moves for free.
-    if (!firedFirst(s, d)) spendMove(s);
-    noteMove(s, d);
+    if (!modeHooks(s, 'freeMove').some((free) => free(s, d))) spendMove(s);
+    for (const onMove of modeHooks(s, 'onMove')) onMove(s, d);
     if (opt.diagonal) markAbility(s, d); // Interceptor manoeuvre
     d.loc = { zone: 'board', ...a.to };
     markMoved(s, d);
@@ -41,7 +39,7 @@ export const actionHandlers = {
     requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     if (!canMoveDie(s, d)) fail('This ship already moved this turn');
-    if (firedFirst(s, d)) fail('This ship already fired this turn');
+    if (modeHooks(s, 'noAttack').some((no) => no(s, d))) fail('This ship can’t attack now');
     const opt = moveIndexes(s, d).attacks.get(a.target);
     if (!opt) fail('Target out of range');
     spend(s, 1);

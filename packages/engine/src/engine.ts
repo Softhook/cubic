@@ -12,7 +12,7 @@
  *   effects.ts    the implemented Skill and Tactic effects, as types
  *   skillRules.ts what every skill does, as hooks the rules read
  *   skillActions.ts skills used as an action of their own
- *   cubic.ts      Cubic mode's Shoot action; cubicRules.ts its Picket and Beacon hooks
+ *   cubic/        Cubic, our prototype mode: its settings, ship table and powers (ShipHooks)
  *   turn.ts       start / end of turn, and auto-resolving decisions after each action
  *   legal.ts      legal action enumeration (AI, UI hints)
  *   rules.ts      what differs between rule sets (Basic, Original, Community, Cubic)
@@ -26,7 +26,6 @@ import { actionHandlers } from './actions';
 import { cardHandlers } from './cards';
 import { combatHandlers } from './combat';
 import type { Handlers } from './core';
-import { cubicHandlers } from './cubic';
 import { setupHandlers } from './setup';
 import { skillHandlers } from './skillActions';
 import { settle } from './turn';
@@ -39,7 +38,6 @@ const HANDLERS: Handlers = {
   ...combatHandlers,
   ...cardHandlers,
   ...skillHandlers,
-  ...cubicHandlers,
 };
 
 /** Applies an action and returns the new state. Throws RuleError if the action is illegal. */

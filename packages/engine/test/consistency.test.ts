@@ -58,10 +58,11 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
       { type: 'flexible', die: d.id, delta: -1 },
       { type: 'resourceful', die: d.id },
     );
-    for (const to of cells) out.push({ type: 'move', die: d.id, to }, { type: 'deploy', die: d.id, to }, { type: 'tactical', die: d.id, to });
+    for (const to of cells) out.push({ type: 'move', die: d.id, to }, { type: 'deploy', die: d.id, to }, { type: 'tactical', die: d.id, to }, { type: 'power', die: d.id, to });
     for (const o of onBoard) {
+      out.push({ type: 'power', die: d.id, target: o.id });
       if (o.owner === me) out.push({ type: 'swap', die: d.id, other: o.id });
-      else out.push({ type: 'attack', die: d.id, target: o.id }, { type: 'shoot', die: d.id, target: o.id }, { type: 'freeAttack', die: d.id, target: o.id }, { type: 'tactical', die: d.id, target: o.id });
+      else out.push({ type: 'attack', die: d.id, target: o.id }, { type: 'freeAttack', die: d.id, target: o.id }, { type: 'tactical', die: d.id, target: o.id });
     }
     const at = d.loc;
     if (withCarry && d.value === 2 && at.zone === 'board') {

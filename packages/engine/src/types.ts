@@ -146,11 +146,8 @@ export interface TurnState {
   storedTacticPlayed?: boolean;
   /** Whether an action was spent this turn (free abilities don't count). */
   acted?: boolean;
-  /**
-   * Shoot (Cubic Interceptor): a ship's move and its shot cost one action, in either order. `fired`:
-   * it shot first, so its move is free; `moved`: it moved first, so its shot is free; `done`: both.
-   */
-  shoot?: Record<string, 'fired' | 'moved' | 'done'>;
+  /** Prototype ship powers' notes for this turn, by die id; each power (ShipHooks) reads only its own. */
+  powers?: Record<string, string>;
 }
 
 /** Effects limited to once per turn. 'cunning' is the second use of a ship ability. */
@@ -178,7 +175,7 @@ export interface CombatPending {
   at: Cell;
   /** Re-roll effects already used in this battle (Cruel, Relentless, Scrappy: once each). */
   rerolls: string[];
-  /** A Shoot (Cubic): the attacker fired from 2 spaces away and doesn't advance if it wins. */
+  /** A ranged attack (a prototype power): the attacker fired from where it stands and doesn't advance if it wins. */
   ranged?: true;
 }
 
@@ -278,8 +275,8 @@ export type Action =
   // phase 1 actions
   | { type: 'move'; die: string; to: Cell }
   | { type: 'attack'; die: string; target: string }
-  /** Cubic Interceptor: attack a ship 2 spaces away in a straight line, before or after its move (cubic.ts). */
-  | { type: 'shoot'; die: string; target: string }
+  /** A prototype ship power's action (ShipHooks.action), aimed at a ship, a space or both. */
+  | { type: 'power'; die: string; target?: string; to?: Cell }
   | { type: 'deploy'; die: string; to: Cell }
   | { type: 'reconfigure'; die: string }
   | { type: 'research' }

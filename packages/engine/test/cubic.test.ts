@@ -1,11 +1,13 @@
 /**
- * Cubic, our own rule set (docs/PROTOTYPING.md): Community Edition with movement capped at 3 and new
- * powers for the 4 (Picket), 5 (Shoot) and 6 (Beacon), which replace Modify, Manoeuvre and Free
- * Reconfigure.
+ * Cubic, our own rule set (docs/PROTOTYPING.md, src/cubic): Community Edition with movement capped at 3
+ * and new powers for the 4 (Picket), 5 (Shoot) and 6 (Beacon), which replace Modify, Manoeuvre and Free
+ * Reconfigure. The first block checks that none of it reaches the official modes.
  *
  * Scenarios run on Alpha Sector, the basic map for 2 players (9×9; planets at rows/cols 1, 4, 7,
  * every other cell a space).
  */
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   apply,
@@ -15,15 +17,16 @@ import {
   legalActions,
   MODES,
   moveOptions,
-  picketZone,
   rulesOf,
+  RULESETS,
   shipReach,
   shipsByIndex,
-  shootTargets,
+  stopZone,
   type Action,
   type GameMode,
   type GameState,
 } from '../src';
+import { beacon, picket, shoot as shootPower, shootTargets } from '../src/cubic/powers';
 import { quickStart } from './helpers';
 
 const BASE: Record<'cubic' | 'community', GameState> = { cubic: quickStart(2, 1, 'cubic'), community: quickStart(2, 1, 'community') };
@@ -47,6 +50,8 @@ const at = (s: GameState, id: string) => s.dice.find((d) => d.id === id)!;
 const moves = (s: GameState, id: string) => [...moveOptions(s, id).moves.keys()];
 const farthest = (s: GameState, id: string) => Math.max(...[...moveOptions(s, id).moves.values()].map((m) => m.steps));
 const offered = (s: GameState, type: Action['type']) => legalActions(s).filter((a) => a.type === type);
+/** The ships p0d0 may shoot now, by the legal actions (so cost and power included). */
+const shots = (s: GameState) => legalActions(s).flatMap((a) => (a.type === 'power' && a.die === 'p0d0' && a.target ? [a.target] : [])).sort();
 
 describe('Cubic mode', () => {
   it('is listed after the official modes and plays like Community otherwise', () => {
@@ -56,7 +61,8 @@ describe('Cubic mode', () => {
     expect(cubic.cards).toBe(community.cards);
     expect(cubic.startingMissiles).toBe(1);
     expect(cubic.maxMovement).toBe(3);
-    expect([4, 5, 6].map((v) => cubic.ships[v].power)).toEqual(['picket', 'shoot', 'beacon']);
+    expect([4, 5, 6].map((v) => cubic.ships[v].hooks)).toEqual([picket, shootPower, beacon]);
+    expect([4, 5, 6].map((v) => cubic.ships[v].power)).toEqual([undefined, undefined, undefined]);
     expect([1, 2, 3].map((v) => cubic.ships[v])).toEqual([1, 2, 3].map((v) => community.ships[v]));
   });
 
@@ -67,13 +73,30 @@ describe('Cubic mode', () => {
       expect(rules.maxMovement, mode).toBeUndefined();
     }
     const s = scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 4], p1d1: [8, 8, 6] }, 'community');
-    expect(offered(s, 'shoot')).toEqual([]);
-    expect(picketZone(s, 0, shipsByIndex(s))).toBeUndefined();
+    expect(offered(s, 'power')).toEqual([]);
+    expect(stopZone(s, 0, shipsByIndex(s))).toBeUndefined();
     // A Scout opens no deploy spaces a Destroyer in its place wouldn't (in Cubic it does: Beacon).
     const targets = (mode: 'cubic' | 'community', value: number) =>
       deployTargets(scenario({ p1d1: [5, 5, value] }, mode), 1).map(key).sort();
     expect(targets('community', 6)).toEqual(targets('community', 3));
     expect(targets('cubic', 6).length).toBeGreaterThan(targets('cubic', 3).length);
+  });
+
+  it('official ships have no prototype hooks', () => {
+    for (const mode of ['basic', 'original', 'community'] as const) {
+      for (const ship of Object.values(RULESETS[mode].ships)) expect(ship.hooks, `${mode} ${ship.name}`).toBeUndefined();
+    }
+  });
+
+  it('is reached from the engine only through RULESETS (rules.ts)', () => {
+    const src = join(__dirname, '../src');
+    const files = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(join(dir, e.name)) : e.name.endsWith('.ts') ? [join(dir, e.name)] : []));
+    const importers = files(src)
+      .filter((f) => !relative(src, f).startsWith('cubic/'))
+      .filter((f) => /from '\.\/cubic(\/[^']*)?'/.test(readFileSync(f, 'utf8')))
+      .map((f) => relative(src, f));
+    expect(importers).toEqual(['rules.ts']);
   });
 });
 
@@ -155,7 +178,7 @@ describe('Picket (4 Frigate)', () => {
 describe('Shoot (5 Interceptor)', () => {
   /** Shoots and fixes both combat rolls (lower total wins). */
   function shoot(s: GameState, target: string, attackerRoll: number, defenderRoll: number) {
-    s = apply(s, { type: 'shoot', die: 'p0d0', target });
+    s = apply(s, { type: 'power', die: 'p0d0', target });
     const c = s.pending[0];
     if (c?.kind !== 'combat') throw new Error('no combat');
     c.attacker.dice = [attackerRoll];
@@ -166,7 +189,7 @@ describe('Shoot (5 Interceptor)', () => {
 
   it('attacks a ship 2 spaces away, and stays put when it wins', () => {
     const s0 = scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 3] });
-    expect(offered(s0, 'shoot')).toEqual([{ type: 'shoot', die: 'p0d0', target: 'p1d0' }]);
+    expect(offered(s0, 'power')).toEqual([{ type: 'power', die: 'p0d0', target: 'p1d0' }]);
     const s = shoot(s0, 'p1d0', 1, 6);
     expect(at(s, 'p1d0').loc.zone).toBe('scrapyard');
     expect(at(s, 'p0d0').loc).toEqual({ zone: 'board', r: 0, c: 0 });
@@ -177,34 +200,49 @@ describe('Shoot (5 Interceptor)', () => {
   it('shoot, then move: one action for both, and no attack after', () => {
     const s = shoot(scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 3], p1d1: [3, 0, 2] }), 'p1d0', 6, 1);
     expect(s.turn.actionsLeft).toBe(2);
-    expect(mine(s, 'shoot')).toEqual([]);
+    expect(mine(s, 'power')).toEqual([]);
     expect(mine(s, 'attack')).toEqual([]);
-    expect(() => apply(s, { type: 'attack', die: 'p0d0', target: 'p1d1' })).toThrow(/fired/);
+    expect(() => apply(s, { type: 'attack', die: 'p0d0', target: 'p1d1' })).toThrow(/can’t attack/);
     const moved = apply(s, { type: 'move', die: 'p0d0', to: { r: 0, c: 1 } });
     expect(moved.turn.actionsLeft).toBe(2);
     expect(mine(moved, 'move')).toEqual([]);
   });
 
+  it('a ship that fired keeps its free move and can’t attack, even after changing number', () => {
+    const fired = shoot(scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 3], p1d1: [0, 4, 2] }, 'cubic', ['flexible']), 'p1d0', 6, 1);
+    const s = apply(fired, { type: 'flexible', die: 'p0d0', delta: -1 });
+    expect(at(s, 'p0d0').value).toBe(4);
+    expect(mine(s, 'attack')).toEqual([]);
+    expect(() => apply(s, { type: 'attack', die: 'p0d0', target: 'p1d1' })).toThrow(/can’t attack/);
+    const moved = apply(s, { type: 'move', die: 'p0d0', to: { r: 1, c: 0 } });
+    expect(moved.turn.actionsLeft).toBe(2);
+  });
+
+  it('a ship that moved, then became an Interceptor, can’t shoot for free', () => {
+    const moved = apply(scenario({ p0d0: [0, 0, 4], p1d0: [0, 4, 3] }, 'cubic', ['flexible']), { type: 'move', die: 'p0d0', to: { r: 0, c: 2 } });
+    expect(shots(apply(moved, { type: 'flexible', die: 'p0d0', delta: 1 }))).toEqual([]);
+  });
+
   it('move, then shoot: the shot is free', () => {
     const s0 = scenario({ p0d0: [0, 0, 5], p1d0: [0, 4, 3] });
-    expect(shootTargets(s0, 'p0d0')).toEqual([]);
+    expect(shots(s0)).toEqual([]);
     const moved = apply(s0, { type: 'move', die: 'p0d0', to: { r: 0, c: 2 } });
     expect(moved.turn.actionsLeft).toBe(2);
     const s = shoot(moved, 'p1d0', 1, 6);
     expect(s.turn.actionsLeft).toBe(2);
     expect(at(s, 'p0d0').loc).toEqual({ zone: 'board', r: 0, c: 2 });
-    expect(mine(s, 'shoot')).toEqual([]);
+    expect(mine(s, 'power')).toEqual([]);
   });
 
   it('not after a normal attack', () => {
     const s0 = scenario({ p0d0: [0, 0, 5], p1d0: [0, 1, 6], p1d1: [2, 0, 3] });
     const s = apply(s0, { type: 'attack', die: 'p0d0', target: 'p1d0' });
     const resolved = apply(s, { type: 'resolveCombat' });
-    expect(shootTargets(resolved.pending.length ? apply(resolved, { type: 'advance', move: false }) : resolved, 'p0d0')).toEqual([]);
+    expect(shots(resolved.pending.length ? apply(resolved, { type: 'advance', move: false }) : resolved)).toEqual([]);
   });
 
   it('reaches 1 or 2 spaces in a straight line, diagonals included', () => {
-    const ids = (s: GameState) => shootTargets(s, 'p0d0').map((d) => d.id).sort();
+    const ids = (s: GameState) => shootTargets(s, at(s, 'p0d0')).map((d) => d.id).sort();
     expect(ids(scenario({ p0d0: [0, 2, 5], p1d0: [0, 3, 3], p1d1: [1, 3, 2], p1d2: [2, 2, 6] }))).toEqual(['p1d0', 'p1d1', 'p1d2']);
     expect(ids(scenario({ p0d0: [0, 2, 5], p1d0: [2, 4, 1] }))).toEqual(['p1d0']);
     // Not a knight's move, and not 3 away.
@@ -212,18 +250,19 @@ describe('Shoot (5 Interceptor)', () => {
   });
 
   it('needs an empty space in between at range 2, and an enemy', () => {
-    expect(shootTargets(scenario({ p0d0: [0, 0, 5], p0d1: [0, 1, 2], p1d0: [0, 2, 3] }), 'p0d0')).toEqual([]);
-    expect(shootTargets(scenario({ p0d0: [1, 0, 5], p1d0: [1, 2, 3] }), 'p0d0')).toEqual([]); // a planet in between
-    expect(shootTargets(scenario({ p0d0: [0, 0, 5], p1d0: [2, 2, 3] }), 'p0d0')).toEqual([]); // a planet on the diagonal
-    expect(shootTargets(scenario({ p0d0: [0, 2, 5], p0d1: [1, 3, 1], p1d0: [2, 4, 3] }), 'p0d0')).toEqual([]);
-    expect(shootTargets(scenario({ p0d0: [0, 0, 5], p0d1: [0, 2, 3] }), 'p0d0')).toEqual([]);
-    expect(shootTargets(scenario({ p0d0: [0, 0, 5], p1d0: [0, 3, 3] }), 'p0d0')).toEqual([]);
+    expect(shots(scenario({ p0d0: [0, 0, 5], p0d1: [0, 1, 2], p1d0: [0, 2, 3] }))).toEqual([]);
+    expect(shots(scenario({ p0d0: [1, 0, 5], p1d0: [1, 2, 3] }))).toEqual([]); // a planet in between
+    expect(shots(scenario({ p0d0: [0, 0, 5], p1d0: [2, 2, 3] }))).toEqual([]); // a planet on the diagonal
+    expect(shots(scenario({ p0d0: [0, 2, 5], p0d1: [1, 3, 1], p1d0: [2, 4, 3] }))).toEqual([]);
+    expect(shots(scenario({ p0d0: [0, 0, 5], p0d1: [0, 2, 3] }))).toEqual([]);
+    expect(shots(scenario({ p0d0: [0, 0, 5], p1d0: [0, 3, 3] }))).toEqual([]);
   });
 
   it('only a Cubic Interceptor can shoot', () => {
-    expect(shootTargets(scenario({ p0d0: [0, 0, 4], p1d0: [0, 2, 3] }), 'p0d0')).toEqual([]);
+    expect(shots(scenario({ p0d0: [0, 0, 4], p1d0: [0, 2, 3] }))).toEqual([]);
     const community = scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 3] }, 'community');
-    expect(() => apply(community, { type: 'shoot', die: 'p0d0', target: 'p1d0' })).toThrow();
+    expect(shots(community)).toEqual([]);
+    expect(() => apply(community, { type: 'power', die: 'p0d0', target: 'p1d0' })).toThrow(/no such power/);
   });
 });
 

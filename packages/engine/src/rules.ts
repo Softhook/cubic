@@ -1,4 +1,5 @@
-import { CLASSIC_SHIPS, CUBIC_SHIPS, MAPS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef, type GameMode, type ShipDef, type ShipPower, type ShipTable } from './data';
+import { cubicMode } from './cubic';
+import { CLASSIC_SHIPS, MAPS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef, type GameMode, type ShipDef, type ShipHooks, type ShipPower, type ShipTable } from './data';
 import type { Die, GameState } from './types';
 
 /**
@@ -24,7 +25,7 @@ export interface RuleSet {
   reconfigure: 'different' | 'unseen';
   /** Map groups (data/maps.yaml) this mode can be played on. */
   mapGroups: string[];
-  /** Each die value's ship: its name and power. */
+  /** Each die value's ship: its name and power (built in, or prototype hooks). */
   ships: ShipTable;
   /** The most a ship's die value counts for movement; skill bonuses add to it (PROTOTYPING.md §2). */
   maxMovement?: number;
@@ -108,17 +109,8 @@ export const RULESETS: Record<GameMode, RuleSet> = {
     ships: CLASSIC_SHIPS,
   },
   community: COMMUNITY,
-  /** Our own rules (docs/PROTOTYPING.md): Community Edition with short moves and new 4, 5 and 6 powers. */
-  cubic: {
-    ...COMMUNITY,
-    id: 'cubic',
-    name: 'Cubic',
-    title: 'Cubic',
-    summary: 'Community Edition with moves capped at 3 and new Frigate, Interceptor and Scout powers.',
-    ships: CUBIC_SHIPS,
-    maxMovement: 3,
-    experimental: true,
-  },
+  /** Our own rules, a prototype: everything about it is in src/cubic (docs/PROTOTYPING.md). */
+  cubic: cubicMode(COMMUNITY),
 };
 
 /** The rule set a game is played with. */
@@ -136,9 +128,21 @@ export function hasPower(state: GameState, d: Die, power: ShipPower): boolean {
   return rulesOf(state).ships[d.value]?.power === power;
 }
 
-/** Whether any ship has this power in this game's rules. */
-export function modeHasPower(state: GameState, power: ShipPower): boolean {
-  return Object.values(rulesOf(state).ships).some((s) => s.power === power);
+/** A ship's prototype power hooks in this game's rules (none for the official ships). */
+export function hooksOf(state: GameState, d: Die): ShipHooks | undefined {
+  return rulesOf(state).ships[d.value]?.hooks;
+}
+
+/** Each different power in this game's rules that has this hook (none in the official modes). */
+export function modeHooks<K extends keyof ShipHooks>(state: GameState, hook: K): NonNullable<ShipHooks[K]>[] {
+  const out = new Set<NonNullable<ShipHooks[K]>>();
+  for (const s of Object.values(rulesOf(state).ships)) if (s.hooks?.[hook]) out.add(s.hooks[hook]!);
+  return [...out];
+}
+
+/** Whether any ship in this game's rules has this hook, so searches can skip it otherwise. */
+export function modeHasHook(state: GameState, hook: keyof ShipHooks): boolean {
+  return Object.values(rulesOf(state).ships).some((s) => s.hooks?.[hook]);
 }
 
 /** Player counts a rule set has maps for. */

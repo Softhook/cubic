@@ -1,5 +1,6 @@
 import cardsJson from './data/cards.json';
 import mapsJson from './data/maps.json';
+import type { Cell, Die, GameState } from './types';
 
 export interface CardDef {
   id: string;
@@ -78,28 +79,57 @@ export function isOriginalCard(id: string): boolean {
 
 
 /**
- * What a ship's power does, as the hook the rules look for: ship identity is "has power X", not a die
- * value, so a mode can give a value a different power (RuleSet.ships).
+ * The official ships' powers, built into the engine: ship identity is "has power X", not a die value,
+ * so a mode can give a value a different power (RuleSet.ships).
  */
-export type ShipPower =
-  | 'strike'
-  | 'transport'
-  | 'warp'
-  | 'modify'
-  | 'manoeuvre'
-  | 'freeReconfigure'
-  /** Cubic 4: enemy ships that move into a surrounding space must stop there. */
-  | 'picket'
-  /** Cubic 5: move, then attack a ship 2 spaces away in a straight line. */
-  | 'shoot'
-  /** Cubic 6: its owner may deploy into its surrounding spaces. */
-  | 'beacon';
+export type ShipPower = 'strike' | 'transport' | 'warp' | 'modify' | 'manoeuvre' | 'freeReconfigure';
+
+/** What a power action (ShipHooks.action) is aimed at: a ship, a space, or both. */
+export interface PowerChoice {
+  target?: string;
+  to?: Cell;
+}
+
+/**
+ * A prototype ship power, as hooks the engine reads, like SkillRule for skills. Experimental modes
+ * (src/cubic) define their powers this way, so the engine never names them. The official ships have
+ * none: every hook is optional, and the engine skips ships without it.
+ */
+export interface ShipHooks {
+  /**
+   * Board cell indexes (r * cols + c) where an enemy ship that moves in must stop. It may still attack
+   * from there, and one that starts its move on one may leave. Normal moves only.
+   */
+  stopsEnemies?(state: GameState, ship: Die, index: number): Iterable<number>;
+  /** Extra spaces its owner may deploy into (the engine keeps only empty ones). */
+  deployTargets?(state: GameState, ship: Die): Iterable<Cell>;
+  // The next three are asked about every ship, not only ships with this power: a ship may change
+  // number after using a power, and keeps what that use gave it this turn. They go by the power's own
+  // notes (turn.powers), or check that the ship has the power (hooksOf).
+  /** The ship's next normal move is already paid for. */
+  freeMove?(state: GameState, ship: Die): boolean;
+  /** The ship may not make a normal Move attack now. */
+  noAttack?(state: GameState, ship: Die): boolean;
+  /** The ship makes a normal move (before the move is paid for). */
+  onMove?(state: GameState, ship: Die): void;
+  /**
+   * An action of its own: the `power` action. `options` are the legal choices now, cost included;
+   * `apply` runs only for one of them, and pays for it.
+   */
+  action?: {
+    options(state: GameState, ship: Die): PowerChoice[];
+    apply(state: GameState, ship: Die, choice: PowerChoice): void;
+  };
+}
 
 export interface ShipDef {
   name: string;
-  power: ShipPower;
-  /** The power's name and rules text, for the UI. */
-  ability: { name: string; text: string };
+  /** A built-in power (the official ships). */
+  power?: ShipPower;
+  /** A prototype power, as hooks. A ship with hooks and no `power` has no once-per-turn ability. */
+  hooks?: ShipHooks;
+  /** The power's name and rules text for the UI; `hint` guides a player using its action. */
+  ability: { name: string; text: string; hint?: string };
 }
 
 /** A mode's ships by die value, 1 to 6. */
@@ -114,18 +144,10 @@ export const CLASSIC_SHIPS: ShipTable = {
   6: { name: 'Scout', power: 'freeReconfigure', ability: { name: 'Free Reconfigure', text: 'Re-roll this ship for free.' } },
 };
 
-/** Cubic (docs/PROTOTYPING.md §5): the 4, 5 and 6 control space, strike at range and extend reach. */
-export const CUBIC_SHIPS: ShipTable = {
-  ...CLASSIC_SHIPS,
-  4: { name: 'Frigate', power: 'picket', ability: { name: 'Picket', text: 'An enemy ship that moves into any of the 8 spaces around this ship must stop there. It may still attack from there.' } },
-  5: { name: 'Interceptor', power: 'shoot', ability: { name: 'Shoot', text: 'Attack an enemy 1 or 2 spaces away in a straight line, diagonals included (at 2, over an empty space). It stays where it is. Shooting and moving cost one action together, in either order.' } },
-  6: { name: 'Scout', power: 'beacon', ability: { name: 'Beacon', text: 'You may deploy into any empty space around this ship.' } },
-};
-
 /** The ships' names in every mode. */
 export const SHIP_NAMES: Record<number, string> = Object.fromEntries(Object.entries(CLASSIC_SHIPS).map(([v, s]) => [v, s.name]));
 
-/** The classic ship powers; a mode's own are in rulesOf(state).ships (see shipAbility). */
+/** The classic ship powers; a mode's own are in rulesOf(state).ships (see shipOf). */
 export const SHIP_ABILITIES: Record<number, { name: string; text: string }> = Object.fromEntries(
   Object.entries(CLASSIC_SHIPS).map(([v, s]) => [v, s.ability]),
 );

@@ -56,7 +56,7 @@ exports[`golden master > community, 4 players, seed 13 1`] = `
 
 exports[`golden master > cubic, 2 players, seed 11 1`] = `
 {
-  "actions": "1ad8e0c13c519408",
+  "actions": "291dd5e3182c8208",
   "state": "df3993d4fb8151d4",
   "steps": 233,
   "winner": 0,
@@ -74,7 +74,7 @@ exports[`golden master > cubic, 3 players, seed 12 1`] = `
 
 exports[`golden master > cubic, 4 players, seed 13 1`] = `
 {
-  "actions": "2e9326d1b3add293",
+  "actions": "2a26e0d2b0b7a3fa",
   "state": "2ebea7d14f4320fe",
   "steps": 597,
   "winner": 1,

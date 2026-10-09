@@ -19,8 +19,8 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
   const mine = (a: { die: string }) => a.die === d.id;
   const ship = shipOf(game, d.value);
   const ability = ship.ability;
-  // Picket and Beacon always work; Shoot goes with the ship's move, not a once-per-turn ability.
-  const passive = ship.power === 'picket' || ship.power === 'beacon' || ship.power === 'shoot';
+  // A prototype power (hooks, no built-in power) is never "used this turn".
+  const passive = !ship.power;
   const cancel = () => ctl.select({ kind: 'none' });
   // The cards in the odds shown on the ships it may attack (the same for most targets).
   const factors = [
@@ -35,10 +35,10 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
 
   const abilityButton = () => {
     if (!onBoard) return null;
-    if (ship.power === 'shoot') {
+    if (ship.hooks?.action) {
       return (
-        <button className="btn" disabled={!legal.can('shoot', mine)} onClick={() => ctl.select({ kind: 'shoot', die: d.id })} title={ability.text}>
-          Shoot
+        <button className="btn" disabled={!legal.can('power', mine)} onClick={() => ctl.select({ kind: 'power', die: d.id })} title={ability.text}>
+          {ability.name}
         </button>
       );
     }

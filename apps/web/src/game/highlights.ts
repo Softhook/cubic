@@ -102,8 +102,11 @@ export function highlightsFor(game: GameState, sel: Sel, legal: Legal, actionPha
     case 'freeAttack':
       for (const a of legal.of('freeAttack', (a) => a.die === sel.die)) h.dice.set(a.target, 'attack');
       break;
-    case 'shoot':
-      for (const a of legal.of('shoot', (a) => a.die === sel.die)) h.dice.set(a.target, 'attack');
+    case 'power':
+      for (const a of legal.of('power', (a) => a.die === sel.die)) {
+        if (a.target) h.dice.set(a.target, 'attack');
+        else if (a.to) h.cells.set(key(a.to), { cell: a.to, tone: 'move' });
+      }
       break;
     case 'carryPassenger':
       for (const t of transports(sel.die, sel.tactical)) h.dice.set(t.passenger, 'passenger');

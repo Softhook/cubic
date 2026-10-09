@@ -11,7 +11,8 @@ export type Sel =
   | { kind: 'scrap'; die: string }
   | { kind: 'swap'; die: string }
   | { kind: 'freeAttack'; die: string }
-  | { kind: 'shoot'; die: string }
+  /** A prototype ship power's action (ShipHooks.action). */
+  | { kind: 'power'; die: string }
   | { kind: 'tactical'; die: string }
   | { kind: 'nomadic'; die: string }
   // Relocation: the cube chosen to move (planet it leaves, and its owner).
@@ -73,7 +74,7 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
       if (head) return false;
       if (sel.kind === 'swap' && tone === 'swap') return void (dispatch({ type: 'swap', die: sel.die, other: id }) && setSel(NONE));
       if (sel.kind === 'freeAttack' && tone === 'attack') return void dispatch({ type: 'freeAttack', die: sel.die, target: id });
-      if (sel.kind === 'shoot' && tone === 'attack') return void (dispatch({ type: 'shoot', die: sel.die, target: id }) && setSel(NONE));
+      if (sel.kind === 'power' && tone === 'attack') return void (dispatch({ type: 'power', die: sel.die, target: id }) && setSel(NONE));
       if (sel.kind === 'tactical' && tone === 'attack') return void dispatch({ type: 'tactical', die: sel.die, target: id });
       if (sel.kind === 'ship' && tone === 'attack') return void dispatch({ type: 'attack', die: sel.die, target: id });
       if (sel.kind === 'carryPassenger' && tone === 'passenger') return select({ kind: 'carryDest', die: sel.die, passenger: id, tactical: sel.tactical });
@@ -117,6 +118,8 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
         case 'tactical':
         case 'nomadic':
           return place({ type: sel.kind, die: sel.die, to: cell });
+        case 'power':
+          return place({ type: 'power', die: sel.die, to: cell });
         case 'carryDest':
           return select({ kind: 'carryDrop', die: sel.die, passenger: sel.passenger, to: cell, tactical: sel.tactical });
         case 'carryDrop':
@@ -160,7 +163,7 @@ export interface AttackPreview {
 /** For each ship the selected ship may attack: how it would go, from the space it would attack from. */
 function attackPreviews(game: GameState, sel: Sel, dice: ReadonlyMap<string, string>): Map<string, AttackPreview> {
   const out = new Map<string, AttackPreview>();
-  if (sel.kind !== 'ship' && sel.kind !== 'freeAttack' && sel.kind !== 'shoot' && sel.kind !== 'tactical') return out;
+  if (sel.kind !== 'ship' && sel.kind !== 'freeAttack' && sel.kind !== 'power' && sel.kind !== 'tactical') return out;
   const attacker = getDie(game, sel.die);
   // A Move attack goes in from a space next to the target; the others attack from where the ship is.
   const moves = sel.kind === 'ship' ? moveOptions(game, sel.die).attacks : null;

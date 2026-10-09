@@ -4,8 +4,6 @@ export * from './rules';
 export * from './board';
 export * from './lookups';
 export * from './queries';
-export { firedFirst, shootTargets, shotCost } from './cubic';
-export { picketZone } from './cubicRules';
 export { activeSkills, hasSkill, skillCard, skillRules, SKILL_RULES, type SkillRule } from './skillRules';
 export { createGame } from './setup';
 export type { NewGameOptions } from './setup';

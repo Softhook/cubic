@@ -34,7 +34,7 @@ import { candidates, storedTactics } from './patient';
 
 const RANDOM_ACTIONS = new Set<Action['type']>([
   'attack',
-  'shoot',
+  'power',
   'freeAttack',
   'reconfigure',
   'freeReconfigure',

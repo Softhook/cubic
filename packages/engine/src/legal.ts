@@ -2,7 +2,6 @@
 import { same, spaces } from './board';
 import { actor, tryApply } from './engine';
 import type { PendingOf } from './core';
-import { firedFirst, shootTargets, shotCost } from './cubic';
 import { reserve, scrapyard, shipsOnBoard } from './lookups';
 import {
   actionsClosed,
@@ -29,7 +28,7 @@ import {
   tacticalOptions,
   usedThisTurn,
 } from './queries';
-import { hasPower, rulesOf } from './rules';
+import { hasPower, hooksOf, modeHooks, rulesOf } from './rules';
 import { anySkill, hasSkill } from './skillRules';
 import type { Action, Die, GameState, Pending } from './types';
 
@@ -150,16 +149,18 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
   const canAttack = (cost: number) => actions >= cost + t.freeMovesUsed;
   const nomadic = actions > 0 && hasSkill(s, me, 'nomadic') && !usedThisTurn(s, 'nomadic');
 
+  // Prototype powers (ShipHooks): asked about every ship, see data.ts.
+  const freeMove = modeHooks(s, 'freeMove');
+  const noAttack = modeHooks(s, 'noAttack');
+
   for (const d of shipsOnBoard(s, me)) {
-    // Shoot: an Interceptor that fired first moves for free, but may not attack too.
-    const fired = firedFirst(s, d);
-    if ((canPayMove || fired) && canMoveDie(s, d)) {
+    if ((canPayMove || freeMove.some((free) => free(s, d))) && canMoveDie(s, d)) {
       const moves = moveOptions(s, d.id);
       for (const m of moves.moves.values()) out.push({ type: 'move', die: d.id, to: m.cell });
-      if (!fired && canAttack(1)) for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
+      if (canAttack(1) && !noAttack.some((no) => no(s, d))) for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
     }
-    const shot = shotCost(s, d);
-    if (shot && canAttack(shot === 'paid' ? 1 : 0)) for (const x of shootTargets(s, d.id)) out.push({ type: 'shoot', die: d.id, target: x.id });
+    const action = hooksOf(s, d)?.action;
+    if (action) for (const c of action.options(s, d)) out.push({ type: 'power', die: d.id, ...c });
     if (actions > 0 && canReconfigure(s, d)) out.push({ type: 'reconfigure', die: d.id });
     if ((hasSkill(s, me, 'tactical') || (hasSkill(s, me, 'tactical-original') && canMoveDie(s, d))) && !usedThisTurn(s, 'tactical')) {
       const tac = tacticalOptions(s, d.id);

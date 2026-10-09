@@ -1,4 +1,4 @@
-import { SHIP_NAMES, canProfiteer, die, rulesOf, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, canProfiteer, die, rulesOf, shipOf, type GameState } from '@quantum/engine';
 import type { Sel } from './controller';
 
 /** One-line guidance for the current human decision. */
@@ -47,8 +47,10 @@ export function hintFor(game: GameState, sel: Sel): string {
       return 'Choose another of your ships to switch places with.';
     case 'freeAttack':
       return 'Choose an adjacent enemy to attack for free.';
-    case 'shoot':
-      return 'Shoot: choose an enemy 1 or 2 spaces away in a straight line, diagonals included. Your Interceptor stays put, and can still move before or after.';
+    case 'power': {
+      const { ability } = shipOf(game, die(game, sel.die).value);
+      return ability.hint ?? `${ability.name}: ${ability.text}`;
+    }
     case 'tactical':
       return 'Tactical: move one space, or attack an adjacent enemy.';
     case 'nomadic':

@@ -13,12 +13,31 @@ import {
   stepNeighbours,
   surrounding,
 } from './board';
-import { addBeaconTargets, picketZone } from './cubicRules';
 import { card, effectOf } from './data';
 import { cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
-import { hasPower, rulesOf } from './rules';
+import { hasPower, hooksOf, modeHasHook, rulesOf } from './rules';
 import { activeSkills, anySkill, ruleOf, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
 import type { Cell, CombatPending, CombatRole, Die, GameState, OncePerTurn, Planet, PlayerId, TurnState } from './types';
+
+// ---------------------------------------------------------------------------
+// Prototype ship powers (ShipHooks in data.ts): the official ships have none.
+
+/**
+ * Spaces where `mover`'s ships must stop, by board cell index (`at` is shipsByIndex): around enemy
+ * ships with `stopsEnemies`. Undefined when nothing stops them, so plain searches stay plain.
+ */
+export function stopZone(state: GameState, mover: PlayerId, at: (Die | undefined)[]): Uint8Array | undefined {
+  if (!modeHasHook(state, 'stopsEnemies')) return undefined;
+  let zone: Uint8Array | undefined;
+  for (let i = 0; i < at.length; i++) {
+    const d = at[i];
+    const stops = d && d.owner !== mover ? hooksOf(state, d)?.stopsEnemies : undefined;
+    if (!stops) continue;
+    zone ??= new Uint8Array(grid(state.board).size);
+    for (const nb of stops(state, d!, i)) zone[nb] = 1;
+  }
+  return zone;
+}
 
 export type { CombatPart } from './skillRules';
 
@@ -124,7 +143,7 @@ export function canScrappy(state: GameState): boolean {
 // ---------------------------------------------------------------------------
 // Movement
 
-/** The die value counts up to the mode's cap (Cubic: 3); skill bonuses add to that (PROTOTYPING.md §2). */
+/** The die value counts up to the mode's cap (RuleSet.maxMovement); skill bonuses add to that. */
 export function movementRange(state: GameState, d: Die): number {
   const base = Math.min(rulesOf(state).maxMovement ?? 6, d.value);
   return base + skillRules(state, d.owner).reduce((n, r) => n + (r.movement ?? 0), 0);
@@ -143,7 +162,7 @@ export interface MoveOptions {
  * them in the order they were first reached, the start first. `ignore` lists occupied spaces
  * treated as empty. With `through` (Devious), the ship may pass through that player's enemies'
  * ships at no cost; such spaces are marked in `passing`, as it can't stop there. The search doesn't
- * go on from a space in `zone` (Cubic Picket: cubicRules.ts picketZone), other than the start.
+ * go on from a space in `zone` (stopZone), other than the start.
  */
 function reach(
   state: GameState,
@@ -249,7 +268,7 @@ export function moveIndexes(state: GameState, ship: string | Die, at = shipsByIn
   const range = movementRange(state, d);
   const passes: boolean[] = [false];
   if (hasPower(state, d, 'manoeuvre') && canUseAbility(state, d)) passes.push(true);
-  const zone = picketZone(state, d.owner, at);
+  const zone = stopZone(state, d.owner, at);
 
   // Devious: normal moves only, not Transport or the Tactical step (decided 2026-10-03, OPEN-QUESTIONS #65).
   const through = anySkill(state, d.owner, (r) => r.moveThroughEnemies) ? d.owner : undefined;
@@ -315,7 +334,7 @@ export function shipReach(state: GameState, d: Die, at: (Die | undefined)[]): Sh
   // The gates inline rather than gates(): a call per step is measurable here.
   const [gateA, gateB] = gateIndexes(state, g);
   const diagonals = hasPower(state, d, 'manoeuvre') && canUseAbility(state, d);
-  const zone = picketZone(state, d.owner, at);
+  const zone = stopZone(state, d.owner, at);
   for (let pass = 0; pass < (diagonals ? 2 : 1); pass++) {
     const near = pass ? g.around : g.ortho;
     // Plain breadth-first search: without Devious every step costs 1.
@@ -328,7 +347,7 @@ export function shipReach(state: GameState, d: Die, at: (Die | undefined)[]): Sh
       const cur = QUEUE[head++];
       const steps = STEPS[cur];
       if (steps >= range) continue;
-      // Picket: a ship stopped next to an enemy Frigate may still attack from there, but not move on.
+      // stopZone: a ship stopped there may still attack from it, but not move on.
       const stopped = zone !== undefined && zone[cur] === 1 && cur !== from;
       const list = near[cur];
       for (let k = 0; k <= list.length; k++) {
@@ -490,7 +509,12 @@ export function deployTargets(state: GameState, player: PlayerId): Cell[] {
       if (isEmptySpace(state, p)) targets.set(key(p), p);
     }
   }
-  addBeaconTargets(state, player, targets); // Cubic Scout (cubicRules.ts)
+  if (modeHasHook(state, 'deployTargets')) {
+    for (const d of state.dice) {
+      const extra = d.owner === player && d.loc.zone === 'board' ? hooksOf(state, d)?.deployTargets : undefined;
+      if (extra) for (const p of extra(state, d)) if (isEmptySpace(state, p)) targets.set(key(p), p);
+    }
+  }
   if (anySkill(state, player, (r) => r.deployIsolated)) {
     for (const p of spaces(state.board)) {
       if (isEmptySpace(state, p) && !linked(state, p).some((q) => dieAt(state, q))) targets.set(key(p), p);

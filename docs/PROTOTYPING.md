@@ -49,9 +49,13 @@ Two patterns make changes cheap:
 
 Skills already work like small plugins: each is a set of hooks in
 [skillRules.ts](../packages/engine/src/skillRules.ts) (`movement`, `combat.modifier`, `startOfTurn`…).
-Ship powers and mode rules can borrow that pattern (§4).
+Prototype ship powers now use the same pattern: `ShipHooks` (§9).
 
 ## 2. Worked example: ships move at most 3
+
+*This is how the cap was first planned. It is now built: `MAX_MOVEMENT` in
+[cubic/index.ts](../packages/engine/src/cubic/index.ts), read by `movementRange`. §9 says where
+Cubic's code lives today.*
 
 A ship's movement is calculated in one place:
 
@@ -114,7 +118,7 @@ changes before self-play results mean anything.
 
 ## 4. Refactoring, in the order it pays off
 
-No up-front refactor is needed. Do each step when a rule needs it.
+No up-front refactor is needed. Do each step when a rule needs it. Step 2 is done (§8, §9).
 
 | Step | Refactor | Unlocks | Size |
 |---|---|---|---|
@@ -199,15 +203,15 @@ All three keep big ships weak in combat (they still add 4–6), so they stay sup
 
 | Power | Engine | AI | UI |
 |---|---|---|---|
-| Picket | A "must stop" check in `reach()` (queries.ts) | Automatic, via legal moves | Highlights automatic; a zone overlay is nice-to-have |
-| Intercept | New `Pending` kind after a move, new `Action`, `mayAct` lets the off-turn player answer (like missiles) | Needs a response choice, like `chooseCombatResponse` | A prompt, like the missile window |
-| Beacon | Add Scout-adjacent spaces in `deployTargets` | Automatic | Automatic |
-| Escort, Anchor | A combat modifier / a conquer-sum option | Automatic | A line in the combat breakdown |
-| Pursuit, Strafe, Jump | New action or a `moveOptions` branch | Automatic (new legal actions) | Button / highlights |
-| Survey | New start-of-turn decision | Small choice heuristic | A dialog |
+| Picket | `stopsEnemies` hook (built) | Automatic, via legal moves | Highlights automatic; a zone overlay is nice-to-have |
+| Intercept | New `Pending` kind after a move, `mayAct` lets the off-turn player answer (like missiles): a new hook | Needs a response choice, like `chooseCombatResponse` | A prompt, like the missile window |
+| Beacon | `deployTargets` hook (built) | Automatic | Automatic |
+| Escort, Anchor | A combat modifier / a conquer-sum option: a new hook | Automatic | A line in the combat breakdown |
+| Pursuit, Strafe, Jump | `action` hook (Shoot is built this way) | Automatic (new legal actions) | Automatic: a button and highlights |
+| Survey | New start-of-turn decision: a new hook | Small choice heuristic | A dialog |
 
-Picket and Beacon are a day each once the ship table (§4 step 2) exists. Intercept is the most
-interesting and the most work, roughly a week including AI and UI.
+With `ShipHooks` (§9), a power that fits an existing hook is a change to the cubic folder alone.
+Intercept is the most interesting and the most work, roughly a week including AI and UI.
 
 ### How to test them
 
@@ -356,15 +360,7 @@ Rulings made while building it:
   free. A ship that shot can't also attack, and it shoots at most once a turn. The shooter never
   advances. Normal combat applies, missiles and re-rolls included.
 
-Code: `RuleSet.ships` (the ship table, `CLASSIC_SHIPS` / `CUBIC_SHIPS` in data.ts) and
-`hasPower()` replace the `d.value === N` checks. `RuleSet.maxMovement` is read by
-`movementRange`. All Cubic-only code lives in two files, so the official modes never reach it:
-[cubicRules.ts](../packages/engine/src/cubicRules.ts) has Picket (`picketZone()`, used by `reach()` and
-`shipReach()`) and Beacon (`addBeaconTargets()`, used by `deployTargets`), and
-[cubic.ts](../packages/engine/src/cubic.ts) has the `shoot` action with `shootTargets()` and `shotCost()`.
-`turn.shoot` tracks the order, and a `ranged` battle skips the advance. Each hook returns early when
-no ship in the mode has its power. A test in cubic.test.ts pins Basic, Classic and Community to the
-classic ships with no movement cap, and their golden replays are unchanged. Scenarios are in [cubic.test.ts](../packages/engine/test/cubic.test.ts).
+Code: see §9. Scenarios are in [cubic.test.ts](../packages/engine/test/cubic.test.ts).
 
 **First self-play numbers** (level 2 vs level 2, 2 players):
 
@@ -379,3 +375,60 @@ classic ships with no movement cap, and their golden replays are unchanged. Scen
 Games did not get longer, so the 30% threshold in §5 isn't hit. 4s and 6s now stay on the map. Picket
 bites in about 4% of moves. **Shoot:** with exact range 2 in orthogonal lines it was possible twice in 15 games and never used.
 At range 1–2 with diagonals the AI uses it about once a game. The AI's evaluation knows nothing of Shoot or Beacon threats yet (§4 step 7).
+
+## 9. Working on Cubic
+
+Cubic is a sandbox. Everything that is Cubic lives in one folder,
+[packages/engine/src/cubic/](../packages/engine/src/cubic), and the rest of the engine and the UI
+never name it or its powers.
+
+| To change | Edit |
+|---|---|
+| The movement cap, the mode's name or summary, the base mode (Community) | [cubic/index.ts](../packages/engine/src/cubic/index.ts) (`MAX_MOVEMENT`, `cubicMode`) |
+| Which ship has which power, ship names, power texts and hints | `CUBIC_SHIPS` in cubic/index.ts |
+| How a power works (Shoot's range, what Picket covers…) | [cubic/powers.ts](../packages/engine/src/cubic/powers.ts) (`SHOOT_RANGE` and the hooks) |
+| A new power that fits an existing hook | Write it in powers.ts and put it on a ship in `CUBIC_SHIPS` |
+| A new kind of power | Add a hook to `ShipHooks` (data.ts) and read it in the engine (below) |
+
+### How the engine reaches it
+
+- **One import.** `RULESETS.cubic = cubicMode(COMMUNITY)` in [rules.ts](../packages/engine/src/rules.ts)
+  is the only place outside the folder that imports it.
+- **Hooks, not names.** A ship in a `ShipTable` has either a built-in `power` (the official ships:
+  `strike`, `transport`…) or `hooks: ShipHooks` (a prototype). The engine reads hooks through
+  `hooksOf(state, die)` and never asks which power a ship has. The hooks today:
+
+  | Hook | Read by | Used by |
+  |---|---|---|
+  | `stopsEnemies` | `stopZone` → `moveIndexes`, `shipReach` | Picket |
+  | `deployTargets` | `deployTargets` | Beacon |
+  | `freeMove`, `noAttack`, `onMove` | the `move` and `attack` handlers, legal moves; asked about every ship, as a ship may change number after using a power | Shoot |
+  | `action` (`options`, `apply`) | the generic `power` action, legal actions, the UI | Shoot |
+
+- **A generic action.** A power with an `action` hook is played as
+  `{ type: 'power', die, target?, to? }`. The handler accepts exactly what `options` offers, so the
+  legal actions and the engine can't disagree. The UI shows a button named after the power, highlights
+  its targets (ships) or spaces, and shows `ability.hint` as the hint. No UI change is needed for a new
+  action power.
+- **Its own turn state.** `turn.powers` holds a power's per-ship notes for the turn (Shoot's order).
+- **Ranged combat.** `startCombat(…, ranged = true)` is a battle where the winner doesn't advance.
+
+### What keeps the official modes safe
+
+- The official ship tables have no hooks, and every hook is optional, so their code paths only see
+  `undefined`. `stopZone` and `deployTargets` skip the search when no ship in the mode has the hook.
+- cubic.test.ts checks that Basic, Original and Community use `CLASSIC_SHIPS` with no hooks and no
+  movement cap, that nothing in the engine but rules.ts imports the cubic folder, and that the 4, 5
+  and 6 gain no Cubic powers there.
+- The golden replays of the three official modes must not change. If a Cubic change alters one of
+  them, it has leaked. Only the Cubic snapshots may be updated (`npx vitest run golden -t cubic -u`).
+- The consistency test plays Cubic games and checks that legal actions and the engine agree.
+
+### Adding a new hook
+
+Only when no existing hook fits. Add the optional hook to `ShipHooks` in
+[data.ts](../packages/engine/src/data.ts) with a comment on what it means, read it in the one engine
+function it affects through `hooksOf` (and `modeHasHook` if it is on a hot path), and add a scenario
+to cubic.test.ts. Keep its name about the rule (`stopsEnemies`), not the power (`picket`), so the next
+prototype can reuse it.
+
