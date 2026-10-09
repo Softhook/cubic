@@ -76,7 +76,7 @@ export function PrintPanel({ piece, item, bleed, onBleed, set, part, notes, shee
         {piece.cols * piece.rows} per page at trim size with crop marks; choose “Save as PDF” in the print dialog and print at 100 % (no fit to page).
         {backs && withBacks && ' Backs follow each page, mirrored for long-edge duplex.'}
       </p>
-      {progress && <p className="lab-progress">{progress}</p>}
+      {progress && <p className="lab-progress"><span className="spinner" /> {progress}</p>}
     </>
   );
 }

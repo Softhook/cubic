@@ -147,7 +147,7 @@ export function CardLab() {
       </LabHeader>
       <div className="lab-body">
         <div>
-          {fonts === null && <p className="lab-note">Loading fonts…</p>}
+          {fonts === null && <p className="lab-note"><span className="spinner" /> Loading fonts…</p>}
           {show('redesigns') && (
             <>
               {pairs('Reworded', 'Classic → Community, same name, same rules', LINEAGE.reworded)}

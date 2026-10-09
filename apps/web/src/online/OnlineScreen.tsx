@@ -44,7 +44,7 @@ function Searching({ relays, failure, onLeave }: { relays: RelayStatus; failure:
   return (
     <div className="lobby">
       <div className="lobby-card online-searching">
-        <h2>{failure ? 'Can’t open this game' : !late ? 'Joining game…' : relays.connected ? 'Game not found' : 'No connection'}</h2>
+        <h2>{!failure && !late && <span className="spinner" />} {failure ? 'Can’t open this game' : !late ? 'Joining game…' : relays.connected ? 'Game not found' : 'No connection'}</h2>
         <p className="muted">
           {failure
             ? `This browser couldn’t open the game: ${failure}`
@@ -156,7 +156,9 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
         className={`relay-dot ${ok ? 'ok' : ''}`}
         title={`Connected to ${g.relays.connected} of ${g.relays.total} relays. Your moves are saved in this browser and sent when a relay is reachable.`}
       />
-      <span className="online-status">{status}</span>
+      <span className="online-status">
+        {ok && (unsent || !g.live) && !open ? <span className="spinner" /> : null} {status}
+      </span>
       <button className={`btn ${open ? 'btn-primary' : ''}`} onClick={copy} title="Copy the link to this game. Anyone with it can join an open seat or watch.">
         {copied ? 'Copied' : open ? 'Invite' : 'Link'}
       </button>

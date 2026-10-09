@@ -528,7 +528,7 @@ input { font: inherit; }
 .action-pips em { font-style: normal; font-size: 10px; color: var(--good); margin-left: 4px; }
 .hint { margin: 10px 0 0; font-size: 13px; color: #c3cbea; line-height: 1.45; }
 .hint.thinking { display: flex; align-items: center; gap: 8px; color: var(--muted); }
-.spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line-2); border-top-color: var(--pc); animation: spin .8s linear infinite; }
+.spinner { display: inline-block; flex: none; box-sizing: border-box; width: 14px; height: 14px; vertical-align: middle; border-radius: 50%; border: 2px solid var(--line-2); border-top-color: var(--pc); animation: spin .8s linear infinite; }
 .turn-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .turn-actions .btn-primary { margin-left: auto; }
 .turn-actions .undo-btn { margin-left: auto; }
@@ -1179,6 +1179,7 @@ input { font: inherit; }
   .turn-panel { padding: 8px 12px 10px; container: turn-panel / inline-size; }
   .turn-title { flex-direction: row; align-items: baseline; gap: 8px; }
   .turn-panel .hint { margin-top: 4px; font-size: 12.5px; line-height: 1.35; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+  .turn-panel .hint.thinking { display: flex; }
   .turn-panel .turn-actions { margin-top: 6px; }
   .turn-panel .btn { padding-top: 7px; padding-bottom: 7px; }
   .turn-scrap .scrapyard { margin-top: 6px; }
