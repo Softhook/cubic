@@ -61,6 +61,7 @@ More tools, all headless:
 | `npm run ai:match -- 3 4 40 community` | AI level vs level win rates ([AI.md § Strength](docs/AI.md#strength)) |
 | `npm run audit:cards` | AI games with every card dealt, each step checked for legality and each card's effect against its text |
 | `npm run selfplay:cards` | Card win, pick and use rates over AI self-play |
+| `npm run selfplay:skills` | What each skill is worth on its own: one side holds it, the other none ([card-benchmark.md](docs/card-benchmark.md)) |
 | `npm run sweep:basic` | AI games on every Basic map: game length, seat results, odd play |
 | `npm run test:deep` | The legal-move cross-check over many more games (minutes) |
 | `npm run mobile:shots` / `mobile:play` | Phone and tablet layouts in emulated Chrome; whole games played by tapping |
@@ -95,7 +96,7 @@ More tools, all headless:
 | [GRAPHICS.md](docs/GRAPHICS.md) | The art package, Art Lab and print pipeline |
 | [PROTOTYPING.md](docs/PROTOTYPING.md) | Ideas for a fourth rule set of our own |
 | [ROADMAP.md](docs/ROADMAP.md) | Milestones, what's done and the backlog |
-| [card-benchmark-level4.md](docs/card-benchmark-level4.md) | Card win and pick rates from 100 Admiral self-play games, Original rules |
+| [card-benchmark.md](docs/card-benchmark.md) | Card balance from AI self-play: each Community skill's value against no skill, and card pick and win rates |
 
 ## Credits
 

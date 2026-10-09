@@ -462,7 +462,7 @@ const ORACLES: ((c: Step) => void)[] = [
   // Patient: a Tactic may be stored when taken, and a stored one played in the action phase.
   (c) => {
     const { before, action, after, legal } = c;
-    if (action.type === 'takeCard' && action.store) {
+    if ((action.type === 'takeCard' && action.store) || (action.type === 'patientTactic' && action.index !== undefined)) {
       const p = decider(before);
       const patient = held(before, p, 'patient');
       const stored = (s: GameState) => s.players[p].storedTactics?.length ?? 0;
@@ -649,7 +649,7 @@ export function auditGame(g: AuditGame, opts: { maxSteps?: number; onStep?: (ste
     }
 
     // Flagship carries are only listed on request (they are many); the higher AI levels use them.
-    const legal = s.pending[0]?.kind === 'combat' ? null : legalActions(s, { includeCarry: action.type === 'carry' });
+    const legal = s.pending[0]?.kind === 'combat' ? null : legalActions(s, { includeCarry: 'passenger' in action });
     if (legal && !legal.some((a) => keyOf(a) === keyOf(action!))) flag(undefined, `AI chose an action legalActions() doesn't offer: ${keyOf(action)}`);
 
     try {

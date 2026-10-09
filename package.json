@@ -17,6 +17,7 @@
     "check": "npm run typecheck && npm test",
     "ai:match": "npm run data && vite-node scripts/ai-match.ts",
     "selfplay:cards": "npm run data && vite-node scripts/selfplay-cards.ts",
+    "selfplay:skills": "npm run data && vite-node scripts/skill-ab.ts --",
     "audit:cards": "npm run data && vite-node scripts/card-audit.ts --",
     "sweep:basic": "npm run data && vite-node scripts/basic-sweep.ts",
     "relays:check": "vite-node scripts/relay-check.ts --",
