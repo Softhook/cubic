@@ -97,7 +97,7 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
             );
           })}
 
-          {reachOf && <Reach game={game} id={reachOf} cell={cell} />}
+          {reachOf && <Reach game={game} id={reachOf} cell={cell} spots={spots} />}
 
           {/* Mouse users also get `title=` on ships and planets; touch screens get the tap. */}
           <Ships
@@ -129,20 +129,32 @@ const yoursOf = (game: GameState, ctl: Controller) => (owner: number) => ctl.min
 
 /**
  * The spaces another player's ship could move to with a plain move: its movement (with its owner's
- * skills) in straight steps, not its own ship ability (the Interceptor's diagonal). Only shown, not clickable.
+ * skills), diagonally too for an Interceptor with its ability. Every ship it could reach to attack
+ * gets a ring, above the ships. Only shown, not clickable.
  */
-function Reach({ game, id, cell }: { game: GameState; id: string; cell: number }) {
+function Reach({ game, id, cell, spots }: { game: GameState; id: string; cell: number; spots: ShipSpots }) {
   const d = game.dice.find((x) => x.id === id);
   if (d?.loc.zone !== 'board') return null;
-  const cells = [...moveOptions(game, id).moves.values()].filter((m) => !m.diagonal);
+  const { moves, attacks } = moveOptions(game, id);
+  const threatened = [...attacks.keys()].flatMap((t) => (spots.get(t) ? [{ id: t, at: spots.get(t)! }] : []));
+  const style = { '--pc': game.players[d.owner].color } as CSSProperties;
   return (
-    <div className="reach" style={{ '--pc': game.players[d.owner].color } as CSSProperties}>
-      {cells.map(({ cell: c }) => (
-        <span key={key(c)} style={{ left: c.c * cell, top: c.r * cell, width: cell, height: cell }}>
-          <span />
-        </span>
-      ))}
-    </div>
+    <>
+      <div className="reach" style={style}>
+        {[...moves.values()].map(({ cell: c }) => (
+          <span key={key(c)} style={{ left: c.c * cell, top: c.r * cell, width: cell, height: cell }}>
+            <span />
+          </span>
+        ))}
+      </div>
+      <div className="reach reach-attack" style={style}>
+        {threatened.map(({ id: t, at }) => (
+          <span key={t} style={{ left: at.c * cell, top: at.r * cell, width: cell, height: cell }}>
+            <span />
+          </span>
+        ))}
+      </div>
+    </>
   );
 }
 

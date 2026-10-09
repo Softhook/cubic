@@ -365,6 +365,14 @@ input { font: inherit; }
   box-shadow: 0 0 10px color-mix(in srgb, var(--pc) 45%, transparent);
   animation: hl-in .2s ease-out both;
 }
+/* Ships it could reach to attack: a ring around them, over the ships. */
+.reach-attack { z-index: 4; }
+.reach-attack > span > span {
+  width: 92%; height: 92%;
+  background: transparent;
+  border-width: 3px;
+  box-shadow: 0 0 12px var(--pc), inset 0 0 8px color-mix(in srgb, var(--pc) 60%, transparent);
+}
 
 .planet-hit {
   position: absolute;
