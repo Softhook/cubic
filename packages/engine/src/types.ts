@@ -146,8 +146,8 @@ export interface TurnState {
   storedTacticPlayed?: boolean;
   /** Whether an action was spent this turn (free abilities don't count). */
   acted?: boolean;
-  /** Prototype ship powers' notes for this turn, by die id; each power (ShipHooks) reads only its own. */
-  powers?: Record<string, string>;
+  /** Prototype ship powers' notes for this turn: by power, then die id (prototype.ts turnNote). */
+  powers?: Record<string, Record<string, string>>;
 }
 
 /** Effects limited to once per turn. 'cunning' is the second use of a ship ability. */

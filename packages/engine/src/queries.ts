@@ -20,7 +20,7 @@ import { activeSkills, anySkill, ruleOf, skillRules, type ActiveSkill, type Comb
 import type { Cell, CombatPending, CombatRole, Die, GameState, OncePerTurn, Planet, PlayerId, TurnState } from './types';
 
 // ---------------------------------------------------------------------------
-// Prototype ship powers (ShipHooks in data.ts): the official ships have none.
+// Prototype ship powers (ShipHooks in prototype.ts): the official ships have none.
 
 /**
  * Spaces where `mover`'s ships must stop, by board cell index (`at` is shipsByIndex): around enemy

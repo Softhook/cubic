@@ -1,13 +1,14 @@
 /**
  * Cubic, our own rule set (docs/PROTOTYPING.md, src/cubic): Community Edition with movement capped at 3
  * and new powers for the 4 (Picket), 5 (Shoot) and 6 (Beacon), which replace Modify, Manoeuvre and Free
- * Reconfigure. The first block checks that none of it reaches the official modes.
+ * Reconfigure. The first block checks that none of it reaches the official modes, and that the cubic
+ * folder and the engine meet only at RULESETS and the prototype kit.
  *
  * Scenarios run on Alpha Sector, the basic map for 2 players (9×9; planets at rows/cols 1, 4, 7,
  * every other cell a space).
  */
 import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   apply,
@@ -26,7 +27,9 @@ import {
   type GameMode,
   type GameState,
 } from '../src';
-import { beacon, picket, shoot as shootPower, shootTargets } from '../src/cubic/powers';
+import { beacon } from '../src/cubic/powers/beacon';
+import { picket } from '../src/cubic/powers/picket';
+import { shoot as shootPower, shootTargets } from '../src/cubic/powers/shoot';
 import { quickStart } from './helpers';
 
 const BASE: Record<'cubic' | 'community', GameState> = { cubic: quickStart(2, 1, 'cubic'), community: quickStart(2, 1, 'community') };
@@ -61,7 +64,7 @@ describe('Cubic mode', () => {
     expect(cubic.cards).toBe(community.cards);
     expect(cubic.startingMissiles).toBe(1);
     expect(cubic.maxMovement).toBe(3);
-    expect([4, 5, 6].map((v) => cubic.ships[v].hooks)).toEqual([picket, shootPower, beacon]);
+    expect([4, 5, 6].map((v) => cubic.ships[v].hooks)).toEqual([picket.hooks, shootPower.hooks, beacon.hooks]);
     expect([4, 5, 6].map((v) => cubic.ships[v].power)).toEqual([undefined, undefined, undefined]);
     expect([1, 2, 3].map((v) => cubic.ships[v])).toEqual([1, 2, 3].map((v) => community.ships[v]));
   });
@@ -88,15 +91,27 @@ describe('Cubic mode', () => {
     }
   });
 
+  const src = join(__dirname, '../src');
+  const files = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(join(dir, e.name)) : e.name.endsWith('.ts') ? [join(dir, e.name)] : []));
+  const imports = (f: string) => [...readFileSync(f, 'utf8').matchAll(/from '([^']+)'/g)].map((m) => m[1]);
+  const inCubic = (f: string) => relative(src, f).startsWith('cubic/');
+
   it('is reached from the engine only through RULESETS (rules.ts)', () => {
-    const src = join(__dirname, '../src');
-    const files = (dir: string): string[] =>
-      readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(join(dir, e.name)) : e.name.endsWith('.ts') ? [join(dir, e.name)] : []));
     const importers = files(src)
-      .filter((f) => !relative(src, f).startsWith('cubic/'))
-      .filter((f) => /from '\.\/cubic(\/[^']*)?'/.test(readFileSync(f, 'utf8')))
+      .filter((f) => !inCubic(f))
+      .filter((f) => imports(f).some((i) => /^\.\/cubic(\/|$)/.test(i)))
       .map((f) => relative(src, f));
     expect(importers).toEqual(['rules.ts']);
+  });
+
+  it('uses the engine only through the prototype kit (prototype.ts)', () => {
+    for (const f of files(src).filter(inCubic)) {
+      for (const i of imports(f)) {
+        const target = relative(src, join(dirname(f), i));
+        expect(target === 'prototype' || target.startsWith('cubic/'), `${relative(src, f)} imports ${i}`).toBe(true);
+      }
+    }
   });
 });
 

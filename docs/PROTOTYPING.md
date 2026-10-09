@@ -380,15 +380,44 @@ At range 1–2 with diagonals the AI uses it about once a game. The AI's evaluat
 
 Cubic is a sandbox. Everything that is Cubic lives in one folder,
 [packages/engine/src/cubic/](../packages/engine/src/cubic), and the rest of the engine and the UI
-never name it or its powers.
+never name it or its powers. The folder in turn sees the engine only through one file, the prototype
+kit [prototype.ts](../packages/engine/src/prototype.ts): the `ShipHooks` interface, `PrototypePower`,
+turn notes, and the engine's building blocks (board, lookups, queries, core helpers, `startCombat`),
+re-exported whole so a new power rarely needs to touch it.
+
+```
+cubic/
+  index.ts          the mode: MAX_MOVEMENT, CUBIC_SHIPS (which ship has which power), cubicMode()
+  powers/picket.ts  one file per power: its rules text (name, text, hint) and its hooks
+  powers/shoot.ts
+  powers/beacon.ts
+```
 
 | To change | Edit |
 |---|---|
 | The movement cap, the mode's name or summary, the base mode (Community) | [cubic/index.ts](../packages/engine/src/cubic/index.ts) (`MAX_MOVEMENT`, `cubicMode`) |
-| Which ship has which power, ship names, power texts and hints | `CUBIC_SHIPS` in cubic/index.ts |
-| How a power works (Shoot's range, what Picket covers…) | [cubic/powers.ts](../packages/engine/src/cubic/powers.ts) (`SHOOT_RANGE` and the hooks) |
-| A new power that fits an existing hook | Write it in powers.ts and put it on a ship in `CUBIC_SHIPS` |
-| A new kind of power | Add a hook to `ShipHooks` (data.ts) and read it in the engine (below) |
+| Which ship has which power, ship names | `CUBIC_SHIPS` in cubic/index.ts: `5: { name: 'Interceptor', ...shoot }` |
+| How a power works or its text (Shoot's range, what Picket covers…) | Its file in [cubic/powers/](../packages/engine/src/cubic/powers) |
+| A new power that fits an existing hook | Copy a file in powers/, then put it on a ship in `CUBIC_SHIPS` |
+| An engine helper the kit doesn't have yet | Re-export it from prototype.ts |
+| A new kind of power | Add a hook to `ShipHooks` (prototype.ts) and read it in the engine (below) |
+
+A power is a `PrototypePower`, `{ ability, hooks }`:
+
+```ts
+// cubic/powers/beacon.ts
+import { cellOf, surrounding, type PrototypePower } from '../../prototype';
+
+export const beacon: PrototypePower = {
+  ability: { name: 'Beacon', text: 'You may deploy into any empty space around this ship.' },
+  hooks: {
+    deployTargets: (state, ship) => surrounding(state.board, cellOf(ship)!),
+  },
+};
+```
+
+A power that tracks something over a turn keeps it with `turnNote(state, 'shoot', ship)` /
+`setTurnNote(…)`, under its own name so powers never overwrite each other's notes (Shoot's order).
 
 ### How the engine reaches it
 
@@ -410,7 +439,10 @@ never name it or its powers.
   legal actions and the engine can't disagree. The UI shows a button named after the power, highlights
   its targets (ships) or spaces, and shows `ability.hint` as the hint. No UI change is needed for a new
   action power.
-- **Its own turn state.** `turn.powers` holds a power's per-ship notes for the turn (Shoot's order).
+- **Its own turn state.** `turn.powers` holds each power's per-ship notes for the turn, by power name
+  (Shoot's order), read and written through `turnNote` / `setTurnNote`.
+- **No cost when unused.** Which powers have which hook is worked out once per ship table
+  (`modeHooks`), so the hooks add nothing to the official modes' move and legal-action searches.
 - **Ranged combat.** `startCombat(…, ranged = true)` is a battle where the winner doesn't advance.
 
 ### What keeps the official modes safe
@@ -418,8 +450,9 @@ never name it or its powers.
 - The official ship tables have no hooks, and every hook is optional, so their code paths only see
   `undefined`. `stopZone` and `deployTargets` skip the search when no ship in the mode has the hook.
 - cubic.test.ts checks that Basic, Original and Community use `CLASSIC_SHIPS` with no hooks and no
-  movement cap, that nothing in the engine but rules.ts imports the cubic folder, and that the 4, 5
-  and 6 gain no Cubic powers there.
+  movement cap, and that the 4, 5 and 6 gain no Cubic powers there. It also checks the boundary both
+  ways: nothing in the engine but rules.ts imports the cubic folder, and the cubic folder imports
+  nothing from the engine but prototype.ts.
 - The golden replays of the three official modes must not change. If a Cubic change alters one of
   them, it has leaked. Only the Cubic snapshots may be updated (`npx vitest run golden -t cubic -u`).
 - The consistency test plays Cubic games and checks that legal actions and the engine agree.
@@ -427,7 +460,7 @@ never name it or its powers.
 ### Adding a new hook
 
 Only when no existing hook fits. Add the optional hook to `ShipHooks` in
-[data.ts](../packages/engine/src/data.ts) with a comment on what it means, read it in the one engine
+[prototype.ts](../packages/engine/src/prototype.ts) with a comment on what it means, read it in the one engine
 function it affects through `hooksOf` (and `modeHasHook` if it is on a hot path), and add a scenario
 to cubic.test.ts. Keep its name about the rule (`stopsEnemies`), not the power (`picket`), so the next
 prototype can reuse it.

@@ -12,7 +12,8 @@
  *   effects.ts    the implemented Skill and Tactic effects, as types
  *   skillRules.ts what every skill does, as hooks the rules read
  *   skillActions.ts skills used as an action of their own
- *   cubic/        Cubic, our prototype mode: its settings, ship table and powers (ShipHooks)
+ *   prototype.ts  the prototype kit: ShipHooks, and all an experimental mode may use from the engine
+ *   cubic/        Cubic, our prototype mode: its settings, ship table and powers (one file each)
  *   turn.ts       start / end of turn, and auto-resolving decisions after each action
  *   legal.ts      legal action enumeration (AI, UI hints)
  *   rules.ts      what differs between rule sets (Basic, Original, Community, Cubic)

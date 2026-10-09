@@ -1,6 +1,7 @@
 export * from './types';
 export * from './data';
 export * from './rules';
+export type { PowerChoice, PrototypePower, ShipHooks } from './prototype';
 export * from './board';
 export * from './lookups';
 export * from './queries';

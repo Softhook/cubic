@@ -149,7 +149,7 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
   const canAttack = (cost: number) => actions >= cost + t.freeMovesUsed;
   const nomadic = actions > 0 && hasSkill(s, me, 'nomadic') && !usedThisTurn(s, 'nomadic');
 
-  // Prototype powers (ShipHooks): asked about every ship, see data.ts.
+  // Prototype powers (ShipHooks): asked about every ship, see prototype.ts.
   const freeMove = modeHooks(s, 'freeMove');
   const noAttack = modeHooks(s, 'noAttack');
 

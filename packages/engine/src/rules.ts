@@ -1,5 +1,6 @@
 import { cubicMode } from './cubic';
-import { CLASSIC_SHIPS, MAPS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef, type GameMode, type ShipDef, type ShipHooks, type ShipPower, type ShipTable } from './data';
+import { CLASSIC_SHIPS, MAPS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef, type GameMode, type ShipDef, type ShipPower, type ShipTable } from './data';
+import type { ShipHooks } from './prototype';
 import type { Die, GameState } from './types';
 
 /**
@@ -133,16 +134,26 @@ export function hooksOf(state: GameState, d: Die): ShipHooks | undefined {
   return rulesOf(state).ships[d.value]?.hooks;
 }
 
+/** modeHooks' answers, worked out once per ship table: the engine asks on every move and legal-action search. */
+const HOOKS = new WeakMap<ShipTable, Map<keyof ShipHooks, unknown[]>>();
+
 /** Each different power in this game's rules that has this hook (none in the official modes). */
-export function modeHooks<K extends keyof ShipHooks>(state: GameState, hook: K): NonNullable<ShipHooks[K]>[] {
-  const out = new Set<NonNullable<ShipHooks[K]>>();
-  for (const s of Object.values(rulesOf(state).ships)) if (s.hooks?.[hook]) out.add(s.hooks[hook]!);
-  return [...out];
+export function modeHooks<K extends keyof ShipHooks>(state: GameState, hook: K): readonly NonNullable<ShipHooks[K]>[] {
+  const ships = rulesOf(state).ships;
+  let byHook = HOOKS.get(ships);
+  if (!byHook) HOOKS.set(ships, (byHook = new Map()));
+  let found = byHook.get(hook);
+  if (!found) {
+    const out = new Set<unknown>();
+    for (const s of Object.values(ships)) if (s.hooks?.[hook]) out.add(s.hooks[hook]);
+    byHook.set(hook, (found = [...out]));
+  }
+  return found as NonNullable<ShipHooks[K]>[];
 }
 
 /** Whether any ship in this game's rules has this hook, so searches can skip it otherwise. */
 export function modeHasHook(state: GameState, hook: keyof ShipHooks): boolean {
-  return Object.values(rulesOf(state).ships).some((s) => s.hooks?.[hook]);
+  return modeHooks(state, hook).length > 0;
 }
 
 /** Player counts a rule set has maps for. */

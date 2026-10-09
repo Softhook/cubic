@@ -1,6 +1,6 @@
 import cardsJson from './data/cards.json';
 import mapsJson from './data/maps.json';
-import type { Cell, Die, GameState } from './types';
+import type { ShipHooks } from './prototype';
 
 export interface CardDef {
   id: string;
@@ -84,49 +84,11 @@ export function isOriginalCard(id: string): boolean {
  */
 export type ShipPower = 'strike' | 'transport' | 'warp' | 'modify' | 'manoeuvre' | 'freeReconfigure';
 
-/** What a power action (ShipHooks.action) is aimed at: a ship, a space, or both. */
-export interface PowerChoice {
-  target?: string;
-  to?: Cell;
-}
-
-/**
- * A prototype ship power, as hooks the engine reads, like SkillRule for skills. Experimental modes
- * (src/cubic) define their powers this way, so the engine never names them. The official ships have
- * none: every hook is optional, and the engine skips ships without it.
- */
-export interface ShipHooks {
-  /**
-   * Board cell indexes (r * cols + c) where an enemy ship that moves in must stop. It may still attack
-   * from there, and one that starts its move on one may leave. Normal moves only.
-   */
-  stopsEnemies?(state: GameState, ship: Die, index: number): Iterable<number>;
-  /** Extra spaces its owner may deploy into (the engine keeps only empty ones). */
-  deployTargets?(state: GameState, ship: Die): Iterable<Cell>;
-  // The next three are asked about every ship, not only ships with this power: a ship may change
-  // number after using a power, and keeps what that use gave it this turn. They go by the power's own
-  // notes (turn.powers), or check that the ship has the power (hooksOf).
-  /** The ship's next normal move is already paid for. */
-  freeMove?(state: GameState, ship: Die): boolean;
-  /** The ship may not make a normal Move attack now. */
-  noAttack?(state: GameState, ship: Die): boolean;
-  /** The ship makes a normal move (before the move is paid for). */
-  onMove?(state: GameState, ship: Die): void;
-  /**
-   * An action of its own: the `power` action. `options` are the legal choices now, cost included;
-   * `apply` runs only for one of them, and pays for it.
-   */
-  action?: {
-    options(state: GameState, ship: Die): PowerChoice[];
-    apply(state: GameState, ship: Die, choice: PowerChoice): void;
-  };
-}
-
 export interface ShipDef {
   name: string;
   /** A built-in power (the official ships). */
   power?: ShipPower;
-  /** A prototype power, as hooks. A ship with hooks and no `power` has no once-per-turn ability. */
+  /** A prototype power, as hooks (prototype.ts). A ship with hooks and no `power` has no once-per-turn ability. */
   hooks?: ShipHooks;
   /** The power's name and rules text for the UI; `hint` guides a player using its action. */
   ability: { name: string; text: string; hint?: string };
