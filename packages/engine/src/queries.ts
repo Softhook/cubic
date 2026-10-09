@@ -1,6 +1,5 @@
 /** Read-only questions about a state: movement, deploying, conquering, combat totals… */
 import {
-  cellAt,
   diagonals,
   delta,
   grid,
@@ -185,10 +184,16 @@ function reach(state: GameState, start: Cell, range: number, diagonal: boolean, 
   return { found, steps, passing };
 }
 
-/** The Warp Gate partner of a cell index, or -1 (see board.ts stepNeighbours). */
+/** The two Warp Gates' cell indexes, or -1s until both are placed (see board.ts stepNeighbours). */
+function gateIndexes(state: GameState, g: Grid): [number, number] {
+  if (state.gates.length !== 2) return [-1, -1];
+  const [a, b] = state.gates;
+  return [a.r * g.cols + a.c, b.r * g.cols + b.c];
+}
+
+/** The Warp Gate partner of a cell index, or -1. */
 function gates(state: GameState, g: Grid): (i: number) => number {
-  if (state.gates.length !== 2) return () => -1;
-  const [a, b] = state.gates.map((p) => p.r * g.cols + p.c);
+  const [a, b] = gateIndexes(state, g);
   return (i) => (i === a ? b : i === b ? a : -1);
 }
 
@@ -293,7 +298,8 @@ export function shipReach(state: GameState, d: Die, at: (Die | undefined)[]): Sh
   }
   const range = movementRange(state, d);
   const from = start.r * g.cols + start.c;
-  const [gateA, gateB] = state.gates.length === 2 ? state.gates.map((p) => p.r * g.cols + p.c) : [-1, -1];
+  // The gates inline rather than gates(): a call per step is measurable here.
+  const [gateA, gateB] = gateIndexes(state, g);
   const diagonals = d.value === 5 && canUseAbility(state, d);
   for (let pass = 0; pass < (diagonals ? 2 : 1); pass++) {
     const near = pass ? g.around : g.ortho;
@@ -341,7 +347,7 @@ export function carryOptions(state: GameState, flagshipId: string, passengerId: 
   const result = new Map<string, { cell: Cell; drops: Cell[] }>();
   if (!start || !pCell) return result;
   range ??= movementRange(state, flag);
-  const { cells } = grid(state.board);
+  const { cols, cells, space } = grid(state.board);
   const { found, steps } = reach(state, start, range, false, [pCell]);
   for (const i of found) {
     // The flagship must move, but may fly out and back to its own space (designer ruling,
@@ -349,8 +355,7 @@ export function carryOptions(state: GameState, flagshipId: string, passengerId: 
     if (steps[i] === 0 && (range < 2 || found.length < 2)) continue;
     const cell = cells[i];
     const drops = surrounding(state.board, cell).filter((q) => {
-      const cell = cellAt(state.board, q);
-      if (!cell || cell.kind !== 'space') return false;
+      if (!space[q.r * cols + q.c]) return false;
       const occupant = dieAt(state, q);
       return !occupant || occupant.id === flag.id || occupant.id === passenger.id;
     });

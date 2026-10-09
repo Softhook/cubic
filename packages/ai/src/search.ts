@@ -62,6 +62,15 @@ interface Line {
   end: GameState;
 }
 
+/** A candidate scored one step deep, with its outcomes kept for deepening (null for ending the turn). */
+interface Scored {
+  a: Action;
+  outs: Outcome[] | null;
+  line: Line;
+}
+
+const byValue = (x: { line: Line }, y: { line: Line }) => y.line.value - x.line.value;
+
 export class Search {
   private readonly tt = new Map<string, Line>();
   private readonly seeds: number[];
@@ -94,14 +103,7 @@ export class Search {
 
     const root = hideUnknowns(state, this.random);
     const depth = this.params.depth;
-    const scored = options
-      .flatMap<{ a: Action; outs: Outcome[] | null; line: Line }>((a) => {
-        if (a.type === 'endTurn') return [{ a, outs: null, line: this.standPat(root) }];
-        const outs = this.expand(root, a);
-        return outs ? [{ a, outs, line: this.action(outs, 0) }] : [];
-      })
-      .filter((x) => x.line.value > -Infinity)
-      .sort((x, y) => y.line.value - x.line.value);
+    const scored = this.scoreAll(root, options);
     if (!scored.length) return options[0];
 
     // Deepen the most promising candidates. Ending the turn needs no deepening.
@@ -110,7 +112,7 @@ export class Search {
         if (this.exhausted()) break;
         if (x.outs) x.line = this.action(x.outs, depth - 1);
       }
-      scored.sort((x, y) => y.line.value - x.line.value);
+      scored.sort(byValue);
     }
     if (this.params.replies > 0 && !head) {
       // Scores after the reply are on a different scale, so choose among the checked plans only.
@@ -178,6 +180,17 @@ export class Search {
     return outs && outs.map((o) => ({ state: this.settle(o.state), p: o.p }));
   }
 
+  /** The legal ones of `actions` in `s`, scored one step deep, best first. Ending the turn scores `s` itself. */
+  private scoreAll(s: GameState, actions: Action[]): Scored[] {
+    return actions
+      .flatMap<Scored>((a) => {
+        if (a.type === 'endTurn') return [{ a, outs: null, line: this.standPat(s) }];
+        const outs = this.expand(s, a);
+        return outs ? [{ a, outs, line: this.action(outs, 0) }] : [];
+      })
+      .sort(byValue);
+  }
+
   /** Expected value of an action, from its `expand`ed outcomes, searching `depth` further actions after it. */
   private action(outs: Outcome[], depth: number): Line {
     let value = 0;
@@ -203,17 +216,13 @@ export class Search {
 
     let best = this.standPat(s);
     if (depth > 0 && !this.exhausted()) {
-      const scored = candidates(s, { includeCarry: this.params.carry })
-        .filter((a) => a.type !== 'endTurn')
-        .flatMap((a) => {
-          const outs = this.expand(s, a);
-          return outs ? [{ outs, line: this.action(outs, 0) }] : [];
-        })
-        .sort((x, y) => y.line.value - x.line.value);
+      // Ending the turn is `best` already.
+      const scored = this.scoreAll(s, candidates(s, { includeCarry: this.params.carry }).filter((a) => a.type !== 'endTurn'));
       for (const x of scored) if (x.line.value > best.value) best = x.line;
       if (depth > 1) {
         for (const x of scored.slice(0, this.params.innerWidth)) {
           if (this.exhausted()) break;
+          if (!x.outs) continue;
           const line = this.action(x.outs, depth - 1);
           if (line.value > best.value) best = line;
         }
