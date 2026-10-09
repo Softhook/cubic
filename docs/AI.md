@@ -6,9 +6,9 @@ The AI comes in five levels. Each player seat in the lobby picks one; the defaul
 |:-:|---|---|---|
 | 1 | **Cadet** | One action at a time. Scores the position after each legal action and takes the best. Random actions are sampled 3 times. | ~5 ms |
 | 2 | **Captain** | One action at a time, with exact odds for re-rolls and combat and an evaluation that knows whose turn is next and which enemy ships can reach which of its ships. | ~5 ms |
-| 3 | **Commodore** | Plans the whole turn: searches combinations of up to 3 actions (plus free ship abilities) and the outcomes of every dice roll on the way. | ~30 ms, ≤ 0.3 s |
-| 4 | **Admiral** | Wider turn search, includes Flagship transports, and checks its best three plans against the opponent's actual next turn. | ~85 ms, ≤ 0.5 s |
-| 5 | **Fleet Admiral** | Deeper and wider turn search (4 actions, more samples), and checks its best four plans against three replies each, with the same dice for every plan, averaged. | ~125 ms, ≤ 1.2 s |
+| 3 | **Commodore** | Plans the whole turn: searches combinations of up to 3 actions (plus free ship abilities) and the outcomes of every dice roll on the way. | ~10–20 ms, ≤ 0.1 s |
+| 4 | **Admiral** | Wider turn search, includes Flagship transports, and checks its best three plans against the opponent's actual next turn. | ~25–50 ms, ≤ 0.2 s |
+| 5 | **Fleet Admiral** | Deeper and wider turn search (4 actions, more samples), and checks its best four plans against three replies each, with the same dice for every plan, averaged. | ~65–100 ms, ≤ 0.5 s |
 
 All levels choose among `legalActions(state)`, so they can only play legal moves. None of them
 sees the game's RNG or the order of the decks. Before searching, the AI replaces the RNG seed with
@@ -27,28 +27,36 @@ Self-play results, alternating seats, each pair of games on the same map seed (`
 | Cadet vs Captain | 5 – 35 (40) | | |
 | Captain vs Commodore | 9 – 31 (40) | | 9 – 26 (35) |
 | Commodore vs Admiral | 20 – 28 (48) | | |
-| Admiral vs Fleet Admiral | 20 – 28 (48) | | |
+| Admiral vs Fleet Admiral | 82 – 118 (200) | | |
 | Cadet vs Commodore | | 1 – 29 (30) | 3 – 27 (30) |
 
-Fleet Admiral beat Admiral 28 – 20 (58%, 2026-10-09), the same margin as Admiral over Commodore, at
-about 2.5× Admiral's thinking time in the same run (126 vs 48 ms per decision). Over 48 games that
-lead is suggestive, not conclusive (p ≈ 0.15). Earlier candidate settings were no clear gain: a
-deeper, wider search alone went 25 – 23 (48 games), and Admiral's search checking five plans against
-a Commodore-played reply was 16 – 15 after 31 (interrupted). The shipped setting adds averaged
-replies, aimed at the reply check's noise; confirm the gain with a longer run before tuning further.
+Fleet Admiral beat Admiral 118 – 82 over 200 games (59%, z = 2.55, p ≈ 0.01; 2026-10-09, before
+the reply-scoring fix below), at about twice Admiral's thinking time. Settings that spend more time
+on the reply check did not do better than Fleet Admiral (200 games each, after the fix):
 
-The levels are clearly ordered. The top two steps are the smallest (58% each); they are where there
-is the most room to grow (see Next steps). Empty cells haven't been measured yet.
+| Fleet Admiral variant | Score vs Fleet Admiral | Thinking time |
+|---|---|---|
+| Position after the reply scored with me to move (the fix, now shipped) | 104 – 96 (52%) | same |
+| 6 plans checked, 6 replies each | 91 – 109 (45.5%) | 1.6× |
+| Replies played by Commodore instead of Captain | 106 – 94 (53%) | 4× |
+
+Checking more plans against a noisy reply seems to pick the luckiest one; a stronger reply player
+costs far more than it gains. Further strength more likely comes from the evaluation (see Next steps).
+
+The levels are clearly ordered. The top two steps are the smallest (58–59% each). Empty cells
+haven't been measured yet.
 
 To measure a change, run for example:
 
 ```sh
 npm run ai:match -- 2 3 40            # Captain vs Commodore, 40 basic games
 npm run ai:match -- 3 4 20 community  # Commodore vs Admiral, community rules
+npm run ai:match -- 4 5 200 basic 2 10 # 200 games split over 10 processes (one per CPU core)
 ```
 
 Twelve games can mislead: during development one version of Admiral went 7–5 against Commodore
-over 12 games, and 38–10 over 48. Use 40 or more before trusting a difference.
+over 12 games, and 38–10 over 48. Use 40 or more before trusting a difference, and 200 or more for
+a difference of a few percent (the script prints z; |z| > 2 is about p < 0.05).
 
 ## What was wrong with the original AI
 
@@ -106,7 +114,8 @@ search (advance after a battle, card picks) get each player's best one-step choi
 
 **Reply check** (Admiral): for the three best plans, the end-of-turn position is played on through
 the opponent's next turn by the Captain policy, and each plan scores half its own value and half
-the value after the reply. Fleet Admiral checks four plans, each against three replies with
+the value after the reply. The position after the reply is scored with me to move (the evaluation
+otherwise scores a position in my turn as if I end it now). Fleet Admiral checks four plans, each against three replies with
 different dice (`replySamples`), the same three for every plan, so that one lucky roll doesn't
 decide between plans. `reply` can also set a stronger policy for the opponent's turn.
 
@@ -126,7 +135,14 @@ In rough order of value:
    of `structuredClone`, the board's neighbours are cached per board, and movement (`reach`,
    `moveIndexes`) runs over cell indexes; the search reuses an action's outcomes when it deepens
    it and caches evaluations. Levels 3 and 4 got 3–4× faster with identical choices (88 fixed
-   positions). The evaluation's movement for every ship is still most of the time.
+   positions). A second round (2026-10-09) made levels 2–5 another 2–3.5× faster, again with
+   identical choices: the evaluation's movement uses a plain breadth-first search over cell indexes
+   (`shipReach`, checked against `moveIndexes` by the consistency tests), the skills' rules are
+   cached by card set, a Move is validated without building string-keyed maps, the search settles
+   decisions without first testing every answer (`decisionCandidates`), and the reply checks share
+   the search's evaluation cache. Now about half the time is the evaluation and a sixth is copying
+   states. Not counted in the evaluation budget: the reply checks (budget 15000 binds in 2–3% of
+   Fleet Admiral's decisions).
 5. **Admiral beyond one reply.** Monte Carlo tree search across turns (with determinized decks),
    time-boxed in the worker, as originally planned in the roadmap.
 6. **More than 2 players.** The evaluation subtracts the strongest rival and a quarter of the

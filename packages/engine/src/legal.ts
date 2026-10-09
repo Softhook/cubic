@@ -209,3 +209,16 @@ export function legalActions(s: GameState, opts: { includeCarry?: boolean } = {}
   if (canScrappy(s) && actor(s) === s.turn.player) out.push({ type: 'scrappy' });
   return out;
 }
+
+/**
+ * The answers to the pending decision that may be legal, in legalActions' order but not yet tried:
+ * for the AI, which tries each anyway (legalActions applies every one to test it, and the AI would
+ * copy the state twice for each). Without a decision, legalActions.
+ */
+export function decisionCandidates(s: GameState): Action[] {
+  const head = s.pending[0];
+  if (!head || s.phase === 'over') return legalActions(s);
+  const out = (DECISION_CANDIDATES[head.kind] as (s: GameState, h: Pending) => Action[])(s, head);
+  if (canScrappy(s) && actor(s) === s.turn.player) out.push({ type: 'scrappy' });
+  return out;
+}

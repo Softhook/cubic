@@ -1,4 +1,17 @@
-import { actor, apply, copyState, deployTargets, legalActions, scrapyard, type Action, type GameState, type Pending, type PlayerId } from '@quantum/engine';
+import {
+  actor,
+  apply,
+  copyState,
+  decisionCandidates,
+  deployTargets,
+  legalActions,
+  scrapyard,
+  tryApply,
+  type Action,
+  type GameState,
+  type Pending,
+  type PlayerId,
+} from '@quantum/engine';
 import { outcomes, type Outcome } from './chance';
 import { candidates } from './patient';
 import { evaluate } from './evaluate';
@@ -50,8 +63,6 @@ interface Line {
 
 export class Search {
   private readonly tt = new Map<string, Line>();
-  /** Evaluations by position: deepening a line scores its positions again. */
-  private readonly evals = new Map<string, number>();
   private readonly seeds: number[];
   private evaluations = 0;
 
@@ -59,6 +70,11 @@ export class Search {
     private readonly me: PlayerId,
     private readonly params: SearchParams,
     private readonly random: () => number,
+    /**
+     * Evaluations by player and position: deepening a line scores its positions again, and the
+     * reply checks play out the same positions. Shared with the searches that play the replies.
+     */
+    private readonly evals = new Map<string, number>(),
   ) {
     this.seeds = Array.from({ length: params.samples }, () => seed(random));
   }
@@ -139,10 +155,15 @@ export class Search {
     // Counted even when cached: the budget measures the search's size, so that a faster search
     // makes the same choices.
     this.evaluations++;
-    const k = evalKey(s);
+    return { value: this.score(s, this.me), end: s };
+  }
+
+  /** evaluate(s, who, mover), cached. */
+  private score(s: GameState, who: PlayerId, mover?: PlayerId): number {
+    const k = `${who}|${mover ?? ''}|${evalKey(s)}`;
     let value = this.evals.get(k);
-    if (value === undefined) this.evals.set(k, (value = evaluate(s, this.me)));
-    return { value, end: s };
+    if (value === undefined) this.evals.set(k, (value = evaluate(s, who, mover)));
+    return value;
   }
 
   private exhausted(): boolean {
@@ -213,11 +234,12 @@ export class Search {
       const who = actor(s);
       let pick: GameState | null = null;
       let top = -Infinity;
-      for (const a of head.kind === 'unveil' ? unveilPlacements(s) : legalActions(s)) {
+      // Candidates are tried here, which is all legalActions would do to them first.
+      for (const a of head.kind === 'unveil' ? unveilPlacements(s) : decisionCandidates(s)) {
         const outs = outcomes(s, a, this.seeds.slice(0, 1));
         if (!outs) continue;
         // Nested decisions are settled with the first option, to keep this cheap.
-        const v = outs.reduce((sum, o) => sum + o.p * evaluate(quickSettle(o.state), who), 0);
+        const v = outs.reduce((sum, o) => sum + o.p * this.score(quickSettle(o.state), who), 0);
         if (v > top) {
           top = v;
           pick = outs[0].state;
@@ -231,19 +253,21 @@ export class Search {
 
   /** The value of `end` after I finish my turn and the next player plays theirs (`reply` policy). */
   private afterReply(end: GameState, random: () => number): number {
-    const captain = new Search(this.me, LEVEL_2_REPLY, random);
+    const captain = new Search(this.me, LEVEL_2_REPLY, random, this.evals);
     let s = end;
     if (this.myTurn(s)) s = captain.settle(apply(s, { type: 'endTurn' }));
     const them = s.turn.player;
-    if (them === this.me) return evaluate(s, this.me);
-    const opponent = new Search(them, this.params.reply ?? LEVEL_2_REPLY, random);
+    // A turn of mine is scored as if I end it now (see evaluate.ts nextMover), but here it has
+    // only just started: I move next.
+    if (them === this.me) return this.score(s, this.me, this.me);
+    const opponent = new Search(them, this.params.reply ?? LEVEL_2_REPLY, random, this.evals);
     for (let i = 0; i < 12 && s.phase !== 'over' && s.turn.player === them; i++) {
       const a = s.pending[0] ? (actor(s) === them ? opponent.choose(s) : captain.choose(s)) : opponent.choose(s);
       if (!a) break;
       // The opponent's rolls are sampled: this is a check of the plan, not a full average.
       s = captain.settle(apply({ ...s, rng: seed(random) }, a));
     }
-    return evaluate(s, this.me);
+    return this.score(s, this.me, s.turn.player === this.me ? this.me : undefined);
   }
 }
 
@@ -255,14 +279,21 @@ const IDLE_LIMIT = 2;
 /** The level-2 policy, used to play out the opponent's reply. */
 const LEVEL_2_REPLY: SearchParams = { depth: 1, width: 0, innerWidth: 0, samples: 1, carry: false, replies: 0, budget: Infinity };
 
+/** Settles pending decisions with the first legal answer. */
 function quickSettle(state: GameState): GameState {
   let s = state;
   for (let i = 0; i < 6 && s.pending.length && s.phase !== 'over'; i++) {
     const head = s.pending[0];
     // Unveil's first option is always Done; asking legalActions would test every placement first.
-    const a: Action | undefined = head.kind === 'combat' ? { type: 'resolveCombat' } : head.kind === 'unveil' ? { type: 'unveilDone' } : legalActions(s)[0];
-    if (!a) break;
-    s = apply(s, a);
+    if (head.kind === 'combat' || head.kind === 'unveil') {
+      s = apply(s, { type: head.kind === 'combat' ? 'resolveCombat' : 'unveilDone' });
+      continue;
+    }
+    // legalActions(s)[0], without trying the answers after it.
+    let next: GameState | null = null;
+    for (const a of decisionCandidates(s)) if ((next = tryApply(s, a))) break;
+    if (!next) break;
+    s = next;
   }
   return s;
 }

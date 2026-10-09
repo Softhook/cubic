@@ -235,15 +235,44 @@ export interface ActiveSkill {
 }
 
 /** The player's active skills, in SKILL_EFFECTS order (so results don't depend on draw order). */
-export function activeSkills(state: GameState, player: PlayerId): ActiveSkill[] {
-  const owned = new Map<string, string>();
-  for (const s of state.players[player].skills) if (s.active && !owned.has(effectOf(s.id))) owned.set(effectOf(s.id), s.id);
-  return SKILL_EFFECTS.filter((e) => owned.has(e)).map((effect) => ({ effect, card: owned.get(effect)!, rule: SKILL_RULES[effect] }));
+export function activeSkills(state: GameState, player: PlayerId): readonly ActiveSkill[] {
+  return skillSet(state, player).active;
 }
 
 /** The rules of the player's active skills. */
-export function skillRules(state: GameState, player: PlayerId): SkillRule[] {
-  return activeSkills(state, player).map((a) => a.rule);
+export function skillRules(state: GameState, player: PlayerId): readonly SkillRule[] {
+  return skillSet(state, player).rules;
+}
+
+interface SkillSet {
+  active: readonly ActiveSkill[];
+  rules: readonly SkillRule[];
+}
+
+const NO_SKILLS: SkillSet = { active: Object.freeze([]), rules: Object.freeze([]) };
+
+/**
+ * Active skills by the ids of the active cards, in order: movement, combat and the conquer check
+ * ask for them for every ship, and the AI asks in every position it scores. Few sets occur in a
+ * game, so the cache stays small. The lists are frozen, as every caller gets the same one.
+ */
+const SKILL_SETS = new Map<string, SkillSet>();
+
+function skillSet(state: GameState, player: PlayerId): SkillSet {
+  const skills = state.players[player].skills;
+  let key = '';
+  for (const s of skills) if (s.active) key += `${s.id},`;
+  if (!key) return NO_SKILLS;
+  let set = SKILL_SETS.get(key);
+  if (set) return set;
+  const owned = new Map<string, string>();
+  for (const s of skills) if (s.active && !owned.has(effectOf(s.id))) owned.set(effectOf(s.id), s.id);
+  const active = Object.freeze(
+    SKILL_EFFECTS.filter((e) => owned.has(e)).map((effect) => Object.freeze({ effect, card: owned.get(effect)!, rule: SKILL_RULES[effect] })),
+  );
+  set = { active, rules: Object.freeze(active.map((a) => a.rule)) };
+  SKILL_SETS.set(key, set);
+  return set;
 }
 
 /** The rule of a skill card, whether or not it is active yet. */

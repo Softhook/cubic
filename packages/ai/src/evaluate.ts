@@ -4,19 +4,21 @@ import {
   cellOf,
   conquerCheck,
   distance,
-  isEmptySpace,
+  grid,
   movementRange,
-  moveIndexes,
   orbitals,
   planetFreeSlots,
   rulesOf,
   scrapyard,
+  shipReach,
+  shipsByIndex,
   shipsOnBoard,
   skillLimit,
   type Die,
   type GameState,
   type Planet,
   type PlayerId,
+  type ShipReach,
 } from '@quantum/engine';
 import { storedTactics } from './patient';
 
@@ -58,18 +60,24 @@ interface Ctx {
   s: GameState;
   /** The player who moves next: they act before anyone can react. */
   mover: PlayerId;
-  /** Empty spaces each ship on the map can reach with one move, as board cell indexes (r * cols + c), by die id. */
-  reach: Map<string, Set<number>>;
+  /** Empty spaces each ship on the map can reach with one move (marked by board cell index, r * cols + c), by die id. */
+  reach: Map<string, ShipReach>;
   /** Chance each ship is destroyed by an enemy before its owner moves again, by die id. */
   kill: Map<string, number>;
   /** Expected cube points each player loses to attacks on their ships. */
   exposure: number[];
+  /** The ships on the map by board cell index, and by player. */
+  at: (Die | undefined)[];
+  fleets: Die[][];
 }
 
-/** Scores `s` for `me`: my value minus the strongest rival's (and a little of the others'). */
-export function evaluate(s: GameState, me: PlayerId): number {
+/**
+ * Scores `s` for `me`: my value minus the strongest rival's (and a little of the others'). `mover`
+ * is who moves next, if not the usual (see nextMover).
+ */
+export function evaluate(s: GameState, me: PlayerId, mover = nextMover(s, me)): number {
   if (s.phase === 'over') return s.winner === me ? WIN : -WIN;
-  const ctx = context(s, me);
+  const ctx = context(s, mover);
   const values = s.players.map((p) => playerValue(ctx, p.id));
   const rivals = values.filter((_, i) => i !== me);
   const top = Math.max(...rivals);
@@ -88,20 +96,21 @@ function nextMover(s: GameState, me: PlayerId): PlayerId {
   return (t.player + 1) % s.players.length;
 }
 
-function context(s: GameState, me: PlayerId): Ctx {
-  const mover = nextMover(s, me);
+function context(s: GameState, mover: PlayerId): Ctx {
   const ships = shipsOnBoard(s);
-  const reach = new Map<string, Set<number>>();
+  const at = shipsByIndex(s);
+  const fleets: Die[][] = s.players.map(() => []);
+  for (const d of ships) fleets[d.owner].push(d);
+  const reach = new Map<string, ShipReach>();
   const kill = new Map<string, number>();
   const exposure = s.players.map(() => 0);
   for (const d of ships) {
-    const opts = moveIndexes(s, d.id);
-    reach.set(d.id, new Set(opts.moves.keys()));
-    for (const targetId of opts.attacks.keys()) {
-      const target = ships.find((x) => x.id === targetId)!;
+    const opts = shipReach(s, d, at);
+    reach.set(d.id, opts);
+    for (const target of opts.attacks) {
       // The next mover attacks first; later players only if the target is still there.
       const odds = attackOdds(d.value, target.value) * (d.owner === mover ? 1 : 0.5);
-      kill.set(targetId, Math.max(kill.get(targetId) ?? 0, odds));
+      kill.set(target.id, Math.max(kill.get(target.id) ?? 0, odds));
     }
   }
   for (const d of ships) {
@@ -113,7 +122,7 @@ function context(s: GameState, me: PlayerId): Ctx {
     const loss = SHIP_ON_BOARD - SHIP_IN_SCRAPYARD + dominanceStep(pl.dominance - 1) + dominanceGain(attacker);
     exposure[d.owner] += k * loss * (d.owner === mover ? 0.3 : 0.75);
   }
-  return { s, mover, reach, kill, exposure };
+  return { s, mover, reach, kill, exposure, at, fleets };
 }
 
 /** Value lost by dropping from `to + 1` to `to` dominance. */
@@ -148,7 +157,7 @@ function playerValue(ctx: Ctx, p: PlayerId): number {
   v += Math.min(pl.skills.length, skillLimit(s, p)) * SKILL;
   v += storedTactics(s, p) * STORED_TACTIC;
   v += pl.missiles * MISSILE;
-  v += shipsOnBoard(s, p).length * SHIP_ON_BOARD;
+  v += ctx.fleets[p].length * SHIP_ON_BOARD;
   v += scrapyard(s, p).length * SHIP_IN_SCRAPYARD;
   v -= ctx.exposure[p];
   v += conquestPotential(ctx, p);
@@ -181,10 +190,10 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
 
   const { sum, target, ships: inOrbit } = check;
   const gap = target - sum;
-  const empty = orbitals(s.board, planet).filter((c) => isEmptySpace(s, c));
-  const cols = s.board.cols;
-  const reaches = (d: Die) => empty.some((c) => ctx.reach.get(d.id)?.has(c.r * cols + c.c));
-  const outside = shipsOnBoard(s, p).filter((d) => !inOrbit.includes(d));
+  const { cols, space } = grid(s.board);
+  const empty = orbitals(s.board, planet).filter((c) => space[c.r * cols + c.c] && !ctx.at[c.r * cols + c.c]);
+  const reaches = (d: Die) => empty.some((c) => ctx.reach.get(d.id)?.moves[c.r * cols + c.c]);
+  const outside = ctx.fleets[p].filter((d) => !inOrbit.includes(d));
   const reachers = outside.filter(reaches);
 
   let best = 0;
@@ -192,7 +201,7 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
   // One ship of the right value flies in.
   if (reachers.some((d) => d.value === gap)) option(3);
   // One orbiting ship flies off and leaves the right sum.
-  if (inOrbit.some((d) => sum - d.value === target && (ctx.reach.get(d.id)?.size ?? 0) > 0)) option(3);
+  if (inOrbit.some((d) => sum - d.value === target && (ctx.reach.get(d.id)?.count ?? 0) > 0)) option(3);
   // Reconfigure an orbiting ship to the missing value.
   for (const d of inOrbit) {
     const need = target - (sum - d.value);

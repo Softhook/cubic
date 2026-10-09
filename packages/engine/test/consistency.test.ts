@@ -5,12 +5,28 @@
  * - complete: every phase-1 action apply() accepts is offered by legalActions(), checked by brute
  *             force over all dice × cells × targets on a sample of states (DEEP=1: all states).
  * - invariants hold after every action, and the checker itself notices broken states.
+ * - the AI's shortcuts agree with what they stand for: shipReach with moveIndexes, and
+ *   decisionCandidates with legalActions.
  *
  * The UI and the AI only offer what legalActions() returns, so a failure here is a move a
  * player could not make, or one the engine would refuse.
  */
 import { describe, expect, it } from 'vitest';
-import { checkInvariants, distance, legalActions, spaces, tryApply, type Action, type GameMode, type GameState } from '../src';
+import {
+  checkInvariants,
+  decisionCandidates,
+  distance,
+  legalActions,
+  moveIndexes,
+  shipReach,
+  shipsByIndex,
+  shipsOnBoard,
+  spaces,
+  tryApply,
+  type Action,
+  type GameMode,
+  type GameState,
+} from '../src';
 import { playAiGame, quickStart } from './helpers';
 
 const DEEP = !!process.env.DEEP;
@@ -75,6 +91,18 @@ function playChecked(mode: GameMode, players: number, seed: number) {
       const where = `step ${step}`;
       const legal = legalActions(s, { includeCarry: true });
       for (const a of legal) expect(tryApply(s, a), `${where}: legal but refused: ${keyOf(a)}`).not.toBeNull();
+
+      const tried = decisionCandidates(s).filter((a) => a.type === 'scrappy' || tryApply(s, a));
+      expect(tried.map(keyOf), `${where}: decisionCandidates`).toEqual(legalActions(s).map(keyOf));
+      const at = shipsByIndex(s);
+      for (const d of shipsOnBoard(s)) {
+        const { moves, attacks } = moveIndexes(s, d.id);
+        const fast = shipReach(s, d, at);
+        const marked = [...fast.moves.keys()].filter((i) => fast.moves[i]);
+        expect(marked, `${where}: shipReach moves of ${d.id}`).toEqual([...moves.keys()].sort((a, b) => a - b));
+        expect(fast.count).toBe(moves.size);
+        expect(fast.attacks.map((x) => x.id).sort(), `${where}: shipReach attacks of ${d.id}`).toEqual([...attacks.keys()].sort());
+      }
 
       // Brute force is slow, so it samples states (`DEEP=1 npx vitest run consistency` checks every state of more games).
       const actionPhase = s.phase === 'play' && !s.pending.length && s.turn.phase === 'actions';

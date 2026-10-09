@@ -192,14 +192,6 @@ function gates(state: GameState, g: Grid): (i: number) => number {
   return (i) => (i === a ? b : i === b ? a : -1);
 }
 
-/** The ships on the map by board cell index (see board.ts grid). */
-function shipsByIndex(state: GameState): (Die | undefined)[] {
-  const cols = state.board.cols;
-  const at: (Die | undefined)[] = [];
-  for (const d of state.dice) if (d.loc.zone === 'board') at[d.loc.r * cols + d.loc.c] = d;
-  return at;
-}
-
 export function canMoveDie(state: GameState, d: Die): boolean {
   return (
     d.loc.zone === 'board' &&
@@ -216,9 +208,20 @@ export function moveOptions(state: GameState, dieId: string): MoveOptions {
   return result;
 }
 
-/** moveOptions by board cell index (see board.ts grid), for code that asks about many ships and positions: the AI. */
-export function moveIndexes(state: GameState, dieId: string) {
-  const d = die(state, dieId);
+/** The ships on the map by board cell index (see board.ts grid), for moveIndexes. */
+export function shipsByIndex(state: GameState): (Die | undefined)[] {
+  const cols = state.board.cols;
+  const at: (Die | undefined)[] = [];
+  for (const d of state.dice) if (d.loc.zone === 'board') at[d.loc.r * cols + d.loc.c] = d;
+  return at;
+}
+
+/**
+ * moveOptions by board cell index (see board.ts grid), for code that asks about many ships and positions: the AI.
+ * It may pass the ship itself and `at` (shipsByIndex), to look them up once for all ships.
+ */
+export function moveIndexes(state: GameState, ship: string | Die, at = shipsByIndex(state)) {
+  const d = typeof ship === 'string' ? die(state, ship) : ship;
   const result = {
     moves: new Map<number, { steps: number; diagonal: boolean }>(),
     attacks: new Map<string, { from: number; at: number; diagonal: boolean }>(),
@@ -233,7 +236,6 @@ export function moveIndexes(state: GameState, dieId: string) {
   const through = anySkill(state, d.owner, (r) => r.moveThroughEnemies) ? d.owner : undefined;
   const g = grid(state.board);
   const gate = gates(state, g);
-  const at = shipsByIndex(state);
   for (const diagonal of passes) {
     const { found, steps, passing } = reach(state, start, range, diagonal, [], through, at);
     for (const i of found) {
@@ -251,6 +253,77 @@ export function moveIndexes(state: GameState, dieId: string) {
       for (const nb of near[i]) attack(i, nb);
       const partner = gate(i);
       if (partner >= 0) attack(i, partner);
+    }
+  }
+  return result;
+}
+
+export interface ShipReach {
+  /** 1 on each empty space one move reaches, by board cell index (see board.ts grid). */
+  moves: Uint8Array;
+  /** How many spaces are marked in `moves`. */
+  count: number;
+  /** The enemy ships it can attack. */
+  attacks: Die[];
+}
+
+/** Scratch space for shipReach's search, reused: it runs for every ship in every position the AI scores. */
+let STEPS = new Int32Array(0);
+let QUEUE = new Int32Array(0);
+
+/**
+ * Where a ship can go with one move: the same spaces and targets as moveIndexes, without the steps
+ * to each, for the AI's evaluation. `at` is shipsByIndex(state).
+ */
+export function shipReach(state: GameState, d: Die, at: (Die | undefined)[]): ShipReach {
+  const g = grid(state.board);
+  const result: ShipReach = { moves: new Uint8Array(g.size), count: 0, attacks: [] };
+  const start = cellOf(d);
+  if (!start) return result;
+  if (anySkill(state, d.owner, (r) => r.moveThroughEnemies)) {
+    const opts = moveIndexes(state, d, at);
+    for (const i of opts.moves.keys()) result.moves[i] = 1;
+    result.count = opts.moves.size;
+    for (const id of opts.attacks.keys()) result.attacks.push(die(state, id));
+    return result;
+  }
+  if (STEPS.length < g.size) {
+    STEPS = new Int32Array(g.size);
+    QUEUE = new Int32Array(g.size);
+  }
+  const range = movementRange(state, d);
+  const from = start.r * g.cols + start.c;
+  const [gateA, gateB] = state.gates.length === 2 ? state.gates.map((p) => p.r * g.cols + p.c) : [-1, -1];
+  const diagonals = d.value === 5 && canUseAbility(state, d);
+  for (let pass = 0; pass < (diagonals ? 2 : 1); pass++) {
+    const near = pass ? g.around : g.ortho;
+    // Plain breadth-first search: without Devious every step costs 1.
+    STEPS.fill(-1, 0, g.size);
+    STEPS[from] = 0;
+    QUEUE[0] = from;
+    let head = 0;
+    let tail = 1;
+    while (head < tail) {
+      const cur = QUEUE[head++];
+      const steps = STEPS[cur];
+      if (steps >= range) continue;
+      const list = near[cur];
+      for (let k = 0; k <= list.length; k++) {
+        const nb = k < list.length ? list[k] : cur === gateA ? gateB : cur === gateB ? gateA : -1;
+        if (nb < 0) continue;
+        const ship = at[nb];
+        if (ship) {
+          if (ship.owner !== d.owner && !result.attacks.includes(ship)) result.attacks.push(ship);
+          continue;
+        }
+        if (STEPS[nb] >= 0 || !g.space[nb]) continue;
+        STEPS[nb] = steps + 1;
+        QUEUE[tail++] = nb;
+        if (!result.moves[nb]) {
+          result.moves[nb] = 1;
+          result.count++;
+        }
+      }
     }
   }
   return result;

@@ -1,5 +1,5 @@
 /** The five phase-1 actions (Move/Attack, Deploy, Reconfigure, Research, Conquer) and ending the turn. */
-import { key, same } from './board';
+import { grid, same } from './board';
 import { startCombat } from './combat';
 import {
   fail,
@@ -18,7 +18,7 @@ import {
   type Handlers,
 } from './core';
 import { die } from './lookups';
-import { canGainResearch, canMoveDie, canReconfigure, conquerCheck, deployTargets, deploysFree, moveOptions } from './queries';
+import { canGainResearch, canMoveDie, canReconfigure, conquerCheck, deployTargets, deploysFree, moveIndexes } from './queries';
 import { rulesOf } from './rules';
 import { endTurn } from './turn';
 
@@ -27,7 +27,10 @@ export const actionHandlers = {
     requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     if (!canMoveDie(s, d)) fail('This ship already moved this turn');
-    const opt = moveOptions(s, d.id).moves.get(key(a.to));
+    const g = grid(s.board);
+    const { r, c } = a.to ?? {};
+    const onBoard = Number.isInteger(r) && Number.isInteger(c) && r >= 0 && c >= 0 && r < s.board.rows && c < g.cols;
+    const opt = onBoard ? moveIndexes(s, d).moves.get(r * g.cols + c) : undefined;
     if (!opt) fail('Out of range');
     spendMove(s);
     if (opt.diagonal) markAbility(s, d); // Interceptor manoeuvre
@@ -38,12 +41,12 @@ export const actionHandlers = {
     requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     if (!canMoveDie(s, d)) fail('This ship already moved this turn');
-    const opt = moveOptions(s, d.id).attacks.get(a.target);
+    const opt = moveIndexes(s, d).attacks.get(a.target);
     if (!opt) fail('Target out of range');
     spend(s, 1);
     if (opt.diagonal) markAbility(s, d);
     markMoved(s, d);
-    startCombat(s, d, die(s, a.target), opt.from);
+    startCombat(s, d, die(s, a.target), grid(s.board).cells[opt.from]);
   },
   deploy(s, a) {
     const t = requireActionPhase(s);

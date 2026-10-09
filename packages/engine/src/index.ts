@@ -8,7 +8,7 @@ export { activeSkills, hasSkill, skillCard, skillRules, SKILL_RULES, type SkillR
 export { createGame } from './setup';
 export type { NewGameOptions } from './setup';
 export { apply, tryApply, actor, mayAct, cloneState, copyState } from './engine';
-export { legalActions } from './legal';
+export { decisionCandidates, legalActions } from './legal';
 export { isUndoable } from './undo';
 export { checkInvariants } from './invariants';
 export { IMPLEMENTED_EFFECTS, SKILL_EFFECTS, TACTIC_EFFECT_IDS, type SkillEffect, type TacticEffect } from './effects';
