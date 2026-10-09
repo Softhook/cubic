@@ -91,6 +91,7 @@ export const Die3D = memo(function Die3D({
   const settle = useRef<number>();
   const clatter = useRef<number>();
   const frame = useRef<number>();
+  const hopAnimation = useRef<Animation | undefined>(undefined);
   /** Drop a move still waiting on a new cube. */
   const cancelFrame = () => {
     if (frame.current) cancelAnimationFrame(frame.current);
@@ -100,6 +101,7 @@ export const Die3D = memo(function Die3D({
     clearTimeout(settle.current);
     clearTimeout(clatter.current);
     cancelFrame();
+    hopAnimation.current?.cancel();
   }, []);
   /** Run `go` once the cube just built has been on screen for a frame. */
   const afterPaint = (go: () => void) => {
@@ -131,7 +133,8 @@ export const Die3D = memo(function Die3D({
     const turns = () => (2 + Math.floor(Math.random() * 2)) * 360 * (Math.random() < 0.5 ? -1 : 1);
     spins.current = { x: spins.current.x + turns(), y: spins.current.y + turns() };
     setRotation(1100);
-    hop.current?.animate(
+    hopAnimation.current?.cancel();
+    hopAnimation.current = hop.current?.animate(
       [
         { transform: 'translateY(0) scale(1)' },
         { transform: `translateY(${-size * 0.55}px) scale(1.12)`, offset: 0.28 },
