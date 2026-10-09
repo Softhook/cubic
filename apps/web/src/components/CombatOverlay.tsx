@@ -2,8 +2,10 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, missileOffered, tryApply, type Action, type CombatPending, type CombatRole, type GameState, type PlayerId, type PlayerState } from '@quantum/engine';
 import type { Dispatch } from '../game/useGame';
 import type { GameView } from '../game/view';
+import { COMBAT_RESOLVE_MS } from '../game/useAiDriver';
 import { PHONE, useMediaQuery } from '../game/useMediaQuery';
 import { useShortcut } from '../game/useShortcut';
+import { COMBAT_MS } from '../online/playback';
 import { COMBAT_DICE } from '../theme';
 import { MissileIcon } from './Card';
 import { Die3D } from './Die3D';
@@ -15,7 +17,7 @@ export function CombatOverlay({
   combat,
   dispatch,
   mine,
-  aiResponding,
+  aiResponder,
   online,
 }: {
   game: GameState;
@@ -23,8 +25,8 @@ export function CombatOverlay({
   dispatch: Dispatch;
   /** The players this screen responds for. */
   mine: (p: PlayerId) => boolean;
-  /** On this device: an AI is about to respond, so the battle can't be resolved yet. */
-  aiResponding: boolean;
+  /** On this device: the AI about to respond, so the battle can't be resolved yet. */
+  aiResponder: PlayerId | null;
   /** Online: who the battle waits for; it resolves once everyone who may respond is done. */
   online?: GameView['combat'];
 }) {
@@ -42,18 +44,18 @@ export function CombatOverlay({
   const humans = game.players.filter((p) => (online ? online.responders.includes(p.id) : mine(p.id)));
   const shooters = humans.filter((p) => p.missiles > 0);
   const autoResolve = !humans.some((p) => canRespondToCombat(game, combat, p.id));
-  const waitingNames = online?.waitingOn.map((id) => game.players[id].name).join(' and ');
+  const waitingNames = online ? online.waitingOn.map((id) => game.players[id].name).join(' and ') : aiResponder !== null ? game.players[aiResponder].name : undefined;
   // A battle nobody here can change stays up until OK (or a click beside it), so the player can
-  // see how it went: online, it moves on once decided; here, OK resolves it. Only a game with no
-  // humans resolves its battles by itself.
+  // see how it went: online, it moves on once decided; here, OK resolves it. Online, other players'
+  // battles move on by themselves (playback), as do the battles of a game with no humans.
   const ok = online
     ? !online.mustAnswer && !waitingNames
-      ? online.dismiss
+      ? close(online.dismiss)
       : undefined
     : autoResolve && game.players.some((p) => !p.ai)
-      ? () => dispatch({ type: 'resolveCombat' })
+      ? close(() => dispatch({ type: 'resolveCombat' }))
       : undefined;
-  const ready = revealed && !aiResponding;
+  const ready = revealed && aiResponder === null;
   // Enter or Escape is OK too; not held down (it would carry on into the next choice), nor on a
   // focused button (Enter presses that already).
   useShortcut(
@@ -72,9 +74,9 @@ export function CombatOverlay({
     const winning = revealed && (role === 'attacker') === out.attackerWins;
     // The dice show the ship and the roll; listed are only what else counts: a card that sets the
     // roll (not a missile: its die says so) and bonuses.
-    const natural = Math.min(...s.dice);
-    const [rollPart, , ...bonuses] = total.parts;
-    const setBy = !s.missile && total.roll !== natural ? rollPart.label : null;
+    const rollPart = total.parts.find((part) => part.kind === 'roll');
+    const bonuses = total.parts.filter((part) => part.kind === 'modifier');
+    const setBy = rollPart?.set && !s.missile && total.roll !== Math.min(...s.dice) ? rollPart.label : null;
     return (
       <div className={`combat-side ${role} ${winning ? 'winning' : ''}`} style={{ '--pc': p.color } as CSSProperties}>
         <div className="combat-who">
@@ -113,7 +115,7 @@ export function CombatOverlay({
               <b>{part.value > 0 ? `+${part.value}` : `−${-part.value}`}</b>
             </li>
           ))}
-          {s.dice.length > 1 && !setBy && !s.missile && <li className="muted">Brutal: rolled {s.dice.join(' & ')}</li>}
+          {s.dice.length > 1 && !rollPart?.set && <li className="muted">Brutal: rolled {s.dice.join(' & ')}</li>}
         </ul>
         <div className={`combat-total ${revealed ? 'show' : ''}`}>{revealed ? total.total : '?'}</div>
         {revealed && humans.map((p) => <RerollButton key={p.id} game={game} combat={combat} role={role} by={p} named={humans.length > 1} dispatch={dispatch} />)}
@@ -144,7 +146,7 @@ export function CombatOverlay({
         </div>
         <div className="combat-footer">
           {online?.mustAnswer ? (
-            <button className="btn btn-primary" disabled={!revealed} onClick={online.pass}>
+            <button className="btn btn-primary" disabled={!revealed} onClick={close(online.pass)}>
               {humans.some((p) => canRespondToCombat(game, combat, p.id)) ? 'Done — no response' : 'Continue'}
             </button>
           ) : waitingNames ? (
@@ -155,13 +157,13 @@ export function CombatOverlay({
             <button className="btn btn-primary" disabled={!ready} onClick={ok}>
               OK
             </button>
-          ) : autoResolve ? (
-            // The battle resolves by itself shortly; restarts when a missile changes it.
+          ) : online || autoResolve ? (
+            // The battle moves on by itself shortly; restarts when a missile changes it.
             <div className="autobar" key={`${combat.id}-${+combat.attacker.missile}-${+combat.defender.missile}`}>
-              <span />
+              <span style={{ animationDuration: `${online ? COMBAT_MS : COMBAT_RESOLVE_MS}ms` }} />
             </div>
           ) : (
-            <button className="btn btn-primary" disabled={!ready} onClick={() => dispatch({ type: 'resolveCombat' })}>
+            <button className="btn btn-primary" disabled={!ready} onClick={close(() => dispatch({ type: 'resolveCombat' }))}>
               Resolve battle
             </button>
           )}
@@ -169,6 +171,23 @@ export function CombatOverlay({
       </div>
     </div>
   );
+}
+
+/**
+ * Closes the battle with `f`, then swallows clicks for a moment: a double click would otherwise
+ * land on whatever is under the battle (a ship, a space, the next choice). Undefined stays so.
+ */
+function close(f: (() => void) | undefined): (() => void) | undefined {
+  if (!f) return undefined;
+  return () => {
+    const stop = (e: MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+    };
+    window.addEventListener('click', stop, true);
+    window.setTimeout(() => window.removeEventListener('click', stop, true), 400);
+    f();
+  };
 }
 
 /** Cruel, Relentless or Scrappy: re-roll this side's combat dice (each card once per battle). */

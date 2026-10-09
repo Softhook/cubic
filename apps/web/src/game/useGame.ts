@@ -81,7 +81,7 @@ export function useGame(initial: GameState): GameView {
   }, []);
 
   useUndoShortcut(undo);
-  const aiResponding = useAiDriver(game, dispatch);
+  const aiResponder = useAiDriver(game, dispatch);
 
   // Keep the unfinished game in the browser so a revisit can resume it.
   useEffect(() => saveGame(game), [game]);
@@ -93,7 +93,7 @@ export function useGame(initial: GameState): GameView {
   }, [commit, dispatch]);
 
   const mine = useCallback((p: PlayerId) => !ref.current.players[p].ai, []);
-  return { game, dispatch, mine, error, toasts, undo: undoCount > 0 ? undo : undefined, aiResponding };
+  return { game, dispatch, mine, error, toasts, undo: undoCount > 0 ? undo : undefined, aiResponder };
 }
 
 /** Ctrl/Cmd+Z undoes the last move, unless the user is typing or a dialog is open over the board. */

@@ -589,10 +589,10 @@ export interface CombatTotal {
 /** The value a side's combat roll is set to, overriding the dice: a missile, Plan Ahead or Rational (in that priority). */
 function rollOverride(state: GameState, combat: CombatPending, side: CombatRole): CombatPart | undefined {
   const s = combat[side];
-  if (s.missile) return { label: 'Missile', value: 1 };
-  if (state.players[s.player].planAhead > 0) return { label: 'Plan Ahead', value: 1 };
+  if (s.missile) return { kind: 'roll', set: true, label: 'Missile', value: 1 };
+  if (state.players[s.player].planAhead > 0) return { kind: 'roll', set: true, label: 'Plan Ahead', value: 1 };
   const fixed = activeSkills(state, s.player).filter((a) => a.rule.combat?.roll !== undefined).pop();
-  return fixed && { label: card(fixed.card).name, value: fixed.rule.combat!.roll! };
+  return fixed && { kind: 'roll', set: true, label: card(fixed.card).name, value: fixed.rule.combat!.roll! };
 }
 
 /**
@@ -605,11 +605,11 @@ export function combatTotal(state: GameState, combat: CombatPending, side: Comba
   const parts: CombatPart[] = [];
   const set = rollOverride(state, combat, side);
   const roll = set?.value ?? (s.dice.length > 1 ? Math.min(...s.dice) : s.dice[0]);
-  parts.push({ label: set?.label ?? (s.dice.length > 1 ? 'Brutal roll' : 'Roll'), value: roll });
-  parts.push({ label: 'Ship', value: s.ship });
+  parts.push(set ?? { kind: 'roll', label: s.dice.length > 1 ? 'Brutal roll' : 'Roll', value: roll });
+  parts.push({ kind: 'ship', label: 'Ship', value: s.ship });
   for (const { card: id, rule } of skills) {
     const value = rule.combat!.modifier?.({ state, combat, side }) ?? 0;
-    if (value) parts.push({ label: card(id).name, value });
+    if (value) parts.push({ kind: 'modifier', label: card(id).name, value });
   }
   const total = parts.reduce((a, x) => a + x.value, 0);
   return { roll, total, parts };

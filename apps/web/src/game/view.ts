@@ -14,11 +14,11 @@ export interface GameView {
   undo?: () => void;
   toasts: Toast[];
   error: { id: number; text: string } | null;
-  /** On this device: an AI is about to fire a missile or re-roll in the battle on screen. */
-  aiResponding?: boolean;
+  /** On this device: the AI about to fire a missile or re-roll in the battle on screen. */
+  aiResponder?: PlayerId | null;
   /**
    * Online only: a battle waits for the players who may respond to say they are done, and once
-   * decided stays on screen until dismissed.
+   * decided, if this browser fights in it, stays on screen until dismissed.
    */
   combat?: {
     /** This browser's seats that may still respond. */
@@ -28,7 +28,7 @@ export interface GameView {
     /** Other players the battle waits for. */
     waitingOn: PlayerId[];
     pass(): void;
-    /** Moves on from the battle once it has been decided. */
-    dismiss(): void;
+    /** Moves on from the battle once it has been decided; only for this browser's own battles. */
+    dismiss?: () => void;
   };
 }

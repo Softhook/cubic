@@ -43,6 +43,8 @@ store small signed messages for anyone. We run nothing.
   re-roll), unless their `ask` setting says otherwise: *all battles* (default), *my battles*
   or *never*. Each responds or passes ("Done"); once all have passed, every browser
   resolves the battle the same way. AI seats always answer, so all-AI battles resolve at once.
+  On screen, a decided battle you fought in stays up until you click OK; other players'
+  battles move on after a few seconds.
 - **Privacy.** The invite link `#online/<secret>` carries a 128-bit secret in the fragment,
   which browsers never send to a server. Relays see only an encrypted blob (AES-GCM, key
   derived from the secret), a tag derived from it, and the poster's public key.

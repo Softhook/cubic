@@ -93,7 +93,7 @@ export function Game({
         )}
       </main>
 
-      {head?.kind === 'combat' && <CombatOverlay key={head.id} game={game} combat={head} dispatch={dispatch} mine={view.mine} aiResponding={!!view.aiResponding} online={online ? view.combat : undefined} />}
+      {head?.kind === 'combat' && <CombatOverlay key={head.id} game={game} combat={head} dispatch={dispatch} mine={view.mine} aiResponder={view.aiResponder ?? null} online={online ? view.combat : undefined} />}
       <DecisionOverlay game={game} dispatch={dispatch} human={ctl.human} />
       {game.phase === 'over' && !hideGameOver && <GameOver game={game} onNew={onQuit} onClose={() => setHideGameOver(true)} newLabel={online ? 'Back to lobby' : undefined} />}
       {overlay}

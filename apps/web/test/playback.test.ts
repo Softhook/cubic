@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Post, Step } from '@quantum/online';
 import { quickStart } from '../../../packages/engine/test/helpers';
 import type { CombatPending } from '@quantum/engine';
-import { battleStage, COMBAT_MS, MAX_BEHIND, nextStep, STEP_MS } from '../src/online/playback';
+import { COMBAT_MS, MAX_BEHIND, nextStep, STEP_MS } from '../src/online/playback';
 
 const base = quickStart(2, 1);
 const post = (author: string): Post => ({ id: `${author}${Math.random()}`, author, at: 0, prev: 'x', body: { t: 'act', seat: 0, action: { type: 'research' } } });
@@ -47,16 +47,17 @@ describe('online playback', () => {
     expect(nextStep(steps, null, mine, 0)).toMatchObject({ step: steps.at(-1), announce: false });
   });
 
-  it('keeps a battle on screen until it is dismissed, but not each stage of it', () => {
+  it('keeps your own battle on screen until it is dismissed, but not each stage of it', () => {
     const side = { player: 0, die: 'x', ship: 3, dice: [4], missile: false };
     const battle = (missile: boolean): CombatPending => ({ kind: 'combat', id: 7, attacker: { ...side, missile }, defender: { ...side, player: 1 }, from: [0, 0], at: [0, 1], rerolls: [] }) as unknown as CombatPending;
     const fighting = (missile: boolean) => step({ ...structuredClone(base), pending: [battle(missile)] });
     const steps = [fighting(false), fighting(true), step()];
     // A missile changes the battle: shown after the usual pause.
-    expect(nextStep(steps, steps[0], mine, 0)).toMatchObject({ step: steps[1], delay: COMBAT_MS });
-    // The battle is over: held until the player dismisses that stage of it.
-    expect(nextStep(steps, steps[1], mine, Infinity)).toBeNull();
-    expect(nextStep(steps, steps[1], mine, 0, battleStage(steps[0].state))).toBeNull();
-    expect(nextStep(steps, steps[1], mine, 0, battleStage(steps[1].state))).toMatchObject({ step: steps[2], delay: 0, announce: true });
+    expect(nextStep(steps, steps[0], mine, 0, { mine: true, dismissed: false })).toMatchObject({ step: steps[1], delay: COMBAT_MS });
+    // The battle is over: held until the player dismisses it.
+    expect(nextStep(steps, steps[1], mine, Infinity, { mine: true, dismissed: false })).toBeNull();
+    expect(nextStep(steps, steps[1], mine, 0, { mine: true, dismissed: true })).toMatchObject({ step: steps[2], delay: 0, announce: true });
+    // Other players' battles move on after a pause.
+    expect(nextStep(steps, steps[1], mine, 1000)).toMatchObject({ step: steps[2], delay: COMBAT_MS - 1000 });
   });
 });

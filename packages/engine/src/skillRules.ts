@@ -17,8 +17,11 @@ import { dieAt, shipsOnBoard } from './lookups';
 import type { Action, Cell, CombatPending, CombatRole, Die, GameState, PlayerId } from './types';
 
 export interface CombatPart {
+  /** The roll (`set`: a missile or card set it, overriding the dice), the ship, or a card's modifier. */
+  kind: 'roll' | 'ship' | 'modifier';
   label: string;
   value: number;
+  set?: boolean;
 }
 
 export interface ConquerContext {

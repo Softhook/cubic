@@ -281,7 +281,7 @@ async function playGame(page: Page, name: string): Promise<{ issues: string[]; s
       still = 0;
       lastSig = l.sig;
     }
-    // AI turns move every second or so, and a battle with no human in it resolves after 2.6 s.
+    // AI turns move every second or so; a battle waits for OK, which the script taps.
     if (still > 60) {
       // The state, to replay with window.__quantum.load or the engine.
       writeFileSync(`${OUT}/${name}-stuck.json`, await page.evaluate(() => JSON.stringify((window as unknown as { __quantum: { state(): unknown } }).__quantum.state())));
