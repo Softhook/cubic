@@ -1,5 +1,5 @@
 /** The five phase-1 actions (Move/Attack, Deploy, Reconfigure, Research, Conquer) and ending the turn. */
-import { grid, same } from './board';
+import { cellIndex, grid, same } from './board';
 import { startCombat } from './combat';
 import {
   fail,
@@ -27,10 +27,7 @@ export const actionHandlers = {
     requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     if (!canMoveDie(s, d)) fail('This ship already moved this turn');
-    const g = grid(s.board);
-    const { r, c } = a.to ?? {};
-    const onBoard = Number.isInteger(r) && Number.isInteger(c) && r >= 0 && c >= 0 && r < s.board.rows && c < g.cols;
-    const opt = onBoard ? moveIndexes(s, d).moves.get(r * g.cols + c) : undefined;
+    const opt = moveIndexes(s, d).moves.get(cellIndex(s.board, a.to));
     if (!opt) fail('Out of range');
     spendMove(s);
     if (opt.diagonal) markAbility(s, d); // Interceptor manoeuvre

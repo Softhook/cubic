@@ -11,7 +11,7 @@
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chooseAction, chooseCombatResponse, type AiLevel } from '../packages/ai/src';
-import { actor, apply, createGame, type Action, type GameMode, type GameState } from '../packages/engine/src';
+import { actor, apply, createGame, mulberry32, type Action, type GameMode, type GameState } from '../packages/engine/src';
 
 const [a = '1', b = '3', games = '20', mode = 'basic', players = '2', jobs = '1'] = process.argv.slice(2);
 const levels = [Number(a), Number(b)] as AiLevel[];
@@ -19,20 +19,6 @@ const n = Number(games);
 const seats = Number(players);
 /** Set for a worker process: the games it plays, "from-to". */
 const shard = process.env.AI_MATCH_SHARD;
-
-/**
- * mulberry32, as in the engine's rng.ts. Not a float LCG: x * 1103515245 exceeds 2^53, so it
- * loses bits and repeats after about 10,000 numbers, fewer than one game uses.
- */
-function seededRandom(seed: number): () => number {
-  let x = seed >>> 0;
-  return () => {
-    let t = (x = (x + 0x6d2b79f5) >>> 0);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 interface Result {
   wins: number[];
@@ -54,7 +40,7 @@ function play(from: number, to: number, progress: boolean): Result {
       seed: 5000 + Math.floor(g / 2),
       mode: mode as GameMode,
     });
-    const random = seededRandom(g * 7919 + 13);
+    const random = mulberry32(g * 7919 + 13);
     for (let step = 0; s.phase !== 'over' && step < 3000; step++) {
       let action: Action | null = null;
       if (s.pending[0]?.kind === 'combat') {

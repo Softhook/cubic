@@ -8,6 +8,7 @@ export { activeSkills, hasSkill, skillCard, skillRules, SKILL_RULES, type SkillR
 export { createGame } from './setup';
 export type { NewGameOptions } from './setup';
 export { apply, tryApply, actor, mayAct, cloneState, copyState } from './engine';
+export { mulberry32 } from './rng';
 export { decisionCandidates, legalActions } from './legal';
 export { isUndoable } from './undo';
 export { checkInvariants } from './invariants';

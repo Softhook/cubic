@@ -5,6 +5,7 @@ import {
   decisionCandidates,
   deployTargets,
   legalActions,
+  mulberry32,
   scrapyard,
   tryApply,
   type Action,
@@ -94,9 +95,10 @@ export class Search {
     const root = hideUnknowns(state, this.random);
     const depth = this.params.depth;
     const scored = options
-      .map((a) => {
-        const outs = a.type === 'endTurn' ? null : this.expand(root, a);
-        return { a, outs, line: outs ? this.action(outs, 0) : a.type === 'endTurn' ? this.standPat(root) : NO_LINE };
+      .flatMap<{ a: Action; outs: Outcome[] | null; line: Line }>((a) => {
+        if (a.type === 'endTurn') return [{ a, outs: null, line: this.standPat(root) }];
+        const outs = this.expand(root, a);
+        return outs ? [{ a, outs, line: this.action(outs, 0) }] : [];
       })
       .filter((x) => x.line.value > -Infinity)
       .sort((x, y) => y.line.value - x.line.value);
@@ -116,7 +118,7 @@ export class Search {
       const samples = this.params.replySamples;
       const seeds = samples ? Array.from({ length: samples }, () => seed(this.random)) : [];
       const reply = (end: GameState) =>
-        samples ? seeds.reduce((sum, x) => sum + this.afterReply(end, mulberry(x)), 0) / samples : this.afterReply(end, this.random);
+        samples ? seeds.reduce((sum, x) => sum + this.afterReply(end, mulberry32(x)), 0) / samples : this.afterReply(end, this.random);
       const after = checked.map((x) => ({ a: x.a, value: 0.5 * x.line.value + 0.5 * reply(x.line.end) }));
       return after.reduce((b, x) => (x.value > b.value ? x : b)).a;
     }
@@ -271,8 +273,6 @@ export class Search {
   }
 }
 
-const NO_LINE: Line = { value: -Infinity, end: null as unknown as GameState };
-
 /** Turns in a row a player may end without spending an action before the AI must act. */
 const IDLE_LIMIT = 2;
 
@@ -310,21 +310,6 @@ function unveilPlacements(s: GameState): Action[] {
   const die = scrapyard(s, head.player).find((d) => !head.reorganize || head.rerolled.includes(d.id));
   const [to] = die ? deployTargets(s, head.player) : [];
   return [die && to ? { type: 'unveilDeploy', die: die.id, to } : { type: 'unveilDone' }];
-}
-
-/**
- * A random number generator in [0, 1) from a seed, for repeatable reply samples: mulberry32, as in
- * the engine's rng.ts. Integer maths (Math.imul): a float LCG loses bits above 2^53, and different
- * seeds fall into the same sequence.
- */
-function mulberry(seed: number): () => number {
-  let x = seed >>> 0;
-  return () => {
-    let t = (x = (x + 0x6d2b79f5) >>> 0);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 function seed(random: () => number): number {

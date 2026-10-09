@@ -190,9 +190,11 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
 
   const { sum, target, ships: inOrbit } = check;
   const gap = target - sum;
-  const { cols, space } = grid(s.board);
-  const empty = orbitals(s.board, planet).filter((c) => space[c.r * cols + c.c] && !ctx.at[c.r * cols + c.c]);
-  const reaches = (d: Die) => empty.some((c) => ctx.reach.get(d.id)?.moves[c.r * cols + c.c]);
+  const { cols, space, cells } = grid(s.board);
+  const empty = orbitals(s.board, planet)
+    .map((c) => c.r * cols + c.c)
+    .filter((i) => space[i] && !ctx.at[i]);
+  const reaches = (d: Die) => empty.some((i) => ctx.reach.get(d.id)?.moves[i]);
   const outside = ctx.fleets[p].filter((d) => !inOrbit.includes(d));
   const reachers = outside.filter(reaches);
 
@@ -229,7 +231,7 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
     for (const d of outside) {
       const from = cellOf(d);
       if (!from) continue;
-      const moves = Math.ceil(Math.min(...empty.map((c) => distance(from, c, s.board))) / Math.max(1, movementRange(s, d)));
+      const moves = Math.ceil(Math.min(...empty.map((i) => distance(from, cells[i], s.board))) / Math.max(1, movementRange(s, d)));
       approach = Math.max(approach, APPROACH / Math.max(2, moves));
     }
   }

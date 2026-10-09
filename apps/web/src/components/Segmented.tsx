@@ -15,7 +15,7 @@ export function Segmented<T extends string | number | boolean>({
   label?: string;
 }) {
   return (
-    <div className={`segmented ${small ? 'small' : ''}`} role="group" aria-label={label}>
+    <div className={`segmented${small ? ' small' : ''}`} role="group" aria-label={label}>
       {options.map(([v, l]) => (
         <button type="button" key={String(v)} className={v === value ? 'on' : ''} aria-pressed={v === value} onClick={() => onPick(v)}>
           {l}

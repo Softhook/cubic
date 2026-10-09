@@ -137,6 +137,13 @@ export function grid(board: Board): Grid {
   return g;
 }
 
+/** A cell's index in grid(board), or -1 if it is not a cell of the board (as in a malformed action). */
+export function cellIndex(board: Board, p: Cell | undefined): number {
+  const { r, c } = p ?? {};
+  const inside = Number.isInteger(r) && Number.isInteger(c) && r! >= 0 && c! >= 0 && r! < board.rows && c! < board.cols;
+  return inside ? r! * board.cols + c! : -1;
+}
+
 function neighbours(board: Board, p: Cell, around: boolean): readonly Cell[] {
   if (p.r < 0 || p.c < 0 || p.r >= board.rows || p.c >= board.cols) return offsets(board, p, around ? AROUND : ORTHO).filter((q) => onBoard(board, q));
   const g = grid(board);
