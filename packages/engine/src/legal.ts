@@ -199,13 +199,18 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
 export function legalActions(s: GameState, opts: { includeCarry?: boolean } = {}): Action[] {
   if (s.phase === 'over') return [];
   const head = s.pending[0];
-  let out: Action[];
-  if (head) {
-    const candidates = (DECISION_CANDIDATES[head.kind] as (s: GameState, h: Pending) => Action[])(s, head);
-    out = candidates.filter((a) => tryApply(s, a) !== null);
-  } else if (s.phase === 'play' && s.turn.phase === 'actions') out = actionPhaseOptions(s, opts);
-  else return [];
-  // Scrappy's re-roll is open to the player whose turn it is, whatever they are deciding.
+  if (head) return withScrappy(s, answers(s, head).filter((a) => tryApply(s, a) !== null));
+  if (s.phase === 'play' && s.turn.phase === 'actions') return withScrappy(s, actionPhaseOptions(s, opts));
+  return [];
+}
+
+/** The answers DECISION_CANDIDATES lists for a pending decision, not yet tried. */
+function answers(s: GameState, head: Pending): Action[] {
+  return (DECISION_CANDIDATES[head.kind] as (s: GameState, h: Pending) => Action[])(s, head);
+}
+
+/** Scrappy's re-roll is open to the player whose turn it is, whatever they are deciding. */
+function withScrappy(s: GameState, out: Action[]): Action[] {
   if (canScrappy(s) && actor(s) === s.turn.player) out.push({ type: 'scrappy' });
   return out;
 }
@@ -218,7 +223,5 @@ export function legalActions(s: GameState, opts: { includeCarry?: boolean } = {}
 export function decisionCandidates(s: GameState): Action[] {
   const head = s.pending[0];
   if (!head || s.phase === 'over') return legalActions(s);
-  const out = (DECISION_CANDIDATES[head.kind] as (s: GameState, h: Pending) => Action[])(s, head);
-  if (canScrappy(s) && actor(s) === s.turn.player) out.push({ type: 'scrappy' });
-  return out;
+  return withScrappy(s, answers(s, head));
 }

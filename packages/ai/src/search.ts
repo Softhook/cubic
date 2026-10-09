@@ -136,10 +136,10 @@ export class Search {
     let pick: Action | null = null;
     // The evaluation already counts a kept missile; a small margin avoids firing for nothing.
     let top = after(root) + 10;
+    const legal = legalActions(root);
     for (const side of ['attacker', 'defender'] as const) {
       const a: Action = { type: 'missile', by: player, side };
-      const available = legalActions(root).some((x) => x.type === 'missile' && x.by === player && x.side === side);
-      if (!available) continue;
+      if (!legal.some((x) => x.type === 'missile' && x.by === player && x.side === side)) continue;
       const v = after(apply(root, a));
       if (v > top) {
         top = v;
@@ -273,7 +273,8 @@ export class Search {
     if (them === this.me) return this.score(s, this.me, this.me);
     const opponent = new Search(them, this.params.reply ?? LEVEL_2_REPLY, random, this.evals);
     for (let i = 0; i < 12 && s.phase !== 'over' && s.turn.player === them; i++) {
-      const a = s.pending[0] ? (actor(s) === them ? opponent.choose(s) : captain.choose(s)) : opponent.choose(s);
+      // Decisions that fall to anyone else during their turn are answered by `captain`.
+      const a = (s.pending[0] && actor(s) !== them ? captain : opponent).choose(s);
       if (!a) break;
       // The opponent's rolls are sampled: this is a check of the plan, not a full average.
       s = captain.settle(apply({ ...s, rng: seed(random) }, a));

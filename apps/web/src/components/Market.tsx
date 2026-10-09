@@ -94,6 +94,10 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
     <CardViewer title={card(viewingCard).name} subtitle={card(viewingCard).subtitle} cards={[viewingCard]} single onClose={() => setViewingCard(null)} />
   );
 
+  const takePatient = (index: number, store: boolean) => {
+    dispatch({ type: 'takeCard', deck: 'tactic', index, ...(store && { store }) });
+    setPatientChoice(null);
+  };
   const patientDialog = patientChoice && (
     <Dialog
       title="Patient"
@@ -104,24 +108,10 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
         <CardView id={patientChoice.id} size="md" />
       </div>
       <div className="modal-actions">
-        <button
-          type="button"
-          className="btn"
-          onClick={() => {
-            dispatch({ type: 'takeCard', deck: 'tactic', index: patientChoice.index });
-            setPatientChoice(null);
-          }}
-        >
+        <button type="button" className="btn" onClick={() => takePatient(patientChoice.index, false)}>
           Play immediately
         </button>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => {
-            dispatch({ type: 'takeCard', deck: 'tactic', index: patientChoice.index, store: true });
-            setPatientChoice(null);
-          }}
-        >
+        <button type="button" className="btn btn-primary" onClick={() => takePatient(patientChoice.index, true)}>
           Store tactic
         </button>
       </div>
