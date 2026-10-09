@@ -3,18 +3,29 @@
  *
  *   npm run ai:match -- <levelA> <levelB> [games=20] [mode=basic] [players=2] [jobs=1]
  *
+ * A level may name a git commit to play that version of the AI against the current one:
+ * `3@HEAD~1` is Commodore as of the previous commit (against today's engine). Its source is
+ * extracted once into .cache/ai-match/<commit hash>.
+ *
  * Seats alternate between games and each pair of games shares a map seed, so neither level
  * gets the better start. With more than 2 players, level A plays seat 0 and level B the rest.
  * With jobs > 1 the games are split between that many processes (one per CPU core is about
  * right); the results are the same as with one, as each game has its own seeds.
  */
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
+import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { chooseAction, chooseCombatResponse, type AiLevel } from '../packages/ai/src';
+import * as current from '../packages/ai/src';
 import { actor, apply, createGame, mulberry32, type Action, type GameMode, type GameState } from '../packages/engine/src';
 
+type Ai = Pick<typeof current, 'chooseAction' | 'chooseCombatResponse'>;
+
 const [a = '1', b = '3', games = '20', mode = 'basic', players = '2', jobs = '1'] = process.argv.slice(2);
-const levels = [Number(a), Number(b)] as AiLevel[];
+const specs = [a, b];
+// Split at the first @ only: refs such as main@{1} contain one too.
+const parts = specs.map((x) => x.match(/^([^@]*)(?:@(.*))?$/)!);
+const levels = parts.map(([, level]) => Number(level) as current.AiLevel);
+const ais: Ai[] = await Promise.all(parts.map(([, , ref]) => loadAi(ref)));
 const n = Number(games);
 const seats = Number(players);
 /** Set for a worker process: the games it plays, "from-to". */
@@ -27,6 +38,26 @@ interface Result {
   time: number[];
   decisions: number[];
   slowest: number[];
+}
+
+/** The AI at git commit `ref` (extracted on first use), or the current one. */
+async function loadAi(ref?: string): Promise<Ai> {
+  if (!ref) return current;
+  const git = (...args: string[]) => execFileSync('git', args, { encoding: 'buffer', maxBuffer: 1 << 28 });
+  const commit = git('rev-parse', `${ref}^{commit}`).toString().trim();
+  const dir = fileURLToPath(new URL(`../.cache/ai-match/${commit}`, import.meta.url));
+  if (!existsSync(dir)) {
+    // Extracted beside the final directory and renamed, so parallel workers never see half of it.
+    const tmp = `${dir}.${process.pid}`;
+    mkdirSync(tmp, { recursive: true });
+    execFileSync('tar', ['-x', '-C', tmp, '--strip-components=3'], { input: git('archive', commit, 'packages/ai/src') });
+    try {
+      renameSync(tmp, dir);
+    } catch {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+  return import(`${dir}/index.ts`);
 }
 
 function play(from: number, to: number, progress: boolean): Result {
@@ -44,11 +75,11 @@ function play(from: number, to: number, progress: boolean): Result {
     for (let step = 0; s.phase !== 'over' && step < 3000; step++) {
       let action: Action | null = null;
       if (s.pending[0]?.kind === 'combat') {
-        for (const p of s.players) action ??= chooseCombatResponse(s, p.id, { level: levels[side(p.id)], random });
+        for (const p of s.players) action ??= ais[side(p.id)].chooseCombatResponse(s, p.id, { level: levels[side(p.id)], random });
       }
       const who = side(actor(s));
       const t = performance.now();
-      action ??= chooseAction(s, { level: levels[who], random });
+      action ??= ais[who].chooseAction(s, { level: levels[who], random });
       const dt = performance.now() - t;
       r.time[who] += dt;
       r.decisions[who]++;
@@ -60,7 +91,7 @@ function play(from: number, to: number, progress: boolean): Result {
       r.wins[side(s.winner!)]++;
       r.turns += s.turn.number;
     } else r.unfinished++;
-    if (progress) process.stdout.write(`\rgame ${g + 1}/${to}: L${levels[0]} ${r.wins[0]} – ${r.wins[1]} L${levels[1]}`);
+    if (progress) process.stdout.write(`\rgame ${g + 1}/${to}: L${specs[0]} ${r.wins[0]} – ${r.wins[1]} L${specs[1]}`);
   }
   return r;
 }
@@ -112,11 +143,11 @@ if (shard) {
   console.log(`\n\n${mode}, ${seats} players, ${n} games${r.unfinished ? ` (${r.unfinished} unfinished)` : ''}, ${(r.turns / Math.max(1, finished)).toFixed(1)} turns on average`);
   for (const i of [0, 1]) {
     const avg = r.time[i] / Math.max(1, r.decisions[i]);
-    console.log(`  level ${levels[i]}: ${r.wins[i]} wins, ${avg.toFixed(0)} ms per decision, slowest ${r.slowest[i].toFixed(0)} ms`);
+    console.log(`  level ${specs[i]}: ${r.wins[i]} wins, ${avg.toFixed(0)} ms per decision, slowest ${r.slowest[i].toFixed(0)} ms`);
   }
   if (seats === 2 && finished) {
     // How surprising the score would be between equal players: |z| > 2 is about p < 0.05.
     const z = (r.wins[0] - finished / 2) / Math.sqrt(finished / 4);
-    console.log(`  level ${levels[0]} won ${((100 * r.wins[0]) / finished).toFixed(1)}% (z = ${z.toFixed(2)})`);
+    console.log(`  level ${specs[0]} won ${((100 * r.wins[0]) / finished).toFixed(1)}% (z = ${z.toFixed(2)})`);
   }
 }
