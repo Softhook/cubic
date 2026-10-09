@@ -682,3 +682,29 @@ export function attackOdds(a: number, d: number): number {
   for (let x = 1; x <= 6; x++) for (let y = 1; y <= 6; y++) if (a + x <= d + y) wins++;
   return wins / 36;
 }
+
+/**
+ * Probability that `attacker` beats `defender` if it attacks from where it is now, with both
+ * players' combat skills and Plan Ahead (not re-rolls, missiles or Dangerous).
+ */
+export function attackChance(state: GameState, attacker: Die, defender: Die): number {
+  const plain = (p: PlayerId) => !state.players[p].planAhead && !activeSkills(state, p).some((a) => a.rule.combat);
+  if (plain(attacker.owner) && plain(defender.owner)) return attackOdds(attacker.value, defender.value);
+  const side = (d: Die) => ({ player: d.owner, die: d.id, ship: d.value, dice: [6], missile: false });
+  const combat: CombatPending = { kind: 'combat', id: 0, attacker: side(attacker), defender: side(defender), from: cellOf(attacker)!, at: cellOf(defender)!, rerolls: [] };
+  /** Chance of each total: the roll (a set value, or the lowest of n dice) plus what doesn't depend on it. */
+  const totals = (role: CombatRole): Map<number, number> => {
+    const t = combatTotal(state, combat, role);
+    // A set roll (Rational, Plan Ahead): the 6 rolled was ignored.
+    if (t.roll !== 6) return new Map([[t.total, 1]]);
+    const n = combatDice(state, combat[role].player);
+    // The lowest of n dice is r with chance ((7 - r)^n - (6 - r)^n) / 6^n.
+    return new Map([1, 2, 3, 4, 5, 6].map((r) => [t.total - 6 + r, ((7 - r) ** n - (6 - r) ** n) / 6 ** n]));
+  };
+  const att = totals('attacker');
+  const def = totals('defender');
+  const stubborn = anySkill(state, defender.owner, (r) => r.combat?.stubborn);
+  let wins = 0;
+  for (const [a, pa] of att) for (const [d, pd] of def) if (a < d || (a === d && !stubborn)) wins += pa * pd;
+  return wins;
+}

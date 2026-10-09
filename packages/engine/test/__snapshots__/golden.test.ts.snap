@@ -47,9 +47,9 @@ exports[`golden master > community, 3 players, seed 12 1`] = `
 
 exports[`golden master > community, 4 players, seed 13 1`] = `
 {
-  "actions": "ffdc7bfdacacc91b",
-  "state": "7d43ab98bded3e46",
-  "steps": 226,
+  "actions": "0712446f80012a6d",
+  "state": "7e4aee5ef14ff918",
+  "steps": 524,
   "winner": 2,
 }
 `;

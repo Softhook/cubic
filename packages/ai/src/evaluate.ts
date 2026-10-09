@@ -1,5 +1,5 @@
 import {
-  attackOdds,
+  attackChance,
   breakthroughAt,
   cellOf,
   conquerCheck,
@@ -20,7 +20,8 @@ import {
   type PlayerId,
   type ShipReach,
 } from '@quantum/engine';
-import { storedTactics } from './patient';
+import { skillValue } from './cardValues';
+import { storedTacticsValue } from './patient';
 
 /**
  * Position evaluation for levels 2 and up, in "cube points": one quantum cube is worth CUBE.
@@ -38,9 +39,6 @@ const DOMINANCE = [0, 0, 60, 150, 290, 500];
 const SHIP_ON_BOARD = 70;
 const SHIP_IN_SCRAPYARD = 30;
 const MISSILE = 40;
-const SKILL = 110;
-/** A Tactic stored with Patient: worth keeping when playing it now would gain less. */
-const STORED_TACTIC = 50;
 /** A card still to be taken at the end of this turn (conquest or research breakthrough). */
 const CARD = 120;
 
@@ -109,7 +107,7 @@ function context(s: GameState, mover: PlayerId): Ctx {
     reach.set(d.id, opts);
     for (const target of opts.attacks) {
       // The next mover attacks first; later players only if the target is still there.
-      const odds = attackOdds(d.value, target.value) * (d.owner === mover ? 1 : 0.5);
+      const odds = attackChance(s, d, target) * (d.owner === mover ? 1 : 0.5);
       kill.set(target.id, Math.max(kill.get(target.id) ?? 0, odds));
     }
   }
@@ -154,8 +152,13 @@ function playerValue(ctx: Ctx, p: PlayerId): number {
     if (s.turn.phase === 'actions') v += (s.turn.offTurnCubes ?? []).filter((x) => x === p).length * CARD;
     v += (pl.carriedPicks ?? 0) * CARD;
   }
-  v += Math.min(pl.skills.length, skillLimit(s, p)) * SKILL;
-  v += storedTactics(s, p) * STORED_TACTIC;
+  // The best skills up to the limit (one over it is discarded at once).
+  v += pl.skills
+    .map((sk) => skillValue(sk.id))
+    .sort((a, b) => b - a)
+    .slice(0, skillLimit(s, p))
+    .reduce((a, b) => a + b, 0);
+  v += storedTacticsValue(s, p);
   v += pl.missiles * MISSILE;
   v += ctx.fleets[p].length * SHIP_ON_BOARD;
   v += scrapyard(s, p).length * SHIP_IN_SCRAPYARD;

@@ -149,14 +149,33 @@ card), so only large gaps are worth reading.
 
 ## Limits
 
-- **The AI scores all skills the same** in its evaluation (`SKILL = 110` in
-  [evaluate.ts](../packages/ai/src/evaluate.ts)). Its draft choice comes only from look-ahead.
-  Skills that pay off over many turns (Talented, Precocious, Composed) are likely undervalued.
-- **Patient:** when taking Patient, the AI always stores the first Tactic in the row
-  (`patientTactic` is a chance node in the search and index 0 in greedy) instead of choosing one.
+All the numbers above were measured with the AI as it was before the fixes below. They are the
+AI's view of each card.
+
+- **Fixed since: the AI drafted skills by row position.** Every skill had the same value in the
+  evaluation (`SKILL = 110`), and a skill only takes effect after the turn it is taken in, so the
+  search couldn't tell skills apart. 76% of skill picks went to the first card in the row. The
+  self-play pick rates and win rates for skills reflect that. Skills now have values from the
+  skill value test ([cardValues.ts](../packages/ai/src/cardValues.ts)).
+- **Fixed since: Patient stored the first Tactic in the row.** Every stored Tactic was worth the
+  same. Stored Tactics are now valued card by card.
+- **Fixed since: Calculating always chose 1.** The evaluation doesn't tell scrapyard numbers
+  apart, so the first option won. Measured over 200 games each, Calculating against no skill won
+  39.5% choosing 1s, 42% choosing 6s, 46% choosing 3s and 57% choosing 4s (a Frigate can become
+  a 3 or a 5). The AI now prefers 4, then 3, 5, 2, 6, 1. Even played this way, Calculating is
+  worth about as much as no skill.
+- **Fixed since: the AI's threat estimate ignored combat skills.** How likely a ship is to be
+  destroyed came from plain dice, so Brutal, Ferocious, Rational, Strategic and Stubborn made no
+  difference to it (actual attacks were always worked out exactly). It now uses `attackChance`
+  ([queries.ts](../packages/engine/src/queries.ts)).
+- With these fixes, the new Commodore beat the old one 158–82 over 240 games (65.8%). The
+  benchmark should be run again with the new AI.
 - **Profiteering:** the AI never takes the missile, because a missile is worth 40 against 110–120
   for a card. A better AI might sometimes take the missile.
-- **One map, two players.** The skill-value test used Alpha Sector only. Some skills (Devious,
+- **Dangerous:** the AI attacks into a Dangerous defender about three times a game. The defender
+  then destroys both ships 92% of the time, which costs the attacker an action for an even trade.
+  The search sees this coming and still judges the trade worth it. That may be too generous.
+- **One map, two players.** The skill value test used Alpha Sector only. Some skills (Devious,
   Stealthy, Ingenious) depend on the map, and multi-player games were not measured.
 
 ## Reproduce

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { apply, legalActions, type GameState } from '../src';
+import { apply, attackChance, attackOdds, die, legalActions, type GameState } from '../src';
 import { arrange, quickStart } from './helpers';
 
 function communityGame(skills: { me?: string[]; foe?: string[] } = {}): GameState {
@@ -454,3 +454,37 @@ describe('Calculating edge cases', () => {
 });
 
 
+
+describe('attackChance', () => {
+  // My 6 attacks the foe's 3 from the next space; with plain dice the attacker wins on 6 + x <= 3 + y.
+  const odds = (skills: { me?: string[]; foe?: string[] }) => {
+    const s = communityGame(skills);
+    const me = s.turn.player;
+    return attackChance(s, die(s, `p${me}d0`), die(s, `p${1 - me}d0`));
+  };
+  /** The attacker wins with total a (a roll plus 6) against the defender's 3 + y, ties included unless Stubborn. */
+  const exact = (attackerRoll: (x: number) => number[], tieWins = true) => {
+    let wins = 0;
+    for (let x = 1; x <= 6; x++) {
+      for (let y = 1; y <= 6; y++) {
+        const rolls = attackerRoll(x);
+        for (const r of rolls) if (6 + r < 3 + y || (tieWins && 6 + r === 3 + y)) wins += 1 / rolls.length;
+      }
+    }
+    return wins / 36;
+  };
+
+  it('is the plain-dice odds without combat skills', () => {
+    expect(odds({ me: ['agile'] })).toBeCloseTo(attackOdds(6, 3));
+  });
+
+  it('counts skills on both sides', () => {
+    expect(odds({ me: ['rational'] })).toBeCloseTo(exact(() => [3]));
+    expect(odds({ me: ['ferocious'] })).toBeCloseTo(exact((x) => [x - 1]));
+    expect(odds({ foe: ['stubborn'] })).toBeCloseTo(exact((x) => [x], false));
+    // Brutal: the lower of two dice, so a 1 is eleven times as likely as a 6.
+    const brutal = odds({ me: ['brutal'] });
+    expect(brutal).toBeGreaterThan(attackOdds(6, 3));
+    expect(brutal).toBeCloseTo(exact((x) => Array.from({ length: 6 }, (_, k) => Math.min(x, k + 1))));
+  });
+});

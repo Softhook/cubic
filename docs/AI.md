@@ -43,6 +43,11 @@ on the reply check did not do better than Fleet Admiral (200 games each, after t
 Checking more plans against a noisy reply seems to pick the luckiest one; a stronger reply player
 costs far more than it gains. Further strength more likely comes from the evaluation (see Next steps).
 
+Card values (2026-10-09, [card-benchmark.md](card-benchmark.md#limits)): with skills and stored
+Tactics valued card by card instead of all alike, threats worked out with both players' combat
+skills (`attackChance`), and Calculating choosing 4s, Commodore beat the previous Commodore
+158 – 82 over 240 Community games (65.8%) at about the same thinking time.
+
 The levels are clearly ordered. The top two steps are the smallest (58–59% each). Empty cells
 haven't been measured yet.
 
