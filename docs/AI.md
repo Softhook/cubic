@@ -77,7 +77,7 @@ researched about 27 times a game. The causes were assumptions built into its des
    destroying ships hardly paid. Research scored a flat 14 per step. Every skill was worth the same.
 5. **Reach ignored blocking**, and ignored whether a ship's value fits the planet's sum.
 
-## How levels 2–4 work
+## How levels 2–5 work
 
 | File | Contents |
 |---|---|

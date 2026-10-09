@@ -60,7 +60,7 @@ Open, in the order of [AI.md § Next steps](AI.md#next-steps):
 
 - [ ] **Tune the evaluation by self-play** (weights are hand-set).
 - [ ] **Value cards individually** (every skill is worth the same today); ideally from measured win rates (M5).
-- [ ] Missiles in the search; a faster engine for search (copy-on-write board).
+- [ ] Missiles in the search.
 - [ ] **Search across turns**: MCTS with chance nodes and determinized decks, time-boxed per move.
 - [ ] Better play with more than 2 players (who attacks whom).
 - [ ] "Explain move" — show why the AI did something (from the evaluation's terms).
@@ -95,13 +95,13 @@ The reason the existing fan cards look poor is that each was made by hand. We'll
 them **generated from data** with a consistent visual language. Plan for shared in-game and
 print rendering: [GRAPHICS.md](GRAPHICS.md).
 
-Done: `packages/art` (tokens, seeded RNG, mm units), procedural tiles, planets and starfields; the Art Lab (`#lab`) with card and tile labs; cards drawn from `cards.yaml` at poker size; print exports (PNG/SVG/ZIP, with or without bleed) and A4/US Letter sheets with crop marks, saved as PDF from the print dialog; the in-app rulebook with diagrams. [GRAPHICS.md § Phases](GRAPHICS.md#5-phases) has the detailed list (its checkboxes are behind on Phase 2).
+Done: `packages/art` (tokens, seeded RNG, mm units), procedural tiles, planets and starfields; the Art Lab (`#lab`) with card and tile labs; cards drawn from `cards.yaml` at poker size; the A6 player aid (`#lab/aid`); print exports (PNG/SVG/ZIP, with or without bleed) and A4/US Letter sheets with crop marks, saved as PDF from the print dialog; the in-app rulebook with diagrams. [GRAPHICS.md § Phases](GRAPHICS.md#5-phases) has the detailed list.
 
 - [ ] **Art direction** — mood board, palette, typography, faction identities (4–5 factions, colours that work for colour-blind players).
 - [ ] **Iconography** — a proper icon set: ship types 1–6, actions, dominance, research, missile, cube, card categories.
 - [ ] **Card art** — commission an illustrator, or a consistent AI-assisted pipeline with human art direction; one illustration per unique card (45: 35 Skills, 9 Tactics, Expansion) plus 3 card backs. Track licensing per image.
 - [ ] **Map tiles** — pin the chosen seeds for all 30 tiles (`data/art.yaml`); tile backs and starting markers; print one test tile at 100 % with real dice and cubes.
-- [ ] **Player board** — tracks, skill slots, scrapyard, reserve, cheat sheet.
+- [ ] **Player board** — the A6 player aid is built (cube rail, dominance and research pads, actions, ships); still to decide whether it needs skill slots, a scrapyard and a reserve.
 - [ ] **Rulebook for print** — typeset, with diagrams rendered from engine states.
 - [ ] **Print-on-demand** — choose vendors (The Game Crafter, MakePlayingCards, Printer Studio, DriveThruCards) and set trim/bleed to their specs; physical proof.
 - [ ] **Components** — dice (custom engraved 1–6 ship icons?), cubes, missile & gate tokens, box.

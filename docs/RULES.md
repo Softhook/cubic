@@ -44,7 +44,7 @@ The digital edition offers three rule sets, chosen when starting a game:
 | Spend a card pick to deal 6 new face-up cards | — | ✓ (rulebook p.9) | — |
 | Reconfigure | Ship on the map or scrapyard; any different value | Ship on the map or scrapyard; any different value | Ship on the map or scrapyard; new value not seen this turn |
 | Infamy, Quantum Entanglement, void tiles | ✓ | ✓ | ✓ |
-| Maps | Published (basic, advanced, add-on pack) | Published | Published + Board Game Arena's |
+| Maps | Published (basic, advanced, add-on pack) | Published | Published + Board Game Arena's + the CE booklet's 5-player maps |
 
 Basic mode has no Research action: in the 2013 rules research only earns advance cards.
 
@@ -63,7 +63,7 @@ Every Original card and every Community Edition card (all 35 skills, 9 tactics, 
 | **Original title** | Quantum ([BGG #143519](https://boardgamegeek.com/boardgame/143519/quantum)) |
 | **Designer** | Eric Zimmerman |
 | **Publisher** | FunForge (2013), with regional partners; now out of print |
-| **Players** | 2–4 (CE print edition adds 5-player maps, not yet transcribed here) |
+| **Players** | 2–4 (the CE print edition adds 5-player maps) |
 | **Play time** | ~60 minutes |
 | **Genre** | Light 4X / area control, dice-as-units, modular grid board |
 
@@ -398,9 +398,9 @@ The print booklet contains ~60 maps grouped by player count and style:
 | 5 | Omega Sector, Ad Hominem, False Dilemma, Reification, No True Scotsman, Anecdotal, Fallacy Fallacy, Bandwagon | Appeal to Authority, False Equivalence, Special Pleading, False Dichotomy, Ambiguity, Beg the Question | — |
 
 Layouts are in the [rules booklet PDF](../reference/community-edition-print/QCB-rules-booklet-A5.pdf)
-(pages 8–15). The 2–4 player maps are transcribed in [`data/maps.yaml`](../data/maps.yaml)
-(group `advanced`), alongside the add-on pack's (`addon`) and Board Game Arena's (`bga`).
-The 5-player maps are not transcribed yet, so the engine allows at most 4 players.
+(pages 8–15). All are transcribed in [`data/maps.yaml`](../data/maps.yaml): the 2–4 player maps as
+group `advanced`, the 14 5-player maps as `ce`, alongside the add-on pack's (`addon`) and Board Game
+Arena's (`bga`). Five players need a `ce` map, so 5-player games use the Community Edition rules.
 
 ---
 

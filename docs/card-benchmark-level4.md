@@ -1,6 +1,6 @@
 # Quantum Self-Play Card Benchmark Analysis (Level 4 "Admiral" AI)
 
-This report details the statistical findings from **100 self-play matches** executed with the **highest-tier AI (Level 4 "Admiral")** under **Original Edition** rules on the canonical 2-player map (*Alpha Sector*).
+This report details the statistical findings from **100 self-play matches** executed with the **Level 4 "Admiral" AI** (the highest level at the time; Level 5 "Fleet Admiral" came later) under **Original Edition** rules on the canonical 2-player map (*Alpha Sector*).
 
 ---
 

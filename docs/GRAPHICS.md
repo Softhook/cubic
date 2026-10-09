@@ -11,19 +11,17 @@ at physical size. Nothing is drawn twice, so the printed game and the online gam
 
 ## Where we are today
 
-| Element | How it's drawn | Can it be printed? |
+| Element | How it's drawn | Printed? |
 |---|---|---|
-| Board tiles, void, planets, gates | Inline SVG in [`board/BoardArt.tsx`](../apps/web/src/components/board/BoardArt.tsx), sized in **screen pixels** (`cell` from a `ResizeObserver`) | Not as is: coordinates, blur radius and stroke widths depend on the window size |
-| Gradient / filter ids | Global ids (`#tile`, `#planet7`, `#glow`) | Ids clash as soon as two boards or tiles share a page (a print sheet) |
-| Cards | HTML + CSS in [`Card.tsx`](../apps/web/src/components/Card.tsx), fixed `px` font sizes, no art slot | Layout is close; needs physical sizes, bleed and an art slot |
-| Category icons | SVG (`CategoryIcon`) | Yes, already vector |
-| Dice / ships | CSS 3D cube ([`Die3D.tsx`](../apps/web/src/components/Die3D.tsx)) | No, and doesn't need to be (physical dice); ship icons for faces do |
-| Starfield background | CSS radial gradients on `body::before` | No; it's screen chrome |
+| Map tiles, void, planets | `tileSvg` / `planet` / `starfield` in [`packages/art`](../packages/art), in mm and seeded. The game draws each tile once to an image and keeps it in IndexedDB ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)) | Yes, from the Art Lab (`#lab`) |
+| Cards | `cardSvg` / `cardBackSvg` ([`card.ts`](../packages/art/src/card.ts)): poker size, SVG text, one illustration per card. The game's card pop-ups show the same drawing as an image ([`cardImages.ts`](../apps/web/src/art/cardImages.ts)); market cards are HTML with the same colours and icons | Yes, from `#lab/cards` |
+| Player aid | `playerAidSvg` ([`aid.ts`](../packages/art/src/aid.ts)), A6 | Yes, from `#lab/aid` |
+| Warp gates, spaces, planet numbers and cube slots | SVG in [`board/BoardArt.tsx`](../apps/web/src/components/board/BoardArt.tsx), in screen pixels | Gates no (a token in the physical game); numbers and cube slots are in the printed tiles |
+| Dice / ships | CSS 3D cube ([`Die3D.tsx`](../apps/web/src/components/Die3D.tsx)) | No, and doesn't need to be (physical dice) |
 | Explosions, highlights, hit areas | HTML/CSS overlay (`board-layer`) | Never printed, correctly kept separate |
-| Fonts | Google Fonts CDN (Inter, Orbitron) | PDFs need local font files to embed |
+| Fonts | Google Fonts CDN (Inter, Orbitron); cards embed them in each SVG as data URLs | Not self-hosted yet |
 
-The board already separates the **SVG art layer** from the **interactive HTML layer**. That split is
-exactly what we want and the plan keeps it.
+The board keeps the **art layer** (tile images and SVG) apart from the **interactive HTML layer**.
 
 ---
 
@@ -457,11 +455,14 @@ Each phase leaves the game working and better-looking.
 - [ ] Self-host fonts; generate the app's CSS colour variables from tokens.
 
 **Phase 2 — Print loop working end to end (ugly is fine)**
-- [ ] Print route + `scripts/print.ts`; output current cards and tiles as `cards-pnp` and `tiles`
+- [x] Print loop in the Art Lab (§4): PNG 300/600 dpi, SVG and ZIP sets with or without bleed, A4/US
+      Letter sheets with crop marks and duplex backs, saved as PDF from the print dialog.
+- [ ] Headless print route + `scripts/print.ts` + `scripts/print.ts`; output current cards and tiles as `cards-pnp` and `tiles`
       PDFs with bleed and crop marks.
-- [ ] Convert `CardView` to the mm/`cqw` card used by both the game and print; add art window and
-      backs.
-- [ ] PDF and text-fit checks.
+- [x] Cards drawn once, in mm, for both the game's pop-ups and print (`cardSvg`), with illustrations
+      and backs.
+- [x] Text fit: card text shrinks until it fits; a test checks the player aid's text sizes.
+- [ ] PDF checks.
 
 **Phase 3 — Art Lab**
 - [x] Lab route (`#lab`): all 30 tiles, seed/type/rings controls, and the standard print exports (§4) plus SVG for Illustrator.
@@ -483,7 +484,8 @@ Each phase leaves the game working and better-looking.
 **Phase 5 — Production**
 - [ ] Choose card and tile vendor; set trim/bleed tokens to their specs.
 - [ ] Card art (procedural or illustrated) for every card, with licences.
-- [ ] Player board, tile backs, box art, rulebook diagrams (rendered from engine states with the
+- [x] Player aid (A6, `#lab/aid`).
+- [ ] Tile backs, box art, rulebook diagrams (rendered from engine states with the
       same components).
 - [ ] Physical proof, then fix colours.
 
