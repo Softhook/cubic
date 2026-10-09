@@ -316,7 +316,7 @@ function OddsBadge({ chance, cell, zoomed }: { chance: number; cell: number; zoo
 }
 
 /** A chance as a whole percentage; never 0% or 100% unless it is certain. */
-export function percent(p: number): string {
+function percent(p: number): string {
   const n = Math.round(p * 100);
   return p > 0 && n === 0 ? '<1%' : p < 1 && n === 100 ? '>99%' : `${n}%`;
 }

@@ -1,5 +1,5 @@
-import type { GameState } from '@quantum/engine';
-import type { Post, Step } from '@quantum/online';
+import type { CombatPending, GameState } from '@quantum/engine';
+import { combatStage, type Post, type Step } from '@quantum/online';
 
 /** How long a move by someone else stays on screen before the next one is shown. */
 export const STEP_MS = 1500;
@@ -37,25 +37,25 @@ export function nextStep(steps: readonly Step[], shown: Step | null, own: (p: Po
   if (i < 0 || last - i > MAX_BEHIND) return steps[last] === shown ? null : { step: steps[last], delay: 0, announce: false };
   if (i === last) return null;
   const next = steps[i + 1];
-  const fighting = battleId(shown!.state) !== null;
-  if (fighting && battle.mine && battleId(next.state) !== battleId(shown!.state)) return battle.dismissed ? { step: next, delay: 0, announce: true } : null;
+  const fighting = battleOnScreen(shown!.state);
+  if (fighting && battle.mine && battleOnScreen(next.state)?.id !== fighting.id) return battle.dismissed ? { step: next, delay: 0, announce: true } : null;
   const min = fighting ? COMBAT_MS : next.post && own(next.post) ? 0 : STEP_MS;
   return { step: next, delay: Math.max(0, min - elapsed), announce: true };
 }
 
 /** The battle on screen and how far it has got (each missile and re-roll changes it), if any. */
 export function battleStage(s: GameState): string | null {
-  const head = s.pending[0];
-  return head?.kind === 'combat' ? `${head.id}:${head.rerolls.length}:${+head.attacker.missile}${+head.defender.missile}` : null;
+  const c = battleOnScreen(s);
+  return c ? combatStage(c) : null;
 }
 
 /** Whether `p` attacks or defends in the battle on screen. */
 export function inBattle(s: GameState, p: (id: number) => boolean): boolean {
-  const head = s.pending[0];
-  return head?.kind === 'combat' && (p(head.attacker.player) || p(head.defender.player));
+  const c = battleOnScreen(s);
+  return !!c && (p(c.attacker.player) || p(c.defender.player));
 }
 
-function battleId(s: GameState): number | null {
+function battleOnScreen(s: GameState): CombatPending | null {
   const head = s.pending[0];
-  return head?.kind === 'combat' ? head.id : null;
+  return head?.kind === 'combat' ? head : null;
 }

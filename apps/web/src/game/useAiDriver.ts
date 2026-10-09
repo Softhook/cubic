@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { actor, canRespondToCombat, type GameState, type PlayerId } from '@quantum/engine';
 import { chooseCombatResponse } from '@quantum/ai';
+import { combatStage } from '@quantum/online';
 import { aiLevelOf, think } from './aiClient';
 import type { Dispatch } from './useGame';
 
@@ -33,7 +34,7 @@ export function useAiDriver(game: GameState, dispatch: Dispatch): PlayerId | nul
   // The AI about to respond, and to which combat stage.
   const [responding, setResponding] = useState<{ stage: string; player: PlayerId } | null>(null);
   const head = game.pending[0];
-  const stage = head?.kind === 'combat' ? `${head.id}:${head.rerolls.length}:${+head.attacker.missile}${+head.defender.missile}` : null;
+  const stage = head?.kind === 'combat' ? combatStage(head) : null;
 
   useEffect(() => {
     if (game.phase === 'over') return;

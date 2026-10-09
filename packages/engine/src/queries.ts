@@ -721,16 +721,19 @@ export function attackChance(state: GameState, attacker: Die, defender: Die, fro
 export function attackFactors(state: GameState, attacker: Die, defender: Die, from: Cell = cellOf(attacker)!): Record<CombatRole, string[]> {
   const combat = previewCombat(attacker, defender, from);
   const factors = (role: CombatRole): string[] => {
-    const out: string[] = [];
     const parts = combatTotal(state, combat, role).parts;
-    for (const part of parts) {
-      if (part.kind === 'roll' && part.set) out.push(`${part.label}: rolls ${part.value}`);
-      else if (part.kind === 'modifier') out.push(`${part.label} ${part.value > 0 ? '+' : '−'}${Math.abs(part.value)}`);
-    }
+    const set = parts.find((part) => part.kind === 'roll' && part.set);
+    const out = set ? [`${set.label}: rolls ${set.value}`] : [];
+    for (const part of parts) if (part.kind === 'modifier') out.push(`${part.label} ${signed(part.value)}`);
     const n = combatDice(state, combat[role].player);
-    if (n > 1 && !parts.some((part) => part.kind === 'roll' && part.set)) out.push(`Brutal: lowest of ${n} dice`);
+    if (n > 1 && !set) out.push(`Brutal: lowest of ${n} dice`);
     if (role === 'defender' && anySkill(state, defender.owner, (r) => r.combat?.stubborn)) out.push('Stubborn: wins ties');
     return out;
   };
   return { attacker: factors('attacker'), defender: factors('defender') };
+}
+
+/** A modifier with its sign: "+1", "−2" (a minus sign, not a hyphen). */
+export function signed(n: number): string {
+  return n < 0 ? `−${-n}` : `+${n}`;
 }

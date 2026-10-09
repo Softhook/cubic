@@ -1,4 +1,4 @@
-import { SHIP_ABILITIES, SHIP_NAMES, canMoveDie, canUseAbility, card, hasSkill, movementRange, skillCard, type GameState } from '@quantum/engine';
+import { SHIP_ABILITIES, SHIP_NAMES, canMoveDie, canUseAbility, card, die, hasSkill, movementRange, skillCard, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
 import { Die3D } from './Die3D';
@@ -23,7 +23,7 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
   const factors = [
     ...new Set(
       [...ctl.attacks].flatMap(([id, a]) => {
-        const owner = game.players[game.dice.find((x) => x.id === id)!.owner].name;
+        const owner = game.players[die(game, id).owner].name;
         return [...a.factors.attacker, ...a.factors.defender.map((f) => `${owner}'s ${f}`)];
       }),
     ),

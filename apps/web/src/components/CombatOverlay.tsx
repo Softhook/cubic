@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, missileOffered, tryApply, type Action, type CombatPending, type CombatRole, type GameState, type PlayerId, type PlayerState } from '@quantum/engine';
+import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, missileOffered, signed, tryApply, type Action, type CombatPending, type CombatRole, type GameState, type PlayerId, type PlayerState } from '@quantum/engine';
+import { combatStage } from '@quantum/online';
 import type { Dispatch } from '../game/useGame';
 import type { GameView } from '../game/view';
 import { COMBAT_RESOLVE_MS } from '../game/useAiDriver';
@@ -48,12 +49,13 @@ export function CombatOverlay({
   // A battle nobody here can change stays up until OK (or a click beside it), so the player can
   // see how it went: online, it moves on once decided; here, OK resolves it. Online, other players'
   // battles move on by themselves (playback), as do the battles of a game with no humans.
+  const resolve = close(() => dispatch({ type: 'resolveCombat' }));
   const ok = online
     ? !online.mustAnswer && !waitingNames
       ? close(online.dismiss)
       : undefined
     : autoResolve && game.players.some((p) => !p.ai)
-      ? close(() => dispatch({ type: 'resolveCombat' }))
+      ? resolve
       : undefined;
   const ready = revealed && aiResponder === null;
   // Enter or Escape is OK too; not held down (it would carry on into the next choice), nor on a
@@ -112,7 +114,7 @@ export function CombatOverlay({
           {bonuses.map((part, i) => (
             <li key={i}>
               <span>{part.label}</span>
-              <b>{part.value > 0 ? `+${part.value}` : `−${-part.value}`}</b>
+              <b>{signed(part.value)}</b>
             </li>
           ))}
           {s.dice.length > 1 && !rollPart?.set && <li className="muted">Brutal: rolled {s.dice.join(' & ')}</li>}
@@ -158,12 +160,12 @@ export function CombatOverlay({
               OK
             </button>
           ) : online || autoResolve ? (
-            // The battle moves on by itself shortly; restarts when a missile changes it.
-            <div className="autobar" key={`${combat.id}-${+combat.attacker.missile}-${+combat.defender.missile}`}>
+            // The battle moves on by itself shortly; restarts when a missile or re-roll changes it.
+            <div className="autobar" key={combatStage(combat)}>
               <span style={{ animationDuration: `${online ? COMBAT_MS : COMBAT_RESOLVE_MS}ms` }} />
             </div>
           ) : (
-            <button className="btn btn-primary" disabled={!ready} onClick={close(() => dispatch({ type: 'resolveCombat' }))}>
+            <button className="btn btn-primary" disabled={!ready} onClick={resolve}>
               Resolve battle
             </button>
           )}
