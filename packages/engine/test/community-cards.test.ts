@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { apply, attackChance, attackOdds, die, legalActions, type GameState } from '../src';
+import { apply, attackChance, attackFactors, attackOdds, die, legalActions, type GameState } from '../src';
 import { arrange, quickStart } from './helpers';
 
 function communityGame(skills: { me?: string[]; foe?: string[] } = {}): GameState {
@@ -486,5 +486,17 @@ describe('attackChance', () => {
     const brutal = odds({ me: ['brutal'] });
     expect(brutal).toBeGreaterThan(attackOdds(6, 3));
     expect(brutal).toBeCloseTo(exact((x) => Array.from({ length: 6 }, (_, k) => Math.min(x, k + 1))));
+  });
+
+  it('names what changes the odds, beyond the ships and dice', () => {
+    const factors = (skills: { me?: string[]; foe?: string[] }) => {
+      const s = communityGame(skills);
+      const me = s.turn.player;
+      return attackFactors(s, die(s, `p${me}d0`), die(s, `p${1 - me}d0`));
+    };
+    expect(factors({ me: ['agile'] })).toEqual({ attacker: [], defender: [] });
+    expect(factors({ me: ['ferocious'], foe: ['stubborn'] })).toEqual({ attacker: ['Ferocious −1'], defender: ['Stubborn: wins ties'] });
+    expect(factors({ me: ['rational'] }).attacker).toEqual(['Rational: rolls 3']);
+    expect(factors({ me: ['brutal'] }).attacker).toEqual(['Brutal: lowest of 2 dice']);
   });
 });

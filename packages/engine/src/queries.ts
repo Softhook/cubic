@@ -683,15 +683,20 @@ export function attackOdds(a: number, d: number): number {
   return wins / 36;
 }
 
+/** The battle `attacker` would start against `defender` from `from`, every die rolling a 6 (a placeholder). */
+function previewCombat(attacker: Die, defender: Die, from: Cell): CombatPending {
+  const side = (d: Die) => ({ player: d.owner, die: d.id, ship: d.value, dice: [6], missile: false });
+  return { kind: 'combat', id: 0, attacker: side(attacker), defender: side(defender), from, at: cellOf(defender)!, rerolls: [] };
+}
+
 /**
- * Probability that `attacker` beats `defender` if it attacks from where it is now, with both
- * players' combat skills and Plan Ahead (not re-rolls, missiles or Dangerous).
+ * Probability that `attacker` beats `defender` if it attacks from `from` (by default, where it is
+ * now), with both players' combat skills and Plan Ahead (not re-rolls, missiles or Dangerous).
  */
-export function attackChance(state: GameState, attacker: Die, defender: Die): number {
+export function attackChance(state: GameState, attacker: Die, defender: Die, from: Cell = cellOf(attacker)!): number {
   const plain = (p: PlayerId) => !state.players[p].planAhead && !activeSkills(state, p).some((a) => a.rule.combat);
   if (plain(attacker.owner) && plain(defender.owner)) return attackOdds(attacker.value, defender.value);
-  const side = (d: Die) => ({ player: d.owner, die: d.id, ship: d.value, dice: [6], missile: false });
-  const combat: CombatPending = { kind: 'combat', id: 0, attacker: side(attacker), defender: side(defender), from: cellOf(attacker)!, at: cellOf(defender)!, rerolls: [] };
+  const combat = previewCombat(attacker, defender, from);
   /** Chance of each total: the roll (a set value, or the lowest of n dice) plus what doesn't depend on it. */
   const totals = (role: CombatRole): Map<number, number> => {
     const t = combatTotal(state, combat, role);
@@ -707,4 +712,25 @@ export function attackChance(state: GameState, attacker: Die, defender: Die): nu
   let wins = 0;
   for (const [a, pa] of att) for (const [d, pd] of def) if (a < d || (a === d && !stubborn)) wins += pa * pd;
   return wins;
+}
+
+/**
+ * What changes the odds of an attack (see attackChance) for each side, beyond the ships and the
+ * dice: e.g. "Ferocious −1", "Rational: rolls 3", "Brutal: lowest of 2 dice", "Stubborn: wins ties".
+ */
+export function attackFactors(state: GameState, attacker: Die, defender: Die, from: Cell = cellOf(attacker)!): Record<CombatRole, string[]> {
+  const combat = previewCombat(attacker, defender, from);
+  const factors = (role: CombatRole): string[] => {
+    const out: string[] = [];
+    const parts = combatTotal(state, combat, role).parts;
+    for (const part of parts) {
+      if (part.kind === 'roll' && part.set) out.push(`${part.label}: rolls ${part.value}`);
+      else if (part.kind === 'modifier') out.push(`${part.label} ${part.value > 0 ? '+' : '−'}${Math.abs(part.value)}`);
+    }
+    const n = combatDice(state, combat[role].player);
+    if (n > 1 && !parts.some((part) => part.kind === 'roll' && part.set)) out.push(`Brutal: lowest of ${n} dice`);
+    if (role === 'defender' && anySkill(state, defender.owner, (r) => r.combat?.stubborn)) out.push('Stubborn: wins ties');
+    return out;
+  };
+  return { attacker: factors('attacker'), defender: factors('defender') };
 }

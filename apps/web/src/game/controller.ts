@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { actor, cellOf, die as getDie, key, scrapyard, type Action, type Cell, type GameState, type PlayerId } from '@quantum/engine';
+import { actor, attackChance, attackFactors, cellOf, die as getDie, key, moveOptions, scrapyard, type Action, type Cell, type CombatRole, type GameState, type PlayerId } from '@quantum/engine';
 import { sfx } from '../sound';
 import { highlightsFor, noHighlights } from './highlights';
 import { legalFor, NO_LEGAL } from './legal';
@@ -46,6 +46,8 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
     () => (human ? highlightsFor(game, sel, legal, actionPhase) : noHighlights()),
     [game, sel, human, actionPhase, legal],
   );
+
+  const attacks = useMemo(() => attackPreviews(game, sel, highlights.dice), [game, sel, highlights]);
 
   const select = useCallback((s: Sel) => {
     if (s.kind !== 'none') sfx.select();
@@ -142,7 +144,29 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
     [human, highlights, head, sel, legal, dispatch, select],
   );
 
-  return { sel, select, highlights, legal, onDie, onCell, onPlanet, human, actionPhase, mine };
+  return { sel, select, highlights, legal, attacks, onDie, onCell, onPlanet, human, actionPhase, mine };
 }
 
 export type Controller = ReturnType<typeof useController>;
+
+/** How an attack on a ship would go: the chance to win, and what changes it beyond ships and dice. */
+export interface AttackPreview {
+  chance: number;
+  factors: Record<CombatRole, string[]>;
+}
+
+/** For each ship the selected ship may attack: how it would go, from the space it would attack from. */
+function attackPreviews(game: GameState, sel: Sel, dice: ReadonlyMap<string, string>): Map<string, AttackPreview> {
+  const out = new Map<string, AttackPreview>();
+  if (sel.kind !== 'ship' && sel.kind !== 'freeAttack' && sel.kind !== 'tactical') return out;
+  const attacker = getDie(game, sel.die);
+  // A Move attack goes in from a space next to the target; the others attack from where the ship is.
+  const moves = sel.kind === 'ship' ? moveOptions(game, sel.die).attacks : null;
+  for (const [id, tone] of dice) {
+    if (tone !== 'attack') continue;
+    const defender = getDie(game, id);
+    const from = moves?.get(id)?.from ?? cellOf(attacker)!;
+    out.set(id, { chance: attackChance(game, attacker, defender, from), factors: attackFactors(game, attacker, defender, from) });
+  }
+  return out;
+}

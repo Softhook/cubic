@@ -19,6 +19,16 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
   const mine = (a: { die: string }) => a.die === d.id;
   const ability = SHIP_ABILITIES[d.value];
   const cancel = () => ctl.select({ kind: 'none' });
+  // The cards in the odds shown on the ships it may attack (the same for most targets).
+  const factors = [
+    ...new Set(
+      [...ctl.attacks].flatMap(([id, a]) => {
+        const owner = game.players[game.dice.find((x) => x.id === id)!.owner].name;
+        return [...a.factors.attacker, ...a.factors.defender.map((f) => `${owner}'s ${f}`)];
+      }),
+    ),
+  ];
+  const oddsNote = factors.length ? `Attack odds count ${factors.join(' · ')}` : null;
 
   const abilityButton = () => {
     if (!onBoard || used) return null;
@@ -62,7 +72,13 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
       <div className="ship-panel-head">
         <Die3D value={d.value} rolls={d.rolls} size={34} color={game.players[d.owner].color} sound={false} />
         {/* On phones the ability text below is hidden: a tap on the name shows it. */}
-        <Tip as="div" className="ship-name" tip={`${ability.name}: ${used ? 'used this turn' : ability.text}`}>
+        <Tip as="div" className="ship-name" tip={
+            <>
+              <span>{`${ability.name}: ${used ? 'used this turn' : ability.text}`}</span>
+              {oddsNote && <span className="muted">{oddsNote}</span>}
+            </>
+          }
+        >
           <strong>{SHIP_NAMES[d.value]}</strong>
           <small>
             {onBoard ? `Moves ${movementRange(game, d)} · ${canMoveDie(game, d) ? 'ready' : 'already moved'}` : 'In scrapyard'}
@@ -74,6 +90,7 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
         <b>{ability.name}</b> {used ? '— used this turn' : `— ${ability.text}`}
         {secondUse && <em className="muted"> (second use via Cunning)</em>}
       </p>
+      {oddsNote && <p className="ship-odds-note">{oddsNote}</p>}
       <div className="turn-actions">
         {abilityButton()}
         <button className="btn" disabled={!legal.can('reconfigure', mine)} onClick={() => dispatch({ type: 'reconfigure', die: d.id })} title="Spend 1 action to re-roll this ship to a new number.">

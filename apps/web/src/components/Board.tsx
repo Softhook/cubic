@@ -103,6 +103,7 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
           <Ships
             game={game}
             ctl={ctl}
+            zoomed={zoom.zoomed}
             spots={spots}
             cell={cell}
             onInfo={(id) => show({ ship: id })}
@@ -149,6 +150,7 @@ function Reach({ game, id, cell }: { game: GameState; id: string; cell: number }
 function Ships({
   game,
   ctl,
+  zoomed,
   spots,
   cell,
   onInfo,
@@ -156,6 +158,7 @@ function Ships({
 }: {
   game: GameState;
   ctl: Controller;
+  zoomed: boolean;
   spots: ShipSpots;
   cell: number;
   onInfo: (id: string) => void;
@@ -175,6 +178,10 @@ function Ships({
     const spent = mine && (game.turn.moved[d.id] ?? 0) > 0;
     const abilityUsed = mine && game.turn.abilityUsed[d.id];
     const fighting = combat && (combat.attacker.die === d.id || combat.defender.die === d.id);
+    // An attack target shows the chance to win on the map itself: no hover on a touch screen, and
+    // a tap attacks. The cards behind it are in the title and the ship panel.
+    const attack = ctl.attacks.get(d.id);
+    const who = `${game.players[d.owner].name} · ${SHIP_NAMES[d.value]} (${d.value})`;
     return (
       <div
         key={d.id}
@@ -196,12 +203,17 @@ function Ships({
         onClick={() => ctl.onDie(d.id) === false && onInfo(d.id)}
         onPointerDown={yours(d.owner) ? undefined : (e) => onPress(d.id, e.pointerType !== 'mouse')}
         onContextMenu={(e) => e.preventDefault()}
-        aria-label={`${game.players[d.owner].name}'s ${SHIP_NAMES[d.value]} (${d.value})`}
-        title={`${game.players[d.owner].name} · ${SHIP_NAMES[d.value]} (${d.value})\n${SHIP_ABILITIES[d.value].name}: ${SHIP_ABILITIES[d.value].text}`}
+        aria-label={`${game.players[d.owner].name}'s ${SHIP_NAMES[d.value]} (${d.value})${attack ? `, ${percent(attack.chance)} chance to win an attack` : ''}`}
+        title={
+          attack
+            ? [`Attack ${who}: ${percent(attack.chance)} to win`, ...attack.factors.attacker.map((f) => `You: ${f}`), ...attack.factors.defender.map((f) => `Them: ${f}`)].join('\n')
+            : `${who}\n${SHIP_ABILITIES[d.value].name}: ${SHIP_ABILITIES[d.value].text}`
+        }
       >
         <div className="ship-ring" />
         <Die3D value={d.value} rolls={d.rolls} size={cell * 0.56} color={game.players[d.owner].color} />
         {abilityUsed && <span className="ship-badge" aria-label="Ability used this turn">✦</span>}
+        {attack && <OddsBadge chance={attack.chance} cell={cell} zoomed={zoomed} />}
       </div>
     );
   });
@@ -264,4 +276,47 @@ function PlanetInfo({ game, id }: { game: GameState; id: number }) {
       ))}
     </>
   );
+}
+
+/**
+ * An attack target's chance to win, on its space's top-right corner, sticking out of it (above the
+ * map's edge too). Zoomed in, the map is clipped to its area: where that would cut the badge off,
+ * it moves inside, below or to the left.
+ */
+function OddsBadge({ chance, cell, zoomed }: { chance: number; cell: number; zoomed: boolean }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [flip, setFlip] = useState({ below: false, left: false });
+  useEffect(() => {
+    const badge = ref.current!;
+    const ship = badge.parentElement!;
+    // Not zoomed in, only the screen's edge can cut it off.
+    const root = zoomed ? ship.closest('.board-wrap') : null;
+    // How far the badge sticks out of the space (see .ship-odds): the ship must be this far inside.
+    const { width, height } = badge.getBoundingClientRect();
+    const up = Math.ceil(height * 0.3);
+    const right = Math.ceil(width * 0.3);
+    const io = new IntersectionObserver(
+      ([e]) => {
+        const b = e.rootBounds;
+        if (b) setFlip({ below: e.boundingClientRect.top < b.top, left: e.boundingClientRect.right > b.right });
+      },
+      { root, rootMargin: `-${up}px -${right}px 0px 0px`, threshold: 1 },
+    );
+    io.observe(ship);
+    return () => io.disconnect();
+  }, [cell, zoomed]);
+  const tone = chance >= 0.6 ? 'good' : chance <= 0.4 ? 'bad' : '';
+  return (
+    <span ref={ref} className={['ship-odds', tone, flip.below && 'below', flip.left && 'left'].filter(Boolean).join(' ')} aria-hidden>
+      {/* The % sign smaller: a narrower badge. */}
+      {percent(chance).replace('%', '')}
+      <small>%</small>
+    </span>
+  );
+}
+
+/** A chance as a whole percentage; never 0% or 100% unless it is certain. */
+export function percent(p: number): string {
+  const n = Math.round(p * 100);
+  return p > 0 && n === 0 ? '<1%' : p < 1 && n === 100 ? '>99%' : `${n}%`;
 }
