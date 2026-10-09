@@ -193,6 +193,7 @@ function Ships({
     // An attack target shows the chance to win on the map itself: no hover on a touch screen, and
     // a tap attacks. The cards behind it are in the title and the ship panel.
     const attack = ctl.attacks.get(d.id);
+    const { ability } = shipOf(game, d.value);
     const who = `${game.players[d.owner].name} · ${SHIP_NAMES[d.value]} (${d.value})`;
     return (
       <div
@@ -219,7 +220,7 @@ function Ships({
         title={
           attack
             ? [`Attack ${who}: ${percent(attack.chance)} to win`, ...attack.factors.attacker.map((f) => `You: ${f}`), ...attack.factors.defender.map((f) => `Them: ${f}`)].join('\n')
-            : `${who}\n${shipOf(game, d.value).ability.name}: ${shipOf(game, d.value).ability.text}`
+            : `${who}\n${ability.name}: ${ability.text}`
         }
       >
         <div className="ship-ring" />

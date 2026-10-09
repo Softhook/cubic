@@ -13,7 +13,8 @@ const DIAG: Cell[] = [
   { r: 1, c: -1 },
   { r: 1, c: 1 },
 ];
-const AROUND: Cell[] = [...ORTHO, ...DIAG];
+/** The 8 directions to a surrounding space: orthogonal first, then diagonal. */
+export const AROUND: readonly Cell[] = [...ORTHO, ...DIAG];
 
 export const CAPACITY: Record<number, number> = { 7: 1, 8: 2, 9: 3, 10: 4 };
 
@@ -87,7 +88,7 @@ export function onBoard(board: Board, p: Cell): boolean {
 }
 
 /** The cells one step from p in each direction, carried across the board's joined edges. */
-export function offsets(board: Board, p: Cell, deltas: Cell[]): Cell[] {
+export function offsets(board: Board, p: Cell, deltas: readonly Cell[]): Cell[] {
   const join = (x: number, size: number, wraps = false) => (wraps ? (x + size) % size : x);
   return deltas.map((d) => ({ r: join(p.r + d.r, board.rows, board.wrap?.rows), c: join(p.c + d.c, board.cols, board.wrap?.cols) }));
 }
@@ -118,7 +119,7 @@ export function grid(board: Board): Grid {
   const { rows, cols } = board;
   const cells: Cell[] = [];
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cells.push(Object.freeze({ r, c }));
-  const near = (deltas: Cell[]) =>
+  const near = (deltas: readonly Cell[]) =>
     cells.map((p) => Object.freeze(offsets(board, p, deltas).filter((q) => onBoard(board, q)).map((q) => cells[q.r * cols + q.c])));
   const orthoCells = near(ORTHO);
   const aroundCells = near(AROUND);

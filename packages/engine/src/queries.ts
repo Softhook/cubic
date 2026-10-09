@@ -19,26 +19,6 @@ import { hasPower, hooksOf, modeHasHook, rulesOf } from './rules';
 import { activeSkills, anySkill, ruleOf, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
 import type { Cell, CombatPending, CombatRole, Die, GameState, OncePerTurn, Planet, PlayerId, TurnState } from './types';
 
-// ---------------------------------------------------------------------------
-// Prototype ship powers (ShipHooks in prototype.ts): the official ships have none.
-
-/**
- * Spaces where `mover`'s ships must stop, by board cell index (`at` is shipsByIndex): around enemy
- * ships with `stopsEnemies`. Undefined when nothing stops them, so plain searches stay plain.
- */
-export function stopZone(state: GameState, mover: PlayerId, at: (Die | undefined)[]): Uint8Array | undefined {
-  if (!modeHasHook(state, 'stopsEnemies')) return undefined;
-  let zone: Uint8Array | undefined;
-  for (let i = 0; i < at.length; i++) {
-    const d = at[i];
-    const stops = d && d.owner !== mover ? hooksOf(state, d)?.stopsEnemies : undefined;
-    if (!stops) continue;
-    zone ??= new Uint8Array(grid(state.board).size);
-    for (const nb of stops(state, d!, i)) zone[nb] = 1;
-  }
-  return zone;
-}
-
 export type { CombatPart } from './skillRules';
 
 // ---------------------------------------------------------------------------
@@ -147,6 +127,23 @@ export function canScrappy(state: GameState): boolean {
 export function movementRange(state: GameState, d: Die): number {
   const base = Math.min(rulesOf(state).maxMovement ?? 6, d.value);
   return base + skillRules(state, d.owner).reduce((n, r) => n + (r.movement ?? 0), 0);
+}
+
+/**
+ * Spaces where `mover`'s ships must stop, by board cell index (`at` is shipsByIndex): around enemy
+ * ships with `stopsEnemies` (a prototype power, ShipHooks). Undefined when nothing stops them, so plain searches stay plain.
+ */
+export function stopZone(state: GameState, mover: PlayerId, at: (Die | undefined)[]): Uint8Array | undefined {
+  if (!modeHasHook(state, 'stopsEnemies')) return undefined;
+  let zone: Uint8Array | undefined;
+  for (let i = 0; i < at.length; i++) {
+    const d = at[i];
+    const stops = d && d.owner !== mover ? hooksOf(state, d)?.stopsEnemies : undefined;
+    if (!stops) continue;
+    zone ??= new Uint8Array(grid(state.board).size);
+    for (const nb of stops(state, d!, i)) zone[nb] = 1;
+  }
+  return zone;
 }
 
 export interface MoveOptions {

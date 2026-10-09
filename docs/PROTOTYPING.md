@@ -131,16 +131,12 @@ No up-front refactor is needed. Do each step when a rule needs it. Step 2 is don
 | 7 | AI scoring per mode | Trustworthy self-play | Medium |
 | 8 | UI driven by the rule set: ship names and powers, player tracks, a generic decision dialog | Showing it all on screen | Large |
 
-Step 2 matters most for this document. Today a ship's identity is its die value, hard-coded in:
-
-- **Engine:** [abilities.ts](../packages/engine/src/abilities.ts) (`change` checks for a 4,
-  `freeReconfigure` for a 6), `moveOptions` (`d.value === 5` turns on diagonals), and the ability list
-  in [legal.ts](../packages/engine/src/legal.ts) (lines ~170–171).
-- **Data and UI:** `SHIP_NAMES` and `SHIP_ABILITIES` in `data.ts`, read by about ten components
-  (Board, ShipPanel, CombatOverlay, Overlays, the rulebook).
-
-A per-mode ship table replaces each `d.value === N` with "does this ship's power have hook X?",
-exactly as skills do. The UI then reads names and power texts from the rule set instead of fixed maps.
+Step 2 matters most for this document, and is done. A ship's identity was its die value, hard-coded
+as `d.value === N` in [abilities.ts](../packages/engine/src/abilities.ts), `moveOptions` and
+[legal.ts](../packages/engine/src/legal.ts), and in fixed name and ability maps the UI read. Now each
+mode has a ship table (`RuleSet.ships`): the engine asks `hasPower(state, d, 'warp')` or reads a
+prototype's hooks, and the UI reads names and ability texts through `shipOf(state, value)`.
+`SHIP_NAMES` remains for log lines, as every mode keeps the official names.
 
 ---
 

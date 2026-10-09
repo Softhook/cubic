@@ -108,8 +108,3 @@ export const CLASSIC_SHIPS: ShipTable = {
 
 /** The ships' names in every mode. */
 export const SHIP_NAMES: Record<number, string> = Object.fromEntries(Object.entries(CLASSIC_SHIPS).map(([v, s]) => [v, s.name]));
-
-/** The classic ship powers; a mode's own are in rulesOf(state).ships (see shipOf). */
-export const SHIP_ABILITIES: Record<number, { name: string; text: string }> = Object.fromEntries(
-  Object.entries(CLASSIC_SHIPS).map(([v, s]) => [v, s.ability]),
-);

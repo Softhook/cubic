@@ -1,6 +1,6 @@
 import type { CSSProperties, MouseEvent, ReactNode } from 'react';
 import type { CardDeck } from '@quantum/art';
-import { MODES, SHIP_ABILITIES, SHIP_NAMES } from '@quantum/engine';
+import { CLASSIC_SHIPS, MODES } from '@quantum/engine';
 import { ActionHex, MissileIcon } from '../components/Card';
 import { PLAYER_COLORS } from '../theme';
 import { Arrow, CubeIcon, Diagram, DieFace, DieIcon, Dots, Glow, Icon, Mark, Note, Path, PlanetIcon, PlanetMarks, Ship, Tile, cardBackUrl, reachable, type At } from './diagrams';
@@ -294,7 +294,7 @@ export function Manual({ dark }: { dark?: boolean }) {
             <div key={v} className="mn-ship">
               <DieIcon v={v} size={30} />
               <div>
-                <b>{SHIP_NAMES[v]}</b> <span className="mn-ability">{SHIP_ABILITIES[v].name}</span>
+                <b>{CLASSIC_SHIPS[v].name}</b> <span className="mn-ability">{CLASSIC_SHIPS[v].ability.name}</span>
                 <p>{SHIP_TEXT[v]}</p>
               </div>
             </div>

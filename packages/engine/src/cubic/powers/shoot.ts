@@ -2,23 +2,11 @@
  * Shoot: attack an enemy in a straight line, without moving. The ship's move and its shot cost one
  * action together, in either order; the shooter never advances.
  */
-import { canMoveDie, cellOf, die, dieAt, hooksOf, isEmptySpace, offsets, setTurnNote, spend, startCombat, turnNote } from '../../prototype';
-import type { Cell, Die, GameState, PrototypePower } from '../../prototype';
+import { AROUND, canMoveDie, cellOf, die, dieAt, hooksOf, isEmptySpace, offsets, setTurnNote, spend, startCombat, turnNote } from '../../prototype';
+import type { Die, GameState, PrototypePower } from '../../prototype';
 
 /** How far a shot reaches. Spaces short of the target must be empty (a ship, planet or void blocks). */
 const SHOOT_RANGE = 2;
-
-/** The directions a shot may go: orthogonal and diagonal. */
-const LINES: Cell[] = [
-  { r: -1, c: 0 },
-  { r: 1, c: 0 },
-  { r: 0, c: -1 },
-  { r: 0, c: 1 },
-  { r: -1, c: -1 },
-  { r: -1, c: 1 },
-  { r: 1, c: -1 },
-  { r: 1, c: 1 },
-];
 
 /** This turn so far: `fired` first, so its move is free; `moved` first, so its shot is free; `done`: both. */
 type Shot = 'fired' | 'moved' | 'done';
@@ -37,7 +25,8 @@ export function shootTargets(s: GameState, d: Die): Die[] {
   const start = cellOf(d);
   if (!start) return [];
   const out: Die[] = [];
-  for (const dir of LINES) {
+  // Orthogonal and diagonal lines.
+  for (const dir of AROUND) {
     let at = start;
     for (let k = 0; k < SHOOT_RANGE; k++) {
       [at] = offsets(s.board, at, [dir]);

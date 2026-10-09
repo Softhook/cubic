@@ -17,6 +17,12 @@ function canDeployFrom(game: GameState, p: PlayerState, ctl: Controller): boolea
   return (ctl.actionPhase && game.turn.player === p.id) || !!unveilingOf(game, p.id, ctl) || placingStart;
 }
 
+/** A ship's ability in this game's rules, as one line. */
+function abilityText(game: GameState, value: number): string {
+  const { ability } = shipOf(game, value);
+  return `${ability.name}: ${ability.text}`;
+}
+
 /**
  * Whose scrapyard the turn panel shows: the ships this device plays with, so they stay in one place
  * rather than moving between the panel and a player row as turns pass. That's whoever can deploy now,
@@ -54,7 +60,7 @@ export function Scrapyard({ game, p, ctl, dispatch }: { game: GameState; p: Play
                   {SHIP_NAMES[d.value]} ({d.value})
                 </b>
                 <span>
-                  {shipOf(game, d.value).ability.name}: {shipOf(game, d.value).ability.text}
+                  {abilityText(game, d.value)}
                 </span>
                 <span className="muted">Waiting in the scrapyard to be deployed.</span>
               </>
