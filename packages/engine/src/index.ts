@@ -7,7 +7,7 @@ export * from './queries';
 export { activeSkills, hasSkill, skillCard, skillRules, SKILL_RULES, type SkillRule } from './skillRules';
 export { createGame } from './setup';
 export type { NewGameOptions } from './setup';
-export { apply, tryApply, actor, mayAct } from './engine';
+export { apply, tryApply, actor, mayAct, cloneState, copyState } from './engine';
 export { legalActions } from './legal';
 export { isUndoable } from './undo';
 export { checkInvariants } from './invariants';

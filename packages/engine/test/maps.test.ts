@@ -11,7 +11,7 @@ describe('maps', () => {
 
 describe('wrapping maps', () => {
   const board = (id: string) => buildBoard(MAPS.find((m) => m.id === id)!);
-  const has = (cells: { r: number; c: number }[], r: number, c: number) => cells.some((q) => q.r === r && q.c === c);
+  const has = (cells: readonly { r: number; c: number }[], r: number, c: number) => cells.some((q) => q.r === r && q.c === c);
 
   it('left and right edges join on a horizontal map', () => {
     const b = board('appeal-to-authority'); // 9 rows × 15 cols

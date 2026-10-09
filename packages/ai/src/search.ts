@@ -1,5 +1,5 @@
-import { actor, apply, deployTargets, legalActions, scrapyard, type Action, type GameState, type Pending, type PlayerId } from '@quantum/engine';
-import { outcomes } from './chance';
+import { actor, apply, copyState, deployTargets, legalActions, scrapyard, type Action, type GameState, type Pending, type PlayerId } from '@quantum/engine';
+import { outcomes, type Outcome } from './chance';
 import { candidates } from './patient';
 import { evaluate } from './evaluate';
 
@@ -33,6 +33,13 @@ export interface SearchParams {
   carry: boolean;
   /** How many of the best plans to test against the opponent's next turn (0 = none). */
   replies: number;
+  /** The policy that plays the opponent's next turn for those tests (default: level 2's). */
+  reply?: SearchParams;
+  /**
+   * Replies played per plan, averaged, each with its own dice; the same dice for every plan, so they
+   * are compared fairly. Without it, one reply with the search's own randomness.
+   */
+  replySamples?: number;
 }
 
 interface Line {
@@ -43,6 +50,8 @@ interface Line {
 
 export class Search {
   private readonly tt = new Map<string, Line>();
+  /** Evaluations by position: deepening a line scores its positions again. */
+  private readonly evals = new Map<string, number>();
   private readonly seeds: number[];
   private evaluations = 0;
 
@@ -69,7 +78,10 @@ export class Search {
     const root = hideUnknowns(state, this.random);
     const depth = this.params.depth;
     const scored = options
-      .map((a) => ({ a, line: a.type === 'endTurn' ? this.standPat(root) : this.action(root, a, 0) }))
+      .map((a) => {
+        const outs = a.type === 'endTurn' ? null : this.expand(root, a);
+        return { a, outs, line: outs ? this.action(outs, 0) : a.type === 'endTurn' ? this.standPat(root) : NO_LINE };
+      })
       .filter((x) => x.line.value > -Infinity)
       .sort((x, y) => y.line.value - x.line.value);
     if (!scored.length) return options[0];
@@ -78,14 +90,18 @@ export class Search {
     if (depth > 1) {
       for (const x of scored.slice(0, this.params.width)) {
         if (this.exhausted()) break;
-        if (x.a.type !== 'endTurn') x.line = this.action(root, x.a, depth - 1);
+        if (x.outs) x.line = this.action(x.outs, depth - 1);
       }
       scored.sort((x, y) => y.line.value - x.line.value);
     }
     if (this.params.replies > 0 && !head) {
       // Scores after the reply are on a different scale, so choose among the checked plans only.
       const checked = scored.slice(0, this.params.replies);
-      const after = checked.map((x) => ({ a: x.a, value: 0.5 * x.line.value + 0.5 * this.afterReply(x.line.end) }));
+      const samples = this.params.replySamples;
+      const seeds = samples ? Array.from({ length: samples }, () => seed(this.random)) : [];
+      const reply = (end: GameState) =>
+        samples ? seeds.reduce((sum, x) => sum + this.afterReply(end, mulberry(x)), 0) / samples : this.afterReply(end, this.random);
+      const after = checked.map((x) => ({ a: x.a, value: 0.5 * x.line.value + 0.5 * reply(x.line.end) }));
       return after.reduce((b, x) => (x.value > b.value ? x : b)).a;
     }
     return scored[0].a;
@@ -120,23 +136,32 @@ export class Search {
   }
 
   private standPat(s: GameState): Line {
+    // Counted even when cached: the budget measures the search's size, so that a faster search
+    // makes the same choices.
     this.evaluations++;
-    return { value: evaluate(s, this.me), end: s };
+    const k = evalKey(s);
+    let value = this.evals.get(k);
+    if (value === undefined) this.evals.set(k, (value = evaluate(s, this.me)));
+    return { value, end: s };
   }
 
   private exhausted(): boolean {
     return this.evaluations >= this.params.budget;
   }
 
-  /** Expected value of taking `a` in `s`, searching `depth` further actions after it. */
-  private action(s: GameState, a: Action, depth: number): Line {
+  /** The outcomes of `a` in `s`, with the decisions that follow settled; null if it is illegal. */
+  private expand(s: GameState, a: Action): Outcome[] | null {
     const outs = outcomes(s, a, this.seeds);
-    if (!outs) return { value: -Infinity, end: s };
+    return outs && outs.map((o) => ({ state: this.settle(o.state), p: o.p }));
+  }
+
+  /** Expected value of an action, from its `expand`ed outcomes, searching `depth` further actions after it. */
+  private action(outs: Outcome[], depth: number): Line {
     let value = 0;
-    let end = s;
+    let end = outs[0].state;
     let likeliest = -1;
     for (const o of outs) {
-      const line = this.node(this.settle(o.state), depth);
+      const line = this.node(o.state, depth);
       value += o.p * line.value;
       if (o.p > likeliest) {
         likeliest = o.p;
@@ -157,14 +182,16 @@ export class Search {
     if (depth > 0 && !this.exhausted()) {
       const scored = candidates(s, { includeCarry: this.params.carry })
         .filter((a) => a.type !== 'endTurn')
-        .map((a) => ({ a, line: this.action(s, a, 0) }))
-        .filter((x) => x.line.value > -Infinity)
+        .flatMap((a) => {
+          const outs = this.expand(s, a);
+          return outs ? [{ outs, line: this.action(outs, 0) }] : [];
+        })
         .sort((x, y) => y.line.value - x.line.value);
       for (const x of scored) if (x.line.value > best.value) best = x.line;
       if (depth > 1) {
         for (const x of scored.slice(0, this.params.innerWidth)) {
           if (this.exhausted()) break;
-          const line = this.action(s, x.a, depth - 1);
+          const line = this.action(x.outs, depth - 1);
           if (line.value > best.value) best = line;
         }
       }
@@ -202,23 +229,25 @@ export class Search {
     return s;
   }
 
-  /** The value of `end` after I finish my turn and the next player plays theirs (level-2 policy). */
-  private afterReply(end: GameState): number {
-    const captain = new Search(this.me, LEVEL_2_REPLY, this.random);
+  /** The value of `end` after I finish my turn and the next player plays theirs (`reply` policy). */
+  private afterReply(end: GameState, random: () => number): number {
+    const captain = new Search(this.me, LEVEL_2_REPLY, random);
     let s = end;
     if (this.myTurn(s)) s = captain.settle(apply(s, { type: 'endTurn' }));
     const them = s.turn.player;
     if (them === this.me) return evaluate(s, this.me);
-    const opponent = new Search(them, LEVEL_2_REPLY, this.random);
+    const opponent = new Search(them, this.params.reply ?? LEVEL_2_REPLY, random);
     for (let i = 0; i < 12 && s.phase !== 'over' && s.turn.player === them; i++) {
       const a = s.pending[0] ? (actor(s) === them ? opponent.choose(s) : captain.choose(s)) : opponent.choose(s);
       if (!a) break;
-      // The opponent's rolls are sampled once: this is a check of the plan, not a full average.
-      s = captain.settle(apply({ ...s, rng: seed(this.random) }, a));
+      // The opponent's rolls are sampled: this is a check of the plan, not a full average.
+      s = captain.settle(apply({ ...s, rng: seed(random) }, a));
     }
     return evaluate(s, this.me);
   }
 }
+
+const NO_LINE: Line = { value: -Infinity, end: null as unknown as GameState };
 
 /** Turns in a row a player may end without spending an action before the AI must act. */
 const IDLE_LIMIT = 2;
@@ -252,6 +281,21 @@ function unveilPlacements(s: GameState): Action[] {
   return [die && to ? { type: 'unveilDeploy', die: die.id, to } : { type: 'unveilDone' }];
 }
 
+/**
+ * A random number generator in [0, 1) from a seed, for repeatable reply samples: mulberry32, as in
+ * the engine's rng.ts. Integer maths (Math.imul): a float LCG loses bits above 2^53, and different
+ * seeds fall into the same sequence.
+ */
+function mulberry(seed: number): () => number {
+  let x = seed >>> 0;
+  return () => {
+    let t = (x = (x + 0x6d2b79f5) >>> 0);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function seed(random: () => number): number {
   return Math.floor(random() * 2 ** 32) >>> 0;
 }
@@ -261,7 +305,7 @@ function seed(random: () => number): number {
  * a random seed of its own instead of the game's RNG, and the unseen deck cards shuffled.
  */
 function hideUnknowns(state: GameState, random: () => number): GameState {
-  const s = structuredClone({ ...state, log: [] });
+  const s = copyState({ ...state, log: [] });
   s.rng = seed(random);
   const peek = s.pending[0]?.kind === 'peek' ? s.pending[0].deck : null;
   shuffle(s.market.skillDeck, peek === 'skill' ? 1 : 0, random);
@@ -275,6 +319,13 @@ function shuffle(xs: string[], keep: number, random: () => number) {
     const j = keep + Math.floor(random() * (i - keep + 1));
     [xs[i], xs[j]] = [xs[j], xs[i]];
   }
+}
+
+/** Identifies a position for the evaluation cache: also outside my turn, where whose turn it is matters. */
+function evalKey(s: GameState): string {
+  const t = s.turn;
+  const between = s.players.map((p) => [p.bonusTurns.length, p.carriedPicks]);
+  return `${s.phase}|${s.winner}|${t.player}|${t.phase}|${JSON.stringify([t.offTurnCubes, between])}|${signature(s)}`;
 }
 
 /** Identifies a position within a turn, for the transposition table. */

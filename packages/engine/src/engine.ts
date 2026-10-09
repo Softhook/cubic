@@ -45,14 +45,38 @@ export function apply(prev: GameState, action: Action): GameState {
   // Own keys only: an action from another browser may name anything, `constructor` included.
   const handler = Object.hasOwn(HANDLERS, action?.type) ? (HANDLERS[action.type] as (s: GameState, a: Action) => void) : undefined;
   if (!handler) throw new RuleError(`Unknown action ${action?.type}`);
-  // The board's cells never change after the board is built, so states share them: copying them was
-  // most of the AI's time (an Unveil with five ships to place took minutes).
-  const s: GameState = structuredClone({ ...prev, board: { ...prev.board, cells: [] } });
-  s.board.cells = prev.board.cells;
+  const s = copyState(prev);
   // Scrappy's re-roll must come right after the roll: any other action gives it up.
   if (action.type !== 'scrappy') delete s.turn.scrappy;
   handler(s, action);
   settle(s);
+  return s;
+}
+
+/**
+ * A deep copy of a state, or any part of one. States are plain data (they travel as JSON between
+ * browsers), so a plain recursive copy does what structuredClone does, about three times faster:
+ * the AI copies a state for every position it searches.
+ */
+export function cloneState<T>(x: T): T {
+  if (typeof x !== 'object' || x === null) return x;
+  if (Array.isArray(x)) {
+    const out = new Array(x.length);
+    for (let i = 0; i < x.length; i++) out[i] = cloneState(x[i]);
+    return out as T;
+  }
+  const out: Record<string, unknown> = {};
+  for (const k in x) out[k] = cloneState(x[k]);
+  return out as T;
+}
+
+/**
+ * A copy of a state to change. The board's cells never change after the board is built, so states
+ * share them: copying them was most of the AI's time (an Unveil with five ships to place took minutes).
+ */
+export function copyState(prev: GameState): GameState {
+  const s: GameState = cloneState({ ...prev, board: { ...prev.board, cells: [] } });
+  s.board.cells = prev.board.cells;
   return s;
 }
 

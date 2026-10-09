@@ -3,7 +3,8 @@ import {
   cellAt,
   diagonals,
   delta,
-  isDiagonalStep,
+  grid,
+  type Grid,
   key,
   linked,
   orbitals,
@@ -135,39 +136,68 @@ export interface MoveOptions {
 }
 
 /**
- * Spaces a ship can reach within `range` steps, with the fewest steps to each. `ignore` lists
- * occupied spaces treated as empty. With `through` (Devious), the ship may pass through that
- * player's enemies' ships at no cost; such spaces are marked `through`, as it can't stop there.
+ * Spaces a ship can reach within `range` steps, with the fewest steps to each, by board cell index
+ * (see board.ts grid): this runs for every ship in every position the AI scores. `found` lists
+ * them in the order they were first reached, the start first. `ignore` lists occupied spaces
+ * treated as empty. With `through` (Devious), the ship may pass through that player's enemies'
+ * ships at no cost; such spaces are marked in `passing`, as it can't stop there.
  */
-function reach(state: GameState, start: Cell, range: number, diagonal: boolean, ignore: Cell[] = [], through?: PlayerId) {
-  const steps = new Map<string, { cell: Cell; steps: number; usedDiagonal: boolean; through: boolean }>();
-  steps.set(key(start), { cell: start, steps: 0, usedDiagonal: false, through: false });
-  const queue: Cell[] = [start];
-  const entry = (p: Cell): 'free' | 'through' | null => {
-    const cell = cellAt(state.board, p);
-    if (!cell || cell.kind !== 'space') return null;
-    if (ignore.some((x) => same(x, p))) return 'free';
-    const d = dieAt(state, p);
-    if (!d) return 'free';
-    return through !== undefined && d.owner !== through ? 'through' : null;
+function reach(state: GameState, start: Cell, range: number, diagonal: boolean, ignore: Cell[] = [], through?: PlayerId, at = shipsByIndex(state)) {
+  const g = grid(state.board);
+  const ignored = ignore.map((p) => p.r * g.cols + p.c);
+  const steps = new Int32Array(g.size).fill(-1);
+  const passing = new Uint8Array(g.size);
+  const from = start.r * g.cols + start.c;
+  const found: number[] = [from];
+  steps[from] = 0;
+  const gate = gates(state, g);
+  const near = diagonal ? g.around : g.ortho;
+  /** 0 = blocked, 1 = free, 2 = passed through (Devious). */
+  const entry = (i: number): number => {
+    if (!g.space[i]) return 0;
+    const d = at[i];
+    if (!d || (ignored.length && ignored.includes(i))) return 1;
+    return through !== undefined && d.owner !== through ? 2 : 0;
   };
   // 0-1 breadth-first search: free passes go to the front of the queue. Without them it is a plain BFS.
-  while (queue.length) {
-    const cur = queue.shift()!;
-    const info = steps.get(key(cur))!;
-    if (info.steps >= range) continue;
-    for (const nb of stepNeighbours(state, cur, diagonal)) {
-      const kind = entry(nb);
-      if (!kind) continue;
-      const cost = info.steps + (kind === 'through' ? 0 : 1);
-      const old = steps.get(key(nb));
-      if (old && old.steps <= cost) continue;
-      steps.set(key(nb), { cell: nb, steps: cost, usedDiagonal: info.usedDiagonal || isDiagonalStep(cur, nb, state.board), through: kind === 'through' });
-      if (kind === 'through') queue.unshift(nb);
-      else queue.push(nb);
-    }
+  const queue: number[] = [from];
+  let head = 0;
+  const visit = (cur: number, nb: number) => {
+    const kind = entry(nb);
+    if (!kind) return;
+    const cost = steps[cur] + (kind === 2 ? 0 : 1);
+    if (steps[nb] >= 0 && steps[nb] <= cost) return;
+    if (steps[nb] < 0) found.push(nb);
+    steps[nb] = cost;
+    passing[nb] = kind === 2 ? 1 : 0;
+    if (kind === 2) {
+      if (head > 0) queue[--head] = nb;
+      else queue.unshift(nb);
+    } else queue.push(nb);
+  };
+  while (head < queue.length) {
+    const cur = queue[head++];
+    if (steps[cur] >= range) continue;
+    for (const nb of near[cur]) visit(cur, nb);
+    const partner = gate(cur);
+    if (partner >= 0) visit(cur, partner);
   }
-  return steps;
+  return { found, steps, passing };
+}
+
+/** The Warp Gate partner of a cell index, or -1 (see board.ts stepNeighbours). */
+function gates(state: GameState, g: Grid): (i: number) => number {
+  if (state.gates.length !== 2) return () => -1;
+  const [a, b] = state.gates.map((p) => p.r * g.cols + p.c);
+  return (i) => (i === a ? b : i === b ? a : -1);
+}
+
+/** The ships on the map by board cell index (see board.ts grid). */
+function shipsByIndex(state: GameState): (Die | undefined)[] {
+  const cols = state.board.cols;
+  const at: (Die | undefined)[] = [];
+  for (const d of state.dice) if (d.loc.zone === 'board') at[d.loc.r * cols + d.loc.c] = d;
+  return at;
 }
 
 export function canMoveDie(state: GameState, d: Die): boolean {
@@ -178,9 +208,22 @@ export function canMoveDie(state: GameState, d: Die): boolean {
 }
 
 export function moveOptions(state: GameState, dieId: string): MoveOptions {
-  const d = die(state, dieId);
-  const start = cellOf(d);
+  const { cells } = grid(state.board);
+  const { moves, attacks } = moveIndexes(state, dieId);
   const result: MoveOptions = { moves: new Map(), attacks: new Map() };
+  for (const [i, m] of moves) result.moves.set(key(cells[i]), { cell: cells[i], ...m });
+  for (const [id, x] of attacks) result.attacks.set(id, { from: cells[x.from], at: cells[x.at], diagonal: x.diagonal });
+  return result;
+}
+
+/** moveOptions by board cell index (see board.ts grid), for code that asks about many ships and positions: the AI. */
+export function moveIndexes(state: GameState, dieId: string) {
+  const d = die(state, dieId);
+  const result = {
+    moves: new Map<number, { steps: number; diagonal: boolean }>(),
+    attacks: new Map<string, { from: number; at: number; diagonal: boolean }>(),
+  };
+  const start = cellOf(d);
   if (!start) return result;
   const range = movementRange(state, d);
   const passes: boolean[] = [false];
@@ -188,19 +231,26 @@ export function moveOptions(state: GameState, dieId: string): MoveOptions {
 
   // Devious: normal moves only, not Transport or the Tactical step (decided 2026-10-03, OPEN-QUESTIONS #65).
   const through = anySkill(state, d.owner, (r) => r.moveThroughEnemies) ? d.owner : undefined;
+  const g = grid(state.board);
+  const gate = gates(state, g);
+  const at = shipsByIndex(state);
   for (const diagonal of passes) {
-    const reached = reach(state, start, range, diagonal, [], through);
-    for (const [k, info] of reached) {
-      if (info.steps === 0 || info.through || result.moves.has(k)) continue;
-      result.moves.set(k, { cell: info.cell, steps: info.steps, diagonal });
+    const { found, steps, passing } = reach(state, start, range, diagonal, [], through, at);
+    for (const i of found) {
+      if (steps[i] === 0 || passing[i] || result.moves.has(i)) continue;
+      result.moves.set(i, { steps: steps[i], diagonal });
     }
-    for (const info of reached.values()) {
-      if (info.steps >= range || info.through) continue;
-      for (const nb of stepNeighbours(state, info.cell, diagonal)) {
-        const target = dieAt(state, nb);
-        if (!target || target.owner === d.owner || result.attacks.has(target.id)) continue;
-        result.attacks.set(target.id, { from: info.cell, at: nb, diagonal });
-      }
+    const near = diagonal ? g.around : g.ortho;
+    const attack = (from: number, nb: number) => {
+      const target = at[nb];
+      if (!target || target.owner === d.owner || result.attacks.has(target.id)) return;
+      result.attacks.set(target.id, { from, at: nb, diagonal });
+    };
+    for (const i of found) {
+      if (steps[i] >= range || passing[i]) continue;
+      for (const nb of near[i]) attack(i, nb);
+      const partner = gate(i);
+      if (partner >= 0) attack(i, partner);
     }
   }
   return result;
@@ -218,18 +268,20 @@ export function carryOptions(state: GameState, flagshipId: string, passengerId: 
   const result = new Map<string, { cell: Cell; drops: Cell[] }>();
   if (!start || !pCell) return result;
   range ??= movementRange(state, flag);
-  const reached = reach(state, start, range, false, [pCell]);
-  for (const [k, info] of reached) {
+  const { cells } = grid(state.board);
+  const { found, steps } = reach(state, start, range, false, [pCell]);
+  for (const i of found) {
     // The flagship must move, but may fly out and back to its own space (designer ruling,
     // BGG thread 1074052): that needs 2 movement and one free neighbouring space.
-    if (info.steps === 0 && (range < 2 || reached.size < 2)) continue;
-    const drops = surrounding(state.board, info.cell).filter((q) => {
+    if (steps[i] === 0 && (range < 2 || found.length < 2)) continue;
+    const cell = cells[i];
+    const drops = surrounding(state.board, cell).filter((q) => {
       const cell = cellAt(state.board, q);
       if (!cell || cell.kind !== 'space') return false;
       const occupant = dieAt(state, q);
       return !occupant || occupant.id === flag.id || occupant.id === passenger.id;
     });
-    if (drops.length) result.set(k, { cell: info.cell, drops });
+    if (drops.length) result.set(key(cell), { cell, drops });
   }
   return result;
 }
@@ -385,7 +437,7 @@ export function conquerCheck(state: GameState, player: PlayerId, planetId: numbe
   }
 
   const rules = skillRules(state, player).flatMap((r) => (r.conquer ? [r.conquer] : []));
-  const mine = (spaces: Cell[]) => spaces.map((p) => dieAt(state, p)).filter((d): d is Die => !!d && d.owner === player);
+  const mine = (spaces: readonly Cell[]) => spaces.map((p) => dieAt(state, p)).filter((d): d is Die => !!d && d.owner === player);
   const orbit = mine(orbitals(state.board, planet));
   const corners = rules.some((r) => r.diagonals) ? mine(diagonals(state.board, planet)) : [];
   const all = [...orbit, ...corners];

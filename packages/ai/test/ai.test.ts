@@ -47,7 +47,7 @@ function playTurn(state: GameState, level: AiLevel): { s: GameState; actions: Ac
   return { s, actions };
 }
 
-const LEVELS: AiLevel[] = [1, 2, 3, 4];
+const LEVELS: AiLevel[] = [1, 2, 3, 4, 5];
 
 describe.each(LEVELS)('level %i', (level) => {
   it('conquers a planet whose orbit already adds up', () => {

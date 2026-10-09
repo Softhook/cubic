@@ -13,6 +13,7 @@ const DIAG: Cell[] = [
   { r: 1, c: -1 },
   { r: 1, c: 1 },
 ];
+const AROUND: Cell[] = [...ORTHO, ...DIAG];
 
 export const CAPACITY: Record<number, number> = { 7: 1, 8: 2, 9: 3, 10: 4 };
 
@@ -91,9 +92,60 @@ export function offsets(board: Board, p: Cell, deltas: Cell[]): Cell[] {
   return deltas.map((d) => ({ r: join(p.r + d.r, board.rows, board.wrap?.rows), c: join(p.c + d.c, board.cols, board.wrap?.cols) }));
 }
 
+/**
+ * A board's cells by index (r * cols + c), with each cell's neighbours: they never change, and the
+ * AI asks for them for every ship in every position it scores. Cached by `cells`, which states share
+ * (see engine.ts copyState). The lists are frozen, as every caller gets the same one.
+ */
+export interface Grid {
+  cols: number;
+  size: number;
+  cells: readonly Cell[];
+  /** Whether a ship may stand on the cell. */
+  space: readonly boolean[];
+  /** Neighbour indexes, orthogonal and all eight, on the board. */
+  ortho: readonly (readonly number[])[];
+  around: readonly (readonly number[])[];
+  orthoCells: readonly (readonly Cell[])[];
+  aroundCells: readonly (readonly Cell[])[];
+}
+
+const GRIDS = new WeakMap<BoardCell[][], Grid>();
+
+export function grid(board: Board): Grid {
+  let g = GRIDS.get(board.cells);
+  if (g) return g;
+  const { rows, cols } = board;
+  const cells: Cell[] = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cells.push(Object.freeze({ r, c }));
+  const near = (deltas: Cell[]) =>
+    cells.map((p) => Object.freeze(offsets(board, p, deltas).filter((q) => onBoard(board, q)).map((q) => cells[q.r * cols + q.c])));
+  const orthoCells = near(ORTHO);
+  const aroundCells = near(AROUND);
+  const index = (list: readonly Cell[]) => Object.freeze(list.map((q) => q.r * cols + q.c));
+  g = {
+    cols,
+    size: rows * cols,
+    cells,
+    space: cells.map((p) => cellAt(board, p)?.kind === 'space'),
+    ortho: orthoCells.map(index),
+    around: aroundCells.map(index),
+    orthoCells,
+    aroundCells,
+  };
+  GRIDS.set(board.cells, g);
+  return g;
+}
+
+function neighbours(board: Board, p: Cell, around: boolean): readonly Cell[] {
+  if (p.r < 0 || p.c < 0 || p.r >= board.rows || p.c >= board.cols) return offsets(board, p, around ? AROUND : ORTHO).filter((q) => onBoard(board, q));
+  const g = grid(board);
+  return (around ? g.aroundCells : g.orthoCells)[p.r * board.cols + p.c];
+}
+
 /** The 4 orthogonal spaces next to p that are on the board. */
-export function adjacent(board: Board, p: Cell): Cell[] {
-  return offsets(board, p, ORTHO).filter((q) => onBoard(board, q));
+export function adjacent(board: Board, p: Cell): readonly Cell[] {
+  return neighbours(board, p, false);
 }
 
 /** The orthogonal neighbours of p plus its Warp Gate partner: the two gate spaces count as adjacent (RULE-SUGGESTIONS #30). */
@@ -102,14 +154,14 @@ export function linked(state: GameState, p: Cell): Cell[] {
 }
 
 /** The 8 surrounding spaces of p that are on the board. */
-export function surrounding(board: Board, p: Cell): Cell[] {
-  return offsets(board, p, [...ORTHO, ...DIAG]).filter((q) => onBoard(board, q));
+export function surrounding(board: Board, p: Cell): readonly Cell[] {
+  return neighbours(board, p, true);
 }
 
 /** Movement neighbours, including diagonals for interceptors and Warp Gate links. */
-export function stepNeighbours(state: GameState, p: Cell, diagonal: boolean): Cell[] {
-  const result = offsets(state.board, p, diagonal ? [...ORTHO, ...DIAG] : ORTHO).filter((q) => onBoard(state.board, q));
-  return [...result, ...gatePartner(state, p)];
+export function stepNeighbours(state: GameState, p: Cell, diagonal: boolean): readonly Cell[] {
+  const result = neighbours(state.board, p, diagonal);
+  return state.gates.length === 2 ? [...result, ...gatePartner(state, p)] : result;
 }
 
 /** The other Warp Gate space, when p is one of two placed gates. */
@@ -124,7 +176,7 @@ export function isDiagonalStep(a: Cell, b: Cell, board: Board): boolean {
   return Math.abs(d.r) === 1 && Math.abs(d.c) === 1;
 }
 
-export function orbitals(board: Board, planet: Planet): Cell[] {
+export function orbitals(board: Board, planet: Planet): readonly Cell[] {
   return adjacent(board, planet);
 }
 

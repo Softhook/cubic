@@ -5,9 +5,8 @@ import {
   conquerCheck,
   distance,
   isEmptySpace,
-  key,
   movementRange,
-  moveOptions,
+  moveIndexes,
   orbitals,
   planetFreeSlots,
   rulesOf,
@@ -59,8 +58,8 @@ interface Ctx {
   s: GameState;
   /** The player who moves next: they act before anyone can react. */
   mover: PlayerId;
-  /** Empty spaces each ship on the map can reach with one move, by die id. */
-  reach: Map<string, Set<string>>;
+  /** Empty spaces each ship on the map can reach with one move, as board cell indexes (r * cols + c), by die id. */
+  reach: Map<string, Set<number>>;
   /** Chance each ship is destroyed by an enemy before its owner moves again, by die id. */
   kill: Map<string, number>;
   /** Expected cube points each player loses to attacks on their ships. */
@@ -92,11 +91,11 @@ function nextMover(s: GameState, me: PlayerId): PlayerId {
 function context(s: GameState, me: PlayerId): Ctx {
   const mover = nextMover(s, me);
   const ships = shipsOnBoard(s);
-  const reach = new Map<string, Set<string>>();
+  const reach = new Map<string, Set<number>>();
   const kill = new Map<string, number>();
   const exposure = s.players.map(() => 0);
   for (const d of ships) {
-    const opts = moveOptions(s, d.id);
+    const opts = moveIndexes(s, d.id);
     reach.set(d.id, new Set(opts.moves.keys()));
     for (const targetId of opts.attacks.keys()) {
       const target = ships.find((x) => x.id === targetId)!;
@@ -183,7 +182,8 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
   const { sum, target, ships: inOrbit } = check;
   const gap = target - sum;
   const empty = orbitals(s.board, planet).filter((c) => isEmptySpace(s, c));
-  const reaches = (d: Die) => empty.some((c) => ctx.reach.get(d.id)?.has(key(c)));
+  const cols = s.board.cols;
+  const reaches = (d: Die) => empty.some((c) => ctx.reach.get(d.id)?.has(c.r * cols + c.c));
   const outside = shipsOnBoard(s, p).filter((d) => !inOrbit.includes(d));
   const reachers = outside.filter(reaches);
 

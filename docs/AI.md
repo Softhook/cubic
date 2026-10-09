@@ -1,13 +1,14 @@
 # AI opponents
 
-The AI comes in four levels. Each player seat in the lobby picks one; the default is 3.
+The AI comes in five levels. Each player seat in the lobby picks one; the default is 3.
 
 | Level | Name | How it chooses | Thinking time per decision |
 |:-:|---|---|---|
 | 1 | **Cadet** | One action at a time. Scores the position after each legal action and takes the best. Random actions are sampled 3 times. | ~5 ms |
-| 2 | **Captain** | One action at a time, with exact odds for re-rolls and combat and an evaluation that knows whose turn is next and which enemy ships can reach which of its ships. | ~10 ms |
-| 3 | **Commodore** | Plans the whole turn: searches combinations of up to 3 actions (plus free ship abilities) and the outcomes of every dice roll on the way. | ~80 ms, ≤ 1 s |
-| 4 | **Admiral** | Wider turn search, includes Flagship transports, and checks its best three plans against the opponent's actual next turn. | ~250 ms, ≤ 2 s |
+| 2 | **Captain** | One action at a time, with exact odds for re-rolls and combat and an evaluation that knows whose turn is next and which enemy ships can reach which of its ships. | ~5 ms |
+| 3 | **Commodore** | Plans the whole turn: searches combinations of up to 3 actions (plus free ship abilities) and the outcomes of every dice roll on the way. | ~30 ms, ≤ 0.3 s |
+| 4 | **Admiral** | Wider turn search, includes Flagship transports, and checks its best three plans against the opponent's actual next turn. | ~85 ms, ≤ 0.5 s |
+| 5 | **Fleet Admiral** | Deeper and wider turn search (4 actions, more samples), and checks its best four plans against three replies each, with the same dice for every plan, averaged. | ~125 ms, ≤ 1.2 s |
 
 All levels choose among `legalActions(state)`, so they can only play legal moves. None of them
 sees the game's RNG or the order of the decks. Before searching, the AI replaces the RNG seed with
@@ -26,10 +27,18 @@ Self-play results, alternating seats, each pair of games on the same map seed (`
 | Cadet vs Captain | 5 – 35 (40) | | |
 | Captain vs Commodore | 9 – 31 (40) | | 9 – 26 (35) |
 | Commodore vs Admiral | 20 – 28 (48) | | |
+| Admiral vs Fleet Admiral | 20 – 28 (48) | | |
 | Cadet vs Commodore | | 1 – 29 (30) | 3 – 27 (30) |
 
-The levels are clearly ordered. Admiral's lead over Commodore is the smallest (58%); it is the
-level with the most room to grow (see Next steps). Empty cells haven't been measured yet.
+Fleet Admiral beat Admiral 28 – 20 (58%, 2026-10-09), the same margin as Admiral over Commodore, at
+about 2.5× Admiral's thinking time in the same run (126 vs 48 ms per decision). Over 48 games that
+lead is suggestive, not conclusive (p ≈ 0.15). Earlier candidate settings were no clear gain: a
+deeper, wider search alone went 25 – 23 (48 games), and Admiral's search checking five plans against
+a Commodore-played reply was 16 – 15 after 31 (interrupted). The shipped setting adds averaged
+replies, aimed at the reply check's noise; confirm the gain with a longer run before tuning further.
+
+The levels are clearly ordered. The top two steps are the smallest (58% each); they are where there
+is the most room to grow (see Next steps). Empty cells haven't been measured yet.
 
 To measure a change, run for example:
 
@@ -97,7 +106,9 @@ search (advance after a battle, card picks) get each player's best one-step choi
 
 **Reply check** (Admiral): for the three best plans, the end-of-turn position is played on through
 the opponent's next turn by the Captain policy, and each plan scores half its own value and half
-the value after the reply.
+the value after the reply. Fleet Admiral checks four plans, each against three replies with
+different dice (`replySamples`), the same three for every plan, so that one lucky roll doesn't
+decide between plans. `reply` can also set a stronger policy for the opponent's turn.
 
 ## Next steps
 
@@ -111,9 +122,11 @@ In rough order of value:
    and Community.
 3. **Missiles in the search.** The chance model assumes nobody fires a missile into a battle. The
    defender's possible missile should lower the attacker's odds.
-4. **Faster engine for search.** About 60% of `apply` is copying the board, which never changes
-   except for cubes. Copy-on-write or a separate static board would roughly double the positions
-   searched in the same time.
+4. **Faster engine for search.** Done (2026-10): states are copied by a plain recursive copy instead
+   of `structuredClone`, the board's neighbours are cached per board, and movement (`reach`,
+   `moveIndexes`) runs over cell indexes; the search reuses an action's outcomes when it deepens
+   it and caches evaluations. Levels 3 and 4 got 3–4× faster with identical choices (88 fixed
+   positions). The evaluation's movement for every ship is still most of the time.
 5. **Admiral beyond one reply.** Monte Carlo tree search across turns (with determinized decks),
    time-boxed in the worker, as originally planned in the roadmap.
 6. **More than 2 players.** The evaluation subtracts the strongest rival and a quarter of the

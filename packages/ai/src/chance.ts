@@ -1,4 +1,4 @@
-import { combatOutcome, die, rulesOf, tryApply, type Action, type CombatPending, type GameState } from '@quantum/engine';
+import { combatOutcome, copyState, die, rulesOf, tryApply, type Action, type CombatPending, type GameState } from '@quantum/engine';
 
 /**
  * The possible results of an action, with their probabilities.
@@ -43,7 +43,7 @@ function rerolls(prev: GameState, next: GameState, dieId: string): Outcome[] {
   const seen = unseen ? (prev.turn.seen[dieId] ?? [old]) : [old];
   const values = [1, 2, 3, 4, 5, 6].filter((v) => !seen.includes(v));
   return values.map((v) => {
-    const state = structuredClone(next);
+    const state = copyState(next);
     die(state, dieId).value = v;
     if (unseen) state.turn.seen[dieId] = [...seen, v];
     return { state, p: 1 / values.length };
@@ -68,7 +68,7 @@ function battles(state: GameState, combat: CombatPending): Outcome[] {
     else tally.set(r, { count: 1, dice });
   }
   return [...tally.values()].map(({ count, dice }) => {
-    const next = structuredClone(state);
+    const next = copyState(state);
     next.pending[0] = withDice(next.pending[0] as CombatPending, dice);
     return { state: next, p: count / total };
   });

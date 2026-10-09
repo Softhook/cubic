@@ -54,7 +54,7 @@ Done: SVG board, player panel, card market with Peek, action and combat UX, miss
 
 Package: `packages/ai`
 
-Done: four levels picked per seat (1 Cadet, 2 Captain, 3 Commodore, 4 Admiral; see [AI.md](AI.md)), running in a Web Worker; card-pick, missile and Dangerous policies; `npm run ai:match` benchmarks.
+Done: five levels picked per seat (1 Cadet, 2 Captain, 3 Commodore, 4 Admiral, 5 Fleet Admiral; see [AI.md](AI.md)), running in a Web Worker; card-pick, missile and Dangerous policies; `npm run ai:match` benchmarks.
 
 Open, in the order of [AI.md § Next steps](AI.md#next-steps):
 

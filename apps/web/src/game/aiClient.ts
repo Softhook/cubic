@@ -9,7 +9,7 @@ let nextId = 0;
 
 export function aiLevelOf(p: PlayerConfig): AiLevel {
   const level = p.aiLevel ?? DEFAULT_AI_LEVEL;
-  return (level >= 1 && level <= 4 ? level : DEFAULT_AI_LEVEL) as AiLevel;
+  return (level >= 1 && level <= 5 ? level : DEFAULT_AI_LEVEL) as AiLevel;
 }
 
 function getWorker(): Worker | null {
