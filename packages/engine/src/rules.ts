@@ -17,6 +17,10 @@ export interface RuleSet {
   summary: string;
   /** Advance cards; null means the mode has no cards, and so no research either. */
   cards: CardRules | null;
+  /** Actions available on each regular turn. */
+  actionsPerTurn: number;
+  /** Maximum value on the research track. */
+  researchLimit: number;
   /** Missiles each player starts with; 0 means the mode has no missiles. */
   startingMissiles: number;
   /**
@@ -63,6 +67,8 @@ const COMMUNITY: RuleSet = {
   name: 'Community',
   title: 'Community Edition',
   summary: 'Rebalanced cards, missiles, a starting skill and card peeking.',
+  actionsPerTurn: 3,
+  researchLimit: 6,
   cards: {
     skills: SKILLS,
     tactics: TACTICS,
@@ -85,6 +91,8 @@ export const RULESETS: Record<GameMode, RuleSet> = {
     title: 'Basic',
     summary: 'The official rules without cards. Learn movement, combat and conquering.',
     cards: null,
+    actionsPerTurn: 3,
+    researchLimit: 6,
     startingMissiles: 0,
     reconfigure: 'different',
     mapGroups: OFFICIAL_MAPS,
@@ -104,6 +112,8 @@ export const RULESETS: Record<GameMode, RuleSet> = {
       refresh: true,
       terms: { skill: 'Command card', skills: 'Command cards', skillDeck: 'Command', tacticDeck: 'Gambit' },
     },
+    actionsPerTurn: 3,
+    researchLimit: 6,
     startingMissiles: 0,
     reconfigure: 'different',
     mapGroups: OFFICIAL_MAPS,

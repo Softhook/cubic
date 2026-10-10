@@ -14,6 +14,7 @@ import { linked } from './board';
 import { effectOf } from './data';
 import { SKILL_EFFECTS, type SkillEffect } from './effects';
 import { dieAt, shipsOnBoard } from './lookups';
+import { rulesOf } from './rules';
 import type { Action, Cell, CombatPending, CombatRole, Die, GameState, PlayerId } from './types';
 
 export interface CombatPart {
@@ -308,7 +309,7 @@ export function askBrilliant(state: GameState, player: PlayerId): boolean {
   return (
     skillCard(state, player, 'brilliant') === 'brilliant' &&
     hasSkill(state, player, 'pioneering') &&
-    state.players[player].research < 6 &&
+    state.players[player].research < rulesOf(state).researchLimit &&
     !anySkill(state, player, (r) => r.noResearch)
   );
 }

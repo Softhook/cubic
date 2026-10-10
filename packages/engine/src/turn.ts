@@ -1,5 +1,5 @@
 /** Turn structure: start of turn, the end-of-turn card phase, and passing the turn on. */
-import { ACTIONS_PER_TURN, checkInfamy, emptyTurn, gainResearch, log, name, type PendingOf } from './core';
+import { checkInfamy, emptyTurn, gainResearch, log, name, type PendingOf } from './core';
 import { cellOf, scrapyard, shipsOnBoard } from './lookups';
 import { breakthroughAt, canProfiteer, canTakeAnyCard, infamyTargets, startSlots } from './queries';
 import { rulesOf } from './rules';
@@ -53,7 +53,7 @@ export function startTurn(s: GameState, player: PlayerId, actions: number, bonus
 export function beginPlay(s: GameState) {
   s.phase = 'play';
   s.turn.number = 0;
-  startTurn(s, s.turn.player, ACTIONS_PER_TURN, false);
+  startTurn(s, s.turn.player, rulesOf(s).actionsPerTurn, false);
 }
 
 /**
@@ -110,7 +110,7 @@ function finishTurn(s: GameState) {
     s.turn.resume = resume;
     return;
   }
-  startTurn(s, resume, ACTIONS_PER_TURN, false);
+  startTurn(s, resume, rulesOf(s).actionsPerTurn, false);
 }
 
 /**

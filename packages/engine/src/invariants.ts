@@ -19,6 +19,7 @@ export function checkInvariants(s: GameState): string[] {
     if (!ok) errors.push(message);
   };
   const isPlayer = (p: number) => Number.isInteger(p) && p >= 0 && p < s.players.length;
+  const researchLimit = rulesOf(s).researchLimit;
 
   // Players and tracks
   const map = MAPS.find((m) => m.id === s.board.mapId);
@@ -26,7 +27,7 @@ export function checkInvariants(s: GameState): string[] {
   for (const p of s.players) {
     const name = `player ${p.id}`;
     check(p.dominance >= 1 && p.dominance <= 6, `${name}: dominance ${p.dominance} outside 1–6`);
-    check(p.research >= 1 && p.research <= 6, `${name}: research ${p.research} outside 1–6`);
+    check(p.research >= 1 && p.research <= researchLimit, `${name}: research ${p.research} outside 1–${researchLimit}`);
     check(p.missiles >= 0, `${name}: ${p.missiles} missiles`);
     check(p.actionPenalty >= 0 && p.planAhead >= 0, `${name}: negative penalty or Plan Ahead`);
     check(p.ambitionTokens >= 0 && p.ambitionTokens < 3, `${name}: ${p.ambitionTokens} ambition tokens`);

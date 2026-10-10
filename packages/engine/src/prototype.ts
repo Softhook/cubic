@@ -1,8 +1,9 @@
 /**
- * The prototype kit: everything an experimental mode (src/prototyping) may use from the engine, in one file.
+ * The prototype kit: the engine APIs trusted experimental-mode code may use, in one file.
  * It holds the interface a prototype ship power plugs into (ShipHooks) and the engine helpers a power
  * may call. A prototype imports this file and nothing else from the engine (test/prototyping.test.ts checks
- * it), so this is the one place to look for what a prototype can reach.
+ * the import convention). This is an architectural boundary, not a sandbox: hooks can mutate GameState,
+ * so prototype code is trusted engine code.
  *
  * It re-exports the engine's building blocks whole, so a power can use any of them. When a power needs a
  * new kind of hook, add it to ShipHooks and read it where it applies in the engine (docs/PROTOTYPING.md §9).

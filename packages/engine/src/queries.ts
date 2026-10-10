@@ -57,7 +57,8 @@ export function skillLimit(state: GameState, player: PlayerId): number {
 
 /** Research needed for a breakthrough at the end of the turn. */
 export function breakthroughAt(state: GameState, player: PlayerId): number {
-  return Math.min(6, ...skillRules(state, player).map((r) => r.breakthroughAt ?? 6));
+  const limit = rulesOf(state).researchLimit;
+  return Math.min(limit, ...skillRules(state, player).map((r) => r.breakthroughAt ?? limit));
 }
 
 /** Dominance needed for Infamy (normally 6, or 4 with Prideful). */

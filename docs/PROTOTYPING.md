@@ -140,7 +140,7 @@ No up-front refactor is needed. Do each step when a rule needs it. Step 2 is don
 
 | Step | Refactor | Unlocks | Size |
 |---|---|---|---|
-| 1 | Lift fixed numbers into `RuleSet`: actions per turn (`ACTIONS_PER_TURN`), track cap (6), movement cap, Infamy and breakthrough thresholds | Variable tweaks | Small |
+| 1 | Lift fixed numbers into `RuleSet`: actions per turn and research cap (done); remaining shared track and threshold rules | Variable tweaks | Small (partial) |
 | 2 | **Ship table per mode**: `RuleSet.ships` gives each value its name, movement, and power as hooks like `SkillRule` | §5, and factions in §6 | Medium (Done) |
 | 3 | Formula hooks on `RuleSet`: `combatOutcome`, `conquerCheck`, `deployTargets` | Supply, contested orbit (§6.8), new conquer rules | Small–medium |
 | 4 | Win check as a hook, not fixed in `placeCube` ([core.ts](../packages/engine/src/core.ts)) | Points, round limits, planet economy (§6.3) | Medium |
@@ -602,8 +602,10 @@ interfering with other powers.
 
 - **Complete isolation:** Official modes use `CLASSIC_SHIPS` with no hooks. Their code paths observe
   `undefined` for all hook lookups.
-- **Strict architectural boundary:** Nothing in `engine` imports `prototyping` except `rules.ts`. The `prototyping`
-  folder imports nothing from `engine` except `prototype.ts`. Checked in `prototyping.test.ts`.
+- **Import boundary by convention:** Nothing in `engine` imports `prototyping` except `rules.ts`. The
+  `prototyping` folder imports nothing from `engine` except `prototype.ts`; `prototyping.test.ts` checks
+  static and dynamic relative imports. This is not a sandbox: prototype hooks are trusted engine code
+  and can mutate `GameState`.
 - **Golden test protection:** Golden replays for Basic, Classic, and Community must never change. Any
   alteration indicates a leak. Only Prototyping replay snapshots may update (`npx vitest run golden -t prototyping -u`).
 

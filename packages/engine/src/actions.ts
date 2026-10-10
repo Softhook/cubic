@@ -67,7 +67,8 @@ export const actionHandlers = {
   research(s) {
     const t = requireActionPhase(s);
     if (!rulesOf(s).cards) fail('This mode has no research');
-    if (s.players[t.player].research >= 6) fail('Research is already at 6');
+    const limit = rulesOf(s).researchLimit;
+    if (s.players[t.player].research >= limit) fail(`Research is already at ${limit}`);
     if (!canGainResearch(s, t.player)) fail('You cannot gain research');
     spendPeaceful(s);
     gainResearch(s, t.player, 1);

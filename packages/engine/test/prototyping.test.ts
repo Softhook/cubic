@@ -8,7 +8,8 @@
  * every other cell a space).
  */
 import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import {
   apply,
@@ -27,6 +28,7 @@ import {
   type GameMode,
   type GameState,
 } from '../src';
+import { beginPlay } from '../src/turn';
 import { beacon } from '../src/prototyping/powers/beacon';
 import { picket } from '../src/prototyping/powers/picket';
 import { shoot as shootPower, shootTargets } from '../src/prototyping/powers/shoot';
@@ -96,15 +98,41 @@ describe('Prototyping mode', () => {
   });
 
   const src = join(__dirname, '../src');
+  const sourceExtensions = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs'];
   const files = (dir: string): string[] =>
-    readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(join(dir, e.name)) : e.name.endsWith('.ts') ? [join(dir, e.name)] : []));
-  const imports = (f: string) => [...readFileSync(f, 'utf8').matchAll(/from '([^']+)'/g)].map((m) => m[1]);
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? files(join(dir, e.name)) : sourceExtensions.some((ext) => e.name.endsWith(ext)) ? [join(dir, e.name)] : [],
+    );
+  const moduleSpecifiers = (text: string): string[] => {
+    const source = ts.createSourceFile('boundary.ts', text, ts.ScriptTarget.Latest, true);
+    const found: string[] = [];
+    const add = (node: ts.Expression | undefined) => {
+      if (node && ts.isStringLiteralLike(node)) found.push(node.text);
+    };
+    const visit = (node: ts.Node) => {
+      if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) add(node.moduleSpecifier);
+      else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) add(node.moduleReference.expression);
+      else if (ts.isCallExpression(node)) {
+        if (node.expression.kind === ts.SyntaxKind.ImportKeyword) add(node.arguments[0]);
+        else if (ts.isIdentifier(node.expression) && node.expression.text === 'require') add(node.arguments[0]);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(source);
+    return found;
+  };
+  const imports = (f: string) => moduleSpecifiers(readFileSync(f, 'utf8'));
+  const importedPath = (file: string, specifier: string) => resolve(dirname(file), specifier);
   const inPrototyping = (f: string) => relative(src, f).startsWith('prototyping/');
+  const inPrototypingPath = (f: string) => {
+    const path = relative(src, f);
+    return path === 'prototyping' || path.startsWith('prototyping/');
+  };
 
   it('is reached from the engine only through RULESETS (rules.ts)', () => {
     const importers = files(src)
       .filter((f) => !inPrototyping(f))
-      .filter((f) => imports(f).some((i) => /^\.\/prototyping(\/|$)/.test(i)))
+      .filter((f) => imports(f).some((i) => inPrototypingPath(importedPath(f, i))))
       .map((f) => relative(src, f));
     expect(importers).toEqual(['rules.ts']);
   });
@@ -112,9 +140,42 @@ describe('Prototyping mode', () => {
   it('uses the engine only through the prototype kit (prototype.ts)', () => {
     for (const f of files(src).filter(inPrototyping)) {
       for (const i of imports(f)) {
-        const target = relative(src, join(dirname(f), i));
+        const target = relative(src, importedPath(f, i)).replace(/\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs)$/, '');
         expect(target === 'prototype' || target.startsWith('prototyping/'), `${relative(src, f)} imports ${i}`).toBe(true);
       }
+    }
+  });
+
+  it('recognizes static, re-export, dynamic and require imports in the boundary check', () => {
+    expect(
+      moduleSpecifiers(
+        "import './a'; export * from './b'; import('./c'); require('./d'); import item = require('./e');",
+      ),
+    ).toEqual(['./a', './b', './c', './d', './e']);
+  });
+
+  it('uses mode-configured regular-turn actions and research cap', () => {
+    const rules = RULESETS.prototyping;
+    const oldActions = rules.actionsPerTurn;
+    const oldResearchLimit = rules.researchLimit;
+    try {
+      rules.actionsPerTurn = 2;
+      rules.researchLimit = 4;
+
+      const started = scenario({});
+      beginPlay(started);
+      expect(started.turn.actionsLeft).toBe(2);
+
+      const ready = scenario({});
+      ready.players[0].research = 3;
+      expect(offered(ready, 'research')).toHaveLength(1);
+      const researched = apply(ready, { type: 'research' });
+      expect(researched.players[0].research).toBe(4);
+      expect(offered(researched, 'research')).toEqual([]);
+      expect(() => apply(researched, { type: 'research' })).toThrow(/at 4/);
+    } finally {
+      rules.actionsPerTurn = oldActions;
+      rules.researchLimit = oldResearchLimit;
     }
   });
 });

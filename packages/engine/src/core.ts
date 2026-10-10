@@ -11,7 +11,6 @@ import { rulesOf } from './rules';
 import { anySkill, hasSkill, skillRules, stealableSkill } from './skillRules';
 import { RuleError, type Action, type Die, type GameState, type LogEntry, type LogEvent, type OncePerTurn, type Pending, type PlayerId, type TurnState } from './types';
 
-export const ACTIONS_PER_TURN = 3;
 const LOG_LIMIT = 80;
 
 // ---------------------------------------------------------------------------
@@ -214,7 +213,7 @@ export function requireSkill(s: GameState, p: PlayerId, skill: SkillEffect) {
 
 export function gainResearch(s: GameState, p: PlayerId, n: number) {
   if (!canGainResearch(s, p)) return;
-  s.players[p].research = Math.min(6, s.players[p].research + n);
+  s.players[p].research = Math.min(rulesOf(s).researchLimit, s.players[p].research + n);
 }
 
 /**
