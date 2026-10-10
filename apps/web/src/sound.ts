@@ -37,6 +37,7 @@ window.addEventListener('pointerdown', warm, true);
 window.addEventListener('keydown', warm, true);
 
 let noiseBuf: AudioBuffer | null = null;
+let clickBufs: { sampleRate: number; buffers: AudioBuffer[] } | null = null;
 
 /** Two seconds of white noise, made once and reused by every noise sound. */
 function whiteNoise(ac: AudioContext): AudioBuffer {
@@ -48,13 +49,26 @@ function whiteNoise(ac: AudioContext): AudioBuffer {
   return noiseBuf;
 }
 
+/** A few short random click samples reused by every dice clatter. */
+function clickBuffers(ac: AudioContext): AudioBuffer[] {
+  if (!clickBufs || clickBufs.sampleRate !== ac.sampleRate) {
+    const len = 0.035;
+    const size = Math.floor(ac.sampleRate * len);
+    const buffers = Array.from({ length: 8 }, () => {
+      const buf = ac.createBuffer(1, size, ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) ** 3;
+      return buf;
+    });
+    clickBufs = { sampleRate: ac.sampleRate, buffers };
+  }
+  return clickBufs.buffers;
+}
+
 function click(ac: AudioContext, at: number, gain: number, freq: number) {
-  const len = 0.035;
-  const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * len), ac.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) ** 3;
+  const buffers = clickBuffers(ac);
   const src = ac.createBufferSource();
-  src.buffer = buf;
+  src.buffer = buffers[Math.floor(Math.random() * buffers.length)];
   const filter = ac.createBiquadFilter();
   filter.type = 'bandpass';
   filter.frequency.value = freq;
