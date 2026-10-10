@@ -31,7 +31,23 @@ import { playAiGame, quickStart } from './helpers';
 
 const DEEP = !!process.env.DEEP;
 
-const keyOf = (a: Action) => JSON.stringify(a, Object.keys(a).sort());
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => [key, canonical(child)]));
+  }
+  return value;
+}
+
+const keyOf = (a: Action) => JSON.stringify(canonical(a));
+
+describe('action comparison', () => {
+  it('distinguishes moves to different nested cells', () => {
+    expect(keyOf({ type: 'move', die: 'p0d0', to: { r: 1, c: 2 } })).not.toBe(
+      keyOf({ type: 'move', die: 'p0d0', to: { r: 1, c: 3 } }),
+    );
+  });
+});
 
 /** Every phase-1 action worth trying in this state, legal or not. */
 function bruteForce(s: GameState, withCarry: boolean): Action[] {
