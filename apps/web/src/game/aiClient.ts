@@ -1,5 +1,5 @@
 /** Asks the AI worker for a move; falls back to thinking on the main thread if workers fail. */
-import { chooseAction, DEFAULT_AI_LEVEL, type AiLevel } from '@quantum/ai';
+import { AI_LEVELS, chooseAction, DEFAULT_AI_LEVEL, type AiLevel } from '@quantum/ai';
 import type { Action, GameState, PlayerConfig } from '@quantum/engine';
 import type { AiRequest, AiResponse } from './aiWorker';
 
@@ -9,7 +9,7 @@ let nextId = 0;
 
 export function aiLevelOf(p: PlayerConfig): AiLevel {
   const level = p.aiLevel ?? DEFAULT_AI_LEVEL;
-  return (level >= 1 && level <= 5 ? level : DEFAULT_AI_LEVEL) as AiLevel;
+  return AI_LEVELS.find((candidate) => candidate.level === level)?.level ?? DEFAULT_AI_LEVEL;
 }
 
 function getWorker(): Worker | null {

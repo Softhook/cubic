@@ -65,7 +65,7 @@ export interface PlayerConfig {
   name: string;
   color: string;
   ai: boolean;
-  /** Strength of an AI player, 1 (weakest) to 4; see packages/ai. */
+  /** Strength of an AI player, 1 (weakest) to 5; see packages/ai. */
   aiLevel?: number;
 }
 
