@@ -1,6 +1,8 @@
 /** Online games share storage with the game on this device; finished ones make way for it. */
 import { beforeEach, describe, expect, it } from 'vitest';
+import { createGame, defaultMap } from '@quantum/engine';
 import { forget, remember, stored } from '../src/storage';
+import { loadSavedGame } from '../src/game/savedGame';
 import { forgetFinishedGames, onlineGames } from '../src/online/games';
 import { rememberGame, saveEvents } from '../src/online/storage';
 
@@ -41,6 +43,18 @@ function addGame(i: number, over: boolean, size = 1000) {
 
 describe('online games in storage', () => {
   beforeEach(() => setQuota(1_000_000));
+
+  it('discards saved games with a removed mode id', () => {
+    const players = [
+      { name: 'A', color: '#fff', ai: false, aiLevel: 1 },
+      { name: 'B', color: '#000', ai: true, aiLevel: 1 },
+    ];
+    const state = createGame({ players, mapId: defaultMap(2)!.id, mode: 'prototyping', seed: 1 });
+    store.setItem('quantum.savedGame', JSON.stringify({ ...state, mode: 'cubic' }));
+
+    expect(loadSavedGame()).toBeNull();
+    expect(stored('quantum.savedGame')).toBeNull();
+  });
 
   it(`keeps only the most recently seen finished games`, () => {
     for (let i = 0; i < 8; i++) addGame(i, true);

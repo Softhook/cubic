@@ -120,7 +120,7 @@ function playChecked(mode: GameMode, players: number, seed: number) {
 }
 
 describe('legal actions agree with the engine', () => {
-  for (const mode of ['basic', 'original', 'community', 'cubic'] as const)
+  for (const mode of ['basic', 'original', 'community', 'prototyping'] as const)
     for (const [players, seed] of DEEP ? [[2, 21], [3, 22], [4, 23]] : [[3, 22]])
       it(`${mode}, ${players} players, seed ${seed}`, () => playChecked(mode, players, seed), DEEP ? 600_000 : 60_000);
 });

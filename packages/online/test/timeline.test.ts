@@ -91,6 +91,30 @@ function playOnline(browsers: Browser[], seed: number, maxTicks = 20000) {
 }
 
 describe('online timeline', () => {
+  it('migrates old Cubic create posts to the Prototyping mode', () => {
+    const g = create('alice', [seat('Alice'), seat('Bob')], [1], 7, 'prototyping');
+    const body = g.body;
+    if (body.t !== 'create') throw new Error('expected create post');
+    const legacy = {
+      ...g,
+      body: { ...body, config: { ...body.config, mode: 'cubic' as GameMode } },
+    };
+    const t = new Timeline();
+    t.add(legacy);
+
+    const replay = t.replay()!;
+    expect(replay.config.mode).toBe('prototyping');
+    expect(head(replay).mode).toBe('prototyping');
+
+    const action = legalActions(head(replay))[0];
+    expect(action).toBeDefined();
+    const next = apply(head(replay), action!);
+    const oldHash = stateHash({ ...next, mode: 'cubic' as GameMode });
+    expect(stateHash(next)).toBe(oldHash);
+    t.add(post('alice', { t: 'act', seat: 0, action: action!, h: oldHash }, g.id));
+    expect(t.replay()?.desync).toBeNull();
+  });
+
   it('two browsers and an AI play a whole game and end with the same game', { timeout: 60000 }, () => {
     const a = new Browser('alice', [0], true, 1, 0.3);
     const b = new Browser('bob', [1], false, 2, 0.3);

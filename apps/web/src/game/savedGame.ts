@@ -1,4 +1,4 @@
-import { checkInvariants, type GameState } from '@quantum/engine';
+import { checkInvariants, MODES, type GameState } from '@quantum/engine';
 import { forget, remember, stored } from '../storage';
 
 /** The unfinished game, kept in localStorage so a revisit can resume it. */
@@ -18,7 +18,10 @@ export function loadSavedGame(): GameState | null {
   const raw = stored(KEY);
   if (!raw) return null;
   try {
-    const state = JSON.parse(raw) as GameState;
+    const saved = JSON.parse(raw) as Omit<GameState, 'mode'> & { mode: string };
+    const mode = MODES.find((m) => m.id === saved.mode)?.id;
+    if (!mode) throw new Error('stale save');
+    const state: GameState = { ...saved, mode };
     if (state?.version !== 1 || state.phase === 'over' || checkInvariants(state).length) throw new Error('stale save');
     return state;
   } catch {

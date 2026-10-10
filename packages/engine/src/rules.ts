@@ -1,4 +1,4 @@
-import { cubicMode } from './cubic';
+import { prototypingMode } from './prototyping';
 import { CLASSIC_SHIPS, MAPS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef, type GameMode, type ShipDef, type ShipPower, type ShipTable } from './data';
 import type { ShipHooks } from './prototype';
 import type { Die, GameState } from './types';
@@ -110,8 +110,8 @@ export const RULESETS: Record<GameMode, RuleSet> = {
     ships: CLASSIC_SHIPS,
   },
   community: COMMUNITY,
-  /** Our own rules, a prototype: everything about it is in src/cubic (docs/PROTOTYPING.md). */
-  cubic: cubicMode(COMMUNITY),
+  /** Our own rules, a prototype: everything about it is in src/prototyping (docs/PROTOTYPING.md). */
+  prototyping: prototypingMode(COMMUNITY),
 };
 
 /** The rule set a game is played with. */
@@ -162,4 +162,4 @@ export function playerCounts(rules: RuleSet): number[] {
 }
 
 /** Rule sets in menu order. */
-export const MODES: RuleSet[] = [RULESETS.basic, RULESETS.original, RULESETS.community, RULESETS.cubic];
+export const MODES: RuleSet[] = [RULESETS.basic, RULESETS.original, RULESETS.community, RULESETS.prototyping];

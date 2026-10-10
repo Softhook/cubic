@@ -18,7 +18,7 @@ export interface CardDef {
   classic?: string;
 }
 
-export type GameMode = 'basic' | 'original' | 'community' | 'cubic';
+export type GameMode = 'basic' | 'original' | 'community' | 'prototyping';
 
 
 export interface MapDef {

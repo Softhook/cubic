@@ -1,10 +1,10 @@
 # Prototyping a Fourth Mode
 
-How to build **Cubic**, our own rule set, alongside Basic, Classic, and Community.
+How to build **Prototyping**, our experimental rule set, alongside Basic, Classic, and Community.
 
 > **Design Thesis: From Arithmetic Sprint to Positional War**  
 > In base Quantum, hyper-mobility collapsed geography. Ships with 5–6 movement on compact boards crossed the map with ease, turning battles into isolated teleport raids and conquest into an arithmetic puzzle.  
-> **Cubic restores territorial gravity**: movement caps create distance, big ships project zones of control and forward logistics, and planets require orbital superiority before conquest.
+> **Prototyping restores territorial gravity**: movement caps create distance, big ships project zones of control and forward logistics, and planets require orbital superiority before conquest.
 
 Nothing here is permanently adopted. Rulings go to [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) and, once decided, to [RULES.md](RULES.md).
 
@@ -20,7 +20,7 @@ Nothing here is permanently adopted. Rulings go to [OPEN-QUESTIONS.md](OPEN-QUES
 6. [Radical Ideas Catalogue](#6-radical-ideas-a-different-game-not-a-re-tuned-one)
 7. [Next Steps](#7-next-steps)
 8. [Current Status & Playtest Results](#8-what-was-built-2026-10-09)
-9. [Developer Guide: Working on Cubic](#9-working-on-cubic)
+9. [Developer Guide: Working on Prototyping](#9-working-on-prototyping)
 
 ---
 
@@ -36,7 +36,7 @@ so a new mode needs no network changes as long as it stays deterministic.
   AI ──────┼── legalActions() / apply() ──▶  action handlers ──▶ rule questions ◀── RULESETS
   Online ──┘                                 (actions, combat,   (queries.ts:        (rules.ts:
                                               cards, turn)        movementRange,      Basic, Classic,
-                                                                  conquerCheck…)      Community, + Cubic)
+                                                                  conquerCheck…)      Community, + Prototyping)
 ```
 
 A mode is one entry in `RULESETS` ([rules.ts](../packages/engine/src/rules.ts)). The engine reads it
@@ -68,8 +68,8 @@ Prototype ship powers use the same pattern: `ShipHooks` (§9).
 ## 2. Worked example: ships move at most 3
 
 *This is how the cap was first planned. It is now built: `MAX_MOVEMENT` in
-[cubic/index.ts](../packages/engine/src/cubic/index.ts), read by `movementRange`. §9 details where
-Cubic's code lives today.*
+[prototyping/index.ts](../packages/engine/src/prototyping/index.ts), read by `movementRange`. §9 details where
+the mode's code lives today.*
 
 A ship's movement is calculated in one place:
 
@@ -84,15 +84,15 @@ The legal-move search (`moveOptions`, `carryOptions`), board highlights, both AI
 ([greedy.ts](../packages/ai/src/greedy.ts), [evaluate.ts](../packages/ai/src/evaluate.ts)), and the
 ship panel's "Moves N" label all call it.
 
-1. Add `'cubic'` to `GameMode` in [data.ts](../packages/engine/src/data.ts).
+1. Add `'prototyping'` to `GameMode` in [data.ts](../packages/engine/src/data.ts).
 2. Give `RuleSet` an optional `maxMovement?: number`.
 3. Add the mode, copying Community, and list it in `MODES`:
    ```ts
-   cubic: { ...RULESETS.community, id: 'cubic', name: 'Cubic', title: 'Cubic',
+   prototyping: { ...RULESETS.community, id: 'prototyping', name: 'Prototyping', title: 'Prototyping',
             summary: 'Community Edition with redesigned fast ships.', maxMovement: 3 },
    ```
 4. Cap the result in `movementRange`.
-5. Optional: a `.mode-badge.mode-cubic` colour in `styles.css`, a row in the rulebook's mode table
+5. Optional: a `.mode-badge.mode-prototyping` colour in `styles.css`, a row in the rulebook's mode table
    ([Manual.tsx](../apps/web/src/rulebook/Manual.tsx)), and a scenario test.
 
 About 15 lines; the three existing modes and their golden replays don't change.
@@ -110,18 +110,18 @@ Capping the total instead would make Agile useless on any ship showing 3 or more
 
 ## 3. How to test a new mode
 
-1. **Play it by hand.** `npm run dev`, then `localhost:5173/?play=cubic&players=2&seed=7` skips the
+1. **Play it by hand.** `npm run dev`, then `localhost:5173/?play=prototyping&players=2&seed=7` skips the
    lobby and starts a game against the AI ([devStart.ts](../apps/web/src/game/devStart.ts)). The same
    seed gives the same dice, so situations can be replayed after each tweak.
-2. **Pin each rule with a scenario.** `quickStart(2, 1, 'cubic')` and `arrange()` in
+2. **Pin each rule with a scenario.** `quickStart(2, 1, 'prototyping')` and `arrange()` in
    [test/helpers.ts](../packages/engine/test/helpers.ts) set up exact positions. One test per rule,
-   as in [basic.test.ts](../packages/engine/test/basic.test.ts) and [cubic.test.ts](../packages/engine/test/cubic.test.ts).
-3. **Check it never breaks the engine.** Add `'cubic'` to the modes in
+   as in [basic.test.ts](../packages/engine/test/basic.test.ts) and [prototyping.test.ts](../packages/engine/test/prototyping.test.ts).
+3. **Check it never breaks the engine.** Add `'prototyping'` to the modes in
    [golden.test.ts](../packages/engine/test/golden.test.ts) and the consistency cross-check: seeded AI
    games run `checkInvariants()` after every action, and `legalActions` and `apply` must agree.
 4. **Measure balance with AI self-play.**
-   - `npm run ai:match -- 3 3 100 cubic 2`: turns per game and seat win rates. Compare with `community`.
-   - `npm run selfplay:cards -- 50 cubic`: card win, pick, and use rates.
+   - `npm run ai:match -- 3 3 100 prototyping 2`: turns per game and seat win rates. Compare with `community`.
+   - `npm run selfplay:cards -- 50 prototyping`: card win, pick, and use rates.
    - [basic-sweep.ts](../scripts/basic-sweep.ts) is a template for flagging AI mistakes per mode.
 
 **Worth building first:** a stats script that writes one CSV row per game: mode, turns, winner seat,
@@ -197,7 +197,7 @@ movement on maps typically only 6–9 spaces across:
 
 ### 5.3 Active set: control, ranged threat, logistics
 
-The trio implemented in Cubic today (see §8 for rulings and playtest stats):
+The trio implemented in Prototyping today (see §8 for rulings and playtest stats):
 
 | Ship | Moves | Power | Role |
 |---|:-:|---|---|
@@ -467,7 +467,7 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 | **6.7 Fog of war** | Local vision ranges | Very high | Very large | Conflicts with online model |
 
 **Recommendation:**
-1. Keep the live Cubic baseline: **Movement cap 3 + Picket + Shoot + Beacon** (§5).
+1. Keep the live Prototyping baseline: **Movement cap 3 + Picket + Shoot + Beacon** (§5).
 2. Prototype **Contested orbit (§6.8)** first—it is tiny to build (a `conquerCheck` hook) and immediately
    reinforces the siege/defense dynamics of Picket.
 3. Test **Kinetic ships (§6.1)** as an independent one-file experiment to explore movement-driven sums.
@@ -479,8 +479,8 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 ## 7. Next steps
 
 - [x] Rule on the movement cap: caps die value before skill bonuses and powers
-- [x] Add Cubic mode with `maxMovement: 3` and scenario tests
-- [x] Add Cubic to golden replay and consistency invariants
+- [x] Add Prototyping mode with `maxMovement: 3` and scenario tests
+- [x] Add Prototyping to golden replay and consistency invariants
 - [x] Refactor: ship table per mode (§4 step 2)
 - [x] Prototype and land Picket (4), Shoot (5), and Beacon (6)
 - [ ] Prototype Contested Orbit (§6.8) via `conquerCheck` hook
@@ -492,7 +492,7 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 
 ## 8. Current status & playtest results (2026-10-09)
 
-Cubic is playable in the lobby: Community Edition plus the movement cap, with **Picket** (4), **Shoot** (5),
+Prototyping is playable in the lobby: Community Edition plus the movement cap, with **Picket** (4), **Shoot** (5),
 and **Beacon** (6) replacing Modify, Manoeuvre, and Free Reconfigure. Values 1, 2, and 3 are unchanged.
 
 ### Rulings established during implementation
@@ -506,11 +506,11 @@ and **Beacon** (6) replacing Modify, Manoeuvre, and Free Reconfigure. Values 1, 
   that shoots cannot also attack normally that turn. Normal combat, missiles, and re-rolls apply; the
   shooter never advances.
 
-Scenarios live in [cubic.test.ts](../packages/engine/test/cubic.test.ts).
+Scenarios live in [prototyping.test.ts](../packages/engine/test/prototyping.test.ts).
 
 ### First self-play benchmarks (Level 2 vs Level 2, 2 Players)
 
-| Metric | Community | Cubic |
+| Metric | Community | Prototyping |
 |---|:-:|:-:|
 | Turns per game (`ai:match`, 60 games) | 17.9 | 17.1 |
 | Total attacks (30 games) | 208 | 134 |
@@ -527,18 +527,18 @@ Scenarios live in [cubic.test.ts](../packages/engine/test/cubic.test.ts).
 
 ---
 
-## 9. Developer guide: working on Cubic
+## 9. Developer guide: working on Prototyping
 
-Cubic is isolated in a modular sandbox. Everything specific to Cubic lives in
-[`packages/engine/src/cubic/`](../packages/engine/src/cubic). The core engine and web UI never hard-code
-Cubic powers or mode names.
+Prototyping is isolated in a modular sandbox. Everything specific to the mode lives in
+[`packages/engine/src/prototyping/`](../packages/engine/src/prototyping). The core engine and web UI never hard-code
+its powers or mode name.
 
 ### File Layout
 
 ```
 packages/engine/src/
-  cubic/
-    index.ts          mode definition: MAX_MOVEMENT, CUBIC_SHIPS, cubicMode()
+  prototyping/
+    index.ts          mode definition: MAX_MOVEMENT, PROTOTYPING_SHIPS, prototypingMode()
     powers/picket.ts  power text and hooks for Picket (4)
     powers/shoot.ts   power text and hooks for Shoot (5)
     powers/beacon.ts  power text and hooks for Beacon (6)
@@ -547,10 +547,10 @@ packages/engine/src/
 
 | To Change | File to Edit |
 |---|---|
-| Movement cap, mode summary, base rules | [cubic/index.ts](../packages/engine/src/cubic/index.ts) |
-| Which ship has which power, ship names | `CUBIC_SHIPS` in [cubic/index.ts](../packages/engine/src/cubic/index.ts) |
-| A power's rules text, range, or hooks | Power file in [cubic/powers/](../packages/engine/src/cubic/powers) |
-| Add a power using existing hooks | New file in `powers/`, referenced in `CUBIC_SHIPS` |
+| Movement cap, mode summary, base rules | [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) |
+| Which ship has which power, ship names | `PROTOTYPING_SHIPS` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) |
+| A power's rules text, range, or hooks | Power file in [prototyping/powers/](../packages/engine/src/prototyping/powers) |
+| Add a power using existing hooks | New file in `powers/`, referenced in `PROTOTYPING_SHIPS` |
 | Add an engine helper to the kit | Re-export from [prototype.ts](../packages/engine/src/prototype.ts) |
 | Add a new kind of rule hook | Add to `ShipHooks` in [prototype.ts](../packages/engine/src/prototype.ts) |
 
@@ -559,7 +559,7 @@ packages/engine/src/
 A power is a `PrototypePower` object combining UI metadata with optional engine hooks:
 
 ```ts
-// packages/engine/src/cubic/powers/beacon.ts
+// packages/engine/src/prototyping/powers/beacon.ts
 import { cellOf, surrounding, type PrototypePower } from '../../prototype';
 
 export const beacon: PrototypePower = {
@@ -578,8 +578,8 @@ interfering with other powers.
 
 ### Engine Integration & Hooks
 
-1. **One import.** `RULESETS.cubic = cubicMode(COMMUNITY)` in [rules.ts](../packages/engine/src/rules.ts)
-   is the only place in the main engine importing the `cubic` folder.
+1. **One import.** `RULESETS.prototyping = prototypingMode(COMMUNITY)` in [rules.ts](../packages/engine/src/rules.ts)
+   is the only place in the main engine importing the `prototyping` folder.
 2. **Hooks over names.** Ships have built-in official powers (`strike`, `transport`...) or
    `hooks: ShipHooks`. The engine evaluates hooks via `hooksOf(state, die)`:
 
@@ -602,10 +602,10 @@ interfering with other powers.
 
 - **Complete isolation:** Official modes use `CLASSIC_SHIPS` with no hooks. Their code paths observe
   `undefined` for all hook lookups.
-- **Strict architectural boundary:** Nothing in `engine` imports `cubic` except `rules.ts`. The `cubic`
-  folder imports nothing from `engine` except `prototype.ts`. Checked in `cubic.test.ts`.
+- **Strict architectural boundary:** Nothing in `engine` imports `prototyping` except `rules.ts`. The `prototyping`
+  folder imports nothing from `engine` except `prototype.ts`. Checked in `prototyping.test.ts`.
 - **Golden test protection:** Golden replays for Basic, Classic, and Community must never change. Any
-  alteration indicates a leak. Only Cubic replay snapshots may update (`npx vitest run golden -t cubic -u`).
+  alteration indicates a leak. Only Prototyping replay snapshots may update (`npx vitest run golden -t prototyping -u`).
 
 ### Adding a New Hook
 
@@ -613,4 +613,4 @@ Only add a new hook when no existing hook fits:
 1. Add the optional hook signature to `ShipHooks` in [prototype.ts](../packages/engine/src/prototype.ts).
 2. Name the hook after the **rule concept** (e.g. `stopsEnemies`), not the specific power name (`picket`).
 3. Read the hook via `hooksOf` in the single engine function it affects.
-4. Add a scenario test in [cubic.test.ts](../packages/engine/test/cubic.test.ts).
+4. Add a scenario test in [prototyping.test.ts](../packages/engine/test/prototyping.test.ts).

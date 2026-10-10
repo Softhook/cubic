@@ -1,14 +1,14 @@
 /**
- * Cubic, our own rule set: a prototype (docs/PROTOTYPING.md §9). Everything that is Cubic lives in this
- * folder: what the mode changes and which ship has which power here, each power in its own file in
+ * Prototyping, our own experimental rule set (docs/PROTOTYPING.md §9). Everything specific to the mode
+ * lives in this folder: what the mode changes and which ship has which power here, each power in its own file in
  * powers/ (its rules text and its hooks).
  *
- * The engine reaches this folder in one place, RULESETS.cubic (rules.ts), and runs the powers only
+ * The engine reaches this folder in one place, RULESETS.prototyping (rules.ts), and runs the powers only
  * through ShipHooks, so nothing here can change Basic, Original or Community. This folder in turn uses
- * the engine only through the prototype kit (../prototype.ts). test/cubic.test.ts checks both.
+ * the engine only through the prototype kit (../prototype.ts). test/prototyping.test.ts checks both.
  *
  * To try a change: a setting, edit this file; how a power works or its text, its file in powers/; a
- * power on another ship, move it in CUBIC_SHIPS; a new power, copy a file in powers/.
+ * power on another ship, move it in PROTOTYPING_SHIPS; a new power, copy a file in powers/.
  */
 import { CLASSIC_SHIPS, type RuleSet, type ShipTable } from '../prototype';
 import { beacon } from './powers/beacon';
@@ -19,22 +19,22 @@ import { shoot } from './powers/shoot';
 const MAX_MOVEMENT = 3;
 
 /** The 1, 2 and 3 keep their official powers; the 4, 5 and 6 control space, strike at range and extend reach. */
-export const CUBIC_SHIPS: ShipTable = {
+export const PROTOTYPING_SHIPS: ShipTable = {
   ...CLASSIC_SHIPS,
   4: { name: 'Frigate', ...picket },
   5: { name: 'Interceptor', ...shoot },
   6: { name: 'Scout', ...beacon },
 };
 
-/** Cubic, built on `base` (Community Edition, see rules.ts): its cards, missiles and maps are kept. */
-export function cubicMode(base: RuleSet): RuleSet {
+/** Prototyping is built on `base` (Community Edition, see rules.ts): its cards, missiles and maps are kept. */
+export function prototypingMode(base: RuleSet): RuleSet {
   return {
     ...base,
-    id: 'cubic',
-    name: 'Cubic',
-    title: 'Cubic',
+    id: 'prototyping',
+    name: 'Prototyping',
+    title: 'Prototyping',
     summary: 'Community Edition with moves capped at 3 and new Frigate, Interceptor and Scout powers.',
-    ships: CUBIC_SHIPS,
+    ships: PROTOTYPING_SHIPS,
     maxMovement: MAX_MOVEMENT,
     experimental: true,
   };

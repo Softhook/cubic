@@ -28,7 +28,8 @@ function storedAiLevel(): number {
 }
 
 function storedMode(): GameMode {
-  return MODES.find((m) => m.id === stored('quantum.mode'))?.id ?? 'community';
+  const saved = stored('quantum.mode');
+  return MODES.find((m) => m.id === saved || (saved === 'cubic' && m.id === 'prototyping'))?.id ?? 'community';
 }
 
 function storedMap(players: number): string {

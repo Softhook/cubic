@@ -1023,7 +1023,7 @@ input { font: inherit; }
 }
 .mode-badge.mode-basic { background: rgba(94,240,176,.13); color: var(--good); }
 .mode-badge.mode-original { background: rgba(255,200,87,.13); color: var(--gold); }
-.mode-badge.mode-cubic { background: rgba(185,140,255,.15); color: var(--violet); }
+.mode-badge.mode-prototyping { background: rgba(185,140,255,.15); color: var(--violet); }
 .field { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 13px; }
 .segmented { display: inline-flex; padding: 3px; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid var(--line); }
 .segmented button { border: 0; background: transparent; padding: 6px 14px; border-radius: 7px; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 13px; }

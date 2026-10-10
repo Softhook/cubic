@@ -300,9 +300,11 @@ function start(g: Post): Replay | null {
   const n = b.config?.players?.length;
   const seatOk = (s: unknown) => Number.isInteger(s) && (s as number) >= 0 && (s as number) < n;
   if (!seatOk(b.creator) || !Array.isArray(b.open) || !b.open.every(seatOk) || b.open.includes(b.creator)) return null;
+  const mode = String(b.config.mode) === 'cubic' ? 'prototyping' : b.config.mode;
+  const config = { ...b.config, mode };
   let state: GameState;
   try {
-    state = createGame({ players: b.config.players, mapId: b.config.mapId, mode: b.config.mode, seed: b.config.seed });
+    state = createGame({ players: config.players, mapId: config.mapId, mode: config.mode, seed: config.seed });
   } catch {
     return null;
   }
@@ -315,7 +317,7 @@ function start(g: Post): Replay | null {
   }));
   // A human seat is either the creator's or open; anything else would be a seat nobody can play.
   if (seats.some((s) => !s.ai && !s.open && s.id !== b.creator) || seats[b.creator].ai) return null;
-  return { genesis: g, config: b.config, seats, steps: [{ state, post: null }], tip: g.id, tipAt: g.at, tipAuthor: g.author, undoSeat: null, combat: null, desync: null };
+  return { genesis: g, config, seats, steps: [{ state, post: null }], tip: g.id, tipAt: g.at, tipAuthor: g.author, undoSeat: null, combat: null, desync: null };
 }
 
 const ASK: ReadonlySet<unknown> = new Set<AskMode>(['always', 'own', 'never']);

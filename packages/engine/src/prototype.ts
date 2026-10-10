@@ -1,7 +1,7 @@
 /**
- * The prototype kit: everything an experimental mode (src/cubic) may use from the engine, in one file.
+ * The prototype kit: everything an experimental mode (src/prototyping) may use from the engine, in one file.
  * It holds the interface a prototype ship power plugs into (ShipHooks) and the engine helpers a power
- * may call. A prototype imports this file and nothing else from the engine (test/cubic.test.ts checks
+ * may call. A prototype imports this file and nothing else from the engine (test/prototyping.test.ts checks
  * it), so this is the one place to look for what a prototype can reach.
  *
  * It re-exports the engine's building blocks whole, so a power can use any of them. When a power needs a
@@ -75,7 +75,7 @@ export * from './core';
 export * from './lookups';
 export * from './queries';
 export * from './types';
-// rules.ts is still loading when it loads src/cubic, so its exports are named here, not `export *`.
+// rules.ts is still loading when it loads src/prototyping, so its exports are named here, not `export *`.
 export { hasPower, hooksOf, rulesOf, shipOf, type RuleSet } from './rules';
 export { startCombat } from './combat';
 export { CLASSIC_SHIPS, SHIP_NAMES, type ShipDef, type ShipTable } from './data';

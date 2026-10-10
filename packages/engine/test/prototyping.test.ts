@@ -1,7 +1,7 @@
 /**
- * Cubic, our own rule set (docs/PROTOTYPING.md, src/cubic): Community Edition with movement capped at 3
+ * Prototyping mode (docs/PROTOTYPING.md, src/prototyping): Community Edition with movement capped at 3
  * and new powers for the 4 (Picket), 5 (Shoot) and 6 (Beacon), which replace Modify, Manoeuvre and Free
- * Reconfigure. The first block checks that none of it reaches the official modes, and that the cubic
+ * Reconfigure. The first block checks that none of it reaches the official modes, and that the mode
  * folder and the engine meet only at RULESETS and the prototype kit.
  *
  * Scenarios run on Alpha Sector, the basic map for 2 players (9×9; planets at rows/cols 1, 4, 7,
@@ -27,15 +27,18 @@ import {
   type GameMode,
   type GameState,
 } from '../src';
-import { beacon } from '../src/cubic/powers/beacon';
-import { picket } from '../src/cubic/powers/picket';
-import { shoot as shootPower, shootTargets } from '../src/cubic/powers/shoot';
+import { beacon } from '../src/prototyping/powers/beacon';
+import { picket } from '../src/prototyping/powers/picket';
+import { shoot as shootPower, shootTargets } from '../src/prototyping/powers/shoot';
 import { quickStart } from './helpers';
 
-const BASE: Record<'cubic' | 'community', GameState> = { cubic: quickStart(2, 1, 'cubic'), community: quickStart(2, 1, 'community') };
+const BASE: Record<'prototyping' | 'community', GameState> = {
+  prototyping: quickStart(2, 1, 'prototyping'),
+  community: quickStart(2, 1, 'community'),
+};
 
 /** Player 0 to act with 3 fresh actions, only the listed ships on the map, and the given skills. */
-function scenario(dice: Record<string, [number, number, number]>, mode: 'cubic' | 'community' = 'cubic', skills: string[] = []): GameState {
+function scenario(dice: Record<string, [number, number, number]>, mode: 'prototyping' | 'community' = 'prototyping', skills: string[] = []): GameState {
   const s = structuredClone(BASE[mode]);
   for (const d of s.dice) if (d.loc.zone === 'board') d.loc = { zone: 'scrapyard' };
   for (const [id, [r, c, value]] of Object.entries(dice)) {
@@ -56,17 +59,18 @@ const offered = (s: GameState, type: Action['type']) => legalActions(s).filter((
 /** The ships p0d0 may shoot now, by the legal actions (so cost and power included). */
 const shots = (s: GameState) => legalActions(s).flatMap((a) => (a.type === 'power' && a.die === 'p0d0' && a.target ? [a.target] : [])).sort();
 
-describe('Cubic mode', () => {
+describe('Prototyping mode', () => {
   it('is listed after the official modes and plays like Community otherwise', () => {
-    expect(MODES.map((m) => m.id)).toEqual(['basic', 'original', 'community', 'cubic'] satisfies GameMode[]);
-    const cubic = rulesOf(BASE.cubic);
+    expect(MODES.map((m) => m.id)).toEqual(['basic', 'original', 'community', 'prototyping'] satisfies GameMode[]);
+    const prototyping = rulesOf(BASE.prototyping);
     const community = rulesOf(BASE.community);
-    expect(cubic.cards).toBe(community.cards);
-    expect(cubic.startingMissiles).toBe(1);
-    expect(cubic.maxMovement).toBe(3);
-    expect([4, 5, 6].map((v) => cubic.ships[v].hooks)).toEqual([picket.hooks, shootPower.hooks, beacon.hooks]);
-    expect([4, 5, 6].map((v) => cubic.ships[v].power)).toEqual([undefined, undefined, undefined]);
-    expect([1, 2, 3].map((v) => cubic.ships[v])).toEqual([1, 2, 3].map((v) => community.ships[v]));
+    expect(prototyping.name).toBe('Prototyping');
+    expect(prototyping.cards).toBe(community.cards);
+    expect(prototyping.startingMissiles).toBe(1);
+    expect(prototyping.maxMovement).toBe(3);
+    expect([4, 5, 6].map((v) => prototyping.ships[v].hooks)).toEqual([picket.hooks, shootPower.hooks, beacon.hooks]);
+    expect([4, 5, 6].map((v) => prototyping.ships[v].power)).toEqual([undefined, undefined, undefined]);
+    expect([1, 2, 3].map((v) => prototyping.ships[v])).toEqual([1, 2, 3].map((v) => community.ships[v]));
   });
 
   it('leaves the official modes alone: classic ships, no movement cap', () => {
@@ -78,11 +82,11 @@ describe('Cubic mode', () => {
     const s = scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 4], p1d1: [8, 8, 6] }, 'community');
     expect(offered(s, 'power')).toEqual([]);
     expect(stopZone(s, 0, shipsByIndex(s))).toBeUndefined();
-    // A Scout opens no deploy spaces a Destroyer in its place wouldn't (in Cubic it does: Beacon).
-    const targets = (mode: 'cubic' | 'community', value: number) =>
+    // A Scout opens no deploy spaces a Destroyer in its place wouldn't (in Prototyping it does: Beacon).
+    const targets = (mode: 'prototyping' | 'community', value: number) =>
       deployTargets(scenario({ p1d1: [5, 5, value] }, mode), 1).map(key).sort();
     expect(targets('community', 6)).toEqual(targets('community', 3));
-    expect(targets('cubic', 6).length).toBeGreaterThan(targets('cubic', 3).length);
+    expect(targets('prototyping', 6).length).toBeGreaterThan(targets('prototyping', 3).length);
   });
 
   it('official ships have no prototype hooks', () => {
@@ -95,21 +99,21 @@ describe('Cubic mode', () => {
   const files = (dir: string): string[] =>
     readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(join(dir, e.name)) : e.name.endsWith('.ts') ? [join(dir, e.name)] : []));
   const imports = (f: string) => [...readFileSync(f, 'utf8').matchAll(/from '([^']+)'/g)].map((m) => m[1]);
-  const inCubic = (f: string) => relative(src, f).startsWith('cubic/');
+  const inPrototyping = (f: string) => relative(src, f).startsWith('prototyping/');
 
   it('is reached from the engine only through RULESETS (rules.ts)', () => {
     const importers = files(src)
-      .filter((f) => !inCubic(f))
-      .filter((f) => imports(f).some((i) => /^\.\/cubic(\/|$)/.test(i)))
+      .filter((f) => !inPrototyping(f))
+      .filter((f) => imports(f).some((i) => /^\.\/prototyping(\/|$)/.test(i)))
       .map((f) => relative(src, f));
     expect(importers).toEqual(['rules.ts']);
   });
 
   it('uses the engine only through the prototype kit (prototype.ts)', () => {
-    for (const f of files(src).filter(inCubic)) {
+    for (const f of files(src).filter(inPrototyping)) {
       for (const i of imports(f)) {
         const target = relative(src, join(dirname(f), i));
-        expect(target === 'prototype' || target.startsWith('cubic/'), `${relative(src, f)} imports ${i}`).toBe(true);
+        expect(target === 'prototype' || target.startsWith('prototyping/'), `${relative(src, f)} imports ${i}`).toBe(true);
       }
     }
   });
@@ -123,8 +127,8 @@ describe('movement cap', () => {
   });
 
   it('applies before skill bonuses: a 6 with Agile moves 4 (ruling 2026-10-08)', () => {
-    expect(farthest(scenario({ p0d0: [0, 0, 6] }, 'cubic', ['agile']), 'p0d0')).toBe(4);
-    expect(farthest(scenario({ p0d0: [0, 0, 2] }, 'cubic', ['agile']), 'p0d0')).toBe(3);
+    expect(farthest(scenario({ p0d0: [0, 0, 6] }, 'prototyping', ['agile']), 'p0d0')).toBe(4);
+    expect(farthest(scenario({ p0d0: [0, 0, 2] }, 'prototyping', ['agile']), 'p0d0')).toBe(3);
   });
 });
 
@@ -209,7 +213,7 @@ describe('Shoot (5 Interceptor)', () => {
     expect(at(s, 'p1d0').loc.zone).toBe('scrapyard');
     expect(at(s, 'p0d0').loc).toEqual({ zone: 'board', r: 0, c: 0 });
     expect(s.pending.some((p) => p.kind === 'advance')).toBe(false);
-    expect(s.players[0].dominance).toBeGreaterThan(BASE.cubic.players[0].dominance);
+    expect(s.players[0].dominance).toBeGreaterThan(BASE.prototyping.players[0].dominance);
   });
 
   it('shoot, then move: one action for both, and no attack after', () => {
@@ -224,7 +228,7 @@ describe('Shoot (5 Interceptor)', () => {
   });
 
   it('a ship that fired keeps its free move and can’t attack, even after changing number', () => {
-    const fired = shoot(scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 3], p1d1: [0, 4, 2] }, 'cubic', ['flexible']), 'p1d0', 6, 1);
+    const fired = shoot(scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 3], p1d1: [0, 4, 2] }, 'prototyping', ['flexible']), 'p1d0', 6, 1);
     const s = apply(fired, { type: 'flexible', die: 'p0d0', delta: -1 });
     expect(at(s, 'p0d0').value).toBe(4);
     expect(mine(s, 'attack')).toEqual([]);
@@ -234,7 +238,7 @@ describe('Shoot (5 Interceptor)', () => {
   });
 
   it('a ship that moved, then became an Interceptor, can’t shoot for free', () => {
-    const moved = apply(scenario({ p0d0: [0, 0, 4], p1d0: [0, 4, 3] }, 'cubic', ['flexible']), { type: 'move', die: 'p0d0', to: { r: 0, c: 2 } });
+    const moved = apply(scenario({ p0d0: [0, 0, 4], p1d0: [0, 4, 3] }, 'prototyping', ['flexible']), { type: 'move', die: 'p0d0', to: { r: 0, c: 2 } });
     expect(shots(apply(moved, { type: 'flexible', die: 'p0d0', delta: 1 }))).toEqual([]);
   });
 
@@ -273,7 +277,7 @@ describe('Shoot (5 Interceptor)', () => {
     expect(shots(scenario({ p0d0: [0, 0, 5], p1d0: [0, 3, 3] }))).toEqual([]);
   });
 
-  it('only a Cubic Interceptor can shoot', () => {
+  it('only a Prototyping Interceptor can shoot', () => {
     expect(shots(scenario({ p0d0: [0, 0, 4], p1d0: [0, 2, 3] }))).toEqual([]);
     const community = scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 3] }, 'community');
     expect(shots(community)).toEqual([]);
@@ -293,7 +297,7 @@ describe('Beacon (6 Scout)', () => {
     expect(at(deployed, scrap.id).loc).toEqual({ zone: 'board', r: 3, c: 1 });
   });
 
-  it('only works for its owner, only on the map, and only in Cubic', () => {
+  it('only works for its owner, only on the map, and only in Prototyping', () => {
     const near = (s: GameState, p: number) => deployTargets(s, p).map(key).includes(key({ r: 2, c: 3 }));
     expect(near(scenario({ p0d0: [2, 2, 6] }), 1)).toBe(false);
     expect(near(scenario({ p0d1: [8, 8, 1] }), 0)).toBe(false);
