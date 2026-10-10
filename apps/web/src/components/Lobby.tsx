@@ -216,6 +216,7 @@ function SeatRow({
 function MapPicker({ map, choices, onChoose }: { map: MapDef; choices: MapDef[]; onChoose: (id: string) => void }) {
   const chooseRandom = () => {
     const others = choices.filter((m) => m.id !== map.id);
+    if (!others.length) return;
     onChoose(others[Math.floor(Math.random() * others.length)].id);
   };
   return (
@@ -239,7 +240,7 @@ function MapPicker({ map, choices, onChoose }: { map: MapDef; choices: MapDef[];
               );
             })}
           </select>
-          <button className="btn btn-icon" title="Random map" aria-label="Random map" onClick={chooseRandom}>
+          <button className="btn btn-icon" title="Random map" aria-label="Random map" disabled={choices.length < 2} onClick={chooseRandom}>
             ⚄
           </button>
         </div>
