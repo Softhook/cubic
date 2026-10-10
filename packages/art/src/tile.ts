@@ -131,7 +131,7 @@ function markings(spec: TileSpec, spacesOnly = false): Fragment {
   if (spec.number > 0 && !spacesOnly) {
     const s = CUBE_PAD.size;
     for (const p of cubePadCentres(spec.number - 6, MID, MID)) {
-      body += `<rect x="${n(p.x - s / 2)}" y="${n(p.y - s / 2)}" width="${s}" height="${s}" rx="1.6" fill="#000" fill-opacity=".42" stroke="#fff" stroke-opacity=".75" stroke-width=".3"/>`;
+      body += `<rect x="${n(p.x - s / 2)}" y="${n(p.y - s / 2)}" width="${s}" height="${s}" rx="1.6" fill="#000" fill-opacity=".22" stroke="#fff" stroke-opacity=".35" stroke-width=".3"/>`;
     }
     const at = numberPlacement(spec.number);
     const hue = PLANET_FAMILY[spec.number].hue;
@@ -204,6 +204,29 @@ function rift(id: string): Fragment {
   };
 }
 
+/**
+ * One or two small moons beside the planet, lit from the top left like it, at varied angles and
+ * distances. They stay out of the top-left (the label) and bottom-right (the number) quadrants.
+ */
+function moons(r: number, id: string, hue: number, rand: ReturnType<typeof rng>): Fragment {
+  const count = rand.int(0, 2);
+  // One free arc each: up and to the right, or down and to the left (degrees, y down).
+  const arcs: [number, number][] = rand.chance(0.5) ? [[-85, -5], [95, 175]] : [[95, 175], [-85, -5]];
+  let defs = '';
+  let body = '';
+  for (let i = 0; i < count; i++) {
+    const mr = r * rand.range(0.07, 0.13);
+    const a = (rand.range(...arcs[i]) * Math.PI) / 180;
+    const d = r * 1.12 + mr + rand.range(1, 7);
+    const x = MID + Math.cos(a) * d;
+    const y = MID + Math.sin(a) * d;
+    const tint = rand.chance(0.5) ? hsl(hue, 12, 62) : hsl(rand.range(20, 45), 14, 58);
+    defs += `<radialGradient id="${id}-moon${i}" cx=".32" cy=".28" r=".85"><stop offset="0" stop-color="${tint}"/><stop offset=".55" stop-color="${hsl(hue, 14, 30)}"/><stop offset="1" stop-color="${hsl(hue, 30, 6)}"/></radialGradient>`;
+    body += `<circle cx="${n(x)}" cy="${n(y)}" r="${n(mr)}" fill="url(#${id}-moon${i})"/>`;
+  }
+  return { defs, body };
+}
+
 /** One map tile (trim 96 × 96 mm) as a standalone SVG document. */
 export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
   const id = o.idPrefix ?? spec.id;
@@ -239,6 +262,7 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
         type: spec.type ?? PLANET_FAMILY[spec.number].types[0],
         rings: spec.rings,
       }),
+      moons(PLANET_DIAMETER[spec.number] / 2, `${id}-planet`, PLANET_FAMILY[spec.number].hue, art.fork('moons')),
     );
   }
   if (!isVoid && o.only !== 'art') parts.push(label(spec));

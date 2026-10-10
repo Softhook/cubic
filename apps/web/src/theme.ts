@@ -13,4 +13,4 @@ export const PIP = '#0a0f1e';
 export { COMBAT_DICE } from '@quantum/art';
 
 /** A free cube space on a planet. */
-export const CUBE_SLOT = { fill: 'rgba(0,0,0,.42)', stroke: 'rgba(255,255,255,.75)' } as const;
+export const CUBE_SLOT = { fill: 'rgba(0,0,0,.22)', stroke: 'rgba(255,255,255,.35)' } as const;
