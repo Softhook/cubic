@@ -4,13 +4,23 @@ import { logText } from '../game/logText';
 import { remember, stored } from '../storage';
 
 const STORAGE_KEY = 'quantum.logOpen';
+const AUTO_SCROLL_THRESHOLD = 12;
+
+export function shouldAutoScroll(scrollTop: number, clientHeight: number, scrollHeight: number, threshold = AUTO_SCROLL_THRESHOLD) {
+  return scrollHeight - scrollTop - clientHeight <= threshold;
+}
 
 /** The game's log. Collapsed (the default, remembered) it is just its title; the whole row toggles it. */
 export function Log({ game }: { game: GameState }) {
   const ref = useRef<HTMLOListElement>(null);
   const [open, setOpen] = useState(() => stored(STORAGE_KEY) === '1');
   useEffect(() => {
-    ref.current?.scrollTo({ top: ref.current.scrollHeight, behavior: 'smooth' });
+    const list = ref.current;
+    if (!open || !list) return;
+    if (!shouldAutoScroll(list.scrollTop, list.clientHeight, list.scrollHeight)) return;
+    requestAnimationFrame(() => {
+      list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
+    });
   }, [game.log.length, game.logCounter, open]);
   const toggle = () => {
     setOpen(!open);
