@@ -39,6 +39,8 @@ export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState
   const H = rows * cell;
   // Print millimetres to screen pixels: the tile art and everything drawn over it use the printed geometry.
   const mm = cell / TILE.cell;
+  // Gap between neighbouring tiles, scaled with the cell so zooming doesn't change the look.
+  const inset = cell * 0.015;
   return (
     <>
       <svg className="board-svg" width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
@@ -50,12 +52,12 @@ export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState
 
         {tiles.map((t) => (
           <g key={`${t.r},${t.c}`}>
-            {images[t.id] && <image href={images[t.id]} x={t.c * cell + 1} y={t.r * cell + 1} width={cell * 3 - 2} height={cell * 3 - 2} />}
+            {images[t.id] && <image href={images[t.id]} x={t.c * cell + inset} y={t.r * cell + inset} width={cell * 3 - 2 * inset} height={cell * 3 - 2 * inset} />}
             <rect
-              x={t.c * cell + 1}
-              y={t.r * cell + 1}
-              width={cell * 3 - 2}
-              height={cell * 3 - 2}
+              x={t.c * cell + inset}
+              y={t.r * cell + inset}
+              width={cell * 3 - 2 * inset}
+              height={cell * 3 - 2 * inset}
               rx={(cell * 3 * TILE.corner) / TILE.size}
               fill={images[t.id] ? 'none' : '#0b1124'}
               stroke={t.void ? 'rgba(197,155,255,.35)' : 'rgba(127,178,255,.16)'}
