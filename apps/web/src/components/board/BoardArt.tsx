@@ -109,7 +109,7 @@ export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState
 
         {game.gates.map((g, i) => (
           <g key={i} transform={`translate(${(g.c + 0.5) * cell} ${(g.r + 0.5) * cell})`}>
-            <circle r={cell * 0.4} fill="none" stroke="#5ef0b0" strokeWidth={3} filter="url(#glow)" />
+            <circle r={cell * 0.4} fill="none" stroke="#5ef0b0" strokeWidth={cell * 0.05} filter="url(#glow)" />
           </g>
         ))}
 
@@ -122,7 +122,7 @@ export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState
           return (
             <g key={p.id}>
               {p.start && game.phase === 'setup' && (
-                <circle cx={cx} cy={cy} r={R * 1.12} fill="none" stroke="#fff" strokeOpacity={0.5} strokeDasharray="3 4" />
+                <circle cx={cx} cy={cy} r={R * 1.12} fill="none" stroke="#fff" strokeOpacity={0.5} strokeDasharray={`${3 * mm} ${4 * mm}`} />
               )}
               <PlanetMarkings
                 cx={cx}
@@ -141,7 +141,7 @@ export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState
       {/* Each gate's turning ring is its own element over the map, so turning it doesn't repaint the map. */}
       {game.gates.map((g, i) => (
         <svg key={i} className="gate-spin" style={{ left: g.c * cell, top: g.r * cell }} width={cell} height={cell} viewBox={`0 0 ${cell} ${cell}`}>
-          <circle cx={cell / 2} cy={cell / 2} r={cell * 0.36} fill="none" stroke="#5ef0b0" strokeWidth={1.5} strokeDasharray="4 4" />
+          <circle cx={cell / 2} cy={cell / 2} r={cell * 0.36} fill="none" stroke="#5ef0b0" strokeWidth={cell * 0.025} strokeDasharray={`${cell * 0.065} ${cell * 0.065}`} />
         </svg>
       ))}
     </>
