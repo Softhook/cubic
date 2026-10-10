@@ -1,14 +1,7 @@
 import { Relay } from 'nostr-tools/relay';
 import { KIND, type NostrEvent } from '@quantum/online';
 
-/**
- * Public Nostr relays that store our events. Checked 2026-10 with a new key: each took a burst of
- * 40 events and returned them all. Left out: relays that want payment, a NIP-05 address or a "web
- * of trust" (nostr.wine, nostr.land, offchain.pub…), and ones with tight rate limits (damus.io,
- * nostr.oxtr.dev). A game is sent to all of them, so it survives any one going away; every browser
- * also keeps the whole game and re-sends whatever a relay is missing. To find and check relays
- * (gently, so we don't get banned): `npm run relays:check`.
- */
+/** Six relays that accepted and returned a burst of 40 events from a new key in 2026-10. */
 export const RELAYS = [
   'wss://relay.primal.net',
   'wss://nostr.mom',
@@ -29,6 +22,8 @@ const SEND_GAP_MS = 150;
 const RATE_LIMIT_PAUSE_MS = 30000;
 /** Waits before sending an event again after a relay didn't confirm it (a timeout, a hiccup). */
 const SEND_RETRY_MS = [2000, 8000, 30000];
+/** After the quick retries, keep trying at a low rate while the connection remains open. */
+const SEND_SLOW_RETRY_MS = 60000;
 /** Refusals that won't change by trying again: stop writing to that relay. */
 const REFUSED_FOR_GOOD = /blocked|restricted|web of trust|pay|auth-required|nip-05|whitelist|not allowed/i;
 const RATE_LIMITED = /rate.?limit|too (many|fast)|slow down/i;
@@ -51,7 +46,6 @@ export interface RelayStatus {
 
 /** The events this browser holds for the game. */
 export interface EventStore {
-  get(id: string): NostrEvent | undefined;
   all(): NostrEvent[];
 }
 
@@ -60,9 +54,8 @@ export interface EventStore {
  * stored ones, then new ones as they are posted), publishes this browser's events, and re-sends
  * known events a relay doesn't have.
  *
- * Every relay sends the whole game on connecting; events this browser already holds are skipped
- * before they are parsed or their signature checked (a few ms each on a phone), so reconnecting
- * stays cheap.
+ * Every relay sends the whole game on connecting. The relay library still parses and verifies
+ * already-known events before this client skips their decryption and replay.
  */
 export class RelayLink {
   private relays = new Map<string, Relay>();
@@ -75,8 +68,8 @@ export class RelayLink {
   /** Events waiting to be sent, per relay, oldest first. */
   private outbox = new Map<string, NostrEvent[]>();
   private sending = new Set<string>();
-  /** Per relay: how many times the event at the head of its outbox went unconfirmed. */
-  private tries = new Map<string, number>();
+  /** Per relay and event: how many transient publish failures it has had. */
+  private tries = new Map<string, Map<string, number>>();
   /** Relays that refused our events for good; still read from. */
   private readOnly = new Set<string>();
   /** This browser's events that no relay has confirmed yet. */
@@ -137,6 +130,7 @@ export class RelayLink {
   /** The relay holds this event. */
   private holds(url: string, id: string) {
     this.seen.get(url)!.add(id);
+    this.tries.get(url)?.delete(id);
     if (this.unsent.delete(id)) this.status();
   }
 
@@ -204,14 +198,9 @@ export class RelayLink {
     };
     return {
       // Called with the id alone, before nostr-tools parses the event or checks its signature.
-      alreadyHaveEvent: (id: string) => {
-        const e = this.store.get(id);
-        if (e) counted(e.created_at);
-        return !!e;
-      },
-      receivedEvent: (_: unknown, id: string) => this.holds(url, id),
       onevent: (e: NostrEvent) => {
         counted(e.created_at);
+        this.holds(url, e.id);
         this.onEvent(e);
       },
     };
@@ -268,7 +257,7 @@ export class RelayLink {
     };
     const done = () => {
       q.shift();
-      this.tries.delete(url);
+      this.tries.get(url)?.delete(e.id);
       next(SEND_GAP_MS);
     };
     r.publish(e).then(
@@ -278,7 +267,8 @@ export class RelayLink {
       },
       (err: unknown) => {
         const why = String((err as Error)?.message ?? err);
-        const tries = this.tries.get(url) ?? 0;
+        const attempts = this.tries.get(url) ?? new Map<string, number>();
+        const tries = attempts.get(e.id) ?? 0;
         if (REFUSED_FOR_GOOD.test(why)) {
           console.warn(`[quantum] ${url} refuses our events (${why}); reading from it only`);
           this.readOnly.add(url);
@@ -288,14 +278,31 @@ export class RelayLink {
         } else if (RATE_LIMITED.test(why)) {
           next(RATE_LIMIT_PAUSE_MS);
         } else if (TRANSIENT.test(why) && tries < SEND_RETRY_MS.length) {
-          // Keep it at the head of the queue; if the socket died, it goes out after reconnecting.
-          this.tries.set(url, tries + 1);
-          next(SEND_RETRY_MS[tries]);
+          this.defer(url, e, q, attempts, tries, SEND_RETRY_MS[tries]);
+        } else if (TRANSIENT.test(why)) {
+          if (tries === SEND_RETRY_MS.length) console.warn(`[quantum] ${url} still has not confirmed event ${e.id}; retrying once a minute`);
+          this.defer(url, e, q, attempts, tries, SEND_SLOW_RETRY_MS);
         } else {
           // The relay won't take this event (or keeps failing): skip it; the next sync tries again.
           done();
         }
       },
     );
+  }
+
+  private defer(
+    url: string,
+    event: NostrEvent,
+    queue: NostrEvent[],
+    attempts: Map<string, number>,
+    tries: number,
+    delay: number,
+  ) {
+    queue.shift();
+    attempts.set(event.id, tries + 1);
+    this.tries.set(url, attempts);
+    this.later(() => this.enqueue(url, [event]), delay);
+    this.sending.delete(url);
+    this.later(() => this.drain(url), SEND_GAP_MS);
   }
 }

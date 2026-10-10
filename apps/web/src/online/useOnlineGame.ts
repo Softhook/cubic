@@ -195,7 +195,7 @@ function usePostLog(secret: string) {
     try {
       for (const e of loadEvents(keys.tag)) receive(e, true);
       publish();
-      const store = { get: (id: string) => events.get(id), all: () => [...events.values()] };
+      const store = { all: () => [...events.values()] };
       l = new RelayLink(keys.tag, store, (e) => receive(e) && (save(), publish()), setRelays);
       l.start();
       link.current = l;

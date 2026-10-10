@@ -48,15 +48,16 @@ store small signed messages for anyone. We run nothing.
 - **Privacy.** The invite link `#online/<secret>` carries a 128-bit secret in the fragment,
   which browsers never send to a server. Relays see only an encrypted blob (AES-GCM, key
   derived from the secret), a tag derived from it, and the poster's public key.
-- **Relays** ([`relays.ts`](../apps/web/src/online/relays.ts)): six that accept bursts from new
-  keys (checked 2026-10). Each relay gets a paced send queue; rate limits pause it; a send that
-  goes unconfirmed is retried; a relay that refuses for good (payment, web of trust) is only
-  read from. After syncing, a browser re-sends anything a relay is missing, so a game survives
-  relays dropping old events as long as one player still has it. Every relay sends the whole
-  game on connecting, but events the browser already holds are skipped before they are parsed
-  or their signature checked (~1 ms each on a laptop, more on a phone), and a reconnect only
-  asks for what's new since the last sync. A relay that ends our subscription is asked again.
-  The panel shows *Sending…* while a move of ours isn't confirmed by any relay.
+- **Relays** ([`relays.ts`](../apps/web/src/online/relays.ts)): six relays that accepted bursts
+  of 40 events from a new key (checked 2026-10). Every game is sent to all six. Each relay gets a
+  paced send queue; rate limits pause it; transient failures are retried with backoff and moved
+  behind newer events, then retried once a minute after the quick retries. A relay that refuses
+  for good (payment, web of trust) is only read from. After syncing, a browser re-sends anything
+  a relay is missing, so a game survives relays dropping old events as long as one player still
+  has it. Events already in the browser are still parsed and signature-checked when returned by a
+  relay, so an unverified duplicate cannot suppress a valid event. A reconnect only asks for
+  what's new since the last sync. A relay that ends our subscription is asked again. The panel
+  shows *Sending…* while a move of ours isn't confirmed by any relay.
 - **Staying in sync.** Each move carries a hash of the position it leads to (names and log
   left out, as claims may still be in flight). A browser that gets a different position, or
   refuses a move the seat's owner made from the same position, shows *Out of sync* and asks

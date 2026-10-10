@@ -289,6 +289,7 @@ describe('online timeline', () => {
     t.add(create('alice', [seat('A'), seat('B')], []));
     expect(t.replay()).toBeNull();
   });
+
 });
 
 describe('codec', () => {
