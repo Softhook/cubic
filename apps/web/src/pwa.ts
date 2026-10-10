@@ -62,7 +62,9 @@ export function startServiceWorker() {
     },
     onNeedRefresh() {
       setStatus('ready');
-      if (asked || document.hidden || Date.now() - opened < 10_000) applyNow();
+      const applyImmediately = asked || document.hidden || Date.now() - opened < 10_000;
+      asked = false;
+      if (applyImmediately) applyNow();
     },
   });
 
@@ -93,7 +95,10 @@ export function startServiceWorker() {
     // Nothing new. The player's check gives its answer; a background check only clears a stale
     // `updating`, and leaves alone a check the player started meanwhile (`checking`).
     const settle = (answer: UpdateStatus) => {
-      if (ask ? status === 'checking' : status === 'updating') setStatus(ask ? answer : 'idle');
+      if (ask ? status === 'checking' : status === 'updating') {
+        if (ask) asked = false;
+        setStatus(ask ? answer : 'idle');
+      }
     };
     r.update().then(
       () => {

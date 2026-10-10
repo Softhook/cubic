@@ -3,7 +3,7 @@
  *
  *   npm run pwa:check
  *
- * Builds the app four times (versions v1–v4, told apart by BUILD_ID) into test-results/pwa/ and serves
+ * Builds the app five times (versions v1–v5, told apart by BUILD_ID) into test-results/pwa/ and serves
  * one at a time under /quantum/, as GitHub Pages does (with its 10-minute HTTP cache). Then, in Chrome
  * sized as the Moto G55:
  *   1. a first visit installs the service worker, which has every file of the build;
@@ -11,7 +11,8 @@
  *   3. v2 is deployed: back in the foreground the app finds it, but doesn't reload while you play;
  *   4. the app goes to the background: v2 takes over, and the game is back on screen;
  *   5. v3 is deployed: an app just opened switches to it at once;
- *   6. v4 is deployed: the lobby's *Check for updates* switches to it, then says *Up to date*.
+ *   6. v4 is deployed: the lobby's *Check for updates* switches to it, then says *Up to date*;
+ *   7. v5 is deployed: a later check finds it without interrupting the app, and it takes over in the background.
  * Uses the installed Google Chrome, like mobile:shots. Exits with 1 if a check fails.
  */
 import { readdirSync, readFileSync } from 'node:fs';
@@ -22,7 +23,7 @@ import { MOTO_G55, launchChrome } from './mobile-common';
 import { build } from 'vite';
 
 const OUT = resolve('test-results/pwa');
-const VERSIONS = ['v1', 'v2', 'v3', 'v4'] as const;
+const VERSIONS = ['v1', 'v2', 'v3', 'v4', 'v5'] as const;
 type Version = (typeof VERSIONS)[number];
 const PORT = 5190;
 const BASE = `http://127.0.0.1:${PORT}/quantum/`;
@@ -166,6 +167,25 @@ async function main() {
     await versionLine(page).getByRole('button', { name: 'Check for updates' }).click();
     const current = await versionLine(page).getByRole('button', { name: 'Up to date' }).waitFor({ timeout: 10_000 }).then(() => true, () => false);
     check('with nothing new it says Up to date', current);
+
+    console.log('7. v5 deployed after an up-to-date check');
+    await pastOpening();
+    live = 'v5';
+    await page.evaluate(() => ((window as unknown as { kept: boolean }).kept = true));
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    const laterFound = await page
+      .waitForFunction(async () => !!(await navigator.serviceWorker.getRegistration())?.waiting, null, { timeout: 20_000 })
+      .then(() => true, () => false);
+    check('a later check finds v5', laterFound);
+    await page.waitForTimeout(2000);
+    check('a later update does not interrupt the app', await page.evaluate(() => (window as unknown as { kept?: boolean }).kept === true));
+    const laterReload = page.waitForEvent('load', { timeout: 10_000 }).then(() => true, () => false);
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    check('v5 takes over in the background', await laterReload);
+    check('it runs v5', (await servedVersion(page)) === 'v5', await servedVersion(page));
   } finally {
     await browser.close();
     server.close();
