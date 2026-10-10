@@ -125,7 +125,9 @@ function PlayerCard({ game, p, ctl, dispatch, showScrap }: { game: GameState; p:
                   setViewing(null);
                 }}
               >
-                Play Tactic
+                {game.turn.actionsLeft > 0
+                  ? `Play Tactic (forfeits ${game.turn.actionsLeft} remaining action${game.turn.actionsLeft === 1 ? '' : 's'})`
+                  : 'Play Tactic'}
               </button>
             ) : undefined
           }
