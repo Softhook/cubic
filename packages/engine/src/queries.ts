@@ -530,6 +530,8 @@ export interface ConquerCheck {
   target: number;
   ships: Die[];
   reason?: string;
+  /** Over-conquest: owners whose cube may be displaced. */
+  replace?: PlayerId[];
 }
 
 export function conquerCheck(state: GameState, player: PlayerId, planetId: number): ConquerCheck {
@@ -544,8 +546,13 @@ export function conquerCheck(state: GameState, player: PlayerId, planetId: numbe
     reason,
   });
 
-  if (planetFreeSlots(planet) <= 0) return fail('No empty cube location');
-  if (own > 0) {
+  let replace: PlayerId[] | undefined;
+  if (planetFreeSlots(planet) <= 0) {
+    if (!rulesOf(state).overConquest) return fail('No empty cube location');
+    replace = [...new Set(planet.cubes.filter((x) => x !== player))];
+    if (!replace.length) return fail('No opponent cube to displace');
+    target = planet.number * 2;
+  } else if (own > 0) {
     // Quantum Entanglement: only once you hold every planet that still has room.
     const blocked = state.board.planets.some(
       (p) => planetFreeSlots(p) > 0 && !p.cubes.includes(player),
@@ -571,7 +578,7 @@ export function conquerCheck(state: GameState, player: PlayerId, planetId: numbe
     const sum = total(ships);
     const ctx = { sum, ships, dominance: p.dominance, research: p.research };
     const sums = [sum, ...rules.flatMap((r) => r.sums?.(ctx) ?? [])];
-    if (sums.some((s) => Math.abs(s - target) <= tolerance)) return { ok: true, sum, target, ships };
+    if (sums.some((s) => Math.abs(s - target) <= tolerance)) return { ok: true, sum, target, ships, replace };
   }
   const sum = total(all);
   return fail(`Orbit totals ${sum}, needs ${target}`, all, sum);

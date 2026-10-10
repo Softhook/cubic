@@ -1,7 +1,6 @@
 /**
- * Prototyping mode (docs/PROTOTYPING.md, src/prototyping): Community Edition with movement capped at 3
- * and new powers for the 4 (Picket), 5 (Shoot) and 6 (Beacon), which replace Modify, Manoeuvre and Free
- * Reconfigure. The first block checks that none of it reaches the official modes, and that the mode
+ * Prototyping mode (docs/PROTOTYPING.md, src/prototyping): Community Edition with movement capped at 3,
+ * a new power for the 5 (Shoot), which replaces Manoeuvre, and over-conquest of full planets. The first block checks that none of it reaches the official modes, and that the mode
  * folder and the engine meet only at RULESETS and the prototype kit.
  *
  * Scenarios run on Alpha Sector, the basic map for 2 players (9×9; planets at rows/cols 1, 4, 7,
@@ -14,14 +13,14 @@ import { describe, expect, it } from 'vitest';
 import {
   apply,
   CLASSIC_SHIPS,
-  deployTargets,
-  key,
+  orbitals,
+  conquerCheck,
   legalActions,
   MODES,
   moveOptions,
+  planetFreeSlots,
   rulesOf,
   RULESETS,
-  shipReach,
   shipsByIndex,
   stopZone,
   type Action,
@@ -29,8 +28,6 @@ import {
   type GameState,
 } from '../src';
 import { beginPlay } from '../src/turn';
-import { beacon } from '../src/prototyping/powers/beacon';
-import { picket } from '../src/prototyping/powers/picket';
 import { shoot as shootPower, shootTargets } from '../src/prototyping/powers/shoot';
 import { quickStart } from './helpers';
 
@@ -55,7 +52,6 @@ function scenario(dice: Record<string, [number, number, number]>, mode: 'prototy
 }
 
 const at = (s: GameState, id: string) => s.dice.find((d) => d.id === id)!;
-const moves = (s: GameState, id: string) => [...moveOptions(s, id).moves.keys()];
 const farthest = (s: GameState, id: string) => Math.max(...[...moveOptions(s, id).moves.values()].map((m) => m.steps));
 const offered = (s: GameState, type: Action['type']) => legalActions(s).filter((a) => a.type === type);
 /** The ships p0d0 may shoot now, by the legal actions (so cost and power included). */
@@ -70,9 +66,10 @@ describe('Prototyping mode', () => {
     expect(prototyping.cards).toBe(community.cards);
     expect(prototyping.startingMissiles).toBe(1);
     expect(prototyping.maxMovement).toBe(3);
-    expect([4, 5, 6].map((v) => prototyping.ships[v].hooks)).toEqual([picket.hooks, shootPower.hooks, beacon.hooks]);
-    expect([4, 5, 6].map((v) => prototyping.ships[v].power)).toEqual([undefined, undefined, undefined]);
-    expect([1, 2, 3].map((v) => prototyping.ships[v])).toEqual([1, 2, 3].map((v) => community.ships[v]));
+    expect(prototyping.overConquest).toBe(true);
+    expect(prototyping.ships[5].hooks).toBe(shootPower.hooks);
+    expect(prototyping.ships[5].power).toBeUndefined();
+    expect([1, 2, 3, 4, 6].map((v) => prototyping.ships[v])).toEqual([1, 2, 3, 4, 6].map((v) => community.ships[v]));
   });
 
   it('leaves the official modes alone: classic ships, no movement cap', () => {
@@ -84,11 +81,6 @@ describe('Prototyping mode', () => {
     const s = scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 4], p1d1: [8, 8, 6] }, 'community');
     expect(offered(s, 'power')).toEqual([]);
     expect(stopZone(s, 0, shipsByIndex(s))).toBeUndefined();
-    // A Scout opens no deploy spaces a Destroyer in its place wouldn't (in Prototyping it does: Beacon).
-    const targets = (mode: 'prototyping' | 'community', value: number) =>
-      deployTargets(scenario({ p1d1: [5, 5, value] }, mode), 1).map(key).sort();
-    expect(targets('community', 6)).toEqual(targets('community', 3));
-    expect(targets('prototyping', 6).length).toBeGreaterThan(targets('prototyping', 3).length);
   });
 
   it('official ships have no prototype hooks', () => {
@@ -193,13 +185,11 @@ describe('movement cap', () => {
   });
 });
 
-describe('classic 4, 5 and 6 abilities are gone', () => {
-  it('a Frigate cannot change, a Scout cannot reconfigure for free', () => {
+describe('classic 5 ability is gone, 4 and 6 are kept', () => {
+  it('a Frigate can change and a Scout can reconfigure for free, as in Community', () => {
     const s = scenario({ p0d0: [0, 0, 4], p0d1: [0, 8, 6] });
-    expect(offered(s, 'change')).toEqual([]);
-    expect(offered(s, 'freeReconfigure')).toEqual([]);
-    expect(() => apply(s, { type: 'change', die: 'p0d0', value: 3 })).toThrow(/ability/);
-    expect(() => apply(s, { type: 'freeReconfigure', die: 'p0d1' })).toThrow(/ability/);
+    expect(offered(s, 'change').length).toBeGreaterThan(0);
+    expect(offered(s, 'freeReconfigure').length).toBeGreaterThan(0);
   });
 
   it('an Interceptor never moves diagonally', () => {
@@ -212,46 +202,6 @@ describe('classic 4, 5 and 6 abilities are gone', () => {
     const s = scenario({ p0d0: [0, 0, 1], p0d1: [0, 4, 3], p1d0: [0, 1, 4] });
     expect(offered(s, 'freeAttack')).toHaveLength(1);
     expect(offered(s, 'swap')).toHaveLength(1);
-  });
-});
-
-describe('Picket (4 Frigate)', () => {
-  // An enemy Frigate at (1,2) pickets (0,1)–(0,3), (1,3) and (2,1)–(2,3).
-  const picket = (me: [number, number, number], extra: Record<string, [number, number, number]> = {}) =>
-    scenario({ p0d0: me, p1d0: [1, 2, 4], ...extra });
-
-  it('stops an enemy ship that moves into a surrounding space', () => {
-    const s = picket([0, 0, 3]);
-    expect(moves(s, 'p0d0')).toContain(key({ r: 0, c: 1 }));
-    expect(moves(s, 'p0d0')).not.toContain(key({ r: 0, c: 2 }));
-    expect(moves(s, 'p0d0')).not.toContain(key({ r: 0, c: 3 }));
-    // Without Picket the same ship reaches (0,3) along the top row.
-    expect(moves(scenario({ p0d0: [0, 0, 3], p1d0: [1, 2, 4] }, 'community'), 'p0d0')).toContain(key({ r: 0, c: 3 }));
-  });
-
-  it('lets a ship that starts next to the Frigate move away', () => {
-    expect(moves(picket([2, 2, 3]), 'p0d0')).toContain(key({ r: 5, c: 2 }));
-  });
-
-  it('still lets the stopped ship attack from there', () => {
-    const s = picket([0, 0, 3], { p1d1: [0, 2, 2] });
-    const attack = moveOptions(s, 'p0d0').attacks.get('p1d1');
-    expect(attack?.from).toEqual({ r: 0, c: 1 });
-  });
-
-  it('does not stop its own side', () => {
-    const s = scenario({ p0d0: [0, 0, 3], p0d1: [1, 2, 4] });
-    expect(moves(s, 'p0d0')).toContain(key({ r: 0, c: 3 }));
-  });
-
-  it('agrees with the AI’s fast reach search', () => {
-    for (const me of [[0, 0, 3], [2, 2, 3], [0, 4, 6]] as [number, number, number][]) {
-      const s = picket(me, { p1d1: [0, 2, 2] });
-      const fast = shipReach(s, at(s, 'p0d0'), shipsByIndex(s));
-      const opts = moveOptions(s, 'p0d0');
-      expect(fast.count).toBe(opts.moves.size);
-      expect(fast.attacks.map((d) => d.id).sort()).toEqual([...opts.attacks.keys()].sort());
-    }
   });
 });
 
@@ -346,22 +296,39 @@ describe('Shoot (5 Interceptor)', () => {
   });
 });
 
-describe('Beacon (6 Scout)', () => {
-  it('lets its owner deploy into the empty spaces around it', () => {
-    const s = scenario({ p0d0: [2, 2, 6], p0d1: [3, 3, 1] });
-    const targets = deployTargets(s, 0).map(key);
-    // (1,1) is a planet and (3,3) is taken: 6 of the 8 surrounding cells.
-    for (const c of [[1, 2], [1, 3], [2, 1], [2, 3], [3, 1], [3, 2]]) expect(targets).toContain(key({ r: c[0], c: c[1] }));
-    expect(targets).not.toContain(key({ r: 3, c: 3 }));
-    const scrap = s.dice.find((d) => d.owner === 0 && d.loc.zone === 'scrapyard')!;
-    const deployed = apply(s, { type: 'deploy', die: scrap.id, to: { r: 3, c: 1 } });
-    expect(at(deployed, scrap.id).loc).toEqual({ zone: 'board', r: 3, c: 1 });
+describe('over-conquest', () => {
+  const full = (mode: 'prototyping' | 'community') => {
+    const s = scenario({ p0d0: [0, 1, 6], p0d1: [1, 0, 6] }, mode);
+    const planet = s.board.planets.find((p) => p.cubes.length === 0)!;
+    return { s, planet };
+  };
+
+  it('is off outside Prototyping: a full planet cannot be conquered', () => {
+    const { s, planet } = full('community');
+    planet.cubes.push(1, 1, 1, 1, 1, 1, 1, 1);
+    expect(conquerCheck(s, 0, planet.id).ok).toBe(false);
   });
 
-  it('only works for its owner, only on the map, and only in Prototyping', () => {
-    const near = (s: GameState, p: number) => deployTargets(s, p).map(key).includes(key({ r: 2, c: 3 }));
-    expect(near(scenario({ p0d0: [2, 2, 6] }), 1)).toBe(false);
-    expect(near(scenario({ p0d1: [8, 8, 1] }), 0)).toBe(false);
-    expect(near(scenario({ p0d0: [2, 2, 6] }, 'community'), 0)).toBe(false);
+  it('needs twice the planet number and displaces a chosen opponent cube', () => {
+    const base = scenario({}, 'prototyping');
+    const planet = base.board.planets[0];
+    const target = planet.number * 2;
+    const spots = orbitals(base.board, planet);
+    const values: number[] = [];
+    for (let left = target; left > 0; left -= values[values.length - 1]) values.push(Math.min(6, left));
+    const placed: Record<string, [number, number, number]> = {};
+    values.forEach((v, i) => (placed[`p0d${i}`] = [spots[i].r, spots[i].c, v]));
+    const s = scenario(placed, 'prototyping');
+    const p = s.board.planets[0];
+    while (planetFreeSlots(p) > 0) p.cubes.push(1);
+    const check = conquerCheck(s, 0, p.id);
+    expect(check.target).toBe(target);
+    expect(check.ok).toBe(true);
+    expect(check.replace).toEqual([1]);
+    const before = s.players[1].cubesLeft;
+    const after = apply(s, { type: 'conquer', planet: p.id, replace: 1 });
+    expect(after.players[1].cubesLeft).toBe(before + 1);
+    expect(after.board.planets[0].cubes.filter((c) => c === 0)).toHaveLength(1);
+    expect(after.board.planets[0].cubes.filter((c) => c === 1)).toHaveLength(p.cubes.length - 1);
   });
 });

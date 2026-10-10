@@ -280,7 +280,7 @@ export type Action =
   | { type: 'deploy'; die: string; to: Cell }
   | { type: 'reconfigure'; die: string }
   | { type: 'research' }
-  | { type: 'conquer'; planet: number }
+  | { type: 'conquer'; planet: number; replace?: PlayerId }
   | { type: 'endTurn' }
   // ship abilities
   | { type: 'freeAttack'; die: string; target: string }

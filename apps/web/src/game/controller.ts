@@ -144,9 +144,15 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
       }
       if (hl.tone === 'start') dispatch({ type: 'placeStart', planet: id });
       else if (hl.tone === 'infamy') dispatch({ type: 'infamy', planet: id });
-      else if (hl.tone === 'conquer') dispatch({ type: 'conquer', planet: id });
+      else if (hl.tone === 'conquer') {
+        // Over-conquest with several opponent cubes: displace the one whose owner leads (most cubes placed).
+        const options = legal.of('conquer', (a) => a.planet === id);
+        const lead = (o: number) => -(game.players[o]?.cubesLeft ?? 0);
+        const pick = [...options].sort((x, y) => (x.replace === undefined ? 0 : lead(x.replace)) - (y.replace === undefined ? 0 : lead(y.replace)))[0];
+        dispatch(pick ?? { type: 'conquer', planet: id });
+      }
     },
-    [human, highlights, head, sel, legal, dispatch, select],
+    [human, highlights, head, sel, legal, game, dispatch, select],
   );
 
   return { sel, select, highlights, legal, attacks, onDie, onCell, onPlanet, human, actionPhase, mine };

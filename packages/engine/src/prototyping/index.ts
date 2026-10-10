@@ -11,19 +11,15 @@
  * power on another ship, move it in PROTOTYPING_SHIPS; a new power, copy a file in powers/.
  */
 import { CLASSIC_SHIPS, type RuleSet, type ShipTable } from '../prototype';
-import { beacon } from './powers/beacon';
-import { picket } from './powers/picket';
 import { shoot } from './powers/shoot';
 
 /** The most a ship's die value counts for movement; skill bonuses add to it (ruling 2026-10-08). */
 const MAX_MOVEMENT = 3;
 
-/** The 1, 2 and 3 keep their official powers; the 4, 5 and 6 control space, strike at range and extend reach. */
+/** Only the 5 has a new power (strikes at range); the other ships keep their official powers. */
 export const PROTOTYPING_SHIPS: ShipTable = {
   ...CLASSIC_SHIPS,
-  4: { name: 'Frigate', ...picket },
   5: { name: 'Interceptor', ...shoot },
-  6: { name: 'Scout', ...beacon },
 };
 
 /** Prototyping is built on `base` (Community Edition, see rules.ts): its cards, missiles and maps are kept. */
@@ -33,9 +29,10 @@ export function prototypingMode(base: RuleSet): RuleSet {
     id: 'prototyping',
     name: 'Prototyping',
     title: 'Prototyping',
-    summary: 'Community Edition with moves capped at 3 and new Frigate, Interceptor and Scout powers.',
+    summary: 'Community Edition with moves capped at 3, a ranged Interceptor and over-conquest of full planets.',
     ships: PROTOTYPING_SHIPS,
     maxMovement: MAX_MOVEMENT,
+    overConquest: true,
     experimental: true,
   };
 }

@@ -34,6 +34,8 @@ export interface RuleSet {
   ships: ShipTable;
   /** The most a ship's die value counts for movement; skill bonuses add to it (PROTOTYPING.md §2). */
   maxMovement?: number;
+  /** A fully occupied planet can still be conquered at twice its number, displacing an opponent's cube (PROTOTYPING.md §6.10). */
+  overConquest?: boolean;
   /** A rule set we're still testing: playable from the lobby, but left out of the rulebook. */
   experimental?: boolean;
 }
