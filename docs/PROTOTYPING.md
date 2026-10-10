@@ -1,21 +1,33 @@
 # Prototyping a Fourth Mode
 
-How to build **Cubic**, our own rule set, alongside Basic, Classic and Community, and what to change
-first. Three parts:
+How to build **Cubic**, our own rule set, alongside Basic, Classic, and Community.
 
-1. The groundwork: how modes work, a worked example, how to test, what to refactor.
-2. New powers for the 4, 5 and 6 ships, which move too far and do too little.
-3. Radical ideas that would make Cubic a different game, not a re-tuned one.
+> **Design Thesis: From Arithmetic Sprint to Positional War**  
+> In base Quantum, hyper-mobility collapsed geography. Ships with 5–6 movement on compact boards crossed the map with ease, turning battles into isolated teleport raids and conquest into an arithmetic puzzle.  
+> **Cubic restores territorial gravity**: movement caps create distance, big ships project zones of control and forward logistics, and planets require orbital superiority before conquest.
 
-Nothing here is adopted. Rulings go to [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) and, once decided, to
-[RULES.md](RULES.md).
+Nothing here is permanently adopted. Rulings go to [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) and, once decided, to [RULES.md](RULES.md).
+
+---
+
+## Table of Contents
+
+1. [How Modes Work Today](#1-how-modes-work-today)
+2. [Worked Example: Movement Cap at 3](#2-worked-example-ships-move-at-most-3)
+3. [How to Test a New Mode](#3-how-to-test-a-new-mode)
+4. [Engine Refactoring Roadmap](#4-refactoring-in-the-order-it-pays-off)
+5. [The Ship Redesign: Powers for the 4, 5, and 6](#5-new-powers-for-the-4-5-and-6)
+6. [Radical Ideas Catalogue](#6-radical-ideas-a-different-game-not-a-re-tuned-one)
+7. [Next Steps](#7-next-steps)
+8. [Current Status & Playtest Results](#8-what-was-built-2026-10-09)
+9. [Developer Guide: Working on Cubic](#9-working-on-cubic)
 
 ---
 
 ## 1. How modes work today
 
 Every rule lives in [`packages/engine`](../packages/engine). A game is a pure function: take the
-state and an action, return the new state. The AI, the web UI and online play only call
+state and an action, return the new state. The AI, the web UI, and online play only call
 `legalActions()` and `apply()`. Online, every browser replays the same moves through the same engine,
 so a new mode needs no network changes as long as it stays deterministic.
 
@@ -44,17 +56,19 @@ Two patterns make changes cheap:
 - **Single choke points.** Each rule question has one function in
   [queries.ts](../packages/engine/src/queries.ts): `movementRange`, `deployTargets`, `conquerCheck`,
   `combatOutcome`, `breakthroughAt`, `infamyAt`. Change the function and every caller follows.
-- **Closed registries.** Actions, decisions and skill effects are closed TypeScript unions. Add one
+- **Closed registries.** Actions, decisions, and skill effects are closed TypeScript unions. Add one
   without a handler and the build fails, pointing at the gap.
 
 Skills already work like small plugins: each is a set of hooks in
 [skillRules.ts](../packages/engine/src/skillRules.ts) (`movement`, `combat.modifier`, `startOfTurn`…).
-Prototype ship powers now use the same pattern: `ShipHooks` (§9).
+Prototype ship powers use the same pattern: `ShipHooks` (§9).
+
+---
 
 ## 2. Worked example: ships move at most 3
 
 *This is how the cap was first planned. It is now built: `MAX_MOVEMENT` in
-[cubic/index.ts](../packages/engine/src/cubic/index.ts), read by `movementRange`. §9 says where
+[cubic/index.ts](../packages/engine/src/cubic/index.ts), read by `movementRange`. §9 details where
 Cubic's code lives today.*
 
 A ship's movement is calculated in one place:
@@ -66,8 +80,8 @@ export function movementRange(state: GameState, d: Die): number {
 }
 ```
 
-The legal-move search (`moveOptions`, `carryOptions`), the board highlights, both AI planners
-([greedy.ts](../packages/ai/src/greedy.ts), [evaluate.ts](../packages/ai/src/evaluate.ts)) and the
+The legal-move search (`moveOptions`, `carryOptions`), board highlights, both AI planners
+([greedy.ts](../packages/ai/src/greedy.ts), [evaluate.ts](../packages/ai/src/evaluate.ts)), and the
 ship panel's "Moves N" label all call it.
 
 1. Add `'cubic'` to `GameMode` in [data.ts](../packages/engine/src/data.ts).
@@ -79,7 +93,7 @@ ship panel's "Moves N" label all call it.
    ```
 4. Cap the result in `movementRange`.
 5. Optional: a `.mode-badge.mode-cubic` colour in `styles.css`, a row in the rulebook's mode table
-   ([Manual.tsx](../apps/web/src/rulebook/Manual.tsx)), a scenario test.
+   ([Manual.tsx](../apps/web/src/rulebook/Manual.tsx)), and a scenario test.
 
 About 15 lines; the three existing modes and their golden replays don't change.
 
@@ -92,29 +106,33 @@ return Math.min(rulesOf(state).maxMovement ?? Infinity, d.value) + skillRules(st
 
 Capping the total instead would make Agile useless on any ship showing 3 or more.
 
+---
+
 ## 3. How to test a new mode
 
 1. **Play it by hand.** `npm run dev`, then `localhost:5173/?play=cubic&players=2&seed=7` skips the
    lobby and starts a game against the AI ([devStart.ts](../apps/web/src/game/devStart.ts)). The same
-   seed gives the same dice, so a situation can be replayed after each tweak.
+   seed gives the same dice, so situations can be replayed after each tweak.
 2. **Pin each rule with a scenario.** `quickStart(2, 1, 'cubic')` and `arrange()` in
    [test/helpers.ts](../packages/engine/test/helpers.ts) set up exact positions. One test per rule,
-   as in [basic.test.ts](../packages/engine/test/basic.test.ts).
+   as in [basic.test.ts](../packages/engine/test/basic.test.ts) and [cubic.test.ts](../packages/engine/test/cubic.test.ts).
 3. **Check it never breaks the engine.** Add `'cubic'` to the modes in
    [golden.test.ts](../packages/engine/test/golden.test.ts) and the consistency cross-check: seeded AI
    games run `checkInvariants()` after every action, and `legalActions` and `apply` must agree.
 4. **Measure balance with AI self-play.**
    - `npm run ai:match -- 3 3 100 cubic 2`: turns per game and seat win rates. Compare with `community`.
-   - `npm run selfplay:cards -- 50 cubic`: card win, pick and use rates.
+   - `npm run selfplay:cards -- 50 cubic`: card win, pick, and use rates.
    - [basic-sweep.ts](../scripts/basic-sweep.ts) is a template for flagging AI mistakes per mode.
 
 **Worth building first:** a stats script that writes one CSV row per game: mode, turns, winner seat,
-attacks, conquers, and **moves and power uses per ship value**. The last column is how we'll know
+attacks, conquers, and **moves and power uses per ship value**. The last column is how we measure
 whether the new 4/5/6 powers get used.
 
 **Caveat:** the AI plays legally under any rule, but its scoring in `evaluate.ts` is hand-tuned for
-Quantum. Passive powers (§5) need no AI work. Reactive powers and the radical ideas in §6 need AI
-changes before self-play results mean anything.
+Quantum. Passive powers (§5) need no AI work. Reactive powers and radical ideas in §6 need AI
+changes before self-play results become meaningful.
+
+---
 
 ## 4. Refactoring, in the order it pays off
 
@@ -123,26 +141,25 @@ No up-front refactor is needed. Do each step when a rule needs it. Step 2 is don
 | Step | Refactor | Unlocks | Size |
 |---|---|---|---|
 | 1 | Lift fixed numbers into `RuleSet`: actions per turn (`ACTIONS_PER_TURN`), track cap (6), movement cap, Infamy and breakthrough thresholds | Variable tweaks | Small |
-| 2 | **Ship table per mode**: `RuleSet.ships` gives each value its name, movement and power, as hooks like `SkillRule` | §5, and factions in §6 | Medium |
-| 3 | Formula hooks on `RuleSet`: `combatOutcome`, `conquerCheck`, `deployTargets` | Supply, new conquer rules | Small–medium |
-| 4 | Win check as a hook, not fixed in `placeCube` ([core.ts](../packages/engine/src/core.ts)) | Points, round limits | Medium |
-| 5 | Mode-owned player state (an extension field, not new fields on every player) | New resources | Medium |
-| 6 | Mode-gated actions and decisions | New actions, reactions, phases | Medium–large |
-| 7 | AI scoring per mode | Trustworthy self-play | Medium |
-| 8 | UI driven by the rule set: ship names and powers, player tracks, a generic decision dialog | Showing it all on screen | Large |
+| 2 | **Ship table per mode**: `RuleSet.ships` gives each value its name, movement, and power as hooks like `SkillRule` | §5, and factions in §6 | Medium (Done) |
+| 3 | Formula hooks on `RuleSet`: `combatOutcome`, `conquerCheck`, `deployTargets` | Supply, contested orbit (§6.8), new conquer rules | Small–medium |
+| 4 | Win check as a hook, not fixed in `placeCube` ([core.ts](../packages/engine/src/core.ts)) | Points, round limits, planet economy (§6.3) | Medium |
+| 5 | Mode-owned player state (an extension field, not new fields on every player) | New resources, energy economy | Medium |
+| 6 | Mode-gated actions and decisions | Ship activations (§6.9), command dice (§6.4) | Medium–large |
+| 7 | AI scoring per mode | Trustworthy self-play evaluation | Medium |
+| 8 | UI driven by the rule set: ship names and powers, player tracks, generic decision dialogs | Showing dynamic rule sets on screen | Large |
 
-Step 2 matters most for this document, and is done. A ship's identity was its die value, hard-coded
-as `d.value === N` in [abilities.ts](../packages/engine/src/abilities.ts), `moveOptions` and
-[legal.ts](../packages/engine/src/legal.ts), and in fixed name and ability maps the UI read. Now each
-mode has a ship table (`RuleSet.ships`): the engine asks `hasPower(state, d, 'warp')` or reads a
-prototype's hooks, and the UI reads names and ability texts through `shipOf(state, value)`.
-`SHIP_NAMES` remains for log lines, as every mode keeps the official names.
+Step 2 mattered most for ship redesign and is complete. A ship's identity was formerly hard-coded as
+`d.value === N` across [abilities.ts](../packages/engine/src/abilities.ts), `moveOptions`, and
+[legal.ts](../packages/engine/src/legal.ts). Now each mode has a ship table (`RuleSet.ships`): the engine
+queries `hasPower(state, d, 'warp')` or reads a prototype's hooks, and the UI reads names and ability texts
+through `shipOf(state, value)`.
 
 ---
 
 ## 5. New powers for the 4, 5 and 6
 
-### The problem
+### 5.1 The problem: hyper-mobility killed geography
 
 | Ship | Moves | Power today | Why it's weak |
 |---|:-:|---|---|
@@ -150,81 +167,108 @@ prototype's hooks, and the UI reads names and ability texts through `shipOf(stat
 | 5 Interceptor | 5 | Move and attack diagonally | Barely matters at range 5; long range already reaches everything |
 | 6 Scout | 6 | Free Reconfigure | A way to stop being a Scout, not a reason to be one |
 
-The trade-off Quantum is built on is "small ships fight, big ships travel". With 5–6 movement on
-mostly 3–4 tile maps, travel is almost free, so the big ships' only real job is to reach a planet and
-make up a sum. Two of their three powers are about stopping being that ship.
+Quantum's intended trade-off was "small ships fight, big ships travel". But in practice, with 5–6
+movement on maps typically only 6–9 spaces across:
+- **Geography collapsed.** Travel was essentially free. There was no operational depth, no frontline,
+  and no safe rear territory. A 6 could strike almost anywhere in one or two actions.
+- **Battles weren't spatial warfare, but isolated dive-bombing.** Instead of contested borders,
+  flanking, or territorial control, ships zipped across the void for lone duels. Positioning between
+  turns offered no real protection.
+- **Conquering was an arithmetic puzzle, not territorial conquest.** A player could construct a cube
+  right next to an enemy armada as long as their own ships in orbit hit the target sum. It felt like
+  a sudden math sprint rather than a territorial war.
+- **Big ships had no purpose of their own.** Beyond rushing to a planet to fill a sum, their powers
+  were mostly about rerolling to stop being a big ship.
 
-### Design goals
+### 5.2 Design goals: from arithmetic sprint to positional war
 
-- **Cap movement at 3** (§2), so distance matters again and positioning becomes a decision. The cap
-  is on the die value; skill bonuses and powers (Agile, Jump) still add to it.
-- **Give each big ship a role** the small ships can't fill. Small ships fight; big ships **control
-  space, react, and extend reach**.
-- **Keep the combat trade-off**: big ships still lose most fights, so a power must justify fielding a
-  weak fighter.
-- **Prefer passive powers or new uses of existing decisions**, so the AI copes without new scoring.
+- **Cap movement at 3** (§2), so distance and travel time exist again. The board gains scale, and
+  positioning becomes a genuine commitment.
+- **Give the board territorial gravity.** Ships should project threat and control space:
+  - **Zone control:** Frigates (Picket) wall off lanes and planet approaches.
+  - **Ranged pressure:** Interceptors (Shoot) threaten space without having to abandon position.
+  - **Forward bases:** Scouts (Beacon) serve as logistics hubs in a world where crossing the map takes time.
+  - **Planetary sieges:** Planets cannot be claimed while contested by enemy ships (§6.8). You must
+    clear orbital space before constructing.
+- **Keep the combat trade-off**: big ships still lose most fights (they add 4–6), so their value lies in
+  holding space, supporting small fighters, and shaping the battlefield.
+- **Prefer passive powers or clean action extensions**, so the AI copes naturally without complex
+  scoring overhauls.
 
-### Proposed set: control, reaction, logistics
+### 5.3 Active set: control, ranged threat, logistics
+
+The trio implemented in Cubic today (see §8 for rulings and playtest stats):
 
 | Ship | Moves | Power | Role |
 |---|:-:|---|---|
-| **4 Frigate** | 3 | **Picket.** An enemy ship that enters a space adjacent to your Frigate must stop there. Its last step may still be an attack on a ship next to that space. | Zone control: walls off planets and lanes |
-| **5 Interceptor** | 3 | **Intercept.** Once per round, when an enemy ship ends a move within 2 spaces of your Interceptor, you may immediately attack it with the Interceptor (off-turn, no action). | Reaction: punishes careless approaches |
-| **6 Scout** | 3 | **Beacon.** You may Deploy into empty spaces adjacent to your Scout, as if it were a planet with your cube. | Logistics: a forward base for the fleet |
+| **4 Frigate** | 3 | **Picket.** An enemy ship that enters any of the 8 spaces around your Frigate must stop there. Its last step may still be an attack. | Zone control: walls off planets and corridors |
+| **5 Interceptor** | 3 | **Shoot.** Attack an enemy 1–2 spaces away in a straight line without advancing. Move and shot cost 1 action together in either order. | Ranged pressure: threatens space without abandoning position |
+| **6 Scout** | 3 | **Beacon.** You may Deploy into empty spaces around your Scout, as if it were a planet with your cube. | Logistics: forward staging ground for reinforcements |
 
-How they change play:
+How they reshape play:
+- **Frigates turn movement into a puzzle.** A ring of Pickets around a planet slows enemy approaches
+  by a turn and counters "rush the sum" plays.
+- **Interceptors control lanes without suicide runs.** Rather than charging into close combat where a 5
+  usually loses, Interceptors project ranged area denial.
+- **Scouts make the board feel vast.** With movement capped, being stranded far from home planets hurts.
+  A forward Scout becomes where destroyed ships redeploy, making its survival crucial.
 
-- **Frigates turn movement into a puzzle.** A ring of Pickets around a planet you want to conquer
-  slows every approach by a turn. They counter the "rush the sum" pattern.
-- **Interceptors make the opponent's turn interactive.** Today nothing happens on someone else's
-  turn except missiles and card effects. Intercept rewards keeping a 5 in the right spot and makes
-  approaching a defended planet a real risk.
-- **Scouts make the board feel bigger.** With movement capped, being far from your planets hurts.
-  A Scout pushed forward becomes where your destroyed ships come back in. Losing it matters.
-
-All three keep big ships weak in combat (they still add 4–6), so they stay support pieces.
-
-### Alternatives per ship
+### 5.4 Alternatives explored per ship
 
 | Ship | Alternative | Note |
 |---|---|---|
 | 4 | **Escort**: an orthogonally adjacent friendly ship subtracts 1 from its combat total when defending | Passive, easy; makes formations matter |
-| 4 | **Anchor**: in a Conquer sum, counts as 3, 4 or 5, your choice | Restores the old flexibility as a conquer tool, not a dice fix |
-| 5 | **Pursuit**: after winning an attack, may attack again from the new space (once per turn) | Aggressive; no off-turn decision, so simpler than Intercept |
-| 5 | **Strafe**: may attack a ship 2 spaces away in a straight line without moving | Ranged threat; easy to show on the board |
-| 6 | **Jump**: once per turn, move to any empty space within 2 of another of your ships, ignoring blockers | Mobility without long moves |
-| 6 | **Survey**: at the start of your turn, look at the top Skill card; you may swap it with a face-up one | Information role; ties the Scout to the market |
+| 4 | **Anchor**: in a Conquer sum, counts as 3, 4, or 5, your choice | Restores flexibility as a conquer tool, not a dice fix |
+| 5 | **Intercept**: once/round off-turn reaction attack when an enemy ends within 2 spaces | High interactivity; requires off-turn pending prompts |
+| 5 | **Pursuit**: after winning an attack, may attack again from the new space (once per turn) | Aggressive; simpler than Intercept |
+| 6 | **Jump**: once per turn, move to any empty space within 2 of another of your ships, ignoring blockers | Mobility without long linear moves |
+| 6 | **Survey**: at the start of your turn, look at the top Skill card; may swap with a face-up one | Information role; ties Scout to the market |
 
-### What each costs to build
+### 5.5 Implementation costs
 
 | Power | Engine | AI | UI |
 |---|---|---|---|
-| Picket | `stopsEnemies` hook (built) | Automatic, via legal moves | Highlights automatic; a zone overlay is nice-to-have |
-| Intercept | New `Pending` kind after a move, `mayAct` lets the off-turn player answer (like missiles): a new hook | Needs a response choice, like `chooseCombatResponse` | A prompt, like the missile window |
-| Beacon | `deployTargets` hook (built) | Automatic | Automatic |
-| Escort, Anchor | A combat modifier / a conquer-sum option: a new hook | Automatic | A line in the combat breakdown |
-| Pursuit, Strafe, Jump | `action` hook (Shoot is built this way) | Automatic (new legal actions) | Automatic: a button and highlights |
-| Survey | New start-of-turn decision: a new hook | Small choice heuristic | A dialog |
+| Picket | `stopsEnemies` hook (built) | Automatic via legal moves | Highlights automatic; zone overlay optional |
+| Shoot | `action`, `freeMove`, `noAttack` hooks (built) | Handled via legal actions | Action button and target highlights |
+| Beacon | `deployTargets` hook (built) | Automatic | Target cell highlights |
+| Escort, Anchor | Combat modifier / conquer-sum hook | Automatic | Combat breakdown line |
+| Intercept | Off-turn `Pending` reaction hook | Response choice heuristic | Prompt window (like missiles) |
+| Survey | Start-of-turn decision hook | Choice heuristic | Card dialog |
 
-With `ShipHooks` (§9), a power that fits an existing hook is a change to the cubic folder alone.
-Intercept is the most interesting and the most work, roughly a week including AI and UI.
+### 5.6 Testing & validation
 
-### How to test them
-
-- One scenario test per power, including the edges: Picket stops a move that passes by but not one
-  that starts adjacent; Intercept fires only once per round; Beacon spaces vanish when the Scout is
-  destroyed.
-- Self-play stats on **moves, attacks and power uses per ship value**. Success: 4s, 5s and 6s are
-  kept on the board rather than reconfigured away, and their power use is above a few percent of turns.
-- Compare **average game length** with Community. A movement cap plus Picket will lengthen games;
-  more than 30% longer probably needs a counterweight (e.g. 4 actions per turn).
+- One scenario test per power, including boundary conditions: Picket stopping pass-through moves but
+  not starting ones; Shoot line-of-sight blockage by void/planets/ships; Beacon spaces clearing on Scout destruction.
+- Self-play metrics on moves, attacks, and power uses per ship value. Success criterion: 4s, 5s, and 6s
+  are fielded intentionally rather than reconfigured away.
+- Average game length compared with Community: a cap plus Picket should lengthen games slightly, but
+  exceeding a 30% increase suggests adding an action or offensive counterweight.
 
 ---
 
 ## 6. Radical ideas: a different game, not a re-tuned one
 
-These change what the game is about. Each one is a separate prototype; don't combine them until each
-works alone.
+These ideas fundamentally alter game dynamics. Each is a distinct prototype; do not combine them until
+each is evaluated independently.
+
+### Overview by Theme
+
+- **Spatial Control & Geography:**
+  - [§6.2 Supply Lines](#62-supply-lines)
+  - [§6.8 Contested Orbit (Orbital Blockade)](#68-contested-orbit-orbital-blockade-no-conquering-under-enemy-ships)
+  - [§6.10 Over-Conquest (Doubled Defense on Occupied Planets)](#610-over-conquest-doubled-planetary-defense-on-fully-occupied-planets)
+- **Action Economy & Fleet Command:**
+  - [§6.4 Command Dice](#64-command-dice-instead-of-three-fixed-actions)
+  - [§6.9 Pure Ship Activations (The Wargame Model)](#69-pure-ship-activations-the-wargame-model)
+  - [§6.3 Planet Economy](#63-planet-economy)
+- **Ship Dynamics & Movement:**
+  - [§6.1 Kinetic Ships](#61-kinetic-ships-you-become-how-far-you-moved)
+  - [§6.6 Asymmetric Factions](#66-asymmetric-factions)
+- **Variants & Rulesets:**
+  - [§6.5 Neutral Raiders](#65-neutral-raiders-from-the-void)
+  - [§6.7 Fog of War](#67-fog-of-war)
+
+---
 
 ### 6.1 Kinetic ships: you become how far you moved
 
@@ -232,232 +276,341 @@ works alone.
 becomes a Flagship. An attack counts the steps taken to reach the space it attacked from. A ship
 that doesn't move keeps its value. Reconfigure still exists.
 
-**Why it's different.** Speed and strength stop being fixed by the dice. Every move is a choice
-between getting there and arriving strong. Charging across the map leaves you weak on arrival.
-Conquer sums become a positional puzzle you solve with movement, not with re-rolls. It also fixes the
-"6 moves 6" problem by itself: moving 6 means arriving as a 6.
+**Why it's different.** Speed and strength stop being fixed by dice rolls. Every move balances
+reaching a space against arriving combat-ready: charging across the map leaves you vulnerable on arrival.
+Conquer sums become a positional puzzle solved with movement rather than re-rolls.
 
-**Build.** Small: the move handler sets `d.value`; `turn.seen` already tracks values. The AI copes
-through legal actions, though its scoring undervalues the new trick. Golden tests unaffected.
+**Build.** Small: move handler sets `d.value`; `turn.seen` already tracks values. AI copes via legal
+actions. Golden tests unaffected.
 
-**Test.** Does Reconfigure usage drop? Do conquers come from movement (good) or still from re-rolls?
+---
 
 ### 6.2 Supply lines
 
 **Rule.** A ship is **in supply** if it is within 3 spaces of a planet with your cube, or of another
-in-supply ship of yours (a chain). Out-of-supply ships can't attack and add 2 to their combat total
-when defending.
+in-supply ship of yours (forming a supply chain). Out-of-supply ships cannot attack and add 2 to their
+combat total when defending.
 
-**Why it's different.** The map becomes fronts and lines instead of isolated raids. Cutting a chain
-matters as much as destroying a ship. Combines naturally with the Beacon Scout (§5) as a supply
-depot.
+**Why it's different.** Transforms the map into fronts and supply corridors rather than isolated raids.
+Cutting a chain matters as much as destroying a ship. Integrates naturally with Beacon Scouts (§5) as
+mobile supply depots.
 
-**Build.** Medium: an `inSupply` query (BFS like `reach()`), read by attack legality and
-`combatTotal`. UI needs a supply overlay to be playable. AI needs a supply term in its scoring.
+**Build.** Medium: BFS `inSupply` query, read by attack legality and `combatTotal`. UI requires a supply
+overlay. AI needs a supply term in its evaluation.
+
+---
 
 ### 6.3 Planet economy
 
 **Rule.** Each planet with your cube produces energy each turn: 7 → 1, 8 → 1, 9 → 2, 10 → 2. Energy
-buys an extra action (3), a missile (2) or a free Deploy (1). The win condition stays cubes, or
+purchases bonus actions (3 energy), missiles (2), or free Deploys (1). Win condition remains cubes or
 becomes "first to N energy banked".
 
-**Why it's different.** An engine-building layer on top of a racing game. Early conquests compound,
-so who conquers what and when matters, not just how many.
+**Why it's different.** Adds an engine-building layer over the conquest race. Early conquests compound,
+making timing and target selection matter as much as total cube counts.
 
-**Build.** Medium–large: mode-owned player state (§4 step 5), new spend actions, a UI track, an AI
-valuation of energy. Possibly a new win check (§4 step 4).
+**Build.** Medium–large: mode-owned player state (§4 step 5), spend actions, UI track, AI valuation.
+
+---
 
 ### 6.4 Command dice instead of three fixed actions
 
-**Rule.** At the start of your turn, roll 3 command dice. Each face is an action type: 1–2 Move, 3
-Attack, 4 Reconfigure, 5 Research, 6 Wild. Conquer costs two of them. Spending a missile re-rolls one
-command die.
+**Rule.** At the start of your turn, roll 3 command dice. Each face corresponds to an action type:
+1–2 Move, 3 Attack, 4 Reconfigure, 5 Research, 6 Wild. Conquer costs two matching dice. Spending a missile
+re-rolls one command die.
 
-**Why it's different.** Every turn becomes a small puzzle: what can I do with *these* orders? Plans
-must survive bad rolls, and the dice theme reaches the turn structure itself.
+**Why it's different.** Each turn becomes an operational puzzle: making the best of the orders rolled.
+Plans must adapt to tactical friction, extending the dice theme into turn structure itself.
 
-**Build.** Medium: turn start rolls into `TurnState` (seeded, so online stays in sync), and every
-action handler checks and spends a matching die. The AI handles it through legal actions. The UI
-needs a command-dice strip.
+**Build.** Medium: seeded turn rolls into `TurnState`, handlers consume matching dice. AI copes via
+legal actions. UI requires a command-dice display strip.
+
+---
 
 ### 6.5 Neutral raiders from the void
 
-**Rule.** At the end of each round, a neutral raider ship appears on each void tile and moves toward
-the nearest player ship, attacking when adjacent. Destroying a raider gives +1 research. Optionally a
-co-op variant: players win together if they conquer every planet before the raiders destroy N ships.
+**Rule.** At the end of each round, a neutral raider appears on each void tile and advances toward the
+nearest player ship, attacking when adjacent. Destroying a raider yields +1 research. Alternatively, a
+co-op variant where players win together by conquering all planets before raiders destroy N ships.
 
-**Why it's different.** A shared threat changes the social game. Players hold back from attacking
-each other, and the board has its own pressure. The co-op variant is a new game entirely.
+**Why it's different.** Shared threats introduce emergent truce dynamics and board pressure. The co-op
+variant represents a distinct game experience.
 
-**Build.** Large: a non-player owner, automated raider behaviour at round end, invariants for a
-neutral player. Raiders follow fixed rules, so online determinism holds.
+**Build.** Large: non-player owner, round-end automated behavior, neutral invariants.
+
+---
 
 ### 6.6 Asymmetric factions
 
-**Rule.** Each player picks a faction with its own ship table: different powers per value, and
-sometimes a different movement curve. For example, a **swarm** faction whose 1s and 2s move 2 more,
-or a **dreadnought** faction whose 6 is a slow fortress with Picket and +1 defence.
+**Rule.** Each player chooses a faction with its own ship table: unique powers per value and distinct
+movement curves (e.g., a **swarm** faction whose 1s and 2s move 2 extra spaces, or a **dreadnought** faction
+whose 6 is a fortified bastion with Picket and +1 defense).
 
-**Why it's different.** Every matchup plays differently, which gives replay value and makes balance
-the main design work.
+**Why it's different.** Dramatic asymmetry expands replayability, making faction matchups the central
+strategic dimension.
 
-**Build.** Once §4 step 2 exists (ship table per mode), a faction is a ship table per *player* rather
-than per mode: a small extension. Balance testing is the real cost: AI self-play per faction pair.
+**Build.** Once §4 step 2 exists, factions are simply per-player ship tables. Balance validation via
+AI self-play is the primary investment.
+
+---
 
 ### 6.7 Fog of war
 
-**Rule.** You see only spaces within 2 of your ships and planets; Scouts see 4.
+**Rule.** Players see only spaces within 2 of their ships and planets; Scouts reveal range 4.
 
-**Why it's different.** Bluffing, scouting and ambushes, none of which exist today.
+**Why it's different.** Introduces reconnaissance, hidden fleet movements, and ambushes.
 
-**Caution.** This breaks a core assumption of online play: every browser holds the whole game state
-([MULTIPLAYER.md](MULTIPLAYER.md)). Hiding information would need commit-reveal or a trusted host. It
-is realistic only for hot-seat play, or as a later, larger project.
+**Caution.** Conflicts with Quantum's online architecture where all clients hold full game state
+([MULTIPLAYER.md](MULTIPLAYER.md)). Feasible for hot-seat play, but requires cryptographic commit-reveal
+or trusted hosts for online games.
+
+---
+
+### 6.8 Contested orbit (orbital blockade): no conquering under enemy ships
+
+**Rule.** A planet cannot be conquered if an enemy ship occupies any of its orbital spaces (the 4
+orthogonal positions around the planet). To place a quantum cube, orbit must be clear of enemies: you
+must first destroy or drive off every opposing ship stationed there before constructing.
+
+**Why it's different.** In standard Quantum, enemy ships in orbital positions are ignored during
+Conquer actions—as long as your own ships meet the exact sum on the remaining orbital spaces, you can
+construct a cube directly beside an enemy fleet. Requiring an uncontested orbit changes the dynamics:
+- **Defense becomes positional and active.** Parking any ship in orbit—even a weak 5 or 6, or a 4
+  Picket—actively denies enemy conquest without having to eliminate the attacking fleet.
+- **Forces combat before victory.** Players cannot simply "rush the sum" while bypassing defending
+  ships. Conquering becomes a multi-phase effort: achieve orbital superiority first, then construct.
+- **Synergizes with Picket.** A defending Picket in orbit forces attackers to stop upon entry,
+  preventing single-turn blitz attacks and turning planet assaults into authentic tactical sieges.
+
+**Build.** Small: a hook on `conquerCheck` ([queries.ts](../packages/engine/src/queries.ts), §4 step 3)
+verifying that `orbitals(board, planet)` contains no enemy ship. The AI handles legal actions
+automatically, though AI evaluation would benefit from scoring contested planets and prioritizing
+clearing blockers.
+
+**Test.** Check average game length and attacks per conquer. Does it encourage richer combat and
+defense, or does it risk stalling games when players park defensive ships on high-value planets?
+
+---
+
+### 6.9 Pure ship activations: the wargame model
+
+**Rule.** Rather than spending a shared pool of 3 actions, the turn structure splits into **ship activations**
+and **command actions**:
+- **Ship activations:** Every ship on the board can activate once per turn to perform one tactical
+  action: **Move**, **Attack**, or use its **Ship Power**.
+- **Command actions:** In addition, the player gets **1 or 2 Command Actions** per turn to spend on
+  strategic fleet management: **Deploy** (from scrapyard), **Reconfigure**, **Research**, or **Conquer**.
+
+**Why it's different.** In standard Quantum, expanding your fleet to 4 or 5 ships is often an illusion
+or even a liability. With only 3 actions total, advancing a modest battlegroup of 3 ships exhausts your
+entire turn, leaving zero actions to attack or conquer. Extra ships sit as inert dice on the board,
+acting merely as targets for enemy dominance farming. Under pure activations:
+- **No inert ships:** Completely eliminates the feeling of ships being "inert dice sitting on the board".
+  Every vessel in play can maneuver, screen, or attack every round.
+- **Genuine geographical warfare:** You can advance a multi-ship battle line, hold multiple fronts,
+  and stage simultaneous planetary sieges.
+- **Fleet expansion matters:** Adding a 4th or 5th ship via Expansion genuinely scales your operational
+  bandwidth rather than diluting your 3 actions.
+- **Natural synergy with the movement cap:** Because ships move at most 3, having more active ships
+  does not lead to hyper-mobile chaos; instead, it enables coordinated fleet movements and tactical
+  positioning.
+
+**Consideration.** A bigger departure from Quantum's core rules, but the closest to a genuine
+positional wargame.
+
+**Build.** Medium–large: replaces fixed `TurnState.actionsLeft` with tracked ship activations
+(`turn.acted: string[]`) and a small command action pool (`turn.commandActionsLeft`), gated by §4 step 6.
+AI needs an activation sequencer (ordering moves before attacks). UI needs clear visual states
+(e.g. dimmed dice or activation pips) for ships that have already acted this turn.
+
+**Test.** Test with 1 vs 2 command actions. Compare game length and fleet sizes with Community. Does it
+prevent runaway leaders, or does losing ships to the scrapyard create too steep of a tempo swing?
+
+---
+
+### 6.10 Over-conquest: doubled planetary defense on fully occupied planets
+
+**Rule.** When all cube slots at a planet are fully occupied, the planet is not locked out. A player can still conquer the planet, but the planetary defense requirement is **doubled** from its printed planet value:
+- A planet of value 7 requires orbiting ships summing to **exactly 14** (instead of 7).
+- An 8 requires **exactly 16**, a 9 requires **exactly 18**, and a 10 requires **exactly 20**.
+- Ships in orbit are still subject to orbital limits and standard conquer restrictions.
+- Upon successfully conquering/occupying the planet, the player places their cube and chooses which existing cube to replace (if there is a choice between opponents, or between multiple cubes on the planet). The displaced cube is returned to its owner's supply.
+
+**Why it's different.** In standard Quantum, once all cube slots on a planet are occupied, the planet becomes permanently locked down. In the mid-to-late game, this can restrict options, leading to dead zones or forcing players into tedious cross-map journeys to reach remaining open slots:
+- **King-of-the-hill territory.** Central and high-value planets remain relevant battlegrounds for the entire game rather than turning into static background terrain once claimed.
+- **Direct catch-up and king-slayer lever.** Displacing a cube actively subtracts a victory point from the target player while granting one to the conqueror. This provides an organic check against runaway leaders without requiring dedicated combat cards.
+- **Massive fleet commitment.** Assembling a sum of 14, 16, 18, or 20 demands multiple heavy ships (e.g. 6 + 6 + 2 = 14, or 5 + 5 + 4 = 14; 6 + 5 + 5 = 16) simultaneously holding orbital positions. Committing this much fleet power creates an operational bottleneck and leaves the conqueror vulnerable elsewhere, making over-conquest a major deliberate siege rather than an easy opportunistic capture.
+- **Target selection & diplomacy.** When multiple players share a full planet, the conqueror decides whose cube to eliminate, introducing tactical target selection.
+
+**Build.** Small–medium:
+- `conquerCheck` ([queries.ts](../packages/engine/src/queries.ts), §4 step 3): if all cube slots at the planet are full, check if ships sum to `planet.value * 2` rather than disallowing conquest.
+- Decision prompt: if multiple cubes occupy the planet, prompt the conqueror with a `replaceCube` decision to choose which cube to displace. If all cubes belong to a single opponent, auto-resolve or prompt.
+- Displaced cube returns to owner's reserve (decrementing their placed cube score).
+- AI: needs to evaluate over-conquest opportunities (especially targeting the score leader) and calculate sums for doubled defense values.
+- UI: planet orbital display shows doubled requirement when full (e.g., "Full: 14 to Conquer") and renders a cube selection dialog when conquered.
+
+---
 
 ### Which to try first
 
-| Idea | How different | Build cost | Fits the current architecture |
-|---|---|---|---|
-| 6.1 Kinetic ships | High | Small | Yes |
-| 6.2 Supply lines | High | Medium | Yes |
-| 6.4 Command dice | High | Medium | Yes |
-| 6.6 Factions | Medium–high | Medium after §4 step 2 | Yes |
-| 6.3 Planet economy | High | Medium–large | Needs §4 steps 4–5 |
-| 6.5 Neutral raiders | Very high | Large | Needs a neutral player |
-| 6.7 Fog of war | Very high | Very large | Conflicts with online play |
+| Idea | Core Change | How Different | Build Cost | Fits Architecture |
+|---|---|---|---|---|
+| **6.8 Contested orbit** | No conquer while enemy in orbit | Medium | Small | Yes (via §4 step 3 hook) |
+| **6.10 Over-conquest** | Conquer full planets at 2× value; replace a cube | Medium | Small–medium | Yes (via §4 step 3 hook & decision) |
+| **6.1 Kinetic ships** | Speed equals arrival value | High | Small | Yes |
+| **6.2 Supply lines** | Supply chains for attack/defense | High | Medium | Yes |
+| **6.4 Command dice** | Rolled order dice replace fixed actions | High | Medium | Yes |
+| **6.6 Factions** | Asymmetric ship tables per player | Medium–high | Medium after §4 step 2 | Yes |
+| **6.9 Ship activations** | Each ship acts once + 1–2 command actions | High | Medium–large | Needs §4 step 6 |
+| **6.3 Planet economy** | Planetary energy production & spending | High | Medium–large | Needs §4 steps 4–5 |
+| **6.5 Neutral raiders** | Automated void hostiles / co-op | Very high | Large | Needs neutral player |
+| **6.7 Fog of war** | Local vision ranges | Very high | Very large | Conflicts with online model |
 
-**Recommendation:** start Cubic as *movement cap 3 + Picket + Beacon* (§5), which needs only §4
-step 2, and prototype **Kinetic ships** in parallel as a one-file experiment. Both are cheap and test
-the same question from opposite ends: what should a big ship be for?
+**Recommendation:**
+1. Keep the live Cubic baseline: **Movement cap 3 + Picket + Shoot + Beacon** (§5).
+2. Prototype **Contested orbit (§6.8)** first—it is tiny to build (a `conquerCheck` hook) and immediately
+   reinforces the siege/defense dynamics of Picket.
+3. Test **Kinetic ships (§6.1)** as an independent one-file experiment to explore movement-driven sums.
+4. If fleet expansion still feels underwhelming, evaluate **Ship activations (§6.9)** to unlock full
+   multi-front command bandwidth.
+
+---
 
 ## 7. Next steps
 
-- [x] Rule on the movement cap: it caps the die value, before skill bonuses and powers
-- [x] Add the Cubic mode with `maxMovement: 3` and a scenario test
-- [x] Add Cubic to the golden and consistency tests
-- [ ] Write the per-game stats script (CSV, including moves and power uses per ship value)
+- [x] Rule on the movement cap: caps die value before skill bonuses and powers
+- [x] Add Cubic mode with `maxMovement: 3` and scenario tests
+- [x] Add Cubic to golden replay and consistency invariants
 - [x] Refactor: ship table per mode (§4 step 2)
-- [x] Prototype Picket, Shoot and Beacon; first measure of big-ship usage against Community (below)
-- [ ] Prototype Kinetic ships as a separate experiment
+- [x] Prototype and land Picket (4), Shoot (5), and Beacon (6)
+- [ ] Prototype Contested Orbit (§6.8) via `conquerCheck` hook
+- [ ] Write per-game stats script (CSV: moves, attacks, power uses per ship value)
+- [ ] Prototype Kinetic ships (§6.1) as a separate branch experiment
+- [ ] Evaluate Ship Activations (§6.9) if fleet expansion needs more command capacity
 
-## 8. What was built (2026-10-09)
+---
 
-Cubic is in the lobby: Community Edition plus the movement cap, with **Picket** (4), **Shoot** (5)
-and **Beacon** (6) replacing Modify, Manoeuvre and Free Reconfigure. The 1, 2 and 3 are unchanged.
-Rulings made while building it:
+## 8. Current status & playtest results (2026-10-09)
 
-- **Adjacency is all 8 surrounding spaces** for Picket and Beacon. Warp Gates don't count.
-- **Picket** applies to normal moves only (not Transport, Warp or the Tactical step). A ship that
-  starts in a zone may leave, but stops in the next zone space it enters.
-- **Shoot** (first built as Strafe, renamed and reworked the same day) attacks an enemy 1 or 2
-  spaces away in a straight line, orthogonal or diagonal, from where the Interceptor stands. At 2,
-  the space in between must be empty (a ship, planet or void blocks it). Its move and its shot cost **one action together, in either
-  order**: shoot first (1 action) and the move is free, or move first (1 action) and the shot is
-  free. A ship that shot can't also attack, and it shoots at most once a turn. The shooter never
-  advances. Normal combat applies, missiles and re-rolls included.
+Cubic is playable in the lobby: Community Edition plus the movement cap, with **Picket** (4), **Shoot** (5),
+and **Beacon** (6) replacing Modify, Manoeuvre, and Free Reconfigure. Values 1, 2, and 3 are unchanged.
 
-Code: see §9. Scenarios are in [cubic.test.ts](../packages/engine/test/cubic.test.ts).
+### Rulings established during implementation
 
-**First self-play numbers** (level 2 vs level 2, 2 players):
+- **Adjacency is all 8 surrounding spaces** for Picket and Beacon. Warp Gates do not link them.
+- **Picket** applies to normal moves only (not Transport, Warp, or Tactical steps). A ship starting
+  inside a zone may leave, but stops in the next zone space it enters.
+- **Shoot** attacks an enemy 1 or 2 spaces away in a straight line (orthogonal or diagonal). At range 2,
+  the intervening space must be clear. Move and shot cost **one action together, in either order**:
+  shoot first (1 action) and the move is free, or move first (1 action) and the shot is free. A ship
+  that shoots cannot also attack normally that turn. Normal combat, missiles, and re-rolls apply; the
+  shooter never advances.
 
-| | Community | Cubic |
+Scenarios live in [cubic.test.ts](../packages/engine/test/cubic.test.ts).
+
+### First self-play benchmarks (Level 2 vs Level 2, 2 Players)
+
+| Metric | Community | Cubic |
 |---|:-:|:-:|
 | Turns per game (`ai:match`, 60 games) | 17.9 | 17.1 |
-| Attacks (30 games) | 208 | 134 |
-| 4s / 6s on the map at turn ends (30 games) | 273 / 171 | 496 / 445 |
-| Enemy moves that ended in a Picket zone (30 games) | — | 20 of 534 moves |
-| Shoot possible / used (15 games, range 1–2 with diagonals) | — | 63 / 15 (4 shoot-then-move) |
+| Total attacks (30 games) | 208 | 134 |
+| 4s / 6s on board at turn end (30 games) | 273 / 171 | 496 / 445 |
+| Enemy moves stopping in a Picket zone (30 games) | — | 20 of 534 moves (~4%) |
+| Shoot opportunities / usages (15 games, range 1–2) | — | 63 / 15 (4 shoot-then-move) |
 
-Games did not get longer, so the 30% threshold in §5 isn't hit. 4s and 6s now stay on the map. Picket
-bites in about 4% of moves. **Shoot:** with exact range 2 in orthogonal lines it was possible twice in 15 games and never used.
-At range 1–2 with diagonals the AI uses it about once a game. The AI's evaluation knows nothing of Shoot or Beacon threats yet (§4 step 7).
+**Observations:**
+- Games did not lengthen under movement cap 3 (averaging ~17 turns in both modes).
+- Players preserve 4s and 6s on the board instead of immediately reconfiguring them away.
+- Picket zone control bites in roughly 4% of moves.
+- Shoot is used roughly once per game at range 1–2 with diagonals (the AI evaluation does not yet score
+  Shoot threats ahead of time, §4 step 7).
 
-## 9. Working on Cubic
+---
 
-Cubic is a sandbox. Everything that is Cubic lives in one folder,
-[packages/engine/src/cubic/](../packages/engine/src/cubic), and the rest of the engine and the UI
-never name it or its powers. The folder in turn sees the engine only through one file, the prototype
-kit [prototype.ts](../packages/engine/src/prototype.ts): the `ShipHooks` interface, `PrototypePower`,
-turn notes, and the engine's building blocks (board, lookups, queries, core helpers, `startCombat`),
-re-exported whole so a new power rarely needs to touch it.
+## 9. Developer guide: working on Cubic
+
+Cubic is isolated in a modular sandbox. Everything specific to Cubic lives in
+[`packages/engine/src/cubic/`](../packages/engine/src/cubic). The core engine and web UI never hard-code
+Cubic powers or mode names.
+
+### File Layout
 
 ```
-cubic/
-  index.ts          the mode: MAX_MOVEMENT, CUBIC_SHIPS (which ship has which power), cubicMode()
-  powers/picket.ts  one file per power: its rules text (name, text, hint) and its hooks
-  powers/shoot.ts
-  powers/beacon.ts
+packages/engine/src/
+  cubic/
+    index.ts          mode definition: MAX_MOVEMENT, CUBIC_SHIPS, cubicMode()
+    powers/picket.ts  power text and hooks for Picket (4)
+    powers/shoot.ts   power text and hooks for Shoot (5)
+    powers/beacon.ts  power text and hooks for Beacon (6)
+  prototype.ts        the prototype kit: ShipHooks, PrototypePower, turn note utilities
 ```
 
-| To change | Edit |
+| To Change | File to Edit |
 |---|---|
-| The movement cap, the mode's name or summary, the base mode (Community) | [cubic/index.ts](../packages/engine/src/cubic/index.ts) (`MAX_MOVEMENT`, `cubicMode`) |
-| Which ship has which power, ship names | `CUBIC_SHIPS` in cubic/index.ts: `5: { name: 'Interceptor', ...shoot }` |
-| How a power works or its text (Shoot's range, what Picket covers…) | Its file in [cubic/powers/](../packages/engine/src/cubic/powers) |
-| A new power that fits an existing hook | Copy a file in powers/, then put it on a ship in `CUBIC_SHIPS` |
-| An engine helper the kit doesn't have yet | Re-export it from prototype.ts |
-| A new kind of power | Add a hook to `ShipHooks` (prototype.ts) and read it in the engine (below) |
+| Movement cap, mode summary, base rules | [cubic/index.ts](../packages/engine/src/cubic/index.ts) |
+| Which ship has which power, ship names | `CUBIC_SHIPS` in [cubic/index.ts](../packages/engine/src/cubic/index.ts) |
+| A power's rules text, range, or hooks | Power file in [cubic/powers/](../packages/engine/src/cubic/powers) |
+| Add a power using existing hooks | New file in `powers/`, referenced in `CUBIC_SHIPS` |
+| Add an engine helper to the kit | Re-export from [prototype.ts](../packages/engine/src/prototype.ts) |
+| Add a new kind of rule hook | Add to `ShipHooks` in [prototype.ts](../packages/engine/src/prototype.ts) |
 
-A power is a `PrototypePower`, `{ ability, hooks }`:
+### Defining a Power
+
+A power is a `PrototypePower` object combining UI metadata with optional engine hooks:
 
 ```ts
-// cubic/powers/beacon.ts
+// packages/engine/src/cubic/powers/beacon.ts
 import { cellOf, surrounding, type PrototypePower } from '../../prototype';
 
 export const beacon: PrototypePower = {
-  ability: { name: 'Beacon', text: 'You may deploy into any empty space around this ship.' },
+  ability: {
+    name: 'Beacon',
+    text: 'You may deploy into any empty space around this ship.',
+  },
   hooks: {
     deployTargets: (state, ship) => surrounding(state.board, cellOf(ship)!),
   },
 };
 ```
 
-A power that tracks something over a turn keeps it with `turnNote(state, 'shoot', ship)` /
-`setTurnNote(…)`, under its own name so powers never overwrite each other's notes (Shoot's order).
+Powers tracking turn state use `turnNote(state, 'powerName', ship)` and `setTurnNote(...)` to avoid
+interfering with other powers.
 
-### How the engine reaches it
+### Engine Integration & Hooks
 
-- **One import.** `RULESETS.cubic = cubicMode(COMMUNITY)` in [rules.ts](../packages/engine/src/rules.ts)
-  is the only place outside the folder that imports it.
-- **Hooks, not names.** A ship in a `ShipTable` has either a built-in `power` (the official ships:
-  `strike`, `transport`…) or `hooks: ShipHooks` (a prototype). The engine reads hooks through
-  `hooksOf(state, die)` and never asks which power a ship has. The hooks today:
+1. **One import.** `RULESETS.cubic = cubicMode(COMMUNITY)` in [rules.ts](../packages/engine/src/rules.ts)
+   is the only place in the main engine importing the `cubic` folder.
+2. **Hooks over names.** Ships have built-in official powers (`strike`, `transport`...) or
+   `hooks: ShipHooks`. The engine evaluates hooks via `hooksOf(state, die)`:
 
-  | Hook | Read by | Used by |
-  |---|---|---|
-  | `stopsEnemies` | `stopZone` → `moveIndexes`, `shipReach` | Picket |
-  | `deployTargets` | `deployTargets` | Beacon |
-  | `freeMove`, `noAttack`, `onMove` | the `move` and `attack` handlers, legal moves; asked about every ship, as a ship may change number after using a power | Shoot |
-  | `action` (`options`, `apply`) | the generic `power` action, legal actions, the UI | Shoot |
+   | Hook | Evaluated By | Purpose / User |
+   |---|---|---|
+   | `stopsEnemies` | `stopZone` → `moveIndexes`, `shipReach` | Stops enemy movement when entering zone (Picket) |
+   | `deployTargets` | `deployTargets` | Additional valid cells for Deploy action (Beacon) |
+   | `freeMove` | `legalActions`, `move` handler | Free movement following a power action (Shoot) |
+   | `noAttack` | `legalActions`, `attack` handler | Prevents standard attacks after using power (Shoot) |
+   | `onMove` | `applyMove` handler | State updates when ship moves (Shoot note tracking) |
+   | `action` (`options`, `apply`) | generic `power` action handler | Custom active power button & execution (Shoot) |
 
-- **A generic action.** A power with an `action` hook is played as
-  `{ type: 'power', die, target?, to? }`. The handler accepts exactly what `options` offers, so the
-  legal actions and the engine can't disagree. The UI shows a button named after the power, highlights
-  its targets (ships) or spaces, and shows `ability.hint` as the hint. No UI change is needed for a new
-  action power.
-- **Its own turn state.** `turn.powers` holds each power's per-ship notes for the turn, by power name
-  (Shoot's order), read and written through `turnNote` / `setTurnNote`.
-- **No cost when unused.** Which powers have which hook is worked out once per ship table
-  (`modeHooks`), so the hooks add nothing to the official modes' move and legal-action searches.
-- **Ranged combat.** `startCombat(…, ranged = true)` is a battle where the winner doesn't advance.
+3. **Generic action pipeline.** Powers with an `action` hook produce `{ type: 'power', die, target?, to? }`.
+   The UI automatically renders a button with `ability.name`, highlights valid targets, and displays
+   `ability.hint` without needing UI code changes.
+4. **Zero cost when unused.** Active hooks are cached per mode (`modeHooks`), ensuring official modes
+   experience zero performance overhead.
 
-### What keeps the official modes safe
+### Mode Safety & Invariants
 
-- The official ship tables have no hooks, and every hook is optional, so their code paths only see
-  `undefined`. `stopZone` and `deployTargets` skip the search when no ship in the mode has the hook.
-- cubic.test.ts checks that Basic, Original and Community use `CLASSIC_SHIPS` with no hooks and no
-  movement cap, and that the 4, 5 and 6 gain no Cubic powers there. It also checks the boundary both
-  ways: nothing in the engine but rules.ts imports the cubic folder, and the cubic folder imports
-  nothing from the engine but prototype.ts.
-- The golden replays of the three official modes must not change. If a Cubic change alters one of
-  them, it has leaked. Only the Cubic snapshots may be updated (`npx vitest run golden -t cubic -u`).
-- The consistency test plays Cubic games and checks that legal actions and the engine agree.
+- **Complete isolation:** Official modes use `CLASSIC_SHIPS` with no hooks. Their code paths observe
+  `undefined` for all hook lookups.
+- **Strict architectural boundary:** Nothing in `engine` imports `cubic` except `rules.ts`. The `cubic`
+  folder imports nothing from `engine` except `prototype.ts`. Checked in `cubic.test.ts`.
+- **Golden test protection:** Golden replays for Basic, Classic, and Community must never change. Any
+  alteration indicates a leak. Only Cubic replay snapshots may update (`npx vitest run golden -t cubic -u`).
 
-### Adding a new hook
+### Adding a New Hook
 
-Only when no existing hook fits. Add the optional hook to `ShipHooks` in
-[prototype.ts](../packages/engine/src/prototype.ts) with a comment on what it means, read it in the one engine
-function it affects through `hooksOf` (and `modeHasHook` if it is on a hot path), and add a scenario
-to cubic.test.ts. Keep its name about the rule (`stopsEnemies`), not the power (`picket`), so the next
-prototype can reuse it.
-
+Only add a new hook when no existing hook fits:
+1. Add the optional hook signature to `ShipHooks` in [prototype.ts](../packages/engine/src/prototype.ts).
+2. Name the hook after the **rule concept** (e.g. `stopsEnemies`), not the specific power name (`picket`).
+3. Read the hook via `hooksOf` in the single engine function it affects.
+4. Add a scenario test in [cubic.test.ts](../packages/engine/test/cubic.test.ts).
