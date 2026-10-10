@@ -13,6 +13,7 @@ import {
   movementRange,
   orbitals,
   planetFreeSlots,
+  rulesOf,
   shipsOnBoard,
   tryApply,
   type Action,
@@ -214,14 +215,15 @@ function conquerPotential(s: GameState, p: PlayerId): number {
   const values: number[] = [];
   const myShips = shipsOnBoard(s, p);
   for (const planet of s.board.planets) {
-    if (planetFreeSlots(planet) <= 0 || planet.cubes.includes(p)) continue;
+    const full = planetFreeSlots(planet) <= 0;
+    if (full ? !rulesOf(s).overConquest || !planet.cubes.some((x) => x !== p) : planet.cubes.includes(p)) continue;
     const slots = orbitals(s.board, planet);
     const inOrbit = slots.map((c) => dieAt(s, c)).filter((d) => d && d.owner === p);
     const sum = inOrbit.reduce((a, d) => a + d!.value, 0);
     const empty = slots.filter((c) => isEmptySpace(s, c)).length;
-    const target = planet.number;
+    const target = full ? 12 : planet.number;
     let v: number;
-    if (conquerCheck(s, p, planet.id).ok) v = 320;
+    if (conquerCheck(s, p, planet.id).ok || (!full && conquerCheck(s, p, planet.id, true).ok)) v = 320;
     else if (sum < target && empty > 0 && target - sum <= 6) v = 40 + 30 * inOrbit.length;
     else if (sum < target) v = 12 * inOrbit.length;
     else v = Math.max(0, 8 * inOrbit.length - (sum - target) * 6);

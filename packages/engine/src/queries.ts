@@ -534,7 +534,14 @@ export interface ConquerCheck {
   replace?: PlayerId[];
 }
 
-export function conquerCheck(state: GameState, player: PlayerId, planetId: number): ConquerCheck {
+/** The orbit sum that displaces an opponent's cube, on any planet (PROTOTYPING.md §6.10). */
+const OVER_CONQUEST_TARGET = 12;
+
+/**
+ * Whether `player` may conquer the planet. With `displace` (over-conquest), the check is for taking
+ * the place of an opponent's cube at a sum of 12 whatever the planet; on a full planet that is the only way.
+ */
+export function conquerCheck(state: GameState, player: PlayerId, planetId: number, displace = false): ConquerCheck {
   const planet = state.board.planets[planetId];
   const own = planet.cubes.filter((x) => x === player).length;
   let target = planet.number;
@@ -547,11 +554,11 @@ export function conquerCheck(state: GameState, player: PlayerId, planetId: numbe
   });
 
   let replace: PlayerId[] | undefined;
-  if (planetFreeSlots(planet) <= 0) {
+  if (planetFreeSlots(planet) <= 0 || displace) {
     if (!rulesOf(state).overConquest) return fail('No empty cube location');
     replace = [...new Set(planet.cubes.filter((x) => x !== player))];
     if (!replace.length) return fail('No opponent cube to displace');
-    target = planet.number * 2;
+    target = OVER_CONQUEST_TARGET;
   } else if (own > 0) {
     // Quantum Entanglement: only once you hold every planet that still has room.
     const blocked = state.board.planets.some(

@@ -75,10 +75,10 @@ export const actionHandlers = {
   },
   conquer(s, a) {
     const t = requireActionPhase(s);
-    const check = conquerCheck(s, t.player, a.planet);
+    const check = conquerCheck(s, t.player, a.planet, a.replace !== undefined);
     if (!check.ok) fail(check.reason ?? 'Cannot conquer');
     if (check.replace) {
-      const owner = a.replace ?? (check.replace.length === 1 ? check.replace[0] : undefined);
+      const owner = a.replace;
       if (owner === undefined || !check.replace.includes(owner)) fail('Choose which opponent cube to displace');
       const planet = s.board.planets[a.planet];
       planet.cubes.splice(planet.cubes.lastIndexOf(owner), 1);

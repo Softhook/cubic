@@ -1,6 +1,6 @@
 /**
  * Prototyping mode (docs/PROTOTYPING.md, src/prototyping): Community Edition with movement capped at 3,
- * a new power for the 5 (Shoot), which replaces Manoeuvre, and over-conquest of full planets. The first block checks that none of it reaches the official modes, and that the mode
+ * a new power for the 5 (Shoot), which replaces Manoeuvre, and over-conquest (an orbit of 12). The first block checks that none of it reaches the official modes, and that the mode
  * folder and the engine meet only at RULESETS and the prototype kit.
  *
  * Scenarios run on Alpha Sector, the basic map for 2 players (9×9; planets at rows/cols 1, 4, 7,
@@ -254,7 +254,7 @@ describe('Shoot (5 Interceptor)', () => {
   });
 
   it('move, then shoot: the shot is free', () => {
-    const s0 = scenario({ p0d0: [0, 0, 5], p1d0: [0, 4, 3] });
+    const s0 = scenario({ p0d0: [0, 0, 5], p1d0: [2, 2, 3] });
     expect(shots(s0)).toEqual([]);
     const moved = apply(s0, { type: 'move', die: 'p0d0', to: { r: 0, c: 2 } });
     expect(moved.turn.actionsLeft).toBe(2);
@@ -271,21 +271,19 @@ describe('Shoot (5 Interceptor)', () => {
     expect(shots(resolved.pending.length ? apply(resolved, { type: 'advance', move: false }) : resolved)).toEqual([]);
   });
 
-  it('reaches 1 or 2 spaces in a straight line, diagonals included', () => {
+  it('reaches the first ship in a clear orthogonal line, at any distance', () => {
     const ids = (s: GameState) => shootTargets(s, at(s, 'p0d0')).map((d) => d.id).sort();
-    expect(ids(scenario({ p0d0: [0, 2, 5], p1d0: [0, 3, 3], p1d1: [1, 3, 2], p1d2: [2, 2, 6] }))).toEqual(['p1d0', 'p1d1', 'p1d2']);
-    expect(ids(scenario({ p0d0: [0, 2, 5], p1d0: [2, 4, 1] }))).toEqual(['p1d0']);
-    // Not a knight's move, and not 3 away.
-    expect(ids(scenario({ p0d0: [0, 2, 5], p1d0: [1, 0, 3], p1d1: [0, 5, 2] }))).toEqual([]);
+    expect(ids(scenario({ p0d0: [0, 2, 5], p1d0: [0, 3, 3], p1d1: [0, 0, 2] }))).toEqual(['p1d0', 'p1d1']);
+    expect(ids(scenario({ p0d0: [0, 0, 5], p1d0: [0, 8, 3] }))).toEqual(['p1d0']);
+    // Not diagonal, and not a knight's move.
+    expect(ids(scenario({ p0d0: [0, 2, 5], p1d0: [1, 3, 3], p1d1: [2, 3, 2] }))).toEqual([]);
   });
 
-  it('needs an empty space in between at range 2, and an enemy', () => {
+  it('is blocked by ships, planets and the edge of the board', () => {
     expect(shots(scenario({ p0d0: [0, 0, 5], p0d1: [0, 1, 2], p1d0: [0, 2, 3] }))).toEqual([]);
+    expect(shots(scenario({ p0d0: [0, 0, 5], p1d0: [0, 3, 3], p1d1: [0, 6, 2] }))).toEqual(['p1d0']); // only the first
     expect(shots(scenario({ p0d0: [1, 0, 5], p1d0: [1, 2, 3] }))).toEqual([]); // a planet in between
-    expect(shots(scenario({ p0d0: [0, 0, 5], p1d0: [2, 2, 3] }))).toEqual([]); // a planet on the diagonal
-    expect(shots(scenario({ p0d0: [0, 2, 5], p0d1: [1, 3, 1], p1d0: [2, 4, 3] }))).toEqual([]);
     expect(shots(scenario({ p0d0: [0, 0, 5], p0d1: [0, 2, 3] }))).toEqual([]);
-    expect(shots(scenario({ p0d0: [0, 0, 5], p1d0: [0, 3, 3] }))).toEqual([]);
   });
 
   it('only a Prototyping Interceptor can shoot', () => {
@@ -309,10 +307,10 @@ describe('over-conquest', () => {
     expect(conquerCheck(s, 0, planet.id).ok).toBe(false);
   });
 
-  it('needs twice the planet number and displaces a chosen opponent cube', () => {
+  it('needs a sum of 12 and displaces a chosen opponent cube', () => {
     const base = scenario({}, 'prototyping');
     const planet = base.board.planets[0];
-    const target = planet.number * 2;
+    const target = 12;
     const spots = orbitals(base.board, planet);
     const values: number[] = [];
     for (let left = target; left > 0; left -= values[values.length - 1]) values.push(Math.min(6, left));
@@ -330,5 +328,23 @@ describe('over-conquest', () => {
     expect(after.players[1].cubesLeft).toBe(before + 1);
     expect(after.board.planets[0].cubes.filter((c) => c === 0)).toHaveLength(1);
     expect(after.board.planets[0].cubes.filter((c) => c === 1)).toHaveLength(p.cubes.length - 1);
+  });
+  it('is also offered on a planet with room, next to a plain conquest', () => {
+    const base = scenario({}, 'prototyping');
+    const planet = base.board.planets.find((q) => q.capacity >= 2)!;
+    const spots = orbitals(base.board, planet);
+    const values: number[] = [];
+    for (let left = 12; left > 0; left -= values[values.length - 1]) values.push(Math.min(6, left));
+    const placed: Record<string, [number, number, number]> = {};
+    values.forEach((v, i) => (placed[`p0d${i}`] = [spots[i].r, spots[i].c, v]));
+    const s = scenario(placed, 'prototyping');
+    const p = s.board.planets[planet.id];
+    p.cubes = [1];
+    expect(planetFreeSlots(p)).toBeGreaterThan(0);
+    expect(conquerCheck(s, 0, p.id).ok).toBe(false);
+    expect(conquerCheck(s, 0, p.id, true).ok).toBe(true);
+    expect(legalActions(s)).toContainEqual({ type: 'conquer', planet: p.id, replace: 1 });
+    const after = apply(s, { type: 'conquer', planet: p.id, replace: 1 });
+    expect(after.board.planets[planet.id].cubes).toEqual([0]);
   });
 });

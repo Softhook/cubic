@@ -2,11 +2,11 @@
  * Shoot: attack an enemy in a straight line, without moving. The ship's move and its shot cost one
  * action together, in either order; the shooter never advances.
  */
-import { AROUND, canMoveDie, cellOf, die, dieAt, hooksOf, isEmptySpace, offsets, setTurnNote, spend, startCombat, turnNote } from '../../prototype';
+import { AROUND, canMoveDie, cellOf, die, dieAt, hooksOf, isEmptySpace, offsets, onBoard, setTurnNote, spend, startCombat, turnNote } from '../../prototype';
 import type { Die, GameState, PrototypePower } from '../../prototype';
 
-/** How far a shot reaches. Spaces short of the target must be empty (a ship, planet or void blocks). */
-const SHOOT_RANGE = 2;
+/** The four orthogonal directions: a shot flies as far as the first thing in its way (a ship, planet, void or the board's edge). */
+const LINES = AROUND.slice(0, 4);
 
 /** This turn so far: `fired` first, so its move is free; `moved` first, so its shot is free; `done`: both. */
 type Shot = 'fired' | 'moved' | 'done';
@@ -25,11 +25,12 @@ export function shootTargets(s: GameState, d: Die): Die[] {
   const start = cellOf(d);
   if (!start) return [];
   const out: Die[] = [];
-  // Orthogonal and diagonal lines.
-  for (const dir of AROUND) {
+  for (const dir of LINES) {
     let at = start;
-    for (let k = 0; k < SHOOT_RANGE; k++) {
+    // The step count only matters on a board that wraps, where a line comes back round to the shooter.
+    for (let k = 0; k < s.board.rows + s.board.cols; k++) {
       [at] = offsets(s.board, at, [dir]);
+      if (!onBoard(s.board, at)) break;
       const target = dieAt(s, at);
       if (target) {
         if (target.owner !== d.owner && !out.includes(target)) out.push(target);
@@ -44,8 +45,8 @@ export function shootTargets(s: GameState, d: Die): Die[] {
 export const shoot: PrototypePower = {
   ability: {
     name: 'Shoot',
-    text: 'Attack an enemy 1 or 2 spaces away in a straight line, diagonals included (at 2, over an empty space). It stays where it is. Shooting and moving cost one action together, in either order.',
-    hint: 'Shoot: choose an enemy 1 or 2 spaces away in a straight line, diagonals included. Your Interceptor stays put, and can still move before or after.',
+    text: 'Attack the first ship in any straight line up or down, left or right, as far as it is clear (planets, other ships and the edge of the board block the line). It stays where it is. Shooting and moving cost one action together, in either order.',
+    hint: 'Shoot: choose an enemy in a clear straight line, up, down, left or right, at any distance. Your Interceptor stays put, and can still move before or after.',
   },
   hooks: {
     freeMove: (s, d) => shotOf(s, d) === 'fired',

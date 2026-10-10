@@ -175,10 +175,17 @@ function conquestPotential(ctx: Ctx, p: PlayerId): number {
 
 function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
   const { s } = ctx;
-  if (planetFreeSlots(planet) <= 0) return 0;
+  const full = planetFreeSlots(planet) <= 0;
+  // A full planet is only open by over-conquest, displacing an opponent's cube.
+  if (full && (!rulesOf(s).overConquest || !planet.cubes.some((x) => x !== p))) return 0;
   // A planet with my cube is only open again through Quantum Entanglement.
-  if (planet.cubes.includes(p) && s.board.planets.some((q) => planetFreeSlots(q) > 0 && !q.cubes.includes(p))) return 0;
-  const check = conquerCheck(s, p, planet.id);
+  if (!full && planet.cubes.includes(p) && s.board.planets.some((q) => planetFreeSlots(q) > 0 && !q.cubes.includes(p))) return 0;
+  let check = conquerCheck(s, p, planet.id);
+  // A planet with room can also be over-conquered, if the orbit already makes the 12.
+  if (!check.ok && !full && rulesOf(s).overConquest) {
+    const over = conquerCheck(s, p, planet.id, true);
+    if (over.ok) check = over;
+  }
   const mover = ctx.mover === p;
 
   if (check.ok) {

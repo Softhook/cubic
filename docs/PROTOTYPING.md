@@ -202,7 +202,7 @@ The trio implemented in Prototyping today (see §8 for rulings and playtest stat
 | Ship | Moves | Power | Role |
 |---|:-:|---|---|
 | **4 Frigate** | 3 | **Picket.** An enemy ship that enters any of the 8 spaces around your Frigate must stop there. Its last step may still be an attack. | Zone control: walls off planets and corridors |
-| **5 Interceptor** | 3 | **Shoot.** Attack an enemy 1–2 spaces away in a straight line without advancing. Move and shot cost 1 action together in either order. | Ranged pressure: threatens space without abandoning position |
+| **5 Interceptor** | 3 | **Shoot.** Attack the first enemy in a clear orthogonal line, at any distance, without advancing. Move and shot cost 1 action together in either order. | Ranged pressure: threatens space without abandoning position |
 | **6 Scout** | 3 | **Beacon.** You may Deploy into empty spaces around your Scout, as if it were a planet with your cube. | Logistics: forward staging ground for reinforcements |
 
 How they reshape play:
@@ -256,7 +256,7 @@ each is evaluated independently.
 - **Spatial Control & Geography:**
   - [§6.2 Supply Lines](#62-supply-lines)
   - [§6.8 Contested Orbit (Orbital Blockade)](#68-contested-orbit-orbital-blockade-no-conquering-under-enemy-ships)
-  - [§6.10 Over-Conquest (Doubled Defense on Occupied Planets)](#610-over-conquest-doubled-planetary-defense-on-fully-occupied-planets)
+  - [§6.10 Over-Conquest (A Sum of 12 to Displace a Cube)](#610-over-conquest-a-sum-of-12-to-displace-a-cube)
 - **Action Economy & Fleet Command:**
   - [§6.4 Command Dice](#64-command-dice-instead-of-three-fixed-actions)
   - [§6.9 Pure Ship Activations (The Wargame Model)](#69-pure-ship-activations-the-wargame-model)
@@ -428,26 +428,25 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 
 ---
 
-### 6.10 Over-conquest: doubled planetary defense on fully occupied planets
+### 6.10 Over-conquest: a sum of 12 to displace a cube
 
-**Rule.** When all cube slots at a planet are fully occupied, the planet is not locked out. A player can still conquer the planet, but the planetary defense requirement is **doubled** from its printed planet value:
-- A planet of value 7 requires orbiting ships summing to **exactly 14** (instead of 7).
-- An 8 requires **exactly 16**, a 9 requires **exactly 18**, and a 10 requires **exactly 20**.
+**Rule.** A player may conquer a planet that holds an opponent's cube by displacing that cube, whether or not the planet is full. A full planet is not locked out: this is the only way to take it. The requirement is one number to remember: the orbiting ships must sum to **exactly 12**, whatever the planet's printed value. (Doubling the value, 14 to 20, was tried first: those sums were too unlikely, and the AI almost never reached them.)
+- On a planet with room, the ordinary conquest (printed value) stays available; over-conquest is the alternative that takes an opponent's cube instead of a free location.
 - Ships in orbit are still subject to orbital limits and standard conquer restrictions.
-- Upon successfully conquering/occupying the planet, the player places their cube and chooses which existing cube to replace (if there is a choice between opponents, or between multiple cubes on the planet). The displaced cube is returned to its owner's supply.
+- Upon success the player places their cube and chooses which opponent's cube to replace (if there is a choice). The displaced cube is returned to its owner's supply.
 
 **Why it's different.** In standard Quantum, once all cube slots on a planet are occupied, the planet becomes permanently locked down. In the mid-to-late game, this can restrict options, leading to dead zones or forcing players into tedious cross-map journeys to reach remaining open slots:
 - **King-of-the-hill territory.** Central and high-value planets remain relevant battlegrounds for the entire game rather than turning into static background terrain once claimed.
 - **Direct catch-up and king-slayer lever.** Displacing a cube actively subtracts a victory point from the target player while granting one to the conqueror. This provides an organic check against runaway leaders without requiring dedicated combat cards.
-- **Massive fleet commitment.** Assembling a sum of 14, 16, 18, or 20 demands multiple heavy ships (e.g. 6 + 6 + 2 = 14, or 5 + 5 + 4 = 14; 6 + 5 + 5 = 16) simultaneously holding orbital positions. Committing this much fleet power creates an operational bottleneck and leaves the conqueror vulnerable elsewhere, making over-conquest a major deliberate siege rather than an easy opportunistic capture.
+- **Massive fleet commitment.** Assembling a sum of 12 demands at least two heavy ships, usually three (e.g. 6 + 6, or 5 + 4 + 3), simultaneously holding orbital positions. Committing this much fleet power creates an operational bottleneck and leaves the conqueror vulnerable elsewhere, making over-conquest a major deliberate siege rather than an easy opportunistic capture.
 - **Target selection & diplomacy.** When multiple players share a full planet, the conqueror decides whose cube to eliminate, introducing tactical target selection.
 
 **Build.** Small–medium:
-- `conquerCheck` ([queries.ts](../packages/engine/src/queries.ts), §4 step 3): if all cube slots at the planet are full, check if ships sum to `planet.value * 2` rather than disallowing conquest.
+- `conquerCheck` ([queries.ts](../packages/engine/src/queries.ts), §4 step 3): if all cube slots at the planet are full, check if ships sum to 12 rather than disallowing conquest.
 - Decision prompt: if multiple cubes occupy the planet, prompt the conqueror with a `replaceCube` decision to choose which cube to displace. If all cubes belong to a single opponent, auto-resolve or prompt.
 - Displaced cube returns to owner's reserve (decrementing their placed cube score).
-- AI: needs to evaluate over-conquest opportunities (especially targeting the score leader) and calculate sums for doubled defense values.
-- UI: planet orbital display shows doubled requirement when full (e.g., "Full: 14 to Conquer") and renders a cube selection dialog when conquered.
+- AI: needs to evaluate over-conquest opportunities (especially targeting the score leader) and calculate sums for the the fixed 12.
+- UI: planet orbital display shows the requirement when full ("Full: 12 to Conquer") and renders a cube selection dialog when conquered.
 
 ---
 
@@ -456,7 +455,7 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 | Idea | Core Change | How Different | Build Cost | Fits Architecture |
 |---|---|---|---|---|
 | **6.8 Contested orbit** | No conquer while enemy in orbit | Medium | Small | Yes (via §4 step 3 hook) |
-| **6.10 Over-conquest** | Conquer full planets at 2× value; replace a cube | Medium | Small–medium | Yes (via §4 step 3 hook & decision) |
+| **6.10 Over-conquest** | Conquer full planets at a sum of 12; replace a cube | Medium | Small–medium | Yes (via §4 step 3 hook & decision) |
 | **6.1 Kinetic ships** | Speed equals arrival value | High | Small | Yes |
 | **6.2 Supply lines** | Supply chains for attack/defense | High | Medium | Yes |
 | **6.4 Command dice** | Rolled order dice replace fixed actions | High | Medium | Yes |
@@ -500,8 +499,9 @@ and **Beacon** (6) replacing Modify, Manoeuvre, and Free Reconfigure. Values 1, 
 - **Adjacency is all 8 surrounding spaces** for Picket and Beacon. Warp Gates do not link them.
 - **Picket** applies to normal moves only (not Transport, Warp, or Tactical steps). A ship starting
   inside a zone may leave, but stops in the next zone space it enters.
-- **Shoot** attacks an enemy 1 or 2 spaces away in a straight line (orthogonal or diagonal). At range 2,
-  the intervening space must be clear. Move and shot cost **one action together, in either order**:
+- **Shoot** attacks the first ship in any orthogonal line (up, down, left, right), at any distance, as
+  long as the line is clear: other ships, planets, voids and the board's edge block it. (It was first
+  range 1–2, diagonals included.) Move and shot cost **one action together, in either order**:
   shoot first (1 action) and the move is free, or move first (1 action) and the shot is free. A ship
   that shoots cannot also attack normally that turn. Normal combat, missiles, and re-rolls apply; the
   shooter never advances.

@@ -92,18 +92,18 @@ exports[`golden master > prototyping, 2 players, seed 11 1`] = `
 
 exports[`golden master > prototyping, 3 players, seed 12 1`] = `
 {
-  "actions": "d3cf09528290ff9e",
-  "state": "675e24c0d7380e2e",
-  "steps": 312,
-  "winner": 1,
+  "actions": "5f2134a289dbc6a6",
+  "state": "1943d057409f25b3",
+  "steps": 296,
+  "winner": 2,
 }
 `;
 
 exports[`golden master > prototyping, 4 players, seed 13 1`] = `
 {
-  "actions": "66be94d8cca87fd4",
-  "state": "53be56e24a20248e",
-  "steps": 401,
-  "winner": 2,
+  "actions": "87fe638dba01bbde",
+  "state": "74d780bdcaa68268",
+  "steps": 415,
+  "winner": 3,
 }
 `;

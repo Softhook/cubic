@@ -29,7 +29,7 @@ export function prototypingMode(base: RuleSet): RuleSet {
     id: 'prototyping',
     name: 'Prototyping',
     title: 'Prototyping',
-    summary: 'Community Edition with moves capped at 3, a ranged Interceptor and over-conquest of full planets.',
+    summary: 'Community Edition with moves capped at 3, a ranged Interceptor and over-conquest, displacing an opponent cube.',
     ships: PROTOTYPING_SHIPS,
     maxMovement: MAX_MOVEMENT,
     overConquest: true,

@@ -198,9 +198,10 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
   if (hasSkill(s, me, 'tyrannical-original') && !usedThisTurn(s, 'tyrannical') && pl.research > 1) out.push({ type: 'tyrannical' });
   if (actions >= 2) for (const p of s.board.planets) {
     const c = conquerCheck(s, me, p.id);
-    if (!c.ok) continue;
-    if (c.replace) for (const replace of c.replace) out.push({ type: 'conquer', planet: p.id, replace });
-    else out.push({ type: 'conquer', planet: p.id });
+    if (c.ok && !c.replace) out.push({ type: 'conquer', planet: p.id });
+    // Over-conquest: on a full planet it is the only way, on one with room it is a choice.
+    const o = c.replace ? c : rulesOf(s).overConquest ? conquerCheck(s, me, p.id, true) : c;
+    if (o.ok && o.replace) for (const replace of o.replace) out.push({ type: 'conquer', planet: p.id, replace });
   }
   if (hasSkill(s, me, 'composed') && !usedThisTurn(s, 'composed') && pl.dominance > 1 && canGainResearch(s, me)) out.push({ type: 'composed' });
   if (hasSkill(s, me, 'ambitious') && !usedThisTurn(s, 'ambitious')) out.push({ type: 'ambitious' });
