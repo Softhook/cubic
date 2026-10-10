@@ -208,7 +208,11 @@ function rift(id: string): Fragment {
  * One or two small moons beside the planet, lit from the top left like it, at varied angles and
  * distances. They stay out of the top-left (the label) and bottom-right (the number) quadrants.
  */
-function moons(r: number, id: string, hue: number, rand: ReturnType<typeof rng>): Fragment {
+function moons(r: number, id: string, number: number, type: PlanetType, rand: ReturnType<typeof rng>): Fragment {
+  const hue = PLANET_FAMILY[number].hue;
+  // Moons borrow their planet's colouring: mossy and teal by the oceans, white by the ice, tan by the
+  // gas giants, and charred with glowing cracks by the lava worlds.
+  const pal = type === 'lava' ? { h: 8, s: 40, l: 38 } : type === 'ice' || number === 8 ? { h: 200, s: 30, l: 84 } : type === 'gas' ? { h: 36, s: 42, l: 66 } : { h: 140, s: 26, l: 58 };
   const count = rand.int(0, 2);
   // One free arc each: up and to the right, or down and to the left (degrees, y down).
   const arcs: [number, number][] = rand.chance(0.5) ? [[-85, -5], [95, 175]] : [[95, 175], [-85, -5]];
@@ -220,9 +224,12 @@ function moons(r: number, id: string, hue: number, rand: ReturnType<typeof rng>)
     const d = r * 1.12 + mr + rand.range(1, 7);
     const x = MID + Math.cos(a) * d;
     const y = MID + Math.sin(a) * d;
-    const tint = rand.chance(0.5) ? hsl(hue, 12, 62) : hsl(rand.range(20, 45), 14, 58);
-    defs += `<radialGradient id="${id}-moon${i}" cx=".32" cy=".28" r=".85"><stop offset="0" stop-color="${tint}"/><stop offset=".55" stop-color="${hsl(hue, 14, 30)}"/><stop offset="1" stop-color="${hsl(hue, 30, 6)}"/></radialGradient>`;
+    const h = pal.h + rand.range(-8, 8);
+    const l = pal.l + rand.range(-6, 6);
+    defs += `<radialGradient id="${id}-moon${i}" cx=".32" cy=".28" r=".85"><stop offset="0" stop-color="${hsl(h, pal.s, l)}"/><stop offset=".55" stop-color="${hsl(h, pal.s, l * 0.5)}"/><stop offset="1" stop-color="${hsl(hue, 40, 5)}"/></radialGradient>`;
+    body += `<circle cx="${n(x)}" cy="${n(y)}" r="${n(mr * 1.8)}" fill="${hsl(hue, 70, 60)}" fill-opacity=".12"/>`;
     body += `<circle cx="${n(x)}" cy="${n(y)}" r="${n(mr)}" fill="url(#${id}-moon${i})"/>`;
+    if (type === 'lava') body += `<circle cx="${n(x + mr * 0.25)}" cy="${n(y + mr * 0.2)}" r="${n(mr * 0.3)}" fill="${hsl(28, 95, 55)}" fill-opacity=".55"/>`;
   }
   return { defs, body };
 }
@@ -262,7 +269,7 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
         type: spec.type ?? PLANET_FAMILY[spec.number].types[0],
         rings: spec.rings,
       }),
-      moons(PLANET_DIAMETER[spec.number] / 2, `${id}-planet`, PLANET_FAMILY[spec.number].hue, art.fork('moons')),
+      moons(PLANET_DIAMETER[spec.number] / 2, `${id}-planet`, spec.number, spec.type ?? PLANET_FAMILY[spec.number].types[0], art.fork('moons')),
     );
   }
   if (!isVoid && o.only !== 'art') parts.push(label(spec));
