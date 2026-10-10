@@ -55,9 +55,9 @@ export function PlanetMarkings({ cx, cy, mm, n, capacity, cubes, numberClass, cu
             rx={1.6 * mm}
             fill={colour ?? CUBE_SLOT.fill}
             stroke={colour ? '#fff' : CUBE_SLOT.stroke}
-            strokeWidth={colour ? 1.2 : 1}
+            strokeWidth={(colour ? 0.5 : 0.4) * mm}
             className={colour ? cubeClass : undefined}
-            style={colour ? { filter: 'drop-shadow(0 0 3px rgba(255,255,255,.6))' } : undefined}
+            style={colour ? { filter: `drop-shadow(0 0 ${1.2 * mm}px rgba(255,255,255,.6))` } : undefined}
           />
         );
       })}

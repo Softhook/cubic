@@ -280,7 +280,7 @@ input { font: inherit; }
 .board-wrap.zoomed:active { cursor: grabbing; }
 /* Always its own layer: a gesture moves and scales it on the compositor (useBoardZoom), and a pan that ends
    only moves it, without repainting the map. Promoted per gesture, the map was drawn again as each began and ended. */
-.board { position: absolute; transform-origin: 0 0; will-change: transform; }
+.board { --bw: clamp(1.5px, calc(var(--cell, 60px) * .035), 4px); position: absolute; transform-origin: 0 0; will-change: transform; }
 .zoom-controls { position: absolute; right: 6px; bottom: 6px; z-index: 6; display: flex; flex-direction: column; gap: 4px; }
 .zoom-controls button {
   width: 32px; height: 32px; display: grid; place-items: center; padding: 0; cursor: pointer;
@@ -350,10 +350,10 @@ input { font: inherit; }
   width: 70%; height: 70%;
   border-radius: 22%;
   background: rgba(94, 240, 176, .08);
-  border: 2px dashed var(--good);
+  border: var(--bw) dashed var(--good);
   box-shadow: 0 0 14px rgba(94, 240, 176, .25);
 }
-.hl-gate span { width: 56%; height: 56%; background: transparent; border: 2px solid var(--good); box-shadow: 0 0 10px rgba(94,240,176,.4); opacity: .45; }
+.hl-gate span { width: 56%; height: 56%; background: transparent; border: var(--bw) solid var(--good); box-shadow: 0 0 10px rgba(94,240,176,.4); opacity: .45; }
 @keyframes hl-in { from { transform: scale(0); opacity: 0; } }
 /* Where another player's ship could move: shown only, in its owner's colour, under the ships. */
 .reach { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
@@ -361,7 +361,7 @@ input { font: inherit; }
 .reach > span > span {
   width: 62%; height: 62%; border-radius: 50%;
   background: color-mix(in srgb, var(--pc) 22%, transparent);
-  border: 2px solid color-mix(in srgb, var(--pc) 80%, transparent);
+  border: var(--bw) solid color-mix(in srgb, var(--pc) 80%, transparent);
   box-shadow: 0 0 10px color-mix(in srgb, var(--pc) 45%, transparent);
   animation: hl-in .2s ease-out both;
 }
@@ -370,7 +370,7 @@ input { font: inherit; }
 .reach-attack > span > span {
   width: 92%; height: 92%;
   background: transparent;
-  border-width: 3px;
+  border-width: calc(var(--bw) * 1.5);
   box-shadow: 0 0 12px var(--pc), inset 0 0 8px color-mix(in srgb, var(--pc) 60%, transparent);
 }
 
@@ -388,7 +388,7 @@ input { font: inherit; }
   position: absolute;
   inset: 2%;
   border-radius: 50%;
-  border: 3px solid var(--good);
+  border: calc(var(--bw) * 1.5) solid var(--good);
   box-shadow: 0 0 18px var(--good), inset 0 0 14px rgba(94,240,176,.4);
   animation: ring 1.4s ease-in-out infinite;
 }
