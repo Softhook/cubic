@@ -227,47 +227,22 @@ describe('Shoot (5 Interceptor)', () => {
     expect(s.players[0].dominance).toBeGreaterThan(BASE.prototyping.players[0].dominance);
   });
 
-  it('shoot, then move: one action for both, and no attack after', () => {
+  it('is the ship’s one action: no move, attack or second shot after it', () => {
     const s = shoot(scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 3], p1d1: [3, 0, 2] }), 'p1d0', 6, 1);
     expect(s.turn.actionsLeft).toBe(2);
     expect(mine(s, 'power')).toEqual([]);
+    expect(mine(s, 'move')).toEqual([]);
     expect(mine(s, 'attack')).toEqual([]);
-    expect(() => apply(s, { type: 'attack', die: 'p0d0', target: 'p1d1' })).toThrow(/can’t attack/);
-    const moved = apply(s, { type: 'move', die: 'p0d0', to: { r: 0, c: 1 } });
-    expect(moved.turn.actionsLeft).toBe(2);
-    expect(mine(moved, 'move')).toEqual([]);
+    expect(() => apply(s, { type: 'move', die: 'p0d0', to: { r: 0, c: 1 } })).toThrow(/already moved/);
   });
 
-  it('a ship that fired keeps its free move and can’t attack, even after changing number', () => {
-    const fired = shoot(scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 3], p1d1: [0, 4, 2] }, 'prototyping', ['flexible']), 'p1d0', 6, 1);
-    const s = apply(fired, { type: 'flexible', die: 'p0d0', delta: -1 });
-    expect(at(s, 'p0d0').value).toBe(4);
-    expect(mine(s, 'attack')).toEqual([]);
-    expect(() => apply(s, { type: 'attack', die: 'p0d0', target: 'p1d1' })).toThrow(/can’t attack/);
-    const moved = apply(s, { type: 'move', die: 'p0d0', to: { r: 1, c: 0 } });
-    expect(moved.turn.actionsLeft).toBe(2);
-  });
-
-  it('a ship that moved, then became an Interceptor, can’t shoot for free', () => {
-    const moved = apply(scenario({ p0d0: [0, 0, 4], p1d0: [0, 4, 3] }, 'prototyping', ['flexible']), { type: 'move', die: 'p0d0', to: { r: 0, c: 2 } });
-    expect(shots(apply(moved, { type: 'flexible', die: 'p0d0', delta: 1 }))).toEqual([]);
-  });
-
-  it('move, then shoot: the shot is free', () => {
-    const s0 = scenario({ p0d0: [0, 0, 5], p1d0: [2, 2, 3] });
-    expect(shots(s0)).toEqual([]);
-    const moved = apply(s0, { type: 'move', die: 'p0d0', to: { r: 0, c: 2 } });
-    expect(moved.turn.actionsLeft).toBe(2);
-    const s = shoot(moved, 'p1d0', 1, 6);
-    expect(s.turn.actionsLeft).toBe(2);
-    expect(at(s, 'p0d0').loc).toEqual({ zone: 'board', r: 0, c: 2 });
-    expect(mine(s, 'power')).toEqual([]);
-  });
-
-  it('not after a normal attack', () => {
-    const s0 = scenario({ p0d0: [0, 0, 5], p1d0: [0, 1, 6], p1d1: [2, 0, 3] });
-    const s = apply(s0, { type: 'attack', die: 'p0d0', target: 'p1d0' });
-    const resolved = apply(s, { type: 'resolveCombat' });
+  it('can’t shoot after moving or after a normal attack', () => {
+    const s0 = scenario({ p0d0: [0, 0, 5], p1d0: [0, 4, 3] });
+    expect(shots(s0)).toEqual(['p1d0']);
+    expect(shots(apply(s0, { type: 'move', die: 'p0d0', to: { r: 1, c: 0 } }))).toEqual([]);
+    const s1 = scenario({ p0d0: [0, 0, 5], p1d0: [0, 1, 6], p1d1: [2, 0, 3] });
+    const attacked = apply(s1, { type: 'attack', die: 'p0d0', target: 'p1d0' });
+    const resolved = apply(attacked, { type: 'resolveCombat' });
     expect(shots(resolved.pending.length ? apply(resolved, { type: 'advance', move: false }) : resolved)).toEqual([]);
   });
 
@@ -284,6 +259,12 @@ describe('Shoot (5 Interceptor)', () => {
     expect(shots(scenario({ p0d0: [0, 0, 5], p1d0: [0, 3, 3], p1d1: [0, 6, 2] }))).toEqual(['p1d0']); // only the first
     expect(shots(scenario({ p0d0: [1, 0, 5], p1d0: [1, 2, 3] }))).toEqual([]); // a planet in between
     expect(shots(scenario({ p0d0: [0, 0, 5], p0d1: [0, 2, 3] }))).toEqual([]);
+  });
+
+  it('flies over the void', () => {
+    const s = scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 3] });
+    s.board.cells[0][1].void = true;
+    expect(shootTargets(s, at(s, 'p0d0')).map((d) => d.id)).toEqual(['p1d0']);
   });
 
   it('only a Prototyping Interceptor can shoot', () => {

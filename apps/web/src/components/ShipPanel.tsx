@@ -37,7 +37,7 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
     if (!onBoard) return null;
     if (ship.hooks?.action) {
       return (
-        <button className="btn" disabled={!legal.can('power', mine)} onClick={() => ctl.select({ kind: 'power', die: d.id })} title={ability.text}>
+        <button className="btn" disabled={!legal.can('power', mine)} onClick={() => ctl.select({ kind: 'power', die: d.id })} title={legal.can('power', mine) ? ability.text : `${ability.name} unavailable: no enemy in a clear straight line, or no action left. ${ability.text}`}>
           {ability.name}
         </button>
       );

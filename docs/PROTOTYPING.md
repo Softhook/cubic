@@ -1,12 +1,31 @@
 # Prototyping a Fourth Mode
 
-How to build **Prototyping**, our experimental rule set, alongside Basic, Classic, and Community.
+How to build and evaluate **Prototyping**, our experimental rule set, alongside Basic, Classic, and Community.
 
 > **Design Thesis: From Arithmetic Sprint to Positional War**  
 > In base Quantum, hyper-mobility collapsed geography. Ships with 5–6 movement on compact boards crossed the map with ease, turning battles into isolated teleport raids and conquest into an arithmetic puzzle.  
-> **Prototyping restores territorial gravity**: movement caps create distance, big ships project zones of control and forward logistics, and planets require orbital superiority before conquest.
+> **Prototyping aims to restore territorial gravity**: the current movement cap creates distance;
+> candidate powers and experiments explore zone control, forward logistics, and orbital superiority.
 
 Nothing here is permanently adopted. Rulings go to [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) and, once decided, to [RULES.md](RULES.md).
+
+> **Status key:** **Current** rules are enabled in the playable Prototyping mode and covered by
+> [prototyping.test.ts](../packages/engine/test/prototyping.test.ts). **Candidates** are described
+> design work or partially implemented building blocks; they do not change a Prototyping game until
+> they are registered in `PROTOTYPING_SHIPS` or `prototypingMode()`.
+
+## Current Prototyping baseline
+
+As of 2026-10-11, Prototyping is **Community Edition**, with only these changes:
+
+| Status | Rule |
+|---|---|
+| **Current** | A ship's die value contributes at most **3** movement; skill bonuses apply after that cap. |
+| **Current** | The **5 Interceptor** replaces its diagonal Manoeuvre ability with **Shoot**: spend one action to attack the first enemy in a clear orthogonal line without advancing. Shooting is that ship's action for the turn. |
+| **Current** | **Over-conquest:** a player may replace an opponent's cube by meeting an orbit sum of exactly **12**, including on a planet that still has an empty cube location. |
+| **Unchanged** | Ships 1–3 retain their Community abilities. The **4 Frigate** retains Modify and the **6 Scout** retains Free Reconfigure. |
+
+Picket, Beacon, Contested Orbit, and every other rule below are **candidates**, not current rules.
 
 ---
 
@@ -16,10 +35,10 @@ Nothing here is permanently adopted. Rulings go to [OPEN-QUESTIONS.md](OPEN-QUES
 2. [Worked Example: Movement Cap at 3](#2-worked-example-ships-move-at-most-3)
 3. [How to Test a New Mode](#3-how-to-test-a-new-mode)
 4. [Engine Refactoring Roadmap](#4-refactoring-in-the-order-it-pays-off)
-5. [The Ship Redesign: Powers for the 4, 5, and 6](#5-new-powers-for-the-4-5-and-6)
-6. [Radical Ideas Catalogue](#6-radical-ideas-a-different-game-not-a-re-tuned-one)
+5. [Candidate Ship Redesign: Powers for the 4, 5, and 6](#5-candidate-ship-redesign-powers-for-the-4-5-and-6)
+6. [Future Experiments](#6-future-experiments-a-different-game-not-a-re-tuned-one)
 7. [Next Steps](#7-next-steps)
-8. [Current Status & Playtest Results](#8-what-was-built-2026-10-09)
+8. [Current Status & Playtest Results](#8-current-status--playtest-results-2026-10-11)
 9. [Developer Guide: Working on Prototyping](#9-working-on-prototyping)
 
 ---
@@ -157,7 +176,7 @@ through `shipOf(state, value)`.
 
 ---
 
-## 5. New powers for the 4, 5 and 6
+## 5. Candidate ship redesign: powers for the 4, 5 and 6
 
 ### 5.1 The problem: hyper-mobility killed geography
 
@@ -184,33 +203,34 @@ movement on maps typically only 6–9 spaces across:
 
 - **Cap movement at 3** (§2), so distance and travel time exist again. The board gains scale, and
   positioning becomes a genuine commitment.
-- **Give the board territorial gravity.** Ships should project threat and control space:
-  - **Zone control:** Frigates (Picket) wall off lanes and planet approaches.
-  - **Ranged pressure:** Interceptors (Shoot) threaten space without having to abandon position.
-  - **Forward bases:** Scouts (Beacon) serve as logistics hubs in a world where crossing the map takes time.
-  - **Planetary sieges:** Planets cannot be claimed while contested by enemy ships (§6.8). You must
-    clear orbital space before constructing.
+- **Give the board territorial gravity.** Candidate powers could project threat and control space:
+  - **Zone control:** Frigates (Picket) could wall off lanes and planet approaches.
+  - **Ranged pressure:** Interceptors (Shoot, current) threaten space without having to abandon position.
+  - **Forward bases:** Scouts (Beacon) could serve as logistics hubs in a world where crossing the map takes time.
+  - **Planetary sieges:** Contested Orbit (§6.8) could require players to clear orbital space before
+    constructing.
 - **Keep the combat trade-off**: big ships still lose most fights (they add 4–6), so their value lies in
   holding space, supporting small fighters, and shaping the battlefield.
 - **Prefer passive powers or clean action extensions**, so the AI copes naturally without complex
   scoring overhauls.
 
-### 5.3 Active set: control, ranged threat, logistics
+### 5.3 Current and candidate ship powers
 
-The trio implemented in Prototyping today (see §8 for rulings and playtest stats):
+Only Shoot is active today. Picket and Beacon are candidate powers with source files and reusable hooks,
+but neither is assigned to a Prototyping ship.
 
-| Ship | Moves | Power | Role |
+| Ship | Current Prototyping rule | Candidate | Intended role if activated |
 |---|:-:|---|---|
-| **4 Frigate** | 3 | **Picket.** An enemy ship that enters any of the 8 spaces around your Frigate must stop there. Its last step may still be an attack. | Zone control: walls off planets and corridors |
-| **5 Interceptor** | 3 | **Shoot.** Attack the first enemy in a clear orthogonal line, at any distance, without advancing. Move and shot cost 1 action together in either order. | Ranged pressure: threatens space without abandoning position |
-| **6 Scout** | 3 | **Beacon.** You may Deploy into empty spaces around your Scout, as if it were a planet with your cube. | Logistics: forward staging ground for reinforcements |
+| **4 Frigate** | Move 3; **Modify** remains active | **Picket:** an enemy ship entering any of the 8 surrounding spaces must stop there. | Zone control: walls off planets and corridors |
+| **5 Interceptor** | Move 3; **Shoot** is active | — | Ranged pressure: threatens space without abandoning position |
+| **6 Scout** | Move 3; **Free Reconfigure** remains active | **Beacon:** Deploy into empty spaces around the Scout, as if it were a planet with your cube. | Logistics: forward staging ground for reinforcements |
 
-How they reshape play:
-- **Frigates turn movement into a puzzle.** A ring of Pickets around a planet slows enemy approaches
+If Picket and Beacon are activated, they would reshape play as follows:
+- **Frigates turn movement into a puzzle.** A ring of Pickets around a planet could slow enemy approaches
   by a turn and counters "rush the sum" plays.
 - **Interceptors control lanes without suicide runs.** Rather than charging into close combat where a 5
   usually loses, Interceptors project ranged area denial.
-- **Scouts make the board feel vast.** With movement capped, being stranded far from home planets hurts.
+- **Scouts make the board feel vast.** With movement capped, a Beacon could make being stranded far from home planets hurt less.
   A forward Scout becomes where destroyed ships redeploy, making its survival crucial.
 
 ### 5.4 Alternatives explored per ship
@@ -228,17 +248,17 @@ How they reshape play:
 
 | Power | Engine | AI | UI |
 |---|---|---|---|
-| Picket | `stopsEnemies` hook (built) | Automatic via legal moves | Highlights automatic; zone overlay optional |
-| Shoot | `action`, `freeMove`, `noAttack` hooks (built) | Handled via legal actions | Action button and target highlights |
-| Beacon | `deployTargets` hook (built) | Automatic | Target cell highlights |
+| Picket | `stopsEnemies` hook available; candidate not registered | Automatic via legal moves | Highlights automatic; zone overlay optional |
+| Shoot | `action` hook; **current** | Handled via legal actions | Action button and target highlights |
+| Beacon | `deployTargets` hook available; candidate not registered | Automatic | Target cell highlights |
 | Escort, Anchor | Combat modifier / conquer-sum hook | Automatic | Combat breakdown line |
 | Intercept | Off-turn `Pending` reaction hook | Response choice heuristic | Prompt window (like missiles) |
 | Survey | Start-of-turn decision hook | Choice heuristic | Card dialog |
 
 ### 5.6 Testing & validation
 
-- One scenario test per power, including boundary conditions: Picket stopping pass-through moves but
-  not starting ones; Shoot line-of-sight blockage by void/planets/ships; Beacon spaces clearing on Scout destruction.
+- Shoot has scenario coverage for its turn limit and line of sight. Before activating Picket or Beacon,
+  add scenarios for Picket pass-through and starting positions, and for Beacon targets after a Scout is destroyed.
 - Self-play metrics on moves, attacks, and power uses per ship value. Success criterion: 4s, 5s, and 6s
   are fielded intentionally rather than reconfigured away.
 - Average game length compared with Community: a cap plus Picket should lengthen games slightly, but
@@ -246,9 +266,9 @@ How they reshape play:
 
 ---
 
-## 6. Radical ideas: a different game, not a re-tuned one
+## 6. Future experiments: a different game, not a re-tuned one
 
-These ideas fundamentally alter game dynamics. Each is a distinct prototype; do not combine them until
+These candidates fundamentally alter game dynamics. Each is a distinct prototype; do not combine them until
 each is evaluated independently.
 
 ### Overview by Theme
@@ -256,7 +276,6 @@ each is evaluated independently.
 - **Spatial Control & Geography:**
   - [§6.2 Supply Lines](#62-supply-lines)
   - [§6.8 Contested Orbit (Orbital Blockade)](#68-contested-orbit-orbital-blockade-no-conquering-under-enemy-ships)
-  - [§6.10 Over-Conquest (A Sum of 12 to Displace a Cube)](#610-over-conquest-a-sum-of-12-to-displace-a-cube)
 - **Action Economy & Fleet Command:**
   - [§6.4 Command Dice](#64-command-dice-instead-of-three-fixed-actions)
   - [§6.9 Pure Ship Activations (The Wargame Model)](#69-pure-ship-activations-the-wargame-model)
@@ -428,9 +447,9 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 
 ---
 
-### 6.10 Over-conquest: a sum of 12 to displace a cube
+### 6.10 Current rule: over-conquest, a sum of 12 to displace a cube
 
-**Rule.** A player may conquer a planet that holds an opponent's cube by displacing that cube, whether or not the planet is full. A full planet is not locked out: this is the only way to take it. The requirement is one number to remember: the orbiting ships must sum to **exactly 12**, whatever the planet's printed value. (Doubling the value, 14 to 20, was tried first: those sums were too unlikely, and the AI almost never reached them.)
+**Current rule.** A player may conquer a planet that holds an opponent's cube by displacing that cube, whether or not the planet is full. A full planet is not locked out: this is the only way to take it. The requirement is one number to remember: the orbiting ships must sum to **exactly 12**, whatever the planet's printed value. (Doubling the value, 14 to 20, was tried first: those sums were too unlikely, and the AI almost never reached them.)
 - On a planet with room, the ordinary conquest (printed value) stays available; over-conquest is the alternative that takes an opponent's cube instead of a free location.
 - Ships in orbit are still subject to orbital limits and standard conquer restrictions.
 - Upon success the player places their cube and chooses which opponent's cube to replace (if there is a choice). The displaced cube is returned to its owner's supply.
@@ -441,12 +460,10 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 - **Massive fleet commitment.** Assembling a sum of 12 demands at least two heavy ships, usually three (e.g. 6 + 6, or 5 + 4 + 3), simultaneously holding orbital positions. Committing this much fleet power creates an operational bottleneck and leaves the conqueror vulnerable elsewhere, making over-conquest a major deliberate siege rather than an easy opportunistic capture.
 - **Target selection & diplomacy.** When multiple players share a full planet, the conqueror decides whose cube to eliminate, introducing tactical target selection.
 
-**Build.** Small–medium:
-- `conquerCheck` ([queries.ts](../packages/engine/src/queries.ts), §4 step 3): if all cube slots at the planet are full, check if ships sum to 12 rather than disallowing conquest.
-- Decision prompt: if multiple cubes occupy the planet, prompt the conqueror with a `replaceCube` decision to choose which cube to displace. If all cubes belong to a single opponent, auto-resolve or prompt.
-- Displaced cube returns to owner's reserve (decrementing their placed cube score).
-- AI: needs to evaluate over-conquest opportunities (especially targeting the score leader) and calculate sums for the the fixed 12.
-- UI: planet orbital display shows the requirement when full ("Full: 12 to Conquer") and renders a cube selection dialog when conquered.
+**Implementation status.** This is enabled by `RuleSet.overConquest`, checked by
+`conquerCheck`, and covered by [prototyping.test.ts](../packages/engine/test/prototyping.test.ts).
+The current UI and legal actions offer replacement targets; AI valuation and a dedicated orbit-requirement
+display remain possible follow-up work.
 
 ---
 
@@ -455,7 +472,6 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 | Idea | Core Change | How Different | Build Cost | Fits Architecture |
 |---|---|---|---|---|
 | **6.8 Contested orbit** | No conquer while enemy in orbit | Medium | Small | Yes (via §4 step 3 hook) |
-| **6.10 Over-conquest** | Conquer full planets at a sum of 12; replace a cube | Medium | Small–medium | Yes (via §4 step 3 hook & decision) |
 | **6.1 Kinetic ships** | Speed equals arrival value | High | Small | Yes |
 | **6.2 Supply lines** | Supply chains for attack/defense | High | Medium | Yes |
 | **6.4 Command dice** | Rolled order dice replace fixed actions | High | Medium | Yes |
@@ -466,9 +482,9 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 | **6.7 Fog of war** | Local vision ranges | Very high | Very large | Conflicts with online model |
 
 **Recommendation:**
-1. Keep the live Prototyping baseline: **Movement cap 3 + Picket + Shoot + Beacon** (§5).
-2. Prototype **Contested orbit (§6.8)** first—it is tiny to build (a `conquerCheck` hook) and immediately
-   reinforces the siege/defense dynamics of Picket.
+1. Keep the live Prototyping baseline: **movement cap 3 + Shoot + over-conquest**.
+2. Prototype **Contested orbit (§6.8)** first—it is tiny to build (a `conquerCheck` hook) and tests
+   whether orbital defense adds useful positional play.
 3. Test **Kinetic ships (§6.1)** as an independent one-file experiment to explore movement-driven sums.
 4. If fleet expansion still feels underwhelming, evaluate **Ship activations (§6.9)** to unlock full
    multi-front command bandwidth.
@@ -481,7 +497,9 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 - [x] Add Prototyping mode with `maxMovement: 3` and scenario tests
 - [x] Add Prototyping to golden replay and consistency invariants
 - [x] Refactor: ship table per mode (§4 step 2)
-- [x] Prototype and land Picket (4), Shoot (5), and Beacon (6)
+- [x] Replace the 5's diagonal Manoeuvre ability with Shoot
+- [x] Add over-conquest at an orbit sum of 12
+- [ ] Decide whether to activate Picket (4) and Beacon (6); their current source files are candidates only
 - [ ] Prototype Contested Orbit (§6.8) via `conquerCheck` hook
 - [ ] Write per-game stats script (CSV: moves, attacks, power uses per ship value)
 - [ ] Prototype Kinetic ships (§6.1) as a separate branch experiment
@@ -489,41 +507,30 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 
 ---
 
-## 8. Current status & playtest results (2026-10-09)
+## 8. Current status & playtest results (2026-10-11)
 
-Prototyping is playable in the lobby: Community Edition plus the movement cap, with **Picket** (4), **Shoot** (5),
-and **Beacon** (6) replacing Modify, Manoeuvre, and Free Reconfigure. Values 1, 2, and 3 are unchanged.
+Prototyping is playable in the lobby. The authoritative current-rule summary is at the top of this
+document: Community Edition with a movement cap of 3, Shoot for the 5, and over-conquest. The 4's
+Modify and the 6's Free Reconfigure are still active. Picket and Beacon are not enabled.
 
 ### Rulings established during implementation
 
-- **Adjacency is all 8 surrounding spaces** for Picket and Beacon. Warp Gates do not link them.
-- **Picket** applies to normal moves only (not Transport, Warp, or Tactical steps). A ship starting
-  inside a zone may leave, but stops in the next zone space it enters.
 - **Shoot** attacks the first ship in any orthogonal line (up, down, left, right), at any distance, as
-  long as the line is clear: other ships, planets, voids and the board's edge block it. (It was first
-  range 1–2, diagonals included.) Move and shot cost **one action together, in either order**:
-  shoot first (1 action) and the move is free, or move first (1 action) and the shot is free. A ship
-  that shoots cannot also attack normally that turn. Normal combat, missiles, and re-rolls apply; the
+  long as the line is clear: ships (friendly or enemy), planets and the board's edge block it; the void
+  does not. (It was first range 1–2, diagonals included, then a free shot alongside the move, then a shot with a separate move.)
+  Shooting costs one action and is the ship's one action of the turn, like a move or an attack: a ship
+  can't move, attack or shoot again that turn, and can't shoot after moving or attacking. Normal combat, missiles, and re-rolls apply; the
   shooter never advances.
+- **Over-conquest** is optional alongside an ordinary conquest when an opponent cube is present. It
+  requires an orbit sum of exactly 12 and returns the replaced cube to its owner's reserve.
 
 Scenarios live in [prototyping.test.ts](../packages/engine/test/prototyping.test.ts).
 
-### First self-play benchmarks (Level 2 vs Level 2, 2 Players)
+### Playtest status
 
-| Metric | Community | Prototyping |
-|---|:-:|:-:|
-| Turns per game (`ai:match`, 60 games) | 17.9 | 17.1 |
-| Total attacks (30 games) | 208 | 134 |
-| 4s / 6s on board at turn end (30 games) | 273 / 171 | 496 / 445 |
-| Enemy moves stopping in a Picket zone (30 games) | — | 20 of 534 moves (~4%) |
-| Shoot opportunities / usages (15 games, range 1–2) | — | 63 / 15 (4 shoot-then-move) |
-
-**Observations:**
-- Games did not lengthen under movement cap 3 (averaging ~17 turns in both modes).
-- Players preserve 4s and 6s on the board instead of immediately reconfiguring them away.
-- Picket zone control bites in roughly 4% of moves.
-- Shoot is used roughly once per game at range 1–2 with diagonals (the AI evaluation does not yet score
-  Shoot threats ahead of time, §4 step 7).
+There is no current self-play benchmark for this baseline. The previous figures measured a different
+configuration (Picket and Beacon enabled, plus an earlier version of Shoot) and are intentionally not
+used as evidence for the current rules. Re-run the commands in §3 after the current set has stabilized.
 
 ---
 
@@ -539,9 +546,9 @@ its powers or mode name.
 packages/engine/src/
   prototyping/
     index.ts          mode definition: MAX_MOVEMENT, PROTOTYPING_SHIPS, prototypingMode()
-    powers/picket.ts  power text and hooks for Picket (4)
+    powers/picket.ts  candidate power text and hooks for Picket (not registered)
     powers/shoot.ts   power text and hooks for Shoot (5)
-    powers/beacon.ts  power text and hooks for Beacon (6)
+    powers/beacon.ts  candidate power text and hooks for Beacon (not registered)
   prototype.ts        the prototype kit: ShipHooks, PrototypePower, turn note utilities
 ```
 
@@ -556,7 +563,9 @@ packages/engine/src/
 
 ### Defining a Power
 
-A power is a `PrototypePower` object combining UI metadata with optional engine hooks:
+A power is a `PrototypePower` object combining UI metadata with optional engine hooks. The current
+implementation is [shoot.ts](../packages/engine/src/prototyping/powers/shoot.ts); the unregistered
+Beacon candidate is a small passive example:
 
 ```ts
 // packages/engine/src/prototyping/powers/beacon.ts
@@ -587,9 +596,9 @@ interfering with other powers.
    |---|---|---|
    | `stopsEnemies` | `stopZone` → `moveIndexes`, `shipReach` | Stops enemy movement when entering zone (Picket) |
    | `deployTargets` | `deployTargets` | Additional valid cells for Deploy action (Beacon) |
-   | `freeMove` | `legalActions`, `move` handler | Free movement following a power action (Shoot) |
-   | `noAttack` | `legalActions`, `attack` handler | Prevents standard attacks after using power (Shoot) |
-   | `onMove` | `applyMove` handler | State updates when ship moves (Shoot note tracking) |
+   | `freeMove` | `legalActions`, `move` handler | Free movement following a power action |
+   | `noAttack` | `legalActions`, `attack` handler | Prevents standard attacks after using a power |
+   | `onMove` | `applyMove` handler | State updates when ship moves |
    | `action` (`options`, `apply`) | generic `power` action handler | Custom active power button & execution (Shoot) |
 
 3. **Generic action pipeline.** Powers with an `action` hook produce `{ type: 'power', die, target?, to? }`.
