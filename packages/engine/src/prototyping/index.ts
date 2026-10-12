@@ -11,16 +11,25 @@
  * power on another ship, move it in PROTOTYPING_SHIPS; a new power, copy a file in powers/.
  */
 import { CLASSIC_SHIPS, type RuleSet, type ShipTable } from '../prototype';
+import { picket } from './powers/picket';
 import { shoot } from './powers/shoot';
 
 /** The most a ship's die value counts for movement; skill bonuses add to it (ruling 2026-10-08). */
 const MAX_MOVEMENT = 3;
 
 /** Only the 5 has a new power (strikes at range); the other ships keep their official powers. */
-export const PROTOTYPING_SHIPS: ShipTable = {
+const SHIPS: ShipTable = {
   ...CLASSIC_SHIPS,
   5: { name: 'Interceptor', ...shoot },
 };
+
+/**
+ * Zone of control, a mode rule rather than a power: every ship pickets the 4 spaces next to it (not
+ * diagonally), so an enemy ship moving in must stop there. Its rules text stays its own power's.
+ */
+export const PROTOTYPING_SHIPS: ShipTable = Object.fromEntries(
+  Object.entries(SHIPS).map(([v, ship]) => [v, { ...ship, hooks: { ...ship.hooks, ...picket.hooks } }]),
+);
 
 /** Prototyping is built on `base` (Community Edition, see rules.ts): its cards, missiles and maps are kept. */
 export function prototypingMode(base: RuleSet): RuleSet {
@@ -29,7 +38,7 @@ export function prototypingMode(base: RuleSet): RuleSet {
     id: 'prototyping',
     name: 'Prototyping',
     title: 'Prototyping',
-    summary: 'Community Edition with moves capped at 3, a ranged Interceptor and over-conquest, displacing an opponent cube.',
+    summary: 'Community Edition with moves capped at 3, zones of control (a ship moving orthogonally next to an enemy ship stops there), a ranged Interceptor and over-conquest, displacing an opponent cube.',
     ships: PROTOTYPING_SHIPS,
     maxMovement: MAX_MOVEMENT,
     overConquest: true,

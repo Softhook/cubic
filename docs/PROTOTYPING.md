@@ -16,16 +16,17 @@ Nothing here is permanently adopted. Rulings go to [OPEN-QUESTIONS.md](OPEN-QUES
 
 ## Current Prototyping baseline
 
-As of 2026-10-11, Prototyping is **Community Edition**, with only these changes:
+As of 2026-10-12, Prototyping is **Community Edition**, with only these changes:
 
 | Status | Rule |
 |---|---|
 | **Current** | A ship's die value contributes at most **3** movement; skill bonuses apply after that cap. |
+| **Current** | **Zones of control:** every ship pickets the 4 orthogonally adjacent spaces (not diagonals) as a mode rule, not a ship power. Diagonals were dropped (2026-10-12) because most ships can't attack diagonally from where they stop. An enemy ship that moves into one must stop there (it may still attack from there; one that starts its move there may leave). Friendly ships are never stopped. |
 | **Current** | The **5 Interceptor** replaces its diagonal Manoeuvre ability with **Shoot**: spend one action to attack the first enemy in a clear orthogonal line without advancing. Shooting is that ship's action for the turn. |
 | **Current** | **Over-conquest:** a player may replace an opponent's cube by meeting an orbit sum of exactly **12**, including on a planet that still has an empty cube location. |
 | **Unchanged** | Ships 1–3 retain their Community abilities. The **4 Frigate** retains Modify and the **6 Scout** retains Free Reconfigure. |
 
-Picket, Beacon, Contested Orbit, and every other rule below are **candidates**, not current rules.
+Picket is active as the default zone-of-control rule for every ship rather than as the 4's power. Beacon, Contested Orbit, and every other rule below are **candidates**, not current rules.
 
 ---
 
@@ -216,12 +217,12 @@ movement on maps typically only 6–9 spaces across:
 
 ### 5.3 Current and candidate ship powers
 
-Only Shoot is active today. Picket and Beacon are candidate powers with source files and reusable hooks,
-but neither is assigned to a Prototyping ship.
+Only Shoot is active as a ship power. Picket's hook applies to every ship as the zone-of-control rule (2026-10-12),
+so it is not a power of the 4. Beacon is a candidate power with a source file and a reusable hook, not assigned to a ship.
 
 | Ship | Current Prototyping rule | Candidate | Intended role if activated |
 |---|:-:|---|---|
-| **4 Frigate** | Move 3; **Modify** remains active | **Picket:** an enemy ship entering any of the 8 surrounding spaces must stop there. | Zone control: walls off planets and corridors |
+| **4 Frigate** | Move 3; **Modify** remains active | **Picket:** an enemy ship entering any of the 4 orthogonally adjacent spaces must stop there (originally 8, including diagonals). | Zone control: walls off planets and corridors |
 | **5 Interceptor** | Move 3; **Shoot** is active | — | Ranged pressure: threatens space without abandoning position |
 | **6 Scout** | Move 3; **Free Reconfigure** remains active | **Beacon:** Deploy into empty spaces around the Scout, as if it were a planet with your cube. | Logistics: forward staging ground for reinforcements |
 
@@ -265,7 +266,7 @@ on game length and Flagship survival.
 
 | Power | Engine | AI | UI |
 |---|---|---|---|
-| Picket | `stopsEnemies` hook available; candidate not registered | Automatic via legal moves | Highlights automatic; zone overlay optional |
+| Picket | `stopsEnemies` hook; **current** on every ship (zone of control) | Automatic via legal moves | Highlights automatic; zone overlay optional |
 | Shoot | `action` hook; **current** | Handled via legal actions | Action button and target highlights |
 | Beacon | `deployTargets` hook available; candidate not registered | Automatic | Target cell highlights |
 | Escort, Anchor | Combat modifier / conquer-sum hook | Automatic | Combat breakdown line |
@@ -516,7 +517,8 @@ display remain possible follow-up work.
 - [x] Refactor: ship table per mode (§4 step 2)
 - [x] Replace the 5's diagonal Manoeuvre ability with Shoot
 - [x] Add over-conquest at an orbit sum of 12
-- [ ] Decide whether to activate Picket (4) and Beacon (6); their current source files are candidates only
+- [x] Picket active as the default zone of control for all ships (2026-10-12)
+- [ ] Decide whether to activate Beacon (6); its source file is a candidate only
 - [ ] Prototype Contested Orbit (§6.8) via `conquerCheck` hook
 - [ ] Write per-game stats script (CSV: moves, attacks, power uses per ship value)
 - [ ] Prototype Kinetic ships (§6.1) as a separate branch experiment
@@ -528,7 +530,7 @@ display remain possible follow-up work.
 
 Prototyping is playable in the lobby. The authoritative current-rule summary is at the top of this
 document: Community Edition with a movement cap of 3, Shoot for the 5, and over-conquest. The 4's
-Modify and the 6's Free Reconfigure are still active. Picket and Beacon are not enabled.
+Modify and the 6's Free Reconfigure are still active. Picket applies to every ship as the zone-of-control rule (since 2026-10-12); Beacon is not enabled.
 
 ### Rulings established during implementation
 
@@ -563,7 +565,7 @@ its powers or mode name.
 packages/engine/src/
   prototyping/
     index.ts          mode definition: MAX_MOVEMENT, PROTOTYPING_SHIPS, prototypingMode()
-    powers/picket.ts  candidate power text and hooks for Picket (not registered)
+    powers/picket.ts  Picket's hooks, applied to every ship as the zone-of-control rule
     powers/shoot.ts   power text and hooks for Shoot (5)
     powers/beacon.ts  candidate power text and hooks for Beacon (not registered)
   prototype.ts        the prototype kit: ShipHooks, PrototypePower, turn note utilities

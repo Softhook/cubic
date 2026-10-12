@@ -1,6 +1,7 @@
 /**
  * Prototyping mode (docs/PROTOTYPING.md, src/prototyping): Community Edition with movement capped at 3,
- * a new power for the 5 (Shoot), which replaces Manoeuvre, and over-conquest (an orbit of 12). The first block checks that none of it reaches the official modes, and that the mode
+ * zones of control (every ship pickets the spaces around it), a new power for the 5 (Shoot), which
+ * replaces Manoeuvre, and over-conquest (an orbit of 12). The first block checks that none of it reaches the official modes, and that the mode
  * folder and the engine meet only at RULESETS and the prototype kit.
  *
  * Scenarios run on Alpha Sector, the basic map for 2 players (9×9; planets at rows/cols 1, 4, 7,
@@ -28,6 +29,7 @@ import {
   type GameState,
 } from '../src';
 import { beginPlay } from '../src/turn';
+import { picket } from '../src/prototyping/powers/picket';
 import { shoot as shootPower, shootTargets } from '../src/prototyping/powers/shoot';
 import { quickStart } from './helpers';
 
@@ -67,9 +69,11 @@ describe('Prototyping mode', () => {
     expect(prototyping.startingMissiles).toBe(1);
     expect(prototyping.maxMovement).toBe(3);
     expect(prototyping.overConquest).toBe(true);
-    expect(prototyping.ships[5].hooks).toBe(shootPower.hooks);
+    expect(prototyping.ships[5].hooks).toEqual({ ...shootPower.hooks, ...picket.hooks });
     expect(prototyping.ships[5].power).toBeUndefined();
-    expect([1, 2, 3, 4, 6].map((v) => prototyping.ships[v])).toEqual([1, 2, 3, 4, 6].map((v) => community.ships[v]));
+    const withoutHooks = (v: number) => ({ ...prototyping.ships[v], hooks: undefined });
+    expect([1, 2, 3, 4, 6].map(withoutHooks)).toEqual([1, 2, 3, 4, 6].map((v) => ({ ...community.ships[v], hooks: undefined })));
+    for (const v of [1, 2, 3, 4, 5, 6]) expect(prototyping.ships[v].hooks?.stopsEnemies, `ship ${v}`).toBe(picket.hooks.stopsEnemies);
   });
 
   it('leaves the official modes alone: classic ships, no movement cap', () => {
@@ -182,6 +186,33 @@ describe('movement cap', () => {
   it('applies before skill bonuses: a 6 with Agile moves 4 (ruling 2026-10-08)', () => {
     expect(farthest(scenario({ p0d0: [0, 0, 6] }, 'prototyping', ['agile']), 'p0d0')).toBe(4);
     expect(farthest(scenario({ p0d0: [0, 0, 2] }, 'prototyping', ['agile']), 'p0d0')).toBe(3);
+  });
+});
+
+describe('zones of control (Picket on every ship)', () => {
+  const reachable = (s: GameState) => [...moveOptions(s, 'p0d0').moves.keys()];
+
+  it('stops an enemy ship next to a ship, up, down, left or right: it can’t move through', () => {
+    // From (0,2), the only way to (0,4) passes (0,3), next to the enemy at (1,3) (a planet is at (1,4)).
+    const s = scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, 6] });
+    expect(reachable(s)).toContain('0,3');
+    expect(reachable(s)).not.toContain('0,4');
+    expect(reachable(scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, 6] }, 'community'))).toContain('0,4');
+  });
+
+  it('doesn’t stop it diagonally', () => {
+    // (0,2) is diagonal to the enemy at (1,3), so a ship from (0,0) passes it and stops at (0,3).
+    expect(reachable(scenario({ p0d0: [0, 0, 3], p1d0: [1, 3, 6] }))).toContain('0,3');
+  });
+
+  it('still lets it attack from there', () => {
+    const s = scenario({ p0d0: [0, 0, 3], p1d0: [0, 3, 6] });
+    expect(moveOptions(s, 'p0d0').attacks.has('p1d0')).toBe(true);
+  });
+
+  it('lets a ship that starts in a zone leave, and never stops friendly ships', () => {
+    expect(reachable(scenario({ p0d0: [0, 2, 3], p1d0: [0, 3, 6] }))).toContain('0,0');
+    expect(reachable(scenario({ p0d0: [0, 2, 3], p0d1: [2, 3, 6] }))).toContain('2,2');
   });
 });
 
