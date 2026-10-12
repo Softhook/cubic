@@ -244,6 +244,23 @@ If Picket and Beacon are activated, they would reshape play as follows:
 | 6 | **Jump**: once per turn, move to any empty space within 2 of another of your ships, ignoring blockers | Mobility without long linear moves |
 | 6 | **Survey**: at the start of your turn, look at the top Skill card; may swap with a face-up one | Information role; ties Scout to the market |
 
+#### Idea: Rally (replaces the 2 Flagship's Carry)
+
+**Rally:** as part of a Move action, the Flagship may move any other friendly ship that is orthogonally
+adjacent to it, using that ship's normal movement (and attack) rules. Carry is removed.
+
+Is it overpowered? Probably not, but it needs a limit:
+- Carry costs the Flagship's move and forbids its attack; the passenger only relocates. Rally lets a
+  ship act without spending the Flagship's move, so it is closer to a free extra activation: strictly stronger.
+- Under Prototyping's move-3 cap, this gives a second ship 3 moves for one action, which erodes the cap's
+  purpose and risks the hyper-mobility problem from 5.1.
+- Orthogonal adjacency is a real positional tax, and the Flagship is a single ship, so the effect is bounded.
+
+Tuning options, mildest first: (1) once per turn; (2) the Flagship itself must not move that turn;
+(3) the rallied ship moves at most 2 and cannot attack; (4) it replaces the Flagship's own move rather than
+adding to it. Suggest testing (1) + (3) first. Needs a Move-action extension hook and a self-play check
+on game length and Flagship survival.
+
 ### 5.5 Implementation costs
 
 | Power | Engine | AI | UI |

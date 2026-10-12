@@ -175,8 +175,8 @@ export function PlanetIcon({ n, size = 34, slots, cubes = [] }: { n: number; siz
 /** A pip's position on a -1..1 square, from the 3D dice's 3 × 3 grid so the faces match the game's. */
 const pipAt = (i: number) => [(i % 3) - 1, Math.floor(i / 3) - 1] as const;
 
-/** A die face centred on (x, y): a ship as on the player aid, or a combat die shaded like the game's 3D dice. */
-export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim }: {
+/** A die face centred on (x, y): a coloured player die or a combat die shaded like the game's 3D dice. */
+export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim, shipIllustration }: {
   x: number;
   y: number;
   v: number;
@@ -184,6 +184,7 @@ export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim }: 
   kind?: DieKind;
   ghost?: boolean;
   dim?: boolean;
+  shipIllustration?: boolean;
 }) {
   const defs = useContext(Defs);
   const id = useSvgId();
@@ -198,7 +199,7 @@ export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim }: 
         {PIPS[v].map(pipAt).map(([px, py], i) => <circle key={i} cx={x + px * step} cy={y + py * step} r={size * 0.075} />)}
       </g>
     );
-  if (kind === 'you' || kind === 'foe') {
+  if (shipIllustration && (kind === 'you' || kind === 'foe')) {
     // Ships are drawn as on the player aid: the starship on its die face, in the player's colour.
     const ship = shipDie(id, v, x, y, size, PLAYER_HUES[kind === 'you' ? 0 : 1]);
     return <g className={cls} dangerouslySetInnerHTML={{ __html: `<defs>${ship.defs}</defs>${ship.body}` }} />;
@@ -221,14 +222,14 @@ export function Ship({ at, v, who = 'you', ghost, dim }: { at: At; v: number; wh
 }
 
 /** A die as a stand-alone inline icon (for text, tables and the combat sum). */
-export function DieIcon({ v, kind = 'you', size = 26 }: { v: number; kind?: DieKind; size?: number }) {
+export function DieIcon({ v, kind = 'you', size = 26, shipIllustration }: { v: number; kind?: DieKind; size?: number; shipIllustration?: boolean }) {
   const id = useSvgId();
   const label = kind === 'atk' ? `attack die ${v}` : kind === 'def' ? `defence die ${v}` : `ship ${v}`;
   return (
     <svg className="mn-die-icon" width={size} height={size} viewBox="0 0 40 40" aria-label={label} role="img">
       <DieDefs id={id} />
       <Defs.Provider value={id}>
-        <DieFace x={20} y={20} v={v} size={36} kind={kind} />
+        <DieFace x={20} y={20} v={v} size={36} kind={kind} shipIllustration={shipIllustration} />
       </Defs.Provider>
     </svg>
   );
