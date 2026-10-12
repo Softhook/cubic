@@ -405,27 +405,73 @@ or trusted hosts for online games.
 
 ### 6.8 Contested orbit (orbital blockade): no conquering under enemy ships
 
-**Rule.** A planet cannot be conquered if an enemy ship occupies any of its orbital spaces (the 4
-orthogonal positions around the planet). To place a quantum cube, orbit must be clear of enemies: you
-must first destroy or drive off every opposing ship stationed there before constructing.
+**Rule.** A planet cannot be conquered while any opponent's ship occupies one of its orbital
+positions (the 4 orthogonal spaces around the planet). To place a quantum cube you must first clear
+orbit, which in practice means destroying every opposing ship there, since nothing forces a ship to
+move. Friendly ships never block. The check is made only when conquering: a cube already on the
+planet is never lost to ships arriving later.
 
-**Why it's different.** In standard Quantum, enemy ships in orbital positions are ignored during
-Conquer actions—as long as your own ships meet the exact sum on the remaining orbital spaces, you can
-construct a cube directly beside an enemy fleet. Requiring an uncontested orbit changes the dynamics:
-- **Defense becomes positional and active.** Parking any ship in orbit—even a weak 5 or 6, or a 4
-  Picket—actively denies enemy conquest without having to eliminate the attacking fleet.
-- **Forces combat before victory.** Players cannot simply "rush the sum" while bypassing defending
-  ships. Conquering becomes a multi-phase effort: achieve orbital superiority first, then construct.
-- **Synergizes with Picket.** A defending Picket in orbit forces attackers to stop upon entry,
-  preventing single-turn blitz attacks and turning planet assaults into authentic tactical sieges.
+**Why it's different.** In standard Quantum, enemy ships in orbit only take up space: if your own
+ships in the remaining orbital positions hit the exact sum, you can build a cube right next to an
+enemy fleet. Requiring a clear orbit changes the dynamics:
+- **Defence becomes positional and active.** Any ship parked in orbit, even a weak 6 (combat favours
+  the low total), denies conquest without the defender having to beat the attacking fleet.
+- **Combat comes before conquest.** Players can no longer rush the sum past the defenders.
+  Conquering becomes a two-step effort: win orbit first, then build.
 
-**Build.** Small: a hook on `conquerCheck` ([queries.ts](../packages/engine/src/queries.ts), §4 step 3)
-verifying that `orbitals(board, planet)` contains no enemy ship. The AI handles legal actions
-automatically, though AI evaluation would benefit from scoring contested planets and prioritizing
-clearing blockers.
+**Implications under the current baseline (2026-10-12).**
+- **Tempo: a contested planet usually takes two turns.** Attack (1) + Conquer (2) is the full 3
+  actions, so a one-turn capture needs the rest of the sum already in orbit and the attack to succeed.
+  If the attacker advances into the vacated orbital space, its own value joins the sum, so
+  the attack and the conquest have to be planned together. With the movement cap of 3 and zones of
+  control, most sieges will take a turn to set up and a turn to resolve.
+- **Zones of control make orbits harder to get around.** Orbital positions are diagonal to each
+  other, so ships move between them through the planet's corners. A blocker zones the two corners
+  next to it, so an attacker circling the planet is stopped beside the blocker. That is also exactly
+  where it has to be to attack, so zones of control channel attackers into the fight rather than
+  shielding the blocker.
+- **Clearing a blocker means attacking from outside orbit.** Two orbital spaces are never
+  orthogonally adjacent, and the planet blocks a straight line between opposite ones. A ship already
+  in orbit can't attack another orbital ship without first moving to a corner or further out. The 5's
+  **Shoot** works well here: it can remove a blocker from range without leaving its own position.
+- **Deploy lets defenders re-block for 1 action.** A destroyed blocker goes to its owner's
+  scrapyard. If that owner has a cube on the planet, Deploy puts it straight back into an empty
+  orbital position. The attacker can stop this only by filling every orbital position, including the
+  one it just emptied (advance after winning). Expansion (Tactic) is a free version of the same
+  move. This is the main stalemate risk on planets the defender already holds.
+- **Over-conquest becomes a real siege.** The planet over-conquest targets always holds an
+  opponent's cube, so that opponent can always Deploy there. A sum of exactly 12 now also requires
+  a clear orbit, which may tip over-conquest from "hard" to "almost never". If so, the anti-leader
+  lever disappears just when leaders can afford to garrison.
+- **Infamy stays the way out.** Each won attack gives +1 dominance, so clearing blockers pushes
+  the attacker towards Infamy, which ignores orbital positions. Sieges therefore pay off even when
+  the conquest itself fails. Keep Infamy unaffected by the blockade (see rulings below).
+- **Cheap denial in multiplayer.** Any opponent blocks, including a third player who has no
+  interest in the planet. One spare ship can deny a planet to the leader (good) or to whoever is
+  catching up (kingmaking).
+- **Skill conquest still needs a clear orbit.** Pioneering, Tyrannical and Intelligent change the
+  sum, not the blockade, so a planet with a blocker stays locked whatever they add.
 
-**Test.** Check average game length and attacks per conquer. Does it encourage richer combat and
-defense, or does it risk stalling games when players park defensive ships on high-value planets?
+**Rulings to make before building.**
+1. Does **Infamy** ignore the blockade? *Proposed: yes*, since Infamy already ignores orbital
+   positions, and it keeps a release valve.
+2. Do enemy ships on the **corners** block an **Ingenious** conquest? *Proposed: no.* Only the 4
+   orthogonal orbital positions block, for every player, so there is one rule to remember.
+3. Does the blockade apply to **over-conquest**? *Proposed: yes* at first, and measure it. If
+   over-conquest disappears from games, exempt it or let over-conquest ignore one blocker.
+4. Softer variant if games stall: block only when the opponent has **at least as many ships** in
+   orbit as the conqueror (orbital majority), rather than any single ship.
+
+**Build.** Small: one check in `conquerCheck` ([queries.ts](../packages/engine/src/queries.ts),
+§4 step 3) that `orbitals(state.board, planet)` holds no die owned by another player, behind a new
+`RuleSet` flag so only Prototyping sees it. Infamy goes through a separate path and is unaffected
+unless ruling 1 changes. Legal actions follow automatically. The AI, though, needs an evaluation term
+for attacking blockers and for garrisoning its own planets, or self-play will stall around
+blockaded planets and understate the rule.
+
+**Test.** Game length, attacks per conquest, share of conquests made through Infamy,
+over-conquest frequency, and how often a player Deploys back into a planet they are defending.
+Watch for stalled games where every high-value planet is garrisoned.
 
 ---
 
