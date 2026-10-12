@@ -16,14 +16,18 @@ import {
   CLASSIC_SHIPS,
   orbitals,
   conquerCheck,
+  grid,
   legalActions,
   MODES,
+  moveIndexes,
   moveOptions,
+  mulberry32,
   planetFreeSlots,
   rulesOf,
   RULESETS,
   shipsByIndex,
   stopZone,
+  tryApply,
   type Action,
   type GameMode,
   type GameState,
@@ -214,7 +218,80 @@ describe('zones of control (Picket on every ship)', () => {
     expect(reachable(scenario({ p0d0: [0, 2, 3], p1d0: [0, 3, 6] }))).toContain('0,0');
     expect(reachable(scenario({ p0d0: [0, 2, 3], p0d1: [2, 3, 6] }))).toContain('2,2');
   });
+
+  it('every ship has a zone, and the engine refuses a move through one', () => {
+    for (const v of [1, 2, 3, 4, 5, 6]) expect(reachable(scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, v] })), `enemy ${v}`).not.toContain('0,4');
+    const move: Action = { type: 'move', die: 'p0d0', to: { r: 0, c: 4 } };
+    expect(tryApply(scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, 6] }), move)).toBeNull();
+    expect(tryApply(scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, 6] }, 'community'), move)).not.toBeNull();
+  });
+
+  it('lets a stopped ship attack another enemy next to it, but not with no steps left', () => {
+    // Stopped at (2,2) by p1d0's zone, with p1d1 below it.
+    expect([...moveOptions(scenario({ p0d0: [2, 0, 3], p1d0: [2, 3, 6], p1d1: [3, 2, 6] }), 'p0d0').attacks.keys()].sort()).toEqual(['p1d0', 'p1d1']);
+    expect(moveOptions(scenario({ p0d0: [0, 0, 2], p1d0: [0, 3, 6] }), 'p0d0').attacks.size).toBe(0);
+  });
+
+  it('doesn’t stop a player with Devious, who may also pass through the ship', () => {
+    // Devious passes (0,2), next to p1d0, and p1d0 itself for free: (0,4) is 3 steps from (0,0).
+    expect(reachable(scenario({ p0d0: [0, 0, 3], p1d0: [0, 3, 6] }, 'prototyping', ['devious']))).toContain('0,4');
+    expect(reachable(scenario({ p0d0: [0, 0, 3], p1d0: [0, 3, 6] }))).not.toContain('0,4');
+    expect(reachable(scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, 6] }, 'prototyping', ['devious']))).toContain('0,4');
+    expect(reachable(scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, 6] }))).not.toContain('0,4');
+  });
+
+  it('stops a ship on a Warp Gate exit in a zone', () => {
+    const s = scenario({ p0d0: [0, 0, 3], p1d0: [3, 3, 6] });
+    s.gates = [{ r: 0, c: 1 }, { r: 3, c: 2 }];
+    expect(reachable(s)).toContain('3,2');
+    expect(reachable(s)).not.toContain('2,2'); // 3 steps only through the gate and (3,2)
+  });
+
+  it('agrees with a plain reference search on random positions', () => {
+    const g = grid(BASE.prototyping.board);
+    const spaces = [...Array(g.size).keys()].filter((i) => g.space[i]);
+    const random = mulberry32(42);
+    for (let n = 0; n < 500; n++) {
+      const dice: Record<string, [number, number, number]> = {};
+      [...spaces].sort(() => random() - 0.5).slice(0, 2 + Math.floor(random() * 8))
+        .forEach((i, k) => (dice[`p${k % 2}d${Math.floor(k / 2)}`] = [Math.floor(i / g.cols), i % g.cols, 1 + Math.floor(random() * 6)]));
+      const s = scenario(dice);
+      for (const id of Object.keys(dice).filter((x) => x.startsWith('p0'))) {
+        const got = moveIndexes(s, id);
+        const want = referenceReach(s, id);
+        expect([...got.moves.keys()].sort((a, b) => a - b), `${n} ${id}`).toEqual(want.moves);
+        expect([...got.attacks.keys()].sort(), `${n} ${id}`).toEqual(want.attacks);
+      }
+    }
+  });
 });
+
+/** Moves and attacks by a plain breadth-first search, 1 step per space, stopping in any space next to an enemy (no gates or skills). */
+function referenceReach(s: GameState, id: string) {
+  const g = grid(s.board);
+  const at = shipsByIndex(s);
+  const me = at.find((d) => d?.id === id)!;
+  const from = at.indexOf(me);
+  const zone = new Set(at.flatMap((d, i) => (d && d.owner !== me.owner ? g.ortho[i] : [])));
+  const range = Math.min(3, me.value);
+  const steps = new Map([[from, 0]]);
+  const queue = [from];
+  const attacks = new Set<string>();
+  while (queue.length) {
+    const cur = queue.shift()!;
+    if (steps.get(cur)! >= range) continue;
+    for (const nb of g.ortho[cur]) {
+      if (at[nb]) {
+        if (at[nb]!.owner !== me.owner) attacks.add(at[nb]!.id);
+      } else if (g.space[nb] && !steps.has(nb) && !(cur !== from && zone.has(cur))) {
+        steps.set(nb, steps.get(cur)! + 1);
+        queue.push(nb);
+      }
+    }
+  }
+  steps.delete(from);
+  return { moves: [...steps.keys()].sort((a, b) => a - b), attacks: [...attacks].sort() };
+}
 
 describe('classic 5 ability is gone, 4 and 6 are kept', () => {
   it('a Frigate can change and a Scout can reconfigure for free, as in Community', () => {

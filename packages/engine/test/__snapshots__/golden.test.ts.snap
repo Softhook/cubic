@@ -101,9 +101,9 @@ exports[`golden master > prototyping, 3 players, seed 12 1`] = `
 
 exports[`golden master > prototyping, 4 players, seed 13 1`] = `
 {
-  "actions": "e4163e559e4c9b25",
-  "state": "f73d445687d68872",
-  "steps": 435,
-  "winner": 2,
+  "actions": "8ee8a4771660dbf7",
+  "state": "573f60412daf9a26",
+  "steps": 390,
+  "winner": 1,
 }
 `;

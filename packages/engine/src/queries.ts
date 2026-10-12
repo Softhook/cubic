@@ -133,9 +133,10 @@ export function movementRange(state: GameState, d: Die): number {
 /**
  * Spaces where `mover`'s ships must stop, by board cell index (`at` is shipsByIndex): around enemy
  * ships with `stopsEnemies` (a prototype power, ShipHooks). Undefined when nothing stops them, so plain searches stay plain.
+ * Devious ignores them: it slips past enemy ships (ruling 2026-10-12).
  */
 export function stopZone(state: GameState, mover: PlayerId, at: (Die | undefined)[]): Uint8Array | undefined {
-  if (!modeHasHook(state, 'stopsEnemies')) return undefined;
+  if (!modeHasHook(state, 'stopsEnemies') || anySkill(state, mover, (r) => r.moveThroughEnemies)) return undefined;
   let zone: Uint8Array | undefined;
   for (let i = 0; i < at.length; i++) {
     const d = at[i];
