@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { orbitals, type GameMode, type GameState, type PlayerId } from '@quantum/engine';
 import { arrange, quickStart } from '../../../packages/engine/test/helpers';
-import { conquerTap, legalFor } from '../src/game/legal';
+import { conquerOptions, conquerTap, legalFor } from '../src/game/legal';
 
 /**
  * The player to move has two ships in the orbit of an empty, non-starting planet, their numbers
@@ -50,8 +50,7 @@ describe('conquerTap', () => {
     );
     const legal = legalFor(s);
     expect(
-      legal
-        .of('conquer', (a) => a.planet === planet)
+      conquerOptions(legal, planet)
         .map((a) => a.replace)
         .sort(),
     ).toEqual([...others].sort());

@@ -13,7 +13,7 @@
  *   npm run perf:probe -- --url http://…/    # a running dev server (uses the dev-only ?play= link)
  */
 import type { CDPSession, Page } from 'playwright';
-import { arg, devServer, launchChrome, playUrl, type Quantum } from './mobile-common';
+import { arg, devServer, launchChrome, playUrl } from './mobile-common';
 
 const THROTTLE = Number(arg('--cpu') ?? 4);
 
@@ -45,7 +45,7 @@ async function timeCards(page: Page, cdp: CDPSession) {
 /** Taps each of the human's ships and then the first space it may move to, timing each tap to the next painted frame. */
 async function timeTaps(page: Page) {
   const times: number[] = await page.evaluate(async () => {
-    const q = (window as unknown as { __quantum: Quantum }).__quantum;
+    const q = window.__quantum;
     const out: number[] = [];
     const painted = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
     const tap = async (el: HTMLElement) => {
@@ -84,19 +84,19 @@ async function idleCost(page: Page, cdp: CDPSession) {
   await page.waitForTimeout(2000);
   await measure('nothing selected');
   await page.evaluate(() => {
-    const s = (window as unknown as { __quantum: Quantum }).__quantum.state();
+    const s = window.__quantum.state();
     const d = s.dice.find((d) => d.owner === s.turn.player && d.loc.zone === 'board');
     if (d?.loc.zone !== 'board') throw new Error('no ship of the player to move on the board');
     document.querySelector<HTMLElement>(`.ship[data-r="${d.loc.r}"][data-c="${d.loc.c}"]`)!.click();
   });
   await measure('a ship selected');
   await page.evaluate(() => {
-    const q = (window as unknown as { __quantum: Quantum }).__quantum;
+    const q = window.__quantum;
     const s = q.state();
     const spaces = s.board.cells.flatMap((row: { kind: string }[], r: number) =>
       row.flatMap((x, c) => (x.kind === 'space' ? [{ r, c }] : [])),
     );
-    q.load({ ...s, gates: [spaces[0], spaces.at(-1)] });
+    q.load({ ...s, gates: [spaces[0], spaces.at(-1)!] });
   });
   await measure('with warp gates');
 }

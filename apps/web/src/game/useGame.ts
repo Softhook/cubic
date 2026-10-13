@@ -10,6 +10,9 @@ import type { GameView } from './view';
 /** Applies an action; false (with an error shown) if the rules refuse it. */
 export type Dispatch = (a: Action) => boolean;
 
+/** The dev-only `window.__quantum` hook the browser tests (scripts/) drive a local game through. */
+export type QuantumHook = { state(): GameState; load(s: GameState): void; dispatch: Dispatch };
+
 /** Logs an engine bug with the state and action that trigger it (replay with window.__quantum.load). */
 function reportBug(what: string, state: GameState, action: Action, error?: unknown) {
   console.error(`[quantum] ${what}`, { action, error, state: JSON.stringify(state) });
@@ -85,10 +88,10 @@ export function useGame(initial: GameState): GameView {
   // Keep the unfinished game in the browser so a revisit can resume it.
   useEffect(() => saveGame(game), [game]);
 
-  // Dev-only hook for browser tests: window.__quantum.{state(), load(s), dispatch(a)}.
+  // Dev-only hook for browser tests.
   useEffect(() => {
     if (!import.meta.env.DEV) return;
-    (window as unknown as Record<string, unknown>).__quantum = { state: () => ref.current, load: commit, dispatch };
+    (window as unknown as { __quantum: QuantumHook }).__quantum = { state: () => ref.current, load: commit, dispatch };
   }, [commit, dispatch]);
 
   const mine = useCallback((p: PlayerId) => !ref.current.players[p].ai, []);

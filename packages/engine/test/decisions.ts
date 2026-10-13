@@ -3,20 +3,7 @@
  * (one scenario per card, which reaches decisions the AI games rarely do): every answer worth trying to
  * the open decision, legal or not, and those the engine accepts although legalActions() doesn't offer them.
  */
-import {
-  EXPANSION,
-  legalActions,
-  ORIGINAL_COMMAND,
-  ORIGINAL_GAMBIT,
-  SKILLS,
-  TACTICS,
-  tryApply,
-  type Action,
-  type CardDef,
-  type Cell,
-  type GameState,
-  type Pending,
-} from '../src';
+import { ALL_CARDS, legalActions, tryApply, type Action, type Cell, type GameState, type Pending } from '../src';
 
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical);
@@ -33,8 +20,6 @@ function canonical(value: unknown): unknown {
 /** An action as a string that is the same for equal actions, whatever their key order, nested cells included. */
 export const keyOf = (a: Action) => JSON.stringify(canonical(a));
 
-/** Every card of every deck. */
-export const ALL_CARDS: CardDef[] = [...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT];
 export const CARD_IDS = ALL_CARDS.map((c) => c.id);
 const ROW_INDEXES = [0, 1, 2, 3, 4, 5, 6, 7];
 

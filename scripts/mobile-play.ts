@@ -22,7 +22,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { type Page } from 'playwright';
 import { chooseAction } from '../packages/ai/src';
 import { scrapyard, type Action, type Cell, type GameState } from '../packages/engine/src';
-import { PHONES, arg, devServer, finish, launchChrome, playUrl, type Quantum } from './mobile-common';
+import { PHONES, arg, devServer, finish, launchChrome, playUrl } from './mobile-common';
 
 const GAMES: Record<string, { play: string; players: number; map?: string }> = {
   'basic-2p': { play: 'basic', players: 2 },
@@ -243,7 +243,7 @@ async function playGame(page: Page, name: string): Promise<{ issues: string[]; s
     // conquers, researches and takes cards like a player would. Unknown actions and missed taps fall back to random.
     if (l.mine && l.kind === 'turn' && !plan.length && plannedAt !== l.sig && !process.argv.includes('--random')) {
       plannedAt = l.sig;
-      const state = await page.evaluate(() => (window as unknown as { __quantum: Quantum }).__quantum.state());
+      const state = await page.evaluate(() => window.__quantum.state());
       try {
         const a = chooseAction(state, { level: 1 });
         plan = (a && tapsFor(state, a)) ?? [];
@@ -295,10 +295,7 @@ async function playGame(page: Page, name: string): Promise<{ issues: string[]; s
     // AI turns move every second or so; a battle waits for OK, which the script taps.
     if (still > 60) {
       // The state, to replay with window.__quantum.load or the engine.
-      writeFileSync(
-        `${OUT}/${name}-stuck.json`,
-        await page.evaluate(() => JSON.stringify((window as unknown as { __quantum: Quantum }).__quantum.state())),
-      );
+      writeFileSync(`${OUT}/${name}-stuck.json`, await page.evaluate(() => JSON.stringify(window.__quantum.state())));
       await report(
         `stuck:${l.kind}`,
         `stuck at "${l.kind}" on turn ${l.turn}${l.mine && l.target ? ` (tapping "${l.target.label}" does nothing)` : ''}`,

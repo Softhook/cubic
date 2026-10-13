@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { IMPLEMENTED_EFFECTS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILL_RULES, type CardDef } from '../src';
-import { ALL_CARDS as ALL } from './decisions';
+import { ALL_CARDS, IMPLEMENTED_EFFECTS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILL_RULES, type CardDef } from '../src';
 
 const effect = (c: CardDef) => c.effect ?? c.id;
 
@@ -9,12 +8,12 @@ const NOT_YET_IMPLEMENTED: string[] = [];
 
 describe('card data', () => {
   it('has unique card ids', () => {
-    const ids = ALL.map((c) => c.id);
+    const ids = ALL_CARDS.map((c) => c.id);
     expect(ids.filter((id, i) => ids.indexOf(id) !== i)).toEqual([]);
   });
 
   it('implements every effect except the known missing ones', () => {
-    const missing = [...new Set(ALL.map(effect).filter((e) => !IMPLEMENTED_EFFECTS.has(e)))].sort();
+    const missing = [...new Set(ALL_CARDS.map(effect).filter((e) => !IMPLEMENTED_EFFECTS.has(e)))].sort();
     expect(missing).toEqual([...NOT_YET_IMPLEMENTED].sort());
   });
 
@@ -27,7 +26,7 @@ describe('card data', () => {
   });
 
   it('uses every implemented effect (catches a misspelt effect name)', () => {
-    const used = new Set(ALL.map(effect));
+    const used = new Set(ALL_CARDS.map(effect));
     expect([...IMPLEMENTED_EFFECTS].filter((e) => !used.has(e))).toEqual([]);
   });
 

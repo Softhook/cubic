@@ -2,6 +2,7 @@ export * from './types';
 export * from './data';
 export { hasPower, hooksOf, modeHasHook, modeHooks, playerCounts, rulesOf, shipOf, type CardRules, type RuleSet } from './rules';
 export { MODES, RULESETS } from './rulesets';
+export type { ActionOf } from './core';
 export type { PowerChoice, PrototypePower, ShipHooks } from './prototype';
 export * from './board';
 export * from './lookups';

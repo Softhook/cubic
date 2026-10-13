@@ -30,7 +30,7 @@ import {
   type GameState,
 } from '../src';
 import { setSkills, toRow } from './audit';
-import { ALL_CARDS, keyOf, unofferedAnswers } from './decisions';
+import { CARD_IDS, keyOf, unofferedAnswers } from './decisions';
 import { arrange, originalGame, quickStart, seededRandom } from './helpers';
 
 const covered = new Set<string>();
@@ -721,5 +721,5 @@ describe('passive skills and rule hooks', () => {
 });
 
 it('has a scenario for every card', () => {
-  expect(ALL_CARDS.map((c) => c.id).filter((id) => !covered.has(id))).toEqual([]);
+  expect(CARD_IDS.filter((id) => !covered.has(id))).toEqual([]);
 });

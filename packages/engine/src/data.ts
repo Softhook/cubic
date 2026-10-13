@@ -45,7 +45,10 @@ export function defaultMap(players: number): MapDef | undefined {
   return MAPS.find((m) => m.players === players && m.group === 'basic') ?? MAPS.find((m) => m.players === players);
 }
 
-const byId = new Map<string, CardDef>([...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT].map((c) => [c.id, c]));
+/** Every card of every deck. */
+export const ALL_CARDS: CardDef[] = [...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT];
+
+const byId = new Map(ALL_CARDS.map((c) => [c.id, c]));
 const skillIds = new Set([...SKILLS, ...ORIGINAL_COMMAND].map((c) => c.id));
 const originalIds = new Set([...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT].map((c) => c.id));
 

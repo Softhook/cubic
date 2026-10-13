@@ -1,6 +1,4 @@
-import { legalActions, type Action, type GameState } from '@quantum/engine';
-
-export type ActionOf<K extends Action['type']> = Extract<Action, { type: K }>;
+import { legalActions, type Action, type ActionOf, type GameState } from '@quantum/engine';
 
 /**
  * The legal actions of a state, indexed by type. The UI enables a button or highlights a space

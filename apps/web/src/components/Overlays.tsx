@@ -1,7 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { SHIP_NAMES, card, die, rulesOf, scrapyard, type Action, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, card, die, rulesOf, scrapyard, type Action, type ActionOf, type GameState } from '@quantum/engine';
 import { SHORT, useMediaQuery } from '../game/useMediaQuery';
-import type { ActionOf } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
 import { CardView } from './Card';
 import { Dialog } from './Dialog';

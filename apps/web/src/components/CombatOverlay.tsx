@@ -280,9 +280,9 @@ function MissileButton({
 
   // Offered only on the shooter's own roll while losing, so the missile either flips the battle or doesn't.
   const after = combatOutcome(next, nextCombat);
-  const flips = (role === 'attacker') === after.attackerWins;
-  const mine = role === 'attacker' ? after.attacker.total : after.defender.total;
-  const theirs = role === 'attacker' ? after.defender.total : after.attacker.total;
+  const attacking = role === 'attacker';
+  const flips = attacking === after.attackerWins;
+  const [mine, theirs] = attacking ? [after.attacker.total, after.defender.total] : [after.defender.total, after.attacker.total];
   const who = named ? shooter.name : 'you';
   const verdict = `${who} ${flips ? 'would win' : 'would still lose'} ${mine} vs ${theirs}`;
 

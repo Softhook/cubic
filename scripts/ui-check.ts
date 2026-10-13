@@ -12,15 +12,13 @@ import { mkdirSync } from 'node:fs';
 import type { Page } from 'playwright';
 import { apply, legalActions, orbitals, type GameState } from '../packages/engine/src';
 import { arrange, quickStart } from '../packages/engine/test/helpers';
-import { devServer, finish, launchChrome, playUrl, succeeds, type Quantum } from './mobile-common';
+import { devServer, finish, launchChrome, playUrl, succeeds } from './mobile-common';
 
 const OUT = 'test-results/ui';
 mkdirSync(OUT, { recursive: true });
 
-/** The dev-only hook a local game puts on window (useGame.ts). */
-const load = (page: Page, state: unknown) => page.evaluate((st) => (window as unknown as { __quantum: Quantum }).__quantum.load(st), state);
-const cubesOn = (page: Page, planet: number) =>
-  page.evaluate((id) => (window as unknown as { __quantum: Quantum }).__quantum.state().board.planets[id].cubes, planet);
+const load = (page: Page, state: unknown) => page.evaluate((st) => window.__quantum.load(st as GameState), state);
+const cubesOn = (page: Page, planet: number) => page.evaluate((id) => window.__quantum.state().board.planets[id].cubes, planet);
 
 /** A Prototyping position where the player to move can conquer a full planet by displacing either opponent's cube. */
 function overConquest() {
@@ -68,7 +66,7 @@ const browser = await launchChrome();
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
   await page.goto(playUrl(base, { play: 'prototyping', players: 3 }));
-  await page.waitForFunction(() => (window as unknown as { __quantum?: unknown }).__quantum);
+  await page.waitForFunction(() => '__quantum' in window);
 
   // Over-conquest with two opponents' cubes: the player chooses whose to displace.
   const { s, planet, me, victim } = overConquest();
