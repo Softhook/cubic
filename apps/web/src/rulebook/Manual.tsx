@@ -434,9 +434,6 @@ export function Manual({ dark }: { dark?: boolean }) {
           <li>
             <b>The void tile</b> has no planet. At the start of your turn, gain 1 Research for each of your ships on it.
           </li>
-          <li>
-            <b>Chevrons on the edge</b> of some maps mean that edge joins the opposite one: fly off one side, come in on the other.
-          </li>
         </ul>
       </section>
 
@@ -511,9 +508,6 @@ export function Manual({ dark }: { dark?: boolean }) {
                 <li className="no">Ships on the corners aren’t in orbit.</li>
                 <li className="ok">The planet needs a free cube space and none of your cubes yet.</li>
               </ul>
-              <p className="mn-legend">
-                Here the 2 must stay put. Move it next to the planet and the sum becomes 6 + 3 + 2 = 11, which is too many.
-              </p>
             </div>
           </div>
 
