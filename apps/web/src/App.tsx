@@ -59,7 +59,14 @@ export function App() {
       ) : game ? (
         <LocalGame key={game.seed} initial={game} onQuit={quit} onLobby={toLobby} onRules={() => setRules(true)} />
       ) : (
-        <Lobby onStart={start} onRules={() => setRules(true)} onResume={(saved) => { fullscreenOnPhone(); setGame(saved); }} />
+        <Lobby
+          onStart={start}
+          onRules={() => setRules(true)}
+          onResume={(saved) => {
+            fullscreenOnPhone();
+            setGame(saved);
+          }}
+        />
       )}
       {/* Its own boundary: while the manual loads, the screen under it stays. */}
       {rules && (
@@ -71,7 +78,17 @@ export function App() {
   );
 }
 
-function LocalGame({ initial, onQuit, onLobby, onRules }: { initial: GameState; onQuit: () => void; onLobby: () => void; onRules: () => void }) {
+function LocalGame({
+  initial,
+  onQuit,
+  onLobby,
+  onRules,
+}: {
+  initial: GameState;
+  onQuit: () => void;
+  onLobby: () => void;
+  onRules: () => void;
+}) {
   const view = useGame(initial);
   return <Game view={view} onQuit={onQuit} onLobby={onLobby} onRules={onRules} />;
 }

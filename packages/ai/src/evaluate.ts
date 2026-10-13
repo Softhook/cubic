@@ -31,8 +31,8 @@ import { storedTacticsValue } from './patient';
  * what each player's ships risk from the enemy ships that can actually reach them.
  */
 
-export const CUBE = 1000;
-export const WIN = 1e6;
+const CUBE = 1000;
+const WIN = 1e6;
 
 /** Value of each dominance level (index = dominance). Reaching 6 is Infamy, worth a cube. */
 const DOMINANCE = [0, 0, 60, 150, 290, 500];

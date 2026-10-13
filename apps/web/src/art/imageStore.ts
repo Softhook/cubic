@@ -57,7 +57,9 @@ export async function storeImage(store: Store, id: string, key: string, blob: Bl
 }
 
 const nextIdle = (timeout: number) =>
-  new Promise<void>((resolve) => ('requestIdleCallback' in window ? requestIdleCallback(() => resolve(), { timeout }) : setTimeout(resolve, 16)));
+  new Promise<void>((resolve) =>
+    'requestIdleCallback' in window ? requestIdleCallback(() => resolve(), { timeout }) : setTimeout(resolve, 16),
+  );
 
 /**
  * When the player last touched, dragged, scrolled or zoomed. A pinch leaves idle time between its frames,

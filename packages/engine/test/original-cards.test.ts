@@ -6,7 +6,12 @@ import { describe, expect, it } from 'vitest';
 import { apply, legalActions, type Action, type CombatRole, type GameState, type PlayerId } from '../src';
 import { arrange, originalGame as game } from './helpers';
 
-const ids = (s: GameState) => ({ me: s.turn.player, foe: 1 - s.turn.player, scout: `p${s.turn.player}d0`, enemy: `p${1 - s.turn.player}d0` });
+const ids = (s: GameState) => ({
+  me: s.turn.player,
+  foe: 1 - s.turn.player,
+  scout: `p${s.turn.player}d0`,
+  enemy: `p${1 - s.turn.player}d0`,
+});
 const at = (s: GameState, id: string) => s.dice.find((d) => d.id === id)!;
 const can = (s: GameState, match: (a: Action) => boolean) => legalActions(s).some(match);
 

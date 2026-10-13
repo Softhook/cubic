@@ -38,7 +38,8 @@ export function sheetsHtml(piece: Piece, faces: { front: string; back?: string }
   for (let p = 0; p < faces.length; p += perPage) {
     const chunk = faces.slice(p, p + perPage);
     html += page(chunk.map((c, k) => ({ src: c.front, col: k % cols, row: Math.floor(k / cols) })));
-    if (withBacks) html += page(chunk.flatMap((c, k) => (c.back ? [{ src: c.back, col: cols - 1 - (k % cols), row: Math.floor(k / cols) }] : [])));
+    if (withBacks)
+      html += page(chunk.flatMap((c, k) => (c.back ? [{ src: c.back, col: cols - 1 - (k % cols), row: Math.floor(k / cols) }] : [])));
   }
   return (
     `<!doctype html><html><head><meta charset="utf-8"><title>Cubic ${piece.plural}</title><style>` +

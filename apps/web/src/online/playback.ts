@@ -31,14 +31,21 @@ export interface NextStep {
  *
  * `elapsed`: how long `shown` has been on screen already.
  */
-export function nextStep(steps: readonly Step[], shown: Step | null, own: (p: Post) => boolean, elapsed: number, battle = { mine: false, dismissed: false }): NextStep | null {
+export function nextStep(
+  steps: readonly Step[],
+  shown: Step | null,
+  own: (p: Post) => boolean,
+  elapsed: number,
+  battle = { mine: false, dismissed: false },
+): NextStep | null {
   const last = steps.length - 1;
   const i = shown ? steps.indexOf(shown) : -1;
   if (i < 0 || last - i > MAX_BEHIND) return steps[last] === shown ? null : { step: steps[last], delay: 0, announce: false };
   if (i === last) return null;
   const next = steps[i + 1];
   const fighting = battleOnScreen(shown!.state);
-  if (fighting && battle.mine && battleOnScreen(next.state)?.id !== fighting.id) return battle.dismissed ? { step: next, delay: 0, announce: true } : null;
+  if (fighting && battle.mine && battleOnScreen(next.state)?.id !== fighting.id)
+    return battle.dismissed ? { step: next, delay: 0, announce: true } : null;
   const min = fighting ? COMBAT_MS : next.post && own(next.post) ? 0 : STEP_MS;
   return { step: next, delay: Math.max(0, min - elapsed), announce: true };
 }

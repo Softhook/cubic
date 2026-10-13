@@ -1,5 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { actor, attackChance, attackFactors, cellOf, die as getDie, key, moveOptions, scrapyard, type Action, type Cell, type CombatRole, type GameState, type PlayerId } from '@quantum/engine';
+import {
+  actor,
+  attackChance,
+  attackFactors,
+  cellOf,
+  die as getDie,
+  key,
+  moveOptions,
+  scrapyard,
+  type Action,
+  type Cell,
+  type CombatRole,
+  type GameState,
+  type PlayerId,
+} from '@quantum/engine';
 import { sfx } from '../sound';
 import { highlightsFor, noHighlights } from './highlights';
 import { conquerTap, legalFor, NO_LEGAL } from './legal';
@@ -79,7 +93,8 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
       if (sel.kind === 'power' && tone === 'attack') return void (dispatch({ type: 'power', die: sel.die, target: id }) && setSel(NONE));
       if (sel.kind === 'tactical' && tone === 'attack') return void dispatch({ type: 'tactical', die: sel.die, target: id });
       if (sel.kind === 'ship' && tone === 'attack') return void dispatch({ type: 'attack', die: sel.die, target: id });
-      if (sel.kind === 'carryPassenger' && tone === 'passenger') return select({ kind: 'carryDest', die: sel.die, passenger: id, tactical: sel.tactical });
+      if (sel.kind === 'carryPassenger' && tone === 'passenger')
+        return select({ kind: 'carryDest', die: sel.die, passenger: id, tactical: sel.tactical });
       if (sel.kind === 'carryDest' && id === sel.die) {
         // Out-and-back transport: the flagship ends where it started.
         const here = cellOf(getDie(game, id));
@@ -138,7 +153,8 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
       const hl = highlights.planets.get(id);
       if (!hl) return false;
       if (head?.kind === 'relocation') {
-        if (sel.kind === 'relocate' && id !== sel.planet) return void dispatch({ type: 'relocate', planet: sel.planet, owner: sel.owner, to: id });
+        if (sel.kind === 'relocate' && id !== sel.planet)
+          return void dispatch({ type: 'relocate', planet: sel.planet, owner: sel.owner, to: id });
         // Choose the cube; clicking its planet again picks another player's cube there, if any.
         const owners = [...new Set(legal.of('relocate', (a) => a.planet === id).map((a) => a.owner))];
         const next = sel.kind === 'relocate' && sel.planet === id ? owners[(owners.indexOf(sel.owner) + 1) % owners.length] : owners[0];

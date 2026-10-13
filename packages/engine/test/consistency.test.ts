@@ -34,12 +34,9 @@ import { playAiGame, quickStart } from './helpers';
 
 const DEEP = !!process.env.DEEP;
 
-
 describe('action comparison', () => {
   it('distinguishes moves to different nested cells', () => {
-    expect(keyOf({ type: 'move', die: 'p0d0', to: { r: 1, c: 2 } })).not.toBe(
-      keyOf({ type: 'move', die: 'p0d0', to: { r: 1, c: 3 } }),
-    );
+    expect(keyOf({ type: 'move', die: 'p0d0', to: { r: 1, c: 2 } })).not.toBe(keyOf({ type: 'move', die: 'p0d0', to: { r: 1, c: 3 } }));
   });
 });
 
@@ -49,13 +46,7 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
   const cells = spaces(s.board);
   const mine = s.dice.filter((d) => d.owner === me);
   const onBoard = s.dice.filter((d) => d.loc.zone === 'board');
-  const out: Action[] = [
-    { type: 'endTurn' },
-    { type: 'research' },
-    { type: 'composed' },
-    { type: 'ambitious' },
-    { type: 'tyrannical' },
-  ];
+  const out: Action[] = [{ type: 'endTurn' }, { type: 'research' }, { type: 'composed' }, { type: 'ambitious' }, { type: 'tyrannical' }];
   for (const p of s.board.planets) out.push({ type: 'conquer', planet: p.id });
   for (const card of s.players[me].storedTactics ?? []) out.push({ type: 'playStoredTactic', card });
   for (const d of mine) {
@@ -68,11 +59,22 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
       { type: 'flexible', die: d.id, delta: -1 },
       { type: 'resourceful', die: d.id },
     );
-    for (const to of cells) out.push({ type: 'move', die: d.id, to }, { type: 'deploy', die: d.id, to }, { type: 'tactical', die: d.id, to }, { type: 'power', die: d.id, to });
+    for (const to of cells)
+      out.push(
+        { type: 'move', die: d.id, to },
+        { type: 'deploy', die: d.id, to },
+        { type: 'tactical', die: d.id, to },
+        { type: 'power', die: d.id, to },
+      );
     for (const o of onBoard) {
       out.push({ type: 'power', die: d.id, target: o.id });
       if (o.owner === me) out.push({ type: 'swap', die: d.id, other: o.id });
-      else out.push({ type: 'attack', die: d.id, target: o.id }, { type: 'freeAttack', die: d.id, target: o.id }, { type: 'tactical', die: d.id, target: o.id });
+      else
+        out.push(
+          { type: 'attack', die: d.id, target: o.id },
+          { type: 'freeAttack', die: d.id, target: o.id },
+          { type: 'tactical', die: d.id, target: o.id },
+        );
     }
     const at = d.loc;
     if (withCarry && d.value === 2 && at.zone === 'board') {
@@ -133,7 +135,13 @@ function playChecked(mode: GameMode, players: number, seed: number) {
 
 describe('legal actions agree with the engine', () => {
   for (const mode of ['basic', 'original', 'community', 'prototyping'] as const)
-    for (const [players, seed] of DEEP ? [[2, 21], [3, 22], [4, 23]] : [[3, 22]])
+    for (const [players, seed] of DEEP
+      ? [
+          [2, 21],
+          [3, 22],
+          [4, 23],
+        ]
+      : [[3, 22]])
       it(`${mode}, ${players} players, seed ${seed}`, () => playChecked(mode, players, seed), DEEP ? 600_000 : 60_000);
 });
 

@@ -28,6 +28,7 @@ export function isUndoable(prev: GameState, action: Action, next: GameState): bo
   if (action.type === 'tactical' && action.target) return false;
   if (next.rng !== prev.rng || next.phase !== 'play') return false;
   if (next.turn.number !== prev.turn.number || next.pending.length) return false;
-  const m = (s: GameState) => [s.market.skillDeck.length, s.market.tacticDeck.length, s.market.skillRow.join(), s.market.tacticRow.join()].join('|');
+  const m = (s: GameState) =>
+    [s.market.skillDeck.length, s.market.tacticDeck.length, s.market.skillRow.join(), s.market.tacticRow.join()].join('|');
   return m(prev) === m(next);
 }

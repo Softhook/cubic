@@ -1,6 +1,17 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
-import { defaultMap, MAPS, MODES, playerCounts, rulesOf, RULESETS, type GameMode, type GameState, type MapDef, type PlayerConfig } from '@quantum/engine';
+import {
+  defaultMap,
+  MAPS,
+  MODES,
+  playerCounts,
+  rulesOf,
+  RULESETS,
+  type GameMode,
+  type GameState,
+  type MapDef,
+  type PlayerConfig,
+} from '@quantum/engine';
 import { Die3D } from './Die3D';
 import { Segmented } from './Segmented';
 import { fullscreenOnPhone, useFullscreenOnFirstTap } from './FullscreenButton';
@@ -93,9 +104,13 @@ function GameRow({
   return (
     <li className={yourMove ? 'my-turn' : ''}>
       {href ? (
-        <a className="game-row-open" href={href} onClick={fullscreenOnPhone}>{body}</a>
+        <a className="game-row-open" href={href} onClick={fullscreenOnPhone}>
+          {body}
+        </a>
       ) : (
-        <button className="game-row-open" onClick={onOpen}>{body}</button>
+        <button className="game-row-open" onClick={onOpen}>
+          {body}
+        </button>
       )}
       {yourMove && <span className="tag your-turn">Your move</span>}
       <button className="icon-btn" title={removeLabel} aria-label={removeLabel} onClick={onRemove}>
@@ -118,7 +133,12 @@ function YourGames({ saved, onResume, onDiscard }: { saved: GameState | null; on
         {saved && (
           <GameRow
             title={saved.players.map((p) => p.name).join(', ')}
-            meta={['On this device', rulesOf(saved).name, saved.board.mapName, saved.phase === 'setup' ? 'Setting up' : `Turn ${saved.turn.number}`].join(' · ')}
+            meta={[
+              'On this device',
+              rulesOf(saved).name,
+              saved.board.mapName,
+              saved.phase === 'setup' ? 'Setting up' : `Turn ${saved.turn.number}`,
+            ].join(' · ')}
             onOpen={onResume}
             removeLabel="Discard this game"
             onRemove={() => {
@@ -135,7 +155,8 @@ function YourGames({ saved, onResume, onDiscard }: { saved: GameState | null; on
             href={`#online/${g.secret}`}
             removeLabel="Remove from this browser"
             onRemove={() => {
-              if (!g.over && !confirm('Remove this game from this browser? The others can go on playing; you can rejoin with the link.')) return;
+              if (!g.over && !confirm('Remove this game from this browser? The others can go on playing; you can rejoin with the link.'))
+                return;
               forgetGame(g.secret);
               setGames(onlineGames());
             }}
@@ -153,7 +174,9 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
     <div className="field-row">
       <div className="field">
         <span id={id}>{label}</span>
-        <div role="group" aria-labelledby={id}>{children}</div>
+        <div role="group" aria-labelledby={id}>
+          {children}
+        </div>
       </div>
       {hint && <p className="field-hint">{hint}</p>}
     </div>
@@ -188,7 +211,15 @@ function SeatRow({
       {online && index === 0 ? (
         <span className="seat-you">You</span>
       ) : (
-        <Segmented small options={[[false, online ? 'Friend' : 'Human'], [true, 'AI']]} value={!!seat.ai} onPick={(ai) => onChange({ ai })} />
+        <Segmented
+          small
+          options={[
+            [false, online ? 'Friend' : 'Human'],
+            [true, 'AI'],
+          ]}
+          value={!!seat.ai}
+          onPick={(ai) => onChange({ ai })}
+        />
       )}
       {seat.ai && (
         <select
@@ -280,7 +311,10 @@ export function Lobby({
   // Each way of playing keeps its own seats: AI opponents on this device, friends online.
   const [seatSets, setSeatSets] = useState<Record<'local' | 'online', PlayerConfig[]>>(() => {
     const aiLevel = storedAiLevel();
-    return { local: PLAYER_COLORS.map((_, i) => defaultSeat(i, i !== 0, aiLevel)), online: PLAYER_COLORS.map((_, i) => defaultSeat(i, false, aiLevel)) };
+    return {
+      local: PLAYER_COLORS.map((_, i) => defaultSeat(i, i !== 0, aiLevel)),
+      online: PLAYER_COLORS.map((_, i) => defaultSeat(i, false, aiLevel)),
+    };
   });
   const where = online ? 'online' : 'local';
   const seats = seatSets[where];
@@ -344,7 +378,14 @@ export function Lobby({
                 : 'Against the AI, or pass the device around.'
             }
           >
-            <Segmented options={[[false, 'On this device'], [true, 'Online with friends']]} value={online} onPick={setOnline} />
+            <Segmented
+              options={[
+                [false, 'On this device'],
+                [true, 'Online with friends'],
+              ]}
+              value={online}
+              onPick={setOnline}
+            />
           </Field>
 
           <Field label="Rules" hint={RULESETS[mode].summary}>
@@ -377,7 +418,8 @@ export function Lobby({
         <a href="#lab/cards">Art Lab: cards &amp; tiles</a>
       </nav>
       <p className="credits">
-        Cubic by Christian Nold is a reimagining of Quantum by Eric Zimmerman and its fan-made Community Edition. Non-commercial fan project.
+        Cubic by Christian Nold is a reimagining of Quantum by Eric Zimmerman and its fan-made Community Edition. Non-commercial fan
+        project.
       </p>
       <VersionLine />
     </div>
@@ -401,14 +443,33 @@ function HomeScreenHint() {
         <strong>Play full screen</strong>
         <span className="home-hint-steps">
           <span className="home-hint-step">
-            <svg width="13" height="15" viewBox="0 0 14 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              width="13"
+              height="15"
+              viewBox="0 0 14 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="M7 1v9M4 4l3-3 3 3M4.5 7H2.5v8h9V7h-2" />
             </svg>
             Share
           </span>
           <span aria-hidden="true">→</span>
           <span className="home-hint-step">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
               <rect x="1" y="1" width="12" height="12" rx="3" />
               <path d="M7 4v6M4 7h6" />
             </svg>

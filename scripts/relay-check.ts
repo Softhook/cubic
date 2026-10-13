@@ -93,12 +93,19 @@ async function candidates(): Promise<Map<string, number>> {
 /** What the relay says about itself (NIP-11), in a few words; `bad` if it rules us out. */
 async function info(url: string): Promise<{ text: string; bad: boolean }> {
   try {
-    const res = await fetch(url.replace(/^ws/, 'http'), { headers: { Accept: 'application/nostr+json' }, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const res = await fetch(url.replace(/^ws/, 'http'), {
+      headers: { Accept: 'application/nostr+json' },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
     const j = (await res.json()) as { limitation?: Record<string, unknown>; software?: string; retention?: unknown };
     const l = j.limitation ?? {};
     const flags = (['payment_required', 'auth_required', 'restricted_writes'] as const).filter((k) => l[k]);
     if (Number(l.min_pow_difficulty) > 0) flags.push('pow' as never);
-    const software = j.software?.split('/').pop()?.replace(/\.git$/, '') ?? '?';
+    const software =
+      j.software
+        ?.split('/')
+        .pop()
+        ?.replace(/\.git$/, '') ?? '?';
     return { text: [software, ...flags, j.retention ? 'retention' : ''].filter(Boolean).join(' '), bad: flags.length > 0 };
   } catch {
     return { text: 'no NIP-11', bad: false };
@@ -109,7 +116,18 @@ async function info(url: string): Promise<{ text: string; bad: boolean }> {
 function testEvent(sk: Uint8Array, tag: string): NostrEvent {
   const blob = Buffer.from(crypto.getRandomValues(new Uint8Array(200))).toString('base64url');
   const d = Buffer.from(crypto.getRandomValues(new Uint8Array(12))).toString('base64url');
-  return finalizeEvent({ kind: KIND, created_at: Math.floor(Date.now() / 1000), tags: [['d', d], ['t', tag]], content: blob }, sk);
+  return finalizeEvent(
+    {
+      kind: KIND,
+      created_at: Math.floor(Date.now() / 1000),
+      tags: [
+        ['d', d],
+        ['t', tag],
+      ],
+      content: blob,
+    },
+    sk,
+  );
 }
 
 /** The ids of our events the relay returns for the tag. */
@@ -171,7 +189,7 @@ async function check(urls: string[], rtts: Map<string, number>) {
   const queue = [...urls];
   await Promise.all(
     Array.from({ length: PARALLEL }, async () => {
-      for (let url; (url = queue.shift()); ) {
+      for (let url; (url = queue.shift());) {
         const res = await test(url, sk, tag, rtts.get(url), sent);
         results.push(res);
         console.log(`  ${verdict(res)} ${url}`);
@@ -185,7 +203,9 @@ async function check(urls: string[], rtts: Map<string, number>) {
   for (const res of results) {
     const rtt = res.rtt && Number.isFinite(res.rtt) ? String(res.rtt) : '';
     const notes = [ours.has(res.url) ? '(ours)' : '', res.info, res.refusal ?? ''].filter(Boolean).join(' · ');
-    console.log(` ${verdict(res)} ${res.url.padEnd(40)} ${rtt.padStart(5)}  ${res.accepted}/${EVENTS}   ${res.readBack}/${res.accepted}   ${notes}`);
+    console.log(
+      ` ${verdict(res)} ${res.url.padEnd(40)} ${rtt.padStart(5)}  ${res.accepted}/${EVENTS}   ${res.readBack}/${res.accepted}   ${notes}`,
+    );
   }
   console.log(`\nRun with --recheck in a few days to see which relays keep events.`);
 }
@@ -206,7 +226,7 @@ async function recheck() {
   const queue = Object.entries(sent.accepted).filter(([, ids]) => ids.length);
   await Promise.all(
     Array.from({ length: PARALLEL }, async () => {
-      for (let item; (item = queue.shift()); ) {
+      for (let item; (item = queue.shift());) {
         const [url, ids] = item;
         try {
           const r = await withTimeout(Relay.connect(url), 'connect');

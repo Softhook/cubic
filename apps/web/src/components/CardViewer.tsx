@@ -16,14 +16,25 @@ function CardArt({ id, size, badge }: { id: string; size: 'md' | 'lg'; badge?: s
   const def = card(id);
   return (
     <div className={`card-art card-art-${size}`}>
-      {src ? <img src={src} alt={`${def.name}: ${def.text}`} title={`${def.name} — ${def.text}`} /> : <span className="card-art-ph" aria-label={def.name} />}
+      {src ? (
+        <img src={src} alt={`${def.name}: ${def.text}`} title={`${def.name} — ${def.text}`} />
+      ) : (
+        <span className="card-art-ph" aria-label={def.name} />
+      )}
       {badge && <span className="card-art-badge">{badge}</span>}
     </div>
   );
 }
 
 /** Shows a single card large, or a pile of cards grouped by name (so a deck's draw order stays hidden). */
-export function CardViewer({ title, subtitle, cards, single, onClose, action }: {
+export function CardViewer({
+  title,
+  subtitle,
+  cards,
+  single,
+  onClose,
+  action,
+}: {
   title: string;
   subtitle?: string;
   cards: string[];

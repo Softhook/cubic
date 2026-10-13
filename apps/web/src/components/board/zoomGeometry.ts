@@ -75,4 +75,5 @@ export function zoomAround(f: Frame, from: View, factor: number, fx: number, fy:
 }
 
 /** Spaces of `cell` px, with the space (r, c) in the middle as far as the board's edges allow. */
-export const centredOn = (f: Frame, cell: number, r: number, c: number) => place(f, cell, f.w / 2 - (c + 0.5) * cell, f.h / 2 - (r + 0.5) * cell);
+export const centredOn = (f: Frame, cell: number, r: number, c: number) =>
+  place(f, cell, f.w / 2 - (c + 0.5) * cell, f.h / 2 - (r + 0.5) * cell);

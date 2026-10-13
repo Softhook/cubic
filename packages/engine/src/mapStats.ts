@@ -45,10 +45,17 @@ export function mapStats(map: MapDef): MapStats {
   const groups = [...kinds.values()];
 
   const feasible = (shared: Set<number>) =>
-    maxFlow(map.players, planets.length, map.cubes - 1, (pl, i) => owner[i] !== pl, (i) => {
-      const used = owner[i] >= 0 ? 1 : 0;
-      return shared.has(i) ? planets[i].cap - used : Math.max(0, 1 - used);
-    }) === map.players * (map.cubes - 1);
+    maxFlow(
+      map.players,
+      planets.length,
+      map.cubes - 1,
+      (pl, i) => owner[i] !== pl,
+      (i) => {
+        const used = owner[i] >= 0 ? 1 : 0;
+        return shared.has(i) ? planets[i].cap - used : Math.max(0, 1 - used);
+      },
+    ) ===
+    map.players * (map.cubes - 1);
 
   // Every way to pick `k` planets, as counts per kind.
   const picks = (g: number, k: number): number[][] =>
@@ -69,7 +76,13 @@ export function mapStats(map: MapDef): MapStats {
 }
 
 /** Max flow from players (each supplying `need`) to planets (each taking `cap(i)`), one cube per player per planet. */
-function maxFlow(players: number, planets: number, need: number, allowed: (player: number, planet: number) => boolean, cap: (planet: number) => number): number {
+function maxFlow(
+  players: number,
+  planets: number,
+  need: number,
+  allowed: (player: number, planet: number) => boolean,
+  cap: (planet: number) => number,
+): number {
   // Nodes: 0 source, 1..players, then planets, then sink.
   const n = players + planets + 2;
   const sink = n - 1;

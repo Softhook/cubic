@@ -99,7 +99,10 @@ async function playToMyTurn(page: Page) {
         return 'modal';
       }
       if (document.querySelector('.turn-actions .btn-primary:not([disabled])')) return 'mine';
-      const target = document.querySelector('.planet-label')?.closest('.planet-hit') ?? document.querySelector('.hl') ?? document.querySelector('.turn-scrap .scrap-die.clickable');
+      const target =
+        document.querySelector('.planet-label')?.closest('.planet-hit') ??
+        document.querySelector('.hl') ??
+        document.querySelector('.turn-scrap .scrap-die.clickable');
       (target as HTMLElement | null)?.click();
       return 'wait';
     });
@@ -137,7 +140,9 @@ async function playToMyTurn(page: Page) {
   const overlap = await page.evaluate(() => {
     const a = document.querySelector('.board')!.getBoundingClientRect();
     const b = document.querySelector('.turn-panel')!.getBoundingClientRect();
-    return Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)) * (Math.min(a.right, b.right) > Math.max(a.left, b.left) ? 1 : 0);
+    return (
+      Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)) * (Math.min(a.right, b.right) > Math.max(a.left, b.left) ? 1 : 0)
+    );
   });
   if (overlap > 2) issues.push(`your turn: turn bar covers ${Math.round(overlap)}px of the board`);
   return { issues, deployChecked, myTurn };
@@ -188,10 +193,18 @@ async function checkZoom(page: Page): Promise<{ issues: string[]; cells: number[
   const moved = (s: State) => s.left !== pinched.left || s.top !== pinched.top;
   let panned = pinched;
   for (let attempt = 0; attempt < 2 && !moved(panned); attempt++) {
-    await cdp.send('Input.synthesizeScrollGesture', { x: mid.x - 30, y: mid.y - 30, xDistance: 60, yDistance: 60, speed: 300, gestureSourceType: 'touch', preventFling: true });
+    await cdp.send('Input.synthesizeScrollGesture', {
+      x: mid.x - 30,
+      y: mid.y - 30,
+      xDistance: 60,
+      yDistance: 60,
+      speed: 300,
+      gestureSourceType: 'touch',
+      preventFling: true,
+    });
     panned = await settle(moved);
   }
-  if (panned.left === pinched.left && panned.top === pinched.top) issues.push('pan: the map didn\'t move');
+  if (panned.left === pinched.left && panned.top === pinched.top) issues.push("pan: the map didn't move");
   if (panned.ships !== fitted.ships) issues.push('pan: a ship moved');
   if (panned.scrollY !== fitted.scrollY) issues.push(`pan: the page scrolled ${panned.scrollY - fitted.scrollY}px`);
 
@@ -215,7 +228,12 @@ async function checkPopups(newPage: () => Promise<Page>, base: string, device: s
     await page.waitForSelector('.board');
     if (pop.name === 'rules') await page.locator('.topbar button', { hasText: 'Rules' }).evaluate((b: HTMLElement) => b.click());
     const box = page.locator(pop.box ?? '.overlay .modal, .overlay .combat-card').first();
-    if (!(await box.waitFor({ timeout: 15000 }).then(() => true, () => false))) {
+    if (
+      !(await box.waitFor({ timeout: 15000 }).then(
+        () => true,
+        () => false,
+      ))
+    ) {
       issues.push(`${pop.name}: never opened`);
       await page.context().close();
       continue;
@@ -236,8 +254,12 @@ async function checkPopups(newPage: () => Promise<Page>, base: string, device: s
         }
         return document.scrollingElement!.scrollHeight > innerHeight + 1;
       };
-      if (popup && (b.top < -1 || b.left < -1 || b.bottom > innerHeight + 1 || b.right > innerWidth + 1)) out.push(`${Math.round(b.width)}×${Math.round(b.height)} box, larger than the screen`);
-      const top = Math.max(0, b.top), bottom = Math.min(innerHeight, b.bottom), left = Math.max(0, b.left), right = Math.min(innerWidth, b.right);
+      if (popup && (b.top < -1 || b.left < -1 || b.bottom > innerHeight + 1 || b.right > innerWidth + 1))
+        out.push(`${Math.round(b.width)}×${Math.round(b.height)} box, larger than the screen`);
+      const top = Math.max(0, b.top),
+        bottom = Math.min(innerHeight, b.bottom),
+        left = Math.max(0, b.left),
+        right = Math.min(innerWidth, b.right);
       const items = [...el.querySelectorAll(must)];
       if (!items.length) out.push(`nothing matches ${must}`);
       for (const t of items) {
@@ -266,83 +288,104 @@ async function main() {
   const problems: string[] = [];
   try {
     // Devices run side by side (each plays its games in turn); results print in the usual order.
-    const results = await Promise.all(Object.entries(DEVICES).map(async ([device, options]) => {
-      const lines: string[] = [];
-      for (const g of GAMES) {
-        // dev:https is self-signed. Reduced motion: the start-of-game zoom demo shows only its tip, so the
-        // board is measured at rest.
-        const ctx = await browser.newContext({ ...options, ignoreHTTPSErrors: true, reducedMotion: 'reduce' });
-        const page = await ctx.newPage();
-        await page.goto(playUrl(base, g));
-        await page.waitForSelector('.board');
-        const name = `${device}-${g.map}`;
-        const screen = options.viewport!;
-        const issues: string[] = [];
+    const results = await Promise.all(
+      Object.entries(DEVICES).map(async ([device, options]) => {
+        const lines: string[] = [];
+        for (const g of GAMES) {
+          // dev:https is self-signed. Reduced motion: the start-of-game zoom demo shows only its tip, so the
+          // board is measured at rest.
+          const ctx = await browser.newContext({ ...options, ignoreHTTPSErrors: true, reducedMotion: 'reduce' });
+          const page = await ctx.newPage();
+          await page.goto(playUrl(base, g));
+          await page.waitForSelector('.board');
+          const name = `${device}-${g.map}`;
+          const screen = options.viewport!;
+          const issues: string[] = [];
 
-        // Setup popups (fleet roll, starting skill): screenshot and check each, then take the first
-        // choice. Clicks go through the page, so a popup that is partly off screen still advances.
-        for (let n = 1; n <= 4; n++) {
-          const modal = page.locator('.overlay .modal').first();
-          if (!(await modal.waitFor({ timeout: 4000 }).then(() => true, () => false))) break;
-          const keep = modal.locator('button', { hasText: 'Keep fleet' });
-          if (await keep.count()) await page.locator('.overlay button:not([disabled])', { hasText: 'Keep fleet' }).waitFor({ timeout: 5000 }).catch(() => {});
-          await page.waitForTimeout(600); // let cards and dice finish arriving
-          const title = (await modal.locator('h2').textContent())?.trim() ?? `popup ${n}`;
-          const pop = await modal.evaluate((el) => {
-            const r = el.getBoundingClientRect();
-            const hidden = [...el.querySelectorAll('button, .qcard')].filter((t) => {
-              const b = t.getBoundingClientRect();
-              return b.bottom > innerHeight + 1 || b.right > innerWidth + 1 || b.top < -1 || b.left < -1;
+          // Setup popups (fleet roll, starting skill): screenshot and check each, then take the first
+          // choice. Clicks go through the page, so a popup that is partly off screen still advances.
+          for (let n = 1; n <= 4; n++) {
+            const modal = page.locator('.overlay .modal').first();
+            if (
+              !(await modal.waitFor({ timeout: 4000 }).then(
+                () => true,
+                () => false,
+              ))
+            )
+              break;
+            const keep = modal.locator('button', { hasText: 'Keep fleet' });
+            if (await keep.count())
+              await page
+                .locator('.overlay button:not([disabled])', { hasText: 'Keep fleet' })
+                .waitFor({ timeout: 5000 })
+                .catch(() => {});
+            await page.waitForTimeout(600); // let cards and dice finish arriving
+            const title = (await modal.locator('h2').textContent())?.trim() ?? `popup ${n}`;
+            const pop = await modal.evaluate((el) => {
+              const r = el.getBoundingClientRect();
+              const hidden = [...el.querySelectorAll('button, .qcard')].filter((t) => {
+                const b = t.getBoundingClientRect();
+                return b.bottom > innerHeight + 1 || b.right > innerWidth + 1 || b.top < -1 || b.left < -1;
+              });
+              const label = (t: Element) =>
+                t.matches('.qcard') ? `card ${t.querySelector('h3, .qcard-name')?.textContent ?? ''}`.trim() : t.textContent!.trim();
+              return { wide: r.right > innerWidth + 1 || r.left < -1, hidden: hidden.map(label) };
             });
-            const label = (t: Element) => (t.matches('.qcard') ? `card ${t.querySelector('h3, .qcard-name')?.textContent ?? ''}`.trim() : t.textContent!.trim());
-            return { wide: r.right > innerWidth + 1 || r.left < -1, hidden: hidden.map(label) };
+            await page.screenshot({ path: `${OUT}/${name}-popup${n}.png` });
+            if (pop.wide) issues.push(`"${title}" wider than the screen`);
+            if (pop.hidden.length) issues.push(`"${title}": ${pop.hidden.map((t) => `"${t}"`).join(', ')} off screen`);
+            await modal.evaluate((el) => {
+              const keepBtn = [...el.querySelectorAll('button')].find((b) => b.textContent!.includes('Keep fleet'));
+              (keepBtn ?? (el.querySelector('.qcard') as HTMLElement | null))?.click();
+            });
+            await page.waitForTimeout(800);
+          }
+          await page.waitForTimeout(700);
+          await page.screenshot({ path: `${OUT}/${name}.png` });
+
+          const m = await page.evaluate(() => {
+            const rect = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+            const board = rect('.board');
+            const stage = rect('.stage');
+            return {
+              cell: parseFloat((document.querySelector('.board') as HTMLElement).style.getPropertyValue('--cell')),
+              pageWidth: window.innerWidth,
+              pageHeight: document.scrollingElement!.scrollHeight,
+              overflowsStage: board.width > stage.width + 1 || board.height > stage.height + 1,
+            };
           });
-          await page.screenshot({ path: `${OUT}/${name}-popup${n}.png` });
-          if (pop.wide) issues.push(`"${title}" wider than the screen`);
-          if (pop.hidden.length) issues.push(`"${title}": ${pop.hidden.map((t) => `"${t}"`).join(', ')} off screen`);
-          await modal.evaluate((el) => {
-            const keepBtn = [...el.querySelectorAll('button')].find((b) => b.textContent!.includes('Keep fleet'));
-            (keepBtn ?? (el.querySelector('.qcard') as HTMLElement | null))?.click();
-          });
-          await page.waitForTimeout(800);
+          if (m.pageWidth > screen.width) issues.push(`page ${m.pageWidth}px wide on a ${screen.width}px screen`);
+          if (m.overflowsStage) issues.push('board overflows its stage');
+
+          // Play on to your first turn: you never scroll to act. Placing your ships, then with a ship
+          // selected, everything you tap is on screen and not under anything, and the turn bar doesn't
+          // cover the board.
+          const turn = await playToMyTurn(page);
+          if (!turn.deployChecked) issues.push('never had ships to place');
+          if (!turn.myTurn) issues.push('never reached your turn');
+          issues.push(...turn.issues);
+          await page.screenshot({ path: `${OUT}/${name}-turn.png` });
+          const zoom = turn.myTurn && options.hasTouch && !webkitRun ? await checkZoom(page) : null;
+          if (zoom) issues.push(...zoom.issues);
+          const pinch = zoom ? `  pinch → ${Math.round(zoom.cells[1])}px` : '';
+          lines.push(
+            `${name.padEnd(36)} cell ${String(m.cell).padStart(3)}px  page ${m.pageWidth}×${m.pageHeight}${pinch}  ${issues.length ? '✗ ' + issues.join('; ') : '✓'}`,
+          );
+          problems.push(...issues.map((i) => `${name}: ${i}`));
+          await ctx.close();
         }
-        await page.waitForTimeout(700);
-        await page.screenshot({ path: `${OUT}/${name}.png` });
-
-        const m = await page.evaluate(() => {
-          const rect = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
-          const board = rect('.board');
-          const stage = rect('.stage');
-          return {
-            cell: parseFloat((document.querySelector('.board') as HTMLElement).style.getPropertyValue('--cell')),
-            pageWidth: window.innerWidth,
-            pageHeight: document.scrollingElement!.scrollHeight,
-            overflowsStage: board.width > stage.width + 1 || board.height > stage.height + 1,
-          };
-        });
-        if (m.pageWidth > screen.width) issues.push(`page ${m.pageWidth}px wide on a ${screen.width}px screen`);
-        if (m.overflowsStage) issues.push('board overflows its stage');
-
-        // Play on to your first turn: you never scroll to act. Placing your ships, then with a ship
-        // selected, everything you tap is on screen and not under anything, and the turn bar doesn't
-        // cover the board.
-        const turn = await playToMyTurn(page);
-        if (!turn.deployChecked) issues.push('never had ships to place');
-        if (!turn.myTurn) issues.push('never reached your turn');
-        issues.push(...turn.issues);
-        await page.screenshot({ path: `${OUT}/${name}-turn.png` });
-        const zoom = turn.myTurn && options.hasTouch && !webkitRun ? await checkZoom(page) : null;
-        if (zoom) issues.push(...zoom.issues);
-        const pinch = zoom ? `  pinch → ${Math.round(zoom.cells[1])}px` : '';
-        lines.push(`${name.padEnd(36)} cell ${String(m.cell).padStart(3)}px  page ${m.pageWidth}×${m.pageHeight}${pinch}  ${issues.length ? '✗ ' + issues.join('; ') : '✓'}`);
-        problems.push(...issues.map((i) => `${name}: ${i}`));
-        await ctx.close();
-      }
-      const popIssues = await checkPopups(async () => (await browser.newContext({ ...options, ignoreHTTPSErrors: true })).newPage(), base, device);
-      lines.push(`${`${device} popups`.padEnd(36)} ${POPUPS.map((p) => p.name).join(', ')}  ${popIssues.length ? '✗ ' + popIssues.join('; ') : '✓'}`);
-      problems.push(...popIssues.map((i) => `${device}: ${i}`));
-      return lines;
-    }));
+        const popIssues = await checkPopups(
+          async () => (await browser.newContext({ ...options, ignoreHTTPSErrors: true })).newPage(),
+          base,
+          device,
+        );
+        lines.push(
+          `${`${device} popups`.padEnd(36)} ${POPUPS.map((p) => p.name).join(', ')}  ${popIssues.length ? '✗ ' + popIssues.join('; ') : '✓'}`,
+        );
+        problems.push(...popIssues.map((i) => `${device}: ${i}`));
+        return lines;
+      }),
+    );
     console.log(results.flat().join('\n'));
   } finally {
     await browser.close();

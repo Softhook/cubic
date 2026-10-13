@@ -8,7 +8,15 @@ import { createPortal } from 'react-dom';
  * A `bare` dialog shows only its content over the backdrop (no box, heading or × button), and any
  * click closes it.
  */
-export function Dialog({ title, subtitle, wide, bare, className = '', onClose, children }: {
+export function Dialog({
+  title,
+  subtitle,
+  wide,
+  bare,
+  className = '',
+  onClose,
+  children,
+}: {
   title: string;
   subtitle?: string;
   wide?: boolean;
@@ -37,7 +45,14 @@ export function Dialog({ title, subtitle, wide, bare, className = '', onClose, c
   if (bare) {
     return createPortal(
       <div className="overlay" onClick={onClose}>
-        <div ref={bareRef} role="dialog" aria-modal="true" aria-label={subtitle ? `${title}: ${subtitle}` : title} tabIndex={-1} className={`dialog-bare ${className}`}>
+        <div
+          ref={bareRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={subtitle ? `${title}: ${subtitle}` : title}
+          tabIndex={-1}
+          className={`dialog-bare ${className}`}
+        >
           {children}
         </div>
       </div>,
@@ -47,8 +62,16 @@ export function Dialog({ title, subtitle, wide, bare, className = '', onClose, c
 
   return createPortal(
     <div className="overlay" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className={`modal dialog ${wide ? 'wide' : ''} ${className}`} onClick={(e) => e.stopPropagation()}>
-        <button ref={closeRef} className="icon-btn dialog-close" onClick={onClose} aria-label="Close">×</button>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className={`modal dialog ${wide ? 'wide' : ''} ${className}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button ref={closeRef} className="icon-btn dialog-close" onClick={onClose} aria-label="Close">
+          ×
+        </button>
         <h2 id={titleId}>{title}</h2>
         {subtitle && <p className="modal-sub">{subtitle}</p>}
         {children}

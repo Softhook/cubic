@@ -37,7 +37,11 @@ describe('wrapping maps', () => {
   });
 
   it('ships move across a joined edge', () => {
-    const s = createGame({ players: Array.from({ length: 5 }, (_, i) => ({ name: `P${i}`, color: '#fff', ai: true })), mapId: 'appeal-to-authority', seed: 1 });
+    const s = createGame({
+      players: Array.from({ length: 5 }, (_, i) => ({ name: `P${i}`, color: '#fff', ai: true })),
+      mapId: 'appeal-to-authority',
+      seed: 1,
+    });
     const d = s.dice[0];
     d.loc = { zone: 'board', r: 4, c: 0 };
     s.phase = 'play';

@@ -39,10 +39,7 @@ export interface Board {
   planets: Planet[];
 }
 
-export type DieLoc =
-  | { zone: 'board'; r: number; c: number }
-  | { zone: 'scrapyard' }
-  | { zone: 'reserve' };
+export type DieLoc = { zone: 'board'; r: number; c: number } | { zone: 'scrapyard' } | { zone: 'reserve' };
 
 export interface Die {
   id: string;

@@ -95,9 +95,8 @@ function cloud(o: CloudOptions): Fragment {
   };
 }
 
-
 /** A soft square mask: opaque in the middle, fading to nothing towards the frame's edge. */
-export function edgeFade(id: string, area: Box, frame: Box, inset: number, softness: number): string {
+function edgeFade(id: string, area: Box, frame: Box, inset: number, softness: number): string {
   return (
     `<filter id="${id}-blur" filterUnits="userSpaceOnUse" x="${n(area.x)}" y="${n(area.y)}" width="${n(area.w)}" height="${n(area.h)}"><feGaussianBlur stdDeviation="${n(softness)}"/></filter>` +
     `<mask id="${id}" maskUnits="userSpaceOnUse" x="${n(area.x)}" y="${n(area.y)}" width="${n(area.w)}" height="${n(area.h)}">` +
@@ -131,9 +130,46 @@ export function starfield(o: StarfieldOptions): Fragment {
   const boost = (h: number) => 1 + 0.35 * blueness(h);
 
   const layers = [
-    cloud({ id: `${id}-n1`, area, freq: f(neb.range(0.016, 0.026)), octaves: 5, seed: neb.noiseSeed(), colour: [h1, 70, 46 + lift(h1)], strength: Math.min(1, strength * 0.8 * boost(h1)), cut: neb.range(0.4, 0.47), soft: 0.3, warp: 14 * scale, warpSeed: neb.noiseSeed(), filaments: 0.35 }),
-    cloud({ id: `${id}-n2`, area, freq: f(neb.range(0.026, 0.04)), octaves: 4, seed: neb.noiseSeed(), colour: [h2, 75, 58 + lift(h2)], strength: Math.min(1, strength * 0.5 * boost(h2)), cut: neb.range(0.48, 0.54), soft: 0.22, warp: 10 * scale, warpSeed: neb.noiseSeed() }),
-    cloud({ id: `${id}-dust`, area, freq: `${f(0.045)} ${f(0.03)}`, octaves: 5, seed: neb.noiseSeed(), colour: [SPACE_BASE[0], 40, 3], strength: 0.8, cut: 0.5, soft: 0.2, warp: 8 * scale, warpSeed: neb.noiseSeed() }),
+    cloud({
+      id: `${id}-n1`,
+      area,
+      freq: f(neb.range(0.016, 0.026)),
+      octaves: 5,
+      seed: neb.noiseSeed(),
+      colour: [h1, 70, 46 + lift(h1)],
+      strength: Math.min(1, strength * 0.8 * boost(h1)),
+      cut: neb.range(0.4, 0.47),
+      soft: 0.3,
+      warp: 14 * scale,
+      warpSeed: neb.noiseSeed(),
+      filaments: 0.35,
+    }),
+    cloud({
+      id: `${id}-n2`,
+      area,
+      freq: f(neb.range(0.026, 0.04)),
+      octaves: 4,
+      seed: neb.noiseSeed(),
+      colour: [h2, 75, 58 + lift(h2)],
+      strength: Math.min(1, strength * 0.5 * boost(h2)),
+      cut: neb.range(0.48, 0.54),
+      soft: 0.22,
+      warp: 10 * scale,
+      warpSeed: neb.noiseSeed(),
+    }),
+    cloud({
+      id: `${id}-dust`,
+      area,
+      freq: `${f(0.045)} ${f(0.03)}`,
+      octaves: 5,
+      seed: neb.noiseSeed(),
+      colour: [SPACE_BASE[0], 40, 3],
+      strength: 0.8,
+      cut: 0.5,
+      soft: 0.2,
+      warp: 8 * scale,
+      warpSeed: neb.noiseSeed(),
+    }),
   ];
 
   let starMarks = '';

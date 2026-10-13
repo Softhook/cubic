@@ -28,28 +28,57 @@ const fill = (capacity: number, owners: PlayerId[]) => Array.from({ length: capa
 
 describe('conquerTap', () => {
   it('conquers at once when there is one way: an empty place', () => {
-    const { s, planet } = position('basic', (n) => n, () => []);
+    const { s, planet } = position(
+      'basic',
+      (n) => n,
+      () => [],
+    );
     expect(conquerTap(legalFor(s), planet)).toEqual({ type: 'conquer', planet });
   });
 
   it('asks how when a full planet holds two opponents’ cubes (over-conquest)', () => {
-    const probe = position('prototyping', () => 12, () => []);
+    const probe = position(
+      'prototyping',
+      () => 12,
+      () => [],
+    );
     const capacity = probe.s.board.planets[probe.planet].capacity;
-    const { s, planet, others } = position('prototyping', () => 12, (o) => fill(capacity, o));
+    const { s, planet, others } = position(
+      'prototyping',
+      () => 12,
+      (o) => fill(capacity, o),
+    );
     const legal = legalFor(s);
-    expect(legal.of('conquer', (a) => a.planet === planet).map((a) => a.replace).sort()).toEqual([...others].sort());
+    expect(
+      legal
+        .of('conquer', (a) => a.planet === planet)
+        .map((a) => a.replace)
+        .sort(),
+    ).toEqual([...others].sort());
     expect(conquerTap(legal, planet)).toBe('choose');
   });
 
   it('conquers at once when a full planet holds one opponent’s cubes', () => {
-    const probe = position('prototyping', () => 12, () => []);
+    const probe = position(
+      'prototyping',
+      () => 12,
+      () => [],
+    );
     const capacity = probe.s.board.planets[probe.planet].capacity;
-    const { s, planet, others } = position('prototyping', () => 12, (o) => fill(capacity, [o[0]]));
+    const { s, planet, others } = position(
+      'prototyping',
+      () => 12,
+      (o) => fill(capacity, [o[0]]),
+    );
     expect(conquerTap(legalFor(s), planet)).toEqual({ type: 'conquer', planet, replace: others[0] });
   });
 
   it('does nothing on a planet that can’t be conquered', () => {
-    const { s, planet } = position('basic', (n) => n + 1, () => []);
+    const { s, planet } = position(
+      'basic',
+      (n) => n + 1,
+      () => [],
+    );
     expect(conquerTap(legalFor(s), planet)).toBeNull();
   });
 });

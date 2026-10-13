@@ -27,7 +27,7 @@ async function load(id: string, svg: string): Promise<string> {
 }
 
 /** The image URL for a tile (`p7-01`…), drawing and storing it the first time. */
-export function tileImage(id: string): Promise<string> {
+function tileImage(id: string): Promise<string> {
   let image = images.get(id);
   if (!image) {
     // The space pads and their hatching come with the art, as printed; the board draws the number and cubes live.

@@ -9,7 +9,7 @@ import { effectOf } from '@quantum/engine';
  * point a skill wins above holding none, around the old flat value. Skills whose worth that test
  * can't show (Talented, Patient, Prideful) and Original cards keep the flat value.
  */
-export const SKILL = 110;
+const SKILL = 110;
 
 const SKILL_WIN_RATE: Record<string, number> = {
   tactical: 88.5,
@@ -54,7 +54,7 @@ export function skillValue(id: string): number {
 }
 
 /** A Tactic stored with Patient: worth keeping when playing it now would gain less. */
-export const STORED_TACTIC = 50;
+const STORED_TACTIC = 50;
 
 /** Stored Tactics by how much self-play winners favoured them (docs/card-benchmark.md). */
 const TACTIC_VALUE: Record<string, number> = {

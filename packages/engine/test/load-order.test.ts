@@ -30,7 +30,9 @@ describe('each entry point works without src/index.ts', () => {
   it('createGame (setup.ts)', async () => {
     vi.resetModules();
     const { createGame } = await import('../src/setup');
-    expect(createGame({ players: [0, 1].map((i) => ({ name: `P${i}`, color: '#fff', ai: true })), mode: 'prototyping', seed: 1 }).mode).toBe('prototyping');
+    expect(
+      createGame({ players: [0, 1].map((i) => ({ name: `P${i}`, color: '#fff', ai: true })), mode: 'prototyping', seed: 1 }).mode,
+    ).toBe('prototyping');
   });
   it('apply (engine.ts)', async () => {
     const { state, action } = await savedGame();

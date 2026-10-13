@@ -229,10 +229,7 @@ function gates(state: GameState, g: Grid): (i: number) => number {
 }
 
 export function canMoveDie(state: GameState, d: Die): boolean {
-  return (
-    d.loc.zone === 'board' &&
-    ((state.turn.moved[d.id] ?? 0) === 0 || anySkill(state, d.owner, (r) => r.moveRepeatedly))
-  );
+  return d.loc.zone === 'board' && ((state.turn.moved[d.id] ?? 0) === 0 || anySkill(state, d.owner, (r) => r.moveRepeatedly));
 }
 
 export function moveOptions(state: GameState, dieId: string): MoveOptions {
@@ -436,8 +433,7 @@ export function tacticalOptions(state: GameState, dieId: string): TacticalOption
   const straight = stepNeighbours(state, start, false);
   const near = straight.map((cell) => ({ cell, diagonal: false }));
   if (hasPower(state, d, 'manoeuvre') && canUseAbility(state, d)) {
-    for (const cell of stepNeighbours(state, start, true))
-      if (!straight.some((p) => same(p, cell))) near.push({ cell, diagonal: true });
+    for (const cell of stepNeighbours(state, start, true)) if (!straight.some((p) => same(p, cell))) near.push({ cell, diagonal: true });
   }
   for (const { cell, diagonal } of near) {
     const target = dieAt(state, cell);
@@ -562,9 +558,7 @@ export function conquerCheck(state: GameState, player: PlayerId, planetId: numbe
     target = OVER_CONQUEST_TARGET;
   } else if (own > 0) {
     // Quantum Entanglement: only once you hold every planet that still has room.
-    const blocked = state.board.planets.some(
-      (p) => planetFreeSlots(p) > 0 && !p.cubes.includes(player),
-    );
+    const blocked = state.board.planets.some((p) => planetFreeSlots(p) > 0 && !p.cubes.includes(player));
     if (blocked) return fail('You already have a cube here');
     target += 3 * own;
   }
@@ -646,7 +640,9 @@ function rollOverride(state: GameState, combat: CombatPending, side: CombatRole)
   const s = combat[side];
   if (s.missile) return { kind: 'roll', set: true, label: 'Missile', value: 1 };
   if (state.players[s.player].planAhead > 0) return { kind: 'roll', set: true, label: 'Plan Ahead', value: 1 };
-  const fixed = activeSkills(state, s.player).filter((a) => a.rule.combat?.roll !== undefined).pop();
+  const fixed = activeSkills(state, s.player)
+    .filter((a) => a.rule.combat?.roll !== undefined)
+    .pop();
   return fixed && { kind: 'roll', set: true, label: card(fixed.card).name, value: fixed.rule.combat!.roll! };
 }
 
@@ -780,7 +776,12 @@ export function attackChance(state: GameState, attacker: Die, defender: Die, fro
  * What changes the odds of an attack (see attackChance) for each side, beyond the ships and the
  * dice: e.g. "Ferocious −1", "Rational: rolls 3", "Brutal: lowest of 2 dice", "Stubborn: wins ties".
  */
-export function attackFactors(state: GameState, attacker: Die, defender: Die, from: Cell = cellOf(attacker)!): Record<CombatRole, string[]> {
+export function attackFactors(
+  state: GameState,
+  attacker: Die,
+  defender: Die,
+  from: Cell = cellOf(attacker)!,
+): Record<CombatRole, string[]> {
   const combat = previewCombat(attacker, defender, from);
   const factors = (role: CombatRole): string[] => {
     const parts = combatTotal(state, combat, role).parts;

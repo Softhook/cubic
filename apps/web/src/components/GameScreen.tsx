@@ -55,14 +55,20 @@ export function Game({
   return (
     <div className="app">
       <header className="topbar">
-        <button type="button" className="brand" title="Back to the lobby" onClick={onLobby}>Cubic</button>
+        <button type="button" className="brand" title="Back to the lobby" onClick={onLobby}>
+          Cubic
+        </button>
         <div className="topbar-map">
           <span className={`mode-badge mode-${game.mode}`}>{rulesOf(game).name}</span>
           {game.board.mapName}
         </div>
         <div className="topbar-actions">
-          <button className="btn btn-ghost" onClick={onLobby}>Lobby</button>
-          <button className="btn btn-ghost" onClick={onRules}>Rules</button>
+          <button className="btn btn-ghost" onClick={onLobby}>
+            Lobby
+          </button>
+          <button className="btn btn-ghost" onClick={onRules}>
+            Rules
+          </button>
           <FullscreenButton />
         </div>
       </header>
@@ -95,10 +101,24 @@ export function Game({
         )}
       </main>
 
-      {head?.kind === 'combat' && <CombatOverlay key={head.id} game={game} combat={head} dispatch={dispatch} mine={view.mine} aiResponder={view.aiResponder ?? null} online={online ? view.combat : undefined} />}
+      {head?.kind === 'combat' && (
+        <CombatOverlay
+          key={head.id}
+          game={game}
+          combat={head}
+          dispatch={dispatch}
+          mine={view.mine}
+          aiResponder={view.aiResponder ?? null}
+          online={online ? view.combat : undefined}
+        />
+      )}
       <DecisionOverlay game={game} dispatch={dispatch} human={ctl.human} />
-      {conquering.length > 0 && <ConquerChoice game={game} options={conquering} dispatch={dispatch} onClose={() => ctl.select({ kind: 'none' })} />}
-      {game.phase === 'over' && !hideGameOver && <GameOver game={game} onNew={onQuit} onClose={() => setHideGameOver(true)} newLabel={online ? 'Back to lobby' : undefined} />}
+      {conquering.length > 0 && (
+        <ConquerChoice game={game} options={conquering} dispatch={dispatch} onClose={() => ctl.select({ kind: 'none' })} />
+      )}
+      {game.phase === 'over' && !hideGameOver && (
+        <GameOver game={game} onNew={onQuit} onClose={() => setHideGameOver(true)} newLabel={online ? 'Back to lobby' : undefined} />
+      )}
       {overlay}
     </div>
   );

@@ -21,10 +21,19 @@ type Sort = 'deck' | 'name' | 'category';
 const EDITION_LABEL: Record<Edition, string> = { community: 'Community', original: 'Classic' };
 const EDITION_TITLE: Record<Edition, string> = { community: 'Community Edition', original: 'Classic' };
 const isEdition = (v: View): v is Edition => v in EDITION_LABEL;
-const VIEWS: [View, string][] = [['all', 'All'], ['redesigns', 'Redesigns'], ['community-only', 'Community originals'], ['classic-only', 'Classic only']];
+const VIEWS: [View, string][] = [
+  ['all', 'All'],
+  ['redesigns', 'Redesigns'],
+  ['community-only', 'Community originals'],
+  ['classic-only', 'Classic only'],
+];
 const EDITION_VIEWS = Object.entries(EDITION_LABEL) as [Edition, string][];
 const EDITIONS: ['all' | Edition, string][] = [['all', 'All'], ...EDITION_VIEWS];
-const SORTS: [Sort, string][] = [['deck', 'Deck order'], ['name', 'Name'], ['category', 'Category']];
+const SORTS: [Sort, string][] = [
+  ['deck', 'Deck order'],
+  ['name', 'Name'],
+  ['category', 'Category'],
+];
 
 /** One printable thing: a card front, or a deck's back. */
 interface Item {
@@ -38,7 +47,8 @@ const backOf = (d: CardDeck): Item => ({ key: `${d}:back`, deck: d });
 const itemsOf = (d: Deck): Item[] => [backOf(d.id), ...d.cards.map(itemOf)];
 
 /** Cards split by deck, in deck order, for one heading each. */
-const byDeck = (cards: CardFace[]) => DECKS.map((d) => ({ deck: d, cards: cards.filter((c) => c.deck === d.id) })).filter((g) => g.cards.length > 0);
+const byDeck = (cards: CardFace[]) =>
+  DECKS.map((d) => ({ deck: d, cards: cards.filter((c) => c.deck === d.id) })).filter((g) => g.cards.length > 0);
 
 const CATEGORY_ORDER = Object.keys(CARD_CATEGORIES);
 const categoryRank = (c: CardFace) => {
@@ -82,17 +92,27 @@ export function CardLab() {
   const thumbs = useMemo(() => {
     if (fonts === null) return new Map<string, string>();
     return new Map(all.map((i) => [i.key, URL.createObjectURL(new Blob([svgOf(i, { rounded: true })], { type: 'image/svg+xml' }))]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `all` never changes; `svgOf` is rebuilt every render from `fonts`.
   }, [fonts]);
   useEffect(() => () => thumbs.forEach((u) => URL.revokeObjectURL(u)), [thumbs]);
 
-  const detail = useMemo(() => (fonts === null ? '' : URL.createObjectURL(new Blob([svgOf(item, { bleed })], { type: 'image/svg+xml' }))), [item, bleed, fonts]);
+  const detail = useMemo(
+    () => (fonts === null ? '' : URL.createObjectURL(new Blob([svgOf(item, { bleed })], { type: 'image/svg+xml' }))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `svgOf` is rebuilt every render from these.
+    [item, bleed, fonts],
+  );
   useEffect(() => () => URL.revokeObjectURL(detail), [detail]);
 
   const fileName = (i: Item) => (i.face ? `${String(i.face.index).padStart(2, '0')}-${i.face.id}` : 'back');
   const printable = (i: Item): Printable => ({ name: `${i.deck}/${fileName(i)}`, svg: (b) => svgOf(i, { bleed: b }) });
   const sheets = (copies: boolean) =>
     decks.flatMap((d) =>
-      d.cards.flatMap((c) => Array<{ front: Printable; back: Printable }>(copies ? copiesOf(c) : 1).fill({ front: printable(itemOf(c)), back: printable(backOf(d.id)) })),
+      d.cards.flatMap((c) =>
+        Array<{ front: Printable; back: Printable }>(copies ? copiesOf(c) : 1).fill({
+          front: printable(itemOf(c)),
+          back: printable(backOf(d.id)),
+        }),
+      ),
     );
 
   const info = deckInfo(item.deck);
@@ -109,28 +129,47 @@ export function CardLab() {
   const thumb = (i: Item) => (
     <button key={i.key} className={`lab-thumb ${i.key === item.key ? 'on' : ''}`} onClick={() => setSelected(i.key)}>
       {thumbs.get(i.key) ? <img src={thumbs.get(i.key)} alt={i.face?.name ?? 'Back'} loading="lazy" /> : <span className="lab-card-ph" />}
-      <span>{i.face ? i.face.name : `${deckInfo(i.deck).label} back`}{i.face && copiesOf(i.face) > 1 ? ` ×${copiesOf(i.face)}` : ''}</span>
+      <span>
+        {i.face ? i.face.name : `${deckInfo(i.deck).label} back`}
+        {i.face && copiesOf(i.face) > 1 ? ` ×${copiesOf(i.face)}` : ''}
+      </span>
     </button>
   );
   const pairs = (title: string, about: string, list: Redesign[], rules = false) => (
     <section className="lab-deck">
-      <h2>{title} <span className="muted">· {list.length} pairs · {about}</span></h2>
+      <h2>
+        {title}{' '}
+        <span className="muted">
+          · {list.length} pairs · {about}
+        </span>
+      </h2>
       <div className="lab-grid pairs">
-        {[...list].sort((a, b) => order(a.community, b.community)).map((r) => (
-          <div key={r.community.id} className="lab-pair">
-            {thumb(itemOf(r.classic))}
-            <span className="lab-pair-arrow" aria-hidden>→</span>
-            {thumb(itemOf(r.community))}
-            {rules && <span className={`lab-pair-tag ${r.sameRules ? '' : 'changed'}`}>{r.sameRules ? 'Same rules' : 'Rules changed'}</span>}
-          </div>
-        ))}
+        {[...list]
+          .sort((a, b) => order(a.community, b.community))
+          .map((r) => (
+            <div key={r.community.id} className="lab-pair">
+              {thumb(itemOf(r.classic))}
+              <span className="lab-pair-arrow" aria-hidden>
+                →
+              </span>
+              {thumb(itemOf(r.community))}
+              {rules && (
+                <span className={`lab-pair-tag ${r.sameRules ? '' : 'changed'}`}>{r.sameRules ? 'Same rules' : 'Rules changed'}</span>
+              )}
+            </div>
+          ))}
       </div>
     </section>
   );
   const singles = (title: string, cards: CardFace[]) =>
     byDeck(cards).map(({ deck, cards }) => (
       <section key={`${title}:${deck.id}`} className="lab-deck">
-        <h2>{title} <span className="muted">· {deck.name} · {countNote(cards)}</span></h2>
+        <h2>
+          {title}{' '}
+          <span className="muted">
+            · {deck.name} · {countNote(cards)}
+          </span>
+        </h2>
         <div className="lab-grid cards">{[...cards].sort(order).map((c) => thumb(itemOf(c)))}</div>
       </section>
     ));
@@ -147,7 +186,11 @@ export function CardLab() {
       </LabHeader>
       <div className="lab-body">
         <div>
-          {fonts === null && <p className="lab-note"><span className="spinner" /> Loading fonts…</p>}
+          {fonts === null && (
+            <p className="lab-note">
+              <span className="spinner" /> Loading fonts…
+            </p>
+          )}
           {show('redesigns') && (
             <>
               {pairs('Reworded', 'Classic → Community, same name, same rules', LINEAGE.reworded)}
@@ -160,8 +203,12 @@ export function CardLab() {
           {shownEdition && singles(EDITION_TITLE[shownEdition], cardsOf(shownEdition))}
           {(view === 'all' || shownEdition) && (
             <section className="lab-deck">
-              <h2>Backs <span className="muted">· one per deck</span></h2>
-              <div className="lab-grid cards">{DECKS.filter((d) => !shownEdition || d.edition === shownEdition).map((d) => thumb(backOf(d.id)))}</div>
+              <h2>
+                Backs <span className="muted">· one per deck</span>
+              </h2>
+              <div className="lab-grid cards">
+                {DECKS.filter((d) => !shownEdition || d.edition === shownEdition).map((d) => thumb(backOf(d.id)))}
+              </div>
             </section>
           )}
         </div>
@@ -172,7 +219,12 @@ export function CardLab() {
               <>
                 {info.label} ({info.kind.toLowerCase()}) · {CARD_CATEGORIES[item.face.category]?.label} · {cardIllustration(item.face)}
                 {copiesOf(item.face) > 1 ? ` · ${copiesOf(item.face)} copies` : ''}
-                {lineage && <><br />{lineage}</>}
+                {lineage && (
+                  <>
+                    <br />
+                    {lineage}
+                  </>
+                )}
               </>
             ) : (
               <>Back of every {info.label} card</>

@@ -1,8 +1,32 @@
 import { describe, expect, it } from 'vitest';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
-import { actor, apply, checkInvariants, legalActions, defaultMap, type GameMode, type Action, type GameState, type PlayerConfig, type PlayerId } from '@quantum/engine';
+import {
+  actor,
+  apply,
+  checkInvariants,
+  legalActions,
+  defaultMap,
+  type GameMode,
+  type Action,
+  type GameState,
+  type PlayerConfig,
+  type PlayerId,
+} from '@quantum/engine';
 import { chooseAction, chooseCombatResponse } from '@quantum/ai';
-import { actBody, decodeEvent, encodePost, gameKeys, hex, newSecret, PROTOCOL, stateHash, Timeline, type Body, type Post, type Replay } from '../src';
+import {
+  actBody,
+  decodeEvent,
+  encodePost,
+  gameKeys,
+  hex,
+  newSecret,
+  PROTOCOL,
+  stateHash,
+  Timeline,
+  type Body,
+  type Post,
+  type Replay,
+} from '../src';
 import { seededRandom } from '../../engine/test/helpers';
 
 const seat = (name: string, ai = false): PlayerConfig => ({ name, color: '#fff', ai, aiLevel: 1 });
@@ -15,7 +39,13 @@ function post(author: string, body: Body, prev: string | null = null, at = ++clo
 }
 
 const create = (author: string, players: PlayerConfig[], open: number[], seed = 7, mode: GameMode = 'basic') =>
-  post(author, { t: 'create', protocol: PROTOCOL, config: { players, mapId: defaultMap(players.length)!.id, mode, seed }, creator: 0, open });
+  post(author, {
+    t: 'create',
+    protocol: PROTOCOL,
+    config: { players, mapId: defaultMap(players.length)!.id, mode, seed },
+    creator: 0,
+    open,
+  });
 
 const head = (r: Replay): GameState => r.steps.at(-1)!.state;
 
@@ -60,7 +90,8 @@ class Browser {
       }
       return null;
     }
-    if (r.undoSeat !== null && this.seats.includes(r.undoSeat) && this.random() < this.undoRate) return this.send({ t: 'undo', seat: r.undoSeat }, true);
+    if (r.undoSeat !== null && this.seats.includes(r.undoSeat) && this.random() < this.undoRate)
+      return this.send({ t: 'undo', seat: r.undoSeat }, true);
     const who = actor(s);
     if (!plays(who)) return null;
     const a = chooseAction(s, { level: 1, random: this.random, samples: 1 });
@@ -378,11 +409,18 @@ describe('online timeline', () => {
 
   it('ignores a create post for another protocol or with seats nobody can play', () => {
     const t = new Timeline();
-    t.add(post('alice', { t: 'create', protocol: PROTOCOL + 1, config: { players: [seat('A'), seat('B')], mapId: defaultMap(2)!.id, mode: 'basic', seed: 1 }, creator: 0, open: [1] }));
+    t.add(
+      post('alice', {
+        t: 'create',
+        protocol: PROTOCOL + 1,
+        config: { players: [seat('A'), seat('B')], mapId: defaultMap(2)!.id, mode: 'basic', seed: 1 },
+        creator: 0,
+        open: [1],
+      }),
+    );
     t.add(create('alice', [seat('A'), seat('B')], []));
     expect(t.replay()).toBeNull();
   });
-
 });
 
 describe('codec', () => {

@@ -152,7 +152,9 @@ function usePostLog(secret: string) {
   const sk = useMemo(identity, []);
   const me = useMemo(() => publicKeyOf(sk), [sk]);
   const keys = useMemo(() => gameKeys(secret), [secret]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- a new game (`secret`) starts afresh.
   const timeline = useMemo(() => new Timeline(), [secret]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- a new game (`secret`) starts afresh.
   const events = useMemo(() => new Map<string, NostrEvent>(), [secret]);
   const [replay, setReplay] = useState<Replay | null>(null);
   const [relays, setRelays] = useState<RelayStatus>({ connected: 0, total: 0, unsent: 0 });
@@ -317,7 +319,9 @@ function aiWork(r: Replay, s: GameState): { seat: PlayerId; combat: boolean } | 
 function summary(r: Replay, mySeats: PlayerId[]) {
   const s = r.steps.at(-1)!.state;
   const open = r.seats.filter((x) => x.open && !x.owner).length;
-  const waitingOnMe = r.combat ? r.combat.waitingOn.some((id) => mySeats.includes(id) && !r.combat!.passed.includes(id)) : mySeats.includes(actor(s));
+  const waitingOnMe = r.combat
+    ? r.combat.waitingOn.some((id) => mySeats.includes(id) && !r.combat!.passed.includes(id))
+    : mySeats.includes(actor(s));
   return {
     mode: RULESETS[r.config.mode]?.name,
     map: MAPS.find((m) => m.id === r.config.mapId)?.name,

@@ -68,7 +68,7 @@ export interface AuditStep {
   fired: string[];
 }
 
-export interface Anomaly {
+interface Anomaly {
   game: string;
   step: number;
   card?: string;
@@ -77,7 +77,7 @@ export interface Anomaly {
   context: string[];
 }
 
-export interface Coverage {
+interface Coverage {
   /** Turns the card was held, active, by the player whose turn it was. */
   heldTurns: number;
   /** Times the card took effect (an oracle applied, or the card was used or played). */
@@ -95,13 +95,45 @@ export interface AuditResult {
 /** Cards whose effect an oracle below checks (the others are only exercised). */
 export const CHECKED_EFFECTS = new Set([
   // tactics and gambits
-  'aggression', 'black-market', 'momentum', 'plan-ahead', 'sabotage', 'sabotage-original', 'show-of-force', 'warp-gate',
-  'change-of-heart', 'unveil-the-fleet', 'reorganization', 'relocation', 'expansion',
+  'aggression',
+  'black-market',
+  'momentum',
+  'plan-ahead',
+  'sabotage',
+  'sabotage-original',
+  'show-of-force',
+  'warp-gate',
+  'change-of-heart',
+  'unveil-the-fleet',
+  'reorganization',
+  'relocation',
+  'expansion',
   // skills
-  'stubborn', 'ravenous', 'ravenous-original', 'righteous', 'righteous-original', 'plundering', 'plundering-original',
-  'hostile', 'ruthless', 'prideful', 'calculating', 'arrogant', 'conformist', 'curious', 'curious-original',
-  'industrious', 'brilliant', 'precocious', 'patient', 'brutal', 'dangerous', 'clever', 'clever-original',
-  'ambitious', 'profiteering',
+  'stubborn',
+  'ravenous',
+  'ravenous-original',
+  'righteous',
+  'righteous-original',
+  'plundering',
+  'plundering-original',
+  'hostile',
+  'ruthless',
+  'prideful',
+  'calculating',
+  'arrogant',
+  'conformist',
+  'curious',
+  'curious-original',
+  'industrious',
+  'brilliant',
+  'precocious',
+  'patient',
+  'brutal',
+  'dangerous',
+  'clever',
+  'clever-original',
+  'ambitious',
+  'profiteering',
 ]);
 
 /** Every card of a card mode. */
@@ -171,7 +203,13 @@ export function setSkills(s: GameState, p: number, ids: string[]) {
 function deal(s: GameState, offset: number) {
   const list = dealable(s.mode);
   for (const p of s.players) setSkills(s, p.id, []);
-  s.players.forEach((p, i) => setSkills(s, p.id, [0, 1, 2].map((k) => list[(offset + 3 * i + k) % list.length])));
+  s.players.forEach((p, i) =>
+    setSkills(
+      s,
+      p.id,
+      [0, 1, 2].map((k) => list[(offset + 3 * i + k) % list.length]),
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -197,7 +235,7 @@ interface Step {
 }
 
 /** The active skill `p` holds in `s` with one of these engine effects, if any. */
-export function held(s: GameState, p: PlayerId, ...effects: string[]): string | undefined {
+function held(s: GameState, p: PlayerId, ...effects: string[]): string | undefined {
   return s.players[p].skills.find((sk) => sk.active && effects.includes(effectOf(sk.id)))?.id;
 }
 
@@ -222,7 +260,10 @@ function destroyed(c: Step, w: PlayerId, v: PlayerId, inCombat: boolean) {
   const ravenousO = inCombat ? held(before, w, 'ravenous-original') : undefined;
   const dominance = Math.min(6, before.players[w].dominance + stakes(w) + (ravenous ? 1 : 0));
   if (after.players[w].dominance !== dominance) {
-    c.fail(ravenous ?? ravenousO, `winner's Dominance ${before.players[w].dominance} → ${after.players[w].dominance}, expected ${dominance}`);
+    c.fail(
+      ravenous ?? ravenousO,
+      `winner's Dominance ${before.players[w].dominance} → ${after.players[w].dominance}, expected ${dominance}`,
+    );
   } else c.fire(ravenous ?? ravenousO);
 
   // Loser (combat only, RULE-SUGGESTIONS #26): Dominance −1 (−2 with Original Ravenous), unless Righteous.
@@ -230,7 +271,8 @@ function destroyed(c: Step, w: PlayerId, v: PlayerId, inCombat: boolean) {
     const keep = held(before, v, 'righteous', 'righteous-original');
     const was = before.players[v].dominance;
     const expected = keep ? was : Math.max(1, was - stakes(v));
-    if (after.players[v].dominance !== expected) c.fail(keep, `loser's Dominance ${was} → ${after.players[v].dominance}, expected ${expected}`);
+    if (after.players[v].dominance !== expected)
+      c.fail(keep, `loser's Dominance ${was} → ${after.players[v].dominance}, expected ${expected}`);
     else if (keep && was > 1) c.fire(keep);
   }
 
@@ -240,26 +282,30 @@ function destroyed(c: Step, w: PlayerId, v: PlayerId, inCombat: boolean) {
   // Research: Plundering +3 on the first destroy of a turn (Original: on your own turn); Righteous gains none.
   const plunder = first ? (held(before, w, 'plundering') ?? (ownTurn ? held(before, w, 'plundering-original') : undefined)) : undefined;
   const research = held(before, w, 'righteous') ? before.players[w].research : Math.min(6, before.players[w].research + (plunder ? 3 : 0));
-  if (after.players[w].research !== research) c.fail(plunder, `winner's research ${before.players[w].research} → ${after.players[w].research}, expected ${research}`);
+  if (after.players[w].research !== research)
+    c.fail(plunder, `winner's research ${before.players[w].research} → ${after.players[w].research}, expected ${research}`);
   else c.fire(plunder);
 
   // Actions: Hostile / Warlike +1 on the first destroy in your own action phase.
   if (!turnChanged(c)) {
     const hostile = first && ownTurn && before.turn.phase === 'actions' ? held(before, w, 'hostile') : undefined;
     const actions = before.turn.actionsLeft + (hostile ? 1 : 0);
-    if (after.turn.actionsLeft !== actions) c.fail(hostile, `actions ${before.turn.actionsLeft} → ${after.turn.actionsLeft}, expected ${actions}`);
+    if (after.turn.actionsLeft !== actions)
+      c.fail(hostile, `actions ${before.turn.actionsLeft} → ${after.turn.actionsLeft}, expected ${actions}`);
     else c.fire(hostile);
   }
 
   // Ruthless: on the first destroy, a choice of the victim's active skills to disable.
   const ruthless = first ? held(before, w, 'ruthless') : undefined;
   if (ruthless && before.players[v].skills.some((sk) => sk.active)) {
-    if (!after.pending.some((p) => p.kind === 'ruthless' && p.player === w && p.victim === v)) c.fail(ruthless, 'no Ruthless decision after the first destroy');
+    if (!after.pending.some((p) => p.kind === 'ruthless' && p.player === w && p.victim === v))
+      c.fail(ruthless, 'no Ruthless decision after the first destroy');
     else c.fire(ruthless);
   }
   // Prideful: whoever destroys its owner's ship may take it.
   if (before.players[v].skills.some((sk) => effectOf(sk.id) === 'prideful')) {
-    if (!after.pending.some((p) => p.kind === 'prideful' && p.player === w && p.victim === v)) c.fail('prideful', 'no Prideful decision after destroying its owner’s ship');
+    if (!after.pending.some((p) => p.kind === 'prideful' && p.player === w && p.victim === v))
+      c.fail('prideful', 'no Prideful decision after destroying its owner’s ship');
   }
 }
 
@@ -283,7 +329,10 @@ export function cardTaken(before: GameState, action: Action, after: GameState): 
   if (action.type === 'patientTactic' && head?.kind === 'patientTactic' && action.index !== undefined) {
     return { id: before.market.tacticRow[action.index], p: head.player, played: false };
   }
-  if ((action.type === 'draftSkill' && head?.kind === 'skillDraft') || (action.type === 'changeOfHeart' && head?.kind === 'changeOfHeart')) {
+  if (
+    (action.type === 'draftSkill' && head?.kind === 'skillDraft') ||
+    (action.type === 'changeOfHeart' && head?.kind === 'changeOfHeart')
+  ) {
     return { id: action.skill, p: head.player, played: false };
   }
 }
@@ -335,7 +384,8 @@ const ORACLES: ((c: Step) => void)[] = [
       if (was.loc.zone !== 'board' || d.loc.zone !== 'scrapyard') continue;
       const calc = held(c.before, d.owner, 'calculating');
       if (!calc) continue;
-      if (!c.after.pending.some((p) => p.kind === 'clever' && p.die === d.id)) c.fail(calc, `no number choice for ${d.id} sent to the scrapyard`);
+      if (!c.after.pending.some((p) => p.kind === 'clever' && p.die === d.id))
+        c.fail(calc, `no number choice for ${d.id} sent to the scrapyard`);
       else c.fire(calc);
     }
   },
@@ -363,8 +413,12 @@ const ORACLES: ((c: Step) => void)[] = [
     const penalty = before.players[p].actionPenalty + (played && effectOf(played.id) === 'sabotage' && played.p !== p ? 1 : 0);
     const base = after.turn.bonus ? 2 : Math.max(0, 3 - penalty);
     const mine = shipsOnBoard(after, p);
-    const arrogant = held(after, p, 'arrogant') && after.players.every((o) => o.id === p || shipsOnBoard(after, o.id).length < mine.length) ? held(after, p, 'arrogant') : undefined;
-    const conformist = held(after, p, 'conformist') && new Set(mine.map((d) => d.value)).size < mine.length ? held(after, p, 'conformist') : undefined;
+    const arrogant =
+      held(after, p, 'arrogant') && after.players.every((o) => o.id === p || shipsOnBoard(after, o.id).length < mine.length)
+        ? held(after, p, 'arrogant')
+        : undefined;
+    const conformist =
+      held(after, p, 'conformist') && new Set(mine.map((d) => d.value)).size < mine.length ? held(after, p, 'conformist') : undefined;
     const actions = base + (arrogant ? 1 : 0) + (conformist ? 1 : 0);
     const label = penalty ? 'sabotage' : (arrogant ?? conformist);
     if (after.turn.actionsLeft !== actions) c.fail(label, `turn starts with ${after.turn.actionsLeft} actions, expected ${actions}`);
@@ -373,20 +427,23 @@ const ORACLES: ((c: Step) => void)[] = [
       c.fire(conformist);
     }
     const industrious = held(after, p, 'industrious');
-    if (after.turn.freeDeploys !== (industrious ? 1 : 0)) c.fail(industrious, `${after.turn.freeDeploys} free deploys at the start of the turn`);
+    if (after.turn.freeDeploys !== (industrious ? 1 : 0))
+      c.fail(industrious, `${after.turn.freeDeploys} free deploys at the start of the turn`);
     else c.fire(industrious);
     const curious = held(after, p, 'curious-original');
     if (after.turn.freeMoves !== (curious ? 1 : 0)) c.fail(curious, `${after.turn.freeMoves} free moves at the start of the turn`);
     else c.fire(curious);
     const brilliant = held(after, p, 'brilliant');
     if (brilliant && !held(after, p, 'righteous') && before.turn.player !== p && !after.pending.some((x) => x.kind === 'brilliant')) {
-      if (after.players[p].research < Math.min(6, before.players[p].research + 2)) c.fail(brilliant, 'no research at the start of the turn');
+      if (after.players[p].research < Math.min(6, before.players[p].research + 2))
+        c.fail(brilliant, 'no research at the start of the turn');
       else c.fire(brilliant);
     }
     for (const o of after.players)
       for (const sk of o.skills) {
         if (!sk.active && sk.disabledUntil === undefined) c.fail(sk.id, `${o.name}'s skill not in effect after the turn changed`);
-        if (!after.turn.bonus && sk.disabledUntil === p) c.fail('ruthless', `${o.name}'s skill still disabled at the start of the Ruthless player's turn`);
+        if (!after.turn.bonus && sk.disabledUntil === p)
+          c.fail('ruthless', `${o.name}'s skill still disabled at the start of the Ruthless player's turn`);
       }
   },
 
@@ -397,7 +454,8 @@ const ORACLES: ((c: Step) => void)[] = [
     const precocious = held(c.before, p, 'precocious');
     const was = c.before.players[p].research;
     const expected = was >= (precocious ? 4 : 6) ? 1 : was;
-    if (c.after.players[p].research !== expected) c.fail(precocious, `research ${was} → ${c.after.players[p].research} at the end of the turn, expected ${expected}`);
+    if (c.after.players[p].research !== expected)
+      c.fail(precocious, `research ${was} → ${c.after.players[p].research} at the end of the turn, expected ${expected}`);
     else if (precocious && was >= 4 && was < 6) c.fire(precocious);
   },
 
@@ -420,7 +478,8 @@ const ORACLES: ((c: Step) => void)[] = [
         if (now.missiles !== was.missiles + 2) bad(`missiles ${was.missiles} → ${now.missiles}, expected +2`);
         break;
       case 'momentum':
-        if (now.bonusTurns.length !== was.bonusTurns.length + 1 && !(turnChanged(c) && after.turn.player === p && after.turn.bonus)) bad('no bonus turn queued');
+        if (now.bonusTurns.length !== was.bonusTurns.length + 1 && !(turnChanged(c) && after.turn.player === p && after.turn.bonus))
+          bad('no bonus turn queued');
         break;
       case 'plan-ahead':
         if (now.planAhead < 1) bad('Plan Ahead not in effect');
@@ -434,7 +493,8 @@ const ORACLES: ((c: Step) => void)[] = [
         break;
       case 'sabotage-original':
         for (const o of before.players) {
-          if (o.id !== p && o.skills.length && !after.pending.some((x) => x.kind === 'discardSkill' && x.player === o.id)) bad(`${o.name} does not discard a skill`);
+          if (o.id !== p && o.skills.length && !after.pending.some((x) => x.kind === 'discardSkill' && x.player === o.id))
+            bad(`${o.name} does not discard a skill`);
         }
         break;
       case 'show-of-force':
@@ -474,7 +534,14 @@ const ORACLES: ((c: Step) => void)[] = [
       if (!legal.some((a) => a.type === 'takeCard' && a.store)) c.fail('patient', 'no option to store a Tactic');
     }
     const p = before.turn.player;
-    if (legal && !head && before.turn.phase === 'actions' && held(before, p, 'patient') && before.players[p].storedTactics?.length && !before.turn.storedTacticPlayed) {
+    if (
+      legal &&
+      !head &&
+      before.turn.phase === 'actions' &&
+      held(before, p, 'patient') &&
+      before.players[p].storedTactics?.length &&
+      !before.turn.storedTacticPlayed
+    ) {
       if (!legal.some((a) => a.type === 'playStoredTactic')) c.fail('patient', 'stored Tactic not playable');
     }
   },
@@ -486,13 +553,14 @@ const ORACLES: ((c: Step) => void)[] = [
     const curious = held(before, p, 'curious');
     if (!curious || !legal || before.pending.length || before.turn.phase !== 'actions') return;
     if (c.turn.curiousUsed) {
-      if (legal.some((a) => a.type !== 'endTurn' && a.type !== 'playStoredTactic')) c.fail(curious, 'more actions offered after the Curious action');
+      if (legal.some((a) => a.type !== 'endTurn' && a.type !== 'playStoredTactic'))
+        c.fail(curious, 'more actions offered after the Curious action');
       return;
     }
     if (before.turn.actionsLeft > 0 || c.turn.attackedOrConquered || before.turn.storedTacticPlayed) return;
     const canResearch = before.players[p].research < 6 && !held(before, p, 'righteous');
     if (canResearch && !legal.some((a) => a.type === 'research')) c.fail(curious, 'no Curious Research offered');
-    if ((action.type === 'research' || ((action.type === 'move' || action.type === 'carry') && before.turn.freeMoves === 0))) {
+    if (action.type === 'research' || ((action.type === 'move' || action.type === 'carry') && before.turn.freeMoves === 0)) {
       c.turn.curiousUsed = true;
       c.fire(curious);
     }
@@ -522,12 +590,14 @@ const ORACLES: ((c: Step) => void)[] = [
     const a = c.action;
     if (a.type === 'clever') {
       const head = c.before.pending[0];
-      if (head?.kind === 'clever') c.fire(head.source === 'calculating' ? undefined : held(c.before, head.player, 'clever', 'clever-original'));
+      if (head?.kind === 'clever')
+        c.fire(head.source === 'calculating' ? undefined : held(c.before, head.player, 'clever', 'clever-original'));
     }
     if (a.type !== 'reconfigure' && a.type !== 'freeReconfigure') return;
     const p = c.before.turn.player;
     const clever = held(c.before, p, 'clever', 'clever-original');
-    if (clever && !c.after.pending.some((x) => x.kind === 'clever' && x.die === a.die)) c.fail(clever, 'no number choice after a Reconfigure');
+    if (clever && !c.after.pending.some((x) => x.kind === 'clever' && x.die === a.die))
+      c.fail(clever, 'no number choice after a Reconfigure');
   },
 
   // Infamy: Dominance reaching the threshold (6, or 4 with Prideful) earns an Infamy decision.
@@ -538,7 +608,8 @@ const ORACLES: ((c: Step) => void)[] = [
       const wasAt = held(c.before, p.id, 'prideful') ? 4 : 6;
       const crossed = p.dominance >= at && (p.dominance > c.before.players[p.id].dominance || at < wasAt);
       if (!crossed || !infamyTargets(c.after, p.id).length) continue;
-      if (!c.after.pending.some((x) => x.kind === 'infamy' && x.player === p.id)) c.fail(prideful, `${p.name} at ${p.dominance} Dominance without Infamy`);
+      if (!c.after.pending.some((x) => x.kind === 'infamy' && x.player === p.id))
+        c.fail(prideful, `${p.name} at ${p.dominance} Dominance without Infamy`);
       else if (prideful && p.dominance < 6) c.fire(prideful);
     }
   },
@@ -633,7 +704,8 @@ export function auditGame(g: AuditGame, opts: { maxSteps?: number; onStep?: (ste
       if (g.deal !== undefined) deal(s, g.deal);
       dealt = true;
     }
-    if (s.turn.number !== turn.number) turn = { number: s.turn.number, attackedOrConquered: false, curiousUsed: false, destroyers: new Set() };
+    if (s.turn.number !== turn.number)
+      turn = { number: s.turn.number, attackedOrConquered: false, curiousUsed: false, destroyers: new Set() };
 
     action = null;
     after = undefined;
@@ -650,12 +722,18 @@ export function auditGame(g: AuditGame, opts: { maxSteps?: number; onStep?: (ste
 
     // Flagship carries are only listed on request (they are many); the higher AI levels use them.
     const legal = s.pending[0]?.kind === 'combat' ? null : legalActions(s, { includeCarry: 'passenger' in action });
-    if (legal && !legal.some((a) => keyOf(a) === keyOf(action!))) flag(undefined, `AI chose an action legalActions() doesn't offer: ${keyOf(action)}`);
+    if (legal && !legal.some((a) => keyOf(a) === keyOf(action!)))
+      flag(undefined, `AI chose an action legalActions() doesn't offer: ${keyOf(action)}`);
 
     try {
       after = apply(s, action);
     } catch (e) {
-      flag(undefined, e instanceof RuleError ? `engine refused ${keyOf(action)}: ${e.message}` : `engine crashed on ${keyOf(action)}: ${(e as Error).stack}`);
+      flag(
+        undefined,
+        e instanceof RuleError
+          ? `engine refused ${keyOf(action)}: ${e.message}`
+          : `engine crashed on ${keyOf(action)}: ${(e as Error).stack}`,
+      );
       break;
     }
 
@@ -685,7 +763,12 @@ export function auditGame(g: AuditGame, opts: { maxSteps?: number; onStep?: (ste
       const c: Step = { before: s, action, after, legal, turn, fail: flag, fire };
       for (const oracle of ORACLES) oracle(c);
       otherFirings(c).forEach(fire);
-      if (action.type === 'attack' || action.type === 'freeAttack' || action.type === 'conquer' || (action.type === 'tactical' && 'target' in action)) {
+      if (
+        action.type === 'attack' ||
+        action.type === 'freeAttack' ||
+        action.type === 'conquer' ||
+        (action.type === 'tactical' && 'target' in action)
+      ) {
         turn.attackedOrConquered = true;
       }
       if (turnChanged(c)) {

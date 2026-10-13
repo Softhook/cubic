@@ -11,5 +11,5 @@ export * from './effects';
 export * from './board';
 export * from './hud';
 export * from './props';
-export { icon, ICONS } from '../icons';
-export { DOMINANCE, INK, PLAYER_HUES, RESEARCH } from '../tokens';
+export { icon } from '../icons';
+export { DOMINANCE, RESEARCH } from '../tokens';

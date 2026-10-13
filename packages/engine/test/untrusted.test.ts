@@ -15,7 +15,24 @@ import { createGame, legalActions, RuleError, rulesOf, spaces, tryApply, type Ac
 import { CARD_IDS } from './decisions';
 import { playAiGame, players, seededRandom } from './helpers';
 
-const GARBAGE: unknown[] = [undefined, null, -1, 999, 1.5, NaN, '', 'x', true, {}, [], { r: -1, c: 0 }, { r: 1e9, c: 1e9 }, { r: '1', c: 1 }, '__proto__', 'constructor'];
+const GARBAGE: unknown[] = [
+  undefined,
+  null,
+  -1,
+  999,
+  1.5,
+  NaN,
+  '',
+  'x',
+  true,
+  {},
+  [],
+  { r: -1, c: 0 },
+  { r: 1e9, c: 1e9 },
+  { r: '1', c: 1 },
+  '__proto__',
+  'constructor',
+];
 const BAD_TYPES = ['constructor', 'toString', '__proto__', 'hasOwnProperty', 'nope', ''];
 const TYPES = Object.keys(SHAPES) as Action['type'][];
 const FIELDS = Object.fromEntries(TYPES.map((t) => [t, Object.keys(SHAPES[t])])) as Record<Action['type'], string[]>;
@@ -24,10 +41,13 @@ const RANDOM_PER_TYPE = 12;
 
 /** Values a field may get in `s`: the game's own (so many random actions are well formed), and garbage. */
 function pool(s: GameState, random: () => number): unknown[] {
-  const pick = <T,>(xs: T[], n: number) => Array.from({ length: Math.min(n, xs.length) }, () => xs[Math.floor(random() * xs.length)]);
+  const pick = <T>(xs: T[], n: number) => Array.from({ length: Math.min(n, xs.length) }, () => xs[Math.floor(random() * xs.length)]);
   const { rows, cols } = s.board;
   return [
-    ...pick(s.dice.map((d) => d.id), 6),
+    ...pick(
+      s.dice.map((d) => d.id),
+      6,
+    ),
     ...s.players.flatMap((p) => p.skills.map((k) => k.id)),
     ...s.market.skillRow,
     ...s.market.tacticRow,
@@ -36,9 +56,21 @@ function pool(s: GameState, random: () => number): unknown[] {
     { r: 0, c: 0 },
     { r: rows - 1, c: cols - 1 },
     ...s.players.map((p) => p.id),
-    0, 1, 2, 3, 5, 6, 7, s.board.planets.length - 1,
-    true, false,
-    'attacker', 'defender', 'skill', 'tactic', 'expansion',
+    0,
+    1,
+    2,
+    3,
+    5,
+    6,
+    7,
+    s.board.planets.length - 1,
+    true,
+    false,
+    'attacker',
+    'defender',
+    'skill',
+    'tactic',
+    'expansion',
     ...GARBAGE,
   ];
 }

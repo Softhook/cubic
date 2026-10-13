@@ -31,7 +31,19 @@ export function PlayerList({ game, ctl, dispatch }: { game: GameState; ctl: Cont
   );
 }
 
-function PlayerCard({ game, p, ctl, dispatch, showScrap }: { game: GameState; p: PlayerState; ctl: Controller; dispatch: Dispatch; showScrap: boolean }) {
+function PlayerCard({
+  game,
+  p,
+  ctl,
+  dispatch,
+  showScrap,
+}: {
+  game: GameState;
+  p: PlayerState;
+  ctl: Controller;
+  dispatch: Dispatch;
+  showScrap: boolean;
+}) {
   const active = game.phase === 'play' && game.turn.player === p.id;
   const rules = rulesOf(game);
   const placed = game.board.planets.reduce((a, pl) => a + pl.cubes.filter((x) => x === p.id).length, 0);
@@ -44,7 +56,9 @@ function PlayerCard({ game, p, ctl, dispatch, showScrap }: { game: GameState; p:
         <strong>{p.name}</strong>
         {p.ai && <span className="tag">AI</span>}
         <Tip className="cubes" tip={`${placed} of ${totalCubes} cubes placed`}>
-          <small>Cubes {placed}/{totalCubes}</small>
+          <small>
+            Cubes {placed}/{totalCubes}
+          </small>
           {Array.from({ length: totalCubes }, (_, i) => (
             <span key={i} className={i < placed ? 'placed' : ''} />
           ))}
@@ -55,10 +69,26 @@ function PlayerCard({ game, p, ctl, dispatch, showScrap }: { game: GameState; p:
         {rules.cards && <Track label="Research" value={p.research} tone="res" />}
       </div>
       <div className="player-row">
-        {rules.startingMissiles > 0 && <Tip className="stat" tip="Missiles: set any combat roll to 1"><MissileIcon size={14} /> {p.missiles}</Tip>}
-        {p.planAhead > 0 && <Tip className="stat gold" tip="Plan Ahead: all your combat rolls are 1">Plan Ahead</Tip>}
-        {p.actionPenalty > 0 && <Tip className="stat bad" tip="Sabotaged: fewer actions next turn">−{p.actionPenalty} action</Tip>}
-        {p.ambitionTokens > 0 && <Tip className="stat" tip="Ambition tokens">Ambition {p.ambitionTokens}/3</Tip>}
+        {rules.startingMissiles > 0 && (
+          <Tip className="stat" tip="Missiles: set any combat roll to 1">
+            <MissileIcon size={14} /> {p.missiles}
+          </Tip>
+        )}
+        {p.planAhead > 0 && (
+          <Tip className="stat gold" tip="Plan Ahead: all your combat rolls are 1">
+            Plan Ahead
+          </Tip>
+        )}
+        {p.actionPenalty > 0 && (
+          <Tip className="stat bad" tip="Sabotaged: fewer actions next turn">
+            −{p.actionPenalty} action
+          </Tip>
+        )}
+        {p.ambitionTokens > 0 && (
+          <Tip className="stat" tip="Ambition tokens">
+            Ambition {p.ambitionTokens}/3
+          </Tip>
+        )}
       </div>
       {/* The turn panel shows one player's scrapyard (see turnScrapOwner); the others' are here. */}
       {showScrap && (

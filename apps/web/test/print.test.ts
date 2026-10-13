@@ -11,15 +11,22 @@ function sheets(html: string) {
   return html
     .split('<section class="sheet">')
     .slice(1)
-    .map((s) => [...s.matchAll(/<img src="([^"]*)" style="left:([\d.]+)mm;top:([\d.]+)mm">/g)].map((m) => [m[1], Number(m[2]), Number(m[3])] as const));
+    .map((s) =>
+      [...s.matchAll(/<img src="([^"]*)" style="left:([\d.]+)mm;top:([\d.]+)mm">/g)].map(
+        (m) => [m[1], Number(m[2]), Number(m[3])] as const,
+      ),
+    );
 }
 
 describe('print sheets', () => {
-  it.each(pieces.flatMap((p) => papers.map((paper) => [p.id, paper, p] as const)))('fit %s on %s with a margin for crop marks', (_, paper, p) => {
-    const { w, h } = PAPER[paper];
-    expect((w - p.cols * p.w) / 2).toBeGreaterThan(5);
-    expect((h - p.rows * p.h) / 2).toBeGreaterThan(5);
-  });
+  it.each(pieces.flatMap((p) => papers.map((paper) => [p.id, paper, p] as const)))(
+    'fit %s on %s with a margin for crop marks',
+    (_, paper, p) => {
+      const { w, h } = PAPER[paper];
+      expect((w - p.cols * p.w) / 2).toBeGreaterThan(5);
+      expect((h - p.rows * p.h) / 2).toBeGreaterThan(5);
+    },
+  );
 
   it.each(pieces)('put a crop mark at both ends of every cut ($id)', (p) => {
     const html = sheetsHtml(p, [{ front: 'a' }], 'a4');
@@ -29,7 +36,13 @@ describe('print sheets', () => {
 
   it('fills pages in reading order, then starts a new page', () => {
     const p = PIECES.card;
-    const pages = sheets(sheetsHtml(p, Array.from({ length: 10 }, (_, i) => ({ front: `f${i}` })), 'a4'));
+    const pages = sheets(
+      sheetsHtml(
+        p,
+        Array.from({ length: 10 }, (_, i) => ({ front: `f${i}` })),
+        'a4',
+      ),
+    );
     expect(pages.map((s) => s.length)).toEqual([9, 1]);
     const [, x0, y0] = pages[0][0];
     expect(pages[0][4]).toEqual(['f4', x0 + p.w, y0 + p.h]);

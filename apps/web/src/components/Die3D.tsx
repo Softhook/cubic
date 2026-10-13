@@ -97,12 +97,15 @@ export const Die3D = memo(function Die3D({
     if (frame.current) cancelAnimationFrame(frame.current);
     frame.current = undefined;
   };
-  useEffect(() => () => {
-    clearTimeout(settle.current);
-    clearTimeout(clatter.current);
-    cancelFrame();
-    hopAnimation.current?.cancel();
-  }, []);
+  useEffect(
+    () => () => {
+      clearTimeout(settle.current);
+      clearTimeout(clatter.current);
+      cancelFrame();
+      hopAnimation.current?.cancel();
+    },
+    [],
+  );
   /** Run `go` once the cube just built has been on screen for a frame. */
   const afterPaint = (go: () => void) => {
     cancelFrame();

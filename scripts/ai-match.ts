@@ -140,7 +140,9 @@ if (shard) {
 } else {
   const r = Number(jobs) > 1 ? await playInParallel(Number(jobs)) : play(0, n, true);
   const finished = n - r.unfinished;
-  console.log(`\n\n${mode}, ${seats} players, ${n} games${r.unfinished ? ` (${r.unfinished} unfinished)` : ''}, ${(r.turns / Math.max(1, finished)).toFixed(1)} turns on average`);
+  console.log(
+    `\n\n${mode}, ${seats} players, ${n} games${r.unfinished ? ` (${r.unfinished} unfinished)` : ''}, ${(r.turns / Math.max(1, finished)).toFixed(1)} turns on average`,
+  );
   for (const i of [0, 1]) {
     const avg = r.time[i] / Math.max(1, r.decisions[i]);
     console.log(`  level ${specs[i]}: ${r.wins[i]} wins, ${avg.toFixed(0)} ms per decision, slowest ${r.slowest[i].toFixed(0)} ms`);

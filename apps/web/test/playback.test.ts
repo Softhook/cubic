@@ -6,7 +6,13 @@ import type { CombatPending } from '@quantum/engine';
 import { COMBAT_MS, MAX_BEHIND, nextStep, STEP_MS } from '../src/online/playback';
 
 const base = quickStart(2, 1);
-const post = (author: string): Post => ({ id: `${author}${Math.random()}`, author, at: 0, prev: 'x', body: { t: 'act', seat: 0, action: { type: 'research' } } });
+const post = (author: string): Post => ({
+  id: `${author}${Math.random()}`,
+  author,
+  at: 0,
+  prev: 'x',
+  body: { t: 'act', seat: 0, action: { type: 'research' } },
+});
 const step = (state = structuredClone(base), author = 'them'): Step => ({ state, post: post(author) });
 const mine = (p: Post) => p.author === 'me';
 
@@ -49,7 +55,16 @@ describe('online playback', () => {
 
   it('keeps your own battle on screen until it is dismissed, but not each stage of it', () => {
     const side = { player: 0, die: 'x', ship: 3, dice: [4], missile: false };
-    const battle = (missile: boolean): CombatPending => ({ kind: 'combat', id: 7, attacker: { ...side, missile }, defender: { ...side, player: 1 }, from: [0, 0], at: [0, 1], rerolls: [] }) as unknown as CombatPending;
+    const battle = (missile: boolean): CombatPending =>
+      ({
+        kind: 'combat',
+        id: 7,
+        attacker: { ...side, missile },
+        defender: { ...side, player: 1 },
+        from: [0, 0],
+        at: [0, 1],
+        rerolls: [],
+      }) as unknown as CombatPending;
     const fighting = (missile: boolean) => step({ ...structuredClone(base), pending: [battle(missile)] });
     const steps = [fighting(false), fighting(true), step()];
     // A missile changes the battle: shown after the usual pause.

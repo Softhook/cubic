@@ -1,5 +1,15 @@
 import { FONTS, type CardDeck, type CardFace, type Measure } from '@quantum/art';
-import { EXPANSION, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, card, effectOf, isOriginalCard, type CardDef } from '@quantum/engine';
+import {
+  EXPANSION,
+  ORIGINAL_COMMAND,
+  ORIGINAL_GAMBIT,
+  SKILLS,
+  TACTICS,
+  card,
+  effectOf,
+  isOriginalCard,
+  type CardDef,
+} from '@quantum/engine';
 import { blobToDataUrl } from '../files';
 
 /** Every printed card, by deck, from the game's card data. */
@@ -12,7 +22,17 @@ export interface Deck {
 }
 
 const faces = (deck: CardDeck, defs: CardDef[]): CardFace[] =>
-  defs.map((c, i) => ({ id: c.id, name: c.name, subtitle: c.subtitle, text: c.text, category: c.category, deck, copies: c.count, index: i + 1, deckSize: defs.length }));
+  defs.map((c, i) => ({
+    id: c.id,
+    name: c.name,
+    subtitle: c.subtitle,
+    text: c.text,
+    category: c.category,
+    deck,
+    copies: c.count,
+    index: i + 1,
+    deckSize: defs.length,
+  }));
 
 export const DECKS: Deck[] = [
   { id: 'skill', name: 'Skills', edition: 'community', cards: faces('skill', SKILLS) },
@@ -109,12 +129,20 @@ export function cardFontCss(): Promise<string> {
   fontCss ??= (async () => {
     try {
       await cardFontsReady();
-      const css = await (await fetch('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;1,400&family=Orbitron:wght@900&display=block')).text();
+      const css = await (
+        await fetch('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;1,400&family=Orbitron:wght@900&display=block')
+      ).text();
       // Latin only: the card text needs nothing else, and each subset is another file.
       const blocks = [...css.matchAll(/\/\* latin \*\/\s*(@font-face\s*\{[^}]*\})/g)].map((m) => m[1]);
       const files = new Map<string, Promise<string>>();
       const inline = (url: string) => {
-        if (!files.has(url)) files.set(url, fetch(url).then((r) => r.blob()).then(blobToDataUrl));
+        if (!files.has(url))
+          files.set(
+            url,
+            fetch(url)
+              .then((r) => r.blob())
+              .then(blobToDataUrl),
+          );
         return files.get(url)!;
       };
       const out = await Promise.all(

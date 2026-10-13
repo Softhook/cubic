@@ -29,7 +29,13 @@ export function OnlineScreen({ secret, onLeave, onRules }: { secret: string; onL
       onQuit={onLeave}
       onLobby={onLeave}
       onRules={onRules}
-      side={<OnlinePanel g={g} secret={secret} onJoin={watching && openSeats.length && !g.mySeats.length ? () => setWatching(false) : undefined} />}
+      side={
+        <OnlinePanel
+          g={g}
+          secret={secret}
+          onJoin={watching && openSeats.length && !g.mySeats.length ? () => setWatching(false) : undefined}
+        />
+      }
       overlay={joining && <JoinDialog replay={g.replay} onJoin={g.claim} onWatch={() => setWatching(true)} />}
     />
   );
@@ -44,7 +50,10 @@ function Searching({ relays, failure, onLeave }: { relays: RelayStatus; failure:
   return (
     <div className="lobby">
       <div className="lobby-card online-searching">
-        <h2>{!failure && !late && <span className="spinner" />} {failure ? 'Can’t open this game' : !late ? 'Joining game…' : relays.connected ? 'Game not found' : 'No connection'}</h2>
+        <h2>
+          {!failure && !late && <span className="spinner" />}{' '}
+          {failure ? 'Can’t open this game' : !late ? 'Joining game…' : relays.connected ? 'Game not found' : 'No connection'}
+        </h2>
         <p className="muted">
           {failure
             ? `This browser couldn’t open the game: ${failure}`
@@ -53,11 +62,13 @@ function Searching({ relays, failure, onLeave }: { relays: RelayStatus; failure:
               : late
                 ? 'No relay has this game. Check that the link is complete, or ask whoever created the game to open it once so their browser can send it again.'
                 : relays.connected
-              ? `Connected to ${relays.connected} of ${relays.total} relays, looking for the game…`
-              : 'Connecting to the relays…'}
+                  ? `Connected to ${relays.connected} of ${relays.total} relays, looking for the game…`
+                  : 'Connecting to the relays…'}
         </p>
         <div className="modal-actions">
-          <button className="btn" onClick={onLeave}>Back to lobby</button>
+          <button className="btn" onClick={onLeave}>
+            Back to lobby
+          </button>
         </div>
       </div>
     </div>
@@ -79,21 +90,39 @@ function JoinDialog({ replay, onJoin, onWatch }: { replay: Replay; onJoin: (seat
   };
   return (
     <div className="overlay">
-      <div className="modal join-dialog" role="dialog" aria-modal="true" aria-labelledby="join-title" style={{ '--pc': s.players[chosen].color } as CSSProperties}>
+      <div
+        className="modal join-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="join-title"
+        style={{ '--pc': s.players[chosen].color } as CSSProperties}
+      >
         <h2 id="join-title">Join the game</h2>
         <p className="modal-sub">
           {seated.map((x) => `${x.name}${x.ai ? ' (AI)' : ''}`).join(', ')} {seated.length > 1 ? 'are' : 'is'} waiting for you.
         </p>
         <label className="field">
           <span>Your name</span>
-          <input autoFocus value={name} maxLength={14} placeholder="Commander" onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && join()} />
+          <input
+            autoFocus
+            value={name}
+            maxLength={14}
+            placeholder="Commander"
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && join()}
+          />
         </label>
         {open.length > 1 && (
           <label className="field">
             <span>Colour</span>
             <div className="segmented">
               {open.map((o) => (
-                <button key={o.id} className={o.id === chosen ? 'on' : ''} onClick={() => setSeat(o.id)} style={{ '--pc': s.players[o.id].color } as CSSProperties}>
+                <button
+                  key={o.id}
+                  className={o.id === chosen ? 'on' : ''}
+                  onClick={() => setSeat(o.id)}
+                  style={{ '--pc': s.players[o.id].color } as CSSProperties}
+                >
                   <span className="player-swatch" /> Player {o.id + 1}
                 </button>
               ))}
@@ -101,7 +130,9 @@ function JoinDialog({ replay, onJoin, onWatch }: { replay: Replay; onJoin: (seat
           </label>
         )}
         <div className="modal-actions">
-          <button className="btn" onClick={onWatch}>Just watch</button>
+          <button className="btn" onClick={onWatch}>
+            Just watch
+          </button>
           <button className="btn btn-primary" disabled={!name.trim()} onClick={join}>
             Join
           </button>
@@ -158,7 +189,11 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
       <span className="online-status">
         {ok && (unsent || !g.live) && !open ? <span className="spinner" /> : null} {status}
       </span>
-      <button className={`btn ${open ? 'btn-primary' : ''}`} onClick={copy} title="Copy the link to this game. Anyone with it can join an open seat or watch.">
+      <button
+        className={`btn ${open ? 'btn-primary' : ''}`}
+        onClick={copy}
+        title="Copy the link to this game. Anyone with it can join an open seat or watch."
+      >
         {copied ? 'Copied' : open ? 'Invite' : 'Link'}
       </button>
       {onJoin && (
@@ -169,7 +204,13 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
       {r.crash && <Stopped replay={r} />}
       {r.desync && <OutOfSync replay={r} />}
       {ask && (
-        <select className="ask-select" value={ask} aria-label="Battles to be asked about" title="When to wait for you to fire a missile or re-roll in a battle. Battles you're not asked about resolve without you." onChange={(e) => g.setAsk(e.target.value as AskMode)}>
+        <select
+          className="ask-select"
+          value={ask}
+          aria-label="Battles to be asked about"
+          title="When to wait for you to fire a missile or re-roll in a battle. Battles you're not asked about resolve without you."
+          onChange={(e) => g.setAsk(e.target.value as AskMode)}
+        >
           {(Object.keys(ASK_LABELS) as AskMode[]).map((m) => (
             <option key={m} value={m}>
               {ASK_LABELS[m]}
@@ -192,8 +233,10 @@ function OutOfSync({ replay }: { replay: Replay }) {
     <div className="online-desync" role="alert">
       <strong>Out of sync with {who}</strong>
       <span>
-        {d.why === 'rejected' ? `A move by ${who} doesn’t fit the game as this browser sees it.` : `${who}’s browser sees a different game after their move.`} One of you is probably
-        running an older version: both reload the page.
+        {d.why === 'rejected'
+          ? `A move by ${who} doesn’t fit the game as this browser sees it.`
+          : `${who}’s browser sees a different game after their move.`}{' '}
+        One of you is probably running an older version: both reload the page.
       </span>
       <button className="btn" onClick={() => location.reload()}>
         Reload
@@ -209,7 +252,9 @@ function Stopped({ replay }: { replay: Replay }) {
   return (
     <div className="online-desync" role="alert">
       <strong>{who ? `The game stopped on a move by ${who}` : 'The game stopped resolving a battle'}</strong>
-      <span>This browser’s game engine failed on it: a bug{who ? `, not a mistake by ${who}` : ''}. The details are in the browser console.</span>
+      <span>
+        This browser’s game engine failed on it: a bug{who ? `, not a mistake by ${who}` : ''}. The details are in the browser console.
+      </span>
       <button className="btn" onClick={() => location.reload()}>
         Reload
       </button>

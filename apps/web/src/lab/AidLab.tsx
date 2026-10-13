@@ -24,7 +24,11 @@ export function AidLab() {
   }, []);
 
   const svgOf = (o: { bleed?: boolean; rounded?: boolean } = {}) => playerAidSvg({ ...o, edition, measure, fontCss: fonts ?? '' });
-  const detail = useMemo(() => (fonts === null ? '' : URL.createObjectURL(new Blob([svgOf({ bleed, rounded: !bleed })], { type: 'image/svg+xml' }))), [bleed, fonts, edition]);
+  const detail = useMemo(
+    () => (fonts === null ? '' : URL.createObjectURL(new Blob([svgOf({ bleed, rounded: !bleed })], { type: 'image/svg+xml' }))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `svgOf` is rebuilt every render from these.
+    [bleed, fonts, edition],
+  );
   useEffect(() => () => URL.revokeObjectURL(detail), [detail]);
 
   const board: Printable = { name: edition, svg: (b) => svgOf({ bleed: b }) };
@@ -33,7 +37,15 @@ export function AidLab() {
   return (
     <div className="lab">
       <LabHeader page="aid">
-        <Segmented<AidEdition> small options={[['community', 'Community'], ['classic', 'Classic']]} value={edition} onPick={setEdition} />
+        <Segmented<AidEdition>
+          small
+          options={[
+            ['community', 'Community'],
+            ['classic', 'Classic'],
+          ]}
+          value={edition}
+          onPick={setEdition}
+        />
       </LabHeader>
       <div className="lab-aid-page">
         {detail ? <img className="lab-aid" src={detail} alt="Player aid" /> : <span className="lab-aid lab-aid-ph" />}

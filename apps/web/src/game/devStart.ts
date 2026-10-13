@@ -1,4 +1,15 @@
-import { apply, canRespondToCombat, createGame, defaultMap, isEmptySpace, legalActions, MAPS, MODES, tryApply, type GameState } from '@quantum/engine';
+import {
+  apply,
+  canRespondToCombat,
+  createGame,
+  defaultMap,
+  isEmptySpace,
+  legalActions,
+  MAPS,
+  MODES,
+  tryApply,
+  type GameState,
+} from '@quantum/engine';
 import { DEFAULT_AI_LEVEL } from '@quantum/ai';
 import { defaultSeat } from './seats';
 

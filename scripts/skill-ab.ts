@@ -17,7 +17,9 @@ const n = Number(games);
 const level = Number(lvl) as AiLevel;
 
 for (const skill of list.split(',')) {
-  let winsA = 0, unfinished = 0, turns = 0;
+  let winsA = 0,
+    unfinished = 0,
+    turns = 0;
   for (let g = 0; g < n; g++) {
     const aSeat = g % 2;
     let s: GameState = createGame({

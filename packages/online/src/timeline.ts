@@ -1,4 +1,15 @@
-import { apply, canRespondToCombat, createGame, isUndoable, mayAct, RuleError, type Action, type CombatPending, type GameState, type PlayerId } from '@quantum/engine';
+import {
+  apply,
+  canRespondToCombat,
+  createGame,
+  isUndoable,
+  mayAct,
+  RuleError,
+  type Action,
+  type CombatPending,
+  type GameState,
+  type PlayerId,
+} from '@quantum/engine';
 import { byTime, CHAINED, combatStage, PROTOCOL, stateHash, type AskMode, type Body, type GameConfig, type Post } from './protocol';
 
 export interface Seat {
@@ -373,7 +384,19 @@ function start(g: Post): Replay | null {
   }));
   // A human seat is either the creator's or open; anything else would be a seat nobody can play.
   if (seats.some((s) => !s.ai && !s.open && s.id !== b.creator) || seats[b.creator].ai) return null;
-  return { genesis: g, config, seats, steps: [{ state, post: null }], tip: g.id, tipAt: g.at, tipAuthor: g.author, undoSeat: null, combat: null, desync: null, crash: null };
+  return {
+    genesis: g,
+    config,
+    seats,
+    steps: [{ state, post: null }],
+    tip: g.id,
+    tipAt: g.at,
+    tipAuthor: g.author,
+    undoSeat: null,
+    combat: null,
+    desync: null,
+    crash: null,
+  };
 }
 
 /** Battle settings, and what each means now: 'always' (all battles) is 'own' since only fighters may respond. */
@@ -396,7 +419,13 @@ function wellFormed(p: Post): boolean {
     case 'claim':
       return seat && typeof b.name === 'string';
     case 'act':
-      return seat && typeof b.action === 'object' && b.action !== null && typeof b.action.type === 'string' && (b.h === undefined || typeof b.h === 'string');
+      return (
+        seat &&
+        typeof b.action === 'object' &&
+        b.action !== null &&
+        typeof b.action.type === 'string' &&
+        (b.h === undefined || typeof b.h === 'string')
+      );
     case 'undo':
       return seat;
     case 'ask':

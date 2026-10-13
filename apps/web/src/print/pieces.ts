@@ -51,4 +51,5 @@ export function fileName(p: Piece, item: Printable, o: { bleed: boolean; dpi?: n
 }
 
 /** A whole set's file name: `cubic-cards-community-bleed.zip`. */
-export const setName = (p: Piece, o: { bleed: boolean; part?: string }) => `cubic-${p.plural}${o.part ? `-${o.part}` : ''}${o.bleed ? '-bleed' : ''}.zip`;
+export const setName = (p: Piece, o: { bleed: boolean; part?: string }) =>
+  `cubic-${p.plural}${o.part ? `-${o.part}` : ''}${o.bleed ? '-bleed' : ''}.zip`;

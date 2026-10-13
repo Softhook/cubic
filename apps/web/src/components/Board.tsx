@@ -46,7 +46,8 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
       window.removeEventListener('pointercancel', off);
     };
   }, [held]);
-  const reachOf = held ?? (inspect && 'ship' in inspect && viaMouse.current && !yoursOf(game, ctl)(die(game, inspect.ship).owner) ? inspect.ship : null);
+  const reachOf =
+    held ?? (inspect && 'ship' in inspect && viaMouse.current && !yoursOf(game, ctl)(die(game, inspect.ship).owner) ? inspect.ship : null);
 
   // A click on empty board (no highlight there) still reaches the controller, to clear a selection.
   const onBoardClick = (e: MouseEvent<HTMLDivElement>) => {
@@ -113,19 +114,26 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
             }}
           />
           <Explosions game={game} cell={cell} />
-          {inspect && <BoardInfo key={inspectKey(inspect)} game={game} spots={spots} what={inspect} cell={cell} onClose={() => setInspect(null)} />}
+          {inspect && (
+            <BoardInfo key={inspectKey(inspect)} game={game} spots={spots} what={inspect} cell={cell} onClose={() => setInspect(null)} />
+          )}
         </div>
         {children}
       </div>
       {zoom.canZoom && <ZoomControls zoom={zoom} />}
       {zoom.zoomed && <OffscreenHints game={game} ctl={ctl} spots={spots} zoom={zoom} />}
-      {tip && <div className="zoom-tip" role="status">{tip}</div>}
+      {tip && (
+        <div className="zoom-tip" role="status">
+          {tip}
+        </div>
+      )}
     </div>
   );
 }
 
 /** Your ships: those of the seats this screen plays; sharing a screen, those of whoever's turn it is. */
-const yoursOf = (game: GameState, ctl: Controller) => (owner: number) => ctl.mine(owner) && (owner === game.turn.player || !ctl.mine(game.turn.player));
+const yoursOf = (game: GameState, ctl: Controller) => (owner: number) =>
+  ctl.mine(owner) && (owner === game.turn.player || !ctl.mine(game.turn.player));
 
 /**
  * The spaces another player's ship could move to with a plain move: its movement (with its owner's
@@ -212,20 +220,35 @@ function Ships({
         data-r={r}
         data-c={c}
         // In percent of its own size (one space), so a zoom or resize doesn't count as a move and glide.
-        style={{ transform: `translate(${c * 100}%, ${r * 100}%)`, width: cell, height: cell, '--pc': game.players[d.owner].color } as CSSProperties}
+        style={
+          {
+            transform: `translate(${c * 100}%, ${r * 100}%)`,
+            width: cell,
+            height: cell,
+            '--pc': game.players[d.owner].color,
+          } as CSSProperties
+        }
         onClick={() => ctl.onDie(d.id) === false && onInfo(d.id)}
         onPointerDown={yours(d.owner) ? undefined : (e) => onPress(d.id, e.pointerType !== 'mouse')}
         onContextMenu={(e) => e.preventDefault()}
         aria-label={`${game.players[d.owner].name}'s ${SHIP_NAMES[d.value]} (${d.value})${attack ? `, ${percent(attack.chance)} chance to win an attack` : ''}`}
         title={
           attack
-            ? [`Attack ${who}: ${percent(attack.chance)} to win`, ...attack.factors.attacker.map((f) => `You: ${f}`), ...attack.factors.defender.map((f) => `Them: ${f}`)].join('\n')
+            ? [
+                `Attack ${who}: ${percent(attack.chance)} to win`,
+                ...attack.factors.attacker.map((f) => `You: ${f}`),
+                ...attack.factors.defender.map((f) => `Them: ${f}`),
+              ].join('\n')
             : `${who}\n${ability.name}: ${ability.text}`
         }
       >
         <div className="ship-ring" />
         <Die3D value={d.value} rolls={d.rolls} size={cell * 0.56} color={game.players[d.owner].color} />
-        {abilityUsed && <span className="ship-badge" aria-label="Ability used this turn">✦</span>}
+        {abilityUsed && (
+          <span className="ship-badge" aria-label="Ability used this turn">
+            ✦
+          </span>
+        )}
         {attack && <OddsBadge chance={attack.chance} cell={cell} zoomed={zoomed} />}
       </div>
     );
@@ -233,13 +256,28 @@ function Ships({
 }
 
 /** The info bubble for a ship or planet, anchored to its space on the map. */
-function BoardInfo({ game, spots, what, cell, onClose }: { game: GameState; spots: ShipSpots; what: Inspect; cell: number; onClose: () => void }) {
+function BoardInfo({
+  game,
+  spots,
+  what,
+  cell,
+  onClose,
+}: {
+  game: GameState;
+  spots: ShipSpots;
+  what: Inspect;
+  cell: number;
+  onClose: () => void;
+}) {
   const anchor = useAnchorName();
   const spot = 'ship' in what ? spots.get(what.ship) : game.board.planets.find((p) => p.id === what.planet);
   if (!spot) return null; // the ship left the map
   return (
     <>
-      <div className="info-anchor" style={{ left: spot.c * cell, top: spot.r * cell, width: cell, height: cell, '--anchor': anchor } as CSSProperties} />
+      <div
+        className="info-anchor"
+        style={{ left: spot.c * cell, top: spot.r * cell, width: cell, height: cell, '--anchor': anchor } as CSSProperties}
+      />
       <InfoPop anchor={anchor} onClose={onClose}>
         {'ship' in what ? <ShipInfo game={game} id={what.ship} /> : <PlanetInfo game={game} id={what.planet} />}
       </InfoPop>

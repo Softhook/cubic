@@ -89,7 +89,7 @@ export function useAiDriver(game: GameState, dispatch: Dispatch, onError: (text:
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [game, dispatch, onError]);
+  }, [game, head, stage, dispatch, onError]);
 
   return stage && responding?.stage === stage ? responding.player : null;
 }

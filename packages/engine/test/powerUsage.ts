@@ -9,7 +9,7 @@ import { aiAction, players, seededRandom } from './helpers';
 /** The actions that spend a ship's once-per-turn power (carry and strike have tactical twins we don't count). */
 const POWER_ACTIONS = new Set<Action['type']>(['freeAttack', 'carry', 'swap', 'change', 'freeReconfigure', 'power']);
 
-export interface PowerRow {
+interface PowerRow {
   /** Die value of the ship (1 to 6). */
   value: number;
   ship: string;
@@ -93,7 +93,9 @@ export function measurePowerUsage(mode: GameMode, opts: UsageOptions): ModeUsage
 /** A text table of a mode's usage: uses per game, and the share of offered turns the power was used. */
 export function formatUsage(u: ModeUsage): string {
   const lines = [`${u.mode}: ${u.finished}/${u.games} games finished, ${u.playerTurns} player-turns`];
-  lines.push(`  ${'ship'.padEnd(16)}${'power'.padEnd(22)}${'used'.padStart(6)}${'/game'.padStart(8)}${'offered'.padStart(9)}${'use rate'.padStart(10)}`);
+  lines.push(
+    `  ${'ship'.padEnd(16)}${'power'.padEnd(22)}${'used'.padStart(6)}${'/game'.padStart(8)}${'offered'.padStart(9)}${'use rate'.padStart(10)}`,
+  );
   for (const r of u.rows) {
     const rate = r.hasAction ? (r.offeredTurns ? `${Math.round((100 * r.usedTurns) / r.offeredTurns)}%` : '–') : 'auto';
     lines.push(

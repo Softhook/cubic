@@ -24,7 +24,12 @@ export function exportSvg(piece: Piece, item: Printable, bleed: boolean): void {
 }
 
 /** A set as a ZIP: one PNG per face, named and foldered by the face's name, and a README. */
-export async function exportZip(piece: Piece, items: Printable[], o: { bleed: boolean; part?: string; notes?: string }, progress: Progress): Promise<void> {
+export async function exportZip(
+  piece: Piece,
+  items: Printable[],
+  o: { bleed: boolean; part?: string; notes?: string },
+  progress: Progress,
+): Promise<void> {
   const { w, h } = pieceSize(piece, o.bleed);
   const files: { name: string; blob: Blob }[] = [];
   for (const [k, item] of items.entries()) {
@@ -38,7 +43,13 @@ export async function exportZip(piece: Piece, items: Printable[], o: { bleed: bo
 }
 
 /** Opens the print dialog on sheets of these faces at trim size; each distinct face is drawn once. */
-export async function printSheets(piece: Piece, faces: { front: Printable; back?: Printable }[], paper: Paper, withBacks: boolean, progress: Progress): Promise<void> {
+export async function printSheets(
+  piece: Piece,
+  faces: { front: Printable; back?: Printable }[],
+  paper: Paper,
+  withBacks: boolean,
+  progress: Progress,
+): Promise<void> {
   const unique = new Map<string, Printable>();
   for (const f of faces) {
     unique.set(f.front.name, f.front);

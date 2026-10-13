@@ -43,7 +43,11 @@ const BASE: Record<'prototyping' | 'community', GameState> = {
 };
 
 /** Player 0 to act with 3 fresh actions, only the listed ships on the map, and the given skills. */
-function scenario(dice: Record<string, [number, number, number]>, mode: 'prototyping' | 'community' = 'prototyping', skills: string[] = []): GameState {
+function scenario(
+  dice: Record<string, [number, number, number]>,
+  mode: 'prototyping' | 'community' = 'prototyping',
+  skills: string[] = [],
+): GameState {
   const s = structuredClone(BASE[mode]);
   for (const d of s.dice) if (d.loc.zone === 'board') d.loc = { zone: 'scrapyard' };
   for (const [id, [r, c, value]] of Object.entries(dice)) {
@@ -61,7 +65,10 @@ const at = (s: GameState, id: string) => s.dice.find((d) => d.id === id)!;
 const farthest = (s: GameState, id: string) => Math.max(...[...moveOptions(s, id).moves.values()].map((m) => m.steps));
 const offered = (s: GameState, type: Action['type']) => legalActions(s).filter((a) => a.type === type);
 /** The ships p0d0 may shoot now, by the legal actions (so cost and power included). */
-const shots = (s: GameState) => legalActions(s).flatMap((a) => (a.type === 'power' && a.die === 'p0d0' && a.target ? [a.target] : [])).sort();
+const shots = (s: GameState) =>
+  legalActions(s)
+    .flatMap((a) => (a.type === 'power' && a.die === 'p0d0' && a.target ? [a.target] : []))
+    .sort();
 
 describe('Prototyping mode', () => {
   it('is listed after the official modes and plays like Community otherwise', () => {
@@ -111,7 +118,8 @@ describe('Prototyping mode', () => {
     };
     const visit = (node: ts.Node) => {
       if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) add(node.moduleSpecifier);
-      else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) add(node.moduleReference.expression);
+      else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference))
+        add(node.moduleReference.expression);
       else if (ts.isCallExpression(node)) {
         if (node.expression.kind === ts.SyntaxKind.ImportKeyword) add(node.arguments[0]);
         else if (ts.isIdentifier(node.expression) && node.expression.text === 'require') add(node.arguments[0]);
@@ -147,11 +155,13 @@ describe('Prototyping mode', () => {
   });
 
   it('recognizes static, re-export, dynamic and require imports in the boundary check', () => {
-    expect(
-      moduleSpecifiers(
-        "import './a'; export * from './b'; import('./c'); require('./d'); import item = require('./e');",
-      ),
-    ).toEqual(['./a', './b', './c', './d', './e']);
+    expect(moduleSpecifiers("import './a'; export * from './b'; import('./c'); require('./d'); import item = require('./e');")).toEqual([
+      './a',
+      './b',
+      './c',
+      './d',
+      './e',
+    ]);
   });
 
   it('uses mode-configured regular-turn actions and research cap', () => {
@@ -220,7 +230,8 @@ describe('zones of control (Picket on every ship)', () => {
   });
 
   it('every ship has a zone, and the engine refuses a move through one', () => {
-    for (const v of [1, 2, 3, 4, 5, 6]) expect(reachable(scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, v] })), `enemy ${v}`).not.toContain('0,4');
+    for (const v of [1, 2, 3, 4, 5, 6])
+      expect(reachable(scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, v] })), `enemy ${v}`).not.toContain('0,4');
     const move: Action = { type: 'move', die: 'p0d0', to: { r: 0, c: 4 } };
     expect(tryApply(scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, 6] }), move)).toBeNull();
     expect(tryApply(scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, 6] }, 'community'), move)).not.toBeNull();
@@ -228,7 +239,10 @@ describe('zones of control (Picket on every ship)', () => {
 
   it('lets a stopped ship attack another enemy next to it, but not with no steps left', () => {
     // Stopped at (2,2) by p1d0's zone, with p1d1 below it.
-    expect([...moveOptions(scenario({ p0d0: [2, 0, 3], p1d0: [2, 3, 6], p1d1: [3, 2, 6] }), 'p0d0').attacks.keys()].sort()).toEqual(['p1d0', 'p1d1']);
+    expect([...moveOptions(scenario({ p0d0: [2, 0, 3], p1d0: [2, 3, 6], p1d1: [3, 2, 6] }), 'p0d0').attacks.keys()].sort()).toEqual([
+      'p1d0',
+      'p1d1',
+    ]);
     expect(moveOptions(scenario({ p0d0: [0, 0, 2], p1d0: [0, 3, 6] }), 'p0d0').attacks.size).toBe(0);
   });
 
@@ -242,7 +256,10 @@ describe('zones of control (Picket on every ship)', () => {
 
   it('stops a ship on a Warp Gate exit in a zone', () => {
     const s = scenario({ p0d0: [0, 0, 3], p1d0: [3, 3, 6] });
-    s.gates = [{ r: 0, c: 1 }, { r: 3, c: 2 }];
+    s.gates = [
+      { r: 0, c: 1 },
+      { r: 3, c: 2 },
+    ];
     expect(reachable(s)).toContain('3,2');
     expect(reachable(s)).not.toContain('2,2'); // 3 steps only through the gate and (3,2)
   });
@@ -253,13 +270,18 @@ describe('zones of control (Picket on every ship)', () => {
     const random = mulberry32(42);
     for (let n = 0; n < 500; n++) {
       const dice: Record<string, [number, number, number]> = {};
-      [...spaces].sort(() => random() - 0.5).slice(0, 2 + Math.floor(random() * 8))
+      [...spaces]
+        .sort(() => random() - 0.5)
+        .slice(0, 2 + Math.floor(random() * 8))
         .forEach((i, k) => (dice[`p${k % 2}d${Math.floor(k / 2)}`] = [Math.floor(i / g.cols), i % g.cols, 1 + Math.floor(random() * 6)]));
       const s = scenario(dice);
       for (const id of Object.keys(dice).filter((x) => x.startsWith('p0'))) {
         const got = moveIndexes(s, id);
         const want = referenceReach(s, id);
-        expect([...got.moves.keys()].sort((a, b) => a - b), `${n} ${id}`).toEqual(want.moves);
+        expect(
+          [...got.moves.keys()].sort((a, b) => a - b),
+          `${n} ${id}`,
+        ).toEqual(want.moves);
         expect([...got.attacks.keys()].sort(), `${n} ${id}`).toEqual(want.attacks);
       }
     }
@@ -355,7 +377,10 @@ describe('Shoot (5 Interceptor)', () => {
   });
 
   it('reaches the first ship in a clear orthogonal line, at any distance', () => {
-    const ids = (s: GameState) => shootTargets(s, at(s, 'p0d0')).map((d) => d.id).sort();
+    const ids = (s: GameState) =>
+      shootTargets(s, at(s, 'p0d0'))
+        .map((d) => d.id)
+        .sort();
     expect(ids(scenario({ p0d0: [0, 2, 5], p1d0: [0, 3, 3], p1d1: [0, 0, 2] }))).toEqual(['p1d0', 'p1d1']);
     expect(ids(scenario({ p0d0: [0, 0, 5], p1d0: [0, 8, 3] }))).toEqual(['p1d0']);
     // Not diagonal, and not a knight's move.

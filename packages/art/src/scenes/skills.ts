@@ -1,9 +1,49 @@
 import { hsl, n } from '../svg';
 import { FONTS, INK } from '../tokens';
 import {
-  arrowPath, at, beam, burst, chip, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard,
-  RESEARCH, route, scrapyard, shield, ship, shipOn, forbidden, slash, space, sparkles, track, trackSlot, trails, world, wreck, missile,
-  badge, bolt, crest, dial, flask, orbit, pillar, token,
+  arrowPath,
+  at,
+  beam,
+  burst,
+  chip,
+  chips,
+  combatDie,
+  cube,
+  die,
+  DOMINANCE,
+  f,
+  glow,
+  glyph,
+  grid,
+  icon,
+  iso,
+  line,
+  loop,
+  miniCard,
+  RESEARCH,
+  route,
+  scrapyard,
+  shield,
+  ship,
+  shipOn,
+  forbidden,
+  slash,
+  space,
+  sparkles,
+  track,
+  trackSlot,
+  trails,
+  world,
+  wreck,
+  missile,
+  badge,
+  bolt,
+  crest,
+  dial,
+  flask,
+  orbit,
+  pillar,
+  token,
 } from '../kit';
 import type { Illustration } from '../illustrations';
 
@@ -14,10 +54,21 @@ export const SKILL_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, hue, box, p1 }) => {
       const [cx, cy] = at(box, 0.5, 0.5);
       const g = iso(cx, cy + 1, 6.4);
-      const path: [number, number][] = [[0, 2], [0, 1], [0, 0], [0, -1], [0, -2]];
+      const path: [number, number][] = [
+        [0, 2],
+        [0, 1],
+        [0, 0],
+        [0, -1],
+        [0, -2],
+      ];
       return [
         grid(`${id}-g`, g, -2, 2, -2, 2, hue),
-        f(path.slice(1, 4).map(([i, j]) => space(g, i, j, hue, { a: 0.22 })).join('') + space(g, 0, -2, hue, { a: 0.5, light: 72 })),
+        f(
+          path
+            .slice(1, 4)
+            .map(([i, j]) => space(g, i, j, hue, { a: 0.22 }))
+            .join('') + space(g, 0, -2, hue, { a: 0.5, light: 72 }),
+        ),
         shipOn(`${id}-a`, g, 0, 2, 3.4, 4, p1, { ghost: true }),
         route(`${id}-r`, g, path, hsl(hue, 90, 80), { dash: true, lift: 1 }),
         ...trails(`${id}-t`, r.fork('t'), g.x(0, -2) - 2, g.y(0, -2) + 0.5, 1, -0.58, 14, 2.2, hsl(hue, 90, 75), 5),
@@ -33,7 +84,12 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       const [cx, cy] = at(box, 0.34, 0.52);
       const card = miniCard(`${id}-c`, cx, cy, 15, hue, { rot: -8, icon: 'action' });
       const pads = [-4.4, 0, 4.4].map((dx) => [cx + dx * 0.99 + 0.8, cy + 8 - dx * 0.14] as const);
-      let tokens = pads.map(([x, y]) => `<ellipse cx="${n(x)}" cy="${n(y)}" rx="2" ry="1.2" fill="none" stroke="${hsl(hue, 80, 45)}" stroke-width=".25" stroke-dasharray=".6 .4"/>`).join('');
+      let tokens = pads
+        .map(
+          ([x, y]) =>
+            `<ellipse cx="${n(x)}" cy="${n(y)}" rx="2" ry="1.2" fill="none" stroke="${hsl(hue, 80, 45)}" stroke-width=".25" stroke-dasharray=".6 .4"/>`,
+        )
+        .join('');
       tokens += token(pads[0][0], pads[0][1] - 0.3, 1.8) + token(pads[1][0], pads[1][1] - 0.3, 1.8);
       const [tx, ty] = at(box, 0.78, 0.42);
       return [
@@ -56,7 +112,15 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       let rays = '';
       for (let i = 0; i < 12; i++) {
         const a = (i / 12) * Math.PI * 2;
-        rays += line(ix + Math.cos(a) * 7, iy + Math.sin(a) * 7, ix + Math.cos(a) * 10, iy + Math.sin(a) * 10, hsl(RESEARCH, 100, 80), 0.3, ' opacity=".7"');
+        rays += line(
+          ix + Math.cos(a) * 7,
+          iy + Math.sin(a) * 7,
+          ix + Math.cos(a) * 10,
+          iy + Math.sin(a) * 10,
+          hsl(RESEARCH, 100, 80),
+          0.3,
+          ' opacity=".7"',
+        );
       }
       return [
         glow(`${id}-g`, ix, iy, 11, 11, RESEARCH, 0.6, 66),
@@ -78,7 +142,10 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         ...beam(`${id}-b`, ax + 2, ay - 2, bx - 3, by + 1.5, hue, 1.2),
         ship(`${id}-e`, bx, by, 4.6, 3, p2),
         burst(`${id}-x`, bx - 3, by + 1.5, 6, hue, 8, r),
-        f(combatDie(dx - 5, dy + 1, 7, 5, 'attack', { rot: -14, struck: true }) + combatDie(dx + 5, dy + 3, 7, 2, 'attack', { rot: 9, glow: true })),
+        f(
+          combatDie(dx - 5, dy + 1, 7, 5, 'attack', { rot: -14, struck: true }) +
+            combatDie(dx + 5, dy + 3, 7, 2, 'attack', { rot: 9, glow: true }),
+        ),
       ];
     },
   },
@@ -94,11 +161,14 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         const x = sx + Math.cos(a) * 10.5;
         const y = sy + Math.sin(a) * 8.5;
         dial += v === 6 ? `<circle cx="${n(x)}" cy="${n(y)}" r="2.3" fill="${hsl(hue, 90, 60)}" stroke="#fff" stroke-width=".3"/>` : '';
-        dial += `<text x="${n(x)}" y="${n(y + 0.1)}" font-family="${FONTS.title}" font-weight="900" font-size="2.6" fill="${v === 6 ? INK :hsl(hue, 80, 80)}" text-anchor="middle" dominant-baseline="central">${v}</text>`;
+        dial += `<text x="${n(x)}" y="${n(y + 0.1)}" font-family="${FONTS.title}" font-weight="900" font-size="2.6" fill="${v === 6 ? INK : hsl(hue, 80, 80)}" text-anchor="middle" dominant-baseline="central">${v}</text>`;
       }
       return [
         f(scrapyard(cx, cy + 2, 18, 9, hue)),
-        f(`<ellipse cx="${n(sx)}" cy="${n(sy)}" rx="10.5" ry="8.5" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".25" stroke-dasharray="1 .8"/>` + dial),
+        f(
+          `<ellipse cx="${n(sx)}" cy="${n(sy)}" rx="10.5" ry="8.5" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".25" stroke-dasharray="1 .8"/>` +
+            dial,
+        ),
         arrowPath(`${id}-dn`, `M${n(sx)} ${n(sy + 5.8)}V${n(cy - 2)}`, hsl(hue, 90, 80), { w: 0.35, dash: true }),
         ship(`${id}-s`, sx, sy, 4.2, 6, p1),
         f(sparkles(r.fork('sp'), sx, sy, 5, 7, 3)),
@@ -111,11 +181,18 @@ export const SKILL_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, hue, box, p1 }) => {
       const [cx, cy] = at(box, 0.55, 0.5);
       let tumble = '';
-      [[-24, 6, 2.6, 0.25, -40, 1], [-17, 1, 3.2, 0.4, 25, 6], [-9, -2, 3.8, 0.6, -15, 2]].forEach(([dx, dy, s, o, rot, v]) => (tumble += die(cx + dx, cy + dy, s, v, p1, { opacity: o, rotate: rot })));
+      [
+        [-24, 6, 2.6, 0.25, -40, 1],
+        [-17, 1, 3.2, 0.4, 25, 6],
+        [-9, -2, 3.8, 0.6, -15, 2],
+      ].forEach(([dx, dy, s, o, rot, v]) => (tumble += die(cx + dx, cy + dy, s, v, p1, { opacity: o, rotate: rot })));
       const [ux, uy] = [cx + 12, cy - 7];
       const [lx, ly] = [cx + 12, cy + 7];
       return [
-        arrowPath(`${id}-arc`, `M${n(cx - 27)} ${n(cy + 9)}Q${n(cx - 16)} ${n(cy - 10)} ${n(cx - 5)} ${n(cy - 4)}`, hsl(hue, 80, 75), { w: 0.35, dash: true }),
+        arrowPath(`${id}-arc`, `M${n(cx - 27)} ${n(cy + 9)}Q${n(cx - 16)} ${n(cy - 10)} ${n(cx - 5)} ${n(cy - 4)}`, hsl(hue, 80, 75), {
+          w: 0.35,
+          dash: true,
+        }),
         f(tumble),
         ship(`${id}-s`, cx, cy, 5, 4, p1),
         f(die(ux, uy, 2.6, 5, p1, { ghost: true }) + die(lx, ly, 2.6, 3, p1, { ghost: true })),
@@ -136,8 +213,16 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         glow(`${id}-a`, ax, ay, 10, 10, DOMINANCE, 0.4),
         glow(`${id}-b`, bx, by, 10, 10, RESEARCH, 0.55),
         f(crest(ax, ay, 7, true)),
-        f(`<circle cx="${n(bx)}" cy="${n(by)}" r="7.36" fill="${hsl(RESEARCH, 60, 14, 0.7)}" stroke="${hsl(RESEARCH, 90, 75)}" stroke-width=".35"/>` + icon('research', bx, by, 7, hsl(RESEARCH, 100, 85))),
-        arrowPath(`${id}-t`, `M${n(ax + 9)} ${n(ay - 3)}Q${n((ax + bx) / 2)} ${n(ay - 10)} ${n(bx - 9)} ${n(by - 3)}`, hsl(RESEARCH, 90, 82), { w: 0.45 }),
+        f(
+          `<circle cx="${n(bx)}" cy="${n(by)}" r="7.36" fill="${hsl(RESEARCH, 60, 14, 0.7)}" stroke="${hsl(RESEARCH, 90, 75)}" stroke-width=".35"/>` +
+            icon('research', bx, by, 7, hsl(RESEARCH, 100, 85)),
+        ),
+        arrowPath(
+          `${id}-t`,
+          `M${n(ax + 9)} ${n(ay - 3)}Q${n((ax + bx) / 2)} ${n(ay - 10)} ${n(bx - 9)} ${n(by - 3)}`,
+          hsl(RESEARCH, 90, 82),
+          { w: 0.45 },
+        ),
         f(glyph(ax, ay + 12, '−1', 4.2, hsl(DOMINANCE, 100, 75)) + glyph(bx, by + 12, '+3', 4.2, hsl(RESEARCH, 100, 85))),
         f(sparkles(r.fork('sp'), bx, by, 9, 12, 3)),
       ];
@@ -169,7 +254,8 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       const [sx, sy] = at(box, 0.24, 0.66);
       const [nx, ny] = at(box, 0.7, 0.36);
       let arcs = '';
-      for (let i = 1; i <= 4; i++) arcs += `<path d="M${n(sx + 3 + i * 4)} ${n(sy - 2 - i * 3.5)}a${n(i * 3)} ${n(i * 3)} 0 0 1 ${n(i * 2.5)} ${n(i * 3)}" fill="none" stroke="${hsl(hue, 90, 80)}" stroke-width=".3" opacity="${n(1 - i * 0.18)}"/>`;
+      for (let i = 1; i <= 4; i++)
+        arcs += `<path d="M${n(sx + 3 + i * 4)} ${n(sy - 2 - i * 3.5)}a${n(i * 3)} ${n(i * 3)} 0 0 1 ${n(i * 2.5)} ${n(i * 3)}" fill="none" stroke="${hsl(hue, 90, 80)}" stroke-width=".3" opacity="${n(1 - i * 0.18)}"/>`;
       return [
         world(`${id}-w`, r.fork('w'), nx + 2, ny + 2, 10, 7),
         f(arcs),
@@ -204,13 +290,21 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       const d = `M${P(0, 2, 1)}Q${P(0, 1, 16)} ${P(0, 0, 1)}Q${P(0, -1, 16)} ${P(0, -2, 1)}`;
       return [
         grid(`${id}-g`, g, -2, 2, -2, 2, hue),
-        f(space(g, 0, 0, hue, { a: 0.35 }) + space(g, 0, -2, hue, { a: 0.35 }) + space(g, 0, 1, p2, { a: 0.1, dash: true }) + space(g, 0, -1, p2, { a: 0.1, dash: true })),
+        f(
+          space(g, 0, 0, hue, { a: 0.35 }) +
+            space(g, 0, -2, hue, { a: 0.35 }) +
+            space(g, 0, 1, p2, { a: 0.1, dash: true }) +
+            space(g, 0, -1, p2, { a: 0.1, dash: true }),
+        ),
         shipOn(`${id}-a`, g, 0, 2, 3.4, 3, p1, { ghost: true }),
         shipOn(`${id}-e1`, g, 0, 1, 3.6, 5, p2),
         shipOn(`${id}-e2`, g, 0, -1, 3.6, 2, p2),
         arrowPath(`${id}-r`, d, hsl(hue, 90, 82), { w: 0.5 }),
         shipOn(`${id}-s`, g, 0, -2, 3.8, 3, p1),
-        f(glyph(g.x(0, 0) + 0.8, g.y(0, 0) + 1.6, '1', 2.6, hsl(hue, 100, 85)) + glyph(g.x(0, -2) + 6, g.y(0, -2) + 1.5, '2', 2.6, hsl(hue, 100, 85))),
+        f(
+          glyph(g.x(0, 0) + 0.8, g.y(0, 0) + 1.6, '1', 2.6, hsl(hue, 100, 85)) +
+            glyph(g.x(0, -2) + 6, g.y(0, -2) + 1.5, '2', 2.6, hsl(hue, 100, 85)),
+        ),
         f(sparkles(r.fork('sp'), g.x(0, 0), g.y(0, 0) - 8, 1, 3, 2)),
       ];
     },
@@ -242,7 +336,9 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         f(col),
         f(die(cx, cy - 10.5, 2.6, 4, p1, { ghost: true }) + die(cx, cy + 10, 2.6, 2, p1, { ghost: true })),
         ship(`${id}-s`, cx, cy, 4.4, 3, p1),
-        f(`<path d="M${n(cx - 11)} ${n(cy - 7)}l3 -3 3 3M${n(cx - 11)} ${n(cy + 7)}l3 3 3 -3" fill="none" stroke="${hsl(hue, 90, 80)}" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round"/>`),
+        f(
+          `<path d="M${n(cx - 11)} ${n(cy - 7)}l3 -3 3 3M${n(cx - 11)} ${n(cy + 7)}l3 3 3 -3" fill="none" stroke="${hsl(hue, 90, 80)}" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round"/>`,
+        ),
         f(glyph(cx + 13, cy - 9.5, '+1', 3.6, hsl(hue, 100, 85)) + glyph(cx + 13, cy + 10, '−1', 3.6, hsl(hue, 100, 85))),
         f(sparkles(r.fork('sp'), cx, cy, 14, 22, 4)),
       ];
@@ -259,7 +355,10 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         ship(`${id}-a`, ax, ay, 4.8, 6, p1),
         ...beam(`${id}-b`, ax + 2.5, ay - 2, wx - 1, wy, hue, 1.1),
         ...wreck(`${id}-w`, wx, wy, 8, p2, 24, r.fork('w')),
-        arrowPath(`${id}-up`, `M${n(wx + 4)} ${n(wy - 4)}Q${n(wx + 8)} ${n(cy + 2)} ${n(cx - 5)} ${n(cy + 1)}`, hsl(hue, 90, 80), { w: 0.4, dash: true }),
+        arrowPath(`${id}-up`, `M${n(wx + 4)} ${n(wy - 4)}Q${n(wx + 8)} ${n(cy + 2)} ${n(cx - 5)} ${n(cy + 1)}`, hsl(hue, 90, 80), {
+          w: 0.4,
+          dash: true,
+        }),
         glow(`${id}-g`, cx, cy, 9, 9, hue, 0.5),
         f(chip(cx, cy, 4.6, 'new') + glyph(cx, cy + 9, '+1', 4, hsl(hue, 100, 85))),
       ];
@@ -271,7 +370,10 @@ export const SKILL_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, hue, box, p1 }) => {
       const [cx, cy] = at(box, 0.5, 0.64);
       const g = iso(cx, cy, 6);
-      const spots: [number, number][] = [[-1, 1], [1, 0]];
+      const spots: [number, number][] = [
+        [-1, 1],
+        [1, 0],
+      ];
       const out = [grid(`${id}-g`, g, -2, 2, -2, 2, hue, 0.4)];
       spots.forEach(([i, j], k) => {
         const x = g.x(i, j);
@@ -302,7 +404,25 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         f(cells),
         world(`${id}-w`, r.fork('w'), cx, cy, 4.2, 9),
         f(shipAt(-1, -1, 2) + shipAt(1, -1, 3) + shipAt(1, 1, 4)),
-        f([[-1, -1], [1, -1], [1, 1]].map(([i, j]) => line(cx + i * c * 0.72, cy + j * c * 0.72, cx + i * c * 0.38, cy + j * c * 0.38, hsl(hue, 100, 82), 0.4, ' stroke-dasharray=".8 .6"')).join('')),
+        f(
+          [
+            [-1, -1],
+            [1, -1],
+            [1, 1],
+          ]
+            .map(([i, j]) =>
+              line(
+                cx + i * c * 0.72,
+                cy + j * c * 0.72,
+                cx + i * c * 0.38,
+                cy + j * c * 0.38,
+                hsl(hue, 100, 82),
+                0.4,
+                ' stroke-dasharray=".8 .6"',
+              ),
+            )
+            .join(''),
+        ),
       ];
     },
   },
@@ -332,7 +452,10 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         f(dial(cx, cy, 11, hue, 24, 8)),
         loop(`${id}-l`, cx, cy, 8, hsl(hue, 100, 80), 0.6, -90, 330),
         f(chips(cx, cy, 1.6, ['spent', 'spent', 'spent'])),
-        arrowPath(`${id}-ar`, `M${n(cx + 12)} ${n(cy - 4)}Q${n(kx - 6)} ${n(cy - 10)} ${n(kx - 7)} ${n(ky - 3)}`, hsl(hue, 90, 82), { w: 0.4, dash: true }),
+        arrowPath(`${id}-ar`, `M${n(cx + 12)} ${n(cy - 4)}Q${n(kx - 6)} ${n(cy - 10)} ${n(kx - 7)} ${n(ky - 3)}`, hsl(hue, 90, 82), {
+          w: 0.4,
+          dash: true,
+        }),
         miniCard(`${id}-c`, kx, ky, 11, 352, { dark: true, icon: 'combat', rot: 8, state: 'glow' }),
         f(sparkles(r.fork('sp'), kx, ky, 8, 12, 3)),
       ];
@@ -347,7 +470,11 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         ship(`${id}-s`, cx - 21, cy, 4.2, 5, p1),
         f(glyph(cx - 13, cy, '+', 4.4, hsl(hue, 100, 85))),
         glow(`${id}-g`, cx - 4, cy, 6, 6, RESEARCH, 0.5),
-        f(`<circle cx="${n(cx - 4)}" cy="${n(cy)}" r="4.42" fill="${hsl(RESEARCH, 60, 16)}" stroke="${hsl(RESEARCH, 100, 80)}" stroke-width=".35"/>` + icon('research', cx - 4, cy - 1.2, 3.2, hsl(RESEARCH, 100, 85)) + glyph(cx - 4, cy + 2.2, '3', 2.4, hsl(RESEARCH, 100, 90))),
+        f(
+          `<circle cx="${n(cx - 4)}" cy="${n(cy)}" r="4.42" fill="${hsl(RESEARCH, 60, 16)}" stroke="${hsl(RESEARCH, 100, 80)}" stroke-width=".35"/>` +
+            icon('research', cx - 4, cy - 1.2, 3.2, hsl(RESEARCH, 100, 85)) +
+            glyph(cx - 4, cy + 2.2, '3', 2.4, hsl(RESEARCH, 100, 90)),
+        ),
         f(glyph(cx + 5, cy, '=', 4.4, hsl(hue, 100, 85))),
         world(`${id}-w`, r.fork('w'), cx + 17, cy, 7.5, 8),
         f(glyph(cx + 17, cy + 0.3, '8', 5.4, '#fff')),
@@ -360,11 +487,22 @@ export const SKILL_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, box, p2 }) => {
       const [wx, wy] = at(box, 0.3, 0.62);
       const [ix, iy] = at(box, 0.72, 0.32);
-      const cores = [[-8, -8], [0, -10], [8, -7]];
+      const cores = [
+        [-8, -8],
+        [0, -10],
+        [8, -7],
+      ];
       return [
         ...wreck(`${id}-w`, wx, wy, 9, p2, 280, r.fork('w')),
         f(die(wx, wy, 3.4, 5, p2, { opacity: 0.45, rotate: -15 })),
-        ...cores.map(([dx, dy], k) => arrowPath(`${id}-a${k}`, `M${n(wx + dx * 0.4)} ${n(wy + dy * 0.4)}Q${n(wx + dx)} ${n(wy + dy - 6)} ${n(ix - 5 + k * 2)} ${n(iy + 3)}`, hsl(RESEARCH, 90, 80), { w: 0.3, dash: true })),
+        ...cores.map(([dx, dy], k) =>
+          arrowPath(
+            `${id}-a${k}`,
+            `M${n(wx + dx * 0.4)} ${n(wy + dy * 0.4)}Q${n(wx + dx)} ${n(wy + dy - 6)} ${n(ix - 5 + k * 2)} ${n(iy + 3)}`,
+            hsl(RESEARCH, 90, 80),
+            { w: 0.3, dash: true },
+          ),
+        ),
         ...cores.map(([dx, dy], k) => glow(`${id}-c${k}`, wx + dx, wy + dy, 2.6, 2.6, RESEARCH, 0.95, 72)),
         glow(`${id}-i`, ix, iy, 9, 9, RESEARCH, 0.45),
         f(icon('research', ix, iy, 8, hsl(RESEARCH, 100, 88), 2)),
@@ -378,13 +516,19 @@ export const SKILL_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, box }) => {
       const [cx, cy] = at(box, 0.46, 0.6);
       const s = 0.85;
-      const marks = [4, 5, 6].map((v, k) => {
-        const y = cy + 6 * s - k * 4.5 * s - 1;
-        return line(cx + 3, y, cx + 7, y, hsl(RESEARCH, 100, 85), 0.3) + `<text x="${n(cx + 9)}" y="${n(y)}" font-family="${FONTS.title}" font-weight="900" font-size="2.4" fill="${hsl(RESEARCH, 100, 85)}" dominant-baseline="central">${v}</text>`;
-      }).join('');
+      const marks = [4, 5, 6]
+        .map((v, k) => {
+          const y = cy + 6 * s - k * 4.5 * s - 1;
+          return (
+            line(cx + 3, y, cx + 7, y, hsl(RESEARCH, 100, 85), 0.3) +
+            `<text x="${n(cx + 9)}" y="${n(y)}" font-family="${FONTS.title}" font-weight="900" font-size="2.4" fill="${hsl(RESEARCH, 100, 85)}" dominant-baseline="central">${v}</text>`
+          );
+        })
+        .join('');
       let bubbles = '';
       const rr = r.fork('b');
-      for (let i = 0; i < 9; i++) bubbles += `<circle cx="${n(cx + rr.range(-4, 4))}" cy="${n(cy - 14 * s - rr.range(1, 10))}" r="${n(rr.range(0.4, 1.1))}" fill="none" stroke="${hsl(RESEARCH, 100, 85)}" stroke-width=".25"/>`;
+      for (let i = 0; i < 9; i++)
+        bubbles += `<circle cx="${n(cx + rr.range(-4, 4))}" cy="${n(cy - 14 * s - rr.range(1, 10))}" r="${n(rr.range(0.4, 1.1))}" fill="none" stroke="${hsl(RESEARCH, 100, 85)}" stroke-width=".25"/>`;
       return [
         glow(`${id}-g`, cx, cy + 4, 14, 12, RESEARCH, 0.5),
         flask(`${id}-cl`, cx, cy, s, cy + 6 * s - 0.5, marks + bubbles),
@@ -402,7 +546,22 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       return [
         burst(`${id}-b`, trackSlot(tx, 4), ty, 9, DOMINANCE, 8, r),
         f(track(tx, ty, 'dominance', 4, { numbers: true, hot: [4, 5, 6] })),
-        f(`<path d="M${n(ex - 3)} ${n(ey - 1)}L${n(cx + 6)} ${n(cy - 7)}L${n(cx + 6)} ${n(cy + 7)}Z" fill="${hsl(p2, 90, 65, 0.18)}"/>` + [0.3, 0.6].map((t) => line(ex - 3 + (cx + 6 - ex + 3) * t, ey - 1 + (cy - 7 - ey + 1) * t, ex - 3 + (cx + 6 - ex + 3) * t, ey - 1 + (cy + 7 - ey + 1) * t, hsl(p2, 90, 80), 0.2, ' opacity=".6"')).join('')),
+        f(
+          `<path d="M${n(ex - 3)} ${n(ey - 1)}L${n(cx + 6)} ${n(cy - 7)}L${n(cx + 6)} ${n(cy + 7)}Z" fill="${hsl(p2, 90, 65, 0.18)}"/>` +
+            [0.3, 0.6]
+              .map((t) =>
+                line(
+                  ex - 3 + (cx + 6 - ex + 3) * t,
+                  ey - 1 + (cy - 7 - ey + 1) * t,
+                  ex - 3 + (cx + 6 - ex + 3) * t,
+                  ey - 1 + (cy + 7 - ey + 1) * t,
+                  hsl(p2, 90, 80),
+                  0.2,
+                  ' opacity=".6"',
+                ),
+              )
+              .join(''),
+        ),
         miniCard(`${id}-c`, cx, cy, 10, hue, { rot: -10, icon: 'conquer' }),
         ship(`${id}-e`, ex, ey, 4.4, 6, p2),
       ];
@@ -417,7 +576,9 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       return [
         world(`${id}-w`, r.fork('w'), px, py, 10, 9),
         f(cube(px - 3, py - 9.5, 2.4, p1)),
-        f(`<path d="M${n(px + 6)} ${n(py - 6)}Q${n(px + 16)} ${n(py - 22)} ${n(mx - 4)} ${n(my + 2)}" fill="none" stroke="${hsl(30, 100, 70)}" stroke-width=".5" stroke-dasharray=".6 .6" opacity=".8"/>`),
+        f(
+          `<path d="M${n(px + 6)} ${n(py - 6)}Q${n(px + 16)} ${n(py - 22)} ${n(mx - 4)} ${n(my + 2)}" fill="none" stroke="${hsl(30, 100, 70)}" stroke-width=".5" stroke-dasharray=".6 .6" opacity=".8"/>`,
+        ),
         glow(`${id}-g`, mx, my, 9, 6, hue, 0.5),
         f(missile(mx, my, -25, 2)),
         f(sparkles(r.fork('sp'), mx, my, 4, 8, 4)),
@@ -431,7 +592,14 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       const [cx, cy] = at(box, 0.5, 0.5);
       return [
         glow(`${id}-g`, cx, cy, 15, 15, hue, 0.35),
-        f([0, 60, 120].map((rot, k) => `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(16 - k)}" ry="${n(5.5 - k * 0.5)}" fill="none" stroke="${hsl(hue, 90, 70 + k * 6)}" stroke-width=".35" transform="rotate(${rot} ${n(cx)} ${n(cy)})"/>`).join('')),
+        f(
+          [0, 60, 120]
+            .map(
+              (rot, k) =>
+                `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(16 - k)}" ry="${n(5.5 - k * 0.5)}" fill="none" stroke="${hsl(hue, 90, 70 + k * 6)}" stroke-width=".35" transform="rotate(${rot} ${n(cx)} ${n(cy)})"/>`,
+            )
+            .join(''),
+        ),
         f(combatDie(cx, cy, 8, 3, 'attack')),
         f(sparkles(r.fork('sp'), cx, cy, 13, 17, 5)),
       ];
@@ -460,7 +628,10 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       return [
         ...wreck(`${id}-w`, wx, wy, 10, p1, p1, r.fork('w')),
         f(die(wx, wy, 3.6, 2, p1, { opacity: 0.4, rotate: -20 })),
-        arrowPath(`${id}-ar`, `M${n(wx + 6)} ${n(wy - 5)}Q${n(cx - 6)} ${n(wy - 6)} ${n(cx - 5)} ${n(cy + 3)}`, hsl(hue, 90, 80), { w: 0.4, dash: true }),
+        arrowPath(`${id}-ar`, `M${n(wx + 6)} ${n(wy - 5)}Q${n(cx - 6)} ${n(wy - 6)} ${n(cx - 5)} ${n(cy + 3)}`, hsl(hue, 90, 80), {
+          w: 0.4,
+          dash: true,
+        }),
         glow(`${id}-g`, cx, cy, 9, 9, hue, 0.5),
         f(chip(cx, cy, 5, 'new') + glyph(cx + 8, cy + 6, '+1', 4, hsl(hue, 100, 85))),
       ];
@@ -492,14 +663,18 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       const [cx, cy] = at(box, 0.68, 0.48);
       let glitch = '';
       const rr = r.fork('gl');
-      for (let i = 0; i < 6; i++) glitch += `<rect x="${n(cx - 7 + rr.range(-1, 2))}" y="${n(cy - 9 + rr.range(0, 18))}" width="${n(rr.range(4, 11))}" height="${n(rr.range(0.3, 0.9))}" fill="${hsl(rr.pick([0, 190]), 100, 65)}" opacity=".7"/>`;
+      for (let i = 0; i < 6; i++)
+        glitch += `<rect x="${n(cx - 7 + rr.range(-1, 2))}" y="${n(cy - 9 + rr.range(0, 18))}" width="${n(rr.range(4, 11))}" height="${n(rr.range(0.3, 0.9))}" fill="${hsl(rr.pick([0, 190]), 100, 65)}" opacity=".7"/>`;
       return [
         ...wreck(`${id}-w`, wx, wy, 8, p2, 0, r.fork('w')),
         f(die(wx, wy, 3.4, 5, p2, { opacity: 0.45, rotate: 15 })),
         miniCard(`${id}-c`, cx, cy, 13, p2, { rot: 8, icon: 'combat' }),
         f(`<g opacity=".88">${glitch}</g>`),
         f(`<circle cx="${n(cx + 1)}" cy="${n(cy)}" r="7" fill="${hsl(228, 50, 7, 0.6)}"/>` + icon('lock', cx + 1, cy, 7, hsl(0, 95, 66))),
-        f(`<g transform="translate(${n(cx + 11)} ${n(cy - 10)})">${loop(`${id}-l`, 0, 0, 3, hsl(hue, 80, 80), 0.35).body}</g>`, loop(`${id}-l`, 0, 0, 3, hsl(hue, 80, 80), 0.35).defs),
+        f(
+          `<g transform="translate(${n(cx + 11)} ${n(cy - 10)})">${loop(`${id}-l`, 0, 0, 3, hsl(hue, 80, 80), 0.35).body}</g>`,
+          loop(`${id}-l`, 0, 0, 3, hsl(hue, 80, 80), 0.35).defs,
+        ),
       ];
     },
   },
@@ -509,11 +684,30 @@ export const SKILL_SCENES: Record<string, Illustration> = {
     draw: ({ id, hue, box, p1 }) => {
       const [cx, cy] = at(box, 0.48, 0.5);
       const g = iso(cx, cy + 3, 5.2);
-      const stops: [number, number][] = [[1, 2], [1, -1], [-2, -1], [-2, -3]];
+      const stops: [number, number][] = [
+        [1, 2],
+        [1, -1],
+        [-2, -1],
+        [-2, -3],
+      ];
       const legs = [
-        [[1, 2], [1, 1], [1, 0], [1, -1]],
-        [[1, -1], [0, -1], [-1, -1], [-2, -1]],
-        [[-2, -1], [-2, -2], [-2, -3]],
+        [
+          [1, 2],
+          [1, 1],
+          [1, 0],
+          [1, -1],
+        ],
+        [
+          [1, -1],
+          [0, -1],
+          [-1, -1],
+          [-2, -1],
+        ],
+        [
+          [-2, -1],
+          [-2, -2],
+          [-2, -3],
+        ],
       ] as [number, number][][];
       const out = [grid(`${id}-g`, g, -3, 2, -3, 3, hue)];
       legs.forEach((leg, k) => out.push(route(`${id}-r${k}`, g, leg, hsl(hue, 90, 70 + k * 6), { lift: 1, w: 0.45 })));
@@ -530,7 +724,12 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       const [cx, cy] = at(box, 0.5, 0.5);
       const c = 4.6;
       let cells = '';
-      const ships: [number, number, number][] = [[-3, -1, p2], [-2, 1, p2], [2, 1, p1], [3, -1, p2]];
+      const ships: [number, number, number][] = [
+        [-3, -1, p2],
+        [-2, 1, p2],
+        [2, 1, p1],
+        [3, -1, p2],
+      ];
       const blocked = (i: number, j: number) => ships.some(([a, b]) => Math.abs(a - i) <= 1 && Math.abs(b - j) <= 1);
       for (let i = -5; i <= 5; i++)
         for (let j = -2; j <= 2; j++) {
@@ -563,7 +762,10 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         ...beam(`${id}-bm`, g.x(0, 0) + 2, g.y(0, 0) - 4, ex - 2.5, ey + 1.5, hue, 1),
         ship(`${id}-e`, ex, ey, 3.6, 4, p2),
         burst(`${id}-x`, ex - 2.5, ey + 1.5, 5, hue, 7, r),
-        f(combatDie(...at(box, 0.82, 0.68), 6.4, 2, 'defence', { glow: true, rot: 8 }) + glyph(at(box, 0.82, 0.68)[0] - 9, at(box, 0.82, 0.68)[1], '−2', 4.4, hsl(hue, 100, 80))),
+        f(
+          combatDie(...at(box, 0.82, 0.68), 6.4, 2, 'defence', { glow: true, rot: 8 }) +
+            glyph(at(box, 0.82, 0.68)[0] - 9, at(box, 0.82, 0.68)[1], '−2', 4.4, hsl(hue, 100, 80)),
+        ),
       ];
     },
   },
@@ -581,7 +783,11 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         ship(`${id}-d`, dx, dy, 4.8, 4, p1),
         shield(`${id}-sh`, dx, dy, 9, 9.5, p1),
         burst(`${id}-x`, dx - 7.5, dy + 2, 4, p1, 6, r),
-        f(combatDie(cx - 4, cy, 5.5, 4, 'attack', { rot: -8 }) + glyph(cx + 1, cy + 0.4, '=', 3.6, '#fff') + combatDie(cx + 6, cy, 5.5, 4, 'defence', { rot: 6, glow: true })),
+        f(
+          combatDie(cx - 4, cy, 5.5, 4, 'attack', { rot: -8 }) +
+            glyph(cx + 1, cy + 0.4, '=', 3.6, '#fff') +
+            combatDie(cx + 6, cy, 5.5, 4, 'defence', { rot: 6, glow: true }),
+        ),
       ];
     },
   },
@@ -593,11 +799,27 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       return [
         grid(`${id}-g`, g, -1, 5, -1, 1, hue, 0.4),
         f([0, 1, 2].map((k) => space(g, k, 0, hue, { a: 0.08, dash: true })).join('') + space(g, 4, 0, hue, { a: 0.4 })),
-        route(`${id}-old`, g, [[0, 0], [1, 0], [2, 0], [3, 0]], hsl(hue, 50, 65), { lift: 1, dash: true, head: false, w: 0.4 }),
+        route(
+          `${id}-old`,
+          g,
+          [
+            [0, 0],
+            [1, 0],
+            [2, 0],
+            [3, 0],
+          ],
+          hsl(hue, 50, 65),
+          { lift: 1, dash: true, head: false, w: 0.4 },
+        ),
         shipOn(`${id}-e`, g, 4, 0, 3.6, 5, p2),
         burst(`${id}-x`, g.x(4, 0), g.y(4, 0) - 2.5, 7, 352, 8, r),
         shipOn(`${id}-s`, g, 3, 0, 3.6, 2, p1),
-        arrowPath(`${id}-hop`, `M${n(g.x(3, 0) + 1)} ${n(g.y(3, 0) - 8)}Q${n((g.x(3, 0) + g.x(4, 0)) / 2)} ${n(g.y(3, 0) - 12)} ${n(g.x(4, 0) - 1)} ${n(g.y(4, 0) - 7)}`, hsl(hue, 100, 82), { w: 0.55 }),
+        arrowPath(
+          `${id}-hop`,
+          `M${n(g.x(3, 0) + 1)} ${n(g.y(3, 0) - 8)}Q${n((g.x(3, 0) + g.x(4, 0)) / 2)} ${n(g.y(3, 0) - 12)} ${n(g.x(4, 0) - 1)} ${n(g.y(4, 0) - 7)}`,
+          hsl(hue, 100, 82),
+          { w: 0.55 },
+        ),
         f(glyph(g.x(4, 0) + 7, g.y(4, 0) - 9, '1', 4.2, hsl(hue, 100, 85))),
       ];
     },
@@ -614,7 +836,13 @@ export const SKILL_SCENES: Record<string, Illustration> = {
         const t = (a * Math.PI) / 180;
         const x = cx + Math.sin(t) * 30;
         const y = cy - Math.cos(t) * 30;
-        out.push(miniCard(`${id}-c${i}`, x, y, 11, hues[i], { rot: a, icon: ['movement', 'combat', 'conquer', 'card', 'card'][i], state: i >= 3 ? 'glow' : 'normal' }));
+        out.push(
+          miniCard(`${id}-c${i}`, x, y, 11, hues[i], {
+            rot: a,
+            icon: ['movement', 'combat', 'conquer', 'card', 'card'][i],
+            state: i >= 3 ? 'glow' : 'normal',
+          }),
+        );
       }
       out.push(f(glyph(...at(box, 0.88, 0.2), '5', 7, hsl(hue, 100, 85))));
       out.push(f(sparkles(r.fork('sp'), ...at(box, 0.75, 0.35), 2, 8, 4)));
@@ -631,8 +859,15 @@ export const SKILL_SCENES: Record<string, Illustration> = {
       const gy = cy - 5;
       return [
         f(track(tx, ty, 'dominance', 4, { numbers: true })),
-        arrowPath(`${id}-b`, `M${n(trackSlot(tx, 4))} ${n(ty + 2.2)}Q${n(trackSlot(tx, 4) - 2)} ${n(gy - 2)} ${n(gx - 4.5)} ${n(gy)}`, hsl(DOMINANCE, 90, 78), { w: 0.35, dash: true }),
-        f(`<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="14" ry="8" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".25" stroke-dasharray="1 1.2"/>`),
+        arrowPath(
+          `${id}-b`,
+          `M${n(trackSlot(tx, 4))} ${n(ty + 2.2)}Q${n(trackSlot(tx, 4) - 2)} ${n(gy - 2)} ${n(gx - 4.5)} ${n(gy)}`,
+          hsl(DOMINANCE, 90, 78),
+          { w: 0.35, dash: true },
+        ),
+        f(
+          `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="14" ry="8" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".25" stroke-dasharray="1 1.2"/>`,
+        ),
         world(`${id}-w`, r.fork('w'), cx, cy, 8, 10),
         glow(`${id}-gg`, gx, gy, 6, 6, DOMINANCE, 0.5),
         f(crest(gx, gy, 3.6) + glyph(gx, gy + 6.4, '4', 3.6, hsl(DOMINANCE, 100, 78))),

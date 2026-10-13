@@ -1,9 +1,44 @@
 import { hsl, n, type Fragment } from '../svg';
 import { ACTION_HUE, INK } from '../tokens';
 import {
-  arrowPath, at, beam, burst, chip, chips, combatDie, cube, die, DOMINANCE, f, glow, glyph, grid, icon, iso, line, loop, miniCard,
-  panel, RESEARCH, scrapyard, shield, ship, shipOn, forbidden, space, sparkles, trails, world, worldOn, wreck,
-  crest, dial, flask, motes, orbit, pillar,
+  arrowPath,
+  at,
+  beam,
+  burst,
+  chip,
+  chips,
+  combatDie,
+  cube,
+  die,
+  DOMINANCE,
+  f,
+  glow,
+  glyph,
+  grid,
+  icon,
+  iso,
+  line,
+  loop,
+  miniCard,
+  panel,
+  RESEARCH,
+  scrapyard,
+  shield,
+  ship,
+  shipOn,
+  forbidden,
+  space,
+  sparkles,
+  trails,
+  world,
+  worldOn,
+  wreck,
+  crest,
+  dial,
+  flask,
+  motes,
+  orbit,
+  pillar,
 } from '../kit';
 import type { Illustration } from '../illustrations';
 import { SKILL_SCENES } from './skills';
@@ -43,13 +78,23 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
     caption: 'your fleet sweeps past in formation, dwarfing a lonely pair of enemy ships',
     draw: ({ id, r, box, p1, p2 }) => {
       const out = [];
-      const pos = [[0.14, 0.5], [0.26, 0.38], [0.26, 0.62], [0.38, 0.26], [0.38, 0.5], [0.38, 0.74]];
+      const pos = [
+        [0.14, 0.5],
+        [0.26, 0.38],
+        [0.26, 0.62],
+        [0.38, 0.26],
+        [0.38, 0.5],
+        [0.38, 0.74],
+      ];
       pos.forEach(([a, b], k) => {
         const [x, y] = at(box, a, b);
         out.push(...trails(`${id}-t${k}`, r.fork(`t${k}`), x - 2, y, 1, 0, 8, 0.6, hsl(p1, 80, 70), 2));
         out.push(ship(`${id}-s${k}`, x, y, 3, [6, 4, 5, 3, 2, 1][k], p1));
       });
-      out.push(ship(`${id}-e0`, ...at(box, 0.82, 0.66), 2.6, 2, p2, { opacity: 0.7 }), ship(`${id}-e1`, ...at(box, 0.9, 0.78), 2.6, 5, p2, { opacity: 0.7 }));
+      out.push(
+        ship(`${id}-e0`, ...at(box, 0.82, 0.66), 2.6, 2, p2, { opacity: 0.7 }),
+        ship(`${id}-e1`, ...at(box, 0.9, 0.78), 2.6, 5, p2, { opacity: 0.7 }),
+      );
       out.push(f(chip(...at(box, 0.82, 0.24), 3.8, 'new')));
       return out;
     },
@@ -83,11 +128,20 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         const a = Math.PI + (v - 0.5) * (Math.PI / 6);
         const x = cx + Math.cos(a) * 20;
         const y = cy + Math.sin(a) * 17 + 2;
-        out.push(f(v === 5 ? `<circle cx="${n(x)}" cy="${n(y)}" r="4" fill="${hsl(hue, 90, 60, 0.25)}" stroke="#fff" stroke-width=".3"/>` : ''));
+        out.push(
+          f(v === 5 ? `<circle cx="${n(x)}" cy="${n(y)}" r="4" fill="${hsl(hue, 90, 60, 0.25)}" stroke="#fff" stroke-width=".3"/>` : ''),
+        );
         out.push(f(die(x, y, 2.2, v, p1, v === 5 ? {} : { opacity: 0.4 })));
       }
       const a5 = Math.PI + 4.5 * (Math.PI / 6);
-      out.push(arrowPath(`${id}-pick`, `M${n(cx + Math.cos(a5) * 15)} ${n(cy + Math.sin(a5) * 12.5 + 2)}L${n(cx + 2.5)} ${n(cy - 4)}`, hsl(hue, 100, 85), { w: 0.4 }));
+      out.push(
+        arrowPath(
+          `${id}-pick`,
+          `M${n(cx + Math.cos(a5) * 15)} ${n(cy + Math.sin(a5) * 12.5 + 2)}L${n(cx + 2.5)} ${n(cy - 4)}`,
+          hsl(hue, 100, 85),
+          { w: 0.4 },
+        ),
+      );
       out.push(ship(`${id}-s`, cx, cy, 4.6, 5, p1));
       return out;
     },
@@ -100,7 +154,8 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       const [bx, by] = at(box, 0.62, 0.6);
       const [kx, ky] = at(box, 0.86, 0.3);
       let waves = '';
-      for (let i = 0; i < 4; i++) waves += `<path d="M${n(ax + 5)} ${n(ay - 3 - i * 1.5)}Q${n((ax + bx) / 2)} ${n(ay - 9 - i * 2.5)} ${n(bx - 5)} ${n(by - 3 - i * 1.5)}" fill="none" stroke="${hsl(hue, 90, 75)}" stroke-width=".3" opacity="${n(0.9 - i * 0.2)}"/>`;
+      for (let i = 0; i < 4; i++)
+        waves += `<path d="M${n(ax + 5)} ${n(ay - 3 - i * 1.5)}Q${n((ax + bx) / 2)} ${n(ay - 9 - i * 2.5)} ${n(bx - 5)} ${n(by - 3 - i * 1.5)}" fill="none" stroke="${hsl(hue, 90, 75)}" stroke-width=".3" opacity="${n(0.9 - i * 0.2)}"/>`;
       return [
         f(waves),
         ship(`${id}-a`, ax, ay, 4.6, 4, p1),
@@ -149,11 +204,21 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
   'o-curious': {
     caption: 'a long, peaceful route past world after world, and not one shot fired',
     draw: ({ id, r, hue, box, p1 }) => {
-      const pts = [[0.08, 0.76], [0.3, 0.36], [0.56, 0.7], [0.82, 0.3]].map(([a, b]) => at(box, a, b));
+      const pts = [
+        [0.08, 0.76],
+        [0.3, 0.36],
+        [0.56, 0.7],
+        [0.82, 0.3],
+      ].map(([a, b]) => at(box, a, b));
       return [
         world(`${id}-w1`, r.fork('w1'), ...at(box, 0.3, 0.6), 4, 7),
         world(`${id}-w2`, r.fork('w2'), ...at(box, 0.6, 0.38), 5, 8),
-        arrowPath(`${id}-p`, `M${n(pts[0][0])} ${n(pts[0][1])}C${n(pts[1][0] - 10)} ${n(pts[1][1])} ${n(pts[1][0] + 8)} ${n(pts[1][1] - 6)} ${n(pts[2][0] - 4)} ${n(pts[2][1])}S${n(pts[3][0] - 8)} ${n(pts[3][1] + 4)} ${n(pts[3][0] - 3)} ${n(pts[3][1] + 1)}`, hsl(hue, 90, 80), { w: 0.4, dash: true }),
+        arrowPath(
+          `${id}-p`,
+          `M${n(pts[0][0])} ${n(pts[0][1])}C${n(pts[1][0] - 10)} ${n(pts[1][1])} ${n(pts[1][0] + 8)} ${n(pts[1][1] - 6)} ${n(pts[2][0] - 4)} ${n(pts[2][1])}S${n(pts[3][0] - 8)} ${n(pts[3][1] + 4)} ${n(pts[3][0] - 3)} ${n(pts[3][1] + 1)}`,
+          hsl(hue, 90, 80),
+          { w: 0.4, dash: true },
+        ),
         ship(`${id}-s`, ...pts[3], 3.6, 1, p1),
         f(forbidden('combat', ...at(box, 0.12, 0.26), 0.85)),
         f(chip(...at(box, 0.84, 0.72), 3, 'new')),
@@ -170,7 +235,9 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         glow(`${id}-g`, (ax + dx) / 2, (ay + dy) / 2, 20, 14, 28, 0.5),
         f(die(ax, ay, 4, 5, p2, { rotate: -15 }) + die(dx, dy, 4, 2, p1, { rotate: 15 })),
         burst(`${id}-b`, (ax + dx) / 2, (ay + dy) / 2, 10, 32, 10, r),
-        f(`<circle cx="${n((ax + dx) / 2)}" cy="${n((ay + dy) / 2)}" r="16" fill="none" stroke="${hsl(30, 100, 70)}" stroke-width=".4" stroke-dasharray="2 1"/>`),
+        f(
+          `<circle cx="${n((ax + dx) / 2)}" cy="${n((ay + dy) / 2)}" r="16" fill="none" stroke="${hsl(30, 100, 70)}" stroke-width=".4" stroke-dasharray="2 1"/>`,
+        ),
         f(sparkles(r.fork('sp'), (ax + dx) / 2, (ay + dy) / 2, 10, 17, 6, hsl(40, 100, 85))),
       ];
     },
@@ -197,7 +264,12 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
   'o-energetic': {
     caption: "one ship's trail runs through two wrecks and keeps going",
     draw: ({ id, r, hue, box, p1, p2 }) => {
-      const pts = [[0.06, 0.8], [0.34, 0.5], [0.62, 0.62], [0.86, 0.3]].map(([a, b]) => at(box, a, b));
+      const pts = [
+        [0.06, 0.8],
+        [0.34, 0.5],
+        [0.62, 0.62],
+        [0.86, 0.3],
+      ].map(([a, b]) => at(box, a, b));
       const d = `M${n(pts[0][0])} ${n(pts[0][1])}Q${n(pts[1][0] - 8)} ${n(pts[1][1] + 2)} ${n(pts[1][0])} ${n(pts[1][1])}T${n(pts[2][0])} ${n(pts[2][1])}T${n(pts[3][0] - 3)} ${n(pts[3][1] + 2)}`;
       return [
         arrowPath(`${id}-p`, d, hsl(hue, 90, 80), { w: 0.5 }),
@@ -216,8 +288,16 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       return [
         shield(`${id}-sh`, cx, cy, 11, 11, p1),
         ship(`${id}-s`, cx, cy, 5.2, 6, p1),
-        f(`<circle cx="${n(cx - 18)}" cy="${n(cy - 4)}" r="4.6" fill="${hsl(hue, 70, 22)}" stroke="${hsl(hue, 100, 75)}" stroke-width=".35"/>` + icon('combat', cx - 18, cy - 5, 4, hsl(hue, 100, 82)) + glyph(cx - 18, cy + 4, '−1', 2.8, hsl(hue, 100, 85))),
-        f(`<circle cx="${n(cx + 18)}" cy="${n(cy - 4)}" r="4.6" fill="${hsl(hue, 70, 22)}" stroke="${hsl(hue, 100, 75)}" stroke-width=".35"/>` + icon('shield', cx + 18, cy - 5, 4, hsl(hue, 100, 82)) + glyph(cx + 18, cy + 4, '−1', 2.8, hsl(hue, 100, 85))),
+        f(
+          `<circle cx="${n(cx - 18)}" cy="${n(cy - 4)}" r="4.6" fill="${hsl(hue, 70, 22)}" stroke="${hsl(hue, 100, 75)}" stroke-width=".35"/>` +
+            icon('combat', cx - 18, cy - 5, 4, hsl(hue, 100, 82)) +
+            glyph(cx - 18, cy + 4, '−1', 2.8, hsl(hue, 100, 85)),
+        ),
+        f(
+          `<circle cx="${n(cx + 18)}" cy="${n(cy - 4)}" r="4.6" fill="${hsl(hue, 70, 22)}" stroke="${hsl(hue, 100, 75)}" stroke-width=".35"/>` +
+            icon('shield', cx + 18, cy - 5, 4, hsl(hue, 100, 82)) +
+            glyph(cx + 18, cy + 4, '−1', 2.8, hsl(hue, 100, 85)),
+        ),
         f(sparkles(r.fork('sp'), cx, cy, 11, 14, 3)),
       ];
     },
@@ -243,14 +323,20 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, hue, box, p1 }) => {
       const [cx, cy] = at(box, 0.5, 0.56);
       const g = iso(cx, cy, 6.4);
-      const corners: [number, number][] = [[-1, -1], [-1, 1], [1, -1]];
+      const corners: [number, number][] = [
+        [-1, -1],
+        [-1, 1],
+        [1, -1],
+      ];
       const top = g.y(0, 0) - 7;
       return [
         grid(`${id}-g`, g, -2, 2, -2, 2, hue, 0.4),
         f(corners.map(([i, j]) => space(g, i, j, hue, { a: 0.4 })).join('')),
         shipOn(`${id}-s0`, g, -1, -1, 3.2, 3, p1),
         ...worldOn(`${id}-w`, r.fork('w'), g, 0, 0, 5, hue, 10),
-        ...corners.slice(1).flatMap(([i, j], k) => beam(`${id}-b${k}`, g.x(i, j), g.y(i, j) - 4, g.x(0, 0) + (i - j) * 0.6, top + 2, hue, 0.6)),
+        ...corners
+          .slice(1)
+          .flatMap(([i, j], k) => beam(`${id}-b${k}`, g.x(i, j), g.y(i, j) - 4, g.x(0, 0) + (i - j) * 0.6, top + 2, hue, 0.6)),
         shipOn(`${id}-s1`, g, -1, 1, 3.2, 2, p1),
         shipOn(`${id}-s2`, g, 1, -1, 3.2, 5, p1),
         f(cube(g.x(0, 0), top, 2.2, p1)),
@@ -266,7 +352,9 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       let ruler = line(x0, y, x0 + 44, y, hsl(hue, 70, 60), 0.35);
       [6, 7, 8, 9, 10, 11].forEach((v, k) => {
         const x = x0 + 2 + k * 8;
-        ruler += line(x, y, x, y - (v === 9 ? 3 : 2), hsl(hue, 80, 70), 0.3) + glyph(x, y + 3.2, String(v), 2.4, hsl(hue, 100, v >= 8 && v <= 10 ? 85 : 55));
+        ruler +=
+          line(x, y, x, y - (v === 9 ? 3 : 2), hsl(hue, 80, 70), 0.3) +
+          glyph(x, y + 3.2, String(v), 2.4, hsl(hue, 100, v >= 8 && v <= 10 ? 85 : 55));
       });
       const x8 = x0 + 2 + 2 * 8;
       const x10 = x0 + 2 + 4 * 8;
@@ -274,7 +362,9 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         world(`${id}-w`, r.fork('w'), x0 + 26, y - 17, 8, 9),
         f(glyph(x0 + 26, y - 16.6, '9', 5, '#fff')),
         f(ruler),
-        f(`<path d="M${n(x8)} ${n(y - 4)}V${n(y - 6)}H${n(x10)}V${n(y - 4)}" fill="none" stroke="${hsl(hue, 100, 82)}" stroke-width=".5"/>`),
+        f(
+          `<path d="M${n(x8)} ${n(y - 4)}V${n(y - 6)}H${n(x10)}V${n(y - 4)}" fill="none" stroke="${hsl(hue, 100, 82)}" stroke-width=".5"/>`,
+        ),
         f(`<rect x="${n(x8 - 2)}" y="${n(y - 1)}" width="${n(x10 - x8 + 4)}" height="6" rx="1" fill="${hsl(hue, 90, 60, 0.18)}"/>`),
       ];
     },
@@ -315,10 +405,13 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
     caption: 'a ladder of research rungs: the card hangs at rung 4, not at the top',
     draw: ({ id, r, hue, box }) => {
       const [x, base] = at(box, 0.3, 0.9);
-      let ladder = line(x - 5, base, x - 5, base - 29, hsl(RESEARCH, 60, 65), 0.4) + line(x + 5, base, x + 5, base - 29, hsl(RESEARCH, 60, 65), 0.4);
+      let ladder =
+        line(x - 5, base, x - 5, base - 29, hsl(RESEARCH, 60, 65), 0.4) + line(x + 5, base, x + 5, base - 29, hsl(RESEARCH, 60, 65), 0.4);
       for (let k = 1; k <= 6; k++) {
         const y = base - k * 4.5;
-        ladder += line(x - 5, y, x + 5, y, hsl(RESEARCH, 100, k <= 4 ? 80 : 50), k <= 4 ? 0.5 : 0.3) + glyph(x - 9, y, String(k), 2.4, hsl(RESEARCH, 100, k === 4 ? 88 : 60));
+        ladder +=
+          line(x - 5, y, x + 5, y, hsl(RESEARCH, 100, k <= 4 ? 80 : 50), k <= 4 ? 0.5 : 0.3) +
+          glyph(x - 9, y, String(k), 2.4, hsl(RESEARCH, 100, k === 4 ? 88 : 60));
       }
       const y4 = base - 4 * 4.5;
       return [
@@ -337,7 +430,11 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       const [cx, cy] = at(box, 0.5, 0.5);
       return [
         glow(`${id}-g`, cx, cy, 24, 10, hue, 0.3),
-        f([-14, 0, 14].map((dx, i) => combatDie(cx + dx, cy + (i === 1 ? -2 : 1), 8, 3, i === 1 ? 'defence' : 'attack', { rot: [-8, 0, 8][i] })).join('')),
+        f(
+          [-14, 0, 14]
+            .map((dx, i) => combatDie(cx + dx, cy + (i === 1 ? -2 : 1), 8, 3, i === 1 ? 'defence' : 'attack', { rot: [-8, 0, 8][i] }))
+            .join(''),
+        ),
         f(line(cx - 22, cy + 8, cx + 22, cy + 8, hsl(hue, 80, 70), 0.3, ' stroke-dasharray="1 1"')),
         ship(`${id}-s`, cx, cy + 13, 2.4, 3, p1, { opacity: 0.7 }),
       ];
@@ -383,12 +480,19 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, hue, box, p1 }) => {
       const [cx, cy] = at(box, 0.5, 0.5);
       const R = 13;
-      const nodes = [-90, 30, 150].map((a) => [cx + Math.cos((a * Math.PI) / 180) * R * 1.2, cy + Math.sin((a * Math.PI) / 180) * R] as const);
+      const nodes = [-90, 30, 150].map(
+        (a) => [cx + Math.cos((a * Math.PI) / 180) * R * 1.2, cy + Math.sin((a * Math.PI) / 180) * R] as const,
+      );
       return [
         ...[0, 1, 2].map((k) => {
           const a0 = (-90 + k * 120 + 22) * (Math.PI / 180);
           const a1 = (-90 + (k + 1) * 120 - 22) * (Math.PI / 180);
-          return arrowPath(`${id}-a${k}`, `M${n(cx + Math.cos(a0) * R * 1.2)} ${n(cy + Math.sin(a0) * R)}A${n(R * 1.2)} ${R} 0 0 1 ${n(cx + Math.cos(a1) * R * 1.2)} ${n(cy + Math.sin(a1) * R)}`, hsl(hue, 90, 80), { w: 0.5 });
+          return arrowPath(
+            `${id}-a${k}`,
+            `M${n(cx + Math.cos(a0) * R * 1.2)} ${n(cy + Math.sin(a0) * R)}A${n(R * 1.2)} ${R} 0 0 1 ${n(cx + Math.cos(a1) * R * 1.2)} ${n(cy + Math.sin(a1) * R)}`,
+            hsl(hue, 90, 80),
+            { w: 0.5 },
+          );
         }),
         ship(`${id}-s`, ...nodes[0], 3.4, 4, p1),
         f(scrapyard(nodes[1][0], nodes[1][1] + 1, 9, 5, hue) + die(nodes[1][0], nodes[1][1] - 1, 1.8, 2, p1, { rotate: 20 })),
@@ -404,12 +508,15 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       const [cx, cy] = at(box, 0.5, 0.3);
       const ay = cy + 17;
       let chain = '';
-      for (let k = 0; k < 6; k++) chain += `<ellipse cx="${n(cx)}" cy="${n(cy + 4 + k * 2.2)}" rx="${k % 2 ? 0.5 : 0.9}" ry="1.2" fill="none" stroke="${hsl(220, 15, 75)}" stroke-width=".35"/>`;
+      for (let k = 0; k < 6; k++)
+        chain += `<ellipse cx="${n(cx)}" cy="${n(cy + 4 + k * 2.2)}" rx="${k % 2 ? 0.5 : 0.9}" ry="1.2" fill="none" stroke="${hsl(220, 15, 75)}" stroke-width=".35"/>`;
       return [
         glow(`${id}-g`, cx, cy, 8, 8, DOMINANCE, 0.5),
         f(crest(cx, cy, 4.4)),
         f(chain),
-        f(`<path d="M${n(cx)} ${n(ay - 3)}V${n(ay + 5)}M${n(cx - 3)} ${n(ay - 1)}H${n(cx + 3)}M${n(cx - 6)} ${n(ay + 1)}Q${n(cx - 5)} ${n(ay + 6)} ${n(cx)} ${n(ay + 6)}Q${n(cx + 5)} ${n(ay + 6)} ${n(cx + 6)} ${n(ay + 1)}" fill="none" stroke="${hsl(220, 20, 80)}" stroke-width=".8" stroke-linecap="round"/><circle cx="${n(cx)}" cy="${n(ay - 4.2)}" r="1.2" fill="none" stroke="${hsl(220, 20, 80)}" stroke-width=".5"/>`),
+        f(
+          `<path d="M${n(cx)} ${n(ay - 3)}V${n(ay + 5)}M${n(cx - 3)} ${n(ay - 1)}H${n(cx + 3)}M${n(cx - 6)} ${n(ay + 1)}Q${n(cx - 5)} ${n(ay + 6)} ${n(cx)} ${n(ay + 6)}Q${n(cx + 5)} ${n(ay + 6)} ${n(cx + 6)} ${n(ay + 1)}" fill="none" stroke="${hsl(220, 20, 80)}" stroke-width=".8" stroke-linecap="round"/><circle cx="${n(cx)}" cy="${n(ay - 4.2)}" r="1.2" fill="none" stroke="${hsl(220, 20, 80)}" stroke-width=".5"/>`,
+        ),
         f(glyph(cx + 14, cy, '−0', 4.4, hsl(DOMINANCE, 100, 78))),
       ];
     },
@@ -419,7 +526,13 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
     caption: 'every roll of your turn gets a second chance: ships and weapons alike',
     draw: ({ id, hue, box, p1 }) => {
       const out: Fragment[] = [];
-      const spots = [[0.2, 0.42, 'ship', 2], [0.5, 0.6, 'combat', 4], [0.8, 0.4, 'ship', 5], [0.36, 0.78, 'combat', 1], [0.68, 0.82, 'ship', 3]] as const;
+      const spots = [
+        [0.2, 0.42, 'ship', 2],
+        [0.5, 0.6, 'combat', 4],
+        [0.8, 0.4, 'ship', 5],
+        [0.36, 0.78, 'combat', 1],
+        [0.68, 0.82, 'ship', 3],
+      ] as const;
       spots.forEach(([fx, fy, kind, v], k) => {
         const [x, y] = at(box, fx, fy);
         out.push(kind === 'ship' ? ship(`${id}-s${k}`, x, y, 3.4, v, p1) : f(combatDie(x, y, 5.5, v, 'attack', { rot: (k - 2) * 8 })));
@@ -434,7 +547,13 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, hue, box, p1, p2 }) => {
       const [cx, cy] = at(box, 0.5, 0.56);
       const g = iso(cx, cy, 5);
-      const crowd: [number, number, number][] = [[2, -2, p2], [3, -1, p2], [2, 0, p1], [3, 1, p2], [1, -3, p2]];
+      const crowd: [number, number, number][] = [
+        [2, -2, p2],
+        [3, -1, p2],
+        [2, 0, p1],
+        [3, 1, p2],
+        [1, -3, p2],
+      ];
       return [
         grid(`${id}-g`, g, -3, 3, -3, 3, hue, 0.4),
         ...crowd.map(([i, j, h], k) => shipOn(`${id}-c${k}`, g, i, j, 2.6, k + 1, h, { opacity: 0.7 })),
@@ -451,7 +570,12 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
     draw: ({ id, hue, box, p1 }) => {
       const [cx, cy] = at(box, 0.5, 0.54);
       const g = iso(cx, cy, 6.2);
-      const cells: [number, number][] = [[0, 0], [1, 0], [0, 1], [-1, 0]];
+      const cells: [number, number][] = [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [-1, 0],
+      ];
       return [
         grid(`${id}-g`, g, -2, 2, -2, 2, hue, 0.35),
         f(cells.map(([i, j]) => space(g, i, j, hue, { a: 0.3 })).join('')),
@@ -485,14 +609,24 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, hue, box, p1, p2 }) => {
       const [cx, cy] = at(box, 0.5, 0.54);
       const g = iso(cx, cy, 7);
-      const nbrs: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+      const nbrs: [number, number][] = [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ];
       return [
         grid(`${id}-g`, g, -2, 2, -2, 2, hue, 0.4),
         f(nbrs.map(([i, j]) => space(g, i, j, hue, { a: i === 1 ? 0.45 : 0.14, dash: i !== 1 })).join('')),
         shipOn(`${id}-e`, g, 1, 0, 3.6, 3, p2),
         burst(`${id}-x`, g.x(1, 0), g.y(1, 0) - 2.5, 6, 352, 7, r),
         shipOn(`${id}-s`, g, 0, 0, 3.8, 6, p1),
-        arrowPath(`${id}-a`, `M${n(g.x(0, 0) + 2)} ${n(g.y(0, 0) - 8)}Q${n((g.x(0, 0) + g.x(1, 0)) / 2 + 1)} ${n(g.y(0, 0) - 11)} ${n(g.x(1, 0))} ${n(g.y(1, 0) - 7)}`, hsl(hue, 100, 85), { w: 0.55 }),
+        arrowPath(
+          `${id}-a`,
+          `M${n(g.x(0, 0) + 2)} ${n(g.y(0, 0) - 8)}Q${n((g.x(0, 0) + g.x(1, 0)) / 2 + 1)} ${n(g.y(0, 0) - 11)} ${n(g.x(1, 0))} ${n(g.y(1, 0) - 7)}`,
+          hsl(hue, 100, 85),
+          { w: 0.55 },
+        ),
         f(freeChip(...at(box, 0.15, 0.3), 3.2)),
       ];
     },
@@ -506,7 +640,9 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       return [
         glow(`${id}-fg`, fx, fy, 8, 8, RESEARCH, 0.5),
         f(`<g transform="rotate(50 ${n(fx)} ${n(fy)})">${icon('research', fx, fy, 10, hsl(RESEARCH, 100, 85), 2)}</g>`),
-        f(`<path d="M${n(fx + 6)} ${n(fy + 1)}Q${n(cx - 4)} ${n(fy)} ${n(cx)} ${n(cy - 6)}" fill="none" stroke="${hsl(RESEARCH, 100, 75)}" stroke-width=".8" stroke-linecap="round"/>`),
+        f(
+          `<path d="M${n(fx + 6)} ${n(fy + 1)}Q${n(cx - 4)} ${n(fy)} ${n(cx)} ${n(cy - 6)}" fill="none" stroke="${hsl(RESEARCH, 100, 75)}" stroke-width=".8" stroke-linecap="round"/>`,
+        ),
         glow(`${id}-cg`, cx, cy, 7, 7, DOMINANCE, 0.6),
         f(crest(cx, cy, 4.2)),
         f(glyph(fx, fy + 11, '−1', 3.8, hsl(RESEARCH, 100, 85)) + glyph(cx + 10, cy, '+1', 4, hsl(DOMINANCE, 100, 78))),
@@ -538,7 +674,11 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
     caption: 'a fleet raises the dominance crest before a world: dominance +2',
     draw: ({ id, r, box, p1 }) => {
       const [px, py] = at(box, 0.7, 0.8);
-      const fleet = [[0.14, 0.7], [0.3, 0.8], [0.26, 0.56]];
+      const fleet = [
+        [0.14, 0.7],
+        [0.3, 0.8],
+        [0.26, 0.56],
+      ];
       const fx = px - 4;
       const fy = py - 8;
       return [
@@ -559,7 +699,8 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, hue, box, p1 }) => {
       const [cx, cy] = at(box, 0.46, 0.5);
       let ring = '';
-      for (let i = 0; i < 3; i++) ring += `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(8 - i * 1.4)}" ry="${n(15 - i * 2.4)}" fill="none" stroke="${hsl(hue + i * 10, 95, 65 + i * 8)}" stroke-width="${n(0.8 - i * 0.2)}" transform="rotate(-18 ${n(cx)} ${n(cy)})"/>`;
+      for (let i = 0; i < 3; i++)
+        ring += `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(8 - i * 1.4)}" ry="${n(15 - i * 2.4)}" fill="none" stroke="${hsl(hue + i * 10, 95, 65 + i * 8)}" stroke-width="${n(0.8 - i * 0.2)}" transform="rotate(-18 ${n(cx)} ${n(cy)})"/>`;
       const [kx, ky] = at(box, 0.82, 0.78);
       return [
         glow(`${id}-g`, cx, cy, 12, 17, hue, 0.4),
@@ -587,8 +728,14 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         ship(`${id}-a`, px + 11, py, 2.8, 4, p1),
         ship(`${id}-b`, px - 10, py + 2, 2.8, 6, p1),
         f(scrapyard(yx, yy, 14, 7, hue) + die(yx, yy - 2, 2.2, 1, p1)),
-        arrowPath(`${id}-a1`, `M${n(cx - 8)} ${n(cy + 3)}Q${n(px + 4)} ${n(cy + 2)} ${n(px + 4)} ${n(py - 8)}`, hsl(hue, 90, 80), { w: 0.35, dash: true }),
-        arrowPath(`${id}-a2`, `M${n(cx + 8)} ${n(cy + 3)}Q${n(yx)} ${n(cy + 2)} ${n(yx)} ${n(yy - 5)}`, hsl(hue, 70, 70), { w: 0.3, dash: true }),
+        arrowPath(`${id}-a1`, `M${n(cx - 8)} ${n(cy + 3)}Q${n(px + 4)} ${n(cy + 2)} ${n(px + 4)} ${n(py - 8)}`, hsl(hue, 90, 80), {
+          w: 0.35,
+          dash: true,
+        }),
+        arrowPath(`${id}-a2`, `M${n(cx + 8)} ${n(cy + 3)}Q${n(yx)} ${n(cy + 2)} ${n(yx)} ${n(yy - 5)}`, hsl(hue, 70, 70), {
+          w: 0.3,
+          dash: true,
+        }),
       ];
     },
   },
@@ -602,7 +749,9 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
         world(`${id}-a`, r.fork('a'), ax, ay, 8, 8),
         world(`${id}-b`, r.fork('b'), bx, by, 8, 10),
         f(cube(ax + 1, ay - 8, 2.4, p2, { ghost: true })),
-        arrowPath(`${id}-ar`, `M${n(ax + 6)} ${n(ay - 9)}Q${n((ax + bx) / 2)} ${n(ay - 18)} ${n(bx - 4)} ${n(by - 9)}`, hsl(hue, 90, 82), { w: 0.4 }),
+        arrowPath(`${id}-ar`, `M${n(ax + 6)} ${n(ay - 9)}Q${n((ax + bx) / 2)} ${n(ay - 18)} ${n(bx - 4)} ${n(by - 9)}`, hsl(hue, 90, 82), {
+          w: 0.4,
+        }),
         glow(`${id}-g`, bx + 1, by - 8, 4, 4, p2, 0.7),
         f(cube(bx + 1, by - 8, 2.4, p2)),
       ];
@@ -618,7 +767,10 @@ export const ORIGINAL_SCENES: Record<string, Illustration> = {
       const tear = `M${n(cx)} ${n(cy - 11)}L${n(cx - 1.2)} ${n(cy - 6)}L${n(cx + 1)} ${n(cy - 2)}L${n(cx - 1)} ${n(cy + 3)}L${n(cx + 1.2)} ${n(cy + 7)}L${n(cx)} ${n(cy + 11)}`;
       return [
         {
-          defs: left.defs + right.defs + `<clipPath id="${id}-cl"><path d="${tear}L${n(cx - 20)} ${n(cy + 11)}L${n(cx - 20)} ${n(cy - 11)}Z"/></clipPath><clipPath id="${id}-cr"><path d="${tear}L${n(cx + 20)} ${n(cy + 11)}L${n(cx + 20)} ${n(cy - 11)}Z"/></clipPath>`,
+          defs:
+            left.defs +
+            right.defs +
+            `<clipPath id="${id}-cl"><path d="${tear}L${n(cx - 20)} ${n(cy + 11)}L${n(cx - 20)} ${n(cy - 11)}Z"/></clipPath><clipPath id="${id}-cr"><path d="${tear}L${n(cx + 20)} ${n(cy + 11)}L${n(cx + 20)} ${n(cy - 11)}Z"/></clipPath>`,
           body:
             `<g transform="rotate(-12 ${n(cx - 2)} ${n(cy + 10)}) translate(-3 1)"><g clip-path="url(#${id}-cl)">${left.body}</g></g>` +
             `<g transform="rotate(11 ${n(cx + 2)} ${n(cy + 10)}) translate(3 -1)"><g clip-path="url(#${id}-cr)">${right.body}</g></g>`,

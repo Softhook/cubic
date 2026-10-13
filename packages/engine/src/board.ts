@@ -23,9 +23,7 @@ export function buildBoard(map: MapDef): Board {
   const tileCols = Math.max(...map.layout.map((r) => r.length));
   const rows = tileRows * 3;
   const cols = tileCols * 3;
-  const cells: BoardCell[][] = Array.from({ length: rows }, () =>
-    Array.from({ length: cols }, () => ({ kind: 'off' as const, tile: -1 })),
-  );
+  const cells: BoardCell[][] = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ kind: 'off' as const, tile: -1 })));
   const planets: Planet[] = [];
 
   map.layout.forEach((row, tr) => {
@@ -120,7 +118,13 @@ export function grid(board: Board): Grid {
   const cells: Cell[] = [];
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cells.push(Object.freeze({ r, c }));
   const near = (deltas: readonly Cell[]) =>
-    cells.map((p) => Object.freeze(offsets(board, p, deltas).filter((q) => onBoard(board, q)).map((q) => cells[q.r * cols + q.c])));
+    cells.map((p) =>
+      Object.freeze(
+        offsets(board, p, deltas)
+          .filter((q) => onBoard(board, q))
+          .map((q) => cells[q.r * cols + q.c]),
+      ),
+    );
   const orthoCells = near(ORTHO);
   const aroundCells = near(AROUND);
   const index = (list: readonly Cell[]) => Object.freeze(list.map((q) => q.r * cols + q.c));
@@ -146,7 +150,8 @@ export function cellIndex(board: Board, p: Cell | undefined): number {
 }
 
 function neighbours(board: Board, p: Cell, around: boolean): readonly Cell[] {
-  if (p.r < 0 || p.c < 0 || p.r >= board.rows || p.c >= board.cols) return offsets(board, p, around ? AROUND : ORTHO).filter((q) => onBoard(board, q));
+  if (p.r < 0 || p.c < 0 || p.r >= board.rows || p.c >= board.cols)
+    return offsets(board, p, around ? AROUND : ORTHO).filter((q) => onBoard(board, q));
   const g = grid(board);
   return (around ? g.aroundCells : g.orthoCells)[p.r * board.cols + p.c];
 }

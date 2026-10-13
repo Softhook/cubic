@@ -2,9 +2,9 @@ import { die as getDie, key, moveOptions, same, scrapyard, tacticalOptions, type
 import type { Sel } from './controller';
 import type { Legal } from './legal';
 
-export type CellTone = 'move' | 'diagonal' | 'deploy' | 'gate' | 'drop';
-export type DieTone = 'attack' | 'swap' | 'target' | 'passenger';
-export type PlanetTone = 'conquer' | 'infamy' | 'start' | 'blocked';
+type CellTone = 'move' | 'diagonal' | 'deploy' | 'gate' | 'drop';
+type DieTone = 'attack' | 'swap' | 'target' | 'passenger';
+type PlanetTone = 'conquer' | 'infamy' | 'start' | 'blocked';
 
 export interface Highlights {
   cells: Map<string, { cell: Cell; tone: CellTone }>;
@@ -30,14 +30,20 @@ export function highlightsFor(game: GameState, sel: Sel, legal: Legal, actionPha
         break;
       case 'placeShips': {
         const die = sel.kind === 'scrap' ? sel.die : scrapyard(game, head.player)[0]?.id;
-        addCells(legal.of('placeShip', (a) => a.die === die).map((a) => a.to), 'deploy');
+        addCells(
+          legal.of('placeShip', (a) => a.die === die).map((a) => a.to),
+          'deploy',
+        );
         break;
       }
       case 'infamy':
         for (const a of legal.of('infamy')) h.planets.set(a.planet, { tone: 'infamy', label: 'Seize' });
         break;
       case 'placeExpansion':
-        addCells(legal.of('placeExpansion').flatMap((a) => (a.to ? [a.to] : [])), 'deploy');
+        addCells(
+          legal.of('placeExpansion').flatMap((a) => (a.to ? [a.to] : [])),
+          'deploy',
+        );
         break;
       case 'showOfForce':
         for (const a of legal.of('showOfForce')) h.dice.set(a.die, 'target');
@@ -46,18 +52,26 @@ export function highlightsFor(game: GameState, sel: Sel, legal: Legal, actionPha
         addCells([head.to], 'move');
         break;
       case 'warpGate':
-        addCells(legal.of('warpGate').map((a) => a.cell), 'gate');
+        addCells(
+          legal.of('warpGate').map((a) => a.cell),
+          'gate',
+        );
         break;
       case 'relocation': {
         const moves = legal.of('relocate');
         if (sel.kind === 'relocate') {
           h.planets.set(sel.planet, { tone: 'infamy', label: `${game.players[sel.owner].name}'s cube` });
-          for (const a of moves) if (a.planet === sel.planet && a.owner === sel.owner) h.planets.set(a.to, { tone: 'conquer', label: 'Move here' });
+          for (const a of moves)
+            if (a.planet === sel.planet && a.owner === sel.owner) h.planets.set(a.to, { tone: 'conquer', label: 'Move here' });
         } else for (const a of moves) h.planets.set(a.planet, { tone: 'infamy', label: 'Move cube' });
         break;
       }
       case 'unveil':
-        if (sel.kind === 'scrap') addCells(legal.of('unveilDeploy', (a) => a.die === sel.die).map((a) => a.to), 'deploy');
+        if (sel.kind === 'scrap')
+          addCells(
+            legal.of('unveilDeploy', (a) => a.die === sel.die).map((a) => a.to),
+            'deploy',
+          );
         if (head.reorganize) {
           for (const a of legal.of('unveilReroll')) if (getDie(game, a.die).loc.zone === 'board') h.dice.set(a.die, 'swap');
         }
@@ -83,7 +97,10 @@ export function highlightsFor(game: GameState, sel: Sel, legal: Legal, actionPha
       break;
     }
     case 'scrap':
-      addCells(legal.of('deploy', (a) => a.die === sel.die).map((a) => a.to), 'deploy');
+      addCells(
+        legal.of('deploy', (a) => a.die === sel.die).map((a) => a.to),
+        'deploy',
+      );
       break;
     case 'tactical': {
       const steps = tacticalOptions(game, sel.die).moves;
@@ -97,7 +114,10 @@ export function highlightsFor(game: GameState, sel: Sel, legal: Legal, actionPha
       for (const a of legal.of('swap', (a) => a.die === sel.die)) h.dice.set(a.other, 'swap');
       break;
     case 'nomadic':
-      addCells(legal.of('nomadic', (a) => a.die === sel.die).map((a) => a.to), 'deploy');
+      addCells(
+        legal.of('nomadic', (a) => a.die === sel.die).map((a) => a.to),
+        'deploy',
+      );
       break;
     case 'freeAttack':
       for (const a of legal.of('freeAttack', (a) => a.die === sel.die)) h.dice.set(a.target, 'attack');
@@ -112,7 +132,12 @@ export function highlightsFor(game: GameState, sel: Sel, legal: Legal, actionPha
       for (const t of transports(sel.die, sel.tactical)) h.dice.set(t.passenger, 'passenger');
       break;
     case 'carryDest':
-      addCells(transports(sel.die, sel.tactical).filter((t) => t.passenger === sel.passenger).map((t) => t.to), 'move');
+      addCells(
+        transports(sel.die, sel.tactical)
+          .filter((t) => t.passenger === sel.passenger)
+          .map((t) => t.to),
+        'move',
+      );
       break;
     case 'carryDrop':
       addCells(

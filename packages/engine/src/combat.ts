@@ -32,7 +32,14 @@ export function startCombat(s: GameState, attacker: Die, defender: Die, from: Ce
   s.turn.attacked = true;
   log(s, `${name(s, attacker.owner)}'s ${shipName(attacker)} attacks ${name(s, defender.owner)}'s ${shipName(defender)}.`, attacker.owner);
   if (anySkill(s, defender.owner, (r) => r.combat?.destroyBoth)) {
-    s.pending.unshift({ kind: 'dangerous', player: defender.owner, attacker: attacker.id, defender: defender.id, from, ...(ranged && { ranged }) });
+    s.pending.unshift({
+      kind: 'dangerous',
+      player: defender.owner,
+      attacker: attacker.id,
+      defender: defender.id,
+      from,
+      ...(ranged && { ranged }),
+    });
   } else rollCombat(s, attacker, defender, from, ranged);
 }
 

@@ -63,7 +63,13 @@ interface Sealed {
 }
 
 /** Signs and encrypts a post. `sk` is this browser's Nostr secret key. */
-export function encodePost(keys: GameKeys, sk: Uint8Array, body: Body, prev: string | null, at = Date.now()): { event: NostrEvent; post: Post } {
+export function encodePost(
+  keys: GameKeys,
+  sk: Uint8Array,
+  body: Body,
+  prev: string | null,
+  at = Date.now(),
+): { event: NostrEvent; post: Post } {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const plain = enc.encode(JSON.stringify({ prev, at, body } satisfies Sealed));
   const cipher = gcm(keys.key, iv).encrypt(plain);
@@ -106,4 +112,3 @@ export function decodeEvent(keys: GameKeys, event: NostrEvent, trusted = false):
 export function publicKeyOf(sk: Uint8Array): string {
   return getPublicKey(sk);
 }
-

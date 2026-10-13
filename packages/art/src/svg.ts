@@ -35,7 +35,14 @@ export type Hsl = [h: number, s: number, l: number];
 
 /** A colour as `#rrggbb`: for marks that must survive import into tools like Illustrator, which don't read `hsl()`. */
 export const hex = (h: number, s: number, l: number) =>
-  '#' + hslToRgb(h, s, l).map((c) => Math.round(c * 255).toString(16).padStart(2, '0')).join('');
+  '#' +
+  hslToRgb(h, s, l)
+    .map((c) =>
+      Math.round(c * 255)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('');
 
 /**
  * A filter primitive that maps a grey value (0–1, in every channel) to a colour ramp: a "gradient map".

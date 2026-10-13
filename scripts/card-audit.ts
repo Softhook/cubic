@@ -12,7 +12,15 @@
  *
  * Exits with 1 if there is any anomaly.
  */
-import { AUDIT_GAMES, auditGame, CHECKED_EFFECTS, coverageGaps, gameName, modeCards, type AuditResult } from '../packages/engine/test/audit';
+import {
+  AUDIT_GAMES,
+  auditGame,
+  CHECKED_EFFECTS,
+  coverageGaps,
+  gameName,
+  modeCards,
+  type AuditResult,
+} from '../packages/engine/test/audit';
 import { effectOf, type GameMode } from '../packages/engine/src';
 
 const args = process.argv.slice(2);

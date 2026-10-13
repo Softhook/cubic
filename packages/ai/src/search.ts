@@ -218,7 +218,10 @@ export class Search {
     let best = this.standPat(s);
     if (depth > 0 && !this.exhausted()) {
       // Ending the turn is `best` already.
-      const scored = this.scoreAll(s, candidates(s, { includeCarry: this.params.carry }).filter((a) => a.type !== 'endTurn'));
+      const scored = this.scoreAll(
+        s,
+        candidates(s, { includeCarry: this.params.carry }).filter((a) => a.type !== 'endTurn'),
+      );
       for (const x of scored) if (x.line.value > best.value) best = x.line;
       if (depth > 1) {
         for (const x of scored.slice(0, this.params.innerWidth)) {

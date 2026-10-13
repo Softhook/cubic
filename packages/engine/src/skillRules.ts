@@ -25,7 +25,7 @@ export interface CombatPart {
   set?: boolean;
 }
 
-export interface ConquerContext {
+interface ConquerContext {
   /** Sum of the player's ships in orbit. */
   sum: number;
   ships: Die[];
@@ -33,7 +33,7 @@ export interface ConquerContext {
   research: number;
 }
 
-export interface CombatContext {
+interface CombatContext {
   state: GameState;
   combat: CombatPending;
   side: CombatRole;
@@ -46,7 +46,7 @@ export interface TurnBonus {
   research?: number;
 }
 
-export interface DestroyContext {
+interface DestroyContext {
   /** The first enemy ship this player destroyed this turn. */
   first: boolean;
   /** It is this player's turn. */
@@ -55,7 +55,7 @@ export interface DestroyContext {
   ownActionPhase: boolean;
 }
 
-export interface DestroyBonus {
+interface DestroyBonus {
   research?: number;
   actions?: number;
   dominance?: number;
@@ -272,7 +272,9 @@ function skillSet(state: GameState, player: PlayerId): SkillSet {
   const owned = new Map<string, string>();
   for (const s of skills) if (s.active && !owned.has(effectOf(s.id))) owned.set(effectOf(s.id), s.id);
   const active = Object.freeze(
-    SKILL_EFFECTS.filter((e) => owned.has(e)).map((effect) => Object.freeze({ effect, card: owned.get(effect)!, rule: SKILL_RULES[effect] })),
+    SKILL_EFFECTS.filter((e) => owned.has(e)).map((effect) =>
+      Object.freeze({ effect, card: owned.get(effect)!, rule: SKILL_RULES[effect] }),
+    ),
   );
   set = { active, rules: Object.freeze(active.map((a) => a.rule)) };
   SKILL_SETS.set(key, set);

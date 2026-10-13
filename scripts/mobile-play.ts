@@ -86,7 +86,7 @@ function look(page: Page, tapsThisTurn: number, tried: string[], want: Want | nu
         return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden';
       };
       const all = (sel: string) => [...document.querySelectorAll(sel)].filter(shown).filter((el) => !(el as HTMLButtonElement).disabled);
-      const pick = <T,>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
+      const pick = <T>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
 
       let el: Element | undefined;
       let missed = false;
@@ -111,10 +111,12 @@ function look(page: Page, tapsThisTurn: number, tried: string[], want: Want | nu
         const choices = all('.overlay .qcard, .overlay .clever-choice');
         const primary = all('.overlay .btn-primary');
         const keep = primary.find((b) => b.textContent!.includes('Keep fleet'));
-        el = keep ?? (choices.length ? pick(choices) : primary[0] ?? all('.overlay button')[0]);
+        el = keep ?? (choices.length ? pick(choices) : (primary[0] ?? all('.overlay button')[0]));
       } else {
         const takeable = all('.market.picking .takeable, .sheet.open .market .takeable');
-        const decision = all('.turn-panel .turn-actions .btn').filter((b) => !b.closest('.ship-panel') && !/End turn|Undo/.test(b.textContent!));
+        const decision = all('.turn-panel .turn-actions .btn').filter(
+          (b) => !b.closest('.ship-panel') && !/End turn|Undo/.test(b.textContent!),
+        );
         const planets = all('.planet-hit.planet-conquer, .planet-hit.planet-start, .planet-hit.planet-infamy');
         const attacks = all('.ship.ship-attack, .ship.ship-target, .ship.ship-swap, .ship.ship-passenger');
         const cells = all('.hl');
@@ -147,7 +149,9 @@ function look(page: Page, tapsThisTurn: number, tried: string[], want: Want | nu
         const r = el.getBoundingClientRect();
         const x = r.left + r.width / 2;
         const y = r.top + r.height / 2;
-        const label = ((el.getAttribute('aria-label') ?? el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 40) || el.className.toString().split(' ')[0]);
+        const label =
+          (el.getAttribute('aria-label') ?? el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 40) ||
+          el.className.toString().split(' ')[0];
         let problem: string | null = null;
         if (r.top < -1 || r.left < -1 || r.bottom > innerHeight + 1 || r.right > innerWidth + 1) problem = 'off screen';
         else {
@@ -218,7 +222,8 @@ async function playGame(page: Page, name: string): Promise<{ issues: string[]; s
   };
   page.on('pageerror', (e) => void report(`pageerror:${e.message}`, `page error: ${e.message}`));
   page.on('console', (m) => {
-    if (m.type() === 'error' && !/favicon|Failed to load resource/.test(m.text())) void report(`console:${m.text().slice(0, 80)}`, `console: ${m.text().slice(0, 200)}`);
+    if (m.type() === 'error' && !/favicon|Failed to load resource/.test(m.text()))
+      void report(`console:${m.text().slice(0, 80)}`, `console: ${m.text().slice(0, 200)}`);
   });
 
   let lastSig = '';
@@ -244,7 +249,10 @@ async function playGame(page: Page, name: string): Promise<{ issues: string[]; s
         plan = (a && tapsFor(state, a)) ?? [];
       } catch (e) {
         writeFileSync(`${OUT}/${name}-ai-error.json`, JSON.stringify(state));
-        await report(`ai:${String(e).slice(0, 60)}`, `AI error on the human's turn ${l.turn}: ${String((e as Error).message ?? e).slice(0, 200)}`);
+        await report(
+          `ai:${String(e).slice(0, 60)}`,
+          `AI error on the human's turn ${l.turn}: ${String((e as Error).message ?? e).slice(0, 200)}`,
+        );
         plan = [];
       }
       if (plan.length) continue;
@@ -265,7 +273,10 @@ async function playGame(page: Page, name: string): Promise<{ issues: string[]; s
         });
       });
       for (const b of over) await report(`over:${b}`, `game over: "${b}" off screen`);
-      return { issues, summary: `${l.winner ?? '?'} won on turn ${l.turn}, ${Math.round((Date.now() - start) / 1000)} s; taps: ${tally()}` };
+      return {
+        issues,
+        summary: `${l.winner ?? '?'} won on turn ${l.turn}, ${Math.round((Date.now() - start) / 1000)} s; taps: ${tally()}`,
+      };
     }
     if (l.turn > MAX_TURNS) return { issues: [...issues, `still going after ${MAX_TURNS} turns`], summary: `stopped at turn ${l.turn}` };
 
@@ -284,8 +295,14 @@ async function playGame(page: Page, name: string): Promise<{ issues: string[]; s
     // AI turns move every second or so; a battle waits for OK, which the script taps.
     if (still > 60) {
       // The state, to replay with window.__quantum.load or the engine.
-      writeFileSync(`${OUT}/${name}-stuck.json`, await page.evaluate(() => JSON.stringify((window as unknown as { __quantum: { state(): unknown } }).__quantum.state())));
-      await report(`stuck:${l.kind}`, `stuck at "${l.kind}" on turn ${l.turn}${l.mine && l.target ? ` (tapping "${l.target.label}" does nothing)` : ''}`);
+      writeFileSync(
+        `${OUT}/${name}-stuck.json`,
+        await page.evaluate(() => JSON.stringify((window as unknown as { __quantum: { state(): unknown } }).__quantum.state())),
+      );
+      await report(
+        `stuck:${l.kind}`,
+        `stuck at "${l.kind}" on turn ${l.turn}${l.mine && l.target ? ` (tapping "${l.target.label}" does nothing)` : ''}`,
+      );
       return { issues, summary: `stuck on turn ${l.turn}` };
     }
 

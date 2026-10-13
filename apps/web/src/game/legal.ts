@@ -12,7 +12,7 @@ export interface Legal {
   can<K extends Action['type']>(type: K, where?: (a: ActionOf<K>) => boolean): boolean;
 }
 
-export function legalIndex(actions: Action[]): Legal {
+function legalIndex(actions: Action[]): Legal {
   const byType = new Map<Action['type'], Action[]>();
   for (const a of actions) {
     const list = byType.get(a.type);

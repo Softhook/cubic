@@ -14,10 +14,12 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   const patientPick = legal.can('patientTactic');
   const picking = legal.can('takeCard') || patientPick;
   const m = game.market;
-  const canPatientStore = (deck: DeckKind | 'expansion', index: number) => deck === 'tactic' && legal.can('patientTactic', (a) => a.index === index);
+  const canPatientStore = (deck: DeckKind | 'expansion', index: number) =>
+    deck === 'tactic' && legal.can('patientTactic', (a) => a.index === index);
   const canTake = (deck: DeckKind | 'expansion', index: number) =>
     canPatientStore(deck, index) || legal.can('takeCard', (a) => a.deck === deck && a.index === index);
-  const canStore = (deck: DeckKind | 'expansion', index: number) => legal.can('takeCard', (a) => a.deck === deck && a.index === index && !!a.store);
+  const canStore = (deck: DeckKind | 'expansion', index: number) =>
+    legal.can('takeCard', (a) => a.deck === deck && a.index === index && !!a.store);
   /** Takes the card (Patient: stores it, or asks whether to), or else shows it. */
   const clickCard = (deck: DeckKind, index: number, id: string) => {
     if (canPatientStore(deck, index)) dispatch({ type: 'patientTactic', index });
@@ -44,7 +46,8 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   };
   const deckTitle = (deck: DeckKind) => `${cardsLeft(decks[deck].cards.length)} in the ${decks[deck].name} deck — click to view them`;
 
-  const peekAt = (deck: DeckKind, cards: string[], index: number) => peek && index === cards.length - 1 && cards.length === 3 && decks[deck].cards.length > 0;
+  const peekAt = (deck: DeckKind, cards: string[], index: number) =>
+    peek && index === cards.length - 1 && cards.length === 3 && decks[deck].cards.length > 0;
   /**
    * The cards a row shows. In the phone list, copies of a card are one row with a ×n badge (Classic can deal
    * two Expansions); taking it takes the first copy. Elsewhere every card is its own.
@@ -54,7 +57,9 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
       if (!list) return [{ id, index, badge: peekAt(deck, cards, index) ? 'Peek' : undefined }];
       if (cards.indexOf(id) !== index) return [];
       const copies = cards.flatMap((x, i) => (x === id ? [i] : []));
-      const badge = [copies.length > 1 && `×${copies.length}`, copies.some((i) => peekAt(deck, cards, i)) && 'Peek'].filter(Boolean).join(' · ');
+      const badge = [copies.length > 1 && `×${copies.length}`, copies.some((i) => peekAt(deck, cards, i)) && 'Peek']
+        .filter(Boolean)
+        .join(' · ');
       return [{ id, index, badge: badge || undefined }];
     });
 
@@ -84,14 +89,24 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   const viewer = viewing && (
     <CardViewer
       title={`${decks[viewing].name} deck`}
-      subtitle={decks[viewing].cards.length ? `${cardsLeft(decks[viewing].cards.length)}, shown alphabetically (draw order stays hidden).` : 'The deck is empty.'}
+      subtitle={
+        decks[viewing].cards.length
+          ? `${cardsLeft(decks[viewing].cards.length)}, shown alphabetically (draw order stays hidden).`
+          : 'The deck is empty.'
+      }
       cards={decks[viewing].cards}
       onClose={() => setViewing(null)}
     />
   );
 
   const cardViewer = viewingCard && (
-    <CardViewer title={card(viewingCard).name} subtitle={card(viewingCard).subtitle} cards={[viewingCard]} single onClose={() => setViewingCard(null)} />
+    <CardViewer
+      title={card(viewingCard).name}
+      subtitle={card(viewingCard).subtitle}
+      cards={[viewingCard]}
+      single
+      onClose={() => setViewingCard(null)}
+    />
   );
 
   const takePatient = (index: number, store: boolean) => {
@@ -151,7 +166,17 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
       title={`${open ? 'Hide' : 'Show'} the card market (C)`}
       onClick={toggle}
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
         <path d="m6 15 6-6 6 6" />
       </svg>
       <span>Card Market</span>
@@ -175,17 +200,29 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
         </div>
       )}
       {patientPick && (
-        <button className="btn btn-ghost market-refresh" title="Patient: you may take and store a face-up tactic" onClick={() => dispatch({ type: 'patientTactic' })}>
+        <button
+          className="btn btn-ghost market-refresh"
+          title="Patient: you may take and store a face-up tactic"
+          onClick={() => dispatch({ type: 'patientTactic' })}
+        >
           Don't store a tactic
         </button>
       )}
       {legal.can('profiteer') && (
-        <button className="btn btn-ghost market-refresh" title="Profiteering: a card earned by a Conquer action" onClick={() => dispatch({ type: 'profiteer' })}>
+        <button
+          className="btn btn-ghost market-refresh"
+          title="Profiteering: a card earned by a Conquer action"
+          onClick={() => dispatch({ type: 'profiteer' })}
+        >
           Take 1 missile instead of a card
         </button>
       )}
       {legal.can('refreshMarket') && (
-        <button className="btn btn-ghost market-refresh" title="Costs one of this turn's card picks" onClick={() => dispatch({ type: 'refreshMarket' })}>
+        <button
+          className="btn btn-ghost market-refresh"
+          title="Costs one of this turn's card picks"
+          onClick={() => dispatch({ type: 'refreshMarket' })}
+        >
           Discard all face-up cards and deal new ones
         </button>
       )}
@@ -201,7 +238,12 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
         {chips('tactic', m.tacticRow)}
         {cardRules.expansionPile && (
           <div className="market-strip-group market-strip-expansion">
-            <button type="button" className="market-chip market-chip-expansion" title={`${m.expansions} Expansion cards left`} onClick={() => setViewingCard(EXPANSION.id)}>
+            <button
+              type="button"
+              className="market-chip market-chip-expansion"
+              title={`${m.expansions} Expansion cards left`}
+              onClick={() => setViewingCard(EXPANSION.id)}
+            >
               {EXPANSION.name} ×{m.expansions}
             </button>
           </div>
@@ -263,7 +305,14 @@ function useCollapse(picking: boolean) {
  */
 function useWarmCards(game: GameState) {
   const m = game.market;
-  const ids = [...m.skillRow, ...m.tacticRow, ...game.players.flatMap((p) => [...p.skills.map((s) => s.id), ...(p.storedTactics ?? [])]), ...m.skillDeck, ...m.tacticDeck];
+  const ids = [
+    ...m.skillRow,
+    ...m.tacticRow,
+    ...game.players.flatMap((p) => [...p.skills.map((s) => s.id), ...(p.storedTactics ?? [])]),
+    ...m.skillDeck,
+    ...m.tacticDeck,
+  ];
   const sig = ids.join();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `sig` stands for `ids`, a new array every render.
   useEffect(() => warmCardImages(ids), [sig]);
 }

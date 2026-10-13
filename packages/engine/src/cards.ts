@@ -6,11 +6,33 @@
  * its entry in TACTIC_EFFECTS. Skills are listed in SKILL_EFFECTS (effects.ts).
  */
 import { same } from './board';
-import { destroyedEnemyShip, destroyShip, fail, gainDominance, headOf, log, name, requireActionPhase, rollShip, shipName, type Handlers, type PendingOf } from './core';
+import {
+  destroyedEnemyShip,
+  destroyShip,
+  fail,
+  gainDominance,
+  headOf,
+  log,
+  name,
+  requireActionPhase,
+  rollShip,
+  shipName,
+  type Handlers,
+  type PendingOf,
+} from './core';
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
 import { boardLoc, die, reserve, shipsOnBoard } from './lookups';
-import { canPlayStoredTactic, canProfiteer, canRefreshMarket, canRelocate, canTakeCard, deployTargets, relocationOptions, skillLimit } from './queries';
+import {
+  canPlayStoredTactic,
+  canProfiteer,
+  canRefreshMarket,
+  canRelocate,
+  canTakeCard,
+  deployTargets,
+  relocationOptions,
+  skillLimit,
+} from './queries';
 import { shuffle } from './rng';
 import { rulesOf } from './rules';
 import { anySkill, ruleOf } from './skillRules';
@@ -198,9 +220,7 @@ export const cardHandlers = {
     const head = headOf(s, 'peek', 'Not peeking');
     s.pending.shift();
     consumeCardPick(s);
-    const id = a.takeTop
-      ? (head.deck === 'skill' ? s.market.skillDeck : s.market.tacticDeck).shift()!
-      : takeFromRow(s, head.deck, 2);
+    const id = a.takeTop ? (head.deck === 'skill' ? s.market.skillDeck : s.market.tacticDeck).shift()! : takeFromRow(s, head.deck, 2);
     takeOrStore(s, head.player, id, head.store);
   },
   /** Profiteering: a pick earned by a Conquer action (not by Infamy; OPEN-QUESTIONS #64) becomes 1 missile. */
@@ -306,7 +326,13 @@ export const cardHandlers = {
     const to = s.board.planets[a.to];
     from.cubes.splice(from.cubes.lastIndexOf(a.owner), 1);
     to.cubes.push(a.owner);
-    log(s, `${name(s, head.player)} relocates ${name(s, a.owner)}'s cube from planet ${from.number} to planet ${to.number}.`, head.player, undefined, [from.id, to.id]);
+    log(
+      s,
+      `${name(s, head.player)} relocates ${name(s, a.owner)}'s cube from planet ${from.number} to planet ${to.number}.`,
+      head.player,
+      undefined,
+      [from.id, to.id],
+    );
   },
   unveilReroll(s, a) {
     const head = headOf(s, 'unveil', 'Not unveiling');

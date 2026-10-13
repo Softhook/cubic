@@ -30,7 +30,13 @@ const crashing = (s: number): Body => ({ t: 'act', seat: s, action: { type: 'set
 
 function game(players: PlayerConfig[], open: number[] = []) {
   const t = new Timeline();
-  const g = post('alice', { t: 'create', protocol: PROTOCOL, config: { players, mapId: defaultMap(players.length)!.id, mode: 'basic', seed: 7 }, creator: 0, open });
+  const g = post('alice', {
+    t: 'create',
+    protocol: PROTOCOL,
+    config: { players, mapId: defaultMap(players.length)!.id, mode: 'basic', seed: 7 },
+    creator: 0,
+    open,
+  });
   t.add(g);
   return { t, g };
 }

@@ -19,7 +19,7 @@ function startOfTurnBonus(s: GameState, player: PlayerId): Required<TurnBonus> {
   return total;
 }
 
-export function startTurn(s: GameState, player: PlayerId, actions: number, bonus: boolean) {
+function startTurn(s: GameState, player: PlayerId, actions: number, bonus: boolean) {
   const pl = s.players[player];
   s.turn = emptyTurn(player, s.turn.number + 1);
   s.turn.bonus = bonus;
@@ -135,7 +135,9 @@ function activateSkills(s: GameState, player: PlayerId, which: (sk: OwnedSkill) 
 const AUTO_RESOLVE: { [K in Pending['kind']]?: (s: GameState, head: PendingOf<K>) => boolean } = {
   placeShips(s, head) {
     if (scrapyard(s, head.player).length && startSlots(s, head.planet).length) return false;
-    log(s, `${name(s, head.player)} deploys around planet ${s.board.planets[head.planet].number}.`, head.player, 'startPlanet', [head.planet]);
+    log(s, `${name(s, head.player)} deploys around planet ${s.board.planets[head.planet].number}.`, head.player, 'startPlanet', [
+      head.planet,
+    ]);
     s.pending.shift();
     if (!s.pending.length) beginPlay(s);
     return true;

@@ -27,7 +27,16 @@ export function PlanetNumber({ n, x, y, size, className }: { n: number; x: numbe
  * A planet's live markings over its tile art, placed and sized as on the printed tile: its number and
  * cube spaces. `cubes[i]` is the colour of the cube in space i. Used by the board and the manual alike.
  */
-export function PlanetMarkings({ cx, cy, mm, n, capacity, cubes, numberClass, cubeClass }: {
+export function PlanetMarkings({
+  cx,
+  cy,
+  mm,
+  n,
+  capacity,
+  cubes,
+  numberClass,
+  cubeClass,
+}: {
   cx: number;
   cy: number;
   /** SVG units per printed millimetre. */

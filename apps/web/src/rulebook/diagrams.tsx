@@ -62,7 +62,15 @@ const planetUrl = (n: number, box: number) =>
   cached(`planet:${n}:${box}`, () =>
     dataUrl(
       document(
-        planet({ rng: rng(`manual-planet-${n}`), id: `mp${n}`, cx: 0, cy: 0, r: PLANET_DIAMETER[n] / 2, number: n, type: PLANET_FAMILY[n].types[0] }),
+        planet({
+          rng: rng(`manual-planet-${n}`),
+          id: `mp${n}`,
+          cx: 0,
+          cy: 0,
+          r: PLANET_DIAMETER[n] / 2,
+          number: n,
+          type: PLANET_FAMILY[n].types[0],
+        }),
         { x: -box / 2, y: -box / 2, w: box, h: box },
         false,
       ),
@@ -96,7 +104,14 @@ function useSvgId() {
 }
 
 /** A diagram's canvas: `cols` × `rows` spaces plus a margin, scaled to fit its column. */
-export function Diagram({ rows, cols, label, left = 0, scale = 1.3, children }: {
+export function Diagram({
+  rows,
+  cols,
+  label,
+  left = 0,
+  scale = 1.3,
+  children,
+}: {
   rows: number;
   cols: number;
   label: string;
@@ -159,7 +174,14 @@ export function PlanetIcon({ n, size = 34, slots, cubes = [] }: { n: number; siz
   const px = (size / d) * box;
   const font = d * 0.52;
   return (
-    <svg className="mn-planet-icon" width={px} height={px} viewBox={`${-half} ${-half} ${box} ${box}`} role="img" aria-label={`planet ${n}`}>
+    <svg
+      className="mn-planet-icon"
+      width={px}
+      height={px}
+      viewBox={`${-half} ${-half} ${box} ${box}`}
+      role="img"
+      aria-label={`planet ${n}`}
+    >
       <image href={planetUrl(n, box)} x={-half} y={-half} width={box} height={box} />
       {slots ? (
         <Marks cx={0} cy={0} n={n} cubes={cubes} mm={1} />
@@ -176,7 +198,16 @@ export function PlanetIcon({ n, size = 34, slots, cubes = [] }: { n: number; siz
 const pipAt = (i: number) => [(i % 3) - 1, Math.floor(i / 3) - 1] as const;
 
 /** A die face centred on (x, y): a coloured player die or a combat die shaded like the game's 3D dice. */
-export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim, shipIllustration }: {
+export function DieFace({
+  x,
+  y,
+  v,
+  size = S * 0.66,
+  kind = 'you',
+  ghost,
+  dim,
+  shipIllustration,
+}: {
   x: number;
   y: number;
   v: number;
@@ -196,7 +227,9 @@ export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim, sh
     return (
       <g className="mn-ghost">
         <rect x={x - h} y={y - h} width={size} height={size} rx={rx} />
-        {PIPS[v].map(pipAt).map(([px, py], i) => <circle key={i} cx={x + px * step} cy={y + py * step} r={size * 0.075} />)}
+        {PIPS[v].map(pipAt).map(([px, py], i) => (
+          <circle key={i} cx={x + px * step} cy={y + py * step} r={size * 0.075} />
+        ))}
       </g>
     );
   if (shipIllustration && (kind === 'you' || kind === 'foe')) {
@@ -211,7 +244,9 @@ export function DieFace({ x, y, v, size = S * 0.66, kind = 'you', ghost, dim, sh
         <rect key={fill} x={x - h} y={y - h} width={size} height={size} rx={rx} fill={fill} />
       ))}
       <rect x={x - h + 0.5} y={y - h + 0.5} width={size - 1} height={size - 1} rx={rx} fill="none" stroke="rgba(255,255,255,.22)" />
-      {PIPS[v].map(pipAt).map(([px, py], i) => <circle key={i} cx={x + px * step} cy={y + py * step} r={size * 0.085} fill={pip} />)}
+      {PIPS[v].map(pipAt).map(([px, py], i) => (
+        <circle key={i} cx={x + px * step} cy={y + py * step} r={size * 0.085} fill={pip} />
+      ))}
     </g>
   );
 }
@@ -222,7 +257,17 @@ export function Ship({ at, v, who = 'you', ghost, dim }: { at: At; v: number; wh
 }
 
 /** A die as a stand-alone inline icon (for text, tables and the combat sum). */
-export function DieIcon({ v, kind = 'you', size = 26, shipIllustration }: { v: number; kind?: DieKind; size?: number; shipIllustration?: boolean }) {
+export function DieIcon({
+  v,
+  kind = 'you',
+  size = 26,
+  shipIllustration,
+}: {
+  v: number;
+  kind?: DieKind;
+  size?: number;
+  shipIllustration?: boolean;
+}) {
   const id = useSvgId();
   const label = kind === 'atk' ? `attack die ${v}` : kind === 'def' ? `defence die ${v}` : `ship ${v}`;
   return (
@@ -246,7 +291,16 @@ export function CubeIcon({ empty, size = 22 }: { empty?: boolean; size?: number 
 
 /** One of the game's line icons (packages/art icons.ts). */
 export function Icon({ name, size = 20 }: { name: string; size?: number }) {
-  return <svg className="mn-icon" width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: icon(name, 12, 12, 24, 'currentColor') }} />;
+  return (
+    <svg
+      className="mn-icon"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      dangerouslySetInnerHTML={{ __html: icon(name, 12, 12, 24, 'currentColor') }}
+    />
+  );
 }
 
 // ------------------------------------------------------------------ marks drawn over the map
@@ -353,7 +407,12 @@ export function reachable(rows: number, cols: number, from: At, steps: number, b
     const [r, c] = queue.shift()!;
     const d = dist.get(key(r, c))!;
     if (d === steps) continue;
-    for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    for (const [dr, dc] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ]) {
       const nr = r + dr;
       const nc = c + dc;
       if (nr < 0 || nc < 0 || nr >= rows || nc >= cols || block.has(key(nr, nc)) || dist.has(key(nr, nc))) continue;

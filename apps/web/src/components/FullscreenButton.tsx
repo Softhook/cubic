@@ -23,7 +23,9 @@ const enter = () => {
   wanted = true;
   if (asking) return;
   asking = true;
-  const done = () => { asking = false; };
+  const done = () => {
+    asking = false;
+  };
   const request = (root.requestFullscreen ?? root.webkitRequestFullscreen)?.call(root, { navigationUI: 'hide' });
   if (request?.then) request.then(done, done);
   else done();
@@ -96,13 +98,24 @@ export function FullscreenButton() {
   if (!supported) return null;
 
   return (
-    <button className="icon-btn" data-fullscreen-toggle title={on ? 'Exit full screen' : 'Full screen'} aria-label={on ? 'Exit full screen' : 'Full screen'} onClick={toggle}>
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        {on ? (
-          <path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" />
-        ) : (
-          <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" />
-        )}
+    <button
+      className="icon-btn"
+      data-fullscreen-toggle
+      title={on ? 'Exit full screen' : 'Full screen'}
+      aria-label={on ? 'Exit full screen' : 'Full screen'}
+      onClick={toggle}
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {on ? <path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" /> : <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" />}
       </svg>
     </button>
   );

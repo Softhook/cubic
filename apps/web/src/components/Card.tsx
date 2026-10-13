@@ -7,7 +7,17 @@ export function CategoryIcon({ category, size = 14 }: { category: string; size?:
   const markup = ICONS[category];
   if (!markup) return null;
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: markup }} />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      dangerouslySetInnerHTML={{ __html: markup }}
+    />
   );
 }
 
@@ -18,15 +28,38 @@ export function CategoryIcon({ category, size = 14 }: { category: string; size?:
 export function ActionHex({ size = 20, off = false }: { size?: number; off?: boolean }) {
   return (
     <svg className={off ? 'action-hex' : 'action-hex on'} width={size} height={size} viewBox="0 0 24 24" aria-hidden>
-      <path d="M12 1.5 21.1 6.75v10.5L12 22.5 2.9 17.25V6.75z" fill={off ? 'none' : 'currentColor'} stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round" />
-      <g transform="translate(5.4 5.4) scale(.55)" fill="none" stroke={off ? 'currentColor' : '#0b1020'} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICONS.action }} />
+      <path
+        d="M12 1.5 21.1 6.75v10.5L12 22.5 2.9 17.25V6.75z"
+        fill={off ? 'none' : 'currentColor'}
+        stroke="currentColor"
+        strokeWidth={1.6}
+        strokeLinejoin="round"
+      />
+      <g
+        transform="translate(5.4 5.4) scale(.55)"
+        fill="none"
+        stroke={off ? 'currentColor' : '#0b1020'}
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        dangerouslySetInnerHTML={{ __html: ICONS.action }}
+      />
     </svg>
   );
 }
 
 /** A missile: the same drawing as on the cards, pointing up and to the right. */
 export function MissileIcon({ size = 16 }: { size?: number }) {
-  return <svg className="missile-icon" width={size} height={size} viewBox="-3.6 -3.6 7.2 7.2" aria-hidden dangerouslySetInnerHTML={{ __html: missile(0.5, -0.5, -45) }} />;
+  return (
+    <svg
+      className="missile-icon"
+      width={size}
+      height={size}
+      viewBox="-3.6 -3.6 7.2 7.2"
+      aria-hidden
+      dangerouslySetInnerHTML={{ __html: missile(0.5, -0.5, -45) }}
+    />
+  );
 }
 
 /** Sets `--cat` to a category's accent colour, as printed on a light (permanent) or dark (one-shot) card. */
@@ -68,7 +101,7 @@ export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, 
       <div className="qcard-top">
         <span className="qcard-cat">
           <CategoryIcon category={def.category} size={size === 'sm' ? 11 : 13} />
-          {kind === 'skill' ? CARD_CATEGORIES[def.category]?.label ?? 'Skill' : kindLabel}
+          {kind === 'skill' ? (CARD_CATEGORIES[def.category]?.label ?? 'Skill') : kindLabel}
         </span>
         {badge && <span className="qcard-badge">{badge}</span>}
       </div>

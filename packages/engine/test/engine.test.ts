@@ -179,7 +179,8 @@ describe('missiles', () => {
     expect(s.players[2].missiles).toBeGreaterThan(0);
     expect(legalActions(s).filter((a) => a.type === 'missile' && a.by === 2)).toEqual([]);
     expect(canRespondToCombat(s, s.pending[0], 2)).toBe(false);
-    for (const side of ['attacker', 'defender'] as const) expect(() => apply(s, { type: 'missile', by: 2, side })).toThrow(/Only the attacker and defender/);
+    for (const side of ['attacker', 'defender'] as const)
+      expect(() => apply(s, { type: 'missile', by: 2, side })).toThrow(/Only the attacker and defender/);
   });
 
   it('overrides Rational', () => {
@@ -243,7 +244,11 @@ describe('modes', () => {
   it('original Sabotage makes every other player discard a Command card', () => {
     let s = quickStart(3, 3, 'original');
     const me = s.turn.player;
-    for (const p of s.players) p.skills = [{ id: 'o-agile', active: true }, { id: 'o-eager', active: true }];
+    for (const p of s.players)
+      p.skills = [
+        { id: 'o-agile', active: true },
+        { id: 'o-eager', active: true },
+      ];
     s.market.tacticRow[0] = 'o-sabotage';
     s.pending = [{ kind: 'takeCard', player: me, count: 1 }];
     s = apply(s, { type: 'takeCard', deck: 'tactic', index: 0 });
@@ -277,7 +282,12 @@ describe('modes', () => {
       s.turn.freeMoves = 1;
       return s;
     }
-    const ids = (s: GameState) => ({ flag: `p${s.turn.player}d0`, destroyer: `p${s.turn.player}d1`, station: `p${s.turn.player}d2`, enemy: `p${1 - s.turn.player}d0` });
+    const ids = (s: GameState) => ({
+      flag: `p${s.turn.player}d0`,
+      destroyer: `p${s.turn.player}d1`,
+      station: `p${s.turn.player}d2`,
+      enemy: `p${1 - s.turn.player}d0`,
+    });
 
     it('the free move can pay for a Transport (a move without an attack)', () => {
       const s = curious(0);
@@ -333,7 +343,12 @@ describe('Tactical with ship abilities (forum consensus, BGG threads 1093051 and
     s.turn.actionsLeft = 3;
     return s;
   }
-  const ids = (s: GameState) => ({ flag: `p${s.turn.player}d0`, destroyer: `p${s.turn.player}d1`, interceptor: `p${s.turn.player}d2`, enemy: `p${1 - s.turn.player}d0` });
+  const ids = (s: GameState) => ({
+    flag: `p${s.turn.player}d0`,
+    destroyer: `p${s.turn.player}d1`,
+    interceptor: `p${s.turn.player}d2`,
+    enemy: `p${1 - s.turn.player}d0`,
+  });
   const at = (s: GameState, id: string) => s.dice.find((d) => d.id === id)!.loc;
 
   it('a Flagship can transport over the 1 space, using its ability (and, on the Original card, its move)', () => {
@@ -356,7 +371,9 @@ describe('Tactical with ship abilities (forum consensus, BGG threads 1093051 and
     const s = tactical('original', 'o-tactical');
     const { flag, destroyer } = ids(s);
     s.turn.abilityUsed[flag] = true;
-    expect(() => apply(s, { type: 'tactical', die: flag, passenger: destroyer, to: { r: 2, c: 3 }, drop: { r: 3, c: 4 } })).toThrow(/ability/);
+    expect(() => apply(s, { type: 'tactical', die: flag, passenger: destroyer, to: { r: 2, c: 3 }, drop: { r: 3, c: 4 } })).toThrow(
+      /ability/,
+    );
   });
 
   it('an Interceptor can step or attack diagonally, using its ability', () => {
@@ -499,7 +516,10 @@ describe('Stubborn (2013 card text and CE card sheet)', () => {
 
 describe('Composed / Cerebral', () => {
   it('needs dominance to lose ("reduce your dominance by 1")', () => {
-    for (const [mode, id] of [['community', 'composed'], ['original', 'o-cerebral']] as const) {
+    for (const [mode, id] of [
+      ['community', 'composed'],
+      ['original', 'o-cerebral'],
+    ] as const) {
       const s = quickStart(2, 3, mode);
       const me = s.turn.player;
       s.players[me].skills = [{ id, active: true }];
@@ -547,7 +567,10 @@ describe('Original card market (2013 rulebook p.9)', () => {
 
 describe('RULE-SUGGESTIONS §5.3', () => {
   it('#49: a held Talented raises the skill limit at once, so taking it as a 4th skill forces no discard', () => {
-    for (const [taken, discard] of [['talented', false], ['stealthy', true]] as const) {
+    for (const [taken, discard] of [
+      ['talented', false],
+      ['stealthy', true],
+    ] as const) {
       let s = quickStart(2, 3);
       s = apply(s, { type: 'endTurn' });
       const me = s.turn.player;
@@ -576,7 +599,12 @@ describe('RULE-SUGGESTIONS §5.3', () => {
       // The supporting ship sits on the far gate, adjacent to the attacker's space only through the link.
       s = arrange(s, { p0d0: [0, 0, 3], p1d0: [0, 1, 3], p0d1: [8, 8, 2] });
       s.players[0].skills = [{ id: 'strategic', active: true }];
-      s.gates = gates ? [{ r: 0, c: 0 }, { r: 8, c: 8 }] : [];
+      s.gates = gates
+        ? [
+            { r: 0, c: 0 },
+            { r: 8, c: 8 },
+          ]
+        : [];
       s = apply(s, { type: 'attack', die: 'p0d0', target: 'p1d0' });
       if (s.pending[0].kind !== 'combat') throw new Error();
       s.pending[0].attacker.dice = [4];
@@ -591,7 +619,12 @@ describe('RULE-SUGGESTIONS §5.3', () => {
       let s = quickStart();
       s = arrange(s, { p1d0: [8, 8, 3] });
       s.players[0].skills = [{ id: 'stealthy', active: true }];
-      s.gates = gates ? [{ r: 0, c: 0 }, { r: 8, c: 8 }] : [];
+      s.gates = gates
+        ? [
+            { r: 0, c: 0 },
+            { r: 8, c: 8 },
+          ]
+        : [];
       return deployTargets(s, 0).some((c) => c.r === 0 && c.c === 0);
     };
     expect(isolated(false)).toBe(true);
@@ -655,7 +688,8 @@ describe('Clever (CE): after reconfiguring, ±1 (OPEN-QUESTIONS #63)', () => {
       const v = s.dice.find((d) => d.id === head.die)!.value;
       expect(head.options).toEqual([v - 1, v, v + 1].filter((x) => x >= 1 && x <= 6));
       expect(legalActions(s).map((a) => (a.type === 'clever' ? a.value : null))).toEqual(head.options);
-      if (Math.abs(v - start) === 1) expect(apply(s, { type: 'clever', value: start }).dice.find((d) => d.id === head.die)!.value).toBe(start);
+      if (Math.abs(v - start) === 1)
+        expect(apply(s, { type: 'clever', value: start }).dice.find((d) => d.id === head.die)!.value).toBe(start);
     }
   });
 
@@ -712,7 +746,7 @@ describe('Devious: through enemy ships, normal moves only (OPEN-QUESTIONS #65)',
 describe('Profiteering: a card for a Conquer action may be 1 missile (OPEN-QUESTIONS #64)', () => {
   /** Ends a turn with `conquered` Conquer actions and `infamy` Infamy cubes; `breakthrough` adds a research pick. */
   function cardPhase(opts: { conquered: number; infamy?: number; breakthrough?: boolean; skill?: boolean }): GameState {
-    let s = quickStart(2, 3);
+    const s = quickStart(2, 3);
     const me = s.turn.player;
     s.players[me].skills = opts.skill === false ? [] : [{ id: 'profiteering', active: true }];
     s.turn.conquered = opts.conquered;

@@ -9,7 +9,18 @@ import { actionsClosed, canCurious, canGainResearch, canUseAbility, infamyAt, us
 import { d6 } from './rng';
 import { rulesOf } from './rules';
 import { anySkill, hasSkill, skillRules, stealableSkill } from './skillRules';
-import { RuleError, type Action, type Die, type GameState, type LogEntry, type LogEvent, type OncePerTurn, type Pending, type PlayerId, type TurnState } from './types';
+import {
+  RuleError,
+  type Action,
+  type Die,
+  type GameState,
+  type LogEntry,
+  type LogEvent,
+  type OncePerTurn,
+  type Pending,
+  type PlayerId,
+  type TurnState,
+} from './types';
 
 const LOG_LIMIT = 80;
 
@@ -71,7 +82,8 @@ export function markSeen(s: GameState, d: Die) {
 export function rollShip(s: GameState, d: Die, avoid?: number) {
   roll(s, d, avoid);
   if (s.phase !== 'play') return;
-  if (anySkill(s, d.owner, (r) => r.chooseShipNumbers)) s.pending.unshift({ kind: 'clever', player: d.owner, die: d.id, avoid, source: 'clever' });
+  if (anySkill(s, d.owner, (r) => r.chooseShipNumbers))
+    s.pending.unshift({ kind: 'clever', player: d.owner, die: d.id, avoid, source: 'clever' });
   else if (d.owner === s.turn.player && anySkill(s, d.owner, (r) => r.rerollShips)) s.turn.scrappy = { die: d.id, avoid };
 }
 

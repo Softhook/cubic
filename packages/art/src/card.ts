@@ -121,7 +121,25 @@ function finish(all: Fragment, area: Box, id: string, rounded?: boolean): string
 // ---------------------------------------------------------------------------
 // Text
 
-const BOLD_TERMS = new Set(['Research', 'Dominance', 'Missile', 'Missiles', 'Combat', 'Conquer', 'Conquering', 'Construct', 'Attack', 'Deploy', 'Reconfigure', 'Skill', 'Skills', 'Tactic', 'Tactics', 'Move', 'Command']);
+const BOLD_TERMS = new Set([
+  'Research',
+  'Dominance',
+  'Missile',
+  'Missiles',
+  'Combat',
+  'Conquer',
+  'Conquering',
+  'Construct',
+  'Attack',
+  'Deploy',
+  'Reconfigure',
+  'Skill',
+  'Skills',
+  'Tactic',
+  'Tactics',
+  'Move',
+  'Command',
+]);
 
 interface Word {
   text: string;
@@ -149,7 +167,11 @@ function wrap(text: string, size: number, width: number, measure: Measure): Word
 }
 
 const tspans = (line: Word[], boldColour: string) =>
-  line.map((w, i) => `<tspan${w.bold ? ` font-weight="700" fill="${boldColour}"` : ''}>${esc(w.text)}${i < line.length - 1 ? ' ' : ''}</tspan>`).join('');
+  line
+    .map(
+      (w, i) => `<tspan${w.bold ? ` font-weight="700" fill="${boldColour}"` : ''}>${esc(w.text)}${i < line.length - 1 ? ' ' : ''}</tspan>`,
+    )
+    .join('');
 
 // ---------------------------------------------------------------------------
 // Faces
@@ -198,7 +220,9 @@ function textPanel(face: CardFace, category: string, area: Box, p: CardPalette, 
   const { w: W, h: H, artBottom: top, safe } = CARD;
   const info = DECK_INFO[face.deck];
   // The panel below the art, edged in the accent.
-  let out = rect({ x: area.x, y: top, w: area.w, h: area.y + area.h - top }, `fill="${p.paper}"`) + rect({ x: area.x, y: top - 0.2, w: area.w, h: 0.4 }, `fill="${p.accent}"`);
+  let out =
+    rect({ x: area.x, y: top, w: area.w, h: area.y + area.h - top }, `fill="${p.paper}"`) +
+    rect({ x: area.x, y: top - 0.2, w: area.w, h: 0.4 }, `fill="${p.accent}"`);
 
   // Emblem straddling art and panel.
   out +=
@@ -226,7 +250,10 @@ function textPanel(face: CardFace, category: string, area: Box, p: CardPalette, 
   const lead = size * 1.34;
   const firstY = bodyTop + Math.max(0, (bodyBottom - bodyTop - lines.length * lead) / 2.6) + size;
   out += lines
-    .map((l, i) => `<text x="${n(W / 2)}" y="${n(firstY + i * lead)}" font-family="${FONTS.body}" font-size="${n(size)}" fill="${p.ink}" text-anchor="middle">${tspans(l, p.ink)}</text>`)
+    .map(
+      (l, i) =>
+        `<text x="${n(W / 2)}" y="${n(firstY + i * lead)}" font-family="${FONTS.body}" font-size="${n(size)}" fill="${p.ink}" text-anchor="middle">${tspans(l, p.ink)}</text>`,
+    )
     .join('');
 
   // Footer, tucked into the bottom corners: position in the deck, and edition.
@@ -260,12 +287,20 @@ export function cardBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure'> = {}
   const r = rng(hash(`back:${deck}`));
   const inset = 4;
   const win: Box = info.light ? { x: inset, y: inset, w: W - 2 * inset, h: H - 2 * inset } : pageArea(true);
-  const sky = starfield({ rng: r.fork('sky'), id: `${id}-sky`, area: win, frame: info.light ? win : { x: 0, y: 0, w: W, h: H }, hues: [hue - 10, hue + 50], nebula: 0.7 });
+  const sky = starfield({
+    rng: r.fork('sky'),
+    id: `${id}-sky`,
+    area: win,
+    frame: info.light ? win : { x: 0, y: 0, w: W, h: H },
+    hues: [hue - 10, hue + 50],
+    nebula: 0.7,
+  });
   const cx = W / 2;
   const cy = H * 0.44;
   const halo = glow(`${id}-halo`, cx, cy + 2, 22, 22, hue, 0.5, 60);
   let orbits = '';
-  for (let i = 0; i < 3; i++) orbits += `<ellipse cx="${n(cx)}" cy="${n(cy + 1)}" rx="${n(16 + i * 5)}" ry="${n(5 + i * 1.6)}" fill="none" stroke="${hsl(hue, 80, 75)}" stroke-width=".3" opacity="${n(0.6 - i * 0.15)}" transform="rotate(-18 ${n(cx)} ${n(cy)})"/>`;
+  for (let i = 0; i < 3; i++)
+    orbits += `<ellipse cx="${n(cx)}" cy="${n(cy + 1)}" rx="${n(16 + i * 5)}" ry="${n(5 + i * 1.6)}" fill="none" stroke="${hsl(hue, 80, 75)}" stroke-width=".3" opacity="${n(0.6 - i * 0.15)}" transform="rotate(-18 ${n(cx)} ${n(cy)})"/>`;
   const title = `<text x="${n(cx)}" y="${n(H * 0.72)}" font-family="${FONTS.title}" font-weight="900" font-size="7" letter-spacing="1.4" fill="#fff" text-anchor="middle">CUBIC</text>`;
   const sub = `<text x="${n(cx)}" y="${n(H * 0.72 + 6)}" font-family="${FONTS.body}" font-weight="700" font-size="2.4" letter-spacing=".9" fill="${hsl(hue, 90, 78)}" text-anchor="middle">${esc(info.label.toUpperCase())}${info.edition === 'Classic' ? ' · CLASSIC' : ''}</text>`;
   const border = info.light
@@ -273,7 +308,10 @@ export function cardBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure'> = {}
     : `<rect x="3" y="3" width="${n(W - 6)}" height="${n(H - 6)}" rx="1.6" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".3" opacity=".5"/>`;
   const all: Fragment = {
     defs: fontStyle(o) + sky.defs + halo.defs + clipRect(`${id}-win`, win, info.light ? 2.6 : 0),
-    body: rect(area, `fill="${p.paper}"`) + `<g clip-path="url(#${id}-win)">${sky.body}${halo.body}${orbits}${die(cx, cy, 11, 6, hue)}${title}${sub}</g>` + border,
+    body:
+      rect(area, `fill="${p.paper}"`) +
+      `<g clip-path="url(#${id}-win)">${sky.body}${halo.body}${orbits}${die(cx, cy, 11, 6, hue)}${title}${sub}</g>` +
+      border,
   };
   return finish(all, area, id, o.rounded);
 }

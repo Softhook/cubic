@@ -50,7 +50,11 @@ export function Explosions({ game, cell }: { game: GameState; cell: number }) {
       <span className="boom-wave" />
       <span className="boom-wave late" />
       {Array.from({ length: SPARKS }, (_, i) => (
-        <span key={i} className="boom-spark" style={{ '--a': `${(360 / SPARKS) * i + (i % 2) * 14}deg`, '--d': `${0.55 + (i % 3) * 0.18}` } as CSSProperties} />
+        <span
+          key={i}
+          className="boom-spark"
+          style={{ '--a': `${(360 / SPARKS) * i + (i % 2) * 14}deg`, '--d': `${0.55 + (i % 3) * 0.18}` } as CSSProperties}
+        />
       ))}
     </div>
   ));

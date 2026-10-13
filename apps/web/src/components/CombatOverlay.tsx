@@ -1,5 +1,20 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, missileOffered, signed, tryApply, type Action, type CombatPending, type CombatRole, type GameState, type PlayerId, type PlayerState } from '@quantum/engine';
+import {
+  SHIP_NAMES,
+  canRespondToCombat,
+  card,
+  combatOutcome,
+  combatReroll,
+  missileOffered,
+  signed,
+  tryApply,
+  type Action,
+  type CombatPending,
+  type CombatRole,
+  type GameState,
+  type PlayerId,
+  type PlayerState,
+} from '@quantum/engine';
 import { combatStage } from '@quantum/online';
 import type { Dispatch } from '../game/useGame';
 import type { GameView } from '../game/view';
@@ -45,7 +60,11 @@ export function CombatOverlay({
   const humans = game.players.filter((p) => (online ? online.responders.includes(p.id) : mine(p.id)));
   const shooters = humans.filter((p) => p.missiles > 0);
   const autoResolve = !humans.some((p) => canRespondToCombat(game, combat, p.id));
-  const waitingNames = online ? online.waitingOn.map((id) => game.players[id].name).join(' and ') : aiResponder !== null ? game.players[aiResponder].name : undefined;
+  const waitingNames = online
+    ? online.waitingOn.map((id) => game.players[id].name).join(' and ')
+    : aiResponder !== null
+      ? game.players[aiResponder].name
+      : undefined;
   // A battle nobody here can change stays up until OK (or a click beside it), so the player can
   // see how it went: online, it moves on once decided; here, OK resolves it. Battles no human here
   // fights in move on by themselves: online by playback, here by the AI driver (`timed`).
@@ -62,7 +81,8 @@ export function CombatOverlay({
   // Enter or Escape is OK too; not held down (it would carry on into the next choice), nor on a
   // focused button (Enter presses that already).
   useShortcut(
-    (e) => ready && !!ok && !e.repeat && (e.key === 'Enter' || e.key === 'Escape') && (e.target as HTMLElement | null)?.tagName !== 'BUTTON',
+    (e) =>
+      ready && !!ok && !e.repeat && (e.key === 'Enter' || e.key === 'Escape') && (e.target as HTMLElement | null)?.tagName !== 'BUTTON',
     (e) => {
       e.preventDefault();
       ok?.();
@@ -121,8 +141,14 @@ export function CombatOverlay({
           {s.dice.length > 1 && !rollPart?.set && <li className="muted">Brutal: rolled {s.dice.join(' & ')}</li>}
         </ul>
         <div className={`combat-total ${revealed ? 'show' : ''}`}>{revealed ? total.total : '?'}</div>
-        {revealed && humans.map((p) => <RerollButton key={p.id} game={game} combat={combat} role={role} by={p} named={humans.length > 1} dispatch={dispatch} />)}
-        {revealed && shooters.map((sh) => <MissileButton key={sh.id} game={game} combat={combat} role={role} shooter={sh} named={humans.length > 1} dispatch={dispatch} />)}
+        {revealed &&
+          humans.map((p) => (
+            <RerollButton key={p.id} game={game} combat={combat} role={role} by={p} named={humans.length > 1} dispatch={dispatch} />
+          ))}
+        {revealed &&
+          shooters.map((sh) => (
+            <MissileButton key={sh.id} game={game} combat={combat} role={role} shooter={sh} named={humans.length > 1} dispatch={dispatch} />
+          ))}
         {revealed && !s.missile && total.roll === 1 && shooters.some((sh) => sh.id === s.player) && (
           <p className="missile-note">Roll is already 1 — a missile can’t help.</p>
         )}
@@ -143,7 +169,8 @@ export function CombatOverlay({
         <div className={`combat-verdict ${revealed ? 'show' : ''}`} style={{ '--pc': leader.color } as CSSProperties}>
           {revealed && (
             <>
-              <strong>{leader.name}</strong> {out.stubborn ? 'holds firm (Stubborn)' : out.attackerWins ? 'will destroy the defender' : 'will repel the attack'}
+              <strong>{leader.name}</strong>{' '}
+              {out.stubborn ? 'holds firm (Stubborn)' : out.attackerWins ? 'will destroy the defender' : 'will repel the attack'}
             </>
           )}
         </div>

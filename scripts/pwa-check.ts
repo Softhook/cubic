@@ -29,8 +29,14 @@ const PORT = 5190;
 const BASE = `http://127.0.0.1:${PORT}/quantum/`;
 
 const TYPES: Record<string, string> = {
-  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
-  '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2',
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.webmanifest': 'application/manifest+json',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.woff2': 'font/woff2',
 };
 
 let failures = 0;
@@ -133,19 +139,28 @@ async function main() {
     await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
     const found = await page
       .waitForFunction(async () => !!(await navigator.serviceWorker.getRegistration())?.waiting, null, { timeout: 20_000 })
-      .then(() => true, () => false);
+      .then(
+        () => true,
+        () => false,
+      );
     check('returning to the app finds the new version', found);
     await page.waitForTimeout(2000);
     check('it does not reload while you play', await page.evaluate(() => (window as unknown as { kept?: boolean }).kept === true));
 
     console.log('4. The app goes to the background');
-    const reloaded = page.waitForEvent('load', { timeout: 10_000 }).then(() => true, () => false);
+    const reloaded = page.waitForEvent('load', { timeout: 10_000 }).then(
+      () => true,
+      () => false,
+    );
     await page.evaluate(() => {
       Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
       document.dispatchEvent(new Event('visibilitychange'));
     });
     check('the new version takes over in the background', await reloaded);
-    await page.locator('.board').waitFor({ timeout: 5000 }).catch(() => {});
+    await page
+      .locator('.board')
+      .waitFor({ timeout: 5000 })
+      .catch(() => {});
     check('it runs v2', (await servedVersion(page)) === 'v2', await servedVersion(page));
     check('the game is back on screen, not the lobby', await onScreenGame(page));
 
@@ -155,17 +170,35 @@ async function main() {
     page = await context.newPage();
     page.on('load', () => (openedAt = Date.now()));
     await page.goto(BASE);
-    const fresh = await versionLine(page).filter({ hasText: 'pwa-check-v3' }).waitFor({ timeout: 15_000 }).then(() => true, () => false);
+    const fresh = await versionLine(page)
+      .filter({ hasText: 'pwa-check-v3' })
+      .waitFor({ timeout: 15_000 })
+      .then(
+        () => true,
+        () => false,
+      );
     check('an app just opened switches to the new version at once', fresh, (await versionLine(page).textContent())?.trim());
 
     console.log('6. v4 deployed, Check for updates');
     await pastOpening();
     live = 'v4';
     await versionLine(page).getByRole('button', { name: 'Check for updates' }).click();
-    const manual = await versionLine(page).filter({ hasText: 'pwa-check-v4' }).waitFor({ timeout: 15_000 }).then(() => true, () => false);
+    const manual = await versionLine(page)
+      .filter({ hasText: 'pwa-check-v4' })
+      .waitFor({ timeout: 15_000 })
+      .then(
+        () => true,
+        () => false,
+      );
     check('Check for updates switches to the new version', manual, (await versionLine(page).textContent())?.trim());
     await versionLine(page).getByRole('button', { name: 'Check for updates' }).click();
-    const current = await versionLine(page).getByRole('button', { name: 'Up to date' }).waitFor({ timeout: 10_000 }).then(() => true, () => false);
+    const current = await versionLine(page)
+      .getByRole('button', { name: 'Up to date' })
+      .waitFor({ timeout: 10_000 })
+      .then(
+        () => true,
+        () => false,
+      );
     check('with nothing new it says Up to date', current);
 
     console.log('7. v5 deployed after an up-to-date check');
@@ -175,11 +208,17 @@ async function main() {
     await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
     const laterFound = await page
       .waitForFunction(async () => !!(await navigator.serviceWorker.getRegistration())?.waiting, null, { timeout: 20_000 })
-      .then(() => true, () => false);
+      .then(
+        () => true,
+        () => false,
+      );
     check('a later check finds v5', laterFound);
     await page.waitForTimeout(2000);
     check('a later update does not interrupt the app', await page.evaluate(() => (window as unknown as { kept?: boolean }).kept === true));
-    const laterReload = page.waitForEvent('load', { timeout: 10_000 }).then(() => true, () => false);
+    const laterReload = page.waitForEvent('load', { timeout: 10_000 }).then(
+      () => true,
+      () => false,
+    );
     await page.evaluate(() => {
       Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
       document.dispatchEvent(new Event('visibilitychange'));

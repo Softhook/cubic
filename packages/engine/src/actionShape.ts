@@ -20,8 +20,14 @@ const cell: Check = (v, s) => {
   const { r, c } = v as Record<string, unknown>;
   return int(r) && int(c) && r >= 0 && r < s.board.rows && c >= 0 && c < s.board.cols;
 };
-const oneOf = (...values: unknown[]): Check => (v) => values.includes(v);
-const opt = (check: Check): Check => (v, s) => v === undefined || check(v, s);
+const oneOf =
+  (...values: unknown[]): Check =>
+  (v) =>
+    values.includes(v);
+const opt =
+  (check: Check): Check =>
+  (v, s) =>
+    v === undefined || check(v, s);
 const side = oneOf('attacker', 'defender');
 
 export const SHAPES: { [K in Action['type']]: Shape<K> } = {

@@ -59,9 +59,7 @@ export function Scrapyard({ game, p, ctl, dispatch }: { game: GameState; p: Play
                 <b>
                   {SHIP_NAMES[d.value]} ({d.value})
                 </b>
-                <span>
-                  {abilityText(game, d.value)}
-                </span>
+                <span>{abilityText(game, d.value)}</span>
                 <span className="muted">Waiting in the scrapyard to be deployed.</span>
               </>
             }
@@ -69,7 +67,9 @@ export function Scrapyard({ game, p, ctl, dispatch }: { game: GameState; p: Play
             <Die3D value={d.value} rolls={d.rolls} size={22} color={p.color} sound={false} />
           </Tip>
           {unveiling && !unveiling.includes(d.id) && (
-            <button className="mini-btn" onClick={() => dispatch({ type: 'unveilReroll', die: d.id })}>re-roll</button>
+            <button className="mini-btn" onClick={() => dispatch({ type: 'unveilReroll', die: d.id })}>
+              re-roll
+            </button>
           )}
         </span>
       ))}

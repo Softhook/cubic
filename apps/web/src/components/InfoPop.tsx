@@ -28,7 +28,11 @@ export function InfoPop({ anchor, onClose, children }: { anchor: string; onClose
     };
   }, []);
   return (
-    <div ref={ref} className="info-pop" role="tooltip" style={{ '--anchor': anchor } as CSSProperties}
+    <div
+      ref={ref}
+      className="info-pop"
+      role="tooltip"
+      style={{ '--anchor': anchor } as CSSProperties}
       // A tap on the bubble closes it (it may cover something you want to tap next).
       onClick={(e) => (e.stopPropagation(), close.current())}
     >

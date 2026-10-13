@@ -37,7 +37,16 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
     if (!onBoard) return null;
     if (ship.hooks?.action) {
       return (
-        <button className="btn" disabled={!legal.can('power', mine)} onClick={() => ctl.select({ kind: 'power', die: d.id })} title={legal.can('power', mine) ? ability.text : `${ability.name} unavailable: no enemy in a clear straight line, or no action left. ${ability.text}`}>
+        <button
+          className="btn"
+          disabled={!legal.can('power', mine)}
+          onClick={() => ctl.select({ kind: 'power', die: d.id })}
+          title={
+            legal.can('power', mine)
+              ? ability.text
+              : `${ability.name} unavailable: no enemy in a clear straight line, or no action left. ${ability.text}`
+          }
+        >
           {ability.name}
         </button>
       );
@@ -52,25 +61,47 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
         );
       case 'transport':
         return (
-          <button className="btn" disabled={!legal.can('carry', mine)} onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id })} aria-label="Carry & move">
+          <button
+            className="btn"
+            disabled={!legal.can('carry', mine)}
+            onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id })}
+            aria-label="Carry & move"
+          >
             <Label long="Carry & move" short="Carry" />
           </button>
         );
       case 'warp':
         return (
-          <button className="btn" disabled={!legal.can('swap', mine)} onClick={() => ctl.select({ kind: 'swap', die: d.id })} aria-label="Switch places">
+          <button
+            className="btn"
+            disabled={!legal.can('swap', mine)}
+            onClick={() => ctl.select({ kind: 'swap', die: d.id })}
+            aria-label="Switch places"
+          >
             <Label long="Switch places" short="Switch" />
           </button>
         );
       case 'modify':
         return ([3, 5] as const).map((value) => (
-          <button key={value} className="btn" disabled={!legal.can('change', (a) => mine(a) && a.value === value)} onClick={() => dispatch({ type: 'change', die: d.id, value })} aria-label={`Become ${value}`} title={`Become ${value}`}>
+          <button
+            key={value}
+            className="btn"
+            disabled={!legal.can('change', (a) => mine(a) && a.value === value)}
+            onClick={() => dispatch({ type: 'change', die: d.id, value })}
+            aria-label={`Become ${value}`}
+            title={`Become ${value}`}
+          >
             <Label long={`Become ${value}`} short={`→ ${value}`} />
           </button>
         ));
       case 'freeReconfigure':
         return (
-          <button className="btn" disabled={!legal.can('freeReconfigure', mine)} onClick={() => dispatch({ type: 'freeReconfigure', die: d.id })} aria-label="Free Reconfigure">
+          <button
+            className="btn"
+            disabled={!legal.can('freeReconfigure', mine)}
+            onClick={() => dispatch({ type: 'freeReconfigure', die: d.id })}
+            aria-label="Free Reconfigure"
+          >
             <Label long="Free Reconfigure" short="Reconfigure" />
           </button>
         );
@@ -83,7 +114,10 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
       <div className="ship-panel-head">
         <Die3D value={d.value} rolls={d.rolls} size={34} color={game.players[d.owner].color} sound={false} />
         {/* On phones the ability text below is hidden: a tap on the name shows it. */}
-        <Tip as="div" className="ship-name" tip={
+        <Tip
+          as="div"
+          className="ship-name"
+          tip={
             <>
               <span>{`${ability.name}: ${used && !passive ? 'used this turn' : ability.text}`}</span>
               {oddsNote && <span className="muted">{oddsNote}</span>}
@@ -91,11 +125,11 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
           }
         >
           <strong>{ship.name}</strong>
-          <small>
-            {onBoard ? `Moves ${movementRange(game, d)} · ${canMoveDie(game, d) ? 'ready' : 'already moved'}` : 'In scrapyard'}
-          </small>
+          <small>{onBoard ? `Moves ${movementRange(game, d)} · ${canMoveDie(game, d) ? 'ready' : 'already moved'}` : 'In scrapyard'}</small>
         </Tip>
-        <button className="icon-btn" onClick={cancel} aria-label="Deselect">×</button>
+        <button className="icon-btn" onClick={cancel} aria-label="Deselect">
+          ×
+        </button>
       </div>
       <p className="ship-ability">
         <b>{ability.name}</b> {used && !passive ? '— used this turn' : `— ${ability.text}`}
@@ -104,32 +138,68 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
       {oddsNote && <p className="ship-odds-note">{oddsNote}</p>}
       <div className="turn-actions">
         {abilityButton()}
-        <button className="btn" disabled={!legal.can('reconfigure', mine)} onClick={() => dispatch({ type: 'reconfigure', die: d.id })} title="Spend 1 action to re-roll this ship to a new number.">
+        <button
+          className="btn"
+          disabled={!legal.can('reconfigure', mine)}
+          onClick={() => dispatch({ type: 'reconfigure', die: d.id })}
+          title="Spend 1 action to re-roll this ship to a new number."
+        >
           Reconfigure
         </button>
         {tacticalId && legal.can('tactical', (a) => mine(a) && !a.passenger) && (
-          <button className="btn" onClick={() => ctl.select({ kind: 'tactical', die: d.id })} title={card(tacticalId).text} aria-label="Tactical step">
+          <button
+            className="btn"
+            onClick={() => ctl.select({ kind: 'tactical', die: d.id })}
+            title={card(tacticalId).text}
+            aria-label="Tactical step"
+          >
             <Label long="Tactical step" short="Tactical" />
           </button>
         )}
         {tacticalId && legal.can('tactical', (a) => mine(a) && !!a.passenger) && (
-          <button className="btn" onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id, tactical: true })} title={`${card(tacticalId).text} The Flagship may transport a ship over that 1 space.`} aria-label="Tactical carry">
+          <button
+            className="btn"
+            onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id, tactical: true })}
+            title={`${card(tacticalId).text} The Flagship may transport a ship over that 1 space.`}
+            aria-label="Tactical carry"
+          >
             <Label long="Tactical carry" short="Tac. carry" />
           </button>
         )}
         {onBoard && hasSkill(game, me, 'flexible') && (
           <>
-            <button className="btn" disabled={!legal.can('flexible', (a) => mine(a) && a.delta === -1)} onClick={() => dispatch({ type: 'flexible', die: d.id, delta: -1 })}>−1</button>
-            <button className="btn" disabled={!legal.can('flexible', (a) => mine(a) && a.delta === 1)} onClick={() => dispatch({ type: 'flexible', die: d.id, delta: 1 })}>+1</button>
+            <button
+              className="btn"
+              disabled={!legal.can('flexible', (a) => mine(a) && a.delta === -1)}
+              onClick={() => dispatch({ type: 'flexible', die: d.id, delta: -1 })}
+            >
+              −1
+            </button>
+            <button
+              className="btn"
+              disabled={!legal.can('flexible', (a) => mine(a) && a.delta === 1)}
+              onClick={() => dispatch({ type: 'flexible', die: d.id, delta: 1 })}
+            >
+              +1
+            </button>
           </>
         )}
         {legal.can('nomadic', mine) && (
-          <button className="btn" onClick={() => ctl.select({ kind: 'nomadic', die: d.id })} title={card(skillCard(game, me, 'nomadic')!).text}>
+          <button
+            className="btn"
+            onClick={() => ctl.select({ kind: 'nomadic', die: d.id })}
+            title={card(skillCard(game, me, 'nomadic')!).text}
+          >
             Nomadic
           </button>
         )}
         {legal.can('resourceful', mine) && (
-          <button className="btn" onClick={() => dispatch({ type: 'resourceful', die: d.id })} title={card('resourceful').text} aria-label="Sacrifice +1 action">
+          <button
+            className="btn"
+            onClick={() => dispatch({ type: 'resourceful', die: d.id })}
+            title={card('resourceful').text}
+            aria-label="Sacrifice +1 action"
+          >
             <Label long="Sacrifice +1 action" short="Sacrifice" />
           </button>
         )}

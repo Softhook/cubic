@@ -6,7 +6,11 @@ export function Toasts({ toasts, game }: { toasts: Toast[]; game: GameState }) {
   return (
     <div className="toasts" aria-live="polite">
       {toasts.map((t) => (
-        <div key={t.id} className={`toast toast-${t.tone}`} style={{ '--pc': t.player !== undefined ? game.players[t.player]?.color : 'var(--accent)' } as CSSProperties}>
+        <div
+          key={t.id}
+          className={`toast toast-${t.tone}`}
+          style={{ '--pc': t.player !== undefined ? game.players[t.player]?.color : 'var(--accent)' } as CSSProperties}
+        >
           {t.text}
         </div>
       ))}
@@ -23,5 +27,9 @@ export function ErrorToast({ error }: { error: { id: number; text: string } | nu
     return () => window.clearTimeout(t);
   }, [error]);
   if (!visible) return null;
-  return <div className="error-toast" key={visible.id}>{visible.text}</div>;
+  return (
+    <div className="error-toast" key={visible.id}>
+      {visible.text}
+    </div>
+  );
 }

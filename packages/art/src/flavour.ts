@@ -16,7 +16,32 @@ export interface PlanetFlavour {
   data: string;
 }
 
-const START = ['Ka', 'Ve', 'Tha', 'Or', 'Ny', 'Hal', 'Mer', 'Se', 'Au', 'Te', 'Ca', 'Ix', 'Zo', 'El', 'Ry', 'Vo', 'Sol', 'Ar', 'Ely', 'Que', 'Dra', 'Pho', 'Ker', 'Lu'];
+const START = [
+  'Ka',
+  'Ve',
+  'Tha',
+  'Or',
+  'Ny',
+  'Hal',
+  'Mer',
+  'Se',
+  'Au',
+  'Te',
+  'Ca',
+  'Ix',
+  'Zo',
+  'El',
+  'Ry',
+  'Vo',
+  'Sol',
+  'Ar',
+  'Ely',
+  'Que',
+  'Dra',
+  'Pho',
+  'Ker',
+  'Lu',
+];
 const MIDDLE = ['', '', 'la', 'ri', 'the', 'no', 'va', 'lo', 'dra', 'si', 'ne', 'ro', 'ca', 'phe'];
 const END = ['ssa', 'x', 'on', 'is', 'ar', 'ia', 'os', 'um', 'eth', 'yn', 'ara', 'or', 'ion', 'ae', 'ix'];
 const SUFFIX = ['', '', '', '', ' Prime', ' II', ' III', ' IV', ' VI', ' Minor', ' Major'];

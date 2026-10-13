@@ -171,11 +171,7 @@ function surface(o: PlanetOptions, hue: number, rng: Rng): Surface {
         extra += `<circle cx="${n(cx + Math.cos(a) * d)}" cy="${n(cy + Math.sin(a) * d)}" r="${n(cr)}" fill="url(#${id}-crater)"/>`;
       }
       return {
-        filter:
-          turbulence(f(0.11), 5, seed, 't') +
-          greyFromRed('t') +
-          stretch(2.2) +
-          gradientMap(stops),
+        filter: turbulence(f(0.11), 5, seed, 't') + greyFromRed('t') + stretch(2.2) + gradientMap(stops),
         extra,
         extraDefs:
           `<radialGradient id="${id}-crater" fx=".38" fy=".38">` +
@@ -190,19 +186,39 @@ function surface(o: PlanetOptions, hue: number, rng: Rng): Surface {
       let cracks: Hsl;
       switch (rng.pick(['glacier', 'sea', 'turquoise', 'blue'] as const)) {
         case 'glacier':
-          stops = [[hue, 45, 64], [hue, 40, 77], [hue - 10, 32, 88], [hue, 20, 97]];
+          stops = [
+            [hue, 45, 64],
+            [hue, 40, 77],
+            [hue - 10, 32, 88],
+            [hue, 20, 97],
+          ];
           cracks = [hue + 15, 75, 45];
           break;
         case 'sea':
-          stops = [[hue + 18, 70, 30], [hue + 12, 65, 46], [hue, 45, 80], [hue, 22, 95]];
+          stops = [
+            [hue + 18, 70, 30],
+            [hue + 12, 65, 46],
+            [hue, 45, 80],
+            [hue, 22, 95],
+          ];
           cracks = [hue + 20, 70, 38];
           break;
         case 'turquoise':
-          stops = [[hue - 22, 60, 46], [hue - 18, 58, 62], [hue - 10, 45, 78], [hue - 5, 30, 92]];
+          stops = [
+            [hue - 22, 60, 46],
+            [hue - 18, 58, 62],
+            [hue - 10, 45, 78],
+            [hue - 5, 30, 92],
+          ];
           cracks = [hue - 15, 90, 70];
           break;
         case 'blue':
-          stops = [[hue + 12, 65, 50], [hue + 8, 62, 64], [hue, 50, 80], [hue, 30, 94]];
+          stops = [
+            [hue + 12, 65, 50],
+            [hue + 8, 62, 64],
+            [hue, 50, 80],
+            [hue, 30, 94],
+          ];
           cracks = [hue + 25, 80, 40];
           break;
       }

@@ -16,6 +16,7 @@ const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number 
 
 /** Tile artwork by physical tile id, filled in as each image is ready (a plain tile shows meanwhile). */
 function useTileImages(game: GameState) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the art depends only on the map.
   const tiles = useMemo(() => tileArt(game.board), [game.board.mapId]);
   const [images, setImages] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -52,7 +53,15 @@ export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState
 
         {tiles.map((t) => (
           <g key={`${t.r},${t.c}`}>
-            {images[t.id] && <image href={images[t.id]} x={t.c * cell + inset} y={t.r * cell + inset} width={cell * 3 - 2 * inset} height={cell * 3 - 2 * inset} />}
+            {images[t.id] && (
+              <image
+                href={images[t.id]}
+                x={t.c * cell + inset}
+                y={t.r * cell + inset}
+                width={cell * 3 - 2 * inset}
+                height={cell * 3 - 2 * inset}
+              />
+            )}
             <rect
               x={t.c * cell + inset}
               y={t.r * cell + inset}
@@ -122,7 +131,15 @@ export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState
           return (
             <g key={p.id}>
               {p.start && game.phase === 'setup' && (
-                <circle cx={cx} cy={cy} r={R * 1.12} fill="none" stroke="#fff" strokeOpacity={0.5} strokeDasharray={`${3 * mm} ${4 * mm}`} />
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={R * 1.12}
+                  fill="none"
+                  stroke="#fff"
+                  strokeOpacity={0.5}
+                  strokeDasharray={`${3 * mm} ${4 * mm}`}
+                />
               )}
               <PlanetMarkings
                 cx={cx}
@@ -140,8 +157,23 @@ export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState
       </svg>
       {/* Each gate's turning ring is its own element over the map, so turning it doesn't repaint the map. */}
       {game.gates.map((g, i) => (
-        <svg key={i} className="gate-spin" style={{ left: g.c * cell, top: g.r * cell }} width={cell} height={cell} viewBox={`0 0 ${cell} ${cell}`}>
-          <circle cx={cell / 2} cy={cell / 2} r={cell * 0.36} fill="none" stroke="#5ef0b0" strokeWidth={cell * 0.025} strokeDasharray={`${cell * 0.065} ${cell * 0.065}`} />
+        <svg
+          key={i}
+          className="gate-spin"
+          style={{ left: g.c * cell, top: g.r * cell }}
+          width={cell}
+          height={cell}
+          viewBox={`0 0 ${cell} ${cell}`}
+        >
+          <circle
+            cx={cell / 2}
+            cy={cell / 2}
+            r={cell * 0.36}
+            fill="none"
+            stroke="#5ef0b0"
+            strokeWidth={cell * 0.025}
+            strokeDasharray={`${cell * 0.065} ${cell * 0.065}`}
+          />
         </svg>
       ))}
     </>

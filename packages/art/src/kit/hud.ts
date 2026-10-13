@@ -48,9 +48,12 @@ export function track(x: number, y: number, kind: 'research' | 'dominance', valu
     const lit = i <= value;
     const fill = gained ? hsl(hue, 100, 88) : lit ? hsl(hue, 85, 60) : lost ? hsl(hue, 60, 40, 0.35) : 'none';
     out += `<rect x="${n(sx)}" y="${n(y - c / 2)}" width="${n(c)}" height="${n(c)}" rx="${n(c * 0.22)}" fill="${fill}" stroke="${hsl(hue, 85, gained ? 92 : 70)}" stroke-width="${gained ? 0.35 : 0.22}"${lost ? ' stroke-dasharray=".5 .4"' : ''}/>`;
-    if (gained) out += `<rect x="${n(sx - 0.5)}" y="${n(y - c / 2 - 0.5)}" width="${n(c + 1)}" height="${n(c + 1)}" rx="${n(c * 0.3)}" fill="none" stroke="${hsl(hue, 100, 80)}" stroke-width=".18" opacity=".7"/>`;
-    if (o.hot?.includes(i)) out += `<rect x="${n(sx - 0.55)}" y="${n(y - c / 2 - 0.55)}" width="${n(c + 1.1)}" height="${n(c + 1.1)}" rx="${n(c * 0.32)}" fill="none" stroke="#fff" stroke-width=".3" stroke-dasharray=".7 .45"/>`;
-    if (o.numbers) out += `<text x="${n(sx + c / 2)}" y="${n(y + c * 0.08)}" font-family="${FONTS.title}" font-weight="900" font-size="${n(c * 0.52)}" fill="${lit ? INK : hsl(hue, 70, 75)}" text-anchor="middle" dominant-baseline="central">${i}</text>`;
+    if (gained)
+      out += `<rect x="${n(sx - 0.5)}" y="${n(y - c / 2 - 0.5)}" width="${n(c + 1)}" height="${n(c + 1)}" rx="${n(c * 0.3)}" fill="none" stroke="${hsl(hue, 100, 80)}" stroke-width=".18" opacity=".7"/>`;
+    if (o.hot?.includes(i))
+      out += `<rect x="${n(sx - 0.55)}" y="${n(y - c / 2 - 0.55)}" width="${n(c + 1.1)}" height="${n(c + 1.1)}" rx="${n(c * 0.32)}" fill="none" stroke="#fff" stroke-width=".3" stroke-dasharray=".7 .45"/>`;
+    if (o.numbers)
+      out += `<text x="${n(sx + c / 2)}" y="${n(y + c * 0.08)}" font-family="${FONTS.title}" font-weight="900" font-size="${n(c * 0.52)}" fill="${lit ? INK : hsl(hue, 70, 75)}" text-anchor="middle" dominant-baseline="central">${i}</text>`;
   }
   return o.dim ? `<g opacity=".45">${out}</g>` : out;
 }
@@ -64,7 +67,10 @@ export function chip(cx: number, cy: number, r: number, state: 'lit' | 'dim' | '
   const mark = (colour: string, size: number, w: number) => icon('action', cx, cy, size, colour, w);
   const d = poly(cx, cy, r);
   if (state === 'dim' || state === 'spent')
-    return `<path d="${d}" fill="${hsl(228, 50, 8, 0.6)}" stroke="${hsl(hue, 60, 60)}" stroke-width=".25" stroke-dasharray="${state === 'spent' ? '.7 .5' : 'none'}" opacity=".7"/>` + mark(hsl(hue, 50, 60), r * 1.1, 2);
+    return (
+      `<path d="${d}" fill="${hsl(228, 50, 8, 0.6)}" stroke="${hsl(hue, 60, 60)}" stroke-width=".25" stroke-dasharray="${state === 'spent' ? '.7 .5' : 'none'}" opacity=".7"/>` +
+      mark(hsl(hue, 50, 60), r * 1.1, 2)
+    );
   if (state === 'broken') {
     const crack = `M${n(cx - r * 0.2)} ${n(cy - r)}L${n(cx + r * 0.15)} ${n(cy - r * 0.3)}L${n(cx - r * 0.25)} ${n(cy + r * 0.1)}L${n(cx + r * 0.2)} ${n(cy + r)}`;
     return (
@@ -73,7 +79,10 @@ export function chip(cx: number, cy: number, r: number, state: 'lit' | 'dim' | '
       `<path d="${crack}" fill="none" stroke="${hsl(0, 100, 70)}" stroke-width=".35" stroke-linejoin="round"/></g>`
     );
   }
-  const halo = state === 'new' ? `<path d="${d}" fill="none" stroke="#fff" stroke-width=".25" opacity=".6" transform="translate(${n(cx)} ${n(cy)}) scale(1.25) translate(${n(-cx)} ${n(-cy)})"/>` : '';
+  const halo =
+    state === 'new'
+      ? `<path d="${d}" fill="none" stroke="#fff" stroke-width=".25" opacity=".6" transform="translate(${n(cx)} ${n(cy)}) scale(1.25) translate(${n(-cx)} ${n(-cy)})"/>`
+      : '';
   return (
     halo +
     `<path d="${d}" fill="${hsl(hue, 90, state === 'new' ? 62 : 52)}" stroke="${hsl(hue, 100, 85)}" stroke-width=".3"/>` +
@@ -89,16 +98,27 @@ export function chips(cx: number, cy: number, r: number, states: Parameters<type
 }
 
 /** A combat die, flat to tell it from the ships: black with red pips to attack, white to defend, as in the game. */
-export function combatDie(cx: number, cy: number, s: number, value: number, role: 'attack' | 'defence', o: { rot?: number; ghost?: boolean; struck?: boolean; glow?: boolean } = {}): string {
+export function combatDie(
+  cx: number,
+  cy: number,
+  s: number,
+  value: number,
+  role: 'attack' | 'defence',
+  o: { rot?: number; ghost?: boolean; struck?: boolean; glow?: boolean } = {},
+): string {
   const h = s / 2;
   const attack = role === 'attack';
   const { color, pip } = COMBAT_DICE[attack ? 'attacker' : 'defender'];
   const edge = attack ? pip : hsl(225, 30, 70);
   const tr = rotate(o.rot, cx, cy);
   const face = (dy = 0) => `x="${n(cx - h)}" y="${n(cy - h + dy)}" width="${n(s)}" height="${n(s)}" rx="${n(s * 0.2)}"`;
-  const pips = (r: number, fill: string) => PIPS[value].map(([x, y]) => `<circle cx="${n(cx - h + x * s)}" cy="${n(cy - h + y * s)}" r="${n(s * r)}" fill="${fill}"/>`).join('');
-  if (o.ghost) return `<g${tr} opacity=".5"><rect ${face()} fill="none" stroke="${edge}" stroke-width=".25" stroke-dasharray=".8 .6"/>${pips(0.075, edge)}</g>`;
-  const halo = o.glow ? `<rect x="${n(cx - h - 0.7)}" y="${n(cy - h - 0.7)}" width="${n(s + 1.4)}" height="${n(s + 1.4)}" rx="${n(s * 0.26)}" fill="none" stroke="${attack ? pip : '#fff'}" stroke-width=".4"/>` : '';
+  const pips = (r: number, fill: string) =>
+    PIPS[value].map(([x, y]) => `<circle cx="${n(cx - h + x * s)}" cy="${n(cy - h + y * s)}" r="${n(s * r)}" fill="${fill}"/>`).join('');
+  if (o.ghost)
+    return `<g${tr} opacity=".5"><rect ${face()} fill="none" stroke="${edge}" stroke-width=".25" stroke-dasharray=".8 .6"/>${pips(0.075, edge)}</g>`;
+  const halo = o.glow
+    ? `<rect x="${n(cx - h - 0.7)}" y="${n(cy - h - 0.7)}" width="${n(s + 1.4)}" height="${n(s + 1.4)}" rx="${n(s * 0.26)}" fill="none" stroke="${attack ? pip : '#fff'}" stroke-width=".4"/>`
+    : '';
   return (
     `<g${tr}>${halo}` +
     `<rect ${face(s * 0.08)} fill="${hsl(228, 40, attack ? 4 : 30)}"/>` +
@@ -110,14 +130,24 @@ export function combatDie(cx: number, cy: number, s: number, value: number, role
 }
 
 /** A small card, flat: Skills, Tactics, Commands in the illustrations. `w` is its width; it's 1.4 × as tall. */
-export function miniCard(id: string, cx: number, cy: number, w: number, hue: number, o: { rot?: number; icon?: string; dark?: boolean; state?: 'normal' | 'glow' | 'ghost' | 'back' } = {}): Fragment {
+export function miniCard(
+  id: string,
+  cx: number,
+  cy: number,
+  w: number,
+  hue: number,
+  o: { rot?: number; icon?: string; dark?: boolean; state?: 'normal' | 'glow' | 'ghost' | 'back' } = {},
+): Fragment {
   const h = w * 1.4;
   const x = cx - w / 2;
   const y = cy - h / 2;
   const tr = rotate(o.rot, cx, cy);
   const frame = `x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}"`;
   const state = o.state ?? 'normal';
-  if (state === 'ghost') return f(`<g${tr}><rect ${frame} rx="${n(w * 0.1)}" fill="${hsl(hue, 80, 60, 0.06)}" stroke="${hsl(hue, 80, 72)}" stroke-width=".25" stroke-dasharray=".9 .6"/></g>`);
+  if (state === 'ghost')
+    return f(
+      `<g${tr}><rect ${frame} rx="${n(w * 0.1)}" fill="${hsl(hue, 80, 60, 0.06)}" stroke="${hsl(hue, 80, 72)}" stroke-width=".25" stroke-dasharray=".9 .6"/></g>`,
+    );
   const paper = o.dark ? hsl(228, 45, 10) : hsl(225, 30, 93);
   const inner = o.dark ? hsl(hue, 70, 70) : hsl(hue, 70, 35);
   if (state === 'back') {
@@ -130,7 +160,10 @@ export function miniCard(id: string, cx: number, cy: number, w: number, hue: num
         `</g>`,
     };
   }
-  const halo = state === 'glow' ? `<rect x="${n(x - 0.8)}" y="${n(y - 0.8)}" width="${n(w + 1.6)}" height="${n(h + 1.6)}" rx="${n(w * 0.12)}" fill="none" stroke="${hsl(hue, 100, 80)}" stroke-width=".35"/>` : '';
+  const halo =
+    state === 'glow'
+      ? `<rect x="${n(x - 0.8)}" y="${n(y - 0.8)}" width="${n(w + 1.6)}" height="${n(h + 1.6)}" rx="${n(w * 0.12)}" fill="none" stroke="${hsl(hue, 100, 80)}" stroke-width=".35"/>`
+      : '';
   const g = glow(`${id}-g`, cx, cy, w * 1.1, h * 0.85, hue, state === 'glow' ? 0.5 : 0, 60);
   // Laid out like a real card face: art to the top and side edges, an accent line under it, the
   // category emblem straddling art and panel, then the name and rules as lines.
@@ -138,8 +171,17 @@ export function miniCard(id: string, cx: number, cy: number, w: number, hue: num
   const artH = h * 0.49;
   const ey = y + artH;
   const er = w * 0.12;
-  const stars = [[0.2, 0.18], [0.72, 0.12], [0.84, 0.36], [0.36, 0.34], [0.58, 0.26]]
-    .map(([a, b], i) => `<circle cx="${n(x + w * a)}" cy="${n(y + h * b)}" r="${n(w * (i % 2 ? 0.012 : 0.018))}" fill="#fff" opacity=".8"/>`).join('');
+  const stars = [
+    [0.2, 0.18],
+    [0.72, 0.12],
+    [0.84, 0.36],
+    [0.36, 0.34],
+    [0.58, 0.26],
+  ]
+    .map(
+      ([a, b], i) => `<circle cx="${n(x + w * a)}" cy="${n(y + h * b)}" r="${n(w * (i % 2 ? 0.012 : 0.018))}" fill="#fff" opacity=".8"/>`,
+    )
+    .join('');
   return {
     defs:
       g.defs +
@@ -158,7 +200,9 @@ export function miniCard(id: string, cx: number, cy: number, w: number, hue: num
       `<circle cx="${n(cx)}" cy="${n(ey)}" r="${n(er)}" fill="${paper}" stroke="${hsl(hue, 80, 55)}" stroke-width="${n(w * 0.018)}"/>` +
       icon(o.icon ?? 'action', cx, ey, er * 1.2, hsl(hue, 80, o.dark ? 65 : 45), 2.6) +
       line(cx - w * 0.26, y + h * 0.69, cx + w * 0.26, y + h * 0.69, o.dark ? hsl(225, 60, 90) : hsl(228, 40, 14), w * 0.05) +
-      [0.79, 0.86].map((t, i) => line(cx - w * (i ? 0.22 : 0.32), y + h * t, cx + w * (i ? 0.22 : 0.32), y + h * t, inner, w * 0.03, ' opacity=".5"')).join('') +
+      [0.79, 0.86]
+        .map((t, i) => line(cx - w * (i ? 0.22 : 0.32), y + h * t, cx + w * (i ? 0.22 : 0.32), y + h * t, inner, w * 0.03, ' opacity=".5"'))
+        .join('') +
       `</g>`,
   };
 }

@@ -33,7 +33,8 @@ function getWorker(): Worker | null {
 }
 
 /** Rejects, rather than throwing, if the AI fails. */
-const onMainThread = (state: GameState, level: AiLevel) => new Promise<Action | null>((resolve) => resolve(chooseAction(state, { level, samples: 3 })));
+const onMainThread = (state: GameState, level: AiLevel) =>
+  new Promise<Action | null>((resolve) => resolve(chooseAction(state, { level, samples: 3 })));
 
 function ask(state: GameState, level: AiLevel): Promise<Action | null> {
   const w = getWorker();

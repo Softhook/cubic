@@ -12,12 +12,14 @@ for (const [deck, list] of Object.entries(cards)) {
 }
 const classicIds = new Set([...cards.original_command, ...cards.original_gambit].map((c) => c.id));
 for (const c of [...cards.skills, ...cards.tactics, ...cards.expansion])
-  if (c.classic !== undefined && !classicIds.has(c.classic)) throw new Error(`data/cards.yaml: ${c.id} has classic ${c.classic}, not a 2013 card`);
+  if (c.classic !== undefined && !classicIds.has(c.classic))
+    throw new Error(`data/cards.yaml: ${c.id} has classic ${c.classic}, not a 2013 card`);
 writeFileSync(new URL('cards.json', out), JSON.stringify(cards, null, 2) + '\n');
 
 const { maps } = parse(readFileSync(new URL('data/maps.yaml', root), 'utf8'));
 for (const m of maps)
-  if (m.wrap !== undefined && !['horizontal', 'vertical', 'both'].includes(m.wrap)) throw new Error(`data/maps.yaml: ${m.id} has wrap ${m.wrap}`);
+  if (m.wrap !== undefined && !['horizontal', 'vertical', 'both'].includes(m.wrap))
+    throw new Error(`data/maps.yaml: ${m.id} has wrap ${m.wrap}`);
 const parsed = maps.map((m) => ({
   id: m.id,
   name: m.name,

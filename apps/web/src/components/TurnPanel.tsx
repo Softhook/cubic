@@ -37,10 +37,26 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
             {Array.from({ length: Math.max(3, t.actionsLeft) }, (_, i) => (
               <ActionHex key={i} off={i >= t.actionsLeft} />
             ))}
-            {t.freeDeploys > 0 && <Tip as="em" tip="Free deploy (Industrious)">+1 deploy</Tip>}
-            {t.freeMoves > 0 && <Tip as="em" tip="Free move (Curious): only if you don't attack this turn; attacking afterwards costs an action for it">+1 move</Tip>}
-            {canAct && t.actionsLeft === 0 && canCurious(game, t.player) && <Tip as="em" tip="Curious: peaceful Move or Research available">+1 curious</Tip>}
-            {legal.can('playStoredTactic') && <Tip as="em" tip="Patient: you may play a stored tactic from your player card">+stored tactic</Tip>}
+            {t.freeDeploys > 0 && (
+              <Tip as="em" tip="Free deploy (Industrious)">
+                +1 deploy
+              </Tip>
+            )}
+            {t.freeMoves > 0 && (
+              <Tip as="em" tip="Free move (Curious): only if you don't attack this turn; attacking afterwards costs an action for it">
+                +1 move
+              </Tip>
+            )}
+            {canAct && t.actionsLeft === 0 && canCurious(game, t.player) && (
+              <Tip as="em" tip="Curious: peaceful Move or Research available">
+                +1 curious
+              </Tip>
+            )}
+            {legal.can('playStoredTactic') && (
+              <Tip as="em" tip="Patient: you may play a stored tactic from your player card">
+                +stored tactic
+              </Tip>
+            )}
           </Tip>
         )}
       </div>
@@ -69,10 +85,27 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
             </button>
           )}
           <SkillButton game={game} effect="composed" disabled={!legal.can('composed')} onClick={() => dispatch({ type: 'composed' })} />
-          <SkillButton game={game} effect="tyrannical-original" disabled={!legal.can('tyrannical')} onClick={() => dispatch({ type: 'tyrannical' })} />
-          <SkillButton game={game} effect="ambitious" label="Ambitious +1" disabled={!legal.can('ambitious')} onClick={() => dispatch({ type: 'ambitious' })} />
+          <SkillButton
+            game={game}
+            effect="tyrannical-original"
+            disabled={!legal.can('tyrannical')}
+            onClick={() => dispatch({ type: 'tyrannical' })}
+          />
+          <SkillButton
+            game={game}
+            effect="ambitious"
+            label="Ambitious +1"
+            disabled={!legal.can('ambitious')}
+            onClick={() => dispatch({ type: 'ambitious' })}
+          />
           {legal.can('scrappy') && (
-            <SkillButton game={game} effect="scrappy" label={`Re-roll ${SHIP_NAMES[die(game, game.turn.scrappy!.die).value]} (Scrappy)`} disabled={false} onClick={() => dispatch({ type: 'scrappy' })} />
+            <SkillButton
+              game={game}
+              effect="scrappy"
+              label={`Re-roll ${SHIP_NAMES[die(game, game.turn.scrappy!.die).value]} (Scrappy)`}
+              disabled={false}
+              onClick={() => dispatch({ type: 'scrappy' })}
+            />
           )}
           <button
             className="btn btn-ghost undo-btn"
@@ -84,7 +117,17 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
             }}
             title="Take back your last move (Ctrl/⌘+Z). Dice rolls, battles and cards can’t be undone."
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="M9 14 4 9l5-5" />
               <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
             </svg>
@@ -103,12 +146,16 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
       {head?.kind === 'advance' && ctl.human && <AdvanceChoice dispatch={dispatch} />}
       {head?.kind === 'placeExpansion' && ctl.human && (
         <div className="turn-actions">
-          <button className="btn" onClick={() => dispatch({ type: 'placeExpansion', to: null })}>Send to scrapyard</button>
+          <button className="btn" onClick={() => dispatch({ type: 'placeExpansion', to: null })}>
+            Send to scrapyard
+          </button>
         </div>
       )}
       {head?.kind === 'unveil' && ctl.human && (
         <div className="turn-actions">
-          <button className="btn btn-primary" onClick={() => dispatch({ type: 'unveilDone' })}>Done</button>
+          <button className="btn btn-primary" onClick={() => dispatch({ type: 'unveilDone' })}>
+            Done
+          </button>
         </div>
       )}
 
@@ -132,14 +179,30 @@ function AdvanceChoice({ dispatch }: { dispatch: Dispatch }) {
   );
   return (
     <div className="turn-actions">
-      <button className="btn" onClick={() => go(false)}>Hold position</button>
-      <button className="btn btn-primary" onClick={() => go(true)}>Advance</button>
+      <button className="btn" onClick={() => go(false)}>
+        Hold position
+      </button>
+      <button className="btn btn-primary" onClick={() => go(true)}>
+        Advance
+      </button>
     </div>
   );
 }
 
 /** A button for a skill the current player activates; hidden unless they have it. */
-function SkillButton({ game, effect, label, disabled, onClick }: { game: GameState; effect: SkillEffect; label?: string; disabled: boolean; onClick: () => void }) {
+function SkillButton({
+  game,
+  effect,
+  label,
+  disabled,
+  onClick,
+}: {
+  game: GameState;
+  effect: SkillEffect;
+  label?: string;
+  disabled: boolean;
+  onClick: () => void;
+}) {
   const id = skillCard(game, game.turn.player, effect);
   if (!id) return null;
   const def = card(id);

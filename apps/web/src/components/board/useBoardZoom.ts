@@ -214,7 +214,8 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       if (swallowUntil === Infinity) swallowUntil = performance.now() + DRAG_CLICK;
       if (!live) return finish();
       const settled = zoomAround(latest.current.f, live, 1, focus.x, focus.y);
-      if (Math.abs(settled.cell - live.cell) > 0.01 || Math.abs(settled.x - live.x) > 0.5 || Math.abs(settled.y - live.y) > 0.5) return tween(settled, GLIDE_MS);
+      if (Math.abs(settled.cell - live.cell) > 0.01 || Math.abs(settled.x - live.x) > 0.5 || Math.abs(settled.y - live.y) > 0.5)
+        return tween(settled, GLIDE_MS);
       const now = performance.now();
       const recent = track.filter((p) => now - p.t < 100);
       const [a, b] = [recent[0], recent[recent.length - 1]];

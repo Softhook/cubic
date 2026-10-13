@@ -28,5 +28,7 @@ export async function rasterise(svg: string, w: number, h: number, type = 'image
   canvas.width = w;
   canvas.height = h;
   canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
-  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('drawing the SVG failed'))), type, quality));
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('drawing the SVG failed'))), type, quality),
+  );
 }

@@ -60,7 +60,11 @@ const actions = (edition: AidEdition): { name: string; cost: number; text: strin
   { name: 'Conquer', cost: 2, text: 'Your orbiting ships sum to exactly the planet' },
   { name: 'Deploy', cost: 1, text: 'Scrapyard ship to an orbit of your cube' },
   { name: 'Move / Attack', cost: 1, text: 'Up to the ship’s value; attack ends it' },
-  { name: 'Reconfigure', cost: 1, text: edition === 'community' ? 'Re-roll to a value not seen this turn' : 'Re-roll a ship to a new value' },
+  {
+    name: 'Reconfigure',
+    cost: 1,
+    text: edition === 'community' ? 'Re-roll to a value not seen this turn' : 'Re-roll a ship to a new value',
+  },
   { name: 'Research', cost: 1, text: '+1 research' },
 ];
 
@@ -125,7 +129,10 @@ const HUE = 194;
 
 /** One action: a yellow hexagon with the action bolt, as on the cards (`glow` is its soft halo's gradient id). */
 function hex(cx: number, cy: number, r: number, glow: string): string {
-  return `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r * 1.8)}" fill="url(#${glow})"/><path d="${poly(cx, cy, r)}" fill="${hsl(ACTION_HUE, 95, 58)}"/>` + icon('action', cx, cy, r * 1.2, INK, 2.8);
+  return (
+    `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r * 1.8)}" fill="url(#${glow})"/><path d="${poly(cx, cy, r)}" fill="${hsl(ACTION_HUE, 95, 58)}"/>` +
+    icon('action', cx, cy, r * 1.2, INK, 2.8)
+  );
 }
 
 /** A die pad: where the dominance or research die sits, the 24 mm of a tile's space (a 19 mm die with room round it). */
@@ -152,17 +159,23 @@ export function playerAidSvg(o: AidOptions = {}): string {
   const accent = hsl(HUE, 90, 66);
 
   out.push(`<rect x="${-b}" y="${-b}" width="${W + 2 * b}" height="${H + 2 * b}" fill="${GROUND}"/>`);
-  defs.push(`<radialGradient id="${id}-glow"><stop offset="0" stop-color="${hsl(ACTION_HUE, 100, 60)}" stop-opacity=".5"/><stop offset="1" stop-color="${hsl(ACTION_HUE, 100, 60)}" stop-opacity="0"/></radialGradient>`);
+  defs.push(
+    `<radialGradient id="${id}-glow"><stop offset="0" stop-color="${hsl(ACTION_HUE, 100, 60)}" stop-opacity=".5"/><stop offset="1" stop-color="${hsl(ACTION_HUE, 100, 60)}" stop-opacity="0"/></radialGradient>`,
+  );
 
   // --- The cube rail: a pad per cube, spread over the full height, with the win condition alongside.
   // The pads are the planets' cube pads in the die pads' quiet fill; the text runs up the rail, like a spine.
   const pad = CUBE_PAD.size;
   const step = (H - 2 * M - pad) / (MAX_CUBES - 1);
   for (let i = 0; i < MAX_CUBES; i++) {
-    out.push(`<rect x="${M}" y="${n(M + i * step)}" width="${pad}" height="${pad}" rx="1.6" fill="${PAD}" stroke="${hsl(224, 20, 52)}" stroke-width=".3"/>`);
+    out.push(
+      `<rect x="${M}" y="${n(M + i * step)}" width="${pad}" height="${pad}" rx="1.6" fill="${PAD}" stroke="${hsl(224, 20, 52)}" stroke-width=".3"/>`,
+    );
   }
   const spine = M + pad + 3.6;
-  out.push(`<g transform="rotate(-90 ${n(spine)} ${n(H / 2)})">${text(spine, H / 2, 'Place your last cube to win', 2.4, { font: 'bold', fill: WHITE, anchor: 'middle', track: 0.16, upper: true })}</g>`);
+  out.push(
+    `<g transform="rotate(-90 ${n(spine)} ${n(H / 2)})">${text(spine, H / 2, 'Place your last cube to win', 2.4, { font: 'bold', fill: WHITE, anchor: 'middle', track: 0.16, upper: true })}</g>`,
+  );
   const left = spine + 4;
 
   // --- Dominance and research: label, pad, what moves the die, what 6 does.
@@ -175,7 +188,11 @@ export function playerAidSvg(o: AidOptions = {}): string {
     out.push(diePad(cx, M + 17.5, h, kind));
     const lines =
       kind === 'dominance'
-        ? { gain: ['+1 per enemy destroyed', '−1 per ship lost'], six: 'At 6 · Infamy', then: ['Place a cube on any', 'planet, reset to 1'] }
+        ? {
+            gain: ['+1 per enemy destroyed', '−1 per ship lost'],
+            six: 'At 6 · Infamy',
+            then: ['Place a cube on any', 'planet, reset to 1'],
+          }
         : { gain: ['+1 per Research action'], six: 'At 6 · Breakthrough', then: ['Take a card at the', 'end of turn, reset to 1'] };
     let y = M + 34.6;
     for (const t of lines.gain) {
@@ -222,7 +239,9 @@ export function playerAidSvg(o: AidOptions = {}): string {
     out.push(d.body);
     const ty = fleetY + size + 4.2;
     out.push(line(cx, ty, s.ability, 2.6, size + gap - 0.8, measure, { font: 'bold', fill: accent, anchor: 'middle' }));
-    wrap(s.text, 2.1, size + gap - 0.8, measure).forEach((t, k) => out.push(text(cx, ty + 3.2 + k * 2.75, t, 2.1, { fill: MUTED, anchor: 'middle' })));
+    wrap(s.text, 2.1, size + gap - 0.8, measure).forEach((t, k) =>
+      out.push(text(cx, ty + 3.2 + k * 2.75, t, 2.1, { fill: MUTED, anchor: 'middle' })),
+    );
   }
 
   const all: Fragment = { defs: (o.fontCss ? `<style>${o.fontCss}</style>` : '') + defs.join(''), body: out.join('') };

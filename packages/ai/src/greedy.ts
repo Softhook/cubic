@@ -206,7 +206,7 @@ const SKILL_VALUE = 60;
 /** A Tactic stored with Patient: worth keeping when playing it now would gain less. */
 const STORED_TACTIC_VALUE = 30;
 
-export function score(s: GameState, me: PlayerId): number {
+function score(s: GameState, me: PlayerId): number {
   if (s.phase === 'over') return s.winner === me ? 1e6 : -1e6;
   const mine = playerValue(s, me, true);
   let rival = 0;
@@ -253,9 +253,7 @@ function conquerPotential(s: GameState, p: PlayerId): number {
       for (const d of myShips) {
         if (inOrbit.includes(d)) continue;
         const c = cellOf(d)!;
-        const near = slots.some(
-          (q) => isEmptySpace(s, q) && distance(q, c, s.board) <= movementRange(s, d),
-        );
+        const near = slots.some((q) => isEmptySpace(s, q) && distance(q, c, s.board) <= movementRange(s, d));
         if (near) v += 6;
       }
     }

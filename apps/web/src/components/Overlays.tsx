@@ -15,7 +15,11 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
       return <SetupRoll game={game} dispatch={dispatch} player={head.player} rerolled={head.rerolled} />;
     case 'skillDraft':
       return (
-        <Modal title="Choose your starting skill" subtitle={`${game.players[head.player].name}, keep one. The other returns to the bottom of the deck.`} pc={game.players[head.player].color}>
+        <Modal
+          title="Choose your starting skill"
+          subtitle={`${game.players[head.player].name}, keep one. The other returns to the bottom of the deck.`}
+          pc={game.players[head.player].color}
+        >
           <div className="card-choice">
             {head.options.map((id) => (
               <CardView key={id} id={id} size="lg" onClick={() => dispatch({ type: 'draftSkill', skill: id })} />
@@ -25,7 +29,11 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
       );
     case 'peek':
       return (
-        <Modal title="Peek" subtitle="You chose the oldest card. Take it, or the top card of the deck instead." pc={game.players[head.player].color}>
+        <Modal
+          title="Peek"
+          subtitle="You chose the oldest card. Take it, or the top card of the deck instead."
+          pc={game.players[head.player].color}
+        >
           <div className="card-choice">
             <div className="choice-col">
               <small>Face-up</small>
@@ -79,8 +87,12 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
           pc={p.color}
         >
           <div className="modal-actions">
-            <button className="btn" onClick={() => dispatch({ type: 'dangerous', destroy: false })}>Fight</button>
-            <button className="btn btn-primary" onClick={() => dispatch({ type: 'dangerous', destroy: true })}>Destroy both ships</button>
+            <button className="btn" onClick={() => dispatch({ type: 'dangerous', destroy: false })}>
+              Fight
+            </button>
+            <button className="btn btn-primary" onClick={() => dispatch({ type: 'dangerous', destroy: true })}>
+              Destroy both ships
+            </button>
           </div>
         </Modal>
       );
@@ -94,7 +106,9 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
           pc={p.color}
         >
           <div className="modal-actions">
-            <button className="btn" onClick={() => dispatch({ type: 'brilliant', gain: false })}>Keep {p.research}</button>
+            <button className="btn" onClick={() => dispatch({ type: 'brilliant', gain: false })}>
+              Keep {p.research}
+            </button>
             <button className="btn btn-primary" onClick={() => dispatch({ type: 'brilliant', gain: true })}>
               Gain 2 → {Math.min(6, p.research + 2)}
             </button>
@@ -110,8 +124,8 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
       const subtitle = head.options
         ? `${p.name}, keep this ship’s number or change it by 1.`
         : isCalculating
-        ? `${p.name}, choose this ship’s number (1–6) for the scrapyard.`
-        : `${p.name}, choose this ship’s number instead of rolling it.`;
+          ? `${p.name}, choose this ship’s number (1–6) for the scrapyard.`
+          : `${p.name}, choose this ship’s number instead of rolling it.`;
       return (
         <Modal title={title} subtitle={subtitle} pc={p.color}>
           <div className="fleet-roll clever-row">
@@ -138,8 +152,12 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
       return (
         <Modal title="Prideful" subtitle={`${p.name}, you destroyed ${victim.name}’s ship. You may take Prideful from them.`} pc={p.color}>
           <div className="modal-actions">
-            <button className="btn" onClick={() => dispatch({ type: 'prideful', take: false })}>Decline</button>
-            <button className="btn btn-primary" onClick={() => dispatch({ type: 'prideful', take: true })}>Take Prideful</button>
+            <button className="btn" onClick={() => dispatch({ type: 'prideful', take: false })}>
+              Decline
+            </button>
+            <button className="btn btn-primary" onClick={() => dispatch({ type: 'prideful', take: true })}>
+              Take Prideful
+            </button>
           </div>
         </Modal>
       );
@@ -148,14 +166,22 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
       const p = game.players[head.player];
       const victim = game.players[head.victim];
       return (
-        <Modal title="Ruthless" subtitle={`${p.name}, you destroyed an enemy ship. Choose one of ${victim.name}’s skills to disable until the start of your next turn.`} pc={p.color}>
+        <Modal
+          title="Ruthless"
+          subtitle={`${p.name}, you destroyed an enemy ship. Choose one of ${victim.name}’s skills to disable until the start of your next turn.`}
+          pc={p.color}
+        >
           <div className="modal-actions">
-            <button className="btn" onClick={() => dispatch({ type: 'ruthless' })}>Skip</button>
-            {victim.skills.filter((s) => s.active).map((s) => (
-              <button key={s.id} className="btn btn-primary" onClick={() => dispatch({ type: 'ruthless', skill: s.id })}>
-                Disable {card(s.id).name}
-              </button>
-            ))}
+            <button className="btn" onClick={() => dispatch({ type: 'ruthless' })}>
+              Skip
+            </button>
+            {victim.skills
+              .filter((s) => s.active)
+              .map((s) => (
+                <button key={s.id} className="btn btn-primary" onClick={() => dispatch({ type: 'ruthless', skill: s.id })}>
+                  Disable {card(s.id).name}
+                </button>
+              ))}
           </div>
         </Modal>
       );
@@ -180,7 +206,11 @@ function SetupRoll({ game, dispatch, player, rerolled }: { game: GameState; disp
   }, [rollKey]);
 
   return (
-    <Modal title="Roll your fleet" subtitle={`${p.name}, these three dice are your starting ships. The lowest fleet total plays first.`} pc={p.color}>
+    <Modal
+      title="Roll your fleet"
+      subtitle={`${p.name}, these three dice are your starting ships. The lowest fleet total plays first.`}
+      pc={p.color}
+    >
       <div className="fleet-roll">
         {dice.map((d, i) => (
           <div key={d.id} className="fleet-die">
@@ -189,9 +219,16 @@ function SetupRoll({ game, dispatch, player, rerolled }: { game: GameState; disp
           </div>
         ))}
       </div>
-      <p className={`fleet-sum ${landed ? 'show' : ''}`}>Fleet total <b>{sum}</b></p>
+      <p className={`fleet-sum ${landed ? 'show' : ''}`}>
+        Fleet total <b>{sum}</b>
+      </p>
       <div className="modal-actions">
-        <button className="btn" disabled={rerolled || !landed} onClick={() => dispatch({ type: 'setupReroll' })} title="You may re-roll once, but must re-roll all three.">
+        <button
+          className="btn"
+          disabled={rerolled || !landed}
+          onClick={() => dispatch({ type: 'setupReroll' })}
+          title="You may re-roll once, but must re-roll all three."
+        >
           {rerolled ? 'Re-roll used' : 'Re-roll all (once)'}
         </button>
         <button className="btn btn-primary" disabled={!landed} onClick={() => dispatch({ type: 'setupKeep' })}>
@@ -202,7 +239,19 @@ function SetupRoll({ game, dispatch, player, rerolled }: { game: GameState; disp
   );
 }
 
-function Modal({ title, subtitle, pc, wide, children }: { title: string; subtitle?: string; pc?: string; wide?: boolean; children: ReactNode }) {
+function Modal({
+  title,
+  subtitle,
+  pc,
+  wide,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  pc?: string;
+  wide?: boolean;
+  children: ReactNode;
+}) {
   return (
     <div className="overlay">
       <div className={`modal ${wide ? 'wide' : ''}`} style={{ '--pc': pc ?? 'var(--accent)' } as CSSProperties}>
@@ -218,7 +267,12 @@ function Modal({ title, subtitle, pc, wide, children }: { title: string; subtitl
  * How to conquer a planet that offers more than one way: an empty place, or over-conquest displacing
  * one opponent's cube (the conqueror chooses whose). `options` are the legal `conquer` actions for it.
  */
-export function ConquerChoice({ game, options, dispatch, onClose }: {
+export function ConquerChoice({
+  game,
+  options,
+  dispatch,
+  onClose,
+}: {
   game: GameState;
   options: Extract<Action, { type: 'conquer' }>[];
   dispatch: Dispatch;
@@ -238,7 +292,9 @@ export function ConquerChoice({ game, options, dispatch, onClose }: {
       <div className="modal-actions">
         {options.map((a) =>
           a.replace === undefined ? (
-            <button key="plain" className="btn btn-primary" onClick={() => pick(a)}>Take an empty place</button>
+            <button key="plain" className="btn btn-primary" onClick={() => pick(a)}>
+              Take an empty place
+            </button>
           ) : (
             <button key={a.replace} className="btn" style={{ borderColor: game.players[a.replace].color }} onClick={() => pick(a)}>
               Displace {game.players[a.replace].name}’s cube
@@ -251,7 +307,17 @@ export function ConquerChoice({ game, options, dispatch, onClose }: {
 }
 
 /** `newLabel`: what leaving the finished game is called ("New game", or "Back to lobby" online). */
-export function GameOver({ game, onNew, onClose, newLabel = 'New game' }: { game: GameState; onNew: () => void; onClose: () => void; newLabel?: string }) {
+export function GameOver({
+  game,
+  onNew,
+  onClose,
+  newLabel = 'New game',
+}: {
+  game: GameState;
+  onNew: () => void;
+  onClose: () => void;
+  newLabel?: string;
+}) {
   if (game.winner === null) return null;
   const w = game.players[game.winner];
   return (
@@ -260,10 +326,16 @@ export function GameOver({ game, onNew, onClose, newLabel = 'New game' }: { game
         <div className="gameover-burst" />
         <small>Victory</small>
         <h2>{w.name} conquers the sector</h2>
-        <p className="modal-sub">All cubes placed after {game.turn.number} turn{game.turn.number === 1 ? '' : 's'}.</p>
+        <p className="modal-sub">
+          All cubes placed after {game.turn.number} turn{game.turn.number === 1 ? '' : 's'}.
+        </p>
         <div className="modal-actions">
-          <button className="btn" onClick={onClose}>View board</button>
-          <button className="btn btn-primary" onClick={onNew}>{newLabel}</button>
+          <button className="btn" onClick={onClose}>
+            View board
+          </button>
+          <button className="btn btn-primary" onClick={onNew}>
+            {newLabel}
+          </button>
         </div>
       </div>
     </div>

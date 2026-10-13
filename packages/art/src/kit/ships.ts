@@ -5,11 +5,36 @@ import { glow } from './effects';
 /** Pip positions on a unit face. */
 export const PIPS: Record<number, [number, number][]> = {
   1: [[0.5, 0.5]],
-  2: [[0.27, 0.27], [0.73, 0.73]],
-  3: [[0.25, 0.25], [0.5, 0.5], [0.75, 0.75]],
-  4: [[0.27, 0.27], [0.73, 0.27], [0.27, 0.73], [0.73, 0.73]],
-  5: [[0.25, 0.25], [0.75, 0.25], [0.5, 0.5], [0.25, 0.75], [0.75, 0.75]],
-  6: [[0.27, 0.23], [0.73, 0.23], [0.27, 0.5], [0.73, 0.5], [0.27, 0.77], [0.73, 0.77]],
+  2: [
+    [0.27, 0.27],
+    [0.73, 0.73],
+  ],
+  3: [
+    [0.25, 0.25],
+    [0.5, 0.5],
+    [0.75, 0.75],
+  ],
+  4: [
+    [0.27, 0.27],
+    [0.73, 0.27],
+    [0.27, 0.73],
+    [0.73, 0.73],
+  ],
+  5: [
+    [0.25, 0.25],
+    [0.75, 0.25],
+    [0.5, 0.5],
+    [0.25, 0.75],
+    [0.75, 0.75],
+  ],
+  6: [
+    [0.27, 0.23],
+    [0.73, 0.23],
+    [0.27, 0.5],
+    [0.73, 0.5],
+    [0.27, 0.77],
+    [0.73, 0.77],
+  ],
 };
 
 /** Two faces that can sit beside `top` on a real die (opposite faces add up to 7). */
@@ -47,7 +72,9 @@ export function die(cx: number, cy: number, s: number, value: number, hue: numbe
   const face = (m: number[], light: number, v: number) =>
     `<g transform="matrix(${m.map(n).join(' ')})">` +
     `<rect x=".05" y=".05" width=".9" height=".9" rx=".16" fill="${hsl(hue, 62, light)}"/>` +
-    (o.pips === false ? [] : PIPS[v]).map(([x, y]) => `<circle cx="${x}" cy="${y}" r=".085" fill="${hsl(hue, 70, light < 40 ? 88 : 12)}" opacity=".9"/>`).join('') +
+    (o.pips === false ? [] : PIPS[v])
+      .map(([x, y]) => `<circle cx="${x}" cy="${y}" r=".085" fill="${hsl(hue, 70, light < 40 ? 88 : 12)}" opacity=".9"/>`)
+      .join('') +
     `</g>`;
   return (
     `<g${attrs}>` +

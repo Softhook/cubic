@@ -42,14 +42,19 @@ export function TileLab() {
   return (
     <div className="lab">
       <LabHeader page="tiles">
-        <label><input type="checkbox" checked={markings} onChange={(e) => setMarkings(e.target.checked)} /> Print markings</label>
+        <label>
+          <input type="checkbox" checked={markings} onChange={(e) => setMarkings(e.target.checked)} /> Print markings
+        </label>
       </LabHeader>
       <div className="lab-body">
         <div className="lab-grid">
           {thumbs.map(({ spec: t, url }) => (
             <button key={t.id} className={`lab-thumb ${t.id === selected ? 'on' : ''}`} onClick={() => setSelected(t.id)}>
               <img src={url} alt={t.id} />
-              <span>{t.id}{t.type ? ` · ${t.type}` : ''}</span>
+              <span>
+                {t.id}
+                {t.type ? ` · ${t.type}` : ''}
+              </span>
             </button>
           ))}
         </div>
@@ -60,18 +65,25 @@ export function TileLab() {
               Seed
               <input type="number" value={spec.seed} onChange={(e) => set({ seed: Number(e.target.value) >>> 0 })} />
             </label>
-            <button className="btn" onClick={() => set({ seed: Math.floor(Math.random() * 2 ** 32) })}>Reroll</button>
+            <button className="btn" onClick={() => set({ seed: Math.floor(Math.random() * 2 ** 32) })}>
+              Reroll
+            </button>
             {spec.number > 0 && (
               <>
                 <label>
                   Type
                   <select value={spec.type} onChange={(e) => set({ type: e.target.value as PlanetType })}>
-                    {TYPES.map((t) => <option key={t}>{t}</option>)}
+                    {TYPES.map((t) => (
+                      <option key={t}>{t}</option>
+                    ))}
                   </select>
                 </label>
                 <label>
                   Rings
-                  <select value={spec.rings === undefined ? 'auto' : String(spec.rings)} onChange={(e) => set({ rings: e.target.value === 'auto' ? undefined : e.target.value === 'true' })}>
+                  <select
+                    value={spec.rings === undefined ? 'auto' : String(spec.rings)}
+                    onChange={(e) => set({ rings: e.target.value === 'auto' ? undefined : e.target.value === 'true' })}
+                  >
                     <option value="auto">from seed</option>
                     <option value="true">on</option>
                     <option value="false">off</option>
@@ -79,7 +91,11 @@ export function TileLab() {
                 </label>
               </>
             )}
-            {overrides[spec.id] && <button className="btn btn-ghost" onClick={() => setOverrides(({ [spec.id]: _, ...rest }) => rest)}>Reset</button>}
+            {overrides[spec.id] && (
+              <button className="btn btn-ghost" onClick={() => setOverrides(({ [spec.id]: _, ...rest }) => rest)}>
+                Reset
+              </button>
+            )}
           </div>
           <p className="lab-note">Changes here are for exploring; to keep one, copy its settings:</p>
           <pre className="lab-spec">{JSON.stringify(spec)}</pre>
@@ -92,7 +108,12 @@ export function TileLab() {
             notes={markings ? '' : 'Without print markings.\n'}
             sheets={() => specs.map((t) => ({ front: printable(t) }))}
             extra={(run, busy) => (
-              <button className="btn" disabled={busy} onClick={() => run(exportEditable)} title="Art as a 600 dpi image, markings as editable vectors">
+              <button
+                className="btn"
+                disabled={busy}
+                onClick={() => run(exportEditable)}
+                title="Art as a 600 dpi image, markings as editable vectors"
+              >
                 SVG for Illustrator
               </button>
             )}

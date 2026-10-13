@@ -15,14 +15,27 @@ export function ZoomControls({ zoom }: { zoom: BoardZoom }) {
   return (
     <div className="zoom-controls">
       <button type="button" className="zoom-step" title="Zoom in" aria-label="Zoom in" onClick={() => zoom.zoomBy(1.5)}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
       </button>
-      <button type="button" className="zoom-step" title="Zoom out" aria-label="Zoom out" disabled={!zoom.zoomed} onClick={() => zoom.zoomBy(1 / 1.5)}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
+      <button
+        type="button"
+        className="zoom-step"
+        title="Zoom out"
+        aria-label="Zoom out"
+        disabled={!zoom.zoomed}
+        onClick={() => zoom.zoomBy(1 / 1.5)}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 12h14" />
+        </svg>
       </button>
       {zoom.zoomed && (
         <button type="button" title="Whole map" aria-label="Whole map" onClick={zoom.fit}>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+          </svg>
         </button>
       )}
     </div>
@@ -41,6 +54,7 @@ export function useZoomIntro(game: GameState, ctl: Controller, zoom: BoardZoom, 
   const [tip, setTip] = useState<string | null>(null);
   const done = useRef(false);
   if (game.phase !== 'setup') done.current = false; // ready for the next game's setup
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- checked after every render; `done` makes it run once.
   useEffect(() => {
     if (done.current || !introduce || !zoom.canZoom) return;
     done.current = true;
@@ -76,6 +90,7 @@ export function useFollowMoves(game: GameState, ctl: Controller, spots: ShipSpot
       if (now && !ctl.mine(d.owner) && (!was || was.r !== now.r || was.c !== now.c)) moved = now;
     }
     if (moved) zoom.reveal(Math.round(moved.r), Math.round(moved.c));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a new game state can move a ship.
   }, [game]);
 }
 
@@ -93,9 +108,12 @@ export function OffscreenHints({ game, ctl, spots, zoom }: { game: GameState; ct
     ...[...ctl.highlights.dice.keys()].flatMap((id) => spots.get(id) ?? []),
   ];
   // What's on screen, in spaces.
-  const left = -zoom.x / zoom.cell, right = (zoom.w - zoom.x) / zoom.cell;
-  const top = -zoom.y / zoom.cell, bottom = (zoom.h - zoom.y) / zoom.cell;
-  const midR = (top + bottom) / 2, midC = (left + right) / 2;
+  const left = -zoom.x / zoom.cell,
+    right = (zoom.w - zoom.x) / zoom.cell;
+  const top = -zoom.y / zoom.cell,
+    bottom = (zoom.h - zoom.y) / zoom.cell;
+  const midR = (top + bottom) / 2,
+    midC = (left + right) / 2;
   const beyond = new Map<Side, { r: number; c: number; d: number }[]>();
   for (const { r, c } of targets) {
     const over: [Side, number][] = [
@@ -111,8 +129,16 @@ export function OffscreenHints({ game, ctl, spots, zoom }: { game: GameState; ct
   return [...beyond].map(([side, list]) => {
     const near = list.reduce((a, b) => (b.d < a.d ? b : a));
     return (
-      <button key={side} type="button" className={`zoom-hint zoom-hint-${side}`} aria-label={`${list.length} more ${side === 'top' ? 'above' : side === 'bottom' ? 'below' : `to the ${side}`}`} onClick={() => zoom.centreOn(near.r, near.c)}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ARROWS[side]} /></svg>
+      <button
+        key={side}
+        type="button"
+        className={`zoom-hint zoom-hint-${side}`}
+        aria-label={`${list.length} more ${side === 'top' ? 'above' : side === 'bottom' ? 'below' : `to the ${side}`}`}
+        onClick={() => zoom.centreOn(near.r, near.c)}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d={ARROWS[side]} />
+        </svg>
         {list.length > 1 && <span>{list.length}</span>}
       </button>
     );

@@ -36,7 +36,13 @@ async function record(page: Page) {
   });
 }
 /** Marks the end of the gesture: frames after this are its settling. */
-const mark = (page: Page) => page.evaluate(() => ((window as unknown as { __mark: number; __frames: number[] }).__mark = (window as unknown as { __frames: number[] }).__frames.length));
+const mark = (page: Page) =>
+  page.evaluate(
+    () =>
+      ((window as unknown as { __mark: number; __frames: number[] }).__mark = (
+        window as unknown as { __frames: number[] }
+      ).__frames.length),
+  );
 async function stop(page: Page) {
   return page.evaluate(() => {
     const w = window as unknown as { __frames: number[]; __rec: boolean; __mark: number };
@@ -73,8 +79,14 @@ function report(what: string, results: Result[]) {
   const p95 = sorted[Math.floor(sorted.length * 0.95)] ?? 0;
   const janky = during.filter((f) => f > 34).length;
   console.log(
-    `${what.padEnd(26)} during: p95 ${p95.toFixed(0).padStart(3)} ms, max ${Math.max(0, ...during).toFixed(0).padStart(3)} ms, ${String(janky).padStart(2)}/${during.length} frames >34 ms` +
-      ` · settle ${median(results.map((r) => r.settle)).toFixed(0).padStart(3)} ms · main thread ${median(results.map((r) => r.busy)).toFixed(0).padStart(4)} ms`,
+    `${what.padEnd(26)} during: p95 ${p95.toFixed(0).padStart(3)} ms, max ${Math.max(0, ...during)
+      .toFixed(0)
+      .padStart(3)} ms, ${String(janky).padStart(2)}/${during.length} frames >34 ms` +
+      ` · settle ${median(results.map((r) => r.settle))
+        .toFixed(0)
+        .padStart(3)} ms · main thread ${median(results.map((r) => r.busy))
+        .toFixed(0)
+        .padStart(4)} ms`,
   );
 }
 
@@ -142,7 +154,10 @@ async function phone(page: Page, cdp: CDPSession) {
   const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', points: { x: number; y: number }[]) =>
     cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map((p, id) => ({ ...p, id })) });
   const pinch = async (from: number, to: number, steps = 20) => {
-    const at = (d: number) => [{ x: x - d, y }, { x: x + d, y }];
+    const at = (d: number) => [
+      { x: x - d, y },
+      { x: x + d, y },
+    ];
     await touch('touchStart', at(from));
     for (let i = 1; i <= steps; i++) {
       await touch('touchMove', at(from + ((to - from) * i) / steps));

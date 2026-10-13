@@ -39,15 +39,23 @@ export function Rulebook() {
     <div className="rb-screen">
       <style>{css + pageCss}</style>
       <div className="rb-toolbar">
-        <a className="btn btn-ghost" href={back.href}>← {back.label}</a>
+        <a className="btn btn-ghost" href={back.href}>
+          ← {back.label}
+        </a>
         <span className="rb-spacer" />
         <select value={paper} onChange={(e) => setPaper(e.target.value as Paper)} aria-label="Paper">
           {Object.entries(PAPER).map(([id, p]) => (
-            <option key={id} value={id}>{p.name}</option>
+            <option key={id} value={id}>
+              {p.name}
+            </option>
           ))}
         </select>
-        <button className="btn" onClick={downloadHtml}>Download HTML</button>
-        <button className="btn btn-primary" onClick={() => window.print()}>Save as PDF</button>
+        <button className="btn" onClick={downloadHtml}>
+          Download HTML
+        </button>
+        <button className="btn btn-primary" onClick={() => window.print()}>
+          Save as PDF
+        </button>
       </div>
 
       <div className="rb-page" ref={page}>

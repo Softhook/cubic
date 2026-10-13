@@ -23,7 +23,9 @@ const games = Number(argGames);
 const level = Number(argLevel) as AiLevel;
 const [shard, shards] = argShard.split('/').map(Number);
 const BASIC_GROUPS = ['basic', 'advanced', 'addon'];
-const maps = MAPS.filter((m) => BASIC_GROUPS.includes(m.group) && (!argMaps || argMaps.split(',').includes(m.id))).filter((_, i) => i % shards === shard);
+const maps = MAPS.filter((m) => BASIC_GROUPS.includes(m.group) && (!argMaps || argMaps.split(',').includes(m.id))).filter(
+  (_, i) => i % shards === shard,
+);
 
 interface Finding {
   map: string;
@@ -47,7 +49,14 @@ function wins(s: GameState, a: Action): boolean {
 }
 
 for (const map of maps) {
-  const results: { turns: number; winner: PlayerId | null; seconds: number; attacks: number; conquers: number; endTurnsWithActions: number }[] = [];
+  const results: {
+    turns: number;
+    winner: PlayerId | null;
+    seconds: number;
+    attacks: number;
+    conquers: number;
+    endTurnsWithActions: number;
+  }[] = [];
   for (let g = 0; g < games; g++) {
     const seed = 7000 + g;
     const started = performance.now();
@@ -59,7 +68,15 @@ for (const map of maps) {
     let left = new Map<string, Set<string>>();
     let turnNo = -1;
     const note = (s: GameState, kind: Finding['kind'], detail: string) =>
-      findings.push({ map: map.id, seed, turn: s.turn.number, player: s.turn.player, kind, detail, log: s.log.slice(-6).map((l) => l.text) });
+      findings.push({
+        map: map.id,
+        seed,
+        turn: s.turn.number,
+        player: s.turn.player,
+        kind,
+        detail,
+        log: s.log.slice(-6).map((l) => l.text),
+      });
 
     const result = auditGame(
       { mode: 'basic', mapId: map.id, players: map.players, levels: Array(map.players).fill(level), seed },
@@ -76,7 +93,12 @@ for (const map of maps) {
           if (action.type !== 'conquer' && conquerActions.some((a) => wins(s, a))) note(s, 'missed win', `played ${action.type} instead`);
           if (action.type === 'endTurn') {
             if (s.turn.actionsLeft > 0) endTurnsWithActions++;
-            if (conquerActions.length) note(s, 'missed conquer', `ended turn with ${s.turn.actionsLeft} actions left; could conquer planet ${conquerActions.map((a) => (a as { planet: number }).planet).join(', ')}`);
+            if (conquerActions.length)
+              note(
+                s,
+                'missed conquer',
+                `ended turn with ${s.turn.actionsLeft} actions left; could conquer planet ${conquerActions.map((a) => (a as { planet: number }).planet).join(', ')}`,
+              );
           }
           if (action.type === 'conquer') conquers++;
           if (action.type === 'attack') {
@@ -100,7 +122,16 @@ for (const map of maps) {
         },
       },
     );
-    for (const a of result.anomalies) findings.push({ map: map.id, seed, turn: -1, player: -1 as PlayerId, kind: 'anomaly', detail: `step ${a.step}: ${a.message}`, log: a.context });
+    for (const a of result.anomalies)
+      findings.push({
+        map: map.id,
+        seed,
+        turn: -1,
+        player: -1 as PlayerId,
+        kind: 'anomaly',
+        detail: `step ${a.step}: ${a.message}`,
+        log: a.context,
+      });
     if (!result.finished && last) note(last, 'unfinished', `no winner after ${result.steps} steps`);
     results.push({
       turns: last?.turn.number ?? 0,

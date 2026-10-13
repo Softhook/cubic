@@ -30,10 +30,7 @@ const BASE = quickStart(2, 1, 'basic');
  * A focused position: player 0 to act with 3 fresh actions, only the listed ships on the map
  * (everything else in the scrapyard, reserves untouched) and only the listed cubes placed.
  */
-function scenario(
-  dice: Record<string, [number, number, number]>,
-  cubes: Record<number, number[]> = { 2: [0], 6: [1] },
-): GameState {
+function scenario(dice: Record<string, [number, number, number]>, cubes: Record<number, number[]> = { 2: [0], 6: [1] }): GameState {
   const s = structuredClone(BASE);
   for (const d of s.dice) if (d.loc.zone === 'board') d.loc = { zone: 'scrapyard' };
   for (const [id, [r, c, value]] of Object.entries(dice)) {
@@ -99,7 +96,11 @@ describe('setup (p.3)', () => {
 
   it('lets the player with the lowest ship total go first', () => {
     let s = createGame({ players: players(3), seed: 5, mode: 'basic' });
-    const values = [[6, 6, 6], [2, 2, 2], [5, 5, 5]];
+    const values = [
+      [6, 6, 6],
+      [2, 2, 2],
+      [5, 5, 5],
+    ];
     for (const d of s.dice) if (d.loc.zone === 'scrapyard') d.value = values[d.owner][0];
     for (let i = 0; i < 3; i++) s = apply(s, { type: 'setupKeep' });
     expect(s.turn.player).toBe(1);
@@ -236,9 +237,7 @@ describe('move (p.6)', () => {
 
   it('moves orthogonally up to the die number, turning as often as needed', () => {
     const s = scenario({ p0d0: [3, 3, 2] });
-    expect(dests(s, 'p0d0')).toEqual(
-      ['1,3', '2,3', '2,2', '2,4', '3,2', '3,1', '3,4', '3,5', '4,3', '4,2', '5,3'].sort(),
-    );
+    expect(dests(s, 'p0d0')).toEqual(['1,3', '2,3', '2,2', '2,4', '3,2', '3,1', '3,4', '3,5', '4,3', '4,2', '5,3'].sort());
     expect(moveOptions(s, 'p0d0').moves.get('2,2')?.steps).toBe(2);
   });
 
@@ -343,9 +342,15 @@ describe('construct (p.7)', () => {
 
   it('allows only one of your cubes per planet, but different players may share one', () => {
     const ships = { p0d0: [3, 4, 6], p0d1: [5, 4, 2] } as Record<string, [number, number, number]>;
-    expect(conquerCheck(scenario(ships, { 2: [0], 6: [1], 4: [0] }), 0, 4)).toMatchObject({ ok: false, reason: 'You already have a cube here' });
+    expect(conquerCheck(scenario(ships, { 2: [0], 6: [1], 4: [0] }), 0, 4)).toMatchObject({
+      ok: false,
+      reason: 'You already have a cube here',
+    });
     expect(conquerCheck(scenario(ships, { 2: [0], 6: [1], 4: [1] }), 0, 4).ok).toBe(true);
-    expect(conquerCheck(scenario(ships, { 2: [0], 6: [1], 4: [1, 1] }), 0, 4)).toMatchObject({ ok: false, reason: 'No empty cube location' });
+    expect(conquerCheck(scenario(ships, { 2: [0], 6: [1], 4: [1, 1] }), 0, 4)).toMatchObject({
+      ok: false,
+      reason: 'No empty cube location',
+    });
   });
 
   it('size-7 planets hold 1 cube, 8 hold 2, 9 hold 3, 10 hold 4', () => {

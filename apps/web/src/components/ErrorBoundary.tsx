@@ -33,8 +33,12 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
         <p className="crash-detail">{error instanceof Error ? error.message : String(error)}</p>
         <p className="crash-hint">The details are in the browser console.</p>
         <div className="crash-actions">
-          <button className="btn btn-primary" onClick={() => location.reload()}>Reload</button>
-          <button className="btn" onClick={toLobby}>Back to the lobby</button>
+          <button className="btn btn-primary" onClick={() => location.reload()}>
+            Reload
+          </button>
+          <button className="btn" onClick={toLobby}>
+            Back to the lobby
+          </button>
         </div>
       </div>
     );

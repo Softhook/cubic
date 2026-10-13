@@ -52,7 +52,10 @@ let totalTurns = 0;
 for (let g = 0; g < numGames; g++) {
   /** Cards in play this game, and the cards each player held or took (credited with the result). */
   const inGame = new Set<string>();
-  const credited = new Map<PlayerId, Set<string>>([[0, new Set()], [1, new Set()]]);
+  const credited = new Map<PlayerId, Set<string>>([
+    [0, new Set()],
+    [1, new Set()],
+  ]);
   let last: GameState | undefined;
 
   const result = auditGame(
@@ -67,7 +70,13 @@ for (let g = 0; g < numGames; g++) {
           inGame.add(taken.id);
           credited.get(taken.p)!.add(taken.id);
           const pl = before.players[taken.p];
-          st.picks.push({ turn: Math.max(1, before.turn.number), cubesLeft: pl.cubesLeft, dominance: pl.dominance, research: pl.research, standing: standing(before, taken.p) });
+          st.picks.push({
+            turn: Math.max(1, before.turn.number),
+            cubesLeft: pl.cubesLeft,
+            dominance: pl.dominance,
+            research: pl.research,
+            standing: standing(before, taken.p),
+          });
         }
         for (const id of fired) {
           stats.get(id)!.played++;
@@ -79,7 +88,8 @@ for (let g = 0; g < numGames; g++) {
   );
 
   if (result.anomalies.length) {
-    for (const a of result.anomalies) console.log(`\nGame ${g}, step ${a.step}${a.card ? ` [${a.card}]` : ''}: ${a.message}\n  ${a.context.join('\n  ')}`);
+    for (const a of result.anomalies)
+      console.log(`\nGame ${g}, step ${a.step}${a.card ? ` [${a.card}]` : ''}: ${a.message}\n  ${a.context.join('\n  ')}`);
     process.exit(1);
   }
   for (const [id, c] of result.coverage) {
@@ -106,7 +116,9 @@ for (let g = 0; g < numGames; g++) {
   process.stdout.write(`\rPlayed game ${g + 1}/${numGames}...`);
 }
 
-console.log(`\n\nCompleted ${completedGames}/${numGames} games, avg ${(totalTurns / Math.max(1, completedGames)).toFixed(1)} turns/game.\n`);
+console.log(
+  `\n\nCompleted ${completedGames}/${numGames} games, avg ${(totalTurns / Math.max(1, completedGames)).toFixed(1)} turns/game.\n`,
+);
 
 const average = (xs: number[]) => xs.reduce((sum, v) => sum + v, 0) / Math.max(1, xs.length);
 const percent = (n: number, of: number) => `${((n / Math.max(1, of)) * 100).toFixed(1)}%`;
@@ -185,8 +197,12 @@ for (const st of [...stats.values()].filter((x) => x.taken).sort((a, b) => avgTu
       `Turn ${turn.toFixed(1)}`.padStart(10) +
       phase.padStart(11) +
       `${average(st.picks.map((x) => x.cubesLeft)).toFixed(1)} left`.padStart(11) +
-      average(st.picks.map((x) => x.dominance)).toFixed(1).padStart(9) +
-      average(st.picks.map((x) => x.research)).toFixed(1).padStart(9) +
+      average(st.picks.map((x) => x.dominance))
+        .toFixed(1)
+        .padStart(9) +
+      average(st.picks.map((x) => x.research))
+        .toFixed(1)
+        .padStart(9) +
       share('leading').padStart(11) +
       share('behind').padStart(10),
   );

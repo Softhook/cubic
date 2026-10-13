@@ -124,7 +124,14 @@ function tone(freq: number, dur: number, type: OscillatorType, gain: number, del
 function noise(
   dur: number,
   gain: number,
-  { delay = 0, type = 'bandpass', from = 1000, to = from, q = 1, rise = 0.01 }: {
+  {
+    delay = 0,
+    type = 'bandpass',
+    from = 1000,
+    to = from,
+    q = 1,
+    rise = 0.01,
+  }: {
     delay?: number;
     type?: BiquadFilterType;
     from?: number;
@@ -145,7 +152,10 @@ function noise(
   filter.Q.value = q;
   filter.frequency.setValueAtTime(from, at);
   filter.frequency.exponentialRampToValueAtTime(to, at + dur);
-  src.connect(filter).connect(envelope(ac, at, dur, gain, rise)).connect(out(ac));
+  src
+    .connect(filter)
+    .connect(envelope(ac, at, dur, gain, rise))
+    .connect(out(ac));
   src.start(at, Math.random());
   src.stop(at + dur + 0.05);
 }

@@ -22,7 +22,12 @@ describe('highlightsFor', () => {
     while (g.pending[0]?.kind !== 'placeStart') g = apply(g, legalActions(g)[0]);
     const h = lit(g, { kind: 'none' }, false);
     expect([...h.planets.values()].every((p) => p.tone === 'start')).toBe(true);
-    expect([...h.planets.keys()].sort()).toEqual(legalFor(g).of('placeStart').map((a) => a.planet).sort());
+    expect([...h.planets.keys()].sort()).toEqual(
+      legalFor(g)
+        .of('placeStart')
+        .map((a) => a.planet)
+        .sort(),
+    );
   });
 
   it('lights a selected ship’s moves and attacks', () => {
@@ -30,7 +35,12 @@ describe('highlightsFor', () => {
     const s = myTurn(arrange(quickStart(2, 1, 'basic'), { p0d0: [0, 0, 6], p1d0: [0, 1, 3] }));
     const h = lit(s, { kind: 'ship', die: 'p0d0' });
     expect(h.dice.get('p1d0')).toBe('attack');
-    expect([...h.cells.keys()].sort()).toEqual(legalFor(s).of('move', (a) => a.die === 'p0d0').map((a) => key(a.to)).sort());
+    expect([...h.cells.keys()].sort()).toEqual(
+      legalFor(s)
+        .of('move', (a) => a.die === 'p0d0')
+        .map((a) => key(a.to))
+        .sort(),
+    );
     expect(h.cells.size).toBeGreaterThan(0);
   });
 
@@ -44,7 +54,10 @@ describe('highlightsFor', () => {
     const s = myTurn(arrange(quickStart(2, 1, 'basic'), { p0d0: [0, 0, 6] }));
     const scrap = s.dice.find((d) => d.owner === 0 && d.loc.zone === 'scrapyard')!;
     expect(cellKeys(s, { kind: 'scrap', die: scrap.id })).toEqual(
-      legalFor(s).of('deploy', (a) => a.die === scrap.id).map((a) => key(a.to)).sort(),
+      legalFor(s)
+        .of('deploy', (a) => a.die === scrap.id)
+        .map((a) => key(a.to))
+        .sort(),
     );
   });
 

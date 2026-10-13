@@ -56,16 +56,37 @@ const centre = (s: GameState) => s.board.planets.find((p) => p.number === 8)!.id
 
 describe('start-of-turn bonuses', () => {
   it('Arrogant: an extra action with more ships on the map than any other player', () => {
-    const ahead = place(game({ me: ['o-arrogant'] }), [[0, 0, 6], [2, 0, 3], [2, 2, 2]], [[0, 1, 3]]);
+    const ahead = place(
+      game({ me: ['o-arrogant'] }),
+      [
+        [0, 0, 6],
+        [2, 0, 3],
+        [2, 2, 2],
+      ],
+      [[0, 1, 3]],
+    );
     expect(nextTurn(ahead).turn.actionsLeft).toBe(4);
     const level = place(game({ me: ['o-arrogant'] }), [[0, 0, 6]], [[0, 1, 3]]);
     expect(nextTurn(level).turn.actionsLeft).toBe(3);
   });
 
   it('extra actions do not let a ship move a second time (FAQ)', () => {
-    let s = nextTurn(place(game({ me: ['o-arrogant'] }), [[0, 0, 6], [2, 0, 3], [2, 2, 2]], [[0, 1, 3]]));
+    let s = nextTurn(
+      place(
+        game({ me: ['o-arrogant'] }),
+        [
+          [0, 0, 6],
+          [2, 0, 3],
+          [2, 2, 2],
+        ],
+        [[0, 1, 3]],
+      ),
+    );
     const scout = ship(ids(s).me, 0);
-    s = apply(s, legalActions(s).find((a) => a.type === 'move' && a.die === scout)!);
+    s = apply(
+      s,
+      legalActions(s).find((a) => a.type === 'move' && a.die === scout)!,
+    );
     expect(s.turn.actionsLeft).toBe(3);
     expect(can(s, (a) => a.type === 'move' && a.die === scout)).toBe(false);
   });
@@ -76,8 +97,24 @@ describe('start-of-turn bonuses', () => {
   });
 
   it('Conformist: an extra action when 2 of your ships on the map show the same number', () => {
-    expect(nextTurn(place(game({ me: ['o-conformist'] }), [[0, 0, 3], [2, 0, 3], [2, 2, 6]])).turn.actionsLeft).toBe(4);
-    expect(nextTurn(place(game({ me: ['o-conformist'] }), [[0, 0, 3], [2, 0, 4], [2, 2, 6]])).turn.actionsLeft).toBe(3);
+    expect(
+      nextTurn(
+        place(game({ me: ['o-conformist'] }), [
+          [0, 0, 3],
+          [2, 0, 3],
+          [2, 2, 6],
+        ]),
+      ).turn.actionsLeft,
+    ).toBe(4);
+    expect(
+      nextTurn(
+        place(game({ me: ['o-conformist'] }), [
+          [0, 0, 3],
+          [2, 0, 4],
+          [2, 2, 6],
+        ]),
+      ).turn.actionsLeft,
+    ).toBe(3);
   });
 });
 
@@ -90,14 +127,21 @@ describe('movement and deploying', () => {
   it('Energetic: a ship may move again, each move costing an action', () => {
     let s = place(game({ me: ['o-energetic'] }), [[0, 0, 6]]);
     const scout = ship(ids(s).me, 0);
-    for (let i = 0; i < 2; i++) s = apply(s, legalActions(s).find((a) => a.type === 'move' && a.die === scout)!);
+    for (let i = 0; i < 2; i++)
+      s = apply(
+        s,
+        legalActions(s).find((a) => a.type === 'move' && a.die === scout)!,
+      );
     expect(s.turn.actionsLeft).toBe(1);
     expect(can(s, (a) => a.type === 'move' && a.die === scout)).toBe(true);
   });
 
   it('Eager: deploying costs no action', () => {
     let s = place(game({ me: ['o-eager'] }), [[0, 0, 6]]);
-    s = apply(s, legalActions(s).find((a) => a.type === 'deploy')!);
+    s = apply(
+      s,
+      legalActions(s).find((a) => a.type === 'deploy')!,
+    );
     expect(s.turn.actionsLeft).toBe(3);
   });
 
@@ -113,7 +157,10 @@ describe('movement and deploying', () => {
 
 describe('ship abilities', () => {
   it('Cunning: one ship ability a second time each turn', () => {
-    let s = place(game({ me: ['o-cunning'] }), [[2, 0, 3], [2, 2, 6]]);
+    let s = place(game({ me: ['o-cunning'] }), [
+      [2, 0, 3],
+      [2, 2, 6],
+    ]);
     const destroyer = ship(ids(s).me, 0);
     const other = ship(ids(s).me, 1);
     s = apply(s, { type: 'swap', die: destroyer, other });
@@ -124,12 +171,18 @@ describe('ship abilities', () => {
   it('Cunning does not let an Interceptor move a second time (FAQ)', () => {
     let s = place(game({ me: ['o-cunning'] }), [[0, 0, 5]]);
     const interceptor = ship(ids(s).me, 0);
-    s = apply(s, legalActions(s).find((a) => a.type === 'move' && a.die === interceptor)!);
+    s = apply(
+      s,
+      legalActions(s).find((a) => a.type === 'move' && a.die === interceptor)!,
+    );
     expect(can(s, (a) => a.type === 'move' && a.die === interceptor)).toBe(false);
   });
 
   it('Flexible: ±1 once per turn, and the changed ship still has only one ability use (FAQ)', () => {
-    let s = place(game({ me: ['o-flexible'] }), [[2, 0, 3], [2, 2, 6]]);
+    let s = place(game({ me: ['o-flexible'] }), [
+      [2, 0, 3],
+      [2, 2, 6],
+    ]);
     const destroyer = ship(ids(s).me, 0);
     s = apply(s, { type: 'swap', die: destroyer, other: ship(ids(s).me, 1) });
     s = apply(s, { type: 'flexible', die: destroyer, delta: 1 });
@@ -139,7 +192,10 @@ describe('ship abilities', () => {
   });
 
   it('Resourceful: scrap a ship from the map for an extra action, once per turn', () => {
-    let s = place(game({ me: ['o-resourceful'] }), [[0, 0, 6], [2, 0, 3]]);
+    let s = place(game({ me: ['o-resourceful'] }), [
+      [0, 0, 6],
+      [2, 0, 3],
+    ]);
     s = apply(s, { type: 'resourceful', die: ship(ids(s).me, 0) });
     expect(at(s, ship(ids(s).me, 0)).loc.zone).toBe('scrapyard');
     expect(s.turn.actionsLeft).toBe(4);
@@ -155,22 +211,48 @@ describe('conquering (the centre 8)', () => {
   };
 
   it('Ingenious: diagonal ships count towards the total', () => {
-    const ships: [number, number, number][] = [[3, 3, 5], [3, 4, 3]];
+    const ships: [number, number, number][] = [
+      [3, 3, 5],
+      [3, 4, 3],
+    ];
     expect(conquers(['o-ingenious'], ships)).toBe(true);
     expect(conquers([], ships)).toBe(false);
   });
 
   it('Ingenious: each diagonal ship may be left out of the total', () => {
     // Orbit 5 + 3 = 8 on its own; the diagonal 2 would make 10.
-    const ships: [number, number, number][] = [[3, 4, 5], [4, 3, 3], [3, 3, 2]];
+    const ships: [number, number, number][] = [
+      [3, 4, 5],
+      [4, 3, 3],
+      [3, 3, 2],
+    ];
     expect(conquers([], ships)).toBe(true);
     expect(conquers(['o-ingenious'], ships)).toBe(true);
     // Orbit 5 + diagonals 2 and 1: only 5 + 2 + 1 = 8 works, so both diagonals count.
-    expect(conquers(['o-ingenious'], [[3, 4, 5], [3, 3, 2], [5, 5, 1]])).toBe(true);
+    expect(
+      conquers(
+        ['o-ingenious'],
+        [
+          [3, 4, 5],
+          [3, 3, 2],
+          [5, 5, 1],
+        ],
+      ),
+    ).toBe(true);
   });
 
   it('Intelligent: the total may be 1 higher or lower', () => {
-    const totals = (skills: string[]) => [[3, 4], [4, 5], [5, 5]].map(([a, b]) => conquers(skills, [[3, 4, a], [5, 4, b]]));
+    const totals = (skills: string[]) =>
+      [
+        [3, 4],
+        [4, 5],
+        [5, 5],
+      ].map(([a, b]) =>
+        conquers(skills, [
+          [3, 4, a],
+          [5, 4, b],
+        ]),
+      );
     expect(totals(['o-intelligent'])).toEqual([true, true, false]); // 7, 9, 10
     expect(totals([])).toEqual([false, false, false]);
   });
@@ -179,7 +261,17 @@ describe('conquering (the centre 8)', () => {
 describe('combat', () => {
   it('Strategic: −2 when another of your ships is next to your ship in the battle', () => {
     const totals = (skills: { me?: string[]; foe?: string[] }) => {
-      let s = place(game(skills), [[0, 0, 6], [1, 0, 2]], [[0, 1, 3], [0, 2, 4]]);
+      let s = place(
+        game(skills),
+        [
+          [0, 0, 6],
+          [1, 0, 2],
+        ],
+        [
+          [0, 1, 3],
+          [0, 2, 4],
+        ],
+      );
       const { me, foe } = ids(s);
       s = apply(s, { type: 'attack', die: ship(me, 0), target: ship(foe, 0) });
       const head = s.pending[0];
@@ -195,7 +287,11 @@ describe('combat', () => {
   });
 
   /** Combat totals [attacker, defender] for my 6 at (2,2) attacking the enemy 3 at (2,3), both rolling `rolls`. */
-  const battle = (skills: { me?: string[]; foe?: string[] }, friends: [number, number, number][] = [], rolls: [number, number] = [3, 3]) => {
+  const battle = (
+    skills: { me?: string[]; foe?: string[] },
+    friends: [number, number, number][] = [],
+    rolls: [number, number] = [3, 3],
+  ) => {
     let s = place(game(skills), [[2, 2, 6], ...friends], [[2, 3, 3]]);
     const { me, foe } = ids(s);
     s = apply(s, { type: 'attack', die: ship(me, 0), target: ship(foe, 0) });
@@ -244,7 +340,10 @@ describe('destroying ships', () => {
     s.players[foe].dominance = 5;
     s = fight(s, [6, 1]);
     expect(s.pending[0]).toMatchObject({ kind: 'infamy', player: foe });
-    s = apply(s, legalActions(s).find((a) => a.type === 'infamy')!);
+    s = apply(
+      s,
+      legalActions(s).find((a) => a.type === 'infamy')!,
+    );
     expect(s.pending).toEqual([]);
     s.players[me].research = 6;
     s = apply(s, { type: 'endTurn' });
@@ -274,7 +373,17 @@ describe('destroying ships', () => {
   });
 
   it('Warlike: an extra action the first time you destroy a ship on your turn', () => {
-    let s = place(game({ me: ['o-warlike'] }), [[0, 0, 6], [2, 1, 1]], [[0, 1, 3], [3, 1, 3]]);
+    let s = place(
+      game({ me: ['o-warlike'] }),
+      [
+        [0, 0, 6],
+        [2, 1, 1],
+      ],
+      [
+        [0, 1, 3],
+        [3, 1, 3],
+      ],
+    );
     s = fight(s, [1, 6]);
     expect(s.turn.actionsLeft).toBe(3); // the attack's action back
     s = apply(s, { type: 'advance', move: false });
@@ -327,7 +436,10 @@ describe('Gambit cards', () => {
     s = take(s, { command: 'o-eager', gambit: 'o-momentum' });
     expect(s.turn).toMatchObject({ player: me, actionsLeft: 2, bonus: true, phase: 'actions', moved: {} });
     expect(s.players[me].skills).toContainEqual({ id: 'o-eager', active: true });
-    s = apply(s, legalActions(s).find((a) => a.type === 'deploy')!);
+    s = apply(
+      s,
+      legalActions(s).find((a) => a.type === 'deploy')!,
+    );
     expect(s.turn.actionsLeft).toBe(2);
   });
 

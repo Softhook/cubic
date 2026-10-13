@@ -117,12 +117,24 @@ describe('tactics, gambits and expansion', () => {
       const r = resolveWithAi(takeTactic(s, tactic.id), seededRandom(i * 31 + 5));
       s = r.s;
       switch (tactic.id) {
-        case 'aggression': expect(s.players[p].dominance).toBe(Math.min(6, before.players[p].dominance + 2)); break;
-        case 'black-market': expect(s.players[p].missiles).toBe(before.players[p].missiles + 2); break;
-        case 'momentum': expect(s.players[p].bonusTurns).toEqual([...before.players[p].bonusTurns, 2]); break;
-        case 'plan-ahead': expect(s.players[p].planAhead).toBe(2); break;
-        case 'sabotage': expect(s.players[foe].actionPenalty).toBe(before.players[foe].actionPenalty + 1); break;
-        case 'warp-gate': expect(s.gates).toHaveLength(2); break;
+        case 'aggression':
+          expect(s.players[p].dominance).toBe(Math.min(6, before.players[p].dominance + 2));
+          break;
+        case 'black-market':
+          expect(s.players[p].missiles).toBe(before.players[p].missiles + 2);
+          break;
+        case 'momentum':
+          expect(s.players[p].bonusTurns).toEqual([...before.players[p].bonusTurns, 2]);
+          break;
+        case 'plan-ahead':
+          expect(s.players[p].planAhead).toBe(2);
+          break;
+        case 'sabotage':
+          expect(s.players[foe].actionPenalty).toBe(before.players[foe].actionPenalty + 1);
+          break;
+        case 'warp-gate':
+          expect(s.gates).toHaveLength(2);
+          break;
         case 'change-of-heart':
           expect(r.seen).toContain('changeOfHeart');
           expect(s.players[p].skills).toHaveLength(1);
@@ -131,8 +143,11 @@ describe('tactics, gambits and expansion', () => {
           expect(r.seen).toContain('showOfForce');
           expect(shipsOnBoard(s).length).toBe(ships - 1);
           break;
-        case 'unveil-the-fleet': expect(r.seen).toContain('unveil'); break;
-        default: throw new Error(`no scenario for ${tactic.id}`);
+        case 'unveil-the-fleet':
+          expect(r.seen).toContain('unveil');
+          break;
+        default:
+          throw new Error(`no scenario for ${tactic.id}`);
       }
     }),
   );
@@ -162,13 +177,26 @@ describe('tactics, gambits and expansion', () => {
       const r = resolveWithAi(takeTactic(s, gambit.id), seededRandom(i * 13 + 7));
       s = r.s;
       switch (gambit.id) {
-        case 'o-aggression': expect(s.players[p].dominance).toBe(Math.min(6, before.players[p].dominance + 2)); break;
-        case 'o-momentum': expect(s.players[p].bonusTurns).toEqual([...before.players[p].bonusTurns, 2]); break;
-        case 'o-relocation': expect(s.board.planets[0].cubes).not.toContain(foe); break;
-        case 'o-sabotage': expect(s.players[foe].skills).toHaveLength(0); break;
-        case 'o-reorganization': expect(r.seen).toContain('unveil'); break;
-        case 'o-expansion': expect(shipsOnBoard(s, p)).toHaveLength(ships + 1); break;
-        default: throw new Error(`no scenario for ${gambit.id}`);
+        case 'o-aggression':
+          expect(s.players[p].dominance).toBe(Math.min(6, before.players[p].dominance + 2));
+          break;
+        case 'o-momentum':
+          expect(s.players[p].bonusTurns).toEqual([...before.players[p].bonusTurns, 2]);
+          break;
+        case 'o-relocation':
+          expect(s.board.planets[0].cubes).not.toContain(foe);
+          break;
+        case 'o-sabotage':
+          expect(s.players[foe].skills).toHaveLength(0);
+          break;
+        case 'o-reorganization':
+          expect(r.seen).toContain('unveil');
+          break;
+        case 'o-expansion':
+          expect(shipsOnBoard(s, p)).toHaveLength(ships + 1);
+          break;
+        default:
+          throw new Error(`no scenario for ${gambit.id}`);
       }
     }),
   );
@@ -176,7 +204,10 @@ describe('tactics, gambits and expansion', () => {
 
 describe('activated skills', () => {
   cardCase(['composed', 'o-cerebral'], 'Composed / Cerebral', () => {
-    for (const [mode, id] of [['community', 'composed'], ['original', 'o-cerebral']] as const) {
+    for (const [mode, id] of [
+      ['community', 'composed'],
+      ['original', 'o-cerebral'],
+    ] as const) {
       let s = quickStart(2, 601, mode);
       const p = s.turn.player;
       s.players[p].skills = [{ id, active: true }];
@@ -199,7 +230,10 @@ describe('activated skills', () => {
   });
 
   cardCase(['flexible', 'o-flexible'], 'Flexible', () => {
-    for (const [mode, id] of [['community', 'flexible'], ['original', 'o-flexible']] as const) {
+    for (const [mode, id] of [
+      ['community', 'flexible'],
+      ['original', 'o-flexible'],
+    ] as const) {
       let s = quickStart(2, 604, mode);
       const p = s.turn.player;
       s.players[p].skills = [{ id, active: true }];
@@ -211,7 +245,10 @@ describe('activated skills', () => {
   });
 
   cardCase(['resourceful', 'o-resourceful'], 'Resourceful', () => {
-    for (const [mode, id] of [['community', 'resourceful'], ['original', 'o-resourceful']] as const) {
+    for (const [mode, id] of [
+      ['community', 'resourceful'],
+      ['original', 'o-resourceful'],
+    ] as const) {
       let s = quickStart(2, 606, mode);
       const p = s.turn.player;
       s.players[p].skills = [{ id, active: true }];
@@ -224,7 +261,10 @@ describe('activated skills', () => {
   });
 
   cardCase(['tactical', 'o-tactical'], 'Tactical', () => {
-    for (const [mode, id] of [['community', 'tactical'], ['original', 'o-tactical']] as const) {
+    for (const [mode, id] of [
+      ['community', 'tactical'],
+      ['original', 'o-tactical'],
+    ] as const) {
       let s = arrange(quickStart(2, 608, mode), { p0d0: [2, 2, 3] });
       s.players[0].skills = [{ id, active: true }];
       s.turn.player = 0;
@@ -326,7 +366,10 @@ describe('triggered and choice skills', () => {
   });
 
   cardCase(['brilliant', 'o-brilliant'], 'Brilliant', () => {
-    for (const [mode, id] of [['community', 'brilliant'], ['original', 'o-brilliant']] as const) {
+    for (const [mode, id] of [
+      ['community', 'brilliant'],
+      ['original', 'o-brilliant'],
+    ] as const) {
       let s = quickStart(2, 704, mode);
       const p = s.turn.player;
       s.players[p].skills = [{ id, active: true }];
@@ -363,7 +406,10 @@ describe('triggered and choice skills', () => {
   });
 
   cardCase(['dangerous', 'o-dangerous'], 'Dangerous', () => {
-    for (const [mode, id] of [['community', 'dangerous'], ['original', 'o-dangerous']] as const) {
+    for (const [mode, id] of [
+      ['community', 'dangerous'],
+      ['original', 'o-dangerous'],
+    ] as const) {
       let s = arrange(quickStart(2, 709, mode), { p0d0: [2, 2, 3], p1d0: [2, 3, 3] });
       s.turn.player = 0;
       s.players[1].skills = [{ id, active: true }];
@@ -377,7 +423,10 @@ describe('triggered and choice skills', () => {
 
   cardCase(['o-cruel', 'o-relentless'], 'Cruel / Relentless', () => {
     // Cruel re-rolls the attacker's die when defending; Relentless re-rolls its own when attacking.
-    for (const [id, by] of [['o-cruel', 1], ['o-relentless', 0]] as const) {
+    for (const [id, by] of [
+      ['o-cruel', 1],
+      ['o-relentless', 0],
+    ] as const) {
       let s = arrange(quickStart(2, 711, 'original'), { p0d0: [2, 2, 3], p1d0: [2, 3, 3] });
       s.turn.player = 0;
       s.players[by].skills = [{ id, active: true }];
@@ -391,7 +440,10 @@ describe('triggered and choice skills', () => {
   });
 
   cardCase(['cunning', 'o-cunning'], 'Cunning', () => {
-    for (const [mode, id] of [['community', 'cunning'], ['original', 'o-cunning']] as const) {
+    for (const [mode, id] of [
+      ['community', 'cunning'],
+      ['original', 'o-cunning'],
+    ] as const) {
       let s = arrange(quickStart(2, 714, mode), { p0d0: [2, 2, 6] });
       s.players[0].skills = [{ id, active: true }];
       s.turn.player = 0;
@@ -406,7 +458,10 @@ describe('triggered and choice skills', () => {
 
 describe('passive skills and rule hooks', () => {
   cardCase(['agile', 'o-agile'], 'Agile', () => {
-    for (const [mode, id] of [['community', 'agile'], ['original', 'o-agile']] as const) {
+    for (const [mode, id] of [
+      ['community', 'agile'],
+      ['original', 'o-agile'],
+    ] as const) {
       let s = arrange(quickStart(2, 801, mode), { p0d0: [0, 0, 3] });
       s.turn.player = 0;
       expect(() => apply(s, { type: 'move', die: 'p0d0', to: { r: 4, c: 0 } })).toThrow();
@@ -425,7 +480,10 @@ describe('passive skills and rule hooks', () => {
   });
 
   cardCase(['stealthy', 'o-stealthy'], 'Stealthy', () => {
-    for (const [mode, id] of [['community', 'stealthy'], ['original', 'o-stealthy']] as const) {
+    for (const [mode, id] of [
+      ['community', 'stealthy'],
+      ['original', 'o-stealthy'],
+    ] as const) {
       let s = quickStart(2, 805, mode);
       s.turn.player = 0;
       die(s, 'p0d0').loc = { zone: 'scrapyard' };
@@ -439,7 +497,10 @@ describe('passive skills and rule hooks', () => {
   });
 
   cardCase(['steadfast', 'o-energetic'], 'Steadfast / Energetic', () => {
-    for (const [mode, id] of [['community', 'steadfast'], ['original', 'o-energetic']] as const) {
+    for (const [mode, id] of [
+      ['community', 'steadfast'],
+      ['original', 'o-energetic'],
+    ] as const) {
       let s = arrange(quickStart(2, 807, mode), { p0d0: [0, 0, 1] });
       s.players[0].skills = [{ id, active: true }];
       s.turn.player = 0;
@@ -458,7 +519,10 @@ describe('passive skills and rule hooks', () => {
   });
 
   cardCase(['precocious', 'o-precocious'], 'Precocious', () => {
-    for (const [mode, id] of [['community', 'precocious'], ['original', 'o-precocious']] as const) {
+    for (const [mode, id] of [
+      ['community', 'precocious'],
+      ['original', 'o-precocious'],
+    ] as const) {
       let s = quickStart(2, 810, mode);
       s.turn.player = 0;
       s.players[0].research = 4;
@@ -471,7 +535,10 @@ describe('passive skills and rule hooks', () => {
 
   cardCase(['righteous', 'o-righteous'], 'Righteous', () => {
     // Both keep Dominance when a ship is destroyed; the CE card also blocks every research gain.
-    for (const [mode, id] of [['community', 'righteous'], ['original', 'o-righteous']] as const) {
+    for (const [mode, id] of [
+      ['community', 'righteous'],
+      ['original', 'o-righteous'],
+    ] as const) {
       const before = duel(mode, 812, {}, false).players[1].dominance;
       expect(duel(mode, 812, {}, true).players[1].dominance).toBeLessThan(before);
       expect(duel(mode, 812, { foe: [id] }, true).players[1].dominance).toBe(before);
@@ -501,13 +568,19 @@ describe('passive skills and rule hooks', () => {
   }
 
   cardCase(['ferocious', 'o-ferocious'], 'Ferocious', () => {
-    for (const [mode, id] of [['community', 'ferocious'], ['original', 'o-ferocious']] as const) {
+    for (const [mode, id] of [
+      ['community', 'ferocious'],
+      ['original', 'o-ferocious'],
+    ] as const) {
       expect(total(mode, [id], 0).out.attacker.total).toBe(total(mode, [], 0).out.attacker.total - 1);
     }
   });
 
   cardCase(['rational', 'o-rational'], 'Rational', () => {
-    for (const [mode, id] of [['community', 'rational'], ['original', 'o-rational']] as const) {
+    for (const [mode, id] of [
+      ['community', 'rational'],
+      ['original', 'o-rational'],
+    ] as const) {
       const { s, combat } = total(mode, [id], 0);
       combat.attacker.dice = [6];
       expect(combatOutcome(s, combat).attacker.roll).toBe(3);
@@ -515,14 +588,20 @@ describe('passive skills and rule hooks', () => {
   });
 
   cardCase(['strategic', 'o-strategic'], 'Strategic', () => {
-    for (const [mode, id] of [['community', 'strategic'], ['original', 'o-strategic']] as const) {
+    for (const [mode, id] of [
+      ['community', 'strategic'],
+      ['original', 'o-strategic'],
+    ] as const) {
       const support = { p0d1: [1, 2, 2] as [number, number, number] };
       expect(total(mode, [id], 0, support).out.attacker.total).toBe(total(mode, [], 0, support).out.attacker.total - 2);
     }
   });
 
   cardCase(['stubborn', 'o-stubborn'], 'Stubborn', () => {
-    for (const [mode, id] of [['community', 'stubborn'], ['original', 'o-stubborn']] as const) {
+    for (const [mode, id] of [
+      ['community', 'stubborn'],
+      ['original', 'o-stubborn'],
+    ] as const) {
       const { out } = total(mode, [id], 1, { p1d0: [2, 3, 6] });
       expect(out.attackerWins).toBe(false);
       expect(out.stubborn).toBe(true);
@@ -540,10 +619,34 @@ describe('passive skills and rule hooks', () => {
       return conquerCheck(s, me, centre).ok;
     };
     const cases: [string, [number, number, number][], number?][] = [
-      ['ingenious', [[3, 3, 5], [3, 4, 3]]], // a diagonal ship counts
-      ['o-ingenious', [[3, 3, 5], [3, 4, 3]]],
-      ['intelligent', [[3, 4, 3], [5, 4, 4]]], // 7 for an 8
-      ['o-intelligent', [[3, 4, 3], [5, 4, 4]]],
+      [
+        'ingenious',
+        [
+          [3, 3, 5],
+          [3, 4, 3],
+        ],
+      ], // a diagonal ship counts
+      [
+        'o-ingenious',
+        [
+          [3, 3, 5],
+          [3, 4, 3],
+        ],
+      ],
+      [
+        'intelligent',
+        [
+          [3, 4, 3],
+          [5, 4, 4],
+        ],
+      ], // 7 for an 8
+      [
+        'o-intelligent',
+        [
+          [3, 4, 3],
+          [5, 4, 4],
+        ],
+      ],
       ['pioneering', [[3, 4, 2]], 8], // research in place of a ship
       ['tyrannical', [[3, 4, 6]]], // ship 6 + dominance 2
     ];
@@ -584,7 +687,10 @@ describe('passive skills and rule hooks', () => {
   });
 
   cardCase(['hostile', 'o-warlike'], 'Hostile / Warlike', () => {
-    for (const [mode, id] of [['community', 'hostile'], ['original', 'o-warlike']] as const) {
+    for (const [mode, id] of [
+      ['community', 'hostile'],
+      ['original', 'o-warlike'],
+    ] as const) {
       // The attack's action is given back.
       expect(duel(mode, 835, { me: [id] }, true).turn.actionsLeft).toBe(3);
       expect(duel(mode, 835, {}, true).turn.actionsLeft).toBe(2);
@@ -592,14 +698,20 @@ describe('passive skills and rule hooks', () => {
   });
 
   cardCase(['plundering', 'o-plundering'], 'Plundering', () => {
-    for (const [mode, id] of [['community', 'plundering'], ['original', 'o-plundering']] as const) {
+    for (const [mode, id] of [
+      ['community', 'plundering'],
+      ['original', 'o-plundering'],
+    ] as const) {
       const s = duel(mode, 837, { me: [id] }, true);
       expect(s.players[0].research).toBe(duel(mode, 837, {}, true).players[0].research + 3);
     }
   });
 
   cardCase(['ravenous', 'o-ravenous'], 'Ravenous', () => {
-    for (const [mode, id] of [['community', 'ravenous'], ['original', 'o-ravenous']] as const) {
+    for (const [mode, id] of [
+      ['community', 'ravenous'],
+      ['original', 'o-ravenous'],
+    ] as const) {
       const s = duel(mode, 839, { me: [id] }, true);
       expect(s.players[0].dominance).toBe(duel(mode, 839, {}, true).players[0].dominance + 1);
     }

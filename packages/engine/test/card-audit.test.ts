@@ -10,9 +10,13 @@ import { AUDIT_GAMES, auditGame, gameName } from './audit';
 
 describe('card audit', () => {
   for (const g of AUDIT_GAMES.filter((x) => x.quick))
-    it(gameName(g), () => {
-      const r = auditGame(g);
-      expect(r.anomalies.map((a) => [`step ${a.step} [${a.card ?? '-'}] ${a.message}`, ...a.context].join('\n'))).toEqual([]);
-      expect(r.finished).toBe(true);
-    }, 60_000);
+    it(
+      gameName(g),
+      () => {
+        const r = auditGame(g);
+        expect(r.anomalies.map((a) => [`step ${a.step} [${a.card ?? '-'}] ${a.message}`, ...a.context].join('\n'))).toEqual([]);
+        expect(r.finished).toBe(true);
+      },
+      60_000,
+    );
 });

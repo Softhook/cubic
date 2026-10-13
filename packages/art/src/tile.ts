@@ -1,7 +1,17 @@
 import { rng } from './rng';
 import { planet } from './planet';
 import { starfield, type Box } from './starfield';
-import { CUBE_PAD, FONTS, LABEL_TEXT, NUMBER_TEXT, PLANET_DIAMETER, PLANET_FAMILY, TILE, VOID_NEBULA_HUES, type PlanetType } from './tokens';
+import {
+  CUBE_PAD,
+  FONTS,
+  LABEL_TEXT,
+  NUMBER_TEXT,
+  PLANET_DIAMETER,
+  PLANET_FAMILY,
+  TILE,
+  VOID_NEBULA_HUES,
+  type PlanetType,
+} from './tokens';
 import { planetFlavour, type PlanetFlavour } from './flavour';
 import { dieCut, document, hex, hsl, join, n, type Fragment } from './svg';
 import type { TileSpec } from './tileset';
@@ -50,9 +60,16 @@ export function cubePadCentres(capacity: number, cx: number, cy: number): { x: n
     case 1:
       return [{ x: cx, y: cy }];
     case 2:
-      return [{ x: cx - h, y: cy }, { x: cx + h, y: cy }];
+      return [
+        { x: cx - h, y: cy },
+        { x: cx + h, y: cy },
+      ];
     case 3:
-      return [{ x: cx - h, y: cy - h }, { x: cx + h, y: cy - h }, { x: cx, y: cy + h }];
+      return [
+        { x: cx - h, y: cy - h },
+        { x: cx + h, y: cy - h },
+        { x: cx, y: cy + h },
+      ];
     default:
       return [
         { x: cx - h, y: cy - h },
@@ -139,7 +156,8 @@ function markings(spec: TileSpec, spacesOnly = false): Fragment {
     // is a second copy underneath; the baseline sits 0.4 em below the centre so the digits are centred.
     const text = (paint: string) =>
       `<text x="${n(MID + at.x)}" y="${n(MID + at.y + at.size * 0.4)}" ${paint} font-family="${FONTS.body}" font-weight="800" font-size="${n(at.size)}" letter-spacing="${n(-0.03 * at.size)}" text-anchor="middle">${spec.number}</text>`;
-    body += text(`fill="none" stroke="${hex(hue, 50, 7)}" stroke-width="${n(at.size * 0.13)}" stroke-linejoin="round"`) + text(`fill="#fff"`);
+    body +=
+      text(`fill="none" stroke="${hex(hue, 50, 7)}" stroke-width="${n(at.size * 0.13)}" stroke-linejoin="round"`) + text(`fill="#fff"`);
   }
   return { defs: '', body };
 }
@@ -212,10 +230,25 @@ function moons(r: number, id: string, number: number, type: PlanetType, rand: Re
   const hue = PLANET_FAMILY[number].hue;
   // Moons borrow their planet's colouring: mossy and teal by the oceans, white by the ice, tan by the
   // gas giants, and charred with glowing cracks by the lava worlds.
-  const pal = type === 'lava' ? { h: 8, s: 40, l: 38 } : type === 'ice' || number === 8 ? { h: 200, s: 30, l: 84 } : type === 'gas' ? { h: 36, s: 42, l: 66 } : { h: 140, s: 26, l: 58 };
+  const pal =
+    type === 'lava'
+      ? { h: 8, s: 40, l: 38 }
+      : type === 'ice' || number === 8
+        ? { h: 200, s: 30, l: 84 }
+        : type === 'gas'
+          ? { h: 36, s: 42, l: 66 }
+          : { h: 140, s: 26, l: 58 };
   const count = rand.int(0, 2);
   // One free arc each: up and to the right, or down and to the left (degrees, y down).
-  const arcs: [number, number][] = rand.chance(0.5) ? [[-85, -5], [95, 175]] : [[95, 175], [-85, -5]];
+  const arcs: [number, number][] = rand.chance(0.5)
+    ? [
+        [-85, -5],
+        [95, 175],
+      ]
+    : [
+        [95, 175],
+        [-85, -5],
+      ];
   let defs = '';
   let body = '';
   for (let i = 0; i < count; i++) {
@@ -229,7 +262,8 @@ function moons(r: number, id: string, number: number, type: PlanetType, rand: Re
     defs += `<radialGradient id="${id}-moon${i}" cx=".32" cy=".28" r=".85"><stop offset="0" stop-color="${hsl(h, pal.s, l)}"/><stop offset=".55" stop-color="${hsl(h, pal.s, l * 0.5)}"/><stop offset="1" stop-color="${hsl(hue, 40, 5)}"/></radialGradient>`;
     body += `<circle cx="${n(x)}" cy="${n(y)}" r="${n(mr * 1.8)}" fill="${hsl(hue, 70, 60)}" fill-opacity=".12"/>`;
     body += `<circle cx="${n(x)}" cy="${n(y)}" r="${n(mr)}" fill="url(#${id}-moon${i})"/>`;
-    if (type === 'lava') body += `<circle cx="${n(x + mr * 0.25)}" cy="${n(y + mr * 0.2)}" r="${n(mr * 0.3)}" fill="${hsl(28, 95, 55)}" fill-opacity=".55"/>`;
+    if (type === 'lava')
+      body += `<circle cx="${n(x + mr * 0.25)}" cy="${n(y + mr * 0.2)}" r="${n(mr * 0.3)}" fill="${hsl(28, 95, 55)}" fill-opacity=".55"/>`;
   }
   return { defs, body };
 }
@@ -269,7 +303,13 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
         type: spec.type ?? PLANET_FAMILY[spec.number].types[0],
         rings: spec.rings,
       }),
-      moons(PLANET_DIAMETER[spec.number] / 2, `${id}-planet`, spec.number, spec.type ?? PLANET_FAMILY[spec.number].types[0], art.fork('moons')),
+      moons(
+        PLANET_DIAMETER[spec.number] / 2,
+        `${id}-planet`,
+        spec.number,
+        spec.type ?? PLANET_FAMILY[spec.number].types[0],
+        art.fork('moons'),
+      ),
     );
   }
   if (!isVoid && o.only !== 'art') parts.push(label(spec));

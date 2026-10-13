@@ -87,9 +87,7 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     { type: 'peekChoice', takeTop: false },
   ],
   discardSkill: (s, head) =>
-    s.players[head.player].skills
-      .filter((sk) => sk.id !== head.cannotDiscard)
-      .map((sk) => ({ type: 'discardSkill', skill: sk.id })),
+    s.players[head.player].skills.filter((sk) => sk.id !== head.cannotDiscard).map((sk) => ({ type: 'discardSkill', skill: sk.id })),
   placeExpansion: (s, head) => [
     { type: 'placeExpansion', to: null },
     ...deployTargets(s, head.player).map((to) => ({ type: 'placeExpansion', to }) as const),
@@ -100,8 +98,14 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
       .filter((cell) => !head.placed.some((p) => same(p, cell)))
       .map((cell) => ({ type: 'warpGate', cell })),
   changeOfHeart: (s) => [...new Set(s.market.skillDeck)].map((skill) => ({ type: 'changeOfHeart', skill })),
-  patientTactic: (s) => [{ type: 'patientTactic' } as const, ...s.market.tacticRow.map((_, index) => ({ type: 'patientTactic', index }) as const)],
-  prideful: () => [{ type: 'prideful', take: true }, { type: 'prideful', take: false }],
+  patientTactic: (s) => [
+    { type: 'patientTactic' } as const,
+    ...s.market.tacticRow.map((_, index) => ({ type: 'patientTactic', index }) as const),
+  ],
+  prideful: () => [
+    { type: 'prideful', take: true },
+    { type: 'prideful', take: false },
+  ],
   ruthless: (s, head) => [
     { type: 'ruthless' } as const,
     ...s.players[head.victim].skills.filter((sk) => sk.active).map((sk) => ({ type: 'ruthless', skill: sk.id }) as const),
@@ -124,7 +128,9 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
 /** Every Flagship transport by `d`: passenger, destination and drop. `range` 1 is Tactical's step. */
 function carries(s: GameState, d: Die, range?: number) {
   return carryPassengers(s, d.id).flatMap((p) =>
-    [...carryOptions(s, d.id, p.id, range).values()].flatMap((dest) => dest.drops.map((drop) => ({ passenger: p.id, to: dest.cell, drop }))),
+    [...carryOptions(s, d.id, p.id, range).values()].flatMap((dest) =>
+      dest.drops.map((drop) => ({ passenger: p.id, to: dest.cell, drop })),
+    ),
   );
 }
 
@@ -157,7 +163,8 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
     if ((canPayMove || freeMove.some((free) => free(s, d))) && canMoveDie(s, d)) {
       const moves = moveOptions(s, d.id);
       for (const m of moves.moves.values()) out.push({ type: 'move', die: d.id, to: m.cell });
-      if (canAttack(1) && !noAttack.some((no) => no(s, d))) for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
+      if (canAttack(1) && !noAttack.some((no) => no(s, d)))
+        for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
     }
     const action = hooksOf(s, d)?.action;
     if (action) for (const c of action.options(s, d)) out.push({ type: 'power', die: d.id, ...c });
@@ -171,8 +178,10 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
       }
     }
     if (canUseAbility(s, d)) {
-      if (hasPower(s, d, 'strike') && canAttack(0)) for (const x of freeAttackTargets(s, d.id)) out.push({ type: 'freeAttack', die: d.id, target: x.id });
-      if (hasPower(s, d, 'warp')) for (const o of shipsOnBoard(s, me)) if (o.id !== d.id) out.push({ type: 'swap', die: d.id, other: o.id });
+      if (hasPower(s, d, 'strike') && canAttack(0))
+        for (const x of freeAttackTargets(s, d.id)) out.push({ type: 'freeAttack', die: d.id, target: x.id });
+      if (hasPower(s, d, 'warp'))
+        for (const o of shipsOnBoard(s, me)) if (o.id !== d.id) out.push({ type: 'swap', die: d.id, other: o.id });
       if (hasPower(s, d, 'modify')) out.push({ type: 'change', die: d.id, value: 3 }, { type: 'change', die: d.id, value: 5 });
       if (hasPower(s, d, 'freeReconfigure')) out.push({ type: 'freeReconfigure', die: d.id });
       if (hasPower(s, d, 'transport') && opts.includeCarry && canPayMove && canMoveDie(s, d)) {
@@ -194,16 +203,19 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
     if (actions > 0 || t.freeDeploys > 0 || freeDeploy) for (const to of targets) out.push({ type: 'deploy', die: d.id, to });
     if (actions > 0 && canReconfigure(s, d)) out.push({ type: 'reconfigure', die: d.id });
   }
-  if (rulesOf(s).cards && (actions > 0 || curious) && pl.research < rulesOf(s).researchLimit && canGainResearch(s, me)) out.push({ type: 'research' });
+  if (rulesOf(s).cards && (actions > 0 || curious) && pl.research < rulesOf(s).researchLimit && canGainResearch(s, me))
+    out.push({ type: 'research' });
   if (hasSkill(s, me, 'tyrannical-original') && !usedThisTurn(s, 'tyrannical') && pl.research > 1) out.push({ type: 'tyrannical' });
-  if (actions >= 2) for (const p of s.board.planets) {
-    const c = conquerCheck(s, me, p.id);
-    if (c.ok && !c.replace) out.push({ type: 'conquer', planet: p.id });
-    // Over-conquest: on a full planet it is the only way, on one with room it is a choice.
-    const o = c.replace ? c : rulesOf(s).overConquest ? conquerCheck(s, me, p.id, true) : c;
-    if (o.ok && o.replace) for (const replace of o.replace) out.push({ type: 'conquer', planet: p.id, replace });
-  }
-  if (hasSkill(s, me, 'composed') && !usedThisTurn(s, 'composed') && pl.dominance > 1 && canGainResearch(s, me)) out.push({ type: 'composed' });
+  if (actions >= 2)
+    for (const p of s.board.planets) {
+      const c = conquerCheck(s, me, p.id);
+      if (c.ok && !c.replace) out.push({ type: 'conquer', planet: p.id });
+      // Over-conquest: on a full planet it is the only way, on one with room it is a choice.
+      const o = c.replace ? c : rulesOf(s).overConquest ? conquerCheck(s, me, p.id, true) : c;
+      if (o.ok && o.replace) for (const replace of o.replace) out.push({ type: 'conquer', planet: p.id, replace });
+    }
+  if (hasSkill(s, me, 'composed') && !usedThisTurn(s, 'composed') && pl.dominance > 1 && canGainResearch(s, me))
+    out.push({ type: 'composed' });
   if (hasSkill(s, me, 'ambitious') && !usedThisTurn(s, 'ambitious')) out.push({ type: 'ambitious' });
   return out;
 }
@@ -211,7 +223,11 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
 export function legalActions(s: GameState, opts: { includeCarry?: boolean } = {}): Action[] {
   if (s.phase === 'over') return [];
   const head = s.pending[0];
-  if (head) return withScrappy(s, answers(s, head).filter((a) => tryApply(s, a) !== null));
+  if (head)
+    return withScrappy(
+      s,
+      answers(s, head).filter((a) => tryApply(s, a) !== null),
+    );
   if (s.phase === 'play' && s.turn.phase === 'actions') return withScrappy(s, actionPhaseOptions(s, opts));
   return [];
 }

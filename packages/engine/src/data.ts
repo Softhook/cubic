@@ -20,7 +20,6 @@ export interface CardDef {
 
 export type GameMode = 'basic' | 'original' | 'community' | 'prototyping';
 
-
 export interface MapDef {
   id: string;
   name: string;
@@ -46,9 +45,7 @@ export function defaultMap(players: number): MapDef | undefined {
   return MAPS.find((m) => m.players === players && m.group === 'basic') ?? MAPS.find((m) => m.players === players);
 }
 
-const byId = new Map<string, CardDef>(
-  [...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT].map((c) => [c.id, c]),
-);
+const byId = new Map<string, CardDef>([...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT].map((c) => [c.id, c]));
 const skillIds = new Set([...SKILLS, ...ORIGINAL_COMMAND].map((c) => c.id));
 const originalIds = new Set([...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT].map((c) => c.id));
 
@@ -77,7 +74,6 @@ export function isOriginalCard(id: string): boolean {
   return originalIds.has(id);
 }
 
-
 /**
  * The official ships' powers, built into the engine: ship identity is "has power X", not a die value,
  * so a mode can give a value a different power (RuleSet.ships).
@@ -98,11 +94,23 @@ export interface ShipDef {
 export type ShipTable = Record<number, ShipDef>;
 
 export const CLASSIC_SHIPS: ShipTable = {
-  1: { name: 'Battlestation', power: 'strike', ability: { name: 'Free Attack', text: 'Attack an adjacent enemy without using this ship’s move.' } },
-  2: { name: 'Flagship', power: 'transport', ability: { name: 'Carry & Move', text: 'Carry one of your nearby ships as part of a move, then drop it next to you.' } },
+  1: {
+    name: 'Battlestation',
+    power: 'strike',
+    ability: { name: 'Free Attack', text: 'Attack an adjacent enemy without using this ship’s move.' },
+  },
+  2: {
+    name: 'Flagship',
+    power: 'transport',
+    ability: { name: 'Carry & Move', text: 'Carry one of your nearby ships as part of a move, then drop it next to you.' },
+  },
   3: { name: 'Destroyer', power: 'warp', ability: { name: 'Swap', text: 'Swap places with any of your other ships.' } },
   4: { name: 'Frigate', power: 'modify', ability: { name: 'Change to 3 or 5', text: 'Turn into a Destroyer or an Interceptor.' } },
-  5: { name: 'Interceptor', power: 'manoeuvre', ability: { name: 'Move Diagonally', text: 'May move and attack diagonally (used automatically when needed).' } },
+  5: {
+    name: 'Interceptor',
+    power: 'manoeuvre',
+    ability: { name: 'Move Diagonally', text: 'May move and attack diagonally (used automatically when needed).' },
+  },
   6: { name: 'Scout', power: 'freeReconfigure', ability: { name: 'Free Reconfigure', text: 'Re-roll this ship for free.' } },
 };
 

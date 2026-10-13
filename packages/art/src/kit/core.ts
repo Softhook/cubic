@@ -5,7 +5,7 @@ import { n, type Fragment } from '../svg';
 /** The base every card illustration is drawn on: the scene it gets, and small helpers. Sizes in mm. */
 
 /** A scene's frame and colours. Every card illustration is a function of one of these. */
-export interface Scene {
+interface Scene {
   id: string;
   r: Rng;
   /** The card's category hue: holo lines, highlights. */

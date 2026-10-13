@@ -26,8 +26,10 @@ export function iso(ox: number, oy: number, c: number): Iso {
 /** Board lines over spaces i0..i1 × j0..j1, fading out towards the edge of the patch. */
 export function grid(id: string, g: Iso, i0: number, i1: number, j0: number, j1: number, hue: number, a = 0.55): Fragment {
   let d = '';
-  for (let i = i0 - 0.5; i <= i1 + 0.5; i++) d += `M${n(g.x(i, j0 - 0.5))} ${n(g.y(i, j0 - 0.5))}L${n(g.x(i, j1 + 0.5))} ${n(g.y(i, j1 + 0.5))}`;
-  for (let j = j0 - 0.5; j <= j1 + 0.5; j++) d += `M${n(g.x(i0 - 0.5, j))} ${n(g.y(i0 - 0.5, j))}L${n(g.x(i1 + 0.5, j))} ${n(g.y(i1 + 0.5, j))}`;
+  for (let i = i0 - 0.5; i <= i1 + 0.5; i++)
+    d += `M${n(g.x(i, j0 - 0.5))} ${n(g.y(i, j0 - 0.5))}L${n(g.x(i, j1 + 0.5))} ${n(g.y(i, j1 + 0.5))}`;
+  for (let j = j0 - 0.5; j <= j1 + 0.5; j++)
+    d += `M${n(g.x(i0 - 0.5, j))} ${n(g.y(i0 - 0.5, j))}L${n(g.x(i1 + 0.5, j))} ${n(g.y(i1 + 0.5, j))}`;
   const ci = (i0 + i1) / 2;
   const cj = (j0 + j1) / 2;
   const cx = g.x(ci, cj);
@@ -42,28 +44,50 @@ export function grid(id: string, g: Iso, i0: number, i1: number, j0: number, j1:
 }
 
 /** One board space, lit: a move, a deployment zone, a forbidden space. */
-export function space(g: Iso, i: number, j: number, hue: number, o: { a?: number; inset?: number; stroke?: boolean; dash?: boolean; light?: number } = {}): string {
+export function space(
+  g: Iso,
+  i: number,
+  j: number,
+  hue: number,
+  o: { a?: number; inset?: number; stroke?: boolean; dash?: boolean; light?: number } = {},
+): string {
   const k = 0.5 - (o.inset ?? 0.06);
-  const pts = [[i - k, j - k], [i + k, j - k], [i + k, j + k], [i - k, j + k]].map(([a, b]) => `${n(g.x(a, b))},${n(g.y(a, b))}`).join(' ');
+  const pts = [
+    [i - k, j - k],
+    [i + k, j - k],
+    [i + k, j + k],
+    [i - k, j + k],
+  ]
+    .map(([a, b]) => `${n(g.x(a, b))},${n(g.y(a, b))}`)
+    .join(' ');
   const l = o.light ?? 62;
   return `<polygon points="${pts}" fill="${hsl(hue, 90, l, o.a ?? 0.28)}"${o.stroke === false ? '' : ` stroke="${hsl(hue, 90, l + 14)}" stroke-width=".22"${o.dash ? ' stroke-dasharray=".8 .6"' : ''}`}/>`;
 }
 
 /** A ship standing on space (i, j). */
-export const shipOn = (id: string, g: Iso, i: number, j: number, s: number, value: number, hue: number, o: DieOptions = {}) => ship(id, g.x(i, j), g.y(i, j) - s * 0.5, s, value, hue, o);
+export const shipOn = (id: string, g: Iso, i: number, j: number, s: number, value: number, hue: number, o: DieOptions = {}) =>
+  ship(id, g.x(i, j), g.y(i, j) - s * 0.5, s, value, hue, o);
 
 /** A planet sitting on space (i, j), with its shadow ring on the board. */
 export function worldOn(id: string, r2: Rng, g: Iso, i: number, j: number, rad: number, hue: number, number?: number): Fragment[] {
   const x = g.x(i, j);
   const y = g.y(i, j);
   return [
-    f(`<ellipse cx="${n(x)}" cy="${n(y)}" rx="${n(rad * 1.25)}" ry="${n(rad * 0.62)}" fill="${hsl(hue, 80, 50, 0.12)}" stroke="${hsl(hue, 80, 72)}" stroke-width=".2" opacity=".8"/>`),
+    f(
+      `<ellipse cx="${n(x)}" cy="${n(y)}" rx="${n(rad * 1.25)}" ry="${n(rad * 0.62)}" fill="${hsl(hue, 80, 50, 0.12)}" stroke="${hsl(hue, 80, 72)}" stroke-width=".2" opacity=".8"/>`,
+    ),
     world(id, r2, x, y - rad * 0.75, rad, number),
   ];
 }
 
 /** A path over board spaces, from centre to centre, ending in an arrowhead. */
-export function route(id: string, g: Iso, cells: [number, number][], colour: string, o: { w?: number; dash?: boolean; head?: boolean; lift?: number } = {}): Fragment {
+export function route(
+  id: string,
+  g: Iso,
+  cells: [number, number][],
+  colour: string,
+  o: { w?: number; dash?: boolean; head?: boolean; lift?: number } = {},
+): Fragment {
   const lift = o.lift ?? 0;
   const d = cells.map(([i, j], k) => `${k ? 'L' : 'M'}${n(g.x(i, j))} ${n(g.y(i, j) - lift)}`).join('');
   return arrowPath(id, d, colour, { w: o.w ?? 0.5, dash: o.dash, head: o.head });
@@ -74,9 +98,23 @@ export function scrapyard(cx: number, cy: number, w: number, d: number, hue: num
   const g = iso(cx, cy, 1);
   const corner = (a: number, b: number) => `${n(g.x(a, b))},${n(g.y(a, b))}`;
   const outer = [corner(-w / 2, -d / 2), corner(w / 2, -d / 2), corner(w / 2, d / 2), corner(-w / 2, d / 2)].join(' ');
-  const inner = [corner(-w / 2 + 0.8, -d / 2 + 0.8), corner(w / 2 - 0.8, -d / 2 + 0.8), corner(w / 2 - 0.8, d / 2 - 0.8), corner(-w / 2 + 0.8, d / 2 - 0.8)].join(' ');
+  const inner = [
+    corner(-w / 2 + 0.8, -d / 2 + 0.8),
+    corner(w / 2 - 0.8, -d / 2 + 0.8),
+    corner(w / 2 - 0.8, d / 2 - 0.8),
+    corner(-w / 2 + 0.8, d / 2 - 0.8),
+  ].join(' ');
   let stripes = '';
-  for (let t = -w / 2 + 1.5; t < w / 2 - 0.5; t += 1.6) stripes += line(g.x(t, d / 2 - 0.4), g.y(t, d / 2 - 0.4), g.x(t + 0.8, d / 2 - 0.4), g.y(t + 0.8, d / 2 - 0.4), hsl(42, 95, 60), 0.35, ' opacity=".7"');
+  for (let t = -w / 2 + 1.5; t < w / 2 - 0.5; t += 1.6)
+    stripes += line(
+      g.x(t, d / 2 - 0.4),
+      g.y(t, d / 2 - 0.4),
+      g.x(t + 0.8, d / 2 - 0.4),
+      g.y(t + 0.8, d / 2 - 0.4),
+      hsl(42, 95, 60),
+      0.35,
+      ' opacity=".7"',
+    );
   return (
     `<polygon points="${outer}" fill="${hsl(hue, 40, 12, 0.85)}" stroke="${hsl(hue, 70, 65)}" stroke-width=".3"/>` +
     `<polygon points="${inner}" fill="none" stroke="${hsl(hue, 70, 65)}" stroke-width=".18" stroke-dasharray=".6 .5" opacity=".6"/>` +

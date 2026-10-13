@@ -73,7 +73,8 @@ try {
 
   // Over-conquest with two opponents' cubes: the player chooses whose to displace.
   const { s, planet, me, victim } = overConquest();
-  if (legalActions(s).filter((x) => x.type === 'conquer' && x.planet === planet.id).length !== 2) fail('the position does not offer two over-conquests');
+  if (legalActions(s).filter((x) => x.type === 'conquer' && x.planet === planet.id).length !== 2)
+    fail('the position does not offer two over-conquests');
   await load(page, s);
   await page.click(`.planet-hit[data-r="${planet.r}"][data-c="${planet.c}"]`);
   const dialog = page.getByRole('dialog', { name: `Conquer planet ${planet.number}` });
@@ -81,7 +82,10 @@ try {
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${OUT}/conquer-choice.png` });
   const name = s.players[victim].name;
-  await dialog.getByRole('button', { name: `Displace ${name}’s cube` }).click({ timeout: 5000 }).catch(() => fail(`no "Displace ${name}’s cube" button`));
+  await dialog
+    .getByRole('button', { name: `Displace ${name}’s cube` })
+    .click({ timeout: 5000 })
+    .catch(() => fail(`no "Displace ${name}’s cube" button`));
   await dialog.waitFor({ state: 'detached', timeout: 5000 }).catch(() => fail('the dialog stays open after choosing'));
   const after = await cubesOn(page, planet.id);
   const count = (cubes: number[], p: number) => cubes.filter((c) => c === p).length;
@@ -95,7 +99,13 @@ try {
   await load(page, battle(1, 2));
   await overlay.waitFor({ timeout: 5000 }).catch(() => fail('no battle on screen (AI against AI)'));
   if (await okButton.isVisible()) fail('a battle between two AIs asks the watching human for OK');
-  if (await overlay.waitFor({ state: 'detached', timeout: 8000 }).then(() => true, () => false)) console.log('✓ a battle between two AIs resolves by itself');
+  if (
+    await overlay.waitFor({ state: 'detached', timeout: 8000 }).then(
+      () => true,
+      () => false,
+    )
+  )
+    console.log('✓ a battle between two AIs resolves by itself');
   else fail('a battle between two AIs stays on screen');
   await load(page, battle(1, 0));
   await okButton.waitFor({ timeout: 5000 }).catch(() => fail('a battle the human defends in has no OK'));
@@ -112,14 +122,22 @@ try {
   // A position the screen can't draw: the crash screen, not a blank page, and a way back to the lobby.
   await load(page, { ...s, dice: null }).catch(() => {});
   const crash = page.locator('.crash');
-  if (await crash.waitFor({ timeout: 5000 }).then(() => true, () => false)) {
+  if (
+    await crash.waitFor({ timeout: 5000 }).then(
+      () => true,
+      () => false,
+    )
+  ) {
     await page.screenshot({ path: `${OUT}/crash.png` });
     console.log('✓ crash screen shown');
     await page.getByRole('button', { name: 'Back to the lobby' }).click();
-    await page.locator('.lobby').waitFor({ timeout: 10000 }).then(
-      () => console.log('✓ "Back to the lobby" reaches the lobby'),
-      () => fail('"Back to the lobby" does not reach the lobby'),
-    );
+    await page
+      .locator('.lobby')
+      .waitFor({ timeout: 10000 })
+      .then(
+        () => console.log('✓ "Back to the lobby" reaches the lobby'),
+        () => fail('"Back to the lobby" does not reach the lobby'),
+      );
   } else fail('a state that cannot be drawn leaves no crash screen');
 } finally {
   await browser.close();

@@ -19,7 +19,10 @@ function lanAddress(): string {
  */
 function buildId(): string {
   if (process.env.BUILD_ID) return process.env.BUILD_ID;
-  const git = (args: string) => execSync(`git ${args}`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  const git = (args: string) =>
+    execSync(`git ${args}`, { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
   try {
     return git('rev-parse --short HEAD') + (git('status --porcelain') ? '+' : '');
   } catch {

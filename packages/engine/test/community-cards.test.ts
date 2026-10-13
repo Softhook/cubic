@@ -230,11 +230,7 @@ describe('Patient', () => {
 
     s = apply(s, { type: 'takeCard', deck: 'skill', index: 0 });
     expect(s.pending[0]).toEqual({ kind: 'patientTactic', player: me });
-    expect(legalActions(s)).toEqual([
-      { type: 'patientTactic' },
-      { type: 'patientTactic', index: 0 },
-      { type: 'patientTactic', index: 1 },
-    ]);
+    expect(legalActions(s)).toEqual([{ type: 'patientTactic' }, { type: 'patientTactic', index: 0 }, { type: 'patientTactic', index: 1 }]);
 
     s = apply(s, { type: 'patientTactic', index: 1 });
     expect(s.players[me].storedTactics).toEqual(['sabotage']);
@@ -404,7 +400,7 @@ describe('Patient edge cases', () => {
   });
 
   it('refuses to store a card without Patient, or a Skill', () => {
-    let s = communityGame({ me: ['patient'] });
+    const s = communityGame({ me: ['patient'] });
     const me = s.turn.player;
     s.pending = [{ kind: 'takeCard', player: me, count: 1 }];
     expect(() => apply(s, { type: 'takeCard', deck: 'skill', index: 0, store: true })).toThrow('Only a Tactic can be stored');
@@ -452,8 +448,6 @@ describe('Calculating edge cases', () => {
     expect(s.pending[0]).toMatchObject({ kind: 'unveil', player: me });
   });
 });
-
-
 
 describe('attackChance', () => {
   // My 6 attacks the foe's 3 from the next space; with plain dice the attacker wins on 6 + x <= 3 + y.

@@ -24,7 +24,11 @@ function play(mode: GameMode, players: number, seed: number) {
 
 describe('golden master', () => {
   for (const mode of ['basic', 'original', 'community', 'prototyping'] as const)
-    for (const [players, seed] of [[2, 11], [3, 12], [4, 13]])
+    for (const [players, seed] of [
+      [2, 11],
+      [3, 12],
+      [4, 13],
+    ])
       it(`${mode}, ${players} players, seed ${seed}`, () => {
         expect(play(mode, players, seed)).toMatchSnapshot();
       }, 60_000);

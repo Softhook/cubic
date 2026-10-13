@@ -58,7 +58,9 @@ export function hintFor(game: GameState, sel: Sel): string {
     case 'carryPassenger':
       return 'Choose a ship next to your flagship to carry.';
     case 'carryDest':
-      return sel.tactical ? 'Tactical: choose the space the flagship moves to.' : 'Choose where the flagship flies (its own space means out and back).';
+      return sel.tactical
+        ? 'Tactical: choose the space the flagship moves to.'
+        : 'Choose where the flagship flies (its own space means out and back).';
     case 'carryDrop':
       return 'Choose where to drop the passenger.';
   }

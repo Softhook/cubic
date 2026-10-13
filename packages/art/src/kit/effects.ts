@@ -11,7 +11,7 @@ export const glow = (id: string, cx: number, cy: number, rx: number, ry: number,
 });
 
 /** A line fading from `colour` at its end to nothing at its start: trails and beams. */
-export function streak(id: string, x1: number, y1: number, x2: number, y2: number, colour: string, w: number, a = 1): Fragment {
+function streak(id: string, x1: number, y1: number, x2: number, y2: number, colour: string, w: number, a = 1): Fragment {
   return {
     defs: `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n(x1)}" y1="${n(y1)}" x2="${n(x2)}" y2="${n(y2)}"><stop offset="0" stop-color="${colour}" stop-opacity="0"/><stop offset="1" stop-color="${colour}" stop-opacity="${n(a)}"/></linearGradient>`,
     body: line(x1, y1, x2, y2, `url(#${id})`, w),
@@ -59,11 +59,18 @@ export function wreck(id: string, cx: number, cy: number, r: number, shipHue: nu
 }
 
 /** A stroked path with an optional arrowhead marker. */
-export function arrowPath(id: string, d: string, colour: string, o: { w?: number; dash?: boolean | string; head?: boolean; opacity?: number } = {}): Fragment {
+export function arrowPath(
+  id: string,
+  d: string,
+  colour: string,
+  o: { w?: number; dash?: boolean | string; head?: boolean; opacity?: number } = {},
+): Fragment {
   const head = o.head !== false;
   const dash = o.dash === true ? '1.2 .9' : o.dash || '';
   return {
-    defs: head ? `<marker id="${id}-head" viewBox="0 0 6 6" refX="2.4" refY="3" markerWidth="3.6" markerHeight="3.6" orient="auto"><path d="M0 0L6 3L0 6z" fill="${colour}"/></marker>` : '',
+    defs: head
+      ? `<marker id="${id}-head" viewBox="0 0 6 6" refX="2.4" refY="3" markerWidth="3.6" markerHeight="3.6" orient="auto"><path d="M0 0L6 3L0 6z" fill="${colour}"/></marker>`
+      : '',
     body: `<path d="${d}" fill="none" stroke="${colour}" stroke-width="${n(o.w ?? 0.45)}" stroke-linecap="round" stroke-linejoin="round"${dash ? ` stroke-dasharray="${dash}"` : ''}${head ? ` marker-end="url(#${id}-head)"` : ''}${o.opacity !== undefined ? ` opacity="${n(o.opacity)}"` : ''}/>`,
   };
 }
@@ -75,14 +82,6 @@ export function loop(id: string, cx: number, cy: number, r: number, colour: stri
   const d = `M${n(cx + Math.cos(a0) * r)} ${n(cy + Math.sin(a0) * r)}A${n(r)} ${n(r)} 0 ${sweep > 180 ? 1 : 0} 1 ${n(cx + Math.cos(a1) * r)} ${n(cy + Math.sin(a1) * r)}`;
   return arrowPath(id, d, colour, { w });
 }
-
-/** A targeting reticle. */
-export const reticle = (cx: number, cy: number, r: number, colour: string) =>
-  `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="none" stroke="${colour}" stroke-width=".3" stroke-dasharray="${n(r * 0.6)} ${n(r * 0.2)}"/>` +
-  [0, 90, 180, 270].map((a) => {
-    const t = (a * Math.PI) / 180;
-    return line(cx + Math.cos(t) * r * 0.75, cy + Math.sin(t) * r * 0.75, cx + Math.cos(t) * r * 1.3, cy + Math.sin(t) * r * 1.3, colour, 0.3);
-  }).join('');
 
 /** An energy shield: a dome of light around (cx, cy). */
 export function shield(id: string, cx: number, cy: number, rx: number, ry: number, hue: number): Fragment {
@@ -104,7 +103,8 @@ export const missile = (x: number, y: number, angle: number, scale = 1, hue = MI
 
 /** A slash through something: disabled, forbidden. */
 export const slash = (cx: number, cy: number, r: number, colour = hsl(0, 95, 62)) =>
-  `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="none" stroke="${colour}" stroke-width=".45"/>` + line(cx - r * 0.7, cy + r * 0.7, cx + r * 0.7, cy - r * 0.7, colour, 0.45);
+  `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="none" stroke="${colour}" stroke-width=".45"/>` +
+  line(cx - r * 0.7, cy + r * 0.7, cx + r * 0.7, cy - r * 0.7, colour, 0.45);
 
 /** An icon struck through: what a card forbids ("no combat", "no conquering"). */
 export const forbidden = (name: string, cx: number, cy: number, opacity = 0.9) =>
@@ -122,7 +122,18 @@ export function sparkles(r2: Rng, cx: number, cy: number, d0: number, d1: number
 }
 
 /** Fast-motion lines behind a ship moving along (dx, dy). */
-export function trails(id: string, r2: Rng, x: number, y: number, dx: number, dy: number, len: number, spread: number, colour: string, count = 6): Fragment[] {
+export function trails(
+  id: string,
+  r2: Rng,
+  x: number,
+  y: number,
+  dx: number,
+  dy: number,
+  len: number,
+  spread: number,
+  colour: string,
+  count = 6,
+): Fragment[] {
   const m = Math.hypot(dx, dy);
   const ux = dx / m;
   const uy = dy / m;
@@ -132,7 +143,18 @@ export function trails(id: string, r2: Rng, x: number, y: number, dx: number, dy
     const sx = x - uy * o;
     const sy = y + ux * o;
     const l = len * r2.range(0.6, 1);
-    out.push(streak(`${id}-${i}`, sx - ux * l, sy - uy * l, sx - ux * r2.range(2, 4), sy - uy * r2.range(2, 4), colour, r2.range(0.25, 0.8), r2.range(0.5, 1)));
+    out.push(
+      streak(
+        `${id}-${i}`,
+        sx - ux * l,
+        sy - uy * l,
+        sx - ux * r2.range(2, 4),
+        sy - uy * r2.range(2, 4),
+        colour,
+        r2.range(0.25, 0.8),
+        r2.range(0.5, 1),
+      ),
+    );
   }
   return out;
 }

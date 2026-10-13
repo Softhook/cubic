@@ -232,7 +232,10 @@ export class RelayLink {
   /** Queues every event the relay didn't return. */
   private resend(url: string) {
     const seen = this.seen.get(url)!;
-    this.enqueue(url, this.store.all().filter((e) => !seen.has(e.id)));
+    this.enqueue(
+      url,
+      this.store.all().filter((e) => !seen.has(e.id)),
+    );
   }
 
   private enqueue(url: string, events: NostrEvent[]) {
@@ -280,7 +283,8 @@ export class RelayLink {
         } else if (TRANSIENT.test(why) && tries < SEND_RETRY_MS.length) {
           this.defer(url, e, q, attempts, tries, SEND_RETRY_MS[tries]);
         } else if (TRANSIENT.test(why)) {
-          if (tries === SEND_RETRY_MS.length) console.warn(`[quantum] ${url} still has not confirmed event ${e.id}; retrying once a minute`);
+          if (tries === SEND_RETRY_MS.length)
+            console.warn(`[quantum] ${url} still has not confirmed event ${e.id}; retrying once a minute`);
           this.defer(url, e, q, attempts, tries, SEND_SLOW_RETRY_MS);
         } else {
           // The relay won't take this event (or keeps failing): skip it; the next sync tries again.
@@ -290,14 +294,7 @@ export class RelayLink {
     );
   }
 
-  private defer(
-    url: string,
-    event: NostrEvent,
-    queue: NostrEvent[],
-    attempts: Map<string, number>,
-    tries: number,
-    delay: number,
-  ) {
+  private defer(url: string, event: NostrEvent, queue: NostrEvent[], attempts: Map<string, number>, tries: number, delay: number) {
     queue.shift();
     attempts.set(event.id, tries + 1);
     this.tries.set(url, attempts);

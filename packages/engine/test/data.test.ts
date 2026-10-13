@@ -19,7 +19,11 @@ describe('card data', () => {
   });
 
   it('gives every skill at least one hook (an empty rule would do nothing)', () => {
-    expect(Object.entries(SKILL_RULES).filter(([, rule]) => !Object.keys(rule).length).map(([e]) => e)).toEqual([]);
+    expect(
+      Object.entries(SKILL_RULES)
+        .filter(([, rule]) => !Object.keys(rule).length)
+        .map(([e]) => e),
+    ).toEqual([]);
   });
 
   it('uses every implemented effect (catches a misspelt effect name)', () => {
@@ -30,16 +34,48 @@ describe('card data', () => {
   it('has the 2013 Original deck: 22 black Gambits and 31 white Commands, 1 of each', () => {
     const counts = Object.fromEntries(ORIGINAL_GAMBIT.map((c) => [c.name, c.count]));
     expect(counts).toEqual({
-      Expansion: 8, Momentum: 4, Aggression: 4, Relocation: 2, Reorganisation: 2, Sabotage: 2,
+      Expansion: 8,
+      Momentum: 4,
+      Aggression: 4,
+      Relocation: 2,
+      Reorganisation: 2,
+      Sabotage: 2,
     });
     expect(ORIGINAL_GAMBIT.reduce((n, c) => n + c.count, 0)).toBe(22);
 
     expect(ORIGINAL_COMMAND.every((c) => c.count === 1)).toBe(true);
     expect(ORIGINAL_COMMAND.map((c) => c.name).sort()).toEqual([
-      'Agile', 'Arrogant', 'Brilliant', 'Cerebral', 'Clever', 'Conformist', 'Cruel', 'Cunning', 'Curious',
-      'Dangerous', 'Eager', 'Energetic', 'Ferocious', 'Flexible', 'Ingenious', 'Intelligent', 'Nomadic',
-      'Plundering', 'Precocious', 'Rational', 'Ravenous', 'Relentless', 'Resourceful', 'Righteous', 'Scrappy',
-      'Stealthy', 'Strategic', 'Stubborn', 'Tactical', 'Tyrannical', 'Warlike',
+      'Agile',
+      'Arrogant',
+      'Brilliant',
+      'Cerebral',
+      'Clever',
+      'Conformist',
+      'Cruel',
+      'Cunning',
+      'Curious',
+      'Dangerous',
+      'Eager',
+      'Energetic',
+      'Ferocious',
+      'Flexible',
+      'Ingenious',
+      'Intelligent',
+      'Nomadic',
+      'Plundering',
+      'Precocious',
+      'Rational',
+      'Ravenous',
+      'Relentless',
+      'Resourceful',
+      'Righteous',
+      'Scrappy',
+      'Stealthy',
+      'Strategic',
+      'Stubborn',
+      'Tactical',
+      'Tyrannical',
+      'Warlike',
     ]);
   });
 });

@@ -13,11 +13,12 @@
  *   npm run perf:probe -- --url http://…/    # a running dev server (uses the dev-only ?play= link)
  */
 import type { CDPSession, Page } from 'playwright';
+import type { GameState } from '@quantum/engine';
 import { arg, devServer, launchChrome, playUrl } from './mobile-common';
 
 const THROTTLE = Number(arg('--cpu') ?? 4);
 
-type Quantum = { state(): any; load(s: unknown): void };
+type Quantum = { state(): GameState; load(s: unknown): void };
 
 async function timeCards(page: Page, cdp: CDPSession) {
   const open = async (what: string, selector: string) => {
@@ -25,7 +26,11 @@ async function timeCards(page: Page, cdp: CDPSession) {
     await page.locator(selector).first().click();
     await page.waitForSelector('.card-art');
     const n = await page.locator('.card-art').count();
-    await page.waitForFunction((n) => [...document.querySelectorAll<HTMLImageElement>('.card-art img')].filter((i) => i.complete).length === n, n, { timeout: 120000 });
+    await page.waitForFunction(
+      (n) => [...document.querySelectorAll<HTMLImageElement>('.card-art img')].filter((i) => i.complete).length === n,
+      n,
+      { timeout: 120000 },
+    );
     console.log(`${what.padEnd(28)} ${Date.now() - t0} ms${n > 1 ? ` (${n} cards)` : ''}`);
     await page.keyboard.press('Escape');
     await page.waitForTimeout(300);
@@ -54,8 +59,8 @@ async function timeTaps(page: Page) {
     };
     for (let i = 0; i < 6; i++) {
       const s = q.state();
-      const die = s.dice.find((d: any) => d.owner === s.turn.player && d.loc.zone === 'board' && !(s.turn.moved[d.id] > 0));
-      const ship = die && document.querySelector<HTMLElement>(`.ship[data-r="${die.loc.r}"][data-c="${die.loc.c}"]`);
+      const die = s.dice.find((d) => d.owner === s.turn.player && d.loc.zone === 'board' && !(s.turn.moved[d.id] > 0));
+      const ship = die?.loc.zone === 'board' && document.querySelector<HTMLElement>(`.ship[data-r="${die.loc.r}"][data-c="${die.loc.c}"]`);
       if (!ship) break;
       await tap(ship);
       const space = document.querySelector<HTMLElement>('.hl');
@@ -83,14 +88,17 @@ async function idleCost(page: Page, cdp: CDPSession) {
   await measure('nothing selected');
   await page.evaluate(() => {
     const s = (window as unknown as { __quantum: Quantum }).__quantum.state();
-    const d = s.dice.find((d: any) => d.owner === s.turn.player && d.loc.zone === 'board');
+    const d = s.dice.find((d) => d.owner === s.turn.player && d.loc.zone === 'board');
+    if (d?.loc.zone !== 'board') throw new Error('no ship of the player to move on the board');
     document.querySelector<HTMLElement>(`.ship[data-r="${d.loc.r}"][data-c="${d.loc.c}"]`)!.click();
   });
   await measure('a ship selected');
   await page.evaluate(() => {
     const q = (window as unknown as { __quantum: Quantum }).__quantum;
     const s = q.state();
-    const spaces = s.board.cells.flatMap((row: { kind: string }[], r: number) => row.flatMap((x, c) => (x.kind === 'space' ? [{ r, c }] : [])));
+    const spaces = s.board.cells.flatMap((row: { kind: string }[], r: number) =>
+      row.flatMap((x, c) => (x.kind === 'space' ? [{ r, c }] : [])),
+    );
     q.load({ ...s, gates: [spaces[0], spaces.at(-1)] });
   });
   await measure('with warp gates');

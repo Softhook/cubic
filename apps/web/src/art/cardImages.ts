@@ -95,7 +95,7 @@ export function warmCardImages(ids: Iterable<string>): () => void {
   if (!warming) {
     warming = true;
     void (async () => {
-      for (let id; (id = toWarm.shift()); ) {
+      for (let id; (id = toWarm.shift());) {
         if (images.has(id)) continue; // opened meanwhile
         await idle(2000);
         await cardImage(id).catch(() => {});

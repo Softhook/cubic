@@ -23,7 +23,10 @@ export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wan
     setOpen(wantOpen);
   }
   // Not under a popup (a battle, a choice): Escape is for that.
-  useShortcut((e) => open && e.key === 'Escape' && !document.querySelector('.overlay'), () => setOpen(false));
+  useShortcut(
+    (e) => open && e.key === 'Escape' && !document.querySelector('.overlay'),
+    () => setOpen(false),
+  );
 
   const sheet = useRef<HTMLDivElement>(null);
   const rest = useRef<HTMLDivElement>(null);

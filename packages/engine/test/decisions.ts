@@ -20,7 +20,11 @@ import {
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => [key, canonical(child)]));
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, child]) => [key, canonical(child)]),
+    );
   }
   return value;
 }
@@ -59,7 +63,9 @@ const DECISION_BRUTE_FORCE: { [K in Pending['kind']]: (s: GameState) => Action[]
   ],
   clever: () => [0, 1, 2, 3, 4, 5, 6, 7].map((value) => ({ type: 'clever', value })),
   relocation: (s) =>
-    s.board.planets.flatMap((p) => s.players.flatMap((o) => s.board.planets.map((to) => ({ type: 'relocate', planet: p.id, owner: o.id, to: to.id }) as const))),
+    s.board.planets.flatMap((p) =>
+      s.players.flatMap((o) => s.board.planets.map((to) => ({ type: 'relocate', planet: p.id, owner: o.id, to: to.id }) as const)),
+    ),
   advance: () => [
     { type: 'advance', move: true },
     { type: 'advance', move: false },
@@ -69,10 +75,7 @@ const DECISION_BRUTE_FORCE: { [K in Pending['kind']]: (s: GameState) => Action[]
     { type: 'refreshMarket' },
     { type: 'profiteer' },
     ...(['skill', 'tactic', 'expansion'] as const).flatMap((deck) =>
-      ROW_INDEXES.flatMap((index) => [
-        { type: 'takeCard', deck, index } as const,
-        { type: 'takeCard', deck, index, store: true } as const,
-      ]),
+      ROW_INDEXES.flatMap((index) => [{ type: 'takeCard', deck, index } as const, { type: 'takeCard', deck, index, store: true } as const]),
     ),
   ],
   peek: () => [
@@ -92,7 +95,10 @@ const DECISION_BRUTE_FORCE: { [K in Pending['kind']]: (s: GameState) => Action[]
   ruthless: () => [{ type: 'ruthless' }, ...CARD_IDS.map((skill) => ({ type: 'ruthless', skill }) as const)],
   unveil: (s) => [
     { type: 'unveilDone' },
-    ...s.dice.flatMap((d) => [{ type: 'unveilReroll', die: d.id } as const, ...allCells(s).map((to) => ({ type: 'unveilDeploy', die: d.id, to }) as const)]),
+    ...s.dice.flatMap((d) => [
+      { type: 'unveilReroll', die: d.id } as const,
+      ...allCells(s).map((to) => ({ type: 'unveilDeploy', die: d.id, to }) as const),
+    ]),
   ],
 };
 
