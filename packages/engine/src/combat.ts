@@ -16,7 +16,7 @@ import {
 } from './core';
 import { card } from './data';
 import { cellOf, die, dieAt } from './lookups';
-import { combatDice, combatOutcome, combatReroll, combatTotal, infamyTargets, skillLimit } from './queries';
+import { combatDice, combatOutcome, combatReroll, combatTotal, infamyTargets, missileOffered, skillLimit } from './queries';
 import { d6 } from './rng';
 import { rulesOf } from './rules';
 import { anySkill, skillRules, stealableSkill } from './skillRules';
@@ -90,6 +90,8 @@ export const combatHandlers = {
     if (!pl || pl.missiles <= 0) fail('No missiles left');
     const side = head[a.side];
     if (side.missile || combatTotal(s, head, a.side).roll === 1) fail('That combat roll is already 1');
+    // A combatant fires only on their own roll, and only while losing (OPEN-QUESTIONS #21).
+    if (!missileOffered(s, head, a.by, a.side)) fail('You may only fire a missile on your own roll, while losing');
     pl.missiles--;
     side.missile = true;
     log(s, `${pl.name} fires a missile: ${name(s, side.player)}'s combat roll becomes 1.`, a.by, 'missile');

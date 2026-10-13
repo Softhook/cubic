@@ -2,8 +2,10 @@
  * Cross-checks between the engine's parts, over every state of seeded AI-vs-AI games:
  *
  * - sound:    every action legalActions() offers is accepted by apply().
- * - complete: every phase-1 action apply() accepts is offered by legalActions(), checked by brute
- *             force over all dice × cells × targets on a sample of states (DEEP=1: all states).
+ * - complete: every action apply() accepts is offered by legalActions(), checked by brute force:
+ *             answers to every decision over all players, sides, cards, planets and cells
+ *             (decisions.ts), and phase-1 actions over all dice × cells × targets on a sample of
+ *             states (DEEP=1: all states).
  * - invariants hold after every action, and the checker itself notices broken states.
  * - the AI's shortcuts agree with what they stand for: shipReach with moveIndexes, and
  *   decisionCandidates with legalActions.
@@ -27,19 +29,11 @@ import {
   type GameMode,
   type GameState,
 } from '../src';
+import { bruteForceDecision, keyOf } from './decisions';
 import { playAiGame, quickStart } from './helpers';
 
 const DEEP = !!process.env.DEEP;
 
-function canonical(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonical);
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => [key, canonical(child)]));
-  }
-  return value;
-}
-
-const keyOf = (a: Action) => JSON.stringify(canonical(a));
 
 describe('action comparison', () => {
   it('distinguishes moves to different nested cells', () => {
@@ -121,11 +115,13 @@ function playChecked(mode: GameMode, players: number, seed: number) {
         expect(fast.attacks.map((x) => x.id).sort(), `${where}: shipReach attacks of ${d.id}`).toEqual([...attacks.keys()].sort());
       }
 
-      // Brute force is slow, so it samples states (`DEEP=1 npx vitest run consistency` checks every state of more games).
+      // Decisions are cheap to brute-force, so every one is. Phase-1 actions are slow, so their states
+      // are sampled (`DEEP=1 npx vitest run consistency` checks every state of more games).
       const actionPhase = s.phase === 'play' && !s.pending.length && s.turn.phase === 'actions';
-      if (actionPhase && (DEEP || step % 4 === 0)) {
+      const deciding = s.phase !== 'over' && s.pending.length > 0;
+      if (deciding || (actionPhase && (DEEP || step % 4 === 0))) {
         const offered = new Set(legal.map(keyOf));
-        for (const a of bruteForce(s, DEEP || step % 20 === 0)) {
+        for (const a of deciding ? bruteForceDecision(s) : bruteForce(s, DEEP || step % 20 === 0)) {
           if (offered.has(keyOf(a))) continue;
           expect(tryApply(s, a), `${where}: accepted but not offered: ${keyOf(a)}`).toBeNull();
         }

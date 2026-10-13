@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 import { chooseAction } from '../../ai/src';
 import {
-  apply,
+  apply as applyAction,
   checkInvariants,
   combatOutcome,
   conquerCheck,
@@ -33,6 +33,7 @@ import {
   type GameState,
 } from '../src';
 import { setSkills, toRow } from './audit';
+import { keyOf, unofferedAnswers } from './decisions';
 import { arrange, originalGame, quickStart, seededRandom } from './helpers';
 
 const ALL_CARDS: CardDef[] = [...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT];
@@ -45,7 +46,15 @@ function cardCase(ids: string[], name: string, fn: () => void) {
   it(name, fn);
 }
 
-const keyOf = (a: Action) => JSON.stringify(a, Object.keys(a).sort());
+/**
+ * apply(), after checking that the engine accepts no answer to an open decision that legalActions()
+ * doesn't offer: scenarios reach decisions (Relocation, Change of Heart, Brilliant, Ruthless…) that
+ * the AI games of consistency.test.ts rarely do.
+ */
+function apply(s: GameState, a: Action): GameState {
+  if (s.phase !== 'over' && s.pending.length) expect(unofferedAnswers(s), `accepted but not offered at ${s.pending[0].kind}`).toEqual([]);
+  return applyAction(s, a);
+}
 
 function expectValid(s: GameState, context: string) {
   expect(checkInvariants(s), context).toEqual([]);

@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { apply, createGame, legalActions, type GameState } from '../src';
+import { unofferedAnswers } from './decisions';
 import { players, quickStart } from './helpers';
 
 /** The current turn's card phase, where only `picker` still has `count` picks to take. */
@@ -133,6 +134,8 @@ describe('Brilliant (CE: "you may gain 2 Research")', () => {
   it('with Pioneering the player may keep their research number', () => {
     const { s, foe } = foeTurn(['brilliant', 'pioneering'], 2);
     expect(s.pending).toEqual([{ kind: 'brilliant', player: foe }]);
+    // The decision the AI games of consistency.test.ts never reach: the engine and legalActions agree on it.
+    expect(unofferedAnswers(s)).toEqual([]);
     expect(s.players[foe].research).toBe(2);
     expect(apply(s, { type: 'brilliant', gain: false }).players[foe].research).toBe(2);
     expect(apply(s, { type: 'brilliant', gain: true }).players[foe].research).toBe(4);

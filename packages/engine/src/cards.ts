@@ -167,7 +167,9 @@ export const cardHandlers = {
   takeCard(s, a) {
     const head = headOf(s, 'takeCard', 'Not taking a card');
     const p = head.player;
+    if (a.store && (a.deck !== 'tactic' || !anySkill(s, p, (r) => r.storeTactics))) fail('Only a Tactic can be stored, with Patient');
     if (a.deck === 'expansion') {
+      if (a.index !== 0) fail('The Expansion pile has one face-up card');
       const res = reserve(s, p);
       if (s.market.expansions <= 0) fail('No Expansion cards left');
       if (!res.length) fail('Your reserve is empty');
@@ -178,7 +180,6 @@ export const cardHandlers = {
       log(s, `${name(s, p)} expands their fleet.`, p, 'expansion');
       return;
     }
-    if (a.store && (a.deck !== 'tactic' || !anySkill(s, p, (r) => r.storeTactics))) fail('Only a Tactic can be stored, with Patient');
     const row = a.deck === 'skill' ? s.market.skillRow : s.market.tacticRow;
     if (row[a.index] !== undefined && !canTakeCard(s, p, row[a.index])) fail('Your reserve is empty');
     // Peek: taking the oldest card lets you look at the top of the deck first. An empty deck is

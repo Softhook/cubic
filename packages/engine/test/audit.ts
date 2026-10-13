@@ -44,6 +44,7 @@ import {
   type GameState,
   type PlayerId,
 } from '../src';
+import { keyOf } from './decisions';
 import { aiAction, players, seededRandom } from './helpers';
 
 export interface AuditGame {
@@ -207,7 +208,6 @@ function decider(s: GameState): PlayerId {
   return head.player;
 }
 
-const keyOf = (a: Action) => JSON.stringify(a, Object.keys(a).sort());
 const turnChanged = (c: Step) => c.after.turn.number !== c.before.turn.number;
 
 /** A ship destroyed by `w`: Dominance, research and action bonuses, Ruthless and Prideful. */
