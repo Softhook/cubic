@@ -439,7 +439,7 @@ Each phase is playable on its own.
 
 ### Phase 0 — Decisions & engine prep (2–3 days)
 - [ ] Decide hosting (§2) and the missile window (§5, closes open question #21).
-- [ ] `viewFor`, `mayAct`, action validation, and their tests (§4).
+- [ ] `viewFor` and its tests (§4). `mayAct` and action validation are built.
 - [ ] Engine response window for missiles (also improves hot-seat: no more manual *Resolve*).
 - [ ] Measure AI think time per level on a small server instance.
 
