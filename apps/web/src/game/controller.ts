@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { actor, attackChance, attackFactors, cellOf, die as getDie, key, moveOptions, scrapyard, type Action, type Cell, type CombatRole, type GameState, type PlayerId } from '@quantum/engine';
 import { sfx } from '../sound';
 import { highlightsFor, noHighlights } from './highlights';
-import { legalFor, NO_LEGAL } from './legal';
+import { conquerTap, legalFor, NO_LEGAL } from './legal';
 import type { Dispatch } from './useGame';
 
 export type Sel =
@@ -17,6 +17,8 @@ export type Sel =
   | { kind: 'nomadic'; die: string }
   // Relocation: the cube chosen to move (planet it leaves, and its owner).
   | { kind: 'relocate'; planet: number; owner: number }
+  // A planet that can be conquered in more than one way, waiting for the player to choose how.
+  | { kind: 'conquer'; planet: number }
   // `tactical`: a 1-space transport using the Tactical skill instead of a Move action.
   | { kind: 'carryPassenger'; die: string; tactical?: boolean }
   | { kind: 'carryDest'; die: string; passenger: string; tactical?: boolean }
@@ -37,7 +39,7 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
   useEffect(() => setSel(NONE), [pendingSig]);
   // Drop a selection that is no longer valid (ship destroyed, already moved…).
   useEffect(() => {
-    if (sel.kind === 'none' || sel.kind === 'relocate') return;
+    if (sel.kind === 'none' || sel.kind === 'relocate' || sel.kind === 'conquer') return;
     const d = game.dice.find((x) => x.id === sel.die);
     if (!d || d.loc.zone !== (sel.kind === 'scrap' ? 'scrapyard' : 'board')) setSel(NONE);
   }, [game, sel]);
@@ -145,16 +147,12 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
       if (hl.tone === 'start') dispatch({ type: 'placeStart', planet: id });
       else if (hl.tone === 'infamy') dispatch({ type: 'infamy', planet: id });
       else if (hl.tone === 'conquer') {
-        // A plain conquest if there is one; else over-conquest, displacing the cube of the owner who leads (most cubes placed).
-        const options = legal.of('conquer', (a) => a.planet === id);
-        const plain = options.find((a) => a.replace === undefined);
-        if (plain) return void dispatch(plain);
-        const lead = (o: number) => -(game.players[o]?.cubesLeft ?? 0);
-        const pick = [...options].sort((x, y) => (x.replace === undefined ? 0 : lead(x.replace)) - (y.replace === undefined ? 0 : lead(y.replace)))[0];
-        dispatch(pick ?? { type: 'conquer', planet: id });
+        const tap = conquerTap(legal, id);
+        if (tap === 'choose') select({ kind: 'conquer', planet: id });
+        else if (tap) dispatch(tap);
       }
     },
-    [human, highlights, head, sel, legal, game, dispatch, select],
+    [human, highlights, head, sel, legal, dispatch, select],
   );
 
   return { sel, select, highlights, legal, attacks, onDie, onCell, onPlanet, human, actionPhase, mine };

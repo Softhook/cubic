@@ -10,7 +10,7 @@ import { Log } from './Log';
 import { PlayerList } from './PlayerList';
 import { TurnPanel } from './TurnPanel';
 import { CombatOverlay } from './CombatOverlay';
-import { DecisionOverlay, GameOver } from './Overlays';
+import { ConquerChoice, DecisionOverlay, GameOver } from './Overlays';
 import { ErrorToast, Toasts } from './Toasts';
 import { FullscreenButton, useFullscreenOnFirstTap } from './FullscreenButton';
 
@@ -44,6 +44,8 @@ export function Game({
   const head = game.pending[0];
   const sheet = useMediaQuery(SHEET);
   const cards = rulesOf(game).cards;
+  const { sel } = ctl;
+  const conquering = sel.kind === 'conquer' ? ctl.legal.of('conquer', (a) => a.planet === sel.planet) : [];
   // The same panels in both layouts, in a different order.
   const turnPanel = <TurnPanel game={game} ctl={ctl} dispatch={dispatch} undo={undo} />;
   const market = cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} />;
@@ -95,6 +97,7 @@ export function Game({
 
       {head?.kind === 'combat' && <CombatOverlay key={head.id} game={game} combat={head} dispatch={dispatch} mine={view.mine} aiResponder={view.aiResponder ?? null} online={online ? view.combat : undefined} />}
       <DecisionOverlay game={game} dispatch={dispatch} human={ctl.human} />
+      {conquering.length > 0 && <ConquerChoice game={game} options={conquering} dispatch={dispatch} onClose={() => ctl.select({ kind: 'none' })} />}
       {game.phase === 'over' && !hideGameOver && <GameOver game={game} onNew={onQuit} onClose={() => setHideGameOver(true)} newLabel={online ? 'Back to lobby' : undefined} />}
       {overlay}
     </div>

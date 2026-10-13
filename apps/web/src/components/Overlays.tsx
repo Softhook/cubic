@@ -1,8 +1,9 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { SHIP_NAMES, card, die, rulesOf, scrapyard, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, card, die, rulesOf, scrapyard, type Action, type GameState } from '@quantum/engine';
 import { SHORT, useMediaQuery } from '../game/useMediaQuery';
 import type { Dispatch } from '../game/useGame';
 import { CardView } from './Card';
+import { Dialog } from './Dialog';
 import { Die3D } from './Die3D';
 
 /** Modal decisions for human players. Board-based decisions are handled by highlights instead. */
@@ -210,6 +211,42 @@ function Modal({ title, subtitle, pc, wide, children }: { title: string; subtitl
         {children}
       </div>
     </div>
+  );
+}
+
+/**
+ * How to conquer a planet that offers more than one way: an empty place, or over-conquest displacing
+ * one opponent's cube (the conqueror chooses whose). `options` are the legal `conquer` actions for it.
+ */
+export function ConquerChoice({ game, options, dispatch, onClose }: {
+  game: GameState;
+  options: Extract<Action, { type: 'conquer' }>[];
+  dispatch: Dispatch;
+  onClose: () => void;
+}) {
+  const planet = game.board.planets[options[0].planet];
+  const plain = options.some((a) => a.replace === undefined);
+  const pick = (a: Action) => {
+    if (dispatch(a)) onClose();
+  };
+  return (
+    <Dialog
+      title={`Conquer planet ${planet.number}`}
+      subtitle={plain ? 'Take an empty place, or displace an opponent’s cube.' : 'The planet is full: choose whose cube to displace.'}
+      onClose={onClose}
+    >
+      <div className="modal-actions">
+        {options.map((a) =>
+          a.replace === undefined ? (
+            <button key="plain" className="btn btn-primary" onClick={() => pick(a)}>Take an empty place</button>
+          ) : (
+            <button key={a.replace} className="btn" style={{ borderColor: game.players[a.replace].color }} onClick={() => pick(a)}>
+              Displace {game.players[a.replace].name}’s cube
+            </button>
+          ),
+        )}
+      </div>
+    </Dialog>
   );
 }
 

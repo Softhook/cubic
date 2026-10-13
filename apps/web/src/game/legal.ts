@@ -35,3 +35,13 @@ export const NO_LEGAL: Legal = legalIndex([]);
 export function legalFor(game: GameState): Legal {
   return legalIndex(legalActions(game, { includeCarry: true }));
 }
+
+/**
+ * What a tap on a planet does about conquering it: its one way to be conquered, `choose` when there
+ * are several (an empty place, or over-conquest displacing one of several opponents' cubes: the
+ * player chooses, ConquerChoice), or null when it can't be conquered.
+ */
+export function conquerTap(legal: Legal, planet: number): Action | 'choose' | null {
+  const options = legal.of('conquer', (a) => a.planet === planet);
+  return options.length > 1 ? 'choose' : (options[0] ?? null);
+}
