@@ -4,7 +4,7 @@ import { cardImage, cardImageNow } from '../art/cardImages';
 import { Dialog } from './Dialog';
 
 /** A card as printed, with its illustration. */
-function CardArt({ id, size, badge }: { id: string; size: 'md' | 'lg'; badge?: string }) {
+export function CardArt({ id, size, badge }: { id: string; size: 'md' | 'lg'; badge?: string }) {
   const [src, setSrc] = useState(() => cardImageNow(id));
   useEffect(() => {
     let live = true;

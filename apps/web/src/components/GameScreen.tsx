@@ -15,7 +15,7 @@ import { PlayerList } from './PlayerList';
 import { TurnPanel } from './TurnPanel';
 import { CombatOverlay } from './CombatOverlay';
 import { ConquerChoice, DecisionOverlay, GameOver } from './Overlays';
-import { ErrorToast, Toasts } from './Toasts';
+import { ErrorToast, PlayedCard, Toasts } from './Toasts';
 import { FullscreenButton, useFullscreenOnFirstTap } from './FullscreenButton';
 
 /**
@@ -113,6 +113,11 @@ export function Game({
           {review && <ReviewBar review={review} game={live} waiting={waitingFor(view)} />}
           {/* The game's news goes on while looking back, as news of the game now. */}
           <Toasts toasts={toasts} game={live} now={!!review} />
+          <PlayedCard
+            game={live}
+            mine={view.mine}
+            review={review ? live.log.filter((e) => review.move.has(e.id)) : undefined}
+          />
           <ErrorToast error={error} />
         </div>
         {sheet ? (

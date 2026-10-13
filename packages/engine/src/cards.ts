@@ -147,6 +147,7 @@ function gainCard(s: GameState, p: PlayerId, id: string) {
   if (cardKind(id) === 'skill') {
     pl.skills.push({ id, active: false });
     log(s, `${pl.name} takes the ${def.name} ${rulesOf(s).cards?.terms.skill ?? 'skill'}.`, p, 'cardTaken');
+    s.log[s.log.length - 1].card = id;
     if (pl.skills.length > skillLimit(s, p)) s.pending.unshift({ kind: 'discardSkill', player: p, reason: 'limit' });
     // Resolved before any discard, so a Tactic stored now is lost if Patient itself is then discarded.
     if (ruleOf(id).storeTactics) s.pending.unshift({ kind: 'patientTactic', player: p });
@@ -158,6 +159,7 @@ function gainCard(s: GameState, p: PlayerId, id: string) {
 /** A Tactic is discarded and its effect resolves. */
 function playTactic(s: GameState, p: PlayerId, id: string, message: string) {
   log(s, message, p, 'cardPlayed');
+  s.log[s.log.length - 1].card = id;
   s.market.tacticDiscard.push(id);
   const effect = TACTIC_EFFECTS[effectOf(id) as TacticEffect] as TacticEffectFn | undefined;
   if (!effect) throw new Error(`Unhandled tactic ${id}`);
@@ -170,6 +172,7 @@ function takeOrStore(s: GameState, p: PlayerId, id: string, store: boolean | und
   const pl = s.players[p];
   (pl.storedTactics ??= []).push(id);
   log(s, `${pl.name} stores ${card(id).name} (Patient).`, p, 'cardTaken');
+  s.log[s.log.length - 1].card = id;
 }
 
 /** Moves a player's remaining picks to the Momentum turn's card phase. */

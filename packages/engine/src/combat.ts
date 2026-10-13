@@ -173,6 +173,7 @@ export const combatHandlers = {
       const [stolen] = victimPl.skills.splice(idx, 1);
       winnerPl.skills.push({ id: stolen.id, active: true });
       log(s, `${winnerPl.name} takes Prideful from ${victimPl.name}!`, head.player, 'cardTaken');
+      s.log[s.log.length - 1].card = stolen.id;
       if (winnerPl.skills.length > skillLimit(s, head.player)) {
         s.pending.unshift({ kind: 'discardSkill', player: head.player, reason: 'limit', cannotDiscard: stolen.id });
       }

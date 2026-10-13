@@ -236,6 +236,8 @@ export interface LogEntry {
   event?: LogEvent;
   /** Ids of the planets the text names as `planet N`, in order, so the UI can show their names. */
   planets?: number[];
+  /** The card an entry is about (played, taken or used), so the UI can show it. */
+  card?: string;
   /** A routine action (a move, a reconfigure…), not an event of the game: the log shows it quieter. */
   minor?: true;
 }

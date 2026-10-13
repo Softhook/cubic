@@ -31,7 +31,9 @@ import { cardHandlers } from './cards';
 import { combatHandlers } from './combat';
 import type { Handlers } from './core';
 import { setupHandlers } from './setup';
-import { skillHandlers } from './skillActions';
+import { card } from './data';
+import { log, name } from './core';
+import { skillHandlers, skillUsed } from './skillActions';
 import { settle } from './turn';
 import { RuleError, type Action, type GameState, type PlayerId } from './types';
 
@@ -53,9 +55,24 @@ export function apply(prev: GameState, action: Action): GameState {
   const s = copyState(prev);
   // Scrappy's re-roll must come right after the roll: any other action gives it up.
   if (action.type !== 'scrappy') delete s.turn.scrappy;
+  const used = skillUsed(prev, action);
   handler(s, action);
+  if (used) showSkill(s, prev.logCounter, used.player, used.card);
   settle(s);
   return s;
+}
+
+/**
+ * Names the skill card an action used on the first entry its owner logged, so the UI can show the
+ * card; an action that logged nothing for them (Composed…) logs that they used it.
+ */
+function showSkill(s: GameState, before: number, player: PlayerId, id: string) {
+  const entry = s.log.find((e) => e.id > before && e.player === player && !e.card);
+  if (entry) entry.card = id;
+  else {
+    log(s, `${name(s, player)} uses ${card(id).name}.`, player);
+    s.log[s.log.length - 1].card = id;
+  }
 }
 
 /**

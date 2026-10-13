@@ -27,9 +27,10 @@ import {
   type Handlers,
 } from './core';
 import { boardLoc, cellOf, die } from './lookups';
-import { canGainResearch, canMoveDie, canScrappy, nomadicTargets, tacticalOptions } from './queries';
+import { canGainResearch, canMoveDie, canScrappy, combatReroll, nomadicTargets, tacticalOptions } from './queries';
 import { hasPower } from './rules';
-import { hasSkill } from './skillRules';
+import { hasSkill, ruleOf, skillCard, type SkillRule } from './skillRules';
+import type { Action, GameState, PlayerId } from './types';
 
 export const skillHandlers = {
   composed(s) {
@@ -169,3 +170,39 @@ export const skillHandlers = {
     t.actionsLeft++;
   },
 } satisfies Partial<Handlers>;
+
+/**
+ * The skill card `action` uses, and its owner, judged before the action (Ambitious may be gone after).
+ * None for an action that declines a skill's offer, or that isn't a skill's at all.
+ */
+export function skillUsed(s: GameState, a: Action): { player: PlayerId; card: string } | undefined {
+  const head = s.pending[0];
+  const find = (player: PlayerId, test: (r: SkillRule) => unknown) => {
+    const card = s.players[player].skills.find((sk) => sk.active && test(ruleOf(sk.id)))?.id;
+    return card ? { player, card } : undefined;
+  };
+  switch (a.type) {
+    case 'reroll': {
+      const skill = head?.kind === 'combat' ? combatReroll(s, head, a.by, a.side) : undefined;
+      return skill && { player: a.by, card: skill.card };
+    }
+    case 'scrappy':
+      return s.turn.scrappy && find(die(s, s.turn.scrappy.die).owner, (r) => r.rerollShips);
+    case 'clever':
+      return head?.kind === 'clever'
+        ? find(head.player, (r) => (head.source === 'calculating' ? r.chooseScrapyardNumber : r.adjustReconfigure || r.chooseShipNumbers))
+        : undefined;
+    case 'brilliant':
+      if (!a.gain || head?.kind !== 'brilliant') return undefined;
+      return { player: head.player, card: skillCard(s, head.player, 'brilliant') ?? 'brilliant' };
+    case 'dangerous':
+      return a.destroy && head?.kind === 'dangerous' ? find(head.player, (r) => r.combat?.destroyBoth) : undefined;
+    case 'ruthless':
+      return a.skill && head?.kind === 'ruthless' ? find(head.player, (r) => r.disableSkillOnDestroy) : undefined;
+    case 'profiteer':
+      return head?.kind === 'takeCard' ? find(head.player, (r) => r.missileForConquest) : undefined;
+    default:
+      // Activated skills are actions of the player's own turn.
+      return find(s.turn.player, (r) => r.activated === a.type);
+  }
+}
