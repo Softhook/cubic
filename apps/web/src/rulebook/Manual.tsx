@@ -389,7 +389,7 @@ export function Manual({ dark }: { dark?: boolean }) {
           <div className="mn-scale-dice">
             {[1, 2, 3, 4, 5, 6].map((v) => (
               <div key={v}>
-                <DieIcon v={v} size={34} shipIllustration />
+                <DieIcon v={v} size={34} />
                 <small>moves {v}</small>
               </div>
             ))}
