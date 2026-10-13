@@ -188,6 +188,17 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
 function OutOfSync({ replay }: { replay: Replay }) {
   const d = replay.desync!;
   const who = replay.seats[d.seat]?.name ?? 'Another player';
+  if (d.why === 'crashed') {
+    return (
+      <div className="online-desync" role="alert">
+        <strong>The game stopped on a move by {who}</strong>
+        <span>This browser’s game engine failed on it: a bug, not a mistake by {who}. The details are in the browser console.</span>
+        <button className="btn" onClick={() => location.reload()}>
+          Reload
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="online-desync" role="alert">
       <strong>Out of sync with {who}</strong>

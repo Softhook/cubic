@@ -71,7 +71,6 @@ export const abilityHandlers = {
   change(s, a) {
     requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
-    if (a.value !== 3 && a.value !== 5) fail('A frigate becomes a 3 or a 5');
     useAbility(s, d, 'modify');
     d.value = a.value;
     markSeen(s, d);

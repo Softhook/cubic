@@ -434,7 +434,7 @@ describe('ship abilities (p.8)', () => {
 
   it('4 Frigate — Modify: becomes a 3 or a 5, and cannot use the new ability', () => {
     const s = scenario({ p0d0: [2, 2, 4] });
-    expect(() => apply(s, { type: 'change', die: 'p0d0', value: 2 as 3 })).toThrow(/3 or a 5/);
+    expect(() => apply(s, { type: 'change', die: 'p0d0', value: 2 as 3 })).toThrow(/Malformed action/);
     const five = apply(s, { type: 'change', die: 'p0d0', value: 5 });
     expect(at(five, 'p0d0').value).toBe(5);
     expect(five.turn.actionsLeft).toBe(3);

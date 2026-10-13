@@ -25,6 +25,7 @@
 import { abilityHandlers } from './abilities';
 // Sets the rule sets that rulesOf reads, for a state that didn't come from createGame (a saved game, a test).
 import './rulesets';
+import { isWellFormed } from './actionShape';
 import { actionHandlers } from './actions';
 import { cardHandlers } from './cards';
 import { combatHandlers } from './combat';
@@ -46,9 +47,9 @@ const HANDLERS: Handlers = {
 /** Applies an action and returns the new state. Throws RuleError if the action is illegal. */
 export function apply(prev: GameState, action: Action): GameState {
   if (prev.phase === 'over') throw new RuleError('The game is over');
-  // Own keys only: an action from another browser may name anything, `constructor` included.
-  const handler = Object.hasOwn(HANDLERS, action?.type) ? (HANDLERS[action.type] as (s: GameState, a: Action) => void) : undefined;
-  if (!handler) throw new RuleError(`Unknown action ${action?.type}`);
+  // Online, actions come from other browsers: check the shape before any handler sees it.
+  if (!isWellFormed(prev, action)) throw new RuleError(`Malformed action ${JSON.stringify(action)?.slice(0, 200)}`);
+  const handler = HANDLERS[action.type] as (s: GameState, a: Action) => void;
   const s = copyState(prev);
   // Scrappy's re-roll must come right after the roll: any other action gives it up.
   if (action.type !== 'scrappy') delete s.turn.scrappy;

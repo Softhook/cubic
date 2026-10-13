@@ -1,4 +1,4 @@
-import { apply, canRespondToCombat, createGame, isUndoable, mayAct, type Action, type CombatPending, type GameState, type PlayerId } from '@quantum/engine';
+import { apply, canRespondToCombat, createGame, isUndoable, mayAct, RuleError, type Action, type CombatPending, type GameState, type PlayerId } from '@quantum/engine';
 import { byTime, CHAINED, combatStage, PROTOCOL, stateHash, type AskMode, type Body, type GameConfig, type Post } from './protocol';
 
 export interface Seat {
@@ -29,11 +29,12 @@ export interface CombatWait {
  * This browser disagrees with another about the game: a move its player made was refused here
  * (`rejected`), or led to a different position here (`differs`). Every browser runs the same
  * posts through the same engine, so this means different app versions (or a bug, or tampering).
+ * `crashed`: the engine failed on the move here, a bug in this browser's engine.
  */
 export interface Desync {
   seat: PlayerId;
   author: string;
-  why: 'rejected' | 'differs';
+  why: 'rejected' | 'differs' | 'crashed';
 }
 
 /** Everything a browser derives from the posts it has. */
@@ -229,15 +230,18 @@ export class Timeline {
       if (r.combat && r.combat.passed.includes(b.seat)) return false;
       // The poster's browser checked the move against this same position before sending it, so
       // the engine refusing it here means the two browsers don't agree on the rules.
-      const refused = () => {
-        if (!seat.ai) r.desync ??= { seat: b.seat, author: p.author, why: 'rejected' };
+      const refused = (why: Desync['why'] = 'rejected') => {
+        if (!seat.ai || why === 'crashed') r.desync ??= { seat: b.seat, author: p.author, why };
         return false;
       };
       if (prev.phase === 'over' || !mayAct(prev, b.seat, b.action)) return refused();
       try {
         next = apply(prev, b.action);
-      } catch {
-        return refused();
+      } catch (e) {
+        if (e instanceof RuleError) return refused();
+        // Not a disagreement about the rules: the engine failed on a move it should have taken or refused.
+        console.error('[quantum] the engine failed on a move', { action: b.action, error: e, state: JSON.stringify(prev) });
+        return refused('crashed');
       }
       if (b.h !== undefined) {
         if (b.h !== stateHash(next)) r.desync ??= { seat: b.seat, author: p.author, why: 'differs' };
