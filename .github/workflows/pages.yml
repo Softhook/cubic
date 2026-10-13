@@ -29,6 +29,19 @@ jobs:
         with:
           path: apps/web/dist
 
+  # The rules' safety net (golden replays, invariants, legality cross-check, card audit): a failing test stops the deploy.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
   # Phone and tablet layouts in emulation (docs/MOBILE.md): a broken layout fails the run and nothing deploys.
   # Uses the runner's own Google Chrome. When it fails, the screenshots are kept for a week, to see what broke.
   layout:
@@ -50,7 +63,7 @@ jobs:
           retention-days: 7
 
   deploy:
-    needs: [build, layout]
+    needs: [build, test, layout]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -2,14 +2,16 @@
  * How much each ship power is used in each mode (AI self-play). Prints a table per mode; the
  * assertions only guard the measurement itself, so a prototype power can be judged by eye:
  * a power that is offered often but never used is dead weight, one used every time may be too strong.
- * More games or another AI level: POWER_USAGE_GAMES=40 POWER_USAGE_LEVEL=3 npx vitest run powerUsage  (or `npm run power:usage`).
+ * By default one quick game per mode, so the suite stays fast; the numbers worth reading need more games
+ * and level 4, the lowest that uses Flagship transports:
+ * POWER_USAGE_GAMES=4 POWER_USAGE_LEVEL=4 npx vitest run powerUsage  (or `npm run power:usage`).
  */
 import { describe, expect, it } from 'vitest';
 import type { GameMode } from '../src';
 import { formatUsage, measurePowerUsage } from './powerUsage';
 
-const GAMES = Number(process.env.POWER_USAGE_GAMES ?? 4);
-const LEVEL = Number(process.env.POWER_USAGE_LEVEL ?? 4) as 1 | 2 | 3 | 4 | 5; // level 4 is the lowest that uses Flagship transports
+const GAMES = Number(process.env.POWER_USAGE_GAMES ?? 1);
+const LEVEL = Number(process.env.POWER_USAGE_LEVEL ?? 2) as 1 | 2 | 3 | 4 | 5;
 const MODES: GameMode[] = ['basic', 'original', 'community', 'prototyping'];
 
 describe('power usage by mode', () => {
