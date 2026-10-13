@@ -1,6 +1,6 @@
 /** Asks the AI worker for a move; falls back to thinking on the main thread if workers fail. */
-import { AI_LEVELS, chooseAction, DEFAULT_AI_LEVEL, type AiLevel } from '@quantum/ai';
-import type { Action, GameState, PlayerConfig } from '@quantum/engine';
+import { AI_LEVELS, chooseAction, chooseCombatResponse, DEFAULT_AI_LEVEL, type AiLevel } from '@quantum/ai';
+import { legalActions, type Action, type GameState, type PlayerConfig, type PlayerId } from '@quantum/engine';
 import type { AiRequest, AiResponse } from './aiWorker';
 
 let worker: Worker | null | undefined;
@@ -32,11 +32,12 @@ function getWorker(): Worker | null {
   return worker;
 }
 
-const onMainThread = (state: GameState, level: AiLevel) => chooseAction(state, { level, samples: 3 });
+/** Rejects, rather than throwing, if the AI fails. */
+const onMainThread = (state: GameState, level: AiLevel) => new Promise<Action | null>((resolve) => resolve(chooseAction(state, { level, samples: 3 })));
 
-export function think(state: GameState, level: AiLevel): Promise<Action | null> {
+function ask(state: GameState, level: AiLevel): Promise<Action | null> {
   const w = getWorker();
-  if (!w) return Promise.resolve(onMainThread(state, level));
+  if (!w) return onMainThread(state, level);
   const id = ++nextId;
   return new Promise((resolve) => {
     waiting.set(id, (r) => {
@@ -46,4 +47,43 @@ export function think(state: GameState, level: AiLevel): Promise<Action | null> 
     });
     w.postMessage({ id, state, level } satisfies AiRequest);
   });
+}
+
+/**
+ * An AI's move. `error` is set when the AI failed (an engine bug, logged to the console with the
+ * position): `action` is then a stand-in, so the game goes on.
+ */
+export interface AiMove {
+  action: Action | null;
+  error?: string;
+}
+
+/** The AI's move for whoever must act; if the AI fails, the first legal move stands in. Never rejects. */
+export async function think(state: GameState, level: AiLevel): Promise<AiMove> {
+  try {
+    return { action: await ask(state, level) };
+  } catch (e) {
+    return failed(state, e, () => legalActions(state)[0] ?? null);
+  }
+}
+
+/** Whether `player` fires a missile or re-rolls in the current battle; if the AI fails, it passes. */
+export function combatResponse(state: GameState, player: PlayerId, level: AiLevel): AiMove {
+  try {
+    return { action: chooseCombatResponse(state, player, { level }) };
+  } catch (e) {
+    return failed(state, e, () => null);
+  }
+}
+
+function failed(state: GameState, error: unknown, standIn: () => Action | null): AiMove {
+  console.error('[quantum] the AI failed', { error, state: JSON.stringify(state) });
+  let action: Action | null = null;
+  try {
+    action = standIn();
+  } catch {
+    // the engine fails here too: nothing to stand in
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  return { action, error: `Engine error in the AI: ${message} (details in the console)` };
 }

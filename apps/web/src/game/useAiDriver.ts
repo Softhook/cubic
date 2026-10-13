@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { actor, canRespondToCombat, type GameState, type PlayerId } from '@quantum/engine';
-import { chooseCombatResponse } from '@quantum/ai';
 import { combatStage } from '@quantum/online';
-import { aiLevelOf, think } from './aiClient';
+import { aiLevelOf, combatResponse, think } from './aiClient';
 import type { Dispatch } from './useGame';
 
 /** How long the AI waits before acting (thinking time included), so humans can follow along. */
@@ -26,9 +25,9 @@ export const COMBAT_RESOLVE_MS = 2600;
  * re-roll) its chance; a human then resolves the battle (CombatOverlay), unless there is none.
  *
  * Returns the AI that is about to respond to the battle on screen, if any, so a human doesn't
- * resolve it first.
+ * resolve it first. `onError` is told when the AI fails (it then plays a stand-in move, see aiClient).
  */
-export function useAiDriver(game: GameState, dispatch: Dispatch): PlayerId | null {
+export function useAiDriver(game: GameState, dispatch: Dispatch, onError: (text: string) => void): PlayerId | null {
   // Combat stages at which an AI has already been asked to respond.
   const asked = useRef(new Set<string>());
   // The AI about to respond, and to which combat stage.
@@ -45,7 +44,8 @@ export function useAiDriver(game: GameState, dispatch: Dispatch): PlayerId | nul
       for (const p of game.players) {
         const k = `${stage}:${p.id}`;
         if (!p.ai || !canRespondToCombat(game, head, p.id) || asked.current.has(k)) continue;
-        const m = chooseCombatResponse(game, p.id, { level: aiLevelOf(p) });
+        const { action: m, error } = combatResponse(game, p.id, aiLevelOf(p));
+        if (error) onError(error);
         if (!m) {
           asked.current.add(k);
           continue;
@@ -69,8 +69,10 @@ export function useAiDriver(game: GameState, dispatch: Dispatch): PlayerId | nul
     if (!player.ai) return;
     let cancelled = false;
     const started = performance.now();
-    void think(game, aiLevelOf(player)).then((a) => {
-      if (cancelled || !a) return;
+    void think(game, aiLevelOf(player)).then(({ action: a, error }) => {
+      if (cancelled) return;
+      if (error) onError(error);
+      if (!a) return;
       const wait = Math.max(0, aiDelay(game) - (performance.now() - started));
       timer = window.setTimeout(() => dispatch(a), wait);
     });
@@ -78,7 +80,7 @@ export function useAiDriver(game: GameState, dispatch: Dispatch): PlayerId | nul
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [game, dispatch]);
+  }, [game, dispatch, onError]);
 
   return stage && responding?.stage === stage ? responding.player : null;
 }

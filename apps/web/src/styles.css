@@ -1451,3 +1451,20 @@ body:has(.sheet-layout) { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ------------------------------------------------------------------ crash screen (ErrorBoundary) */
+
+.crash {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: calc(48px + var(--safe-top)) 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--text);
+}
+.crash h2 { margin: 0; font-family: var(--display); }
+.crash p { margin: 0; line-height: 1.5; }
+.crash-detail { color: var(--bad); overflow-wrap: anywhere; }
+.crash-hint { color: var(--muted); }
+.crash-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }

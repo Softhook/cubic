@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { chooseCombatResponse } from '@quantum/ai';
 import { actor, apply, legalActions, MAPS, RuleError, RULESETS, type Action, type GameState, type PlayerId } from '@quantum/engine';
 import {
   actBody,
@@ -17,7 +16,7 @@ import {
   type Step,
 } from '@quantum/online';
 import { sfx } from '../sound';
-import { aiLevelOf, think } from '../game/aiClient';
+import { aiLevelOf, combatResponse, think } from '../game/aiClient';
 import { useToasts } from '../game/toasts';
 import type { GameView } from '../game/view';
 import { battleStage, inBattle, nextStep } from './playback';
@@ -55,13 +54,17 @@ export function useOnlineGame(secret: string): OnlineGame {
   const mySeats = useMemo(() => replay?.seats.filter((s) => s.owner === me).map((s) => s.id) ?? [], [replay, me]);
   const head = replay?.steps.at(-1)!.state ?? null;
   const { shown, live, toasts, ownBattle, dismissBattle } = usePlayback(replay, me);
-  useAiSeats(replay, me, post);
+  const [error, setError] = useState<{ id: number; text: string } | null>(null);
+  const aiFailed = useCallback((text: string) => {
+    sfx.error();
+    setError({ id: Date.now(), text });
+  }, []);
+  useAiSeats(replay, me, post, aiFailed);
 
   useEffect(() => {
     if (replay) rememberGame({ secret, ...summary(replay, mySeats) });
   }, [replay, mySeats, secret]);
 
-  const [error, setError] = useState<{ id: number; text: string } | null>(null);
   const dispatch = useCallback(
     (a: Action): boolean => {
       if (!head || !live) return false;
@@ -265,9 +268,10 @@ function usePlayback(replay: Replay | null, me: string) {
 
 /**
  * Moves the AI seats: the browser that made the last move does; any other takes over once the
- * game has waited `AI_TAKEOVER_MS` for it.
+ * game has waited `AI_TAKEOVER_MS` for it. `onError` is told when the AI fails (it then plays a
+ * stand-in move, see aiClient).
  */
-function useAiSeats(replay: Replay | null, me: string, post: (req: PostRequest) => void) {
+function useAiSeats(replay: Replay | null, me: string, post: (req: PostRequest) => void, onError: (text: string) => void) {
   const working = useRef('');
   const [recheck, setRecheck] = useState(0);
 
@@ -293,12 +297,16 @@ function useAiSeats(replay: Replay | null, me: string, post: (req: PostRequest) 
     const current = (r: Replay) => r.tip === replay.tip && (r.combat?.stage ?? '') === stage;
     const level = aiLevelOf(head.players[work.seat]);
     if (work.combat) {
-      const a = chooseCombatResponse(head, work.seat, { level });
+      const { action: a, error } = combatResponse(head, work.seat, level);
+      if (error) onError(error);
       post((r) => (!current(r) ? null : a ? actBody(r, work.seat, a) : { t: 'pass', seat: work.seat, stage }));
     } else {
-      void think(head, level).then((a) => a && post((r) => (current(r) ? actBody(r, work.seat, a) : null)));
+      void think(head, level).then(({ action: a, error }) => {
+        if (error) onError(error);
+        if (a) post((r) => (current(r) ? actBody(r, work.seat, a) : null));
+      });
     }
-  }, [replay, me, post, recheck]);
+  }, [replay, me, post, recheck, onError]);
 }
 
 /** The AI seat that has something to do now, if any. */

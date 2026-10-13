@@ -81,7 +81,11 @@ export function useGame(initial: GameState): GameView {
   }, []);
 
   useUndoShortcut(undo);
-  const aiResponder = useAiDriver(game, dispatch);
+  const aiFailed = useCallback((text: string) => {
+    sfx.error();
+    setError({ id: Date.now(), text });
+  }, []);
+  const aiResponder = useAiDriver(game, dispatch, aiFailed);
 
   // Keep the unfinished game in the browser so a revisit can resume it.
   useEffect(() => saveGame(game), [game]);
