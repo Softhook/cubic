@@ -78,11 +78,16 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
   const current = zoomed ? place(f, clampCell(f, f.fit * view.zoom), view.x, view.y) : fitted(f);
 
   const commit = (v: View) => {
-    if (v.cell === current.cell && v.x === current.x && v.y === current.y) {
-      if (board.current) board.current.style.transform = ''; // nothing to redraw; just drop the preview
+    const zoom = v.cell / f.fit;
+    // What will be drawn: a hair past the whole map is the whole map.
+    const next = canZoom && zoom > 1.001 ? place(f, clampCell(f, f.fit * zoom), v.x, v.y) : fitted(f); // as `current` works it out
+    if (next.cell === current.cell && next.x === current.x && next.y === current.y) {
+      // Nothing to redraw; just drop the preview.
+      wrap.current?.classList.remove('gesture');
+      if (board.current) board.current.style.transform = '';
       return;
     }
-    setView({ zoom: v.cell / f.fit, x: v.x, y: v.y, map });
+    setView({ zoom, x: v.x, y: v.y, map });
   };
 
   // Gesture handlers are attached once and read the latest values from here.
@@ -118,10 +123,12 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
   latest.current = { f, current, zoomed, commit, stopDemo };
   useLayoutEffect(() => stopDemo, [stopDemo]);
 
-  // The committed view has been drawn: drop the gesture's transform.
+  // The committed view has been drawn: drop the gesture's transform, and only now its clip, or the
+  // transformed board shows outside the wrap for a frame (over the top bar, zooming in from the whole map).
   useLayoutEffect(() => {
+    wrap.current?.classList.remove('gesture');
     if (board.current) board.current.style.transform = '';
-  }, [board, current.cell, current.x, current.y]);
+  }, [wrap, board, current.cell, current.x, current.y]);
 
   useLayoutEffect(() => {
     const el = wrap.current;
@@ -155,12 +162,11 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       frame = 0;
       goal = null;
     };
-    /** Commit what's on screen, so it redraws crisp. */
+    /** Commit what's on screen, so it redraws crisp. The clip stays until that's drawn (see above). */
     const finish = () => {
       stop();
       clearTimeout(wheelTimer);
-      el.classList.remove('gesture');
-      if (!live) return;
+      if (!live) return el.classList.remove('gesture');
       latest.current.commit(live);
       live = null;
     };
