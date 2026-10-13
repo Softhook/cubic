@@ -12,6 +12,8 @@ export interface GameView {
   /** Whether this screen plays for `p` (on this device: every human; online: this browser's seats). */
   mine(p: PlayerId): boolean;
   undo?: () => void;
+  /** Every position of the game so far, oldest first, to look back at from the log (on this device: since it was opened). */
+  positions: readonly GameState[];
   toasts: Toast[];
   error: { id: number; text: string } | null;
   /** On this device: the AI about to fire a missile or re-roll in the battle on screen. */

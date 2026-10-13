@@ -1,8 +1,11 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import { rulesOf } from '@quantum/engine';
+import { actor, rulesOf, type GameState, type PlayerId } from '@quantum/engine';
 import { useController } from '../game/controller';
+import { useUndoShortcut } from '../game/useGame';
 import { conquerOptions } from '../game/legal';
 import type { GameView } from '../game/view';
+import { useReview, type Review } from '../game/review';
+import { logText } from '../game/logText';
 import { SHEET, useMediaQuery } from '../game/useMediaQuery';
 import { BottomSheet } from './BottomSheet';
 import { Board } from './Board';
@@ -20,6 +23,10 @@ import { FullscreenButton, useFullscreenOnFirstTap } from './FullscreenButton';
  * `overlay` over everything; online, leaving doesn't end the game. `onLobby` (the title) goes back to
  * the lobby without ending it. On a phone held upright the sidebar and market are a bottom sheet over
  * the map instead, with the turn panel showing at rest and the market first under it.
+ *
+ * A tap on a log entry looks back at the game: the screen shows the map as it was just after it, and
+ * nothing can be played until the review ends. The game goes on meanwhile, and the log with it; the
+ * review bar says when it is waiting for this screen.
  */
 export function Game({
   view,
@@ -38,8 +45,22 @@ export function Game({
   side?: ReactNode;
   overlay?: ReactNode;
 }) {
-  const { game, dispatch, error, toasts, undo } = view;
-  const ctl = useController(game, dispatch, view.mine);
+  const live = view.game;
+  const { review, can, pick } = useReview(live, view.positions);
+  // While reviewing, the screen shows a past position that nobody plays.
+  const game = review?.state ?? live;
+  const dispatch = review ? NO_DISPATCH : view.dispatch;
+  const undo = review ? undefined : view.undo;
+  useUndoShortcut(undo);
+  // A battle on screen when the player looked back comes back without rolling again.
+  const [settledBattle, setSettledBattle] = useState<number | null>(null);
+  const lookBack = (id: number) => {
+    const liveHead = live.pending[0];
+    if (!review && liveHead?.kind === 'combat') setSettledBattle(liveHead.id);
+    pick(id);
+  };
+  const { error, toasts } = view;
+  const ctl = useController(game, dispatch, review ? NOBODY : view.mine);
   const [hideGameOver, setHideGameOver] = useState(false);
   useFullscreenOnFirstTap();
   const head = game.pending[0];
@@ -51,7 +72,7 @@ export function Game({
   const turnPanel = <TurnPanel game={game} ctl={ctl} dispatch={dispatch} undo={undo} />;
   const market = cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} />;
   const players = <PlayerList game={game} ctl={ctl} dispatch={dispatch} />;
-  const log = <Log game={game} />;
+  const log = <Log game={live} review={{ can, pick: lookBack, picked: review?.entry.id }} />;
 
   return (
     <div className="app">
@@ -78,12 +99,22 @@ export function Game({
         {/* First in both layouts, so turning the phone keeps the board (and its zoom). */}
         <div className="stage" style={{ '--map-ratio': game.board.rows / game.board.cols } as CSSProperties}>
           {/* Choosing a starting planet is the first moment the map is yours to look at: show it zooms then. */}
-          <Board game={game} ctl={ctl} introduce={game.phase === 'setup' && ctl.highlights.planets.size > 0} />
+          <Board
+            game={game}
+            ctl={ctl}
+            scene={review ? `review:${review.entry.id}` : 'live'}
+            introduce={!review && game.phase === 'setup' && ctl.highlights.planets.size > 0}
+          />
+          {review && <ReviewBar review={review} game={live} waiting={waitingFor(view)} />}
           <Toasts toasts={toasts} game={game} />
           <ErrorToast error={error} />
         </div>
         {sheet ? (
-          <BottomSheet peek={turnPanel} wantOpen={!!cards && (ctl.legal.can('takeCard') || ctl.legal.can('patientTactic'))}>
+          <BottomSheet
+            peek={turnPanel}
+            wantOpen={!!cards && (ctl.legal.can('takeCard') || ctl.legal.can('patientTactic'))}
+            closeFor={review?.entry.id}
+          >
             {side}
             {market}
             {players}
@@ -102,7 +133,7 @@ export function Game({
         )}
       </main>
 
-      {head?.kind === 'combat' && (
+      {!review && head?.kind === 'combat' && (
         <CombatOverlay
           key={head.id}
           game={game}
@@ -111,16 +142,67 @@ export function Game({
           mine={view.mine}
           aiResponder={view.aiResponder ?? null}
           online={online ? view.combat : undefined}
+          settled={settledBattle === head.id}
         />
       )}
-      <DecisionOverlay game={game} dispatch={dispatch} human={ctl.human} />
+      {!review && <DecisionOverlay game={game} dispatch={dispatch} human={ctl.human} />}
       {conquering.length > 0 && (
         <ConquerChoice game={game} options={conquering} dispatch={dispatch} onClose={() => ctl.select({ kind: 'none' })} />
       )}
-      {game.phase === 'over' && !hideGameOver && (
+      {!review && game.phase === 'over' && !hideGameOver && (
         <GameOver game={game} onNew={onQuit} onClose={() => setHideGameOver(true)} newLabel={online ? 'Back to lobby' : undefined} />
       )}
       {overlay}
+    </div>
+  );
+}
+
+const NO_DISPATCH = () => false;
+const NOBODY = (_: PlayerId) => false;
+
+/** While the screen looks back: what the game as it is now waits for this screen to do, if anything. */
+function waitingFor(view: GameView): string | null {
+  const g = view.game;
+  if (g.phase === 'over') return 'The game is over';
+  const head = g.pending[0];
+  if (head?.kind === 'combat')
+    return view.mine(head.attacker.player) || view.mine(head.defender.player) ? 'A battle is waiting for you' : null;
+  return view.mine(actor(g)) ? 'It’s your move' : null;
+}
+
+/**
+ * Over the map while looking back: which log entry it shows, steps through the log, and the way back
+ * to the game, which stands out while the game is `waiting` for this screen.
+ */
+function ReviewBar({ review, game, waiting }: { review: Review; game: GameState; waiting: string | null }) {
+  const { entry } = review;
+  const colour = { '--pc': entry.player !== undefined ? game.players[entry.player].color : 'var(--muted)' } as CSSProperties;
+  return (
+    <div className="review-bar" style={colour} role="status">
+      <button
+        type="button"
+        className="btn btn-ghost"
+        disabled={!review.prev}
+        onClick={review.prev}
+        title="Earlier (←)"
+        aria-label="Earlier"
+      >
+        ‹
+      </button>
+      <div className="review-text">
+        {waiting ? (
+          <small className="review-waiting">{waiting}</small>
+        ) : (
+          <small>{review.state.phase === 'setup' ? 'Setup' : `Turn ${review.state.turn.number}`} · looking back</small>
+        )}
+        <span>{logText(game, entry)}</span>
+      </div>
+      <button type="button" className="btn btn-ghost" disabled={!review.next} onClick={review.next} title="Later (→)" aria-label="Later">
+        ›
+      </button>
+      <button type="button" className={`btn ${waiting ? 'btn-primary pulse' : ''}`} onClick={review.close} title="Back to the game (Esc)">
+        Back to game
+      </button>
     </div>
   );
 }

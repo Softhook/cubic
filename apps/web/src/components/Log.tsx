@@ -10,8 +10,11 @@ export function shouldAutoScroll(scrollTop: number, clientHeight: number, scroll
   return scrollHeight - scrollTop - clientHeight <= AUTO_SCROLL_THRESHOLD;
 }
 
-/** The game's log. Collapsed (the default, remembered) it is just its title; the whole row toggles it. */
-export function Log({ game }: { game: GameState }) {
+/**
+ * The game's log. Collapsed (the default, remembered) it is just its title; the whole row toggles it.
+ * An entry `review.can` show is a button: it shows the map as it was just after it (`review.pick`).
+ */
+export function Log({ game, review }: { game: GameState; review?: { can(id: number): boolean; pick(id: number): void; picked?: number } }) {
   const ref = useRef<HTMLOListElement>(null);
   const [open, setOpen] = useState(() => stored(STORAGE_KEY) === '1');
   useEffect(() => {
@@ -48,8 +51,19 @@ export function Log({ game }: { game: GameState }) {
       {open && (
         <ol ref={ref}>
           {game.log.slice(-40).map((e) => (
-            <li key={e.id} style={colour(e.player)}>
-              {logText(game, e)}
+            <li key={e.id} style={colour(e.player)} className={review?.picked === e.id ? 'picked' : undefined}>
+              {review?.can(e.id) ? (
+                <button
+                  type="button"
+                  aria-pressed={review.picked === e.id}
+                  title="Show the map as it was then"
+                  onClick={() => review.pick(e.id)}
+                >
+                  {logText(game, e)}
+                </button>
+              ) : (
+                logText(game, e)
+              )}
             </li>
           ))}
         </ol>

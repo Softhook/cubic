@@ -35,6 +35,7 @@ export function CombatOverlay({
   mine,
   aiResponder,
   online,
+  settled,
 }: {
   game: GameState;
   combat: CombatPending;
@@ -45,14 +46,17 @@ export function CombatOverlay({
   aiResponder: PlayerId | null;
   /** Online: who the battle waits for; it resolves once everyone who may respond is done. */
   online?: GameView['combat'];
+  /** Shown before (the player looked back at the game meanwhile): back as it was, without rolling again. */
+  settled?: boolean;
 }) {
-  const [revealed, setRevealed] = useState(false);
+  const [revealed, setRevealed] = useState(!!settled);
   const dieSize = useMediaQuery(PHONE) ? 40 : 64;
   useEffect(() => {
+    if (settled) return;
     setRevealed(false);
     const t = window.setTimeout(() => setRevealed(true), REVEAL_MS);
     return () => window.clearTimeout(t);
-  }, [combat.id]);
+  }, [combat.id, settled]);
 
   const out = combatOutcome(game, combat);
   const A = game.players[combat.attacker.player];
@@ -118,9 +122,9 @@ export function CombatOverlay({
               size={dieSize}
               color={COMBAT_DICE[role].color}
               pip={COMBAT_DICE[role].pip}
-              tumbleOnMount
+              tumbleOnMount={!settled}
               delay={role === 'attacker' ? 0 : 0.12}
-              sound={role === 'attacker'}
+              sound={!settled && role === 'attacker'}
             />
             <span>{s.missile ? 'Missile' : role === 'attacker' ? 'Attack die' : 'Defence die'}</span>
           </div>

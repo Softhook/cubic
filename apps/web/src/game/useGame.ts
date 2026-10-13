@@ -32,9 +32,13 @@ export function useGame(initial: GameState): GameView {
     setUndoCount(h.length);
   };
 
+  // Every position since the game was opened here, for reviewing it from the log.
+  const [positions, setPositions] = useState<readonly GameState[]>([initial]);
+
   const show = (next: GameState) => {
     ref.current = next;
     setGame(next);
+    setPositions((p) => [...p, next]);
   };
 
   const commit = useCallback(
@@ -82,7 +86,6 @@ export function useGame(initial: GameState): GameView {
     sfx.select();
   }, []);
 
-  useUndoShortcut(undo);
   const aiResponder = useAiDriver(game, dispatch, showError);
 
   // Keep the unfinished game in the browser so a revisit can resume it.
@@ -95,7 +98,7 @@ export function useGame(initial: GameState): GameView {
   }, [commit, dispatch]);
 
   const mine = useCallback((p: PlayerId) => !ref.current.players[p].ai, []);
-  return { game, dispatch, mine, error, toasts, undo: undoCount > 0 ? undo : undefined, aiResponder };
+  return { game, dispatch, mine, error, toasts, undo: undoCount > 0 ? undo : undefined, positions, aiResponder };
 }
 
 /** Ctrl/Cmd+Z undoes the last move, unless the user is typing or a dialog is open over the board. */

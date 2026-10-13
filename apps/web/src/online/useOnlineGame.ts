@@ -84,6 +84,7 @@ export function useOnlineGame(secret: string): OnlineGame {
     [head, live, mySeats, post, showError],
   );
 
+  const positions = useMemo(() => replay?.steps.map((s) => s.state) ?? [], [replay]);
   const view = useMemo((): GameView | null => {
     if (!replay || !shown) return null;
     const c = live ? replay.combat : null;
@@ -95,6 +96,7 @@ export function useOnlineGame(secret: string): OnlineGame {
       // Nothing is this screen's to play while it catches up.
       mine: (p) => live && mySeats.includes(p),
       undo: live && undoSeat !== null && mySeats.includes(undoSeat) ? () => post({ t: 'undo', seat: undoSeat }) : undefined,
+      positions,
       toasts,
       error,
       // While catching up, a battle waits for nobody: it is being replayed.
@@ -113,7 +115,7 @@ export function useOnlineGame(secret: string): OnlineGame {
           }
         : undefined,
     };
-  }, [replay, shown, live, mySeats, dispatch, post, toasts, error, ownBattle, dismissBattle]);
+  }, [replay, shown, live, mySeats, dispatch, post, positions, toasts, error, ownBattle, dismissBattle]);
 
   // Dev-only hook for browser tests: window.__quantumOnline.{state(), view(), legal(), mySeats()}.
   const latest = useRef({ head, view, mySeats });

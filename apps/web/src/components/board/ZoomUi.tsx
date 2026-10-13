@@ -77,13 +77,14 @@ export function useZoomIntro(game: GameState, ctl: Controller, zoom: BoardZoom, 
  * Zoomed in, a ship this screen doesn't play for (an opponent's, the AI's) that moves or arrives off screen
  * brings the map to it, so their moves aren't missed. Your own moves never move the map.
  */
-export function useFollowMoves(game: GameState, ctl: Controller, spots: ShipSpots, zoom: BoardZoom) {
-  const seen = useRef<{ map: string; spots: ShipSpots } | null>(null);
+export function useFollowMoves(game: GameState, ctl: Controller, spots: ShipSpots, zoom: BoardZoom, scene?: string) {
+  const seen = useRef<{ map: string; scene?: string; spots: ShipSpots } | null>(null);
   const follow = useEffectEvent(() => {
     const before = seen.current;
     const map = `${game.board.rows}x${game.board.cols}`;
-    seen.current = { map, spots };
-    if (before?.map !== map) return;
+    seen.current = { map, scene, spots };
+    // A jump to another position (see Board's `scene`) moves no ship.
+    if (before?.map !== map || before.scene !== scene) return;
     let moved: { r: number; c: number } | undefined;
     for (const d of game.dice) {
       const now = spots.get(d.id);

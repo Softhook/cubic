@@ -8,19 +8,34 @@ const TAP_SLOP = 6;
  * The phone's bottom sheet, flush with the bottom of its parent (the layout) and over the map. At rest it shows
  * `peek` (the turn panel); dragged or tapped open it shows `children` too, scrolling, with the map
  * dimmed behind it (a tap there closes it). It opens by itself while `wantOpen` (a card to pick) and
- * closes again after.
+ * closes again after. It closes whenever `closeFor` changes to something (a log entry picked, to show the map then).
  *
  * The resting height is set on the parent as `--sheet-rest`, for the map to stop above it. It only grows
  * (until the screen's width changes), so the map doesn't jump when the turn panel gains a row; the peek
  * keeps that height too (`--peek-min`), so a shorter turn panel leaves space, never a glimpse of the rest.
  */
-export function BottomSheet({ peek, wantOpen, children }: { peek: ReactNode; wantOpen: boolean; children: ReactNode }) {
+export function BottomSheet({
+  peek,
+  wantOpen,
+  closeFor,
+  children,
+}: {
+  peek: ReactNode;
+  wantOpen: boolean;
+  closeFor?: unknown;
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(wantOpen);
   // Follows `wantOpen` during render (not in an effect), so the sheet never flashes shut first.
   const [wanted, setWanted] = useState(wantOpen);
   if (wantOpen !== wanted) {
     setWanted(wantOpen);
     setOpen(wantOpen);
+  }
+  const [closedFor, setClosedFor] = useState(closeFor);
+  if (closeFor !== closedFor) {
+    setClosedFor(closeFor);
+    if (closeFor != null) setOpen(false);
   }
   // Not under a popup (a battle, a choice): Escape is for that.
   useShortcut(

@@ -19,9 +19,23 @@ const inspectKey = (i: Inspect) => ('ship' in i ? `ship:${i.ship}` : `planet:${i
  * ships, then explosions. What is clickable comes from the controller's highlights; a tap on a ship
  * or planet that isn't shows its info instead. It fits its box, and zooms and pans (useBoardZoom).
  * `children` float over the map (positioned in percent of its size). `introduce` (the start of a game)
- * shows that it zooms.
+ * shows that it zooms. `scene` changes when the map jumps to another position instead of following a
+ * move (looking back at the game, and back again): ships glide to where they are then, but don't roll,
+ * blow up or bring the map to them.
  */
-export function Board({ game, ctl, introduce, children }: { game: GameState; ctl: Controller; introduce?: boolean; children?: ReactNode }) {
+export function Board({
+  game,
+  ctl,
+  introduce,
+  scene,
+  children,
+}: {
+  game: GameState;
+  ctl: Controller;
+  introduce?: boolean;
+  scene?: string;
+  children?: ReactNode;
+}) {
   const wrap = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const { rows, cols, planets } = game.board;
@@ -29,7 +43,7 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
   const { cell } = zoom;
   const spots = shipSpots(game);
   const tip = useZoomIntro(game, ctl, zoom, !!introduce);
-  useFollowMoves(game, ctl, spots, zoom);
+  useFollowMoves(game, ctl, spots, zoom, scene);
   const [inspect, setInspect] = useState<Inspect | null>(null);
   // The info closes itself on a tap elsewhere; a tap on the same thing again closes it too.
   const show = (what: Inspect) => setInspect((cur) => (cur && inspectKey(cur) === inspectKey(what) ? null : what));
@@ -103,6 +117,7 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
           {/* Mouse users also get `title=` on ships and planets; touch screens get the tap. */}
           <Ships
             game={game}
+            scene={scene}
             ctl={ctl}
             zoomed={zoom.zoomed}
             spots={spots}
@@ -113,7 +128,7 @@ export function Board({ game, ctl, introduce, children }: { game: GameState; ctl
               if (touch) setHeld(id);
             }}
           />
-          <Explosions game={game} cell={cell} />
+          <Explosions key={scene} game={game} cell={cell} />
           {inspect && (
             <BoardInfo key={inspectKey(inspect)} game={game} spots={spots} what={inspect} cell={cell} onClose={() => setInspect(null)} />
           )}
@@ -175,8 +190,10 @@ function Ships({
   cell,
   onInfo,
   onPress,
+  scene,
 }: {
   game: GameState;
+  scene?: string;
   ctl: Controller;
   zoomed: boolean;
   spots: ShipSpots;
@@ -243,7 +260,7 @@ function Ships({
         }
       >
         <div className="ship-ring" />
-        <Die3D value={d.value} rolls={d.rolls} size={cell * 0.56} color={game.players[d.owner].color} />
+        <Die3D value={d.value} rolls={d.rolls} scene={scene} size={cell * 0.56} color={game.players[d.owner].color} />
         {abilityUsed && (
           <span className="ship-badge" aria-label="Ability used this turn">
             ✦

@@ -2,7 +2,6 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import type { AskMode, Replay } from '@quantum/online';
 import { Game } from '../components/GameScreen';
 import { restoreFullscreen } from '../components/FullscreenButton';
-import { useUndoShortcut } from '../game/useGame';
 import { COARSE } from '../game/useMediaQuery';
 import { inviteLink } from './create';
 import { useOnlineGame, type OnlineGame } from './useOnlineGame';
@@ -16,7 +15,6 @@ const NOT_FOUND_MS = 15000;
 export function OnlineScreen({ secret, onLeave, onRules }: { secret: string; onLeave: () => void; onRules: () => void }) {
   const g = useOnlineGame(secret);
   const [watching, setWatching] = useState(false);
-  useUndoShortcut(g.view?.undo);
 
   if (!g.view || !g.replay) return <Searching relays={g.relays} failure={g.failure} onLeave={onLeave} />;
   const openSeats = g.replay.seats.filter((s) => s.open && !s.owner);

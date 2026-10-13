@@ -58,6 +58,9 @@ export interface Die3DProps {
   pip?: string;
   /** Tumble when first shown (combat dice, setup fleet). */
   tumbleOnMount?: boolean;
+  /** Changes when the die jumps to another position of the game instead of following play (looking
+   * back at it): a roll since then turns it to its face, without tumbling or a sound. */
+  scene?: string;
   /** Seconds to wait before the tumble (to stagger several dice). */
   delay?: number;
   sound?: boolean;
@@ -74,6 +77,7 @@ export const Die3D = memo(function Die3D({
   color,
   pip = PIP,
   tumbleOnMount,
+  scene,
   delay = 0,
   sound = true,
   className = '',
@@ -85,6 +89,7 @@ export const Die3D = memo(function Die3D({
   const spins = useRef({ x: 0, y: 0 });
   const lastRolls = useRef(rolls);
   const lastValue = useRef(value);
+  const lastScene = useRef(scene);
   const mounted = useRef(false);
   /** Whether the cube goes once the die has landed. */
   const flatten = !tumbleOnMount && !APPLE_TOUCH;
@@ -166,7 +171,10 @@ export const Die3D = memo(function Die3D({
       return;
     }
     const rolled = rolls !== lastRolls.current;
-    if (!rolled && value === lastValue.current) return;
+    if (!rolled && value === lastValue.current) {
+      lastScene.current = scene;
+      return;
+    }
     // A still die builds its cube first; this runs again once it's there (before anything is painted).
     if (!el) return setMoving(true);
     const built = !el.style.transform;
@@ -175,9 +183,11 @@ export const Die3D = memo(function Die3D({
       el.style.transition = 'none';
       el.style.transform = rotation(lastValue.current);
     }
+    const jumped = scene !== lastScene.current;
     lastRolls.current = rolls;
     lastValue.current = value;
-    const go = rolled ? tumble : () => setRotation(450);
+    lastScene.current = scene;
+    const go = rolled && !jumped ? tumble : () => setRotation(450);
     if (built) afterPaint(go);
     else {
       // A move still waiting on a new cube is overtaken by this one.
@@ -185,7 +195,7 @@ export const Die3D = memo(function Die3D({
       go();
     }
   });
-  useLayoutEffect(() => animate(), [value, rolls, moving, animate]);
+  useLayoutEffect(() => animate(), [value, rolls, moving, scene, animate]);
 
   const style = {
     '--die-size': `${size}px`,
