@@ -488,29 +488,6 @@ export function Manual({ dark }: { dark?: boolean }) {
             </p>
           </Action>
 
-          <div id="mn-conquer" className="mn-action mn-wide mn-key">
-            <header>
-              <h3>Conquer</h3>
-              <Tag>the key move</Tag>
-              <Cost n={2} />
-            </header>
-            <ConquerFigure />
-            <div className="mn-rules">
-              <p>
-                Add up <b>your ships in the planet’s orbit</b>. If they make <b>exactly</b> the planet’s number, place one of your cubes on
-                it.
-              </p>
-              <ul className="mn-checks">
-                <li className="ok">
-                  <b>All</b> your ships in orbit count. You can’t leave one out, so a ship in the wrong place has to move away first.
-                </li>
-                <li className="no">Enemy ships don’t count, and they don’t stop you.</li>
-                <li className="no">Ships on the corners aren’t in orbit.</li>
-                <li className="ok">The planet needs a free cube space and none of your cubes yet.</li>
-              </ul>
-            </div>
-          </div>
-
           <Action name="Deploy" cost={1} figure={<DeployFigure />}>
             <p>
               Bring a destroyed ship back. Take it from your scrapyard, <b>keeping its number</b>, and put it in an empty orbit space of a
@@ -541,6 +518,29 @@ export function Manual({ dark }: { dark?: boolean }) {
               Move your Research up 1. When it reaches <b>6</b>, take a card at the end of your turn, and it drops back to 1.
             </p>
           </Action>
+
+          <div id="mn-conquer" className="mn-action mn-wide mn-key">
+            <header>
+              <h3>Conquer</h3>
+              <Tag>the key move</Tag>
+              <Cost n={2} />
+            </header>
+            <ConquerFigure />
+            <div className="mn-rules">
+              <p>
+                Add up <b>your ships in the planet’s orbit</b>. If they make <b>exactly</b> the planet’s number, place one of your cubes on
+                it.
+              </p>
+              <ul className="mn-checks">
+                <li className="ok">
+                  <b>All</b> your ships in orbit count. You can’t leave one out, so a ship in the wrong place has to move away first.
+                </li>
+                <li className="no">Enemy ships don’t count, and they don’t stop you.</li>
+                <li className="no">Ships on the corners aren’t in orbit.</li>
+                <li className="ok">The planet needs a free cube space and none of your cubes yet.</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </section>
 
