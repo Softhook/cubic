@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { EXPANSION, card, cardKind, rulesOf, type DeckKind, type GameState } from '@quantum/engine';
 import type { Legal } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
@@ -10,7 +10,8 @@ import { CardViewer } from './CardViewer';
 import { warmCardImages } from '../art/cardImages';
 import { Dialog } from './Dialog';
 
-export function Market({ game, dispatch, legal }: { game: GameState; dispatch: Dispatch; legal: Legal }) {
+/** `steady` (looking back at the game): the market only grows, so the map above it keeps its size from step to step. */
+export function Market({ game, dispatch, legal, steady }: { game: GameState; dispatch: Dispatch; legal: Legal; steady?: boolean }) {
   const patientPick = legal.can('patientTactic');
   const picking = legal.can('takeCard') || patientPick;
   const m = game.market;
@@ -35,6 +36,8 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   const [patientChoice, setPatientChoice] = useState<{ id: string; index: number } | null>(null);
   const { open, toggle } = useCollapse(picking);
   const list = useMediaQuery(LIST);
+  const section = useRef<HTMLElement>(null);
+  useGrowOnly(section, !!steady);
   useWarmCards(game);
   // A pick over, the turn panel comes back into view: in phone landscape's column you may have scrolled down to a card.
   useEffect(() => {
@@ -253,7 +256,7 @@ export function Market({ game, dispatch, legal }: { game: GameState; dispatch: D
   );
 
   return (
-    <section id="market-cards" className={`market ${open ? '' : 'collapsed'} ${picking ? 'picking' : ''}`}>
+    <section ref={section} id="market-cards" className={`market ${open ? '' : 'collapsed'} ${picking ? 'picking' : ''}`}>
       {toggleButton}
       {open ? rows : strip}
       {viewer}
@@ -269,6 +272,27 @@ const LIST = '(max-width: 600px), (max-width: 980px) and (max-height: 500px) and
 const cardsLeft = (n: number) => `${n} card${n === 1 ? '' : 's'} left`;
 
 const STORAGE_KEY = 'quantum.marketCollapsed';
+
+/** While `hold`, `el` never gets shorter than it has been (its own min-height), and is free again after. */
+function useGrowOnly(el: RefObject<HTMLElement>, hold: boolean) {
+  useLayoutEffect(() => {
+    const box = el.current;
+    if (!hold || !box) return;
+    let h = 0;
+    const measure = () => {
+      if (box.offsetHeight <= h) return;
+      h = box.offsetHeight;
+      box.style.minHeight = `${h}px`;
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    return () => {
+      ro.disconnect();
+      box.style.minHeight = '';
+    };
+  }, [el, hold]);
+}
 
 /**
  * The market's open/collapsed state. The player's choice is remembered across games, but a collapsed

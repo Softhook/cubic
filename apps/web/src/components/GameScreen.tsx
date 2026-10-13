@@ -75,7 +75,7 @@ export function Game({
   const conquering = sel.kind === 'conquer' ? conquerOptions(ctl.legal, sel.planet) : [];
   // The same panels in both layouts, in a different order.
   const turnPanel = <TurnPanel game={game} ctl={ctl} dispatch={dispatch} undo={undo} />;
-  const market = cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} />;
+  const market = cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} steady={!!review} />;
   const players = <PlayerList game={game} ctl={ctl} dispatch={dispatch} />;
   const log = <Log game={live} review={{ can, pick: lookBack, picked: review?.entry.id, move: review?.move }} />;
 

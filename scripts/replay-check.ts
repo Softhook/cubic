@@ -51,6 +51,13 @@ const moveInView = (page: Page) =>
     return !!li && li.top >= list.top - 1 && li.bottom <= list.bottom + 1;
   });
 
+/** The map's size on screen (it refits when the space around it changes). */
+const mapSize = (page: Page) =>
+  page.evaluate(() => {
+    const b = document.querySelector('.board')!.getBoundingClientRect();
+    return `${Math.round(b.width)}×${Math.round(b.height)}`;
+  });
+
 /** Dice tumbling on the map now (Die3D's hop). */
 const diceRolling = (page: Page) =>
   page.evaluate(
@@ -94,10 +101,13 @@ try {
     'the review bar covers the map',
   );
   await page.screenshot({ path: `${OUT}/review.png` });
+  const sizes = new Set([await mapSize(page)]);
   for (let i = 0; i < 10; i++) {
     await page.keyboard.press('ArrowRight');
     await page.waitForTimeout(250);
+    sizes.add(await mapSize(page));
   }
+  check(sizes.size === 1, 'the map keeps its size from step to step', `the map changes size as → steps on: ${[...sizes].join(', ')}`);
   await page.waitForTimeout(400);
   check(await moveInView(page), '→ steps through the game, and the log keeps the move in view', 'the log loses the move as → steps on');
   const rolls = await page.evaluate(() =>
