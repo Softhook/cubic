@@ -14,6 +14,7 @@ import {
   type PlayerId,
 } from '@quantum/engine';
 import { outcomes, type Outcome } from './chance';
+import { shuffleUnseen } from './hidden';
 import { candidates } from './patient';
 import { evaluate } from './evaluate';
 
@@ -333,57 +334,28 @@ function seed(random: () => number): number {
 function hideUnknowns(state: GameState, random: () => number): GameState {
   const s = copyState({ ...state, log: [] });
   s.rng = seed(random);
-  const peek = s.pending[0]?.kind === 'peek' ? s.pending[0].deck : null;
-  shuffle(s.market.skillDeck, peek === 'skill' ? 1 : 0, random);
-  shuffle(s.market.tacticDeck, peek === 'tactic' ? 1 : 0, random);
+  shuffleUnseen(s, random);
   return s;
-}
-
-/** Shuffles `xs` in place, leaving the first `keep` cards (known to the player) in place. */
-function shuffle(xs: string[], keep: number, random: () => number) {
-  for (let i = xs.length - 1; i > keep; i--) {
-    const j = keep + Math.floor(random() * (i - keep + 1));
-    [xs[i], xs[j]] = [xs[j], xs[i]];
-  }
 }
 
 /** Identifies a position for the evaluation cache: also outside my turn, where whose turn it is matters. */
 function evalKey(s: GameState): string {
-  const t = s.turn;
-  const between = s.players.map((p) => [p.bonusTurns.length, p.carriedPicks]);
-  return `${s.phase}|${s.winner}|${t.player}|${t.phase}|${JSON.stringify([t.offTurnCubes, between])}|${signature(s)}`;
+  return `${s.phase}|${s.winner}|${signature(s)}`;
 }
 
-/** Identifies a position within a turn, for the transposition table. */
+/**
+ * Identifies a position, for the transposition table and the evaluation cache. The turn and the
+ * players go in whole, less what never changes during a game, so a field added to either can't be
+ * left out by mistake. Dice are reduced to number and place; the decks to their size, since the AI
+ * plays on its own shuffle of them (hideUnknowns).
+ */
 function signature(s: GameState): string {
-  const t = s.turn;
+  const m = s.market;
   return JSON.stringify([
     s.dice.map((d) => [d.value, d.loc.zone === 'board' ? d.loc.r * 100 + d.loc.c : d.loc.zone]),
-    t.actionsLeft,
-    t.freeMoves,
-    t.freeDeploys,
-    t.moved,
-    t.abilityUsed,
-    t.seen,
-    t.oncePerTurn,
-    t.conquests,
-    t.freeMovesUsed,
-    t.attacked,
-    t.conquered,
-    t.curiousUsed,
-    t.storedTacticPlayed,
-    t.destroyedBy,
-    t.scrappy,
-    s.players.map((p) => [
-      p.dominance,
-      p.research,
-      p.cubesLeft,
-      p.missiles,
-      p.skills.map((k) => (k.active ? k.id : `-${k.id}`)),
-      p.ambitionTokens,
-      p.planAhead,
-      p.storedTactics,
-    ]),
+    s.turn,
+    s.players.map(({ id: _id, name: _name, color: _color, ai: _ai, aiLevel: _aiLevel, ...changing }) => changing),
+    [m.skillRow, m.tacticRow, m.skillDeck.length, m.tacticDeck.length, m.skillDiscard.length, m.tacticDiscard.length, m.expansions],
     s.board.planets.map((p) => p.cubes),
     s.gates,
     s.pending,

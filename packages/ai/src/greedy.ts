@@ -5,12 +5,14 @@ import {
   combatOutcome,
   combatRerolls,
   conquerCheck,
+  copyState,
   die,
   dieAt,
   distance,
   isEmptySpace,
   legalActions,
   movementRange,
+  mulberry32,
   orbitals,
   planetFreeSlots,
   rulesOf,
@@ -21,12 +23,14 @@ import {
   type Pending,
   type PlayerId,
 } from '@quantum/engine';
+import { shuffleUnseen } from './hidden';
 import { candidates, storedTactics } from './patient';
 
 /**
  * Level 1 (Cadet): greedy one-ply search. Every legal action is simulated (dice outcomes are
- * sampled with a fresh random seed, so the AI never sees the game's real RNG), the
- * resulting position is scored with a heuristic, and the best action wins.
+ * sampled with a fresh random seed, so the AI never sees the game's real RNG; the decks are
+ * shuffled, so it never sees their real order either), the resulting position is scored with a
+ * heuristic, and the best action wins.
  *
  * Kept as it was first written: it is the weakest level, and the golden tests replay it.
  * Its known weaknesses (one action at a time, few noisy samples, no idea of the opponent's
@@ -61,7 +65,18 @@ export function chooseAction(state: GameState, opts: GreedyOptions = {}): Action
   const options = candidates(state);
   if (!options.length) return null;
   if (options.length === 1) return options[0];
-  return best(state, me, options, opts);
+  return best(withUnseenShuffled(state), me, options, opts);
+}
+
+/**
+ * The position with the unseen cards shuffled. The shuffle has a generator of its own, seeded from
+ * the position, rather than `opts.random`: the AI's random stream, and so every seeded replay of
+ * level 1 (the golden tests), stays as it was before the decks were hidden.
+ */
+function withUnseenShuffled(state: GameState): GameState {
+  const s = copyState(state);
+  shuffleUnseen(s, mulberry32((state.rng ^ 0x9e3779b9) >>> 0));
+  return s;
 }
 
 /**
