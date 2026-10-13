@@ -2,7 +2,8 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import type { GameState } from '@quantum/engine';
 import type { Toast } from '../game/toasts';
 
-export function Toasts({ toasts, game }: { toasts: Toast[]; game: GameState }) {
+/** The game's news. `now`: the screen shows an earlier position (looking back), so it says the news is of the game now. */
+export function Toasts({ toasts, game, now }: { toasts: Toast[]; game: GameState; now?: boolean }) {
   return (
     <div className="toasts" aria-live="polite">
       {toasts.map((t) => (
@@ -11,6 +12,7 @@ export function Toasts({ toasts, game }: { toasts: Toast[]; game: GameState }) {
           className={`toast toast-${t.tone}`}
           style={{ '--pc': t.player !== undefined ? game.players[t.player]?.color : 'var(--accent)' } as CSSProperties}
         >
+          {now && <small className="toast-now">Now</small>}
           {t.text}
         </div>
       ))}

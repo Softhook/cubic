@@ -1,16 +1,30 @@
 import { checkInvariants, MODES, type GameState } from '@quantum/engine';
 import { forget, remember, stored } from '../storage';
+import type { SavedPast } from './past';
 
 /** The unfinished game, kept in localStorage so a revisit can resume it. */
 const KEY = 'quantum.savedGame';
+/** And its past (past.ts), to look back at it from the log after a revisit too. */
+const PAST_KEY = 'quantum.savedPast';
 
-export function saveGame(state: GameState) {
-  if (state.phase === 'over') forget(KEY);
-  else remember(KEY, JSON.stringify(state));
+export function saveGame(state: GameState, past?: SavedPast) {
+  if (state.phase === 'over') return clearSavedGame();
+  remember(KEY, JSON.stringify(state));
+  if (past) remember(PAST_KEY, JSON.stringify(past));
 }
 
 export function clearSavedGame() {
   forget(KEY);
+  forget(PAST_KEY);
+}
+
+/** The saved game's past, unchecked: restore() checks that it leads to the game. */
+export function loadSavedPast(): SavedPast | null {
+  try {
+    return JSON.parse(stored(PAST_KEY) ?? 'null') as SavedPast | null;
+  } catch {
+    return null;
+  }
 }
 
 /** The saved game as stored, unchecked: for a crash report. */

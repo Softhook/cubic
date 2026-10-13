@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { createGame, type GameState } from '@quantum/engine';
 import { useGame } from './game/useGame';
-import { clearSavedGame, gameOnScreenBeforeReload, markGameOnScreen } from './game/savedGame';
+import { clearSavedGame, gameOnScreenBeforeReload, markGameOnScreen, saveGame } from './game/savedGame';
+import { begin, saved } from './game/past';
 import { devStartGame } from './game/devStart';
 import { Lobby, type LobbyResult } from './components/Lobby';
 import { Game } from './components/GameScreen';
@@ -41,7 +42,12 @@ export function App() {
       void import('./online/create')
         .then(({ createOnlineGame }) => (location.hash = `#online/${createOnlineGame(r)}`))
         .finally(() => (creatingOnline = false));
-    } else setGame(createGame({ players: r.players, mapId: r.mapId, mode: r.mode }));
+    } else {
+      const g = createGame({ players: r.players, mapId: r.mapId, mode: r.mode });
+      // A new game's past starts with it, so what its creation wrote in the log can be looked back at.
+      saveGame(g, saved(begin(g)));
+      setGame(g);
+    }
   };
   /** Back to the lobby; the game lives on as the saved game, to resume from there. */
   const toLobby = () => setGame(null);

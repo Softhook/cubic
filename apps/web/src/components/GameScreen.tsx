@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { actor, rulesOf, type GameState, type PlayerId } from '@quantum/engine';
 import { useController } from '../game/controller';
 import { useUndoShortcut } from '../game/useGame';
@@ -46,19 +46,24 @@ export function Game({
   overlay?: ReactNode;
 }) {
   const live = view.game;
-  const { review, can, pick } = useReview(live, view.positions);
+  const { review, can, pick } = useReview(live, view.positions, view.reviewAfter);
   // While reviewing, the screen shows a past position that nobody plays.
   const game = review?.state ?? live;
   const dispatch = review ? NO_DISPATCH : view.dispatch;
   const undo = review ? undefined : view.undo;
   useUndoShortcut(undo);
-  // A battle on screen when the player looked back comes back without rolling again.
-  const [settledBattle, setSettledBattle] = useState<number | null>(null);
+  // The game as it was when the review began. On the way back the map shows it for a moment, then
+  // follows play from there to the game now, so what happened meanwhile rolls, blows up and is
+  // brought into view as usual instead of just being there.
+  const [leftAt, setLeftAt] = useState<GameState | null>(null);
   const lookBack = (id: number) => {
-    const liveHead = live.pending[0];
-    if (!review && liveHead?.kind === 'combat') setSettledBattle(liveHead.id);
+    if (!review) setLeftAt(live);
     pick(id);
   };
+  const returning = !review && leftAt !== live ? leftAt : null;
+  useEffect(() => {
+    if (!review && leftAt) setLeftAt(null);
+  }, [review, leftAt]);
   const { error, toasts } = view;
   const ctl = useController(game, dispatch, review ? NOBODY : view.mine);
   const [hideGameOver, setHideGameOver] = useState(false);
@@ -72,10 +77,10 @@ export function Game({
   const turnPanel = <TurnPanel game={game} ctl={ctl} dispatch={dispatch} undo={undo} />;
   const market = cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} />;
   const players = <PlayerList game={game} ctl={ctl} dispatch={dispatch} />;
-  const log = <Log game={live} review={{ can, pick: lookBack, picked: review?.entry.id }} />;
+  const log = <Log game={live} review={{ can, pick: lookBack, picked: review?.entry.id, move: review?.move }} />;
 
   return (
-    <div className="app">
+    <div className={`app ${review ? 'reviewing' : ''}`}>
       <header className="topbar">
         <button type="button" className="brand" title="Back to the lobby" onClick={onLobby}>
           Cubic
@@ -100,13 +105,14 @@ export function Game({
         <div className="stage" style={{ '--map-ratio': game.board.rows / game.board.cols } as CSSProperties}>
           {/* Choosing a starting planet is the first moment the map is yours to look at: show it zooms then. */}
           <Board
-            game={game}
+            game={returning ?? game}
             ctl={ctl}
             scene={review ? `review:${review.entry.id}` : 'live'}
             introduce={!review && game.phase === 'setup' && ctl.highlights.planets.size > 0}
           />
           {review && <ReviewBar review={review} game={live} waiting={waitingFor(view)} />}
-          <Toasts toasts={toasts} game={game} />
+          {/* The game's news goes on while looking back, as news of the game now. */}
+          <Toasts toasts={toasts} game={live} now={!!review} />
           <ErrorToast error={error} />
         </div>
         {sheet ? (
@@ -142,7 +148,6 @@ export function Game({
           mine={view.mine}
           aiResponder={view.aiResponder ?? null}
           online={online ? view.combat : undefined}
-          settled={settledBattle === head.id}
         />
       )}
       {!review && <DecisionOverlay game={game} dispatch={dispatch} human={ctl.human} />}
@@ -178,7 +183,7 @@ function ReviewBar({ review, game, waiting }: { review: Review; game: GameState;
   const { entry } = review;
   const colour = { '--pc': entry.player !== undefined ? game.players[entry.player].color : 'var(--muted)' } as CSSProperties;
   return (
-    <div className="review-bar" style={colour} role="status">
+    <div className="review-bar" style={colour}>
       <button
         type="button"
         className="btn btn-ghost"
@@ -189,7 +194,8 @@ function ReviewBar({ review, game, waiting }: { review: Review; game: GameState;
       >
         ‹
       </button>
-      <div className="review-text">
+      {/* Read out at each step; the buttons around it are not. */}
+      <div className="review-text" role="status">
         {waiting ? (
           <small className="review-waiting">{waiting}</small>
         ) : (
@@ -197,7 +203,13 @@ function ReviewBar({ review, game, waiting }: { review: Review; game: GameState;
         )}
         <span>{logText(game, entry)}</span>
       </div>
-      <button type="button" className="btn btn-ghost" disabled={!review.next} onClick={review.next} title="Later (→)" aria-label="Later">
+      <button
+        type="button"
+        className="btn btn-ghost"
+        onClick={review.next}
+        title={review.last ? 'Back to the game (→)' : 'Later (→)'}
+        aria-label={review.last ? 'Back to the game' : 'Later'}
+      >
         ›
       </button>
       <button type="button" className={`btn ${waiting ? 'btn-primary pulse' : ''}`} onClick={review.close} title="Back to the game (Esc)">

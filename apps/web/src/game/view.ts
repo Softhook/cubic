@@ -14,6 +14,8 @@ export interface GameView {
   undo?: () => void;
   /** Every position of the game so far, oldest first, to look back at from the log (on this device: since it was opened). */
   positions: readonly GameState[];
+  /** Log entries up to this id were written before `positions[0]`, and can't be looked back at (none if 0 or missing: it is the game's start). */
+  reviewAfter?: number;
   toasts: Toast[];
   error: { id: number; text: string } | null;
   /** On this device: the AI about to fire a missile or re-roll in the battle on screen. */

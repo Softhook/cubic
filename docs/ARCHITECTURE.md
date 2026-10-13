@@ -93,6 +93,8 @@ IndexedDB), `lab/` (the Art Lab pages), `print/` (print exports and sheets, shar
 - `npm run test:deep` runs the legal-action cross-check exhaustively over more games (minutes).
 - `npm run ui:check` checks in Chrome what unit tests can't render: choosing how to conquer a planet, and
   the crash screen. CI runs it with `mobile:shots` before every deploy.
+- `npm run replay:check` checks in Chrome looking back at a game from its log: the map, the log and the
+  way back to the game, a reload keeping the game's past, and the phone layout. CI runs it with `ui:check`.
 
 ## How to…
 

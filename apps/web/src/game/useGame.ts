@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { actor, apply, checkInvariants, isUndoable, RuleError, type Action, type GameState, type PlayerId } from '@quantum/engine';
+import { checkInvariants, RuleError, type Action, type GameState, type PlayerId } from '@quantum/engine';
 import { sfx } from '../sound';
+import { begin, play, restore, saved, takeBack, type Past } from './past';
 import { useErrorToast, useToasts } from './toasts';
-import { saveGame } from './savedGame';
+import { loadSavedPast, saveGame } from './savedGame';
 import { useAiDriver } from './useAiDriver';
 import { useShortcut } from './useShortcut';
 import type { GameView } from './view';
@@ -18,44 +19,28 @@ function reportBug(what: string, state: GameState, action: Action, error?: unkno
   console.error(`[quantum] ${what}`, { action, error, state: JSON.stringify(state) });
 }
 
-/** The game being played on this device: its state, `dispatch`, undo, toasts and errors. AI players move by themselves. */
+/**
+ * The game being played on this device: its state, `dispatch`, undo, toasts and errors. AI players move by
+ * themselves. Its past (to look back at from the log, and undo) is saved with it, so a revisit has it too.
+ */
 export function useGame(initial: GameState): GameView {
-  const [game, setGame] = useState(initial);
+  const [past, setPastState] = useState(() => restore(initial, loadSavedPast()));
+  const game = past.positions.at(-1)!;
   const { error, showError } = useErrorToast();
   const { toasts, announce } = useToasts();
-  const ref = useRef(game);
-  // States before each undoable move this turn. Cleared by anything random or final.
-  const history = useRef<GameState[]>([]);
-  const [undoCount, setUndoCount] = useState(0);
-  const setHistory = (h: GameState[]) => {
-    history.current = h;
-    setUndoCount(h.length);
-  };
-
-  // Every position since the game was opened here, for reviewing it from the log.
-  const [positions, setPositions] = useState<readonly GameState[]>([initial]);
-
-  const show = (next: GameState) => {
+  const ref = useRef(past);
+  const setPast = (next: Past) => {
     ref.current = next;
-    setGame(next);
-    setPositions((p) => [...p, next]);
+    setPastState(next);
   };
-
-  const commit = useCallback(
-    (next: GameState) => {
-      const prev = ref.current;
-      show(next);
-      announce(prev, next);
-    },
-    [announce],
-  );
 
   const dispatch = useCallback(
     (a: Action): boolean => {
-      const prev = ref.current;
-      let next: GameState;
+      const before = ref.current;
+      const prev = before.positions.at(-1)!;
+      let after: Past;
       try {
-        next = apply(prev, a);
+        after = play(before, a);
       } catch (e) {
         if (e instanceof RuleError) {
           showError(e.message);
@@ -66,39 +51,53 @@ export function useGame(initial: GameState): GameView {
         }
         return false;
       }
+      const next = after.positions.at(-1)!;
       if (import.meta.env.DEV) {
         const broken = checkInvariants(next);
         if (broken.length) reportBug(`invariants broken: ${broken.join('; ')}`, prev, a);
       }
-      const human = !prev.players[actor(prev)].ai;
-      setHistory(human && isUndoable(prev, a, next) ? [...history.current, prev] : []);
-      commit(next);
+      setPast(after);
+      announce(prev, next);
       return true;
     },
-    [commit, showError],
+    [announce, showError],
   );
 
   const undo = useCallback(() => {
-    const prev = history.current.at(-1);
-    if (!prev) return;
-    setHistory(history.current.slice(0, -1));
-    show(prev);
+    const after = takeBack(ref.current);
+    if (!after) return;
+    setPast(after);
     sfx.select();
   }, []);
 
   const aiResponder = useAiDriver(game, dispatch, showError);
 
   // Keep the unfinished game in the browser so a revisit can resume it.
-  useEffect(() => saveGame(game), [game]);
+  useEffect(() => saveGame(past.positions.at(-1)!, saved(past)), [past]);
 
-  // Dev-only hook for browser tests.
+  // Dev-only hook for browser tests. A loaded state has no past.
   useEffect(() => {
     if (!import.meta.env.DEV) return;
-    (window as unknown as { __quantum: QuantumHook }).__quantum = { state: () => ref.current, load: commit, dispatch };
-  }, [commit, dispatch]);
+    const load = (s: GameState) => {
+      const prev = ref.current.positions.at(-1)!;
+      setPast(begin(s, s.logCounter));
+      announce(prev, s);
+    };
+    (window as unknown as { __quantum: QuantumHook }).__quantum = { state: () => ref.current.positions.at(-1)!, load, dispatch };
+  }, [announce, dispatch]);
 
-  const mine = useCallback((p: PlayerId) => !ref.current.players[p].ai, []);
-  return { game, dispatch, mine, error, toasts, undo: undoCount > 0 ? undo : undefined, positions, aiResponder };
+  const mine = useCallback((p: PlayerId) => !ref.current.positions.at(-1)!.players[p].ai, []);
+  return {
+    game,
+    dispatch,
+    mine,
+    error,
+    toasts,
+    undo: past.undo.length > 0 ? undo : undefined,
+    positions: past.positions,
+    reviewAfter: past.after,
+    aiResponder,
+  };
 }
 
 /** Ctrl/Cmd+Z undoes the last move, unless the user is typing or a dialog is open over the board. */

@@ -61,6 +61,7 @@ jobs:
       - run: npm ci
       - run: npm run mobile:shots
       - run: npm run ui:check
+      - run: npm run replay:check
       - if: failure()
         uses: actions/upload-artifact@v4
         with:

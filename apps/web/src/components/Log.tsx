@@ -5,6 +5,8 @@ import { remember, stored } from '../storage';
 
 const STORAGE_KEY = 'quantum.logOpen';
 const AUTO_SCROLL_THRESHOLD = 12;
+/** How long the list's own scroll to the newest entry may take (a smooth scroll). */
+const FOLLOW_MS = 700;
 
 export function shouldAutoScroll(scrollTop: number, clientHeight: number, scrollHeight: number) {
   return scrollHeight - scrollTop - clientHeight <= AUTO_SCROLL_THRESHOLD;
@@ -12,19 +14,61 @@ export function shouldAutoScroll(scrollTop: number, clientHeight: number, scroll
 
 /**
  * The game's log. Collapsed (the default, remembered) it is just its title; the whole row toggles it.
- * An entry `review.can` show is a button: it shows the map as it was just after it (`review.pick`).
+ * An entry `review.can` show is a button: it shows the map as it was just after it (`review.pick`), and
+ * the list keeps it, with the rest of its `move`, lit and in view. One it can't (from before the game was opened here) says why on hover.
  */
-export function Log({ game, review }: { game: GameState; review?: { can(id: number): boolean; pick(id: number): void; picked?: number } }) {
+export function Log({
+  game,
+  review,
+}: {
+  game: GameState;
+  review?: { can(id: number): boolean; pick(id: number): void; picked?: number; move?: ReadonlySet<number> };
+}) {
   const ref = useRef<HTMLOListElement>(null);
   const [open, setOpen] = useState(() => stored(STORAGE_KEY) === '1');
+  const picked = review?.picked;
+  const wasPicked = useRef(picked);
+  // Whether the list follows the newest entry: it does until the player scrolls away from the bottom,
+  // and again once they scroll back. Known from scrolling, not measured when an entry comes: by then
+  // the entry is in the list, and the list no longer at its bottom.
+  const following = useRef(true);
+  // When the list last scrolled itself to the newest entry: its own scrolling isn't the player's. A
+  // wheel, touch or key on the list is, whenever it comes.
+  const followedAt = useRef(-Infinity);
+  const byHand = () => (followedAt.current = -Infinity);
+  const onScroll = () => {
+    const list = ref.current;
+    if (!list || performance.now() - followedAt.current < FOLLOW_MS) return;
+    following.current = shouldAutoScroll(list.scrollTop, list.clientHeight, list.scrollHeight);
+  };
   useEffect(() => {
     const list = ref.current;
-    if (!open || !list) return;
-    if (!shouldAutoScroll(list.scrollTop, list.clientHeight, list.scrollHeight)) return;
+    const ended = wasPicked.current !== undefined && picked === undefined;
+    wasPicked.current = picked;
+    // While looking back, the log stays on the move shown (below), not on the newest; after, it is
+    // back on the newest.
+    if (!open || !list || picked !== undefined) return;
+    if (!ended && !following.current) return;
+    following.current = true;
+    followedAt.current = performance.now();
+    // Back from looking back it jumps: a smooth scroll that far could outlast FOLLOW_MS.
     requestAnimationFrame(() => {
-      list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
+      list.scrollTo({ top: list.scrollHeight, behavior: ended ? 'instant' : 'smooth' });
     });
-  }, [game.log.length, game.logCounter, open]);
+  }, [game.log.length, game.logCounter, open, picked]);
+  // The move being looked back at stays in view as the review steps through the log (its start, if
+  // it is taller than the list). Only the list scrolls (not the sidebar or the page, as scrollIntoView would).
+  useEffect(() => {
+    const list = ref.current;
+    const lis = list?.querySelectorAll<HTMLElement>('li.picked');
+    if (!list || !lis?.length) return;
+    const offset = (li: HTMLElement) => li.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop;
+    const top = offset(lis[0]);
+    const last = lis[lis.length - 1];
+    const bottom = offset(last) + last.offsetHeight;
+    if (top < list.scrollTop || bottom - top > list.clientHeight) list.scrollTo({ top, behavior: 'smooth' });
+    else if (bottom > list.scrollTop + list.clientHeight) list.scrollTo({ top: bottom - list.clientHeight, behavior: 'smooth' });
+  }, [picked, open]);
   const toggle = () => {
     setOpen(!open);
     remember(STORAGE_KEY, open ? '0' : '1');
@@ -49,9 +93,17 @@ export function Log({ game, review }: { game: GameState; review?: { can(id: numb
         </svg>
       </button>
       {open && (
-        <ol ref={ref}>
-          {game.log.slice(-40).map((e) => (
-            <li key={e.id} style={colour(e.player)} className={review?.picked === e.id ? 'picked' : undefined}>
+        <ol ref={ref} onScroll={onScroll} onWheel={byHand} onTouchStart={byHand} onPointerDown={byHand} onKeyDown={byHand}>
+          {game.log.map((e) => (
+            <li
+              key={e.id}
+              style={colour(e.player)}
+              className={
+                [e.minor && 'minor', (review?.move?.has(e.id) ?? review?.picked === e.id) && 'picked'].filter(Boolean).join(' ') ||
+                undefined
+              }
+              title={review && !review.can(e.id) ? 'Only moves made since the game was opened here can be shown' : undefined}
+            >
               {review?.can(e.id) ? (
                 <button
                   type="button"
