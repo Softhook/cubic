@@ -2,6 +2,7 @@
  * Shared building blocks for the rule modules: errors, the log, dice, actions and the
  * dominance / research / cube bookkeeping that many rules touch.
  */
+import { diagonals, orbitals, same } from './board';
 import { cardWithEffect, SHIP_NAMES } from './data';
 import type { SkillEffect } from './effects';
 import { die } from './lookups';
@@ -12,17 +13,20 @@ import { anySkill, hasSkill, skillRules, stealableSkill } from './skillRules';
 import {
   RuleError,
   type Action,
+  type Cell,
   type Die,
   type GameState,
   type LogEntry,
   type LogEvent,
   type OncePerTurn,
   type Pending,
+  type Planet,
   type PlayerId,
   type TurnState,
 } from './types';
 
-const LOG_LIMIT = 80;
+/** Every action is logged, so this is several turns' worth: enough to look back on (the web app's review). */
+const LOG_LIMIT = 240;
 
 // ---------------------------------------------------------------------------
 // Handler types
@@ -48,8 +52,27 @@ export function log(s: GameState, text: string, player?: PlayerId, event?: LogEv
   if (s.log.length > LOG_LIMIT) s.log.splice(0, s.log.length - LOG_LIMIT);
 }
 
+/** Logs a routine action (a move, a reconfigure…): shown quieter than the events of the game. */
+export function note(s: GameState, text: string, player: PlayerId, planets?: number[]) {
+  log(s, text, player, undefined, planets);
+  s.log[s.log.length - 1].minor = true;
+}
+
+/**
+ * Logs a ship arriving at `to`: `text` is followed by where that is, beside (or diagonal to) a planet,
+ * named as `planet N` so the UI can show its name. `after` goes at the end, before the full stop.
+ */
+export function logTo(s: GameState, player: PlayerId, text: string, to: Cell, after = '') {
+  const by = (cells: (p: Planet) => readonly Cell[]) => s.board.planets.find((p) => cells(p).some((q) => same(q, to)));
+  const planet = by((p) => orbitals(s.board, p)) ?? by((p) => diagonals(s.board, p));
+  if (planet) note(s, `${text} next to planet ${planet.number}${after}.`, player, [planet.id]);
+  else note(s, `${text} into deep space${after}.`, player);
+}
+
 export const name = (s: GameState, p: PlayerId) => s.players[p].name;
 export const shipName = (d: Die) => `${SHIP_NAMES[d.value]} (${d.value})`;
+/** A ship's name with its article: "an Interceptor (5)". */
+export const aShip = (d: Die) => `${/^[AEIOU]/.test(SHIP_NAMES[d.value]) ? 'an' : 'a'} ${shipName(d)}`;
 
 /** The pending decision at the head of the queue, if it is of the given kind. */
 export function headOf<K extends Pending['kind']>(s: GameState, kind: K, message: string): PendingOf<K> {

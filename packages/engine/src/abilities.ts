@@ -6,11 +6,26 @@
  */
 import { key, same } from './board';
 import { startCombat } from './combat';
-import { fail, markAbility, markMoved, markSeen, ownShip, requireActionPhase, rerollNew, spendMove, type Handlers } from './core';
+import {
+  fail,
+  note,
+  logTo,
+  markAbility,
+  markMoved,
+  markSeen,
+  name,
+  ownShip,
+  requireActionPhase,
+  rerollNew,
+  aShip,
+  shipName,
+  spendMove,
+  type Handlers,
+} from './core';
 import type { ShipPower } from './data';
 import { boardLoc, cellOf, die } from './lookups';
 import { canMoveDie, carryOptions, carryPassengers, freeAttackTargets } from './queries';
-import { hasPower, hooksOf, rulesOf } from './rules';
+import { hasPower, hooksOf, rulesOf, shipOf } from './rules';
 import type { Cell, Die, GameState } from './types';
 
 function useAbility(s: GameState, d: Die, power: ShipPower) {
@@ -57,6 +72,7 @@ export const abilityHandlers = {
     useAbility(s, d, 'transport');
     fly();
     markMoved(s, d);
+    logTo(s, d.owner, `${name(s, d.owner)}'s ${shipName(d)} carries their ${shipName(die(s, a.passenger))}`, a.to);
   },
   /** 3 Destroyer — Warp: swap places with another of your ships on the map; not its move. */
   swap(s, a) {
@@ -66,21 +82,26 @@ export const abilityHandlers = {
     if (o.id === d.id) fail('Choose another ship');
     useAbility(s, d, 'warp');
     [d.loc, o.loc] = [o.loc, d.loc];
+    note(s, `${name(s, d.owner)}'s ${shipName(d)} swaps places with their ${shipName(o)}.`, d.owner);
   },
   /** 4 Frigate — Modify: become a 3 or a 5 (and so can't use the new ship's ability this turn). */
   change(s, a) {
     requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     useAbility(s, d, 'modify');
+    const was = shipName(d);
     d.value = a.value;
     markSeen(s, d);
+    note(s, `${name(s, d.owner)} changes their ${was} into ${aShip(d)}.`, d.owner);
   },
   /** 6 Scout — Free Reconfigure. */
   freeReconfigure(s, a) {
     requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     useAbility(s, d, 'freeReconfigure');
+    const was = shipName(d);
     rerollNew(s, d);
+    note(s, `${name(s, d.owner)}'s ${was} reconfigures itself into ${aShip(d)}.`, d.owner);
   },
   /** A prototype power's action (ShipHooks.action): legal exactly when its hooks offer it. */
   power(s, a) {
@@ -90,6 +111,10 @@ export const abilityHandlers = {
     if (!action) fail('This ship has no such power');
     const choice = action.options(s, d).find((c) => c.target === a.target && (c.to && a.to ? same(c.to, a.to) : c.to === a.to));
     if (!choice) fail('This ship can’t do that now');
+    const logged = s.logCounter;
+    const ship = shipOf(s, d.value);
     action.apply(s, d, choice);
+    // Most powers say what they did (an attack, say); one that doesn't is still logged.
+    if (s.logCounter === logged) note(s, `${name(s, d.owner)}'s ${ship.name} uses ${ship.ability.name}.`, d.owner);
   },
 } satisfies Partial<Handlers>;

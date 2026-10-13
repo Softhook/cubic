@@ -13,9 +13,12 @@ import {
   gainDominance,
   headOf,
   log,
+  note,
+  logTo,
   name,
   requireActionPhase,
   rollShip,
+  aShip,
   shipName,
   type Handlers,
   type PendingOf,
@@ -271,7 +274,11 @@ export const cardHandlers = {
     if (a.to) {
       if (!deployTargets(s, head.player).some((p) => same(p, a.to!))) fail('Place it in orbit of one of your planets');
       d.loc = boardLoc(a.to);
-    } else d.loc = { zone: 'scrapyard' };
+      logTo(s, head.player, `${name(s, head.player)} places their new ${shipName(d)}`, a.to);
+    } else {
+      d.loc = { zone: 'scrapyard' };
+      note(s, `${name(s, head.player)} keeps their new ${shipName(d)} in the scrapyard.`, head.player);
+    }
     s.turn.seen[d.id] = [d.value];
     s.pending.shift();
   },
@@ -295,6 +302,7 @@ export const cardHandlers = {
     if (head.placed.length === 2) {
       s.gates = head.placed;
       s.pending.shift();
+      note(s, `${name(s, head.player)} opens a pair of warp gates.`, head.player);
     }
   },
   /** Patient: "When you take this Skill, you may take and store a Tactic." */
@@ -343,7 +351,9 @@ export const cardHandlers = {
     head.rerolled.push(d.id);
     // Reorganization: a re-rolled ship leaves the map and is placed again (or scrapped).
     if (head.reorganize) d.loc = { zone: 'scrapyard' };
+    const was = shipName(d);
     rollShip(s, d);
+    note(s, `${name(s, head.player)} re-rolls their ${was}: ${shipName(d)}.`, head.player);
   },
   unveilDeploy(s, a) {
     const head = headOf(s, 'unveil', 'Not unveiling');
@@ -352,6 +362,7 @@ export const cardHandlers = {
     if (head.reorganize && !head.rerolled.includes(d.id)) fail('Only re-rolled ships can be placed');
     if (!deployTargets(s, head.player).some((p) => same(p, a.to))) fail('Not a deploy space');
     d.loc = boardLoc(a.to);
+    logTo(s, head.player, `${name(s, head.player)} deploys ${aShip(d)}`, a.to);
   },
   unveilDone(s) {
     headOf(s, 'unveil', 'Not unveiling');

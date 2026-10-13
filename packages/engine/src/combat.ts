@@ -6,6 +6,7 @@ import {
   fail,
   headOf,
   log,
+  logTo,
   loseDominance,
   name,
   payForAttack,
@@ -131,7 +132,10 @@ export const combatHandlers = {
     const head = headOf(s, 'advance', 'Nothing to advance');
     s.pending.shift();
     const d = die(s, head.die);
-    if (a.move && !dieAt(s, head.to)) d.loc = boardLoc(head.to);
+    if (a.move && !dieAt(s, head.to)) {
+      d.loc = boardLoc(head.to);
+      logTo(s, head.player, `${name(s, head.player)}'s ${shipName(d)} advances`, head.to);
+    }
   },
   infamy(s, a) {
     const head = headOf(s, 'infamy', 'No Infamy to resolve');

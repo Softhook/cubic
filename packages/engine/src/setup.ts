@@ -1,7 +1,7 @@
 /** Game creation and the setup decisions: fleet roll, starting skill, starting planet and ships. */
 import { buildBoard, same } from './board';
 import { IMPLEMENTED_EFFECTS } from './effects';
-import { emptyTurn, fail, headOf, log, name, placeCube, roll, type Handlers } from './core';
+import { aShip, emptyTurn, fail, headOf, log, note, logTo, name, placeCube, roll, type Handlers } from './core';
 import { defaultMap, effectOf, MAPS, type CardDef, type GameMode } from './data';
 import { boardLoc, die, scrapyard } from './lookups';
 import { startSlots } from './queries';
@@ -131,7 +131,9 @@ export const setupHandlers = {
     const head = headOf(s, 'setupRoll', 'Not rolling a fleet');
     if (head.rerolled) fail('You may only re-roll once');
     head.rerolled = true;
-    for (const d of scrapyard(s, head.player)) roll(s, d);
+    const fleet = scrapyard(s, head.player);
+    for (const d of fleet) roll(s, d);
+    note(s, `${name(s, head.player)} re-rolls their fleet: ${fleet.map((d) => d.value).join(', ')}.`, head.player);
   },
   draftSkill(s, a) {
     const head = headOf(s, 'skillDraft', 'Not drafting');
@@ -159,6 +161,7 @@ export const setupHandlers = {
     if (d.owner !== head.player || d.loc.zone !== 'scrapyard') fail('Choose one of your starting ships');
     if (!startSlots(s, head.planet).some((p) => same(p, a.to))) fail('Place it in an empty orbital position of your starting planet');
     d.loc = boardLoc(a.to);
+    logTo(s, head.player, `${name(s, head.player)} places ${aShip(d)}`, a.to);
     // When the last ship is placed, settle() moves on (turn.ts AUTO_RESOLVE.placeShips).
   },
 } satisfies Partial<Handlers>;
