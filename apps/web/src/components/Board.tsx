@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { SHIP_NAMES, die, key, moveOptions, shipOf, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
@@ -220,54 +220,54 @@ function Ships({
     const attack = ctl.attacks.get(d.id);
     const { ability } = shipOf(game, d.value);
     const who = `${game.players[d.owner].name} · ${SHIP_NAMES[d.value]} (${d.value})`;
+    // In percent of its own size (one space), so a zoom or resize doesn't count as a move and glide.
+    const place = { transform: `translate(${c * 100}%, ${r * 100}%)`, width: cell, height: cell };
     return (
-      <div
-        key={d.id}
-        className={[
-          'ship',
-          selected && 'selected',
-          tone && `ship-${tone}`,
-          spent && 'spent',
-          fighting && 'fighting',
-          ctl.actionPhase && d.owner === me && 'own',
-          yours(d.owner) && 'yours',
-        ]
-          .filter(Boolean)
-          .join(' ')}
-        data-r={r}
-        data-c={c}
-        // In percent of its own size (one space), so a zoom or resize doesn't count as a move and glide.
-        style={
-          {
-            transform: `translate(${c * 100}%, ${r * 100}%)`,
-            width: cell,
-            height: cell,
-            '--pc': game.players[d.owner].color,
-          } as CSSProperties
-        }
-        onClick={() => ctl.onDie(d.id) === false && onInfo(d.id)}
-        onPointerDown={yours(d.owner) ? undefined : (e) => onPress(d.id, e.pointerType !== 'mouse')}
-        onContextMenu={(e) => e.preventDefault()}
-        aria-label={`${game.players[d.owner].name}'s ${SHIP_NAMES[d.value]} (${d.value})${attack ? `, ${percent(attack.chance)} chance to win an attack` : ''}`}
-        title={
-          attack
-            ? [
-                `Attack ${who}: ${percent(attack.chance)} to win`,
-                ...attack.factors.attacker.map((f) => `You: ${f}`),
-                ...attack.factors.defender.map((f) => `Them: ${f}`),
-              ].join('\n')
-            : `${who}\n${ability.name}: ${ability.text}`
-        }
-      >
-        <div className="ship-ring" />
-        <Die3D value={d.value} rolls={d.rolls} scene={scene} size={cell * 0.56} color={game.players[d.owner].color} />
-        {abilityUsed && (
-          <span className="ship-badge" aria-label="Ability used this turn">
-            ✦
-          </span>
+      <Fragment key={d.id}>
+        <div
+          className={[
+            'ship',
+            selected && 'selected',
+            tone && `ship-${tone}`,
+            spent && 'spent',
+            fighting && 'fighting',
+            ctl.actionPhase && d.owner === me && 'own',
+            yours(d.owner) && 'yours',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          data-r={r}
+          data-c={c}
+          style={{ ...place, '--pc': game.players[d.owner].color } as CSSProperties}
+          onClick={() => ctl.onDie(d.id) === false && onInfo(d.id)}
+          onPointerDown={yours(d.owner) ? undefined : (e) => onPress(d.id, e.pointerType !== 'mouse')}
+          onContextMenu={(e) => e.preventDefault()}
+          aria-label={`${game.players[d.owner].name}'s ${SHIP_NAMES[d.value]} (${d.value})${attack ? `, ${percent(attack.chance)} chance to win an attack` : ''}`}
+          title={
+            attack
+              ? [
+                  `Attack ${who}: ${percent(attack.chance)} to win`,
+                  ...attack.factors.attacker.map((f) => `You: ${f}`),
+                  ...attack.factors.defender.map((f) => `Them: ${f}`),
+                ].join('\n')
+              : `${who}\n${ability.name}: ${ability.text}`
+          }
+        >
+          <div className="ship-ring" />
+          <Die3D value={d.value} rolls={d.rolls} scene={scene} size={cell * 0.56} color={game.players[d.owner].color} />
+          {abilityUsed && (
+            <span className="ship-badge" aria-label="Ability used this turn">
+              ✦
+            </span>
+          )}
+        </div>
+        {/* Over the ship, in a layer of its own, so no other ship's die covers it where it sticks out. */}
+        {attack && (
+          <div className="ship-odds-spot" style={place}>
+            <OddsBadge chance={attack.chance} cell={cell} zoomed={zoomed} />
+          </div>
         )}
-        {attack && <OddsBadge chance={attack.chance} cell={cell} zoomed={zoomed} />}
-      </div>
+      </Fragment>
     );
   });
 }

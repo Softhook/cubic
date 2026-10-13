@@ -521,6 +521,8 @@ input { font: inherit; }
    die doesn't reach, so it never hides the ship's number; sized with the space (small maps, zoom). Where the
    edge of the map on screen would cut it off, it takes the bottom or left corner instead (OddsBadge). */
 .ship-attack { z-index: 4; }
+/* The badge's space, over every ship (Ships), and gliding with its own. */
+.ship-odds-spot { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; transition: transform .6s cubic-bezier(.22,.9,.24,1); }
 .ship-odds {
   position: absolute;
   right: 0; top: 0;
