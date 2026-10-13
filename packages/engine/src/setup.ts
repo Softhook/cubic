@@ -6,7 +6,7 @@ import { defaultMap, effectOf, MAPS, type CardDef, type GameMode } from './data'
 import { die, scrapyard } from './lookups';
 import { startSlots } from './queries';
 import { next, shuffle } from './rng';
-import { RULESETS } from './rules';
+import { RULESETS } from './rulesets';
 import type { Die, GameState, PlayerConfig } from './types';
 
 export interface NewGameOptions {
@@ -23,6 +23,7 @@ export function createGame(opts: NewGameOptions): GameState {
   if (n < 2 || n > 5) throw new Error('Cubic needs 2–5 players');
   const mode = opts.mode ?? 'community';
   const rules = RULESETS[mode];
+  if (!rules) throw new Error(`Unknown mode ${mode}`);
   const map = opts.mapId ? MAPS.find((m) => m.id === opts.mapId) : defaultMap(n);
   if (!map) throw new Error(opts.mapId ? `Unknown map ${opts.mapId}` : `No map for ${n} players`);
   if (map.players !== n) throw new Error(`${map.name} is a ${map.players}-player map`);

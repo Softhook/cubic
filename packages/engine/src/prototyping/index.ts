@@ -3,7 +3,7 @@
  * lives in this folder: what the mode changes and which ship has which power here, each power in its own file in
  * powers/ (its rules text and its hooks).
  *
- * The engine reaches this folder in one place, RULESETS.prototyping (rules.ts), and runs the powers only
+ * The engine reaches this folder in one place, RULESETS.prototyping (rulesets.ts), and runs the powers only
  * through ShipHooks, so nothing here can change Basic, Original or Community. This folder in turn uses
  * the engine only through the prototype kit (../prototype.ts). test/prototyping.test.ts checks both.
  *
@@ -31,7 +31,7 @@ export const PROTOTYPING_SHIPS: ShipTable = Object.fromEntries(
   Object.entries(SHIPS).map(([v, ship]) => [v, { ...ship, hooks: { ...ship.hooks, ...picket.hooks } }]),
 );
 
-/** Prototyping is built on `base` (Community Edition, see rules.ts): its cards, missiles and maps are kept. */
+/** Prototyping is built on `base` (Community Edition, see rulesets.ts): its cards, missiles and maps are kept. */
 export function prototypingMode(base: RuleSet): RuleSet {
   return {
     ...base,

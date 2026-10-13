@@ -129,12 +129,12 @@ describe('Prototyping mode', () => {
     return path === 'prototyping' || path.startsWith('prototyping/');
   };
 
-  it('is reached from the engine only through RULESETS (rules.ts)', () => {
+  it('is reached from the engine only through RULESETS (rulesets.ts)', () => {
     const importers = files(src)
       .filter((f) => !inPrototyping(f))
       .filter((f) => imports(f).some((i) => inPrototypingPath(importedPath(f, i))))
       .map((f) => relative(src, f));
-    expect(importers).toEqual(['rules.ts']);
+    expect(importers).toEqual(['rulesets.ts']);
   });
 
   it('uses the engine only through the prototype kit (prototype.ts)', () => {

@@ -76,7 +76,6 @@ export * from './core';
 export * from './lookups';
 export * from './queries';
 export * from './types';
-// rules.ts is still loading when it loads src/prototyping, so its exports are named here, not `export *`.
 export { hasPower, hooksOf, rulesOf, shipOf, type RuleSet } from './rules';
 export { startCombat } from './combat';
 export { CLASSIC_SHIPS, SHIP_NAMES, type ShipDef, type ShipTable } from './data';

@@ -1,12 +1,11 @@
-import { prototypingMode } from './prototyping';
-import { CLASSIC_SHIPS, MAPS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef, type GameMode, type ShipDef, type ShipPower, type ShipTable } from './data';
+import { MAPS, type CardDef, type GameMode, type ShipDef, type ShipPower, type ShipTable } from './data';
 import type { ShipHooks } from './prototype';
 import type { Die, GameState } from './types';
 
 /**
  * Everything that differs between rule sets lives here. The engine and the UI ask the rule set
  * ("does this mode have missiles?") instead of checking the mode's name, so adding a new
- * edition means adding one entry to RULESETS.
+ * edition means adding one entry to RULESETS (rulesets.ts).
  */
 export interface RuleSet {
   id: GameMode;
@@ -61,74 +60,18 @@ export interface CardRules {
   };
 }
 
-/** Maps published for the boxed game: the box, the 2013 rulebook, and the add-on pack. */
-const OFFICIAL_MAPS = ['basic', 'advanced', 'addon'];
+/** The rule sets by mode: rulesets.ts builds them (it needs the modes, which use the whole engine) and sets them here. */
+let ruleSets: Record<GameMode, RuleSet> | undefined;
 
-const COMMUNITY: RuleSet = {
-  id: 'community',
-  name: 'Community',
-  title: 'Community Edition',
-  summary: 'Rebalanced cards, missiles, a starting skill and card peeking.',
-  actionsPerTurn: 3,
-  researchLimit: 6,
-  cards: {
-    skills: SKILLS,
-    tactics: TACTICS,
-    startingSkillDraft: true,
-    peek: true,
-    expansionPile: true,
-    refresh: false,
-    terms: { skill: 'skill', skills: 'skills', skillDeck: 'Skills', tacticDeck: 'Tactics' },
-  },
-  startingMissiles: 1,
-  reconfigure: 'unseen',
-  mapGroups: [...OFFICIAL_MAPS, 'bga', 'ce'],
-  ships: CLASSIC_SHIPS,
-};
-
-export const RULESETS: Record<GameMode, RuleSet> = {
-  basic: {
-    id: 'basic',
-    name: 'Basic',
-    title: 'Basic',
-    summary: 'The official rules without cards. Learn movement, combat and conquering.',
-    cards: null,
-    actionsPerTurn: 3,
-    researchLimit: 6,
-    startingMissiles: 0,
-    reconfigure: 'different',
-    mapGroups: OFFICIAL_MAPS,
-    ships: CLASSIC_SHIPS,
-  },
-  original: {
-    id: 'original',
-    name: 'Classic',
-    title: 'Classic',
-    summary: 'The 2013 rules with Command and Gambit cards.',
-    cards: {
-      skills: ORIGINAL_COMMAND,
-      tactics: ORIGINAL_GAMBIT,
-      startingSkillDraft: false,
-      peek: false,
-      expansionPile: false,
-      refresh: true,
-      terms: { skill: 'Command card', skills: 'Command cards', skillDeck: 'Command', tacticDeck: 'Gambit' },
-    },
-    actionsPerTurn: 3,
-    researchLimit: 6,
-    startingMissiles: 0,
-    reconfigure: 'different',
-    mapGroups: OFFICIAL_MAPS,
-    ships: CLASSIC_SHIPS,
-  },
-  community: COMMUNITY,
-  /** Our own rules, a prototype: everything about it is in src/prototyping (docs/PROTOTYPING.md). */
-  prototyping: prototypingMode(COMMUNITY),
-};
+export function defineRuleSets(table: Record<GameMode, RuleSet>) {
+  ruleSets = table;
+}
 
 /** The rule set a game is played with. */
 export function rulesOf(state: GameState): RuleSet {
-  return RULESETS[state.mode];
+  const rules = ruleSets?.[state.mode];
+  if (!rules) throw new Error(ruleSets ? `Unknown mode ${state.mode}` : 'No rule sets yet: load the engine through src/index.ts');
+  return rules;
 }
 
 /** The ship a die value is in this game's rules. */
@@ -172,6 +115,3 @@ export function modeHasHook(state: GameState, hook: keyof ShipHooks): boolean {
 export function playerCounts(rules: RuleSet): number[] {
   return [...new Set(MAPS.filter((m) => rules.mapGroups.includes(m.group)).map((m) => m.players))].sort((a, b) => a - b);
 }
-
-/** Rule sets in menu order. */
-export const MODES: RuleSet[] = [RULESETS.basic, RULESETS.original, RULESETS.community, RULESETS.prototyping];

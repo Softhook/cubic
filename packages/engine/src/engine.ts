@@ -23,6 +23,8 @@
  *   invariants.ts consistency checks every state must pass (tests, dev builds)
  */
 import { abilityHandlers } from './abilities';
+// Sets the rule sets that rulesOf reads, for a state that didn't come from createGame (a saved game, a test).
+import './rulesets';
 import { actionHandlers } from './actions';
 import { cardHandlers } from './cards';
 import { combatHandlers } from './combat';
