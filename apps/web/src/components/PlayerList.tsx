@@ -70,7 +70,7 @@ function PlayerCard({
       </div>
       <div className="player-row">
         {rules.startingMissiles > 0 && (
-          <Tip className="stat" tip="Missiles: set any combat roll to 1">
+          <Tip className="stat" tip="Missiles: in a battle you are losing, set your own combat roll to 1">
             <MissileIcon size={14} /> {p.missiles}
           </Tip>
         )}
