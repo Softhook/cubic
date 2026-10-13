@@ -13,6 +13,11 @@ export function clearSavedGame() {
   forget(KEY);
 }
 
+/** The saved game as stored, unchecked: for a crash report. */
+export function savedGameJson(): string | null {
+  return stored(KEY);
+}
+
 /** The saved game, or null if there is none or it no longer fits this version of the engine. */
 export function loadSavedGame(): GameState | null {
   const raw = stored(KEY);

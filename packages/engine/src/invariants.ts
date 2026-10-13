@@ -8,6 +8,8 @@ import { effectOf, MAPS } from './data';
 import { isImplemented } from './effects';
 import { skillLimit } from './queries';
 import { rulesOf } from './rules';
+// Sets the rule sets that rulesOf reads: a test or tool may check a saved state with only this module loaded.
+import './rulesets';
 import type { GameState } from './types';
 
 const DICE_PER_PLAYER = 5;

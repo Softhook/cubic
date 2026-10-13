@@ -60,7 +60,12 @@ export interface CardRules {
   };
 }
 
-/** The rule sets by mode: rulesets.ts builds them (it needs the modes, which use the whole engine) and sets them here. */
+/**
+ * The rule sets by mode: rulesets.ts builds them (it needs the modes, which use the whole engine) and sets
+ * them here. Importing rulesets.ts from this file would bring back the import cycle (CODE-REVIEW #3), so
+ * each module that takes a state from outside (setup, engine, legal through engine, invariants) loads
+ * rulesets.ts itself; load-order.test.ts checks each one alone.
+ */
 let ruleSets: Record<GameMode, RuleSet> | undefined;
 
 export function defineRuleSets(table: Record<GameMode, RuleSet>) {
@@ -69,9 +74,9 @@ export function defineRuleSets(table: Record<GameMode, RuleSet>) {
 
 /** The rule set a game is played with. */
 export function rulesOf(state: GameState): RuleSet {
-  const rules = ruleSets?.[state.mode];
-  if (!rules) throw new Error(ruleSets ? `Unknown mode ${state.mode}` : 'No rule sets yet: load the engine through src/index.ts');
-  return rules;
+  if (!ruleSets) throw new Error('No rule sets yet: load the engine through src/index.ts');
+  if (!Object.hasOwn(ruleSets, state.mode)) throw new Error(`Unknown mode ${state.mode}`);
+  return ruleSets[state.mode];
 }
 
 /** The ship a die value is in this game's rules. */

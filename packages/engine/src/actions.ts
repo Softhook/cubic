@@ -17,7 +17,7 @@ import {
   spendPeaceful,
   type Handlers,
 } from './core';
-import { die } from './lookups';
+import { boardLoc, die } from './lookups';
 import { canGainResearch, canMoveDie, canReconfigure, conquerCheck, deployTargets, deploysFree, moveIndexes } from './queries';
 import { modeHooks, rulesOf } from './rules';
 import { endTurn } from './turn';
@@ -32,7 +32,7 @@ export const actionHandlers = {
     if (!modeHooks(s, 'freeMove').some((free) => free(s, d))) spendMove(s);
     for (const onMove of modeHooks(s, 'onMove')) onMove(s, d);
     if (opt.diagonal) markAbility(s, d); // Interceptor manoeuvre
-    d.loc = { zone: 'board', ...a.to };
+    d.loc = boardLoc(a.to);
     markMoved(s, d);
   },
   attack(s, a) {
@@ -55,7 +55,7 @@ export const actionHandlers = {
       /* Eager: deploying is free */
     } else if (t.freeDeploys > 0) t.freeDeploys--;
     else spend(s, 1);
-    d.loc = { zone: 'board', ...a.to };
+    d.loc = boardLoc(a.to);
   },
   reconfigure(s, a) {
     requireActionPhase(s);

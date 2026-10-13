@@ -713,9 +713,16 @@ export function combatRerolls(state: GameState, combat: CombatPending, by: Playe
  * may fire at either roll. A roll that is already 1 is never offered.
  */
 export function missileOffered(state: GameState, combat: CombatPending, by: PlayerId, side: CombatRole): boolean {
-  if (state.players[by].missiles <= 0 || combat[side].missile || combatTotal(state, combat, side).roll === 1) return false;
-  if (by !== combat.attacker.player && by !== combat.defender.player) return true;
-  return combat[side].player === by && combatOutcome(state, combat).attackerWins !== (side === 'attacker');
+  return missileRefusal(state, combat, by, side) === null;
+}
+
+/** Why `by` is not offered a missile on `side`'s roll (see missileOffered), or null if they are. */
+export function missileRefusal(state: GameState, combat: CombatPending, by: PlayerId, side: CombatRole): string | null {
+  if (state.players[by].missiles <= 0) return 'No missiles left';
+  if (combat[side].missile || combatTotal(state, combat, side).roll === 1) return 'That combat roll is already 1';
+  if (by !== combat.attacker.player && by !== combat.defender.player) return null;
+  if (combat[side].player === by && combatOutcome(state, combat).attackerWins !== (side === 'attacker')) return null;
+  return 'You may only fire a missile on your own roll, while losing';
 }
 
 /** Whether `player` can still respond to the battle: a missile, or a re-roll card. */

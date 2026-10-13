@@ -29,12 +29,20 @@ export interface CombatWait {
  * This browser disagrees with another about the game: a move its player made was refused here
  * (`rejected`), or led to a different position here (`differs`). Every browser runs the same
  * posts through the same engine, so this means different app versions (or a bug, or tampering).
- * `crashed`: the engine failed on the move here, a bug in this browser's engine.
  */
 export interface Desync {
   seat: PlayerId;
   author: string;
-  why: 'rejected' | 'differs' | 'crashed';
+  why: 'rejected' | 'differs';
+}
+
+/**
+ * The engine failed (a bug in this browser's engine, not anyone's mistake) on what comes next, so the
+ * game stops here: a move posted for `seat`, or resolving a battle (`seat` null). Unlike a desync, it
+ * is about the game as it stands: a rival post that the engine takes lets the game go on, and clears it.
+ */
+export interface Crash {
+  seat: PlayerId | null;
 }
 
 /** Everything a browser derives from the posts it has. */
@@ -54,6 +62,7 @@ export interface Replay {
   combat: CombatWait | null;
   /** The first disagreement with another browser, if any. */
   desync: Desync | null;
+  crash: Crash | null;
 }
 
 /**
@@ -95,6 +104,8 @@ export class Timeline {
   /** States before each undoable move, newest last, and whose move it was. */
   private undoStack: { state: GameState; seat: PlayerId }[] = [];
   private dirty = true;
+  /** Engine failures already logged: the game is replayed past the same one on every rebuild. */
+  private logged = new Set<string>();
 
   get size(): number {
     return this.posts.size;
@@ -194,6 +205,7 @@ export class Timeline {
   private extend() {
     const r = this.r!;
     for (;;) {
+      r.crash = null;
       const state = r.steps.at(-1)!.state;
       const combat = state.pending[0]?.kind === 'combat' ? (state.pending[0] as CombatPending) : null;
       r.combat = combat ? this.combatWait(state, combat) : null;
@@ -203,7 +215,8 @@ export class Timeline {
           resolved = apply(state, { type: 'resolveCombat' });
         } catch (e) {
           // An engine bug: the game stops here rather than taking the page down with it.
-          console.error('[quantum] a battle failed to resolve', e);
+          this.logOnce(`battle ${r.combat!.stage}`, 'a battle failed to resolve', () => ({ error: e, state: JSON.stringify(state) }));
+          r.crash = { seat: null };
           break;
         }
         r.steps.push({ state: resolved, post: null });
@@ -230,8 +243,8 @@ export class Timeline {
       if (r.combat && r.combat.passed.includes(b.seat)) return false;
       // The poster's browser checked the move against this same position before sending it, so
       // the engine refusing it here means the two browsers don't agree on the rules.
-      const refused = (why: Desync['why'] = 'rejected') => {
-        if (!seat.ai || why === 'crashed') r.desync ??= { seat: b.seat, author: p.author, why };
+      const refused = () => {
+        if (!seat.ai) r.desync ??= { seat: b.seat, author: p.author, why: 'rejected' };
         return false;
       };
       if (prev.phase === 'over' || !mayAct(prev, b.seat, b.action)) return refused();
@@ -240,8 +253,9 @@ export class Timeline {
       } catch (e) {
         if (e instanceof RuleError) return refused();
         // Not a disagreement about the rules: the engine failed on a move it should have taken or refused.
-        console.error('[quantum] the engine failed on a move', { action: b.action, error: e, state: JSON.stringify(prev) });
-        return refused('crashed');
+        this.logOnce(`post ${p.id}`, 'the engine failed on a move', () => ({ action: b.action, error: e, state: JSON.stringify(prev) }));
+        r.crash ??= { seat: b.seat };
+        return false;
       }
       if (b.h !== undefined) {
         if (b.h !== stateHash(next)) r.desync ??= { seat: b.seat, author: p.author, why: 'differs' };
@@ -264,6 +278,12 @@ export class Timeline {
     r.tipAt = p.at;
     r.tipAuthor = p.author;
     return true;
+  }
+
+  private logOnce(key: string, what: string, details: () => object) {
+    if (this.logged.has(key)) return;
+    this.logged.add(key);
+    console.error(`[quantum] ${what}`, details());
   }
 
   private combatWait(state: GameState, combat: CombatPending): CombatWait {
@@ -321,7 +341,7 @@ function start(g: Post): Replay | null {
   }));
   // A human seat is either the creator's or open; anything else would be a seat nobody can play.
   if (seats.some((s) => !s.ai && !s.open && s.id !== b.creator) || seats[b.creator].ai) return null;
-  return { genesis: g, config, seats, steps: [{ state, post: null }], tip: g.id, tipAt: g.at, tipAuthor: g.author, undoSeat: null, combat: null, desync: null };
+  return { genesis: g, config, seats, steps: [{ state, post: null }], tip: g.id, tipAt: g.at, tipAuthor: g.author, undoSeat: null, combat: null, desync: null, crash: null };
 }
 
 const ASK: ReadonlySet<unknown> = new Set<AskMode>(['always', 'own', 'never']);

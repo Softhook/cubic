@@ -8,7 +8,7 @@ import { key, same } from './board';
 import { startCombat } from './combat';
 import { fail, markAbility, markMoved, markSeen, ownShip, requireActionPhase, rerollNew, spendMove, type Handlers } from './core';
 import type { ShipPower } from './data';
-import { cellOf, die } from './lookups';
+import { boardLoc, cellOf, die } from './lookups';
 import { canMoveDie, carryOptions, carryPassengers, freeAttackTargets } from './queries';
 import { hasPower, hooksOf, rulesOf } from './rules';
 import type { Cell, Die, GameState } from './types';
@@ -33,8 +33,8 @@ export function transport(s: GameState, flagship: Die, passenger: string, to: Ce
   if (!dest || !dest.drops.some((p) => same(p, drop))) fail('Invalid carry');
   if (same(to, drop)) fail('Drop the passenger next to the flagship');
   return () => {
-    flagship.loc = { zone: 'board', ...to };
-    die(s, passenger).loc = { zone: 'board', ...drop };
+    flagship.loc = boardLoc(to);
+    die(s, passenger).loc = boardLoc(drop);
   };
 }
 

@@ -6,14 +6,14 @@
  *   values of the wrong type. Many pass the shape check (actionShape.ts) and reach a handler with
  *   well-formed nonsense, which the handler must refuse too;
  * - corrupted legal actions: one legal action of each type offered, each field in turn replaced by a
- *   value of the wrong type or out of range;
+ *   value of the wrong type or out of range, and each cell given extra keys (which must change nothing);
  * - action types that don't exist, and values that aren't actions at all.
  */
 import { describe, expect, it } from 'vitest';
 import { SHAPES } from '../src/actionShape';
-import { legalActions, RuleError, spaces, tryApply, type Action, type GameMode, type GameState } from '../src';
+import { createGame, legalActions, RuleError, rulesOf, spaces, tryApply, type Action, type GameMode, type GameState } from '../src';
 import { CARD_IDS } from './decisions';
-import { playAiGame, seededRandom } from './helpers';
+import { playAiGame, players, seededRandom } from './helpers';
 
 const GARBAGE: unknown[] = [undefined, null, -1, 999, 1.5, NaN, '', 'x', true, {}, [], { r: -1, c: 0 }, { r: 1e9, c: 1e9 }, { r: '1', c: 1 }, '__proto__', 'constructor'];
 const BAD_TYPES = ['constructor', 'toString', '__proto__', 'hasOwnProperty', 'nope', ''];
@@ -72,6 +72,13 @@ function fuzz(mode: GameMode, seed: number) {
       const oneOfEach = new Map(legalActions(s).map((a) => [a.type, a]));
       for (const a of oneOfEach.values()) {
         for (const field of FIELDS[a.type]) for (const junk of GARBAGE) attempt(s, { ...a, [field]: junk });
+        // Extra keys on a cell (a `zone` above all) must not reach the state.
+        for (const field of FIELDS[a.type]) {
+          const v = (a as unknown as Record<string, unknown>)[field];
+          if (typeof v !== 'object' || v === null) continue;
+          const tampered = { ...a, [field]: { ...v, zone: 'reserve', junk: 'x' } } as Action;
+          expect.soft(tryApply(s, tampered), `extra keys in ${field} of ${JSON.stringify(a)}`).toEqual(tryApply(s, a));
+        }
       }
     },
   });
@@ -80,5 +87,16 @@ function fuzz(mode: GameMode, seed: number) {
 describe('malformed actions are refused, never crash the engine', () => {
   for (const mode of ['basic', 'original', 'community', 'prototyping'] as const) {
     it(mode, () => fuzz(mode, 41), 120_000);
+  }
+});
+
+// A game's mode comes from the `create` post, which another browser wrote.
+describe('an unknown mode is refused by name', () => {
+  const s = createGame({ players: players(2), seed: 1, mode: 'basic' });
+  for (const mode of ['__proto__', 'constructor', 'toString', 'nope']) {
+    it(mode, () => {
+      expect(() => createGame({ players: players(2), seed: 1, mode: mode as GameMode })).toThrow(`Unknown mode ${mode}`);
+      expect(() => rulesOf({ ...s, mode: mode as GameMode })).toThrow(`Unknown mode ${mode}`);
+    });
   }
 });

@@ -5,7 +5,6 @@ import {
   combatOutcome,
   combatRerolls,
   conquerCheck,
-  copyState,
   die,
   dieAt,
   distance,
@@ -65,18 +64,21 @@ export function chooseAction(state: GameState, opts: GreedyOptions = {}): Action
   const options = candidates(state);
   if (!options.length) return null;
   if (options.length === 1) return options[0];
-  return best(withUnseenShuffled(state), me, options, opts);
+  return best(hidden(state), me, options, opts);
 }
 
 /**
- * The position with the unseen cards shuffled. The shuffle has a generator of its own, seeded from
- * the position, rather than `opts.random`: the AI's random stream, and so every seeded replay of
- * level 1 (the golden tests), stays as it was before the decks were hidden.
+ * The position as the player knows it: the unseen cards shuffled and the game's RNG replaced. Both
+ * come from a generator of its own, seeded from the position, rather than `opts.random`: the AI's
+ * random stream, and so every seeded replay of level 1 (the golden tests), stays as it was before
+ * the decks were hidden. Only the decks change, so only they are copied.
  */
-function withUnseenShuffled(state: GameState): GameState {
-  const s = copyState(state);
-  shuffleUnseen(s, mulberry32((state.rng ^ 0x9e3779b9) >>> 0));
-  return s;
+function hidden(state: GameState): GameState {
+  const random = mulberry32((state.rng ^ 0x9e3779b9) >>> 0);
+  const { market } = state;
+  const s = { ...state, market: { ...market, skillDeck: [...market.skillDeck], tacticDeck: [...market.tacticDeck] } };
+  shuffleUnseen(s, random);
+  return withRandomSeed(s, random);
 }
 
 /**
@@ -92,10 +94,14 @@ export function chooseReroll(state: GameState, player: PlayerId): Action | null 
   return first ? { type: 'reroll', by: player, side: first.side } : null;
 }
 
-/** Should `player` fire a missile into the current combat? Dice are already rolled, so this is exact. */
-export function chooseMissile(state: GameState, player: PlayerId): Action | null {
-  const head = state.pending[0];
-  if (head?.kind !== 'combat' || state.players[player].missiles <= 0) return null;
+/**
+ * Should `player` fire a missile into the current combat? The combat dice are already rolled, so who
+ * wins is exact; what follows (re-rolled ships, cards drawn) is played on the hidden position.
+ */
+export function chooseMissile(real: GameState, player: PlayerId): Action | null {
+  const head = real.pending[0];
+  if (head?.kind !== 'combat' || real.players[player].missiles <= 0) return null;
+  const state = hidden(real);
   const options: Action[] = [
     { type: 'missile', by: player, side: 'attacker' },
     { type: 'missile', by: player, side: 'defender' },

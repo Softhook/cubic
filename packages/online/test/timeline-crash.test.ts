@@ -1,19 +1,22 @@
 /**
- * An engine bug met while replaying a post (anything but a RuleError) is not the poster's mistake:
- * the timeline reports it as `crashed`, not `rejected`, and logs it. A file of its own, because it
- * swaps in an engine that fails on a marked move.
+ * An engine bug met while replaying (anything but a RuleError) is not the poster's mistake: the
+ * timeline reports it as a `crash`, not a desync, and logs it once. A file of its own, because it
+ * swaps in an engine that fails on a marked move, or on battles once told to.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { actor, defaultMap, type Action, type PlayerConfig } from '@quantum/engine';
+import { chooseAction } from '@quantum/ai';
+import { actor, defaultMap, legalActions, type Action, type PlayerConfig } from '@quantum/engine';
 import { PROTOCOL, Timeline, type Body, type Post } from '../src';
 
-// The real engine, except that it fails (as a bug would) on an action marked `crash`.
+const engine = vi.hoisted(() => ({ failBattles: false }));
+
+// The real engine, except that it fails (as a bug would) on an action marked `crash`, and on battles while `failBattles`.
 vi.mock('@quantum/engine', async (importOriginal) => {
   const real = await importOriginal<typeof import('@quantum/engine')>();
   return {
     ...real,
     apply: (s: Parameters<typeof real.apply>[0], a: Action) => {
-      if ((a as { crash?: boolean }).crash) throw new TypeError('engine bug');
+      if ((a as { crash?: boolean }).crash || (engine.failBattles && a.type === 'resolveCombat')) throw new TypeError('engine bug');
       return real.apply(s, a);
     },
   };
@@ -23,23 +26,34 @@ let clock = 1_000_000;
 let ids = 0;
 const post = (author: string, body: Body, prev: string | null = null): Post => ({ id: `p${++ids}`, author, at: ++clock, prev, body });
 const seat = (name: string, ai = false): PlayerConfig => ({ name, color: '#fff', ai, aiLevel: 1 });
+const crashing = (s: number): Body => ({ t: 'act', seat: s, action: { type: 'setupKeep', crash: true } as Action });
 
-function game(players: PlayerConfig[]) {
+function game(players: PlayerConfig[], open: number[] = []) {
   const t = new Timeline();
-  const g = post('alice', { t: 'create', protocol: PROTOCOL, config: { players, mapId: defaultMap(players.length)!.id, mode: 'basic', seed: 7 }, creator: 0, open: [] });
+  const g = post('alice', { t: 'create', protocol: PROTOCOL, config: { players, mapId: defaultMap(players.length)!.id, mode: 'basic', seed: 7 }, creator: 0, open });
   t.add(g);
   return { t, g };
 }
 
 describe('a move the engine crashes on', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    engine.failBattles = false;
+  });
 
-  it('is reported as crashed, not as the poster’s mistake, and logged', () => {
+  it('stops the game as a crash, not as the poster’s mistake, and is logged once', () => {
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { t, g } = game([seat('Alice'), seat('Bot', true)]);
-    t.add(post('alice', { t: 'act', seat: 0, action: { type: 'setupKeep', crash: true } as Action }, g.id));
+    const { t, g } = game([seat('Alice'), seat('Bob')], [1]);
+    t.add(post('alice', crashing(0), g.id));
     expect(t.replay()!.steps).toHaveLength(1);
-    expect(t.replay()!.desync).toEqual({ seat: 0, author: 'alice', why: 'crashed' });
+    expect(t.replay()!.crash).toEqual({ seat: 0 });
+    expect(t.replay()!.desync).toBeNull();
+    // Another post at the tip, and a claim that replays the game from the start: both pass the crash again.
+    t.add(post('alice', { t: 'act', seat: 0, action: { type: 'warpDrive' } as unknown as Action }, g.id));
+    t.add(post('bob', { t: 'claim', seat: 1, name: 'Bob' }));
+    expect(t.replay()!.seats[1].owner).toBe('bob');
+    expect(t.replay()!.crash).toEqual({ seat: 0 });
+    expect(errors).toHaveBeenCalledTimes(1);
     expect(errors).toHaveBeenCalledWith('[quantum] the engine failed on a move', expect.objectContaining({ error: expect.any(TypeError) }));
   });
 
@@ -56,9 +70,46 @@ describe('a move the engine crashes on', () => {
     const refused = aiToMove();
     refused.t.add(post('alice', { t: 'act', seat: 1, action: { type: 'warpDrive' } as unknown as Action }, refused.after));
     expect(refused.t.replay()!.desync).toBeNull();
+    expect(refused.t.replay()!.crash).toBeNull();
 
     const crashed = aiToMove();
-    crashed.t.add(post('alice', { t: 'act', seat: 1, action: { type: 'setupKeep', crash: true } as Action }, crashed.after));
-    expect(crashed.t.replay()!.desync).toEqual({ seat: 1, author: 'alice', why: 'crashed' });
+    crashed.t.add(post('alice', crashing(1), crashed.after));
+    expect(crashed.t.replay()!.crash).toEqual({ seat: 1 });
+  });
+
+  it('doesn’t stop the game when a rival post the engine takes comes next', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { t, g } = game([seat('Alice'), seat('Bot', true)]);
+    t.add(post('alice', crashing(0), g.id));
+    expect(t.replay()!.crash).toEqual({ seat: 0 });
+    t.add(post('alice', { t: 'act', seat: 0, action: { type: 'setupKeep' } }, g.id));
+    expect(t.replay()!.steps).toHaveLength(2);
+    expect(t.replay()!.crash).toBeNull();
+  });
+});
+
+describe('a battle the engine crashes on', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    engine.failBattles = false;
+  });
+
+  it('stops the game as a crash with no seat to blame, and is logged', () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { t, g } = game([seat('Alice'), seat('Bot', true)]);
+    let tip = g.id;
+    // Basic has no missiles or cards, so a battle resolves as soon as it is declared.
+    for (let i = 0; i < 2000 && !t.replay()!.crash; i++) {
+      const s = t.replay()!.steps.at(-1)!.state;
+      if (s.phase === 'over') break;
+      const attack = legalActions(s).find((a) => a.type === 'attack');
+      engine.failBattles = !!attack;
+      const p = post('alice', { t: 'act', seat: actor(s), action: attack ?? chooseAction(s, { level: 1, samples: 1 })! }, tip);
+      t.add(p);
+      tip = t.replay()!.tip;
+    }
+    expect(t.replay()!.crash).toEqual({ seat: null });
+    expect(t.replay()!.combat?.waitingOn).toEqual([]);
+    expect(errors).toHaveBeenCalledWith('[quantum] a battle failed to resolve', expect.objectContaining({ error: expect.any(TypeError) }));
   });
 });

@@ -3,7 +3,7 @@ import { buildBoard, same } from './board';
 import { isImplemented } from './effects';
 import { emptyTurn, fail, headOf, log, name, placeCube, roll, type Handlers } from './core';
 import { defaultMap, effectOf, MAPS, type CardDef, type GameMode } from './data';
-import { die, scrapyard } from './lookups';
+import { boardLoc, die, scrapyard } from './lookups';
 import { startSlots } from './queries';
 import { next, shuffle } from './rng';
 import { RULESETS } from './rulesets';
@@ -22,8 +22,8 @@ export function createGame(opts: NewGameOptions): GameState {
   // 5 players only on the CE print booklet's 5-player maps, which the mode's map groups decide.
   if (n < 2 || n > 5) throw new Error('Cubic needs 2–5 players');
   const mode = opts.mode ?? 'community';
+  if (!Object.hasOwn(RULESETS, mode)) throw new Error(`Unknown mode ${mode}`);
   const rules = RULESETS[mode];
-  if (!rules) throw new Error(`Unknown mode ${mode}`);
   const map = opts.mapId ? MAPS.find((m) => m.id === opts.mapId) : defaultMap(n);
   if (!map) throw new Error(opts.mapId ? `Unknown map ${opts.mapId}` : `No map for ${n} players`);
   if (map.players !== n) throw new Error(`${map.name} is a ${map.players}-player map`);
@@ -160,7 +160,7 @@ export const setupHandlers = {
     const d = die(s, a.die);
     if (d.owner !== head.player || d.loc.zone !== 'scrapyard') fail('Choose one of your starting ships');
     if (!startSlots(s, head.planet).some((p) => same(p, a.to))) fail('Place it in an empty orbital position of your starting planet');
-    d.loc = { zone: 'board', ...a.to };
+    d.loc = boardLoc(a.to);
     // When the last ship is placed, settle() moves on (turn.ts AUTO_RESOLVE.placeShips).
   },
 } satisfies Partial<Handlers>;

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import type { GameState, LogEntry, LogEvent } from '@quantum/engine';
+import { sfx } from '../sound';
 import { logText } from './logText';
 import { playSounds } from './sounds';
 
@@ -50,4 +51,14 @@ export function useToasts() {
   }, []);
 
   return { toasts, announce };
+}
+
+/** The error toast: the latest error, and `showError` to show one (with the error sound). */
+export function useErrorToast() {
+  const [error, setError] = useState<{ id: number; text: string } | null>(null);
+  const showError = useCallback((text: string) => {
+    sfx.error();
+    setError({ id: Date.now(), text });
+  }, []);
+  return { error, showError };
 }

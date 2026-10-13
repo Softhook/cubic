@@ -10,7 +10,9 @@ reading it. One finding has been accepted for now and is listed separately at th
 
 **Status (2026-10-13):** every issue is fixed except three. Issue 2 waits for a decision, issue 8 was
 left as it is, and issue 11 needs no change. Each section ends with its status. A second pass checked
-the fixes themselves: it corrected two figures and two claims below, and added the missing tests.
+the fixes themselves: it corrected two figures and two claims below, and added the missing tests. A
+third pass reviewed the commits that made the fixes. It found holes in issues 3, 4, 5, 6, 9 and 12,
+now closed and described under each one.
 
 | # | Severity | Area | Issue | Status |
 |---|---|---|---|---|
@@ -136,6 +138,13 @@ The rule sets are handed over through a setter (`defineRuleSets`) rather than bu
 loading `queries.ts` first would again have the prototype kit copy its `export *` from `queries.ts`
 before that module had loaded.
 
+The setter means a module that calls `rulesOf` works only once something has imported `rulesets.ts`.
+`setup.ts`, `engine.ts` (and so `legal.ts`) and now `invariants.ts` import it themselves, so each entry
+point that takes a state from outside works on its own. `load-order.test.ts` checks each of them with
+only its own module imported, which the first version of the test didn't: it always imported the
+whole engine afterwards. `rulesOf` and `createGame` look the mode up with `Object.hasOwn`, so a `create`
+post with `mode: "__proto__"` gets "Unknown mode", not a TypeError further on.
+
 ## 4. `missile` accepts actions `legalActions` never offers (Medium, confirmed)
 
 `missileOffered` ([queries.ts:715](../packages/engine/src/queries.ts#L715)) only lets a player in the
@@ -156,7 +165,9 @@ covers the action phase. For decisions, it trusts `DECISION_CANDIDATES`, which h
   (every seat, every side, every option index) and check that `apply` accepts exactly what
   `legalActions` lists.
 
-**Status: fixed.** The handler now calls `missileOffered`. `consistency.test.ts` brute-forces every
+**Status: fixed.** The handler now refuses whatever `missileRefusal` names, the reason behind
+`missileOffered`, so the rule is written once: the handler's own earlier checks were removed.
+`consistency.test.ts` brute-forces every
 answer to every kind of decision (`DECISION_BRUTE_FORCE`, typed so a new decision needs an entry). With
 the old handler it fails at once. It also found a second case: `takeCard` from the Expansion pile
 accepted `store: true` and any `index`. The handler now refuses both. `DEEP=1` passes in every mode.
@@ -197,8 +208,17 @@ placeShip, deploy, takeCard, nomadic and discardSkill; for example `missile` wit
 game's own ids, cells, planets and players mixed with garbage. That is about 55,000 attempts per run,
 of which about 19,000 are well formed and reach a handler, across 50 of the 51 action types. The
 handlers' own checks for a Frigate's new number and Clever's integer, now unreachable, were removed.
-In the timeline, an engine crash on a post is now a `crashed` desync. It is logged with the state, and
-the screen says "The game stopped on a move by X … a bug, not a mistake by X".
+The first version still let a tampered cell through: the check looked only at `r` and `c`, and the
+handlers copied the whole cell into the ship's location, so `to: {r, c, zone: "reserve"}` took a ship
+off the board without any invariant noticing. The handlers now copy only `r` and `c` (`boardLoc`), and
+the fuzz test checks that extra keys on any cell of a legal action change nothing.
+
+In the timeline, an engine crash is now `Replay.crash`, apart from desyncs, which record the first
+disagreement between browsers. It covers a crash on a post and a crash while resolving a battle, which
+the first version only logged. It describes the game as it stands: if a rival post the engine takes comes
+next, the game goes on and the crash is cleared. Each crash is logged once with the state, not on every
+replay. The screen says "The game stopped on a move by X … a bug, not a mistake by X", or "The game
+stopped resolving a battle".
 
 ## 6. An AI error hangs the game; there is no error boundary (Medium)
 
@@ -227,14 +247,18 @@ boundary around each page root that shows a reload button and logs the state.
 error with the position, return the first legal move (or a pass in combat) so the game goes on, and
 both drivers show "Engine error in the AI". [ErrorBoundary.tsx](../apps/web/src/components/ErrorBoundary.tsx)
 wraps the game, the Art Lab and the rulebook (now lazy components inside it), with Reload and Back to
-the lobby buttons.
+the lobby buttons. It shows its screen whatever value was thrown (`null` included, which the first
+version took for no error), and logs the last saved position with the error. The error toast both
+game hooks use is one hook, `useErrorToast`.
 
 *Decided 2026-10-13: the AI keeps playing stand-in moves after a failure.*
 
 Tests: [aiClient.test.ts](../apps/web/test/aiClient.test.ts) makes the AI throw and checks that
 `think()` settles with the stand-in and `combatResponse()` passes.
 [timeline-crash.test.ts](../packages/online/test/timeline-crash.test.ts) checks that a crash on a post
-is reported as `crashed`, including for an AI seat, and a refusal as `rejected`. The crash screen and
+or a battle stops the game, including for an AI seat, is logged once, and is cleared by a rival post
+that the engine takes. [errorBoundary.test.ts](../apps/web/test/errorBoundary.test.ts) throws falsy
+values and strings at the crash screen. The crash screen and
 its buttons are checked in Chrome by `npm run ui:check` ([ui-check.ts](../scripts/ui-check.ts)), which
 CI runs before every deploy.
 
@@ -311,7 +335,9 @@ left out by mistake, and level-4 decisions are not slower. Level 1 now plays on 
 unseen cards, like the other levels ([hidden.ts](../packages/ai/src/hidden.ts)). Its shuffle has a
 generator of its own, seeded from the position, so the AI's random stream is untouched. The golden
 replays are unchanged, which contradicts an earlier claim here that they would change. That claim was
-an untested guess; this was tested.
+an untested guess; this was tested. Level 1's missile decision (`chooseMissile`) now plays on the same
+hidden position: it used to simulate the rest of the battle with the game's real RNG and decks. Only
+the two decks are copied for it, not the whole state.
 
 ## 10. `settle()` gives up silently (Low)
 
@@ -344,7 +370,8 @@ Move it behind an env flag, as `test:deep` does, or into `npm run power:usage` o
 
 **Status: fixed.** By default it now plays one level-2 game per mode, so the measurement code stays
 tested. The suite takes 18 s instead of 66 s. The numbers worth reading still come from
-`POWER_USAGE_GAMES=4 POWER_USAGE_LEVEL=4` or `npm run power:usage`.
+`POWER_USAGE_GAMES=4 POWER_USAGE_LEVEL=4` or `npm run power:usage`. Level 2 never plays a Flagship
+transport, so one level-4 Basic game (about 2 s) checks that transports are counted.
 
 ## 13. Docs disagree with the code (Low)
 

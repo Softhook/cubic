@@ -167,6 +167,7 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
           Join
         </button>
       )}
+      {r.crash && <Stopped replay={r} />}
       {r.desync && <OutOfSync replay={r} />}
       {ask && (
         <select className="ask-select" value={ask} aria-label="Battles to be asked about" title="When to wait for you to fire a missile or re-roll in a battle. Battles you're not asked about resolve without you." onChange={(e) => g.setAsk(e.target.value as AskMode)}>
@@ -188,17 +189,6 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
 function OutOfSync({ replay }: { replay: Replay }) {
   const d = replay.desync!;
   const who = replay.seats[d.seat]?.name ?? 'Another player';
-  if (d.why === 'crashed') {
-    return (
-      <div className="online-desync" role="alert">
-        <strong>The game stopped on a move by {who}</strong>
-        <span>This browser’s game engine failed on it: a bug, not a mistake by {who}. The details are in the browser console.</span>
-        <button className="btn" onClick={() => location.reload()}>
-          Reload
-        </button>
-      </div>
-    );
-  }
   return (
     <div className="online-desync" role="alert">
       <strong>Out of sync with {who}</strong>
@@ -206,6 +196,21 @@ function OutOfSync({ replay }: { replay: Replay }) {
         {d.why === 'rejected' ? `A move by ${who} doesn’t fit the game as this browser sees it.` : `${who}’s browser sees a different game after their move.`} One of you is probably
         running an older version: both reload the page.
       </span>
+      <button className="btn" onClick={() => location.reload()}>
+        Reload
+      </button>
+    </div>
+  );
+}
+
+/** The engine failed on the next move or battle: a bug in this browser's engine, so the game can't go on here. */
+function Stopped({ replay }: { replay: Replay }) {
+  const { seat } = replay.crash!;
+  const who = seat === null ? null : (replay.seats[seat]?.name ?? 'another player');
+  return (
+    <div className="online-desync" role="alert">
+      <strong>{who ? `The game stopped on a move by ${who}` : 'The game stopped resolving a battle'}</strong>
+      <span>This browser’s game engine failed on it: a bug{who ? `, not a mistake by ${who}` : ''}. The details are in the browser console.</span>
       <button className="btn" onClick={() => location.reload()}>
         Reload
       </button>

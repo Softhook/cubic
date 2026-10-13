@@ -22,7 +22,7 @@ import {
   spend,
   type Handlers,
 } from './core';
-import { cellOf, die } from './lookups';
+import { boardLoc, cellOf, die } from './lookups';
 import { canGainResearch, canMoveDie, canScrappy, nomadicTargets, tacticalOptions } from './queries';
 import { hasPower } from './rules';
 import { hasSkill } from './skillRules';
@@ -105,7 +105,7 @@ export const skillHandlers = {
     if (!opt) fail('Move one space to an empty space');
     use();
     if (opt.diagonal) markAbility(s, d);
-    d.loc = { zone: 'board', ...opt.cell };
+    d.loc = boardLoc(opt.cell);
   },
   nomadic(s, a) {
     const t = requireActionPhase(s);
@@ -115,7 +115,7 @@ export const skillHandlers = {
     oncePerTurn(s, 'nomadic');
     spend(s, 1);
     // A relocation, not a move: the ship may still move this turn (forum consensus, BGG thread 1636855).
-    d.loc = { zone: 'board', ...a.to };
+    d.loc = boardLoc(a.to);
   },
   scrappy(s) {
     if (!canScrappy(s)) fail('Nothing to re-roll');

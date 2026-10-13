@@ -9,7 +9,7 @@ import { same } from './board';
 import { destroyedEnemyShip, destroyShip, fail, gainDominance, headOf, log, name, requireActionPhase, rollShip, shipName, type Handlers, type PendingOf } from './core';
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
-import { die, reserve, shipsOnBoard } from './lookups';
+import { boardLoc, die, reserve, shipsOnBoard } from './lookups';
 import { canPlayStoredTactic, canProfiteer, canRefreshMarket, canRelocate, canTakeCard, deployTargets, relocationOptions, skillLimit } from './queries';
 import { shuffle } from './rng';
 import { rulesOf } from './rules';
@@ -250,7 +250,7 @@ export const cardHandlers = {
     const d = die(s, head.die);
     if (a.to) {
       if (!deployTargets(s, head.player).some((p) => same(p, a.to!))) fail('Place it in orbit of one of your planets');
-      d.loc = { zone: 'board', ...a.to };
+      d.loc = boardLoc(a.to);
     } else d.loc = { zone: 'scrapyard' };
     s.turn.seen[d.id] = [d.value];
     s.pending.shift();
@@ -271,7 +271,7 @@ export const cardHandlers = {
     const cell = s.board.cells[a.cell.r]?.[a.cell.c];
     if (!cell || cell.kind !== 'space') fail('Gates go on spaces, not planets');
     if (head.placed.some((p) => same(p, a.cell))) fail('Choose a different space');
-    head.placed.push(a.cell);
+    head.placed.push({ r: a.cell.r, c: a.cell.c });
     if (head.placed.length === 2) {
       s.gates = head.placed;
       s.pending.shift();
@@ -325,7 +325,7 @@ export const cardHandlers = {
     if (d.owner !== head.player || d.loc.zone !== 'scrapyard') fail('Choose a ship in your scrapyard');
     if (head.reorganize && !head.rerolled.includes(d.id)) fail('Only re-rolled ships can be placed');
     if (!deployTargets(s, head.player).some((p) => same(p, a.to))) fail('Not a deploy space');
-    d.loc = { zone: 'board', ...a.to };
+    d.loc = boardLoc(a.to);
   },
   unveilDone(s) {
     headOf(s, 'unveil', 'Not unveiling');

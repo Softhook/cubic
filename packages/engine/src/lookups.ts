@@ -1,6 +1,6 @@
 /** Basic lookups on a state: where dice are, what is on a space. No rules, no skills. */
 import { cellAt } from './board';
-import { RuleError, type Cell, type Die, type GameState, type PlayerId } from './types';
+import { RuleError, type Cell, type Die, type DieLoc, type GameState, type PlayerId } from './types';
 
 /** The die with this id. An unknown id is an illegal action (it can only come from outside). */
 export function die(state: GameState, id: string): Die {
@@ -15,6 +15,11 @@ export function dieAt(state: GameState, p: Cell): Die | undefined {
 
 export function cellOf(d: Die): Cell | null {
   return d.loc.zone === 'board' ? { r: d.loc.r, c: d.loc.c } : null;
+}
+
+/** A ship's location on this space. Takes only `r` and `c`: a cell from another browser may carry anything else. */
+export function boardLoc(p: Cell): DieLoc {
+  return { zone: 'board', r: p.r, c: p.c };
 }
 
 export function shipsOnBoard(state: GameState, player?: PlayerId): Die[] {

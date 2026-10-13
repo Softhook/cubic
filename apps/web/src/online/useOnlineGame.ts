@@ -15,9 +15,8 @@ import {
   type Replay,
   type Step,
 } from '@quantum/online';
-import { sfx } from '../sound';
 import { aiLevelOf, combatResponse, think } from '../game/aiClient';
-import { useToasts } from '../game/toasts';
+import { useErrorToast, useToasts } from '../game/toasts';
 import type { GameView } from '../game/view';
 import { battleStage, inBattle, nextStep } from './playback';
 import { identity, keepStorage, loadEvents, rememberGame, saveEvents } from './storage';
@@ -54,12 +53,8 @@ export function useOnlineGame(secret: string): OnlineGame {
   const mySeats = useMemo(() => replay?.seats.filter((s) => s.owner === me).map((s) => s.id) ?? [], [replay, me]);
   const head = replay?.steps.at(-1)!.state ?? null;
   const { shown, live, toasts, ownBattle, dismissBattle } = usePlayback(replay, me);
-  const [error, setError] = useState<{ id: number; text: string } | null>(null);
-  const aiFailed = useCallback((text: string) => {
-    sfx.error();
-    setError({ id: Date.now(), text });
-  }, []);
-  useAiSeats(replay, me, post, aiFailed);
+  const { error, showError } = useErrorToast();
+  useAiSeats(replay, me, post, showError);
 
   useEffect(() => {
     if (replay) rememberGame({ secret, ...summary(replay, mySeats) });
@@ -69,8 +64,7 @@ export function useOnlineGame(secret: string): OnlineGame {
     (a: Action): boolean => {
       if (!head || !live) return false;
       const fail = (text: string) => {
-        sfx.error();
-        setError({ id: Date.now(), text });
+        showError(text);
         return false;
       };
       const seat = a.type === 'missile' || a.type === 'reroll' ? a.by : actor(head);
@@ -87,7 +81,7 @@ export function useOnlineGame(secret: string): OnlineGame {
       post((r) => actBody(r, seat, a));
       return true;
     },
-    [head, live, mySeats, post],
+    [head, live, mySeats, post, showError],
   );
 
   const view = useMemo((): GameView | null => {

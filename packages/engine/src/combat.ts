@@ -15,8 +15,8 @@ import {
   type PendingOf,
 } from './core';
 import { card } from './data';
-import { cellOf, die, dieAt } from './lookups';
-import { combatDice, combatOutcome, combatReroll, combatTotal, infamyTargets, missileOffered, skillLimit } from './queries';
+import { boardLoc, cellOf, die, dieAt } from './lookups';
+import { combatDice, combatOutcome, combatReroll, infamyTargets, missileRefusal, skillLimit } from './queries';
 import { d6 } from './rng';
 import { rulesOf } from './rules';
 import { anySkill, skillRules, stealableSkill } from './skillRules';
@@ -28,7 +28,7 @@ import type { Cell, Die, GameState, PlayerId } from './types';
  */
 export function startCombat(s: GameState, attacker: Die, defender: Die, from: Cell, ranged = false) {
   if (attacker.owner === s.turn.player) payForAttack(s);
-  attacker.loc = { zone: 'board', r: from.r, c: from.c };
+  attacker.loc = boardLoc(from);
   s.turn.attacked = true;
   log(s, `${name(s, attacker.owner)}'s ${shipName(attacker)} attacks ${name(s, defender.owner)}'s ${shipName(defender)}.`, attacker.owner);
   if (anySkill(s, defender.owner, (r) => r.combat?.destroyBoth)) {
@@ -86,12 +86,11 @@ function resolveCombat(s: GameState, combat: PendingOf<'combat'>) {
 export const combatHandlers = {
   missile(s, a) {
     const head = headOf(s, 'combat', 'No combat to target');
-    const pl = s.players[a.by];
-    if (!pl || pl.missiles <= 0) fail('No missiles left');
-    const side = head[a.side];
-    if (side.missile || combatTotal(s, head, a.side).roll === 1) fail('That combat roll is already 1');
     // A combatant fires only on their own roll, and only while losing (OPEN-QUESTIONS #21).
-    if (!missileOffered(s, head, a.by, a.side)) fail('You may only fire a missile on your own roll, while losing');
+    const refusal = missileRefusal(s, head, a.by, a.side);
+    if (refusal) fail(refusal);
+    const pl = s.players[a.by];
+    const side = head[a.side];
     pl.missiles--;
     side.missile = true;
     log(s, `${pl.name} fires a missile: ${name(s, side.player)}'s combat roll becomes 1.`, a.by, 'missile');
@@ -125,7 +124,7 @@ export const combatHandlers = {
     const head = headOf(s, 'advance', 'Nothing to advance');
     s.pending.shift();
     const d = die(s, head.die);
-    if (a.move && !dieAt(s, head.to)) d.loc = { zone: 'board', ...head.to };
+    if (a.move && !dieAt(s, head.to)) d.loc = boardLoc(head.to);
   },
   infamy(s, a) {
     const head = headOf(s, 'infamy', 'No Infamy to resolve');

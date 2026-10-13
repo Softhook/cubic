@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { actor, apply, checkInvariants, isUndoable, RuleError, type Action, type GameState, type PlayerId } from '@quantum/engine';
 import { sfx } from '../sound';
-import { useToasts } from './toasts';
+import { useErrorToast, useToasts } from './toasts';
 import { saveGame } from './savedGame';
 import { useAiDriver } from './useAiDriver';
 import { useShortcut } from './useShortcut';
@@ -18,7 +18,7 @@ function reportBug(what: string, state: GameState, action: Action, error?: unkno
 /** The game being played on this device: its state, `dispatch`, undo, toasts and errors. AI players move by themselves. */
 export function useGame(initial: GameState): GameView {
   const [game, setGame] = useState(initial);
-  const [error, setError] = useState<{ id: number; text: string } | null>(null);
+  const { error, showError } = useErrorToast();
   const { toasts, announce } = useToasts();
   const ref = useRef(game);
   // States before each undoable move this turn. Cleared by anything random or final.
@@ -50,13 +50,12 @@ export function useGame(initial: GameState): GameView {
       try {
         next = apply(prev, a);
       } catch (e) {
-        sfx.error();
         if (e instanceof RuleError) {
-          setError({ id: Date.now(), text: e.message });
+          showError(e.message);
         } else {
           // An engine bug. Keep the game running and log what is needed to reproduce it.
           reportBug('apply threw', prev, a, e);
-          setError({ id: Date.now(), text: `Engine error: ${(e as Error).message} (details in the console)` });
+          showError(`Engine error: ${(e as Error).message} (details in the console)`);
         }
         return false;
       }
@@ -69,7 +68,7 @@ export function useGame(initial: GameState): GameView {
       commit(next);
       return true;
     },
-    [commit],
+    [commit, showError],
   );
 
   const undo = useCallback(() => {
@@ -81,11 +80,7 @@ export function useGame(initial: GameState): GameView {
   }, []);
 
   useUndoShortcut(undo);
-  const aiFailed = useCallback((text: string) => {
-    sfx.error();
-    setError({ id: Date.now(), text });
-  }, []);
-  const aiResponder = useAiDriver(game, dispatch, aiFailed);
+  const aiResponder = useAiDriver(game, dispatch, showError);
 
   // Keep the unfinished game in the browser so a revisit can resume it.
   useEffect(() => saveGame(game), [game]);
