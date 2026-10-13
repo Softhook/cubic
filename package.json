@@ -30,7 +30,7 @@
     "perf:zoom": "npm run data && vite-node scripts/zoom-probe.ts --",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "circular": "madge --circular --extensions ts --exclude \"^prototype\\.ts$\" packages/engine/src",
+    "circular": "madge --circular --extensions ts,tsx packages/engine/src packages/ai/src packages/art/src packages/online/src apps/web/src",
     "knip": "knip",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

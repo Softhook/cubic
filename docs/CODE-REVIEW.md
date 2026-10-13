@@ -52,9 +52,8 @@ The same duplication, availability written once for listing and once for applyin
 like `ShipHooks.action` for prototype powers, and have `legal.ts` and the handlers read it. The
 prototype `power` action already shows the pattern: options computed once, and `apply` accepts only
 an offered option. Related: [queries.ts](../packages/engine/src/queries.ts) has grown to about 800
-lines of unrelated questions (movement, conquest, combat, cards, skills). Splitting it by topic would
-also untangle the import cycle between `core.ts` and `queries.ts`, which is harmless today
-(`load-order.test.ts` checks it).
+lines of unrelated questions (movement, conquest, combat, cards, skills), and splitting it by topic
+would make it easier to find one.
 
 **Status: left as is.** The level-1 AI breaks ties by the order in which `legalActions` lists
 actions, so a registry must list them in exactly today's order. Otherwise the golden replays for

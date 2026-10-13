@@ -128,8 +128,8 @@ describe('combat', () => {
 });
 
 describe('missiles', () => {
-  function battle(defender: { skills?: string[]; planAhead?: number }, rolls: [number, number], players = 2) {
-    let s = quickStart(players);
+  function battle(defender: { skills?: string[]; planAhead?: number }, rolls: [number, number], playerCount = 2) {
+    let s = quickStart(playerCount);
     s.turn.player = 1;
     s = arrange(s, { p1d0: [0, 0, 2], p0d0: [0, 1, 5] });
     s.players[0].skills = (defender.skills ?? []).map((id) => ({ id, active: true }));

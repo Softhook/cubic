@@ -1,7 +1,7 @@
 /**
- * The engine's modules import each other in cycles (core and queries, for one). That is safe only while
- * no module calls into the cycle while it is loading: then the engine works whichever module is
- * imported first. This loads each module first, in a fresh module graph, then plays a few moves.
+ * The engine works whichever of its modules is imported first. `npm run circular` keeps runtime import
+ * cycles out, but a module that calls another while loading could still depend on load order. This
+ * loads each module first, in a fresh module graph, then plays a few moves.
  */
 import { readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';

@@ -332,17 +332,14 @@ export class Timeline {
     const stage = combatStage(combat);
     const seats = this.r!.seats;
     const given = this.passes.get(stage);
-    return {
-      stage,
-      waitingOn: seats.filter((s) => canRespondToCombat(state, combat, s.id) && (s.ai || !s.owner || s.ask === 'own')).map((s) => s.id),
-      // A pass counts if its author plays the seat.
-      passed: seats
-        .filter((s) => {
-          const p = given?.get(s.id);
-          return p && (s.ai || s.owner === p.author);
-        })
-        .map((s) => s.id),
+    // Unclaimed seats and AIs are always waited for; a player only if they asked to be.
+    const waits = (s: Seat) => canRespondToCombat(state, combat, s.id) && (s.ai || !s.owner || s.ask === 'own');
+    // A pass counts if its author plays the seat.
+    const passed = (s: Seat) => {
+      const p = given?.get(s.id);
+      return !!p && (s.ai || s.owner === p.author);
     };
+    return { stage, waitingOn: seats.filter(waits).map((s) => s.id), passed: seats.filter(passed).map((s) => s.id) };
   }
 }
 

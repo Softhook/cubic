@@ -29,7 +29,7 @@ jobs:
         with:
           path: apps/web/dist
 
-  # Lint, dead code (knip), and the rules' safety net (golden replays, invariants, legality cross-check, card audit): a failure stops the deploy.
+  # Lint, import cycles (madge), dead code (knip), formatting, and the rules' safety net (golden replays, invariants, legality cross-check, card audit): a failure stops the deploy.
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
