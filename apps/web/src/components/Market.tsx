@@ -312,7 +312,7 @@ function useWarmCards(game: GameState) {
     ...m.skillDeck,
     ...m.tacticDeck,
   ];
+  // Card ids, joined so the effect reruns only when the cards change, not on every new array.
   const sig = ids.join();
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- `sig` stands for `ids`, a new array every render.
-  useEffect(() => warmCardImages(ids), [sig]);
+  useEffect(() => warmCardImages(sig ? sig.split(',') : []), [sig]);
 }

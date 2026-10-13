@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CARD_CATEGORIES, cardBackSvg, cardIllustration, cardSvg, deckInfo, type CardDeck, type CardFace } from '@quantum/art';
 import { DECKS, LINEAGE, cardFontCss, cardsOf, lineageNote, measure, type Deck, type Redesign } from './cards';
 import { PIECES, type Printable } from '../print/pieces';
@@ -85,21 +85,22 @@ export function CardLab() {
   const all = useMemo(() => DECKS.flatMap(itemsOf), []);
   const item = all.find((i) => i.key === selected) ?? all[0];
 
-  const svgOf = (i: Item, o: { bleed?: boolean; rounded?: boolean } = {}) =>
-    i.face ? cardSvg(i.face, { ...o, measure, fontCss: fonts ?? '' }) : cardBackSvg(i.deck, { ...o, fontCss: fonts ?? '' });
+  const svgOf = useCallback(
+    (i: Item, o: { bleed?: boolean; rounded?: boolean } = {}) =>
+      i.face ? cardSvg(i.face, { ...o, measure, fontCss: fonts ?? '' }) : cardBackSvg(i.deck, { ...o, fontCss: fonts ?? '' }),
+    [fonts],
+  );
 
   // Thumbnails as blob URLs: cheaper than data URLs for documents carrying their fonts.
   const thumbs = useMemo(() => {
     if (fonts === null) return new Map<string, string>();
     return new Map(all.map((i) => [i.key, URL.createObjectURL(new Blob([svgOf(i, { rounded: true })], { type: 'image/svg+xml' }))]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `all` never changes; `svgOf` is rebuilt every render from `fonts`.
-  }, [fonts]);
+  }, [all, fonts, svgOf]);
   useEffect(() => () => thumbs.forEach((u) => URL.revokeObjectURL(u)), [thumbs]);
 
   const detail = useMemo(
     () => (fonts === null ? '' : URL.createObjectURL(new Blob([svgOf(item, { bleed })], { type: 'image/svg+xml' }))),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `svgOf` is rebuilt every render from these.
-    [item, bleed, fonts],
+    [item, bleed, fonts, svgOf],
   );
   useEffect(() => () => URL.revokeObjectURL(detail), [detail]);
 

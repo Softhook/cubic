@@ -29,7 +29,7 @@ jobs:
         with:
           path: apps/web/dist
 
-  # The rules' safety net (golden replays, invariants, legality cross-check, card audit): a failing test stops the deploy.
+  # Lint, dead code (knip), and the rules' safety net (golden replays, invariants, legality cross-check, card audit): a failure stops the deploy.
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -40,6 +40,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run lint -- --max-warnings 0
+      - run: npm run knip
       - run: npm test
 
   # Phone and tablet layouts in emulation (docs/MOBILE.md), and the screens unit tests can't render (ui-check.ts):

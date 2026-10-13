@@ -10,8 +10,11 @@ export default tseslint.config(
   {
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
     rules: {
-      // tsc already reports these (noUnusedLocals / noUnusedParameters).
-      '@typescript-eslint/no-unused-vars': 'off',
+      // As tsc: a leading underscore marks a name as deliberately unused.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' },
+      ],
     },
   },
   {

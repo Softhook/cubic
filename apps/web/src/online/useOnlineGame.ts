@@ -151,11 +151,11 @@ export function useOnlineGame(secret: string): OnlineGame {
 function usePostLog(secret: string) {
   const sk = useMemo(identity, []);
   const me = useMemo(() => publicKeyOf(sk), [sk]);
-  const keys = useMemo(() => gameKeys(secret), [secret]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- a new game (`secret`) starts afresh.
-  const timeline = useMemo(() => new Timeline(), [secret]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- a new game (`secret`) starts afresh.
-  const events = useMemo(() => new Map<string, NostrEvent>(), [secret]);
+  // Together, so a new game (`secret`) never shares a timeline with the last one.
+  const { keys, timeline, events } = useMemo(
+    () => ({ keys: gameKeys(secret), timeline: new Timeline(), events: new Map<string, NostrEvent>() }),
+    [secret],
+  );
   const [replay, setReplay] = useState<Replay | null>(null);
   const [relays, setRelays] = useState<RelayStatus>({ connected: 0, total: 0, unsent: 0 });
   const [failure, setFailure] = useState<string | null>(null);

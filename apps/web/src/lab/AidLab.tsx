@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { playerAidSvg, type AidEdition } from '@quantum/art';
 import { cardFontCss, measure } from './cards';
 import { PIECES, type Printable } from '../print/pieces';
@@ -23,11 +23,13 @@ export function AidLab() {
     void cardFontCss().then(setFonts);
   }, []);
 
-  const svgOf = (o: { bleed?: boolean; rounded?: boolean } = {}) => playerAidSvg({ ...o, edition, measure, fontCss: fonts ?? '' });
+  const svgOf = useCallback(
+    (o: { bleed?: boolean; rounded?: boolean } = {}) => playerAidSvg({ ...o, edition, measure, fontCss: fonts ?? '' }),
+    [edition, fonts],
+  );
   const detail = useMemo(
     () => (fonts === null ? '' : URL.createObjectURL(new Blob([svgOf({ bleed, rounded: !bleed })], { type: 'image/svg+xml' }))),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `svgOf` is rebuilt every render from these.
-    [bleed, fonts, edition],
+    [bleed, fonts, svgOf],
   );
   useEffect(() => () => URL.revokeObjectURL(detail), [detail]);
 

@@ -1,6 +1,7 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { playRoll } from '../sound';
 import { APPLE_TOUCH } from '../platform';
+import { useEffectEvent } from '../game/useEffectEvent';
 import { PIP } from '../theme';
 
 /**
@@ -151,7 +152,7 @@ export const Die3D = memo(function Die3D({
     if (sound) clatter.current = window.setTimeout(() => playRoll(), delay * 1000);
   };
 
-  useLayoutEffect(() => {
+  const animate = useEffectEvent(() => {
     const el = cube.current;
     if (!mounted.current) {
       mounted.current = true;
@@ -183,8 +184,8 @@ export const Die3D = memo(function Die3D({
       cancelFrame();
       go();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, rolls, moving]);
+  });
+  useLayoutEffect(() => animate(), [value, rolls, moving, animate]);
 
   const style = {
     '--die-size': `${size}px`,

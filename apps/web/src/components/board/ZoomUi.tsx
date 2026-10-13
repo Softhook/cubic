@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState } from '@quantum/engine';
 import { COARSE, REDUCED_MOTION } from '../../game/useMediaQuery';
+import { useEffectEvent } from '../../game/useEffectEvent';
 import type { Controller } from '../../game/controller';
 import type { ShipSpots } from './geometry';
 import type { BoardZoom } from './useBoardZoom';
@@ -54,8 +55,7 @@ export function useZoomIntro(game: GameState, ctl: Controller, zoom: BoardZoom, 
   const [tip, setTip] = useState<string | null>(null);
   const done = useRef(false);
   if (game.phase !== 'setup') done.current = false; // ready for the next game's setup
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- checked after every render; `done` makes it run once.
-  useEffect(() => {
+  const start = useEffectEvent(() => {
     if (done.current || !introduce || !zoom.canZoom) return;
     done.current = true;
     const glowing = game.board.planets.find((p) => ctl.highlights.planets.has(p.id));
@@ -63,6 +63,8 @@ export function useZoomIntro(game: GameState, ctl: Controller, zoom: BoardZoom, 
     setTip(matchMedia(COARSE).matches ? 'Pinch to zoom the map' : 'Scroll or press + to zoom the map');
     if (!matchMedia(REDUCED_MOTION).matches) zoom.demo(spot.r, spot.c);
   });
+  // `introduce` holds only during setup, and `done` is reset only outside it.
+  useEffect(() => start(), [introduce, zoom.canZoom, start]);
   useEffect(() => {
     if (!tip) return;
     const t = setTimeout(() => setTip(null), TIP_MS);
@@ -77,8 +79,7 @@ export function useZoomIntro(game: GameState, ctl: Controller, zoom: BoardZoom, 
  */
 export function useFollowMoves(game: GameState, ctl: Controller, spots: ShipSpots, zoom: BoardZoom) {
   const seen = useRef<{ map: string; spots: ShipSpots } | null>(null);
-  // Only a new game state can move a ship.
-  useEffect(() => {
+  const follow = useEffectEvent(() => {
     const before = seen.current;
     const map = `${game.board.rows}x${game.board.cols}`;
     seen.current = { map, spots };
@@ -90,8 +91,9 @@ export function useFollowMoves(game: GameState, ctl: Controller, spots: ShipSpot
       if (now && !ctl.mine(d.owner) && (!was || was.r !== now.r || was.c !== now.c)) moved = now;
     }
     if (moved) zoom.reveal(Math.round(moved.r), Math.round(moved.c));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a new game state can move a ship.
-  }, [game]);
+  });
+  // Only a new game state can move a ship.
+  useEffect(() => follow(), [game, follow]);
 }
 
 type Side = 'left' | 'right' | 'top' | 'bottom';

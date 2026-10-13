@@ -1,8 +1,8 @@
-import { memo, useEffect, useMemo, useState } from 'react';
-import type { GameState } from '@quantum/engine';
+import { memo, useEffect, useState } from 'react';
+import type { Board, GameState } from '@quantum/engine';
 import { PLANET_DIAMETER, TILE } from '@quantum/art';
 import { decodedTileImage } from '../../art/tileImages';
-import { tileArt } from '../../art/boardTiles';
+import { tileArt, type TileArt } from '../../art/boardTiles';
 import { wrapMarks, type WrapMark } from './geometry';
 import { PlanetMarkings } from './PlanetMarkings';
 
@@ -14,10 +14,17 @@ const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number 
   top: { angle: 270, r: -1, c: 0 },
 };
 
+// A map's tile art, worked out once: a map id always names the same layout.
+const tileArtByMap = new Map<string, TileArt[]>();
+function tileArtOf(board: Board): TileArt[] {
+  let tiles = tileArtByMap.get(board.mapId);
+  if (!tiles) tileArtByMap.set(board.mapId, (tiles = tileArt(board)));
+  return tiles;
+}
+
 /** Tile artwork by physical tile id, filled in as each image is ready (a plain tile shows meanwhile). */
 function useTileImages(game: GameState) {
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- the art depends only on the map.
-  const tiles = useMemo(() => tileArt(game.board), [game.board.mapId]);
+  const tiles = tileArtOf(game.board);
   const [images, setImages] = useState<Record<string, string>>({});
   useEffect(() => {
     let live = true;
