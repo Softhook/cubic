@@ -30,15 +30,6 @@ export interface ShipHooks {
   stopsEnemies?(state: GameState, ship: Die, index: number): Iterable<number>;
   /** Extra spaces its owner may deploy into (the engine keeps only empty ones). */
   deployTargets?(state: GameState, ship: Die): Iterable<Cell>;
-  // The next three are asked about every ship, not only ships with this power: a ship may change
-  // number after using a power, and keeps what that use gave it this turn. They go by the power's own
-  // notes (turnNote), or check that the ship has the power (hooksOf).
-  /** The ship's next normal move is already paid for. */
-  freeMove?(state: GameState, ship: Die): boolean;
-  /** The ship may not make a normal Move attack now. */
-  noAttack?(state: GameState, ship: Die): boolean;
-  /** The ship makes a normal move (before the move is paid for). */
-  onMove?(state: GameState, ship: Die): void;
   /**
    * An action of its own: the `power` action. `options` are the legal choices now, cost included;
    * `apply` runs only for one of them, and pays for it.
@@ -53,18 +44,6 @@ export interface ShipHooks {
 export interface PrototypePower {
   ability: ShipDef['ability'];
   hooks: ShipHooks;
-}
-
-/**
- * A power's own note on a ship for this turn (TurnState.powers), cleared at the end of the turn. Each
- * power keeps its notes under its own `power` name, so two powers never overwrite each other's.
- */
-export function turnNote<T extends string>(state: GameState, power: string, ship: Die): T | undefined {
-  return state.turn.powers?.[power]?.[ship.id] as T | undefined;
-}
-
-export function setTurnNote(state: GameState, power: string, ship: Die, note: string) {
-  ((state.turn.powers ??= {})[power] ??= {})[ship.id] = note;
 }
 
 // ---------------------------------------------------------------------------

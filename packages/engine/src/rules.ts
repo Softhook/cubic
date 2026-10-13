@@ -95,26 +95,18 @@ export function hooksOf(state: GameState, d: Die): ShipHooks | undefined {
   return rulesOf(state).ships[d.value]?.hooks;
 }
 
-/** modeHooks' answers, worked out once per ship table: the engine asks on every move and legal-action search. */
-const HOOKS = new WeakMap<ShipTable, Map<keyof ShipHooks, unknown[]>>();
+/** The hooks each ship table's ships have, worked out once: the engine asks on every move search. */
+const HOOKS = new WeakMap<ShipTable, Set<string>>();
 
-/** Each different power in this game's rules that has this hook (none in the official modes). */
-export function modeHooks<K extends keyof ShipHooks>(state: GameState, hook: K): readonly NonNullable<ShipHooks[K]>[] {
-  const ships = rulesOf(state).ships;
-  let byHook = HOOKS.get(ships);
-  if (!byHook) HOOKS.set(ships, (byHook = new Map()));
-  let found = byHook.get(hook);
-  if (!found) {
-    const out = new Set<unknown>();
-    for (const s of Object.values(ships)) if (s.hooks?.[hook]) out.add(s.hooks[hook]);
-    byHook.set(hook, (found = [...out]));
-  }
-  return found as NonNullable<ShipHooks[K]>[];
-}
-
-/** Whether any ship in this game's rules has this hook, so searches can skip it otherwise. */
+/** Whether any ship in this game's rules has this hook (none in the official modes), so searches can skip it otherwise. */
 export function modeHasHook(state: GameState, hook: keyof ShipHooks): boolean {
-  return modeHooks(state, hook).length > 0;
+  const ships = rulesOf(state).ships;
+  let hooks = HOOKS.get(ships);
+  if (!hooks) {
+    hooks = new Set(Object.values(ships).flatMap((s) => Object.keys(s.hooks ?? {}).filter((k) => s.hooks![k as keyof ShipHooks])));
+    HOOKS.set(ships, hooks);
+  }
+  return hooks.has(hook);
 }
 
 /** Player counts a rule set has maps for. */

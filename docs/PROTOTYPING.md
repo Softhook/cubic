@@ -614,7 +614,7 @@ packages/engine/src/
     powers/picket.ts  Picket's hooks, applied to every ship as the zone-of-control rule
     powers/shoot.ts   power text and hooks for Shoot (5)
     powers/beacon.ts  candidate power text and hooks for Beacon (not registered)
-  prototype.ts        the prototype kit: ShipHooks, PrototypePower, turn note utilities
+  prototype.ts        the prototype kit: ShipHooks, PrototypePower, and the engine helpers a power may use
 ```
 
 | To Change | File to Edit |
@@ -647,9 +647,6 @@ export const beacon: PrototypePower = {
 };
 ```
 
-Powers tracking turn state use `turnNote(state, 'powerName', ship)` and `setTurnNote(...)` to avoid
-interfering with other powers.
-
 ### Engine Integration & Hooks
 
 1. **One import.** `RULESETS.prototyping = prototypingMode(COMMUNITY)` in [rulesets.ts](../packages/engine/src/rulesets.ts)
@@ -663,15 +660,12 @@ interfering with other powers.
    |---|---|---|
    | `stopsEnemies` | `stopZone` → `moveIndexes`, `shipReach` | Stops enemy movement when entering zone (Picket) |
    | `deployTargets` | `deployTargets` | Additional valid cells for Deploy action (Beacon) |
-   | `freeMove` | `legalActions`, `move` handler | Free movement following a power action |
-   | `noAttack` | `legalActions`, `attack` handler | Prevents standard attacks after using a power |
-   | `onMove` | `applyMove` handler | State updates when ship moves |
    | `action` (`options`, `apply`) | generic `power` action handler | Custom active power button & execution (Shoot) |
 
 3. **Generic action pipeline.** Powers with an `action` hook produce `{ type: 'power', die, target?, to? }`.
    The UI automatically renders a button with `ability.name`, highlights valid targets, and displays
    `ability.hint` without needing UI code changes.
-4. **Zero cost when unused.** Active hooks are cached per mode (`modeHooks`), ensuring official modes
+4. **Zero cost when unused.** Active hooks are cached per mode (`modeHasHook`), ensuring official modes
    experience zero performance overhead.
 
 ### Mode Safety & Invariants

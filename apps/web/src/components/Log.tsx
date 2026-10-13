@@ -6,8 +6,8 @@ import { remember, stored } from '../storage';
 const STORAGE_KEY = 'quantum.logOpen';
 const AUTO_SCROLL_THRESHOLD = 12;
 
-export function shouldAutoScroll(scrollTop: number, clientHeight: number, scrollHeight: number, threshold = AUTO_SCROLL_THRESHOLD) {
-  return scrollHeight - scrollTop - clientHeight <= threshold;
+export function shouldAutoScroll(scrollTop: number, clientHeight: number, scrollHeight: number) {
+  return scrollHeight - scrollTop - clientHeight <= AUTO_SCROLL_THRESHOLD;
 }
 
 /** The game's log. Collapsed (the default, remembered) it is just its title; the whole row toggles it. */

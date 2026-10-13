@@ -28,7 +28,7 @@ import {
   tacticalOptions,
   usedThisTurn,
 } from './queries';
-import { hasPower, hooksOf, modeHooks, rulesOf } from './rules';
+import { hasPower, hooksOf, rulesOf } from './rules';
 import { anySkill, hasSkill } from './skillRules';
 import type { Action, Die, GameState, Pending } from './types';
 
@@ -155,16 +155,11 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
   const canAttack = (cost: number) => actions >= cost + t.freeMovesUsed;
   const nomadic = actions > 0 && hasSkill(s, me, 'nomadic') && !usedThisTurn(s, 'nomadic');
 
-  // Prototype powers (ShipHooks): asked about every ship, see prototype.ts.
-  const freeMove = modeHooks(s, 'freeMove');
-  const noAttack = modeHooks(s, 'noAttack');
-
   for (const d of shipsOnBoard(s, me)) {
-    if ((canPayMove || freeMove.some((free) => free(s, d))) && canMoveDie(s, d)) {
+    if (canPayMove && canMoveDie(s, d)) {
       const moves = moveOptions(s, d.id);
       for (const m of moves.moves.values()) out.push({ type: 'move', die: d.id, to: m.cell });
-      if (canAttack(1) && !noAttack.some((no) => no(s, d)))
-        for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
+      if (canAttack(1)) for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
     }
     const action = hooksOf(s, d)?.action;
     if (action) for (const c of action.options(s, d)) out.push({ type: 'power', die: d.id, ...c });

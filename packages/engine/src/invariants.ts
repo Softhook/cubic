@@ -5,7 +5,7 @@
  */
 import { key } from './board';
 import { effectOf, MAPS } from './data';
-import { isImplemented } from './effects';
+import { IMPLEMENTED_EFFECTS } from './effects';
 import { skillLimit } from './queries';
 import { rulesOf } from './rules';
 // Sets the rule sets that rulesOf reads: a test or tool may check a saved state with only this module loaded.
@@ -66,7 +66,7 @@ export function checkInvariants(s: GameState): string[] {
   if (cards) {
     const expected = new Map<string, number>();
     for (const c of [...cards.skills, ...cards.tactics]) {
-      if (isImplemented(effectOf(c.id))) expected.set(c.id, (expected.get(c.id) ?? 0) + c.count);
+      if (IMPLEMENTED_EFFECTS.has(effectOf(c.id))) expected.set(c.id, (expected.get(c.id) ?? 0) + c.count);
     }
     const actual = new Map<string, number>();
     const count = (id: string) => actual.set(id, (actual.get(id) ?? 0) + 1);

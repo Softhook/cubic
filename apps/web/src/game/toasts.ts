@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { GameState, LogEntry, LogEvent } from '@quantum/engine';
+import type { GameState, LogEvent } from '@quantum/engine';
 import { sfx } from '../sound';
 import { logText } from './logText';
 import { playSounds } from './sounds';
@@ -29,8 +29,6 @@ const TONES: Record<LogEvent, Toast['tone'] | undefined> = {
   breakthrough: 'info',
 };
 
-const toneOf = (e: LogEntry) => (e.event ? TONES[e.event] : undefined);
-
 const MAX_TOASTS = 4;
 const TOAST_MS = 4200;
 
@@ -42,7 +40,7 @@ export function useToasts() {
     const fresh = next.log.filter((e) => e.id > (prev.log.at(-1)?.id ?? 0));
     playSounds(prev, next, fresh);
     const shown = fresh.flatMap((e): Toast[] => {
-      const tone = toneOf(e);
+      const tone = e.event && TONES[e.event];
       return tone ? [{ id: e.id, text: logText(next, e), player: e.player, tone }] : [];
     });
     if (!shown.length) return;

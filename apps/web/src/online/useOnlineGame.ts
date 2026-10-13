@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { getPublicKey } from 'nostr-tools/pure';
 import { actor, apply, legalActions, MAPS, RuleError, RULESETS, type Action, type GameState, type PlayerId } from '@quantum/engine';
 import {
   actBody,
@@ -6,7 +7,6 @@ import {
   decodeEvent,
   encodePost,
   gameKeys,
-  publicKeyOf,
   Timeline,
   type AskMode,
   type Body,
@@ -150,7 +150,7 @@ export function useOnlineGame(secret: string): OnlineGame {
  */
 function usePostLog(secret: string) {
   const sk = useMemo(identity, []);
-  const me = useMemo(() => publicKeyOf(sk), [sk]);
+  const me = useMemo(() => getPublicKey(sk), [sk]);
   // Together, so a new game (`secret`) never shares a timeline with the last one.
   const { keys, timeline, events } = useMemo(
     () => ({ keys: gameKeys(secret), timeline: new Timeline(), events: new Map<string, NostrEvent>() }),
@@ -194,8 +194,12 @@ function usePostLog(secret: string) {
     try {
       for (const e of loadEvents(keys.tag)) receive(e, true);
       publish();
-      const store = { all: () => [...events.values()] };
-      l = new RelayLink(keys.tag, store, (e) => receive(e) && (save(), publish()), setRelays);
+      l = new RelayLink(
+        keys.tag,
+        () => [...events.values()],
+        (e) => receive(e) && (save(), publish()),
+        setRelays,
+      );
       l.start();
       link.current = l;
     } catch (e) {

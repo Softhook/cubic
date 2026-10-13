@@ -44,11 +44,6 @@ export interface RelayStatus {
   unsent: number;
 }
 
-/** The events this browser holds for the game. */
-export interface EventStore {
-  all(): NostrEvent[];
-}
-
 /**
  * One game's connection to the relays: receives every event filed under the game's tag (the
  * stored ones, then new ones as they are posted), publishes this browser's events, and re-sends
@@ -79,7 +74,8 @@ export class RelayLink {
 
   constructor(
     private tag: string,
-    private store: EventStore,
+    /** The events this browser holds for the game. */
+    private known: () => NostrEvent[],
     private onEvent: (e: NostrEvent) => void,
     private onStatus: (s: RelayStatus) => void,
   ) {}
@@ -176,7 +172,7 @@ export class RelayLink {
     const page = { count: 0, oldest: Infinity };
     r.subscribe([{ kinds: [KIND], '#t': [this.tag], limit: PAGE, since }], {
       eoseTimeout: EOSE_TIMEOUT_MS,
-      ...this.receiver(url, page),
+      onevent: this.receive(url, page),
       oneose: () =>
         void this.backfill(url, r, page, since).then(() => {
           this.synced.set(url, startedAt);
@@ -190,19 +186,13 @@ export class RelayLink {
     });
   }
 
-  /** Subscription callbacks that record what the relay holds, count a page, and pass on new events. */
-  private receiver(url: string, page: { count: number; oldest: number }) {
-    const counted = (createdAt: number) => {
+  /** A subscription's `onevent`: records what the relay holds, counts the page, and passes the event on. */
+  private receive(url: string, page: { count: number; oldest: number }) {
+    return (e: NostrEvent) => {
       page.count++;
-      page.oldest = Math.min(page.oldest, createdAt);
-    };
-    return {
-      // Called with the id alone, before nostr-tools parses the event or checks its signature.
-      onevent: (e: NostrEvent) => {
-        counted(e.created_at);
-        this.holds(url, e.id);
-        this.onEvent(e);
-      },
+      page.oldest = Math.min(page.oldest, e.created_at);
+      this.holds(url, e.id);
+      this.onEvent(e);
     };
   }
 
@@ -216,7 +206,7 @@ export class RelayLink {
       await new Promise<void>((done) => {
         const sub = r.subscribe([{ kinds: [KIND], '#t': [this.tag], until: oldest, since, limit: PAGE }], {
           eoseTimeout: EOSE_TIMEOUT_MS,
-          ...this.receiver(url, page),
+          onevent: this.receive(url, page),
           oneose: () => {
             sub.close();
             done();
@@ -234,7 +224,7 @@ export class RelayLink {
     const seen = this.seen.get(url)!;
     this.enqueue(
       url,
-      this.store.all().filter((e) => !seen.has(e.id)),
+      this.known().filter((e) => !seen.has(e.id)),
     );
   }
 
@@ -270,8 +260,7 @@ export class RelayLink {
       },
       (err: unknown) => {
         const why = String((err as Error)?.message ?? err);
-        const attempts = this.tries.get(url) ?? new Map<string, number>();
-        const tries = attempts.get(e.id) ?? 0;
+        const tries = this.tries.get(url)?.get(e.id) ?? 0;
         if (REFUSED_FOR_GOOD.test(why)) {
           console.warn(`[quantum] ${url} refuses our events (${why}); reading from it only`);
           this.readOnly.add(url);
@@ -280,26 +269,19 @@ export class RelayLink {
           this.status();
         } else if (RATE_LIMITED.test(why)) {
           next(RATE_LIMIT_PAUSE_MS);
-        } else if (TRANSIENT.test(why) && tries < SEND_RETRY_MS.length) {
-          this.defer(url, e, q, attempts, tries, SEND_RETRY_MS[tries]);
         } else if (TRANSIENT.test(why)) {
           if (tries === SEND_RETRY_MS.length)
             console.warn(`[quantum] ${url} still has not confirmed event ${e.id}; retrying once a minute`);
-          this.defer(url, e, q, attempts, tries, SEND_SLOW_RETRY_MS);
+          // Back of the queue, after a pause: the events behind it go first.
+          q.shift();
+          this.tries.set(url, (this.tries.get(url) ?? new Map()).set(e.id, tries + 1));
+          this.later(() => this.enqueue(url, [e]), SEND_RETRY_MS[tries] ?? SEND_SLOW_RETRY_MS);
+          next(SEND_GAP_MS);
         } else {
           // The relay won't take this event (or keeps failing): skip it; the next sync tries again.
           done();
         }
       },
     );
-  }
-
-  private defer(url: string, event: NostrEvent, queue: NostrEvent[], attempts: Map<string, number>, tries: number, delay: number) {
-    queue.shift();
-    attempts.set(event.id, tries + 1);
-    this.tries.set(url, attempts);
-    this.later(() => this.enqueue(url, [event]), delay);
-    this.sending.delete(url);
-    this.later(() => this.drain(url), SEND_GAP_MS);
   }
 }

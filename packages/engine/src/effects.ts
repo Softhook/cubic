@@ -85,7 +85,3 @@ export type TacticEffect = (typeof TACTIC_EFFECT_IDS)[number];
 
 /** Card effects the engine implements. Only cards with these effects are shuffled into the decks. */
 export const IMPLEMENTED_EFFECTS: ReadonlySet<string> = new Set<string>([...SKILL_EFFECTS, ...TACTIC_EFFECT_IDS]);
-
-export function isImplemented(effect: string): boolean {
-  return IMPLEMENTED_EFFECTS.has(effect);
-}

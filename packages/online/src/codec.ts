@@ -1,6 +1,6 @@
 import { gcm } from '@noble/ciphers/aes.js';
 import { sha256 } from '@noble/hashes/sha2.js';
-import { finalizeEvent, getPublicKey, verifyEvent, type Event as NostrEvent } from 'nostr-tools/pure';
+import { finalizeEvent, verifyEvent, type Event as NostrEvent } from 'nostr-tools/pure';
 import type { Body, Post } from './protocol';
 
 /**
@@ -107,8 +107,4 @@ export function decodeEvent(keys: GameKeys, event: NostrEvent, trusted = false):
   } catch {
     return null;
   }
-}
-
-export function publicKeyOf(sk: Uint8Array): string {
-  return getPublicKey(sk);
 }

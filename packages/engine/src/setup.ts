@@ -1,6 +1,6 @@
 /** Game creation and the setup decisions: fleet roll, starting skill, starting planet and ships. */
 import { buildBoard, same } from './board';
-import { isImplemented } from './effects';
+import { IMPLEMENTED_EFFECTS } from './effects';
 import { emptyTurn, fail, headOf, log, name, placeCube, roll, type Handlers } from './core';
 import { defaultMap, effectOf, MAPS, type CardDef, type GameMode } from './data';
 import { boardLoc, die, scrapyard } from './lookups';
@@ -76,7 +76,7 @@ export function createGame(opts: NewGameOptions): GameState {
     const deck = (defs: CardDef[]) =>
       shuffle(
         state,
-        defs.filter((c) => isImplemented(effectOf(c.id))).flatMap((c) => Array.from({ length: c.count }, () => c.id)),
+        defs.filter((c) => IMPLEMENTED_EFFECTS.has(effectOf(c.id))).flatMap((c) => Array.from({ length: c.count }, () => c.id)),
       );
     m.skillDeck = deck(rules.cards.skills);
     m.tacticDeck = deck(rules.cards.tactics);

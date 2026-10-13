@@ -19,7 +19,7 @@ import {
 } from './core';
 import { boardLoc, die } from './lookups';
 import { canGainResearch, canMoveDie, canReconfigure, conquerCheck, deployTargets, deploysFree, moveIndexes } from './queries';
-import { modeHooks, rulesOf } from './rules';
+import { rulesOf } from './rules';
 import { endTurn } from './turn';
 
 export const actionHandlers = {
@@ -29,8 +29,7 @@ export const actionHandlers = {
     if (!canMoveDie(s, d)) fail('This ship already moved this turn');
     const opt = moveIndexes(s, d).moves.get(cellIndex(s.board, a.to));
     if (!opt) fail('Out of range');
-    if (!modeHooks(s, 'freeMove').some((free) => free(s, d))) spendMove(s);
-    for (const onMove of modeHooks(s, 'onMove')) onMove(s, d);
+    spendMove(s);
     if (opt.diagonal) markAbility(s, d); // Interceptor manoeuvre
     d.loc = boardLoc(a.to);
     markMoved(s, d);
@@ -39,7 +38,6 @@ export const actionHandlers = {
     requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     if (!canMoveDie(s, d)) fail('This ship already moved this turn');
-    if (modeHooks(s, 'noAttack').some((no) => no(s, d))) fail('This ship can’t attack now');
     const opt = moveIndexes(s, d).attacks.get(a.target);
     if (!opt) fail('Target out of range');
     spend(s, 1);

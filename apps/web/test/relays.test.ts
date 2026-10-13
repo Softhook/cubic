@@ -86,7 +86,7 @@ describe('online relay link', () => {
       return relay;
     });
 
-    const link = new RelayLink('tag', { all: () => [] }, vi.fn(), vi.fn());
+    const link = new RelayLink('tag', () => [], vi.fn(), vi.fn());
     link.publish(event('older'));
     link.start();
     await flushPromises();
@@ -103,7 +103,7 @@ describe('online relay link', () => {
   });
 
   it('does not skip relayed events before signature validation', async () => {
-    const link = new RelayLink('tag', { all: () => [] }, vi.fn(), vi.fn());
+    const link = new RelayLink('tag', () => [], vi.fn(), vi.fn());
     link.start();
     await flushPromises();
 
