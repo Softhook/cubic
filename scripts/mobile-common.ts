@@ -1,6 +1,7 @@
 /** What the phone scripts (mobile-shots, mobile-play, pwa-check) share: the test phone, flags, server and browser. */
 import { chromium, devices, type BrowserContextOptions } from 'playwright';
 import { createServer } from 'vite';
+import type { GameState } from '@quantum/engine';
 
 /** The user's Moto G55: 1080×2400 at a device pixel ratio of 2.625, minus Chrome's and Android's bars. */
 const g55 = { userAgent: devices['Pixel 7'].userAgent, deviceScaleFactor: 2.625, isMobile: true, hasTouch: true };
@@ -50,3 +51,13 @@ export function finish(out: string, problems: number, what = 'problem') {
   console.log(`${problems} ${what}${problems > 1 ? 's' : ''}.`);
   process.exit(1);
 }
+
+/** Whether `p` settles without an error (a wait that may time out, as a yes or no). */
+export const succeeds = (p: Promise<unknown>) =>
+  p.then(
+    () => true,
+    () => false,
+  );
+
+/** The dev-only `window.__quantum` hook (useGame.ts), for page.evaluate. */
+export type Quantum = { state(): GameState; load(s: unknown): void };

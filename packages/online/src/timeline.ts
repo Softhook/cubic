@@ -146,7 +146,8 @@ export class Timeline {
       let m = this.passes.get(b.stage);
       if (!m) this.passes.set(b.stage, (m = new Map()));
       const old = m.get(b.seat);
-      if (!old || byTime(post, old) < 0) m.set(b.seat, post);
+      if (old && byTime(post, old) >= 0) return true;
+      m.set(b.seat, post);
       if (this.r && !this.dirty) {
         if (this.r.combat?.stage === b.stage) this.extend();
         // The game moved on from this stage (a missile or re-roll) before this pass arrived. If the
@@ -327,23 +328,21 @@ export class Timeline {
     console.error(`[quantum] ${what}`, details());
   }
 
-  /** The seats that have passed `stage` (a pass counts if its author plays the seat). */
-  private passedAt(stage: string): PlayerId[] {
-    const given = this.passes.get(stage);
-    return this.r!.seats.filter((s) => {
-      const p = given?.get(s.id);
-      return p && (s.ai || s.owner === p.author);
-    }).map((s) => s.id);
-  }
-
   private combatWait(state: GameState, combat: CombatPending): CombatWait {
     const stage = combatStage(combat);
     const seats = this.r!.seats;
-    const waitingOn = seats.filter((s) => {
-      if (!canRespondToCombat(state, combat, s.id)) return false;
-      return s.ai || !s.owner || s.ask === 'own';
-    });
-    return { stage, waitingOn: waitingOn.map((s) => s.id), passed: this.passedAt(stage) };
+    const given = this.passes.get(stage);
+    return {
+      stage,
+      waitingOn: seats.filter((s) => canRespondToCombat(state, combat, s.id) && (s.ai || !s.owner || s.ask === 'own')).map((s) => s.id),
+      // A pass counts if its author plays the seat.
+      passed: seats
+        .filter((s) => {
+          const p = given?.get(s.id);
+          return p && (s.ai || s.owner === p.author);
+        })
+        .map((s) => s.id),
+    };
   }
 }
 

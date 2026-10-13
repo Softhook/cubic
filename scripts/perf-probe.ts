@@ -13,12 +13,9 @@
  *   npm run perf:probe -- --url http://…/    # a running dev server (uses the dev-only ?play= link)
  */
 import type { CDPSession, Page } from 'playwright';
-import type { GameState } from '@quantum/engine';
-import { arg, devServer, launchChrome, playUrl } from './mobile-common';
+import { arg, devServer, launchChrome, playUrl, type Quantum } from './mobile-common';
 
 const THROTTLE = Number(arg('--cpu') ?? 4);
-
-type Quantum = { state(): GameState; load(s: unknown): void };
 
 async function timeCards(page: Page, cdp: CDPSession) {
   const open = async (what: string, selector: string) => {

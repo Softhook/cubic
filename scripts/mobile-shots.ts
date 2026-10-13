@@ -20,7 +20,7 @@
  */
 import { mkdirSync } from 'node:fs';
 import { devices, webkit, type BrowserContextOptions, type Page } from 'playwright';
-import { PHONES, devServer, finish, launchChrome, playUrl } from './mobile-common';
+import { PHONES, devServer, finish, launchChrome, playUrl, succeeds } from './mobile-common';
 
 const DEVICES: Record<string, BrowserContextOptions> = {
   ...PHONES,
@@ -228,12 +228,7 @@ async function checkPopups(newPage: () => Promise<Page>, base: string, device: s
     await page.waitForSelector('.board');
     if (pop.name === 'rules') await page.locator('.topbar button', { hasText: 'Rules' }).evaluate((b: HTMLElement) => b.click());
     const box = page.locator(pop.box ?? '.overlay .modal, .overlay .combat-card').first();
-    if (
-      !(await box.waitFor({ timeout: 15000 }).then(
-        () => true,
-        () => false,
-      ))
-    ) {
+    if (!(await succeeds(box.waitFor({ timeout: 15000 })))) {
       issues.push(`${pop.name}: never opened`);
       await page.context().close();
       continue;
@@ -306,13 +301,7 @@ async function main() {
           // choice. Clicks go through the page, so a popup that is partly off screen still advances.
           for (let n = 1; n <= 4; n++) {
             const modal = page.locator('.overlay .modal').first();
-            if (
-              !(await modal.waitFor({ timeout: 4000 }).then(
-                () => true,
-                () => false,
-              ))
-            )
-              break;
+            if (!(await succeeds(modal.waitFor({ timeout: 4000 })))) break;
             const keep = modal.locator('button', { hasText: 'Keep fleet' });
             if (await keep.count())
               await page

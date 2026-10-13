@@ -9,7 +9,6 @@ import {
   type GameMode,
   type Action,
   type GameState,
-  type PlayerConfig,
   type PlayerId,
 } from '@quantum/engine';
 import { chooseAction, chooseCombatResponse } from '@quantum/ai';
@@ -29,23 +28,7 @@ import {
 } from '../src';
 import { seededRandom } from '../../engine/test/helpers';
 
-const seat = (name: string, ai = false): PlayerConfig => ({ name, color: '#fff', ai, aiLevel: 1 });
-
-let clock = 1_000_000;
-let ids = 0;
-/** A post without the crypto, for the replay tests (the codec has its own tests below). */
-function post(author: string, body: Body, prev: string | null = null, at = ++clock): Post {
-  return { id: `p${String(++ids).padStart(6, '0')}`, author, at, prev, body };
-}
-
-const create = (author: string, players: PlayerConfig[], open: number[], seed = 7, mode: GameMode = 'basic') =>
-  post(author, {
-    t: 'create',
-    protocol: PROTOCOL,
-    config: { players, mapId: defaultMap(players.length)!.id, mode, seed },
-    creator: 0,
-    open,
-  });
+import { create, post, seat } from './helpers';
 
 const head = (r: Replay): GameState => r.steps.at(-1)!.state;
 

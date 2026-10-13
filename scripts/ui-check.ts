@@ -12,13 +12,12 @@ import { mkdirSync } from 'node:fs';
 import type { Page } from 'playwright';
 import { apply, legalActions, orbitals, type GameState } from '../packages/engine/src';
 import { arrange, quickStart } from '../packages/engine/test/helpers';
-import { devServer, finish, launchChrome, playUrl } from './mobile-common';
+import { devServer, finish, launchChrome, playUrl, succeeds, type Quantum } from './mobile-common';
 
 const OUT = 'test-results/ui';
 mkdirSync(OUT, { recursive: true });
 
 /** The dev-only hook a local game puts on window (useGame.ts). */
-type Quantum = { load(s: unknown): void; state(): GameState };
 const load = (page: Page, state: unknown) => page.evaluate((st) => (window as unknown as { __quantum: Quantum }).__quantum.load(st), state);
 const cubesOn = (page: Page, planet: number) =>
   page.evaluate((id) => (window as unknown as { __quantum: Quantum }).__quantum.state().board.planets[id].cubes, planet);
@@ -99,13 +98,7 @@ try {
   await load(page, battle(1, 2));
   await overlay.waitFor({ timeout: 5000 }).catch(() => fail('no battle on screen (AI against AI)'));
   if (await okButton.isVisible()) fail('a battle between two AIs asks the watching human for OK');
-  if (
-    await overlay.waitFor({ state: 'detached', timeout: 8000 }).then(
-      () => true,
-      () => false,
-    )
-  )
-    console.log('✓ a battle between two AIs resolves by itself');
+  if (await succeeds(overlay.waitFor({ state: 'detached', timeout: 8000 }))) console.log('✓ a battle between two AIs resolves by itself');
   else fail('a battle between two AIs stays on screen');
   await load(page, battle(1, 0));
   await okButton.waitFor({ timeout: 5000 }).catch(() => fail('a battle the human defends in has no OK'));
@@ -122,12 +115,7 @@ try {
   // A position the screen can't draw: the crash screen, not a blank page, and a way back to the lobby.
   await load(page, { ...s, dice: null }).catch(() => {});
   const crash = page.locator('.crash');
-  if (
-    await crash.waitFor({ timeout: 5000 }).then(
-      () => true,
-      () => false,
-    )
-  ) {
+  if (await succeeds(crash.waitFor({ timeout: 5000 }))) {
     await page.screenshot({ path: `${OUT}/crash.png` });
     console.log('✓ crash screen shown');
     await page.getByRole('button', { name: 'Back to the lobby' }).click();

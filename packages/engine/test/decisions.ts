@@ -12,6 +12,7 @@ import {
   TACTICS,
   tryApply,
   type Action,
+  type CardDef,
   type Cell,
   type GameState,
   type Pending,
@@ -32,7 +33,9 @@ function canonical(value: unknown): unknown {
 /** An action as a string that is the same for equal actions, whatever their key order, nested cells included. */
 export const keyOf = (a: Action) => JSON.stringify(canonical(a));
 
-export const CARD_IDS = [...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT].map((c) => c.id);
+/** Every card of every deck. */
+export const ALL_CARDS: CardDef[] = [...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT];
+export const CARD_IDS = ALL_CARDS.map((c) => c.id);
 const ROW_INDEXES = [0, 1, 2, 3, 4, 5, 6, 7];
 
 /**

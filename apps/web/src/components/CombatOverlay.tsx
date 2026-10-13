@@ -177,7 +177,7 @@ export function CombatOverlay({
         <div className="combat-footer">
           {online?.mustAnswer ? (
             <button className="btn btn-primary" disabled={!revealed} onClick={close(online.pass)}>
-              {humans.some((p) => canRespondToCombat(game, combat, p.id)) ? 'Done — no response' : 'Continue'}
+              {autoResolve ? 'Continue' : 'Done — no response'}
             </button>
           ) : waitingNames ? (
             <p className="combat-waiting">
@@ -272,31 +272,25 @@ function MissileButton({
   named: boolean;
   dispatch: Dispatch;
 }) {
-  const side = combat[role];
-  const fighting = shooter.id === combat.attacker.player || shooter.id === combat.defender.player;
   if (!missileOffered(game, combat, shooter.id, role)) return null;
   const action: Action = { type: 'missile', by: shooter.id, side: role };
   const next = tryApply(game, action);
   const nextCombat = next?.pending[0];
   if (!next || nextCombat?.kind !== 'combat') return null;
 
-  const now = combatOutcome(game, combat);
+  // Offered only on the shooter's own roll while losing, so the missile either flips the battle or doesn't.
   const after = combatOutcome(next, nextCombat);
-  const sideWins = (o: typeof after) => (role === 'attacker') === o.attackerWins;
+  const flips = (role === 'attacker') === after.attackerWins;
   const mine = role === 'attacker' ? after.attacker.total : after.defender.total;
   const theirs = role === 'attacker' ? after.defender.total : after.attacker.total;
-  const flips = sideWins(after) !== sideWins(now);
-  const you = fighting && !named;
-  const who = you ? 'you' : game.players[side.player].name;
-  const verdict = sideWins(after)
-    ? `${who} ${flips ? 'would win' : you ? 'still win' : 'still wins'} ${mine} vs ${theirs}`
-    : `${who} would still lose ${mine} vs ${theirs}`;
+  const who = named ? shooter.name : 'you';
+  const verdict = `${who} ${flips ? 'would win' : 'would still lose'} ${mine} vs ${theirs}`;
 
   return (
     <button className={`btn btn-missile ${flips ? 'decisive' : ''}`} onClick={() => dispatch(action)}>
       <span>
         <MissileIcon /> {named ? `${shooter.name}: ` : ''}
-        {fighting ? 'Fire missile — your roll becomes 1' : `Help ${game.players[side.player].name} — roll becomes 1`}
+        Fire missile — your roll becomes 1
       </span>
       <small>{verdict}</small>
     </button>

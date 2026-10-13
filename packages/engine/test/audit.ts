@@ -722,8 +722,8 @@ export function auditGame(g: AuditGame, opts: { maxSteps?: number; onStep?: (ste
 
     // Flagship carries are only listed on request (they are many); the higher AI levels use them.
     const legal = s.pending[0]?.kind === 'combat' ? null : legalActions(s, { includeCarry: 'passenger' in action });
-    if (legal && !legal.some((a) => keyOf(a) === keyOf(action!)))
-      flag(undefined, `AI chose an action legalActions() doesn't offer: ${keyOf(action)}`);
+    const key = keyOf(action);
+    if (legal && !legal.some((a) => keyOf(a) === key)) flag(undefined, `AI chose an action legalActions() doesn't offer: ${key}`);
 
     try {
       after = apply(s, action);

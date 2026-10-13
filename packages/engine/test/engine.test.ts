@@ -14,6 +14,7 @@ import {
   type GameState,
   ORIGINAL_COMMAND,
   ORIGINAL_GAMBIT,
+  type CombatPending,
 } from '../src';
 import { arrange, players, quickStart } from './helpers';
 
@@ -127,8 +128,8 @@ describe('combat', () => {
 });
 
 describe('missiles', () => {
-  function battle(defender: { skills?: string[]; planAhead?: number }, rolls: [number, number]) {
-    let s = quickStart();
+  function battle(defender: { skills?: string[]; planAhead?: number }, rolls: [number, number], players = 2) {
+    let s = quickStart(players);
     s.turn.player = 1;
     s = arrange(s, { p1d0: [0, 0, 2], p0d0: [0, 1, 5] });
     s.players[0].skills = (defender.skills ?? []).map((id) => ({ id, active: true }));
@@ -168,17 +169,11 @@ describe('missiles', () => {
   });
 
   it('may not be fired by a player not in the battle', () => {
-    let s = quickStart(3);
-    s.turn.player = 1;
-    s = arrange(s, { p1d0: [0, 0, 2], p0d0: [0, 1, 5] });
-    s = apply(s, { type: 'attack', die: 'p1d0', target: 'p0d0' });
-    if (s.pending[0].kind !== 'combat') throw new Error('no combat');
     // Attacker 6+2=8 vs defender 4+5=9: neither roll is 1 yet.
-    s.pending[0].attacker.dice = [6];
-    s.pending[0].defender.dice = [4];
+    const s = battle({}, [6, 4], 3);
     expect(s.players[2].missiles).toBeGreaterThan(0);
     expect(legalActions(s).filter((a) => a.type === 'missile' && a.by === 2)).toEqual([]);
-    expect(canRespondToCombat(s, s.pending[0], 2)).toBe(false);
+    expect(canRespondToCombat(s, s.pending[0] as CombatPending, 2)).toBe(false);
     for (const side of ['attacker', 'defender'] as const)
       expect(() => apply(s, { type: 'missile', by: 2, side })).toThrow(/Only the attacker and defender/);
   });

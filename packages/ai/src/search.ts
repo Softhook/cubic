@@ -156,16 +156,17 @@ export class Search {
     return s.phase === 'play' && !s.pending.length && s.turn.phase === 'actions' && s.turn.player === this.me;
   }
 
-  private standPat(s: GameState): Line {
+  /** `sig` is signature(s), passed in when the caller has it already. */
+  private standPat(s: GameState, sig?: string): Line {
     // Counted even when cached: the budget measures the search's size, so that a faster search
     // makes the same choices.
     this.evaluations++;
-    return { value: this.score(s, this.me), end: s };
+    return { value: this.score(s, this.me, undefined, sig), end: s };
   }
 
-  /** evaluate(s, who, mover), cached. */
-  private score(s: GameState, who: PlayerId, mover?: PlayerId): number {
-    const k = `${who}|${mover ?? ''}|${evalKey(s)}`;
+  /** evaluate(s, who, mover), cached. The key adds phase and winner: it is used outside my turn too. */
+  private score(s: GameState, who: PlayerId, mover?: PlayerId, sig = signature(s)): number {
+    const k = `${who}|${mover ?? ''}|${s.phase}|${s.winner}|${sig}`;
     let value = this.evals.get(k);
     if (value === undefined) this.evals.set(k, (value = evaluate(s, who, mover)));
     return value;
@@ -211,11 +212,12 @@ export class Search {
   /** The best line from `s`: end the turn now, or take up to `depth` more actions. */
   private node(s: GameState, depth: number): Line {
     if (!this.myTurn(s)) return this.standPat(s);
-    const k = `${depth}|${signature(s)}`;
+    const sig = signature(s);
+    const k = `${depth}|${sig}`;
     const hit = this.tt.get(k);
     if (hit) return hit;
 
-    let best = this.standPat(s);
+    let best = this.standPat(s, sig);
     if (depth > 0 && !this.exhausted()) {
       // Ending the turn is `best` already.
       const scored = this.scoreAll(
@@ -339,11 +341,6 @@ function hideUnknowns(state: GameState, random: () => number): GameState {
   s.rng = seed(random);
   shuffleUnseen(s, random);
   return s;
-}
-
-/** Identifies a position for the evaluation cache: also outside my turn, where whose turn it is matters. */
-function evalKey(s: GameState): string {
-  return `${s.phase}|${s.winner}|${signature(s)}`;
 }
 
 /**

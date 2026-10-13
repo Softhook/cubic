@@ -1,6 +1,6 @@
 import { legalActions, type Action, type GameState } from '@quantum/engine';
 
-type ActionOf<K extends Action['type']> = Extract<Action, { type: K }>;
+export type ActionOf<K extends Action['type']> = Extract<Action, { type: K }>;
 
 /**
  * The legal actions of a state, indexed by type. The UI enables a button or highlights a space
@@ -42,6 +42,11 @@ export function legalFor(game: GameState): Legal {
  * player chooses, ConquerChoice), or null when it can't be conquered.
  */
 export function conquerTap(legal: Legal, planet: number): Action | 'choose' | null {
-  const options = legal.of('conquer', (a) => a.planet === planet);
+  const options = conquerOptions(legal, planet);
   return options.length > 1 ? 'choose' : (options[0] ?? null);
+}
+
+/** The ways to conquer `planet`. */
+export function conquerOptions(legal: Legal, planet: number): ActionOf<'conquer'>[] {
+  return legal.of('conquer', (a) => a.planet === planet);
 }

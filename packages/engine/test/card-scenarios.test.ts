@@ -20,23 +20,18 @@ import {
   legalActions,
   nomadicTargets,
   orbitals,
-  ORIGINAL_COMMAND,
   ORIGINAL_GAMBIT,
   shipsOnBoard,
   skillLimit,
-  SKILLS,
   TACTICS,
   type Action,
-  type CardDef,
   type CombatPending,
   type GameMode,
   type GameState,
 } from '../src';
 import { setSkills, toRow } from './audit';
-import { keyOf, unofferedAnswers } from './decisions';
+import { ALL_CARDS, keyOf, unofferedAnswers } from './decisions';
 import { arrange, originalGame, quickStart, seededRandom } from './helpers';
-
-const ALL_CARDS: CardDef[] = [...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT];
 
 const covered = new Set<string>();
 

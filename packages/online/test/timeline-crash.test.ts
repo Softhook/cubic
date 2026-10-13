@@ -5,8 +5,9 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { chooseAction } from '@quantum/ai';
-import { actor, defaultMap, legalActions, type Action, type PlayerConfig } from '@quantum/engine';
-import { PROTOCOL, Timeline, type Body, type Post } from '../src';
+import { actor, legalActions, type Action, type PlayerConfig } from '@quantum/engine';
+import { Timeline, type Body } from '../src';
+import { create, post, seat } from './helpers';
 
 const engine = vi.hoisted(() => ({ failBattles: false }));
 
@@ -22,21 +23,11 @@ vi.mock('@quantum/engine', async (importOriginal) => {
   };
 });
 
-let clock = 1_000_000;
-let ids = 0;
-const post = (author: string, body: Body, prev: string | null = null): Post => ({ id: `p${++ids}`, author, at: ++clock, prev, body });
-const seat = (name: string, ai = false): PlayerConfig => ({ name, color: '#fff', ai, aiLevel: 1 });
 const crashing = (s: number): Body => ({ t: 'act', seat: s, action: { type: 'setupKeep', crash: true } as Action });
 
 function game(players: PlayerConfig[], open: number[] = []) {
   const t = new Timeline();
-  const g = post('alice', {
-    t: 'create',
-    protocol: PROTOCOL,
-    config: { players, mapId: defaultMap(players.length)!.id, mode: 'basic', seed: 7 },
-    creator: 0,
-    open,
-  });
+  const g = create('alice', players, open);
   t.add(g);
   return { t, g };
 }

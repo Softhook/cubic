@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { IMPLEMENTED_EFFECTS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILL_RULES, SKILLS, TACTICS, EXPANSION, type CardDef } from '../src';
+import { IMPLEMENTED_EFFECTS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILL_RULES, type CardDef } from '../src';
+import { ALL_CARDS as ALL } from './decisions';
 
-const ALL: CardDef[] = [...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT];
 const effect = (c: CardDef) => c.effect ?? c.id;
 
 /** Cards left out of the decks because their effect is not written yet. Shrink this list. */

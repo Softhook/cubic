@@ -1,6 +1,7 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import { rulesOf } from '@quantum/engine';
 import { useController } from '../game/controller';
+import { conquerOptions } from '../game/legal';
 import type { GameView } from '../game/view';
 import { SHEET, useMediaQuery } from '../game/useMediaQuery';
 import { BottomSheet } from './BottomSheet';
@@ -45,7 +46,7 @@ export function Game({
   const sheet = useMediaQuery(SHEET);
   const cards = rulesOf(game).cards;
   const { sel } = ctl;
-  const conquering = sel.kind === 'conquer' ? ctl.legal.of('conquer', (a) => a.planet === sel.planet) : [];
+  const conquering = sel.kind === 'conquer' ? conquerOptions(ctl.legal, sel.planet) : [];
   // The same panels in both layouts, in a different order.
   const turnPanel = <TurnPanel game={game} ctl={ctl} dispatch={dispatch} undo={undo} />;
   const market = cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} />;
