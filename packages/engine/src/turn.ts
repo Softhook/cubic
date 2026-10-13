@@ -186,4 +186,6 @@ export function settle(s: GameState) {
     }
     return;
   }
+  // Not a RuleError: a loop here is an engine bug, and must surface as one rather than leave a half-settled state.
+  throw new Error('settle() did not settle after 50 steps');
 }
