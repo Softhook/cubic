@@ -287,8 +287,8 @@ conquering, Infamy, or a card effect.
 
 - Each player starts with **1 missile**.
 - Spend a missile **at any time** to change **any** player's combat roll to **1**.
-- Engine: a combatant is offered a missile only on their own roll, and only while losing;
-  bystanders may fire at either roll ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #21).
+- Engine: only the attacker and defender may fire, each only on their own roll and only while
+  losing; players not in the battle may not ([OPEN-QUESTIONS](OPEN-QUESTIONS.md) #21).
 - The CE print booklet has no missile trading. Trading comes from the stolksdorf CE and is
   not implemented (see [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) #23).
 - Extra missiles come from *Black Market* (tactic) and *Profiteering* (skill).

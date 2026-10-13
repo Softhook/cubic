@@ -3,7 +3,7 @@ import { SHIP_NAMES, canRespondToCombat, card, combatOutcome, combatReroll, miss
 import { combatStage } from '@quantum/online';
 import type { Dispatch } from '../game/useGame';
 import type { GameView } from '../game/view';
-import { COMBAT_RESOLVE_MS } from '../game/useAiDriver';
+import { COMBAT_RESOLVE_MS, humanFights } from '../game/useAiDriver';
 import { PHONE, useMediaQuery } from '../game/useMediaQuery';
 import { useShortcut } from '../game/useShortcut';
 import { COMBAT_MS } from '../online/playback';
@@ -47,14 +47,15 @@ export function CombatOverlay({
   const autoResolve = !humans.some((p) => canRespondToCombat(game, combat, p.id));
   const waitingNames = online ? online.waitingOn.map((id) => game.players[id].name).join(' and ') : aiResponder !== null ? game.players[aiResponder].name : undefined;
   // A battle nobody here can change stays up until OK (or a click beside it), so the player can
-  // see how it went: online, it moves on once decided; here, OK resolves it. Online, other players'
-  // battles move on by themselves (playback), as do the battles of a game with no humans.
+  // see how it went: online, it moves on once decided; here, OK resolves it. Battles no human here
+  // fights in move on by themselves: online by playback, here by the AI driver (`timed`).
   const resolve = close(() => dispatch({ type: 'resolveCombat' }));
+  const timed = !online && !humanFights(game, combat);
   const ok = online
     ? !online.mustAnswer && !waitingNames
       ? close(online.dismiss)
       : undefined
-    : autoResolve && game.players.some((p) => !p.ai)
+    : autoResolve && !timed
       ? resolve
       : undefined;
   const ready = revealed && aiResponder === null;
@@ -159,7 +160,7 @@ export function CombatOverlay({
             <button className="btn btn-primary" disabled={!ready} onClick={ok}>
               OK
             </button>
-          ) : online || autoResolve ? (
+          ) : online || timed ? (
             // The battle moves on by itself shortly; restarts when a missile or re-roll changes it.
             <div className="autobar" key={combatStage(combat)}>
               <span style={{ animationDuration: `${online ? COMBAT_MS : COMBAT_RESOLVE_MS}ms` }} />
@@ -225,8 +226,8 @@ function RerollButton({
 
 /**
  * A missile sets one combat roll to 1. Lower totals win, so firing at your opponent's roll
- * only helps them: combatants are offered their own roll only, and not while already winning;
- * bystanders either roll (engine missileOffered).
+ * only helps them: combatants are offered their own roll only, and not while already winning.
+ * Players not in the battle may not fire (engine missileOffered).
  * Each button previews the battle result if fired.
  */
 function MissileButton({

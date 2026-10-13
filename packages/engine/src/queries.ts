@@ -709,8 +709,8 @@ export function combatRerolls(state: GameState, combat: CombatPending, by: Playe
 
 /**
  * Whether `by` is offered a missile on `side`'s combat roll. A combatant is only offered their own
- * roll (a lower roll for the opponent only helps them), and not while already winning. Bystanders
- * may fire at either roll. A roll that is already 1 is never offered.
+ * roll (a lower roll for the opponent only helps them), and not while already winning. Players not
+ * in the battle may not fire. A roll that is already 1 is never offered.
  */
 export function missileOffered(state: GameState, combat: CombatPending, by: PlayerId, side: CombatRole): boolean {
   return missileRefusal(state, combat, by, side) === null;
@@ -720,7 +720,7 @@ export function missileOffered(state: GameState, combat: CombatPending, by: Play
 export function missileRefusal(state: GameState, combat: CombatPending, by: PlayerId, side: CombatRole): string | null {
   if (state.players[by].missiles <= 0) return 'No missiles left';
   if (combat[side].missile || combatTotal(state, combat, side).roll === 1) return 'That combat roll is already 1';
-  if (by !== combat.attacker.player && by !== combat.defender.player) return null;
+  if (by !== combat.attacker.player && by !== combat.defender.player) return 'Only the attacker and defender may fire a missile';
   if (combat[side].player === by && combatOutcome(state, combat).attackerWins !== (side === 'attacker')) return null;
   return 'You may only fire a missile on your own roll, while losing';
 }

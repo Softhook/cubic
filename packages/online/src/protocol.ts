@@ -12,8 +12,11 @@ export function isSecret(s: string): boolean {
   return /^[A-Za-z0-9_-]{22}$/.test(s);
 }
 
-/** Which battles a player is asked to respond to (fire a missile, re-roll) before they resolve. */
-export type AskMode = 'always' | 'own' | 'never';
+/**
+ * Whether a player's battles wait for them to respond (fire a missile, re-roll) before they resolve.
+ * Only the attacker and defender may respond, so a player is only ever asked about their own battles.
+ */
+export type AskMode = 'own' | 'never';
 
 export interface GameConfig {
   players: PlayerConfig[];

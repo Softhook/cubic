@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   apply,
+  canRespondToCombat,
   combatOutcome,
   conquerCheck,
   createGame,
@@ -164,6 +165,21 @@ describe('missiles', () => {
     expect(missiles(battle({}, [3, 4]))).toEqual([{ type: 'missile', by: 0, side: 'defender' }]);
     // Attacker 6+2=8 vs defender 1+5=6: the defender (player 0) is winning.
     expect(missiles(battle({}, [6, 1]))).toEqual([{ type: 'missile', by: 1, side: 'attacker' }]);
+  });
+
+  it('may not be fired by a player not in the battle', () => {
+    let s = quickStart(3);
+    s.turn.player = 1;
+    s = arrange(s, { p1d0: [0, 0, 2], p0d0: [0, 1, 5] });
+    s = apply(s, { type: 'attack', die: 'p1d0', target: 'p0d0' });
+    if (s.pending[0].kind !== 'combat') throw new Error('no combat');
+    // Attacker 6+2=8 vs defender 4+5=9: neither roll is 1 yet.
+    s.pending[0].attacker.dice = [6];
+    s.pending[0].defender.dice = [4];
+    expect(s.players[2].missiles).toBeGreaterThan(0);
+    expect(legalActions(s).filter((a) => a.type === 'missile' && a.by === 2)).toEqual([]);
+    expect(canRespondToCombat(s, s.pending[0], 2)).toBe(false);
+    for (const side of ['attacker', 'defender'] as const) expect(() => apply(s, { type: 'missile', by: 2, side })).toThrow(/Only the attacker and defender/);
   });
 
   it('overrides Rational', () => {

@@ -446,7 +446,7 @@ export function Manual({ dark }: { dark?: boolean }) {
           <div className="mn-box">
             <h3>Missiles <Tag>Community</Tag></h3>
             <p className="mn-missile"><MissileIcon size={28} /> <span>→</span> <DieIcon v={1} kind="atk" size={28} /> <span>or</span> <DieIcon v={1} kind="def" size={28} /></p>
-            <p>At any moment, any player may spend a missile to turn <b>any</b> combat roll into a 1. Everyone starts with one.</p>
+            <p>In a battle you are losing, spend a missile to turn <b>your own</b> combat roll into a 1. Only the attacker and defender may fire. Everyone starts with one.</p>
           </div>
         </div>
       </section>

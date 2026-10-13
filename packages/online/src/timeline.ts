@@ -105,6 +105,8 @@ export class Timeline {
   private inChain = new Map<string, number>();
   /** States before each undoable move, newest last, and whose move it was. */
   private undoStack: { state: GameState; seat: PlayerId }[] = [];
+  /** Every battle stage the game has been at. */
+  private stages = new Set<string>();
   private dirty = true;
   /** Engine failures already logged: the game is replayed past the same one on every rebuild. */
   private logged = new Set<string>();
@@ -134,7 +136,13 @@ export class Timeline {
       if (!m) this.passes.set(b.stage, (m = new Map()));
       const old = m.get(b.seat);
       if (!old || byTime(post, old) < 0) m.set(b.seat, post);
-      if (this.r && !this.dirty && this.r.combat?.stage === b.stage) this.extend();
+      if (this.r && !this.dirty) {
+        if (this.r.combat?.stage === b.stage) this.extend();
+        // The game moved on from this stage (a missile or re-roll) before this pass arrived. If the
+        // pass completed the stage, the battle was decided there and what followed was too late:
+        // replaying from the start finds out (passes are rare this late, so it costs little).
+        else if (this.stages.has(b.stage)) this.dirty = true;
+      }
     } else {
       // A claimant's first move in a seat can decide who owns it.
       if (b.t === 'act') {
@@ -196,6 +204,7 @@ export class Timeline {
     this.chain = [];
     this.inChain.clear();
     this.undoStack = [];
+    this.stages.clear();
     for (const g of [...this.creates].sort(byTime)) {
       const r = start(g);
       if (!r) continue;
@@ -226,6 +235,7 @@ export class Timeline {
       const state = r.steps.at(-1)!.state;
       const combat = state.pending[0]?.kind === 'combat' ? (state.pending[0] as CombatPending) : null;
       r.combat = combat ? this.combatWait(state, combat) : null;
+      if (r.combat) this.stages.add(r.combat.stage);
       if (combat && r.combat!.waitingOn.every((s) => r.combat!.passed.includes(s))) {
         let resolved: GameState;
         try {
@@ -260,8 +270,11 @@ export class Timeline {
       if (r.combat && r.combat.passed.includes(b.seat)) return false;
       // The poster's browser checked the move against this same position before sending it, so
       // the engine refusing it here means the two browsers don't agree on the rules.
+      // Except a missile or re-roll: it races the last pass, and arriving after the battle was
+      // decided is a race lost, not a disagreement.
       const refused = () => {
-        if (!seat.ai) r.desync ??= { seat: b.seat, author: p.author, why: 'rejected' };
+        const racy = b.action.type === 'missile' || b.action.type === 'reroll';
+        if (!seat.ai && !racy) r.desync ??= { seat: b.seat, author: p.author, why: 'rejected' };
         return false;
       };
       if (prev.phase === 'over' || !mayAct(prev, b.seat, b.action)) return refused();
@@ -286,7 +299,7 @@ export class Timeline {
       this.undoStack = this.undoStack.slice(0, -1);
       next = top.state;
     } else {
-      seat.ask = b.ask;
+      seat.ask = ASK.get(b.ask)!;
     }
     if (next) r.steps.push({ state: next, post: p });
     this.inChain.set(p.id, this.chain.length);
@@ -303,21 +316,23 @@ export class Timeline {
     console.error(`[quantum] ${what}`, details());
   }
 
-  private combatWait(state: GameState, combat: CombatPending): CombatWait {
-    const stage = combatStage(combat);
+  /** The seats that have passed `stage` (a pass counts if its author plays the seat). */
+  private passedAt(stage: string): PlayerId[] {
     const given = this.passes.get(stage);
-    const seats = this.r!.seats;
-    const passed = seats.filter((s) => {
+    return this.r!.seats.filter((s) => {
       const p = given?.get(s.id);
       return p && (s.ai || s.owner === p.author);
-    });
+    }).map((s) => s.id);
+  }
+
+  private combatWait(state: GameState, combat: CombatPending): CombatWait {
+    const stage = combatStage(combat);
+    const seats = this.r!.seats;
     const waitingOn = seats.filter((s) => {
       if (!canRespondToCombat(state, combat, s.id)) return false;
-      if (s.ai || !s.owner) return true;
-      const fighting = s.id === combat.attacker.player || s.id === combat.defender.player;
-      return s.ask === 'always' || (s.ask === 'own' && fighting);
+      return s.ai || !s.owner || s.ask === 'own';
     });
-    return { stage, waitingOn: waitingOn.map((s) => s.id), passed: passed.map((s) => s.id) };
+    return { stage, waitingOn: waitingOn.map((s) => s.id), passed: this.passedAt(stage) };
   }
 }
 
@@ -361,7 +376,12 @@ function start(g: Post): Replay | null {
   return { genesis: g, config, seats, steps: [{ state, post: null }], tip: g.id, tipAt: g.at, tipAuthor: g.author, undoSeat: null, combat: null, desync: null, crash: null };
 }
 
-const ASK: ReadonlySet<unknown> = new Set<AskMode>(['always', 'own', 'never']);
+/** Battle settings, and what each means now: 'always' (all battles) is 'own' since only fighters may respond. */
+const ASK = new Map<unknown, AskMode>([
+  ['own', 'own'],
+  ['never', 'never'],
+  ['always', 'own'],
+]);
 
 /** Rejects posts that don't have the shape of their type (they come from other browsers). */
 function wellFormed(p: Post): boolean {

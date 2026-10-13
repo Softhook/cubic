@@ -122,7 +122,7 @@ describe('online timeline', () => {
     for (const p of a.timeline.all()) b.timeline.add(p);
     b.send({ t: 'claim', seat: 1, name: '  Bob the very long name  ' }, false);
     a.timeline.add(b.sent[0]);
-    a.send({ t: 'ask', seat: 0, ask: 'always' }, true);
+    a.send({ t: 'ask', seat: 0, ask: 'never' }, true);
     b.timeline.add(a.sent[0]);
 
     playOnline([a, b], 3);
@@ -131,7 +131,7 @@ describe('online timeline', () => {
     expect(head(rb)).toEqual(head(ra));
     expect(rb.steps.length).toBe(ra.steps.length);
     expect(ra.seats.map((s) => s.name)).toEqual(['Alice', 'Bob the very l', 'Nova']);
-    expect(ra.seats[0].ask).toBe('always');
+    expect(ra.seats[0].ask).toBe('never');
     expect(checkInvariants(head(ra))).toEqual([]);
     // Every move carried the hash of its position, and both browsers got the same ones.
     expect(ra.desync).toBeNull();
@@ -250,6 +250,49 @@ describe('online timeline', () => {
     expect(t.replay()!.steps).toHaveLength(2);
   });
 
+  it('a missile and a pass racing for one battle give the same game in either order', () => {
+    // Two browsers both moving an AI seat in a battle it is losing: one fires its missile, the other
+    // passes. Whichever arrives first, every browser must end up with the same game.
+    const t = new Timeline();
+    const all: Post[] = [create('alice', [seat('Alice'), seat('Nova', true), seat('Orion', true)], [], 1, 'community')];
+    for (const p of all) t.add(p);
+    const add = (p: Post) => (t.add(p), all.push(p));
+    const random = seededRandom(1);
+    for (let n = 0; n < 3000; n++) {
+      const r = t.replay()!;
+      const s = head(r);
+      expect(s.phase).not.toBe('over');
+      const c = r.combat;
+      const missile = c ? legalActions(s).find((a) => a.type === 'missile' && r.seats[a.by].ai && c.waitingOn.includes(a.by)) : undefined;
+      if (missile?.type === 'missile') {
+        const fire = post('alice', actBody(r, missile.by, missile)!, r.tip);
+        const passes = c!.waitingOn.map((w) => post('bob', { t: 'pass', seat: w, stage: c!.stage }));
+        const browser = (order: Post[]) => {
+          const b = new Timeline();
+          for (const p of all) b.add(p);
+          b.replay();
+          for (const p of order) b.add(p);
+          return b.replay()!;
+        };
+        const missileFirst = browser([fire, ...passes]);
+        const passesFirst = browser([...passes, fire]);
+        // Every seat the battle waited for passed, so it was decided there: the missile came too late.
+        expect(missileFirst.steps.length).toBe(passesFirst.steps.length);
+        expect(head(missileFirst)).toEqual(head(passesFirst));
+        expect(head(passesFirst).players[missile.by].missiles).toBe(s.players[missile.by].missiles);
+        expect(missileFirst.desync).toBeNull();
+        return;
+      }
+      if (c) {
+        for (const w of c.waitingOn) add(post('alice', { t: 'pass', seat: w, stage: c.stage }));
+        continue;
+      }
+      const who = actor(s);
+      add(post('alice', actBody(r, who, chooseAction(s, { level: 1, random, samples: 1 })!)!, r.tip));
+    }
+    throw new Error('no battle in which an AI could fire');
+  });
+
   it('notices a browser that disagrees about the game', () => {
     const g = create('alice', [seat('Alice'), seat('Open')], [1]);
     const claim = post('bob', { t: 'claim', seat: 1, name: 'Bob' });
@@ -319,6 +362,18 @@ describe('online timeline', () => {
     t.add({ id: 'y', author: 'alice', at: NaN, prev: g.id, body: { t: 'act', seat: 0, action: { type: 'setupKeep' } } });
     expect(t.replay()!.steps).toHaveLength(1);
     expect(t.replay()!.tip).toBe(g.id);
+  });
+
+  it('reads the old "all battles" setting as "my battles", keeping the moves after it', () => {
+    const t = new Timeline();
+    const g = create('alice', [seat('Alice'), seat('Nova', true)], []);
+    t.add(g);
+    const ask = post('alice', { t: 'ask', seat: 0, ask: 'always' as never }, g.id);
+    t.add(ask);
+    const s = head(t.replay()!);
+    t.add(post('alice', actBody(t.replay()!, actor(s), legalActions(s)[0])!, ask.id));
+    expect(t.replay()!.seats[0].ask).toBe('own');
+    expect(t.replay()!.steps).toHaveLength(2);
   });
 
   it('ignores a create post for another protocol or with seats nobody can play', () => {

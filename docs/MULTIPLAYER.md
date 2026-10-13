@@ -30,7 +30,7 @@ store small signed messages for anyone. We run nothing.
   log with the engine (`createGame` + `apply`), so they all compute the same game. A full
   4-player game replays in ~35 ms.
 - **Order.** `act`, `undo` and `ask` form a chain: each names the post it follows. If two
-  posts follow the same one (two bystanders firing at once, two browsers moving the AI),
+  posts follow the same one (two browsers moving the AI at once),
   the earlier wins on every browser, whatever order they arrived in (`Timeline`, tested
   with browsers on a network that delays and reorders).
 - **Seats.** Each browser has a Nostr key (localStorage). A post counts only if its author
@@ -40,10 +40,13 @@ store small signed messages for anyone. We run nothing.
   an AI seat.
 - **AI seats** are played by the browser that made the last move; if it has gone, any other
   browser takes over after 15 s (the others in turn, 15 s apart).
-- **Missiles (open question #21).** A battle waits for every player who may respond (fire,
-  re-roll), unless their `ask` setting says otherwise: *all battles* (default), *my battles*
-  or *never*. Each responds or passes ("Done"); once all have passed, every browser
-  resolves the battle the same way. AI seats always answer, so all-AI battles resolve at once.
+- **Missiles (open question #21).** Only the attacker and defender may respond to a battle
+  (fire a missile, re-roll). A battle waits for each of them who can, unless their `ask` setting
+  is *never* (the default is *my battles*). Each responds or passes ("Done"); once all have
+  passed, every browser resolves the battle the same way. A fighter set to *never* may still
+  respond, but once those the battle waits for have passed it is decided: a missile or re-roll
+  that arrives later is dropped on every browser, whichever arrived first (two browsers moving one
+  AI seat can race like this too). AI seats always answer, so all-AI battles resolve at once.
   On screen, a decided battle you fought in stays up until you click OK; other players'
   battles move on after a few seconds.
 - **Privacy.** The invite link `#online/<secret>` carries a 128-bit secret in the fragment,
@@ -77,7 +80,7 @@ store small signed messages for anyone. We run nothing.
 | Public relays may rate-limit or drop events | Six relays, paced sending, re-sending from every browser |
 | **Engine changes can break games in progress**: replay must give the same result on every browser | `golden.test.ts` flags any behaviour change; bump `PROTOCOL` (protocol.ts) when one would alter replays, which retires older games. A player still on the old version is caught by the position hash (*Out of sync*) |
 | Relays promise nothing: they may prune old events or start refusing new keys | Every player's browser is a full copy and re-seeds the relays when it opens the game; the list in `relays.ts` is easy to change. A friend joining an idle game may need the creator to open it first |
-| Rival posts and claims are ordered by the poster's clock, which nobody checks | A wrong clock decides races (two bystanders firing at once, two friends claiming one seat). It can't take a seat someone has played: a claimant who has played a seat keeps it. It can still decide history: a move backdated before one already played replaces it and everything after, which among friends needs a race and a post that arrives late or with a clock far behind. Fine between friends who keep the invite link to themselves; see [CODE-REVIEW](CODE-REVIEW.md) #2 |
+| Rival posts and claims are ordered by the poster's clock, which nobody checks | A wrong clock decides races (two browsers moving the AI at once, two friends claiming one seat). It can't take a seat someone has played: a claimant who has played a seat keeps it. It can still decide history: a move backdated before one already played replaces it and everything after, which among friends needs a race and a post that arrives late or with a clock far behind. Fine between friends who keep the invite link to themselves; see [CODE-REVIEW](CODE-REVIEW.md) #2 |
 | localStorage (~5 MB) holds every game's events (~0.7 KB each), shared with the game saved on this device | Only the 5 most recently seen finished games are kept; when a write doesn't fit (the local autosave, say), the least recently seen finished games are dropped first. Games in progress are never dropped |
 
 ### Testing it
@@ -143,7 +146,7 @@ So browser-to-browser Web Push reaches only Firefox players. Three options, chea
    unchanged and need no `PROTOCOL` bump.
 3. **Send.** The browser whose post made it someone else's turn sends, so each change of turn is
    sent once with no coordination. A browser moving an AI seat alerts the human who is next; in a
-   battle, each bystander it waits on is alerted. It POSTs `{ subscription, title, body, tag }` to
+   battle, each fighter it waits on is alerted. It POSTs `{ subscription, title, body, tag }` to
    the forwarder.
 4. **Forward.** The forwarder does what a page can't for Chrome and Safari: signs a short-lived
    VAPID JWT (ES256) with the private key only it holds, encrypts the text to Bob's keys (RFC 8291,

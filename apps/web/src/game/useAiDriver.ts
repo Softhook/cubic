@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { actor, canRespondToCombat, type GameState, type PlayerId } from '@quantum/engine';
+import { actor, canRespondToCombat, type CombatPending, type GameState, type PlayerId } from '@quantum/engine';
 import { combatStage } from '@quantum/online';
 import { aiLevelOf, combatResponse, think } from './aiClient';
 import type { Dispatch } from './useGame';
@@ -16,13 +16,22 @@ function aiDelay(s: GameState): number {
 
 /** Pause before an AI fires a missile or re-rolls in combat. */
 const COMBAT_RESPONSE_MS = 1700;
-/** Pause before a battle resolves in a game with no humans (otherwise a human dismisses it). */
+/** Pause before a battle no human fights in resolves (a human dismisses their own battles). */
 export const COMBAT_RESOLVE_MS = 2600;
+
+/**
+ * Whether a human on this device attacks or defends in the battle. If not, nobody here can change
+ * it (only fighters may respond), so it resolves by itself after a pause rather than waiting for OK.
+ */
+export function humanFights(game: GameState, combat: CombatPending): boolean {
+  return !game.players[combat.attacker.player].ai || !game.players[combat.defender.player].ai;
+}
 
 /**
  * Plays for the AI players: whenever it is an AI's turn or decision, asks it for an action and
  * dispatches it after a short delay. During combat, gives every AI that may respond (missile,
- * re-roll) its chance; a human then resolves the battle (CombatOverlay), unless there is none.
+ * re-roll) its chance; a human fighting in the battle then resolves it (CombatOverlay), and a
+ * battle between AIs resolves by itself after a pause.
  *
  * Returns the AI that is about to respond to the battle on screen, if any, so a human doesn't
  * resolve it first. `onError` is told when the AI fails (it then plays a stand-in move, see aiClient).
@@ -61,7 +70,7 @@ export function useAiDriver(game: GameState, dispatch: Dispatch, onError: (text:
       }
       // No AI responds (any more): asked again, one may have changed its mind.
       setResponding(null);
-      if (game.players.every((p) => p.ai)) timer = window.setTimeout(() => dispatch({ type: 'resolveCombat' }), COMBAT_RESOLVE_MS);
+      if (!humanFights(game, head)) timer = window.setTimeout(() => dispatch({ type: 'resolveCombat' }), COMBAT_RESOLVE_MS);
       return () => window.clearTimeout(timer);
     }
 

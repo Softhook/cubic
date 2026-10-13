@@ -27,7 +27,7 @@ someone has played is theirs (`owners()` in [timeline.ts](../packages/online/src
 
 **Status: left as is.** *Decided 2026-10-13: the game is played among friends, so only honest
 mistakes matter, not cheating.* Among friends, a rival move needs a race (two browsers moving from
-the same position at once: two bystanders firing, or two browsers moving an AI seat) and a post that
+the same position at once: two browsers moving an AI seat) and a post that
 arrives late (from a phone that was offline) or with a clock far behind. If it ever happens, the fix
 is to let the rival that others have already played on win, with the clock only breaking ties. That
 reverses the test "of two rival moves, the earlier wins even when it arrives later" in
