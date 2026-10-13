@@ -8,8 +8,8 @@ longer they stay.
 Findings are ordered by severity. "Confirmed" means it was reproduced by running code, not only by
 reading it. One finding has been accepted for now and is listed separately at the end.
 
-**Status (2026-10-13):** every issue is fixed except three. Issue 2 waits for a decision, issue 8 was
-left as it is, and issue 11 needs no change. Each section ends with its status. A second pass checked
+**Status (2026-10-13):** every issue is fixed except three. Half of issue 2 is fixed (seats) and the
+other half left as it is (history), issue 8 was left as it is, and issue 11 needs no change. Each section ends with its status. A second pass checked
 the fixes themselves: it corrected two figures and two claims below, and added the missing tests. A
 third pass reviewed the commits that made the fixes. It found holes in issues 3, 4, 5, 6, 9 and 12,
 now closed and described under each one.
@@ -17,7 +17,7 @@ now closed and described under each one.
 | # | Severity | Area | Issue | Status |
 |---|---|---|---|---|
 | 1 | High | CI | Deploys to GitHub Pages without running the tests | Fixed |
-| 2 | High | Online | Self-reported timestamps let anyone with the link steal a seat or rewrite history | Needs a decision |
+| 2 | High | Online | Self-reported timestamps let anyone with the link steal a seat or rewrite history | Seats fixed; history left as is |
 | 3 | High | Engine | Circular imports at runtime: loading a module in the wrong order crashes (confirmed) | Fixed |
 | 4 | Medium | Engine | `missile` accepts actions `legalActions` never offers (confirmed) | Fixed |
 | 5 | Medium | Engine / online | Actions from other browsers are not validated before handlers use them | Fixed |
@@ -51,12 +51,12 @@ the slow benchmark out of the default suite first (issue 12) to keep the job fas
 Two decisions in the timeline depend on `post.at`, which is the poster's own clock, sealed inside
 the encrypted body and never checked:
 
-- **Seat ownership.** `owners()` ([timeline.ts:151](../packages/online/src/timeline.ts#L151)) gives each
+- **Seat ownership.** `owners()` ([timeline.ts:178](../packages/online/src/timeline.ts#L178)) gives each
   open seat to the author of the *earliest* claim, sorted by `at`. Anyone holding the invite link can
   post a claim with `at: 0` at any point in the game and take over a seat that is already being played.
   The rebuild then refuses every later move by the real owner, because `seat.owner !== p.author`.
   The game rolls back to just after setup, for everyone.
-- **History.** Rival chained posts are ranked by `at` ([`byRank`](../packages/online/src/timeline.ts#L62)).
+- **History.** Rival chained posts are ranked by `at` ([`byRank`](../packages/online/src/timeline.ts#L72)).
   A post that names an old post as `prev` and claims an earlier time replaces the move that followed
   it, and everything after that move.
 
@@ -75,17 +75,23 @@ game for everyone while it is being played, and the game can't be recovered.
   post displace one that other browsers have already followed with further moves.
 - Fix the MULTIPLAYER.md row whichever way this is decided.
 
-**Status: needs a decision.** The MULTIPLAYER.md row now describes what the code does. The options:
+**Status: seats fixed; history left as is.** *Decided 2026-10-13: the game is played among friends,
+so the fix only has to hold against honest mistakes (a phone that was offline, a wrong clock), not
+against cheating, and it mustn't ask the creator anything.*
 
-- **Chained claims.** A claim joins the chain like a move, so it can't be backdated before moves
-  that were already played. This is the smallest change, and anyone with the link can still take an
-  open seat first.
-- **The creator confirms claims.** A seat is taken only once the creator's browser accepts the claim.
-  This is safer, but a game waits for its creator to come online before a friend can join.
-- **Ranking rival moves.** Separately, rival moves could be ranked by post id instead of the poster's
-  clock, or a late rival could be refused once others have played on top of the move it competes with.
-
-All of these change how posts replay. That is fine now, because games in progress may break.
+- **Seats: fixed.** A seat someone has played is theirs. `owners()` gives an open seat to the earliest
+  claimant among those who have posted a move for it, and to the earliest claimant only while nobody
+  has. A claim that arrives late, or with a wrong clock, can no longer take a seat that is being played,
+  and the game no longer rolls back to setup. Two friends claiming the same seat at the same moment are
+  still settled by the earlier claim. No post changed, so `PROTOCOL` stays as it is: a game in progress
+  replays differently only if a seat was claimed twice and the later claimant played it, which is the
+  case being fixed. [timeline.test.ts](../packages/online/test/timeline.test.ts) delivers the posts of
+  such a game in every order and checks that the seat stays with the friend who played it. Someone
+  who means to cheat can still take a seat, by posting a move for it along with a backdated claim.
+- **History: left as is.** Among honest friends, a rival move needs a race (two browsers moving at once)
+  and a post that arrives late or with a clock far behind. If it ever happens, the fix is to let the
+  rival that others have already played on win, with the clock only breaking ties. That reverses the
+  test "of two rival moves, the earlier wins even when it arrives later".
 
 ## 3. Circular imports in the engine (High, confirmed)
 
@@ -424,5 +430,5 @@ These parts are working well and are worth keeping as they are:
 
 ## Still open
 
-Issue 2: choose how seats are claimed and rival moves ranked, before invite links are shared beyond
-people you trust.
+Nothing waits for a decision. Issue 2's history half and issue 8 were left as they are on purpose;
+each section says what would change that.

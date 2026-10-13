@@ -172,7 +172,7 @@ describe('online timeline', () => {
     expect(head(t.replay()!).players[1].name).toBe('Bob');
   });
 
-  it('the earliest claim of a seat wins, even when it arrives last', () => {
+  it('the earliest claim of a seat nobody has played wins, even when it arrives last', () => {
     const t = new Timeline();
     t.add(create('alice', [seat('Alice'), seat('Open')], [1]));
     const late = post('carol', { t: 'claim', seat: 1, name: 'Carol' });
@@ -182,6 +182,44 @@ describe('online timeline', () => {
     t.add(early);
     expect(t.replay()!.seats[1].owner).toBe('bob');
     expect(head(t.replay()!).players[1].name).toBe('Bob');
+  });
+
+  describe('a seat someone has played is theirs', () => {
+    /** Alice rolls; Carol claims seat 1 and rolls too. Bob's claim of seat 1 is older, but comes in late. */
+    function contest() {
+      const g = create('alice', [seat('Alice'), seat('Open')], [1]);
+      const roll: Action = { type: 'setupKeep' };
+      const alice = post('alice', { t: 'act', seat: 0, action: roll }, g.id);
+      const carolClaim = post('carol', { t: 'claim', seat: 1, name: 'Carol' });
+      const carol = post('carol', { t: 'act', seat: 1, action: roll }, alice.id);
+      const bobClaim = post('bob', { t: 'claim', seat: 1, name: 'Bob' }, null, carolClaim.at - 5);
+      return { g, roll, alice, carol, posts: [alice, carolClaim, carol, bobClaim] };
+    }
+    /** Every order the posts may arrive in, after the create post. */
+    const orders = (xs: Post[]): Post[][] =>
+      xs.length <= 1 ? [xs] : xs.flatMap((x, i) => orders([...xs.slice(0, i), ...xs.slice(i + 1)]).map((rest) => [x, ...rest]));
+
+    it('a late claim can’t take it, however the posts arrive', () => {
+      const { g, alice, carol, posts } = contest();
+      for (const order of orders(posts)) {
+        const t = new Timeline();
+        t.add(g);
+        for (const p of order) t.add(p);
+        const r = t.replay()!;
+        expect(r.seats[1].owner).toBe('carol');
+        expect(head(r).players[1].name).toBe('Carol');
+        expect(r.steps.map((s) => s.post?.id)).toEqual([undefined, alice.id, carol.id]);
+      }
+    });
+
+    it('when both claimants have played it, the earliest claim wins', () => {
+      const { g, roll, alice, posts } = contest();
+      const bob = post('bob', { t: 'act', seat: 1, action: roll }, alice.id);
+      const t = new Timeline();
+      for (const p of [g, ...posts, bob]) t.add(p);
+      expect(t.replay()!.seats[1].owner).toBe('bob');
+      expect(t.replay()!.steps.map((s) => s.post?.id)).toEqual([undefined, alice.id, bob.id]);
+    });
   });
 
   it('of two rival moves, the earlier wins even when it arrives later', () => {

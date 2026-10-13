@@ -97,6 +97,8 @@ export class Timeline {
   private passes = new Map<string, Map<PlayerId, Post>>();
   private creates: Post[] = [];
   private claims: Post[] = [];
+  /** Who has posted a move for each seat: a claimant who has played a seat keeps it (`owners`). */
+  private played = new Map<PlayerId, Set<string>>();
   private r: Replay | null = null;
   /** The chained posts in the current game, in order, and each one's index in `chain`. */
   private chain: Post[] = [];
@@ -134,6 +136,15 @@ export class Timeline {
       if (!old || byTime(post, old) < 0) m.set(b.seat, post);
       if (this.r && !this.dirty && this.r.combat?.stage === b.stage) this.extend();
     } else {
+      // A claimant's first move in a seat can decide who owns it.
+      if (b.t === 'act') {
+        let authors = this.played.get(b.seat);
+        if (!authors) this.played.set(b.seat, (authors = new Set()));
+        if (!authors.has(post.author)) {
+          authors.add(post.author);
+          if (this.r && this.owners().get(b.seat) !== this.r.seats[b.seat]?.owner) this.dirty = true;
+        }
+      }
       const sibs = this.children.get(post.prev!) ?? [];
       sibs.push(post);
       sibs.sort(byRank);
@@ -159,14 +170,20 @@ export class Timeline {
     return this.r;
   }
 
-  /** Who owns each open seat: the author of its earliest claim. */
+  /**
+   * Who owns each open seat: of those who claimed it, the earliest to claim it among those who have
+   * played it, or the earliest to claim it if nobody has. So a seat that someone plays stays theirs:
+   * a claim that arrives late (from a phone that was offline, or with a wrong clock) can't take it.
+   */
   private owners(): Map<PlayerId, string> {
     const out = new Map<PlayerId, string>();
     const g = this.r?.genesis ?? [...this.creates].sort(byTime)[0];
     if (!g || g.body.t !== 'create') return out;
     out.set(g.body.creator, g.author);
     const open = new Set(g.body.open);
-    for (const c of [...this.claims].sort(byTime)) {
+    const claims = [...this.claims].sort(byTime);
+    const played = (c: Post) => !!this.played.get((c.body as Extract<Body, { t: 'claim' }>).seat)?.has(c.author);
+    for (const c of [...claims.filter(played), ...claims]) {
       const b = c.body as Extract<Body, { t: 'claim' }>;
       if (open.has(b.seat) && !out.has(b.seat)) out.set(b.seat, c.author);
     }

@@ -26,7 +26,7 @@ export interface GameConfig {
 export type Body =
   /** The first post: the game and its seats. The creator plays `creator`; `open` seats are for friends. */
   | { t: 'create'; protocol: number; config: GameConfig; creator: PlayerId; open: PlayerId[] }
-  /** Take an open seat. The earliest claim of a seat wins. */
+  /** Take an open seat. The earliest claim of a seat wins, but a claimant who has played the seat keeps it. */
   | { t: 'claim'; seat: PlayerId; name: string }
   /**
    * `h`: the hash of the position the move leads to (`stateHash`), as the poster's browser computed

@@ -34,7 +34,8 @@ store small signed messages for anyone. We run nothing.
   the earlier wins on every browser, whatever order they arrived in (`Timeline`, tested
   with browsers on a network that delays and reorders).
 - **Seats.** Each browser has a Nostr key (localStorage). A post counts only if its author
-  plays the seat (the earliest claim of an open seat wins), `mayAct` agrees (engine: the
+  plays the seat (an open seat goes to its earliest claimant, but once someone has played it, it is
+  theirs), `mayAct` agrees (engine: the
   actor, or the player named in a missile/re-roll), and `apply` accepts it. Anyone may move
   an AI seat.
 - **AI seats** are played by the browser that made the last move; if it has gone, any other
@@ -76,7 +77,7 @@ store small signed messages for anyone. We run nothing.
 | Public relays may rate-limit or drop events | Six relays, paced sending, re-sending from every browser |
 | **Engine changes can break games in progress**: replay must give the same result on every browser | `golden.test.ts` flags any behaviour change; bump `PROTOCOL` (protocol.ts) when one would alter replays, which retires older games. A player still on the old version is caught by the position hash (*Out of sync*) |
 | Relays promise nothing: they may prune old events or start refusing new keys | Every player's browser is a full copy and re-seeds the relays when it opens the game; the list in `relays.ts` is easy to change. A friend joining an idle game may need the creator to open it first |
-| Rival posts and claims are ordered by the poster's clock, which nobody checks | A wrong clock decides races (two bystanders firing at once). It also decides seats and history: a claim backdated before the real owner's takes the seat (and the game rolls back to that seat's first move, usually in setup), and a move backdated before one already played replaces it and everything after. Fine between friends who keep the invite link to themselves; see [CODE-REVIEW](CODE-REVIEW.md) #2 |
+| Rival posts and claims are ordered by the poster's clock, which nobody checks | A wrong clock decides races (two bystanders firing at once, two friends claiming one seat). It can't take a seat someone has played: a claimant who has played a seat keeps it. It can still decide history: a move backdated before one already played replaces it and everything after, which among friends needs a race and a post that arrives late or with a clock far behind. Fine between friends who keep the invite link to themselves; see [CODE-REVIEW](CODE-REVIEW.md) #2 |
 | localStorage (~5 MB) holds every game's events (~0.7 KB each), shared with the game saved on this device | Only the 5 most recently seen finished games are kept; when a write doesn't fit (the local autosave, say), the least recently seen finished games are dropped first. Games in progress are never dropped |
 
 ### Testing it
