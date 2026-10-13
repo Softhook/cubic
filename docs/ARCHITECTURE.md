@@ -18,7 +18,9 @@ How the code is organised, and where to make the common changes.
 | File | Contents |
 |---|---|
 | `engine.ts` | Public API (`apply`, `tryApply`, `actor`) and the handler registry |
-| `rules.ts` | `RuleSet`: everything that differs between Basic, Original and Community |
+| `rules.ts` | `RuleSet`: everything that differs between Basic, Original and Community; `rulesOf()` |
+| `rulesets.ts` | `RULESETS`, the rule set of each mode (the one module that imports `prototyping/`) |
+| `actionShape.ts` | `isWellFormed()`: the shape of every action, checked by `apply` before any handler (actions from other browsers are untrusted) |
 | `setup.ts` | `createGame` and the setup decisions |
 | `actions.ts` | Move/Attack, Deploy, Reconfigure, Research, Conquer, end turn |
 | `abilities.ts` | Ship abilities 1–6 |
@@ -82,17 +84,23 @@ IndexedDB), `lab/` (the Art Lab pages), `print/` (print exports and sheets, shar
   of full games; the web app runs it after every action in development and logs a violation to the
   console with the action and the prior state (load it back with `window.__quantum.load(JSON.parse(…))`).
 - An engine crash (anything but a `RuleError`) is shown in the UI as "Engine error" and logged the same
-  way; the AI no longer swallows them.
+  way. When the AI is the one to hit it, the AI's move falls back to the first legal move so the game
+  goes on ([aiClient.ts](../apps/web/src/game/aiClient.ts)). Online, a crash while replaying another
+  player's move stops the game with a message that names it as a bug. A crash while rendering shows
+  a reload screen ([ErrorBoundary.tsx](../apps/web/src/components/ErrorBoundary.tsx)), not a blank page.
 - `npm run test:deep` runs the legal-action cross-check exhaustively over more games (minutes).
+- `npm run ui:check` checks in Chrome what unit tests can't render: choosing how to conquer a planet, and
+  the crash screen. CI runs it with `mobile:shots` before every deploy.
 
 ## How to…
 
 **Add an action.** Add it to `Action` in `types.ts`, then add its handler to the module it belongs to
-(the compiler will point you there). Add it to `actionPhaseOptions` in `legal.ts` so the AI and the UI
+and the shape of its fields to `SHAPES` in `actionShape.ts` (the compiler will point you to both). Add it to `actionPhaseOptions` in `legal.ts` so the AI and the UI
 can use it, and to `bruteForce` in `consistency.test.ts` so the cross-check covers it.
 
 **Add a decision.** Add it to `Pending`, push it where the rule triggers, handle its answer action,
-and add its candidates to `DECISION_CANDIDATES`. If it can have no legal answer, add an
+and add its candidates to `DECISION_CANDIDATES` and every answer worth trying to `DECISION_BRUTE_FORCE` in
+`consistency.test.ts` (the compiler asks for both). If it can have no legal answer, add an
 `AUTO_RESOLVE` entry in `turn.ts`.
 
 **Add a Tactic.** Add the card to `data/cards.yaml`, its effect to `TACTIC_EFFECT_IDS` in `effects.ts`,
@@ -106,7 +114,7 @@ is defined in one place. If no hook fits, add one to `SkillRule` and read it whe
 (via `skillRules(state, player)`; rules never name a skill). A skill that is an action of its own
 sets `activated` and gets a handler in `skillActions.ts`.
 
-**Add a rule set** (e.g. our own edition). Add a `GameMode` and an entry in `RULESETS` (`rules.ts`). If
+**Add a rule set** (e.g. our own edition). Add a `GameMode` and an entry in `RULESETS` (`rulesets.ts`). If
 the new rule set changes a rule rather than a parameter, add a field to `RuleSet` and read it where the
 rule lives. Don't compare `state.mode` to a name anywhere else.
 
@@ -121,9 +129,11 @@ from the layout and fails if they disagree. Official layouts are in
 | [`basic.test.ts`](../packages/engine/test/basic.test.ts) | Every official rule in Basic mode, one scenario each, citing its source |
 | [`engine.test.ts`](../packages/engine/test/engine.test.ts) | Card effects, modes, missiles, undo |
 | [`card-audit.test.ts`](../packages/engine/test/card-audit.test.ts) | The card audit ([`audit.ts`](../packages/engine/test/audit.ts)) on its quick games: AI games with skills dealt so every card is held, checking at every step legality, soundness of card decisions, invariants, and each card's effect against its text. `npm run audit:cards` plays the whole matrix (`-- --deep`: level 4 and more maps) and prints each anomaly with the game log, plus card coverage |
-| [`card-scenarios.test.ts`](../packages/engine/test/card-scenarios.test.ts) | A scenario per card (every mode), driven through its real trigger; fails if a card has none |
+| [`card-scenarios.test.ts`](../packages/engine/test/card-scenarios.test.ts) | A scenario per card (every mode), driven through its real trigger; fails if a card has none. At every decision a scenario reaches, the engine accepts no answer `legalActions` doesn't offer ([`decisions.ts`](../packages/engine/test/decisions.ts)), which covers decisions the AI games rarely reach |
 | [`community-cards.test.ts`](../packages/engine/test/community-cards.test.ts) | Calculating, Curious, Patient, Prideful and Ruthless, edge cases included |
-| [`consistency.test.ts`](../packages/engine/test/consistency.test.ts) | `legalActions` and `apply` agree (every offered action is accepted; brute force: every accepted action is offered); invariants after every action |
+| [`consistency.test.ts`](../packages/engine/test/consistency.test.ts) | `legalActions` and `apply` agree (every offered action is accepted; brute force: every accepted action is offered, for every decision's answers ([`decisions.ts`](../packages/engine/test/decisions.ts)) and phase-1 actions on sampled states); invariants after every action |
+| [`untrusted.test.ts`](../packages/engine/test/untrusted.test.ts) | Untrusted actions never crash the engine, only get refused with a `RuleError`: random actions of every type (many well formed, so they reach the handlers), legal actions with a field corrupted, and unknown types |
+| [`load-order.test.ts`](../packages/engine/test/load-order.test.ts) | The engine works whichever of its modules is imported first (its modules import each other in cycles) |
 | [`data.test.ts`](../packages/engine/test/data.test.ts) | Card ids unique; every card effect implemented or on the known-missing list |
 | [`golden.test.ts`](../packages/engine/test/golden.test.ts) | Exact replay of seeded AI-vs-AI games in every mode, with invariants checked after every action. Fails on *any* behaviour change. After an intended change, review and run `npx vitest run -u`. |
 | [`maps.test.ts`](../packages/engine/test/maps.test.ts) | Map stats match layouts |

@@ -24,7 +24,7 @@ Done: ruleset baseline (CE print edition; Basic and Original follow the 2013 rul
 - [ ] **Name & IP check** — "Quantum" is the publisher's title; game mechanics aren't copyrightable but names, art and trade dress are. Pick a working title for anything public, and don't reuse original or found art.
 - [ ] **Contact stolksdorf and WaterGoesRed** — credit, permission to build on their text/maps, interest in collaborating.
 - [ ] **Choose a license** for our code (e.g. MIT) and content (e.g. CC BY-NC-SA). There is no LICENSE file yet.
-- [ ] **CI:** run `npm test` and `npm run pwa:check` before deploying (today only the build and `mobile:shots` run).
+- [ ] **CI:** run `npm run pwa:check` before deploying (the build, `npm test`, `mobile:shots` and `ui:check` run already).
 - [ ] This backlog as GitHub issues (optional).
 
 ### Stack (as built)

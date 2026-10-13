@@ -54,13 +54,13 @@ so a new mode needs no network changes as long as it stays deterministic.
 ```
   Web UI ──┐
   AI ──────┼── legalActions() / apply() ──▶  action handlers ──▶ rule questions ◀── RULESETS
-  Online ──┘                                 (actions, combat,   (queries.ts:        (rules.ts:
+  Online ──┘                                 (actions, combat,   (queries.ts:        (rulesets.ts:
                                               cards, turn)        movementRange,      Basic, Classic,
                                                                   conquerCheck…)      Community, + Prototyping)
 ```
 
-A mode is one entry in `RULESETS` ([rules.ts](../packages/engine/src/rules.ts)). The engine reads it
-through `rulesOf(state)` and never compares mode names. Today a `RuleSet` varies only these:
+A mode is one entry in `RULESETS` ([rulesets.ts](../packages/engine/src/rulesets.ts)). The engine reads it
+through `rulesOf(state)` ([rules.ts](../packages/engine/src/rules.ts)) and never compares mode names. Today a `RuleSet` varies only these:
 
 | Setting | Basic | Classic | Community |
 |---|---|---|---|
@@ -652,8 +652,10 @@ interfering with other powers.
 
 ### Engine Integration & Hooks
 
-1. **One import.** `RULESETS.prototyping = prototypingMode(COMMUNITY)` in [rules.ts](../packages/engine/src/rules.ts)
-   is the only place in the main engine importing the `prototyping` folder.
+1. **One import.** `RULESETS.prototyping = prototypingMode(COMMUNITY)` in [rulesets.ts](../packages/engine/src/rulesets.ts)
+   is the only place in the main engine importing the `prototyping` folder. Engine modules read the rule set
+   through `rulesOf` (rules.ts), which imports no mode, so the engine loads the same whichever module comes
+   first (`load-order.test.ts`).
 2. **Hooks over names.** Ships have built-in official powers (`strike`, `transport`...) or
    `hooks: ShipHooks`. The engine evaluates hooks via `hooksOf(state, die)`:
 
@@ -676,7 +678,7 @@ interfering with other powers.
 
 - **Complete isolation:** Official modes use `CLASSIC_SHIPS` with no hooks. Their code paths observe
   `undefined` for all hook lookups.
-- **Import boundary by convention:** Nothing in `engine` imports `prototyping` except `rules.ts`. The
+- **Import boundary by convention:** Nothing in `engine` imports `prototyping` except `rulesets.ts`. The
   `prototyping` folder imports nothing from `engine` except `prototype.ts`; `prototyping.test.ts` checks
   static and dynamic relative imports. This is not a sandbox: prototype hooks are trusted engine code
   and can mutate `GameState`.

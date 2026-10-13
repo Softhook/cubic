@@ -76,7 +76,7 @@ store small signed messages for anyone. We run nothing.
 | Public relays may rate-limit or drop events | Six relays, paced sending, re-sending from every browser |
 | **Engine changes can break games in progress**: replay must give the same result on every browser | `golden.test.ts` flags any behaviour change; bump `PROTOCOL` (protocol.ts) when one would alter replays, which retires older games. A player still on the old version is caught by the position hash (*Out of sync*) |
 | Relays promise nothing: they may prune old events or start refusing new keys | Every player's browser is a full copy and re-seeds the relays when it opens the game; the list in `relays.ts` is easy to change. A friend joining an idle game may need the creator to open it first |
-| Rival posts are ordered by the poster's clock | A wrong clock only decides races (two bystanders firing at once); fine between friends |
+| Rival posts and claims are ordered by the poster's clock, which nobody checks | A wrong clock decides races (two bystanders firing at once). It also decides seats and history: a claim backdated before the real owner's takes the seat (and the game rolls back to that seat's first move, usually in setup), and a move backdated before one already played replaces it and everything after. Fine between friends who keep the invite link to themselves; see [CODE-REVIEW](CODE-REVIEW.md) #2 |
 | localStorage (~5 MB) holds every game's events (~0.7 KB each), shared with the game saved on this device | Only the 5 most recently seen finished games are kept; when a write doesn't fit (the local autosave, say), the least recently seen finished games are dropped first. Games in progress are never dropped |
 
 ### Testing it
@@ -339,12 +339,15 @@ All small, and all testable without a server:
 - [ ] **`viewFor(state, seat)`** — redacted copy: `seed`/`rng` zeroed, deck contents replaced
       by placeholders (count kept), other players' `skillDraft.options` and `peek.top` hidden.
       Spectators get `viewFor(state, null)`.
-- [ ] **`mayAct(state, seat, action)`** — the authorisation rule in one place: the seat is
+- [x] **`mayAct(state, seat, action)`** — the authorisation rule in one place: the seat is
       `actor(state)`; or the action is a `missile` with `by === seat`; `resolveCombat` only from
-      the server. Today the UI dispatches some of these on anyone's behalf (hot-seat).
-- [ ] **Validate untrusted actions** — a malformed action from a client must be rejected,
-      never crash a handler: check the shape against the `Action` union first, and treat any
-      non-`RuleError` exception as a rejection (plus a bug report).
+      the server. Built ([engine.ts](../packages/engine/src/engine.ts)); the timeline checks every
+      post with it. Hot-seat play on one device still dispatches for every human.
+- [x] **Validate untrusted actions** — a malformed action from a client must be rejected,
+      never crash a handler. Built: `apply` checks the shape against the `Action` union first
+      ([actionShape.ts](../packages/engine/src/actionShape.ts), fuzzed by `untrusted.test.ts`), and
+      the timeline reports any other exception as an engine bug (*The game stopped on a move*), not
+      as the other player's mistake.
 - [ ] **Tests:** `legalActions(viewFor(s, actor))` equals `legalActions(s)` (the UI computes
       highlights from the view, so it must be enough); no log entry leaks a hidden card;
       `viewFor` passes `checkInvariants` (with a flag for hidden decks).
