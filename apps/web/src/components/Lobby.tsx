@@ -12,7 +12,6 @@ import {
   type MapDef,
   type PlayerConfig,
 } from '@quantum/engine';
-import { Die3D } from './Die3D';
 import { LobbyBackdrop } from './LobbyBackdrop';
 import { Segmented } from './Segmented';
 import { fullscreenOnPhone, useFullscreenOnFirstTap } from './FullscreenButton';
@@ -442,13 +441,7 @@ export function Lobby({
     <div className="lobby">
       <LobbyBackdrop map={map} />
       <div className="lobby-hero">
-        <div className="lobby-dice">
-          {[1, 3, 6].map((v, i) => (
-            <Die3D key={v} value={v} size={46} color={PLAYER_COLORS[i]} tumbleOnMount delay={i * 0.15} sound={false} />
-          ))}
-        </div>
         <h1>Cubic</h1>
-        <p className="tagline">Every die is a starship</p>
       </div>
       <HomeScreenHint />
 

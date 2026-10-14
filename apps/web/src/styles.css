@@ -1074,7 +1074,7 @@ input { font: inherit; }
   perspective: 1400px;
 }
 /* One 3D space from here down to the dice, so they stand up on the board as cubes: nothing in the chain may take
-   opacity or a filter, which would flatten it (the tiles fade themselves instead). */
+   opacity or a filter, which would flatten it (the map canvas fades itself instead). */
 .backdrop-spin {
   position: absolute; left: 50%; top: 46%;
   transform-style: preserve-3d;
@@ -1086,68 +1086,102 @@ input { font: inherit; }
   to { transform: translate(-50%, -50%) rotateX(54deg) rotateZ(360deg); }
 }
 .backdrop-plane {
+  --half: calc(var(--cell) * .28);
   position: relative; transform-style: preserve-3d;
   width: calc(var(--cols) * var(--cell)); height: calc(var(--rows) * var(--cell));
 }
-.backdrop-tile {
-  position: absolute;
-  left: calc(var(--c) * var(--cell)); top: calc(var(--r) * var(--cell));
-  width: calc(3 * var(--cell)); height: calc(3 * var(--cell));
-  padding: calc(var(--cell) * .02);
-  opacity: .62;
+.backdrop-map {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: .9;
   animation: backdrop-in 1.4s ease-out both;
 }
 @keyframes backdrop-in { from { opacity: 0; } }
-.backdrop-tile img, .backdrop-tile::before {
-  display: block; width: 100%; height: 100%; border-radius: calc(var(--cell) * .12);
-  box-shadow: 0 0 0 1px rgba(127, 178, 255, .16);
-}
-.backdrop-tile:not(:has(img))::before { content: ''; background: #0b1124; }
-.backdrop-tile.void img { box-shadow: 0 0 0 1px rgba(197, 155, 255, .35); }
-/* Each planet breathes a little light, out of step with the others. */
-.backdrop-glow {
-  position: absolute;
-  left: calc((var(--c) - .4) * var(--cell)); top: calc((var(--r) - .4) * var(--cell));
-  width: calc(1.8 * var(--cell)); height: calc(1.8 * var(--cell)); border-radius: 50%;
-  background: radial-gradient(circle, rgba(143, 211, 255, .3), transparent 65%);
-  animation: backdrop-breathe 7s ease-in-out var(--delay) infinite alternate;
-}
-@keyframes backdrop-breathe { from { opacity: .2; transform: scale(.85); } to { opacity: 1; transform: scale(1.1); } }
 .backdrop-die {
   position: absolute; left: 0; top: 0;
-  width: calc(var(--cell) * .56); height: calc(var(--cell) * .56);
+  width: calc(var(--half) * 2); height: calc(var(--half) * 2);
   transform-style: preserve-3d;
   transform: translate(calc((var(--c) + .22) * var(--cell)), calc((var(--r) + .22) * var(--cell)));
   transition: transform var(--glide) cubic-bezier(.45, 0, .2, 1);
 }
-/* The die's light on the board under it, in its player's colour. */
-.backdrop-die-pool {
-  position: absolute; inset: -60%; border-radius: 50%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--pc) 55%, transparent), transparent);
+/* The cube rests on the board (a pixel above it, so its bottom face doesn't fight the map for depth), and
+   arrives by dropping in while it tumbles to its value. */
+.backdrop-cube, .backdrop-cube-spin { position: absolute; inset: 0; transform-style: preserve-3d; }
+.backdrop-cube {
+  transform: translateZ(calc(var(--half) + 1px));
+  animation: backdrop-drop 1s cubic-bezier(.3, .7, .4, 1) var(--delay) both;
 }
-/* The cube sits on the board, its value face up (Die3D's front face points out of the plane). Its own
-   perspective and shadow are for a die seen head-on: here the scene's perspective draws it. */
-.backdrop-die > span:last-child { display: block; width: 100%; height: 100%; transform-style: preserve-3d; transform: translateZ(calc(var(--cell) * .28)); }
-.backdrop-die .die3d { perspective: none; transform-style: preserve-3d; }
-.backdrop-die .die3d-shadow { display: none; }
-/* A re-roll: the die jumps up off the board while it tumbles. */
-.backdrop-die-lift { animation: backdrop-lift 1s cubic-bezier(.3, .7, .4, 1); }
-@keyframes backdrop-lift {
-  from, to { transform: translateZ(calc(var(--cell) * .28)); }
-  35% { transform: translateZ(calc(var(--cell) * 1.1)); }
+@keyframes backdrop-drop {
+  from { transform: translateZ(calc(var(--half) * 5)); }
+  45% { transform: translateZ(calc(var(--half) * 2.4)); }
+}
+.backdrop-cube-spin { animation: backdrop-tumble 1s cubic-bezier(.15, .6, .3, 1) var(--delay) both; }
+@keyframes backdrop-tumble { from { transform: rotateX(var(--tx)) rotateY(var(--ty)); } }
+.backdrop-face {
+  position: absolute; inset: 0;
+  display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  /* Rounder corners than Die3D's 16% would need wider bevels (.backdrop-edge) to fill the outline seen edge-on. */
+  padding: 12%; border-radius: 9%;
+  /* Lit as Die3D's faces are: a highlight top left, shade towards the bottom edge, a thin bright rim. */
+  background:
+    radial-gradient(circle at 28% 22%, color-mix(in srgb, var(--die-color) 55%, white) 0%, transparent 55%),
+    linear-gradient(145deg, var(--die-color), color-mix(in srgb, var(--die-color) 62%, black));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .18),
+    inset 0 calc(var(--half) * -.12) calc(var(--half) * .24) rgba(0, 0, 0, .28);
+  backface-visibility: hidden;
+}
+.backdrop-face.top    { transform: translateZ(var(--half)); }
+.backdrop-face.north  { transform: rotateX(90deg) translateZ(var(--half)); }
+.backdrop-face.south  { transform: rotateX(-90deg) translateZ(var(--half)); }
+.backdrop-face.east   { transform: rotateY(90deg) translateZ(var(--half)); }
+.backdrop-face.west   { transform: rotateY(-90deg) translateZ(var(--half)); }
+/* The tip of each top corner, where three rounded corners and the bevels along them meet, would show the map:
+   a plane just under the top face fills it. The camera always looks down on the dice, so the top corners are the
+   only ones that need it (the bottom ones sit on the board). */
+.backdrop-core {
+  position: absolute; inset: calc(var(--half) * .05);
+  background: color-mix(in srgb, var(--die-color) 70%, black);
+  transform: translateZ(calc(var(--half) * .95));
+}
+/* A bevel along each edge: the chord across the rounded edge, from where one face's rounded corner starts to
+   where the other's does. Seen edge-on, two faces' rounded corners left a notch in the outline; this fills it.
+   With the 9% radius r = .18 of the half-size: the chord is r√2 = .25 wide, and r/√2 in from the edge, so √2 -
+   r/√2 = 1.287 half-sizes from the centre. It lies inside the outline, so it only shows where the faces don't;
+   drawn narrower (.16), so its long edges sit clearly inside the faces: any closer (.22) and the 3D sorting
+   drew them over the faces, as lines along each edge. */
+.backdrop-edge {
+  --w: calc(var(--half) * .16);
+  --d: calc(var(--half) * 1.287);
+  position: absolute;
+  left: 0; top: calc(50% - var(--w) / 2); width: 100%; height: var(--w);
+  background: color-mix(in srgb, var(--die-color) 82%, black);
+}
+.backdrop-edge.te, .backdrop-edge.tw { top: 0; height: 100%; left: calc(50% - var(--w) / 2); width: var(--w); }
+.backdrop-edge.tn { transform: rotateX(45deg) translateZ(var(--d)); }
+.backdrop-edge.ts { transform: rotateX(-45deg) translateZ(var(--d)); }
+.backdrop-edge.te { transform: rotateY(45deg) translateZ(var(--d)); }
+.backdrop-edge.tw { transform: rotateY(-45deg) translateZ(var(--d)); }
+.backdrop-edge.ne { transform: rotateZ(-45deg) rotateY(90deg) translateZ(var(--d)); }
+.backdrop-edge.se { transform: rotateZ(45deg) rotateY(90deg) translateZ(var(--d)); }
+.backdrop-edge.sw { transform: rotateZ(135deg) rotateY(90deg) translateZ(var(--d)); }
+.backdrop-edge.nw { transform: rotateZ(-135deg) rotateY(90deg) translateZ(var(--d)); }
+/* The face on the board also casts the die's light around it, in its player's colour: no extra layer for it. */
+.backdrop-face.bottom {
+  transform: rotateX(180deg) translateZ(var(--half));
+  backface-visibility: visible;
+  box-shadow: 0 0 calc(var(--cell) * .28) calc(var(--cell) * .1) color-mix(in srgb, var(--die-color) 55%, transparent);
 }
 /* Darker towards the edges and behind the form in the middle, so the map reads as scenery. */
 .backdrop-shade {
   position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse 60% 55% at 50% 45%, rgba(5, 8, 19, .5), transparent),
-    radial-gradient(ellipse 90% 80% at 50% 40%, transparent 40%, rgba(5, 8, 19, .9));
+    radial-gradient(ellipse 60% 55% at 50% 45%, rgba(5, 8, 19, .35), transparent),
+    radial-gradient(ellipse 90% 80% at 50% 40%, transparent 45%, rgba(5, 8, 19, .75));
 }
 .lobby-backdrop.still .backdrop-spin { animation: none; transform: translate(-50%, -50%) rotateX(54deg) rotateZ(-18deg); }
-.lobby-backdrop.still .backdrop-tile, .lobby-backdrop.still .backdrop-glow { animation: none; }
+.lobby-backdrop.still .backdrop-map, .lobby-backdrop.still .backdrop-cube, .lobby-backdrop.still .backdrop-cube-spin { animation: none; }
 
 .lobby-hero { text-align: center; }
-.lobby-dice { display: flex; justify-content: center; gap: 18px; margin-bottom: 18px; }
 .lobby h1 {
   margin: 0;
   font-family: var(--display);
@@ -1163,7 +1197,6 @@ input { font: inherit; }
   color: transparent;
   filter: drop-shadow(0 0 30px rgba(122,162,255,.35));
 }
-.tagline { color: #b9c3e6; max-width: 520px; margin: 10px auto 0; line-height: 1.55; }
 /* On iPhone and iPad, how to play full screen (Lobby.tsx). */
 .home-hint {
   width: min(520px, 100%);
