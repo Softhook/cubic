@@ -1283,7 +1283,16 @@ input { font: inherit; }
 .your-games ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .your-games li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.03); }
 @media (hover: hover) { .your-games li:hover { border-color: var(--line-2); background: rgba(255,255,255,.06); } }
-.your-games li.my-turn { border-color: var(--accent); }
+.your-games li.my-turn { border-color: var(--accent); animation: my-turn-hop 3.6s ease-in-out 1s infinite; }
+/* A quick double hop with a wiggle, then a long rest: noticeable without nagging. Still under the pointer. */
+@media (hover: hover) { .your-games li.my-turn:hover { animation-play-state: paused; } }
+@keyframes my-turn-hop {
+  0%, 22%, 100% { transform: none; }
+  4% { transform: translateY(-5px) rotate(-1deg); }
+  8% { transform: translateY(0) rotate(0); }
+  12% { transform: translateY(-3px) rotate(.8deg); }
+  16% { transform: translateY(0) rotate(-.4deg); }
+}
 .game-row-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; background: none; border: 0; padding: 0; font: inherit; text-align: left; cursor: pointer; }
 .game-row-open strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .game-row-open .where-icon { flex-shrink: 0; color: var(--muted); }
