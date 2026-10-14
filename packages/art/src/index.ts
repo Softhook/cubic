@@ -17,7 +17,16 @@ export {
 export { ICONS, icon } from './icons';
 export { starfield, type StarfieldOptions } from './starfield';
 export { planet, type PlanetOptions } from './planet';
-export { cubePadCentres, editableTileSvg, numberPlacement, tileFlavour, tileSvg, type NumberPlacement, type TileOptions } from './tile';
+export {
+  cubePadCentres,
+  editableTileSvg,
+  numberPlacement,
+  tileFlavour,
+  tileHasRings,
+  tileSvg,
+  type NumberPlacement,
+  type TileOptions,
+} from './tile';
 export { SET_COUNTS, TILE_SET, assignTiles, tileSpec, type TileSpec } from './tileset';
 export {
   CARD,

@@ -319,6 +319,20 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
   return document(o.rounded ? dieCut(all, id, TILE.size, TILE.size, TILE.corner) : all, area);
 }
 
+/** Whether a tile's planet has rings (picked from its seed, when its spec doesn't say). */
+export function tileHasRings(spec: TileSpec): boolean {
+  if (spec.rings !== undefined || spec.number === 0) return !!spec.rings;
+  return planet({
+    rng: rng(spec.seed).fork('planet'),
+    id: spec.id,
+    cx: MID,
+    cy: MID,
+    r: PLANET_DIAMETER[spec.number] / 2,
+    number: spec.number,
+    type: spec.type ?? PLANET_FAMILY[spec.number].types[0],
+  }).rings;
+}
+
 /**
  * A tile for Illustrator and other editors that can't render SVG filters: the painted art as an embedded
  * bitmap (pass a PNG data URL of `tileSvg(spec, { only: 'art', bleed })`), with the markings on top as

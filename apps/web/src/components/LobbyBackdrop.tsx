@@ -1,15 +1,17 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { buildBoard, type Board, type MapDef } from '@quantum/engine';
-import { TILE } from '@quantum/art';
+import { PLANET_DIAMETER, TILE, TILE_SET, tileHasRings, tileSpec } from '@quantum/art';
 import { decodedTileImage } from '../art/tileImages';
-import { tileArt } from '../art/boardTiles';
+import { tileArt, type TileArt } from '../art/boardTiles';
 import { PIPS } from './Die3D';
+import { Boom, EXPLOSION_MS } from './board/Explosions';
 import { PIP, PLAYER_COLORS } from '../theme';
 import { PHONE, REDUCED_MOTION, useMediaQuery } from '../game/useMediaQuery';
 
 /**
  * Behind the lobby: the chosen map with its real tile art, laid on a slowly turning plane, and a few fleets
- * drifting between spaces as if in a quiet game. Purely decoration: hidden from screen readers, and still
+ * drifting between spaces as if in a quiet game: now and then one attacks another and the loser blows up, to
+ * drop back in at home a little later. The planets stand up off the map as spheres (all ringless). Purely decoration: hidden from screen readers, and still
  * (no turning, no moves) under reduced motion.
  *
  * Kept light for phones, where every composited layer costs GPU memory and the turning plane recomposites all
@@ -25,20 +27,86 @@ const CANVAS_SCALE = 1.5;
 const CANVAS_MAX = 2048;
 /** Milliseconds between moves, and how long a glide takes. */
 const STEP_MS = 1100;
-const GLIDE_MS = 1600;
+/** Milliseconds a ship takes to cross one space: it moves space by space, along rows and columns. */
+const SPACE_MS = 340;
+/** How often a ship with an enemy in reach attacks it, rather than moving to an empty space. */
+const ATTACK_CHANCE = 0.4;
+/** How often a ship that moves heads for the nearest enemy, rather than anywhere. */
+const HUNT_CHANCE = 0.5;
+/** How often the attacker is the one destroyed. */
+const ATTACKER_LOSES = 0.3;
+/** How long a destroyed ship is gone before it drops back in near home. */
+const RESPAWN_MS = 3500;
 
-interface Ship {
+type Spot = { r: number; c: number };
+
+interface Ship extends Spot {
   id: number;
   color: string;
   value: number;
-  r: number;
-  c: number;
   rolls: number;
+  /** Its home planet, where it comes back after being destroyed. */
+  home: Spot;
+  /** Destroyed, waiting to come back. */
+  down?: boolean;
+  /** Where it's on its way to, while it moves. */
+  to?: Spot;
+  /** The easing for the space it's crossing: easing in at the start of a move and out at the end. */
+  ease?: string;
+}
+
+/** A move: the spaces a ship crosses, in order, and the enemy it attacks at the end, if any. */
+interface Travel {
+  id: number;
+  path: Spot[];
+  attack?: number;
+}
+
+interface Blast extends Spot {
+  key: string;
+  color: string;
+}
+
+const roll = () => 1 + Math.floor(Math.random() * 6);
+const pick = <T,>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)];
+const at = (s: Spot) => `${s.r},${s.c}`;
+const around = (spaces: Spot[], home: Spot) => spaces.filter((s) => Math.max(Math.abs(s.r - home.r), Math.abs(s.c - home.c)) === 1);
+const STEPS = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+/** The spaces taken: where each ship (not destroyed) stands, and where each moving one is headed. */
+const taken = (ships: Ship[]) => new Set(ships.filter((s) => !s.down).flatMap((s) => (s.to ? [at(s), at(s.to)] : [at(s)])));
+
+/**
+ * The shortest routes from `from`, along rows and columns over open spaces (around planets), up to `range`
+ * spaces long, by the space each ends on. A route can end on a taken space (an enemy, to attack) but not
+ * pass through one.
+ */
+function routes(from: Spot, range: number, open: Set<string>, blocked: Set<string>): Map<string, Spot[]> {
+  const paths = new Map<string, Spot[]>([[at(from), []]]);
+  let frontier = [from];
+  for (let d = 0; d < range; d++) {
+    const next: Spot[] = [];
+    for (const s of frontier)
+      for (const [dr, dc] of STEPS) {
+        const n = { r: s.r + dr, c: s.c + dc };
+        const k = at(n);
+        if (!open.has(k) || paths.has(k)) continue;
+        paths.set(k, [...paths.get(at(s))!, n]);
+        if (!blocked.has(k)) next.push(n);
+      }
+    frontier = next;
+  }
+  paths.delete(at(from));
+  return paths;
 }
 
 /** Spaces a ship can stand on: not off the map, not a planet. */
 function openSpaces(board: Board) {
-  const out: { r: number; c: number }[] = [];
+  const out: Spot[] = [];
   board.cells.forEach((row, r) => row.forEach((x, c) => x.kind === 'space' && out.push({ r, c })));
   return out;
 }
@@ -48,32 +116,43 @@ function launch(board: Board, players: number, fleet: number): Ship[] {
   const starts = board.planets.filter((p) => p.start);
   const homes = (starts.length >= players ? starts : board.planets).slice(0, players);
   const ships: Ship[] = [];
-  homes.forEach((home, i) => {
-    const around = openSpaces(board)
-      .filter((s) => Math.max(Math.abs(s.r - home.r), Math.abs(s.c - home.c)) === 1)
-      .sort(() => Math.random() - 0.5);
-    for (const s of around.slice(0, fleet)) {
-      ships.push({ id: ships.length, color: PLAYER_COLORS[i], value: 1 + Math.floor(Math.random() * 6), ...s, rolls: 0 });
+  const spaces = openSpaces(board);
+  homes.forEach((p, i) => {
+    const home = { r: p.r, c: p.c };
+    for (const s of around(spaces, home)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, fleet)) {
+      ships.push({ id: ships.length, color: PLAYER_COLORS[i], value: roll(), ...s, rolls: 0, home });
     }
   });
   return ships;
 }
 
-/** One ship moves to a free space within its value (a short hop), now and then re-rolling instead. */
-function step(ships: Ship[], spaces: { r: number; c: number }[]): Ship[] {
-  const i = Math.floor(Math.random() * ships.length);
-  const ship = ships[i];
-  if (Math.random() < 0.15)
-    return ships.map((s, j) => (j === i ? { ...s, value: 1 + Math.floor(Math.random() * 6), rolls: s.rolls + 1 } : s));
-  const range = Math.min(ship.value, 3);
-  const occupied = new Set(ships.map((s) => `${s.r},${s.c}`));
-  const reach = spaces.filter((s) => {
-    const d = Math.abs(s.r - ship.r) + Math.abs(s.c - ship.c);
-    return d > 0 && d <= range && !occupied.has(`${s.r},${s.c}`);
-  });
-  if (!reach.length) return ships;
-  const to = reach[Math.floor(Math.random() * reach.length)];
-  return ships.map((s, j) => (j === i ? { ...s, ...to } : s));
+/**
+ * One ship (not destroyed, moving or in a battle) acts: it re-rolls, attacks an enemy within reach, or moves
+ * to a free space within reach, often the one nearest an enemy. Reach is the shortest route along rows and
+ * columns, as in the game. A move is returned as `travel`, for the ship to follow space by space.
+ */
+function step(ships: Ship[], open: Set<string>, busy: Set<number>): { ships: Ship[]; travel?: Travel } {
+  const ready = ships.filter((s) => !s.down && !busy.has(s.id));
+  if (!ready.length) return { ships };
+  const ship = pick(ready);
+  const update = (patch: Partial<Ship>) => ships.map((s) => (s.id === ship.id ? { ...s, ...patch } : s));
+  if (Math.random() < 0.15) return { ships: update({ value: roll(), rolls: ship.rolls + 1 }) };
+  const blocked = taken(ships);
+  const paths = routes(ship, Math.min(ship.value, 3), open, blocked);
+  const targets = ready.filter((s) => s.color !== ship.color && paths.has(at(s)));
+  if (targets.length && Math.random() < ATTACK_CHANCE) {
+    const target = pick(targets);
+    return { ships: update({ to: target }), travel: { id: ship.id, path: paths.get(at(target))!, attack: target.id } };
+  }
+  const reach = [...paths.values()].filter((path) => !blocked.has(at(path.at(-1)!)));
+  if (!reach.length) return { ships };
+  // Half the time it closes in on the nearest enemy, so the fleets meet; otherwise it wanders.
+  const enemies = ships.filter((s) => !s.down && s.color !== ship.color);
+  const gap = (path: Spot[]) => Math.min(...enemies.map((e) => Math.abs(e.r - path.at(-1)!.r) + Math.abs(e.c - path.at(-1)!.c)));
+  const path = enemies.length && Math.random() < HUNT_CHANCE ? reach.reduce((best, p) => (gap(p) < gap(best) ? p : best)) : pick(reach);
+  return { ships: update({ to: path.at(-1) }), travel: { id: ship.id, path } };
 }
 
 /** The plane's cell size in pixels: the whole map fits in about the screen's longer side, re-measured on resize. */
@@ -90,10 +169,8 @@ function useCell(board: Board): number {
   return cell;
 }
 
-/** The map drawn once into a canvas, each tile as its image is ready, with a soft light on each planet. */
-function MapCanvas({ board, cell }: { board: Board; cell: number }) {
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const tiles = useMemo(() => tileArt(board), [board]);
+/** Each tile's artwork, as a decoded image and its URL, filled in as each is ready. */
+function useTileImages(tiles: TileArt[]) {
   const [images, setImages] = useState<Record<string, HTMLImageElement>>({});
   useEffect(() => {
     let live = true;
@@ -110,7 +187,52 @@ function MapCanvas({ board, cell }: { board: Board; cell: number }) {
       live = false;
     };
   }, [tiles]);
+  return images;
+}
 
+/** The tiles whose planet has no rings, by planet number. */
+const RINGLESS = new Map<number, string[]>();
+for (const t of TILE_SET) {
+  const spec = tileSpec(t.id);
+  if (!tileHasRings(spec)) RINGLESS.set(spec.number, [...(RINGLESS.get(spec.number) ?? []), t.id]);
+}
+
+/**
+ * The map's tiles, each with a planet without rings: every planet here stands up off the map as a sphere, which
+ * can't carry rings around it. Planets of the same number take the ringless tiles in turn (repeating, on maps
+ * with more of a number than there are).
+ */
+function ringlessTiles(board: Board): TileArt[] {
+  const used = new Map<number, number>();
+  return tileArt(board).map((t) => {
+    const { number } = tileSpec(t.id);
+    const choices = RINGLESS.get(number);
+    if (!choices?.length) return t;
+    const k = used.get(number) ?? 0;
+    used.set(number, k + 1);
+    return { ...t, id: choices[k % choices.length] };
+  });
+}
+
+/** A planet's diameter in cells, as printed on its tile. */
+const planetSize = (number: number) => (PLANET_DIAMETER[number] ?? PLANET_DIAMETER[7]) / TILE.cell;
+
+/**
+ * The map drawn once into a canvas, each tile as its image is ready. Each planet stands up off it as a sphere
+ * (Planets), so where the tile has it painted flat goes a shadow instead.
+ */
+function MapCanvas({
+  board,
+  cell,
+  tiles,
+  images,
+}: {
+  board: Board;
+  cell: number;
+  tiles: TileArt[];
+  images: Record<string, HTMLImageElement>;
+}) {
+  const canvas = useRef<HTMLCanvasElement>(null);
   const W = board.cols * cell;
   const H = board.rows * cell;
   const k = Math.min(devicePixelRatio || 1, CANVAS_SCALE, CANVAS_MAX / Math.max(W, H));
@@ -146,11 +268,13 @@ function MapCanvas({ board, cell }: { board: Board; cell: number }) {
     for (const p of board.planets) {
       const x = (p.c + 0.5) * cell;
       const y = (p.r + 0.5) * cell;
-      const glow = ctx.createRadialGradient(x, y, 0, x, y, cell * 0.9);
-      glow.addColorStop(0, 'rgba(143,211,255,.22)');
-      glow.addColorStop(1, 'rgba(143,211,255,0)');
-      ctx.fillStyle = glow;
-      ctx.fillRect(x - cell, y - cell, cell * 2, cell * 2);
+      const radius = (planetSize(p.number) / 2) * cell;
+      const shadow = ctx.createRadialGradient(x, y, 0, x, y, radius * 1.35);
+      shadow.addColorStop(0, 'rgba(5,8,19,.95)');
+      shadow.addColorStop(0.72, 'rgba(5,8,19,.9)');
+      shadow.addColorStop(1, 'rgba(5,8,19,0)');
+      ctx.fillStyle = shadow;
+      ctx.fillRect(x - radius * 1.4, y - radius * 1.4, radius * 2.8, radius * 2.8);
     }
   }, [board, tiles, images, cell, W, H, k]);
 
@@ -210,32 +334,149 @@ const Cube = memo(function Cube({ value, color, turn, delay }: { value: number; 
   );
 });
 
+/**
+ * Keeps an upright thing (a planet, an explosion's flash) facing the camera: its turn against the map's
+ * (.backdrop-face) runs on the map's clock, whenever it was added.
+ */
+function faceCamera(el: HTMLElement | null) {
+  const named = (target: Element | null | undefined, name: string) =>
+    target?.getAnimations().find((a) => (a as CSSAnimation).animationName === name);
+  const turn = named(el?.closest('.backdrop-plane'), 'backdrop-turn');
+  const face = named(el, 'backdrop-face');
+  if (turn && face) face.startTime = turn.startTime;
+}
+
+/**
+ * Each planet as a sphere above the map: its disc cut from its tile's artwork (shaded as a sphere lit from the
+ * top left), standing up off the board and turned against the map's turn so it always faces the camera.
+ */
+function Planets({ board, tiles, images }: { board: Board; tiles: TileArt[]; images: Record<string, HTMLImageElement> }) {
+  return board.planets.map((p) => {
+    // A planet sits in the middle of its tile.
+    const tile = tiles.find((t) => t.r === p.r - 1 && t.c === p.c - 1);
+    const img = tile && images[tile.id];
+    return (
+      img && (
+        <span
+          key={p.id}
+          ref={faceCamera}
+          className="backdrop-planet"
+          style={{ '--r': p.r, '--c': p.c, '--size': planetSize(p.number), backgroundImage: `url(${img.src})` } as CSSProperties}
+        />
+      )
+    );
+  });
+}
+
 function Plane({ map, fleet, still }: { map: MapDef; fleet: number; still: boolean }) {
   const board = useMemo(() => buildBoard(map), [map]);
+  const tiles = useMemo(() => ringlessTiles(board), [board]);
+  const images = useTileImages(tiles);
   const spaces = useMemo(() => openSpaces(board), [board]);
+  const open = useMemo(() => new Set(spaces.map(at)), [spaces]);
   const cell = useCell(board);
   const [ships, setShips] = useState(() => launch(board, map.players, fleet));
+  const [blasts, setBlasts] = useState<Blast[]>([]);
+  // The ships as last set, for the timers; and the ships moving or in a battle, which sit out moves until done.
+  const current = useRef(ships);
+  const busy = useRef(new Set<number>());
 
   useEffect(() => {
     if (still) return;
+    const timers = new Set<number>();
+    const later = (ms: number, go: () => void) => {
+      const t = window.setTimeout(() => {
+        timers.delete(t);
+        go();
+      }, ms);
+      timers.add(t);
+    };
+    const commit = (next: Ship[]) => {
+      current.current = next;
+      setShips(next);
+    };
+    const patch = (id: number, change: Partial<Ship>) => commit(current.current.map((s) => (s.id === id ? { ...s, ...change } : s)));
+
+    /** Back near home with a fresh roll, once there's a free space there. */
+    const respawn = (id: number) => {
+      const ship = current.current.find((s) => s.id === id)!;
+      const occupied = taken(current.current);
+      const free = around(spaces, ship.home).filter((s) => !occupied.has(at(s)));
+      if (!free.length) return later(STEP_MS, () => respawn(id));
+      patch(id, { ...pick(free), value: roll(), rolls: ship.rolls + 1, down: false });
+      busy.current.delete(id);
+    };
+
+    /** Once the attacker has arrived: one of the two blows up there. */
+    const battle = (attacker: number, defender: number) => {
+      const loser = Math.random() < ATTACKER_LOSES ? attacker : defender;
+      const ship = current.current.find((s) => s.id === loser)!;
+      const blast = { key: `${loser}:${ship.rolls}`, r: ship.r, c: ship.c, color: ship.color };
+      patch(loser, { down: true });
+      setBlasts((b) => [...b, blast]);
+      later(EXPLOSION_MS, () => setBlasts((b) => b.filter((x) => x !== blast)));
+      busy.current.delete(loser === attacker ? defender : attacker);
+      later(RESPAWN_MS, () => respawn(loser));
+    };
+
+    /** A ship follows its path a space at a time, easing in at the start and out at the end; then it fights, if attacking. */
+    const travel = ({ id, path, attack }: Travel) => {
+      busy.current.add(id);
+      if (attack !== undefined) busy.current.add(attack);
+      const last = path.length - 1;
+      path.forEach((spot, i) =>
+        later(i * SPACE_MS, () =>
+          patch(id, { ...spot, ease: last === 0 ? 'ease-in-out' : i === 0 ? 'ease-in' : i === last ? 'ease-out' : 'linear' }),
+        ),
+      );
+      // Just before it comes to rest on the enemy's space.
+      later(path.length * SPACE_MS - 60, () => {
+        patch(id, { to: undefined });
+        if (attack === undefined) busy.current.delete(id);
+        else battle(id, attack);
+      });
+    };
+
     const timer = setInterval(() => {
-      if (!document.hidden) setShips((s) => step(s, spaces));
+      if (document.hidden) return;
+      const { ships: next, travel: move } = step(current.current, open, busy.current);
+      commit(next);
+      if (move) travel(move);
     }, STEP_MS);
-    return () => clearInterval(timer);
-  }, [spaces, still]);
+    return () => {
+      clearInterval(timer);
+      timers.forEach(clearTimeout);
+    };
+  }, [spaces, open, still]);
 
   return (
     <div
       className="backdrop-plane"
-      style={{ '--cols': board.cols, '--rows': board.rows, '--cell': `${cell}px`, '--glide': `${GLIDE_MS}ms` } as CSSProperties}
+      style={{ '--cols': board.cols, '--rows': board.rows, '--cell': `${cell}px`, '--glide': `${SPACE_MS}ms` } as CSSProperties}
     >
-      <MapCanvas board={board} cell={cell} />
-      {ships.map((s) => (
-        <span key={s.id} className="backdrop-die" style={{ '--r': s.r, '--c': s.c, '--pc': s.color } as CSSProperties}>
-          {/* Keyed by roll: a re-rolled die drops and tumbles in afresh. */}
-          <Cube key={s.rolls} value={s.value} color={s.color} turn={s.id + s.rolls} delay={s.rolls ? 0 : s.id * 0.08} />
+      <MapCanvas board={board} cell={cell} tiles={tiles} images={images} />
+      {/* Each explosion twice: its shock waves across the board, and its flash and sparks upright at die height. */}
+      {blasts.map((b) => (
+        <Boom
+          key={b.key}
+          color={b.color}
+          style={{ transform: `translate(${b.c * cell}px, ${b.r * cell}px) translateZ(1px)`, width: cell, height: cell }}
+        />
+      ))}
+      {blasts.map((b) => (
+        <span key={b.key} ref={faceCamera} className="backdrop-blast" style={{ '--r': b.r, '--c': b.c } as CSSProperties}>
+          <Boom color={b.color} style={{ width: '100%', height: '100%' }} />
         </span>
       ))}
+      <Planets board={board} tiles={tiles} images={images} />
+      {ships
+        .filter((s) => !s.down)
+        .map((s) => (
+          <span key={s.id} className="backdrop-die" style={{ '--r': s.r, '--c': s.c, '--pc': s.color, '--ease': s.ease } as CSSProperties}>
+            {/* Keyed by roll: a re-rolled (or returning) die drops and tumbles in afresh. */}
+            <Cube key={s.rolls} value={s.value} color={s.color} turn={s.id + s.rolls} delay={s.rolls ? 0 : s.id * 0.08} />
+          </span>
+        ))}
     </div>
   );
 }

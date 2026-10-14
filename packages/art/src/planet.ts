@@ -306,7 +306,7 @@ function surface(o: PlanetOptions, hue: number, rng: Rng): Surface {
  * A planet centred on (cx, cy): a noise surface shaded as a sphere lit from the top left, a thin
  * atmosphere, a dark halo so it stands out from any background, and sometimes rings.
  */
-export function planet(o: PlanetOptions): Fragment {
+export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
   const { id, cx, cy, r, rng } = o;
   const look = rng.fork('look');
   const hue = PLANET_FAMILY[o.number].hue + look.range(-8, 8);
@@ -358,5 +358,5 @@ export function planet(o: PlanetOptions): Fragment {
     disc(`url(#${id}-night)`) +
     `</g>` +
     front;
-  return { defs, body };
+  return { defs, body, rings };
 }

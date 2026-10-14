@@ -1078,16 +1078,14 @@ input { font: inherit; }
 .backdrop-spin {
   position: absolute; left: 50%; top: 46%;
   transform-style: preserve-3d;
-  transform: translate(-50%, -50%) rotateX(54deg) rotateZ(0deg);
-  animation: backdrop-turn 360s linear infinite;
+  transform: translate(-50%, -50%) rotateX(54deg);
 }
-@keyframes backdrop-turn {
-  from { transform: translate(-50%, -50%) rotateX(54deg) rotateZ(0deg); }
-  to { transform: translate(-50%, -50%) rotateX(54deg) rotateZ(360deg); }
-}
+/* The map turns on itself; the planets turn back as much (.backdrop-planet), starting in the same frame, so
+   they keep facing the camera. */
 .backdrop-plane {
   --half: calc(var(--cell) * .28);
   position: relative; transform-style: preserve-3d;
+  animation: backdrop-turn 360s linear infinite;
   width: calc(var(--cols) * var(--cell)); height: calc(var(--rows) * var(--cell));
 }
 .backdrop-map {
@@ -1096,12 +1094,54 @@ input { font: inherit; }
   animation: backdrop-in 1.4s ease-out both;
 }
 @keyframes backdrop-in { from { opacity: 0; } }
+@keyframes backdrop-turn { to { transform: rotateZ(360deg); } }
+/* A planet as a sphere: its disc cut from the tile's artwork (shaded as a sphere already), raised off the board by
+   its radius and turned to face the camera, against the map's tilt and turn. The canvas paints its shadow below. */
+.backdrop-planet {
+  --d: calc(var(--size) * var(--cell));
+  --up: translateZ(calc(var(--d) / 2));
+  position: absolute;
+  left: calc((var(--c) + .5) * var(--cell) - var(--d) / 2); top: calc((var(--r) + .5) * var(--cell) - var(--d) / 2);
+  width: var(--d); height: var(--d); border-radius: 50%;
+  /* The tile as the canvas draws it (its width less a 2% inset each side), centred on the planet. */
+  background: center / calc(var(--cell) * 2.96) no-repeat;
+  box-shadow: 0 0 calc(var(--cell) * .14) rgba(143, 211, 255, .4);
+  transform: var(--up) rotateZ(0deg) rotateX(-54deg);
+  animation: backdrop-in 1.4s ease-out both, backdrop-face 360s linear infinite;
+}
+@keyframes backdrop-face {
+  from { transform: var(--up) rotateZ(0deg) rotateX(-54deg); }
+  to { transform: var(--up) rotateZ(-360deg) rotateX(-54deg); }
+}
+/* A rim of atmosphere and a deeper night side, so the disc reads as a ball. */
+.backdrop-planet::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .16), transparent 42%),
+    radial-gradient(circle at 38% 34%, transparent 52%, rgba(5, 8, 19, .55) 100%);
+  box-shadow: inset 0 0 calc(var(--d) * .06) rgba(160, 215, 255, .5);
+}
+/* An explosion's shock waves lie on the board; its flash and sparks stand up at die height, larger, facing the
+   camera as the planets do (.backdrop-blast). The sparks are sized by --cell. */
+.backdrop-plane .explosion { z-index: auto; }
+.backdrop-plane > .explosion > :not(.boom-wave) { display: none; }
+/* Raised by more than its half-size × sin 54° (.53 of a cell), so tilted to the camera it clears the board. */
+.backdrop-blast {
+  --up: translateZ(calc(var(--cell) * .58));
+  position: absolute;
+  left: calc((var(--c) - .15) * var(--cell)); top: calc((var(--r) - .15) * var(--cell));
+  width: calc(1.3 * var(--cell)); height: calc(1.3 * var(--cell));
+  transform: var(--up) rotateZ(0deg) rotateX(-54deg);
+  animation: backdrop-face 360s linear infinite;
+}
+.backdrop-blast .boom-wave { display: none; }
 .backdrop-die {
   position: absolute; left: 0; top: 0;
   width: calc(var(--half) * 2); height: calc(var(--half) * 2);
   transform-style: preserve-3d;
   transform: translate(calc((var(--c) + .22) * var(--cell)), calc((var(--r) + .22) * var(--cell)));
-  transition: transform var(--glide) cubic-bezier(.45, 0, .2, 1);
+  /* A space at a time (LobbyBackdrop.tsx sets the easing for each, so a move flows from start to end). */
+  transition: transform var(--glide) var(--ease, ease-in-out);
 }
 /* The cube rests on the board (a pixel above it, so its bottom face doesn't fight the map for depth), and
    arrives by dropping in while it tumbles to its value. */
@@ -1178,7 +1218,8 @@ input { font: inherit; }
     radial-gradient(ellipse 60% 55% at 50% 45%, rgba(5, 8, 19, .35), transparent),
     radial-gradient(ellipse 90% 80% at 50% 40%, transparent 45%, rgba(5, 8, 19, .75));
 }
-.lobby-backdrop.still .backdrop-spin { animation: none; transform: translate(-50%, -50%) rotateX(54deg) rotateZ(-18deg); }
+.lobby-backdrop.still .backdrop-plane { animation: none; transform: rotateZ(-18deg); }
+.lobby-backdrop.still .backdrop-planet { animation: none; transform: var(--up) rotateZ(18deg) rotateX(-54deg); }
 .lobby-backdrop.still .backdrop-map, .lobby-backdrop.still .backdrop-cube, .lobby-backdrop.still .backdrop-cube-spin { animation: none; }
 
 .lobby-hero { text-align: center; }

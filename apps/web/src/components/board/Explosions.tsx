@@ -9,7 +9,7 @@ interface Explosion {
   color: string;
 }
 
-const EXPLOSION_MS = 1100;
+export const EXPLOSION_MS = 1100;
 const SPARKS = 10;
 
 /** Ships knocked off the map by a battle or a card blow up where they stood. */
@@ -37,15 +37,10 @@ function useExplosions(game: GameState): Explosion[] {
   return booms;
 }
 
-export function Explosions({ game, cell }: { game: GameState; cell: number }) {
-  const booms = useExplosions(game);
-  return booms.map((b) => (
-    <div
-      key={b.id}
-      className="explosion"
-      style={{ transform: `translate(${b.c * cell}px, ${b.r * cell}px)`, width: cell, height: cell, '--pc': b.color } as CSSProperties}
-      aria-hidden
-    >
+/** One ship blowing up: a flash, two shock waves and sparks, filling the box `style` places (a space's size). */
+export function Boom({ color, style }: { color: string; style: CSSProperties }) {
+  return (
+    <div className="explosion" style={{ ...style, '--pc': color } as CSSProperties} aria-hidden>
       <span className="boom-flash" />
       <span className="boom-wave" />
       <span className="boom-wave late" />
@@ -57,5 +52,12 @@ export function Explosions({ game, cell }: { game: GameState; cell: number }) {
         />
       ))}
     </div>
+  );
+}
+
+export function Explosions({ game, cell }: { game: GameState; cell: number }) {
+  const booms = useExplosions(game);
+  return booms.map((b) => (
+    <Boom key={b.id} color={b.color} style={{ transform: `translate(${b.c * cell}px, ${b.r * cell}px)`, width: cell, height: cell }} />
   ));
 }
