@@ -43,9 +43,7 @@ let introPlayed = false;
  * motion; a tap or key skips it. Returns the phase (null once done) and the offset that centres the title.
  */
 function useIntro(title: RefObject<HTMLHeadingElement | null>) {
-  const [phase, setPhase] = useState<'title' | 'rise' | null>(() =>
-    introPlayed || matchMedia(REDUCED_MOTION).matches ? null : 'title',
-  );
+  const [phase, setPhase] = useState<'title' | 'rise' | null>(() => (introPlayed || matchMedia(REDUCED_MOTION).matches ? null : 'title'));
   const [offset, setOffset] = useState(0);
   useLayoutEffect(() => {
     if (phase !== 'title' || !title.current) return;

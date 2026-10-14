@@ -11,8 +11,8 @@ import { PHONE, REDUCED_MOTION, useMediaQuery } from '../game/useMediaQuery';
 /**
  * Behind the lobby: the chosen map with its real tile art, laid on a slowly turning plane, and a few fleets
  * drifting between spaces as if in a quiet game: now and then one attacks another and the loser blows up, to
- * drop back in at home a little later. The planets stand up off the map as spheres (all ringless). Purely decoration: hidden from screen readers, and still
- * (no turning, no moves) under reduced motion.
+ * drop back in at home a little later. The planets stand up off the map as spheres. Purely decoration: hidden from
+ * screen readers, and still (no turning, no moves) under reduced motion.
  *
  * Kept light for phones, where every composited layer costs GPU memory and the turning plane recomposites all
  * of them each frame: the map is one canvas at a capped resolution (not a layer per tile), and each die is a
@@ -25,10 +25,12 @@ const PHONE_FLEET = 2;
 /** The map canvas's pixels per CSS pixel at most: it sits far back, dimmed, and needn't be sharp. */
 const CANVAS_SCALE = 1.5;
 const CANVAS_MAX = 2048;
-/** Milliseconds between moves, and how long a glide takes. */
+/** Milliseconds between one ship acting and the next. */
 const STEP_MS = 1100;
 /** Milliseconds a ship takes to cross one space: it moves space by space, along rows and columns. */
 const SPACE_MS = 340;
+/** How often a ship that acts re-rolls instead. */
+const REROLL_CHANCE = 0.15;
 /** How often a ship with an enemy in reach attacks it, rather than moving to an empty space. */
 const ATTACK_CHANCE = 0.4;
 /** How often a ship that moves heads for the nearest enemy, rather than anywhere. */
@@ -138,13 +140,14 @@ function step(ships: Ship[], open: Set<string>, busy: Set<number>): { ships: Shi
   if (!ready.length) return { ships };
   const ship = pick(ready);
   const update = (patch: Partial<Ship>) => ships.map((s) => (s.id === ship.id ? { ...s, ...patch } : s));
-  if (Math.random() < 0.15) return { ships: update({ value: roll(), rolls: ship.rolls + 1 }) };
+  if (Math.random() < REROLL_CHANCE) return { ships: update({ value: roll(), rolls: ship.rolls + 1 }) };
   const blocked = taken(ships);
   const paths = routes(ship, Math.min(ship.value, 3), open, blocked);
   const targets = ready.filter((s) => s.color !== ship.color && paths.has(at(s)));
   if (targets.length && Math.random() < ATTACK_CHANCE) {
     const target = pick(targets);
-    return { ships: update({ to: target }), travel: { id: ship.id, path: paths.get(at(target))!, attack: target.id } };
+    const path = paths.get(at(target))!;
+    return { ships: update({ to: path.at(-1) }), travel: { id: ship.id, path, attack: target.id } };
   }
   const reach = [...paths.values()].filter((path) => !blocked.has(at(path.at(-1)!)));
   if (!reach.length) return { ships };
@@ -156,15 +159,14 @@ function step(ships: Ship[], open: Set<string>, busy: Set<number>): { ships: Shi
 }
 
 /** The plane's cell size in pixels: the whole map fits in about the screen's longer side, re-measured on resize. */
+const cellSize = (board: Board) => Math.min(1.05 * Math.max(innerWidth, innerHeight), 1250) / Math.max(board.cols, board.rows);
 function useCell(board: Board): number {
-  const measure = () => Math.min(1.05 * Math.max(innerWidth, innerHeight), 1250) / Math.max(board.cols, board.rows);
-  const [cell, setCell] = useState(measure);
+  const [cell, setCell] = useState(() => cellSize(board));
   useEffect(() => {
-    const resize = () => setCell(measure());
+    const resize = () => setCell(cellSize(board));
     resize();
     addEventListener('resize', resize);
     return () => removeEventListener('resize', resize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- measure only reads the board
   }, [board]);
   return cell;
 }
@@ -190,27 +192,25 @@ function useTileImages(tiles: TileArt[]) {
   return images;
 }
 
-/** The tiles whose planet has no rings, by planet number. */
-const RINGLESS = new Map<number, string[]>();
-for (const t of TILE_SET) {
-  const spec = tileSpec(t.id);
-  if (!tileHasRings(spec)) RINGLESS.set(spec.number, [...(RINGLESS.get(spec.number) ?? []), t.id]);
-}
+/** The tiles in the set whose planet has no rings. */
+const RINGLESS = TILE_SET.filter((spec) => !tileHasRings(spec));
 
 /**
- * The map's tiles, each with a planet without rings: every planet here stands up off the map as a sphere, which
- * can't carry rings around it. Planets of the same number take the ringless tiles in turn (repeating, on maps
- * with more of a number than there are).
+ * The map's tiles as the game lays them, but each planet without rings: every planet here stands up off the map
+ * as a sphere, which can't carry rings around it. A ringed tile is swapped for a ringless one of its number the
+ * map doesn't use yet (or, once those run out, for each in turn).
  */
 function ringlessTiles(board: Board): TileArt[] {
-  const used = new Map<number, number>();
-  return tileArt(board).map((t) => {
-    const { number } = tileSpec(t.id);
-    const choices = RINGLESS.get(number);
-    if (!choices?.length) return t;
-    const k = used.get(number) ?? 0;
-    used.set(number, k + 1);
-    return { ...t, id: choices[k % choices.length] };
+  const tiles = tileArt(board);
+  const used = new Set(tiles.map((t) => t.id));
+  let reused = 0;
+  return tiles.map((t) => {
+    const spec = tileSpec(t.id);
+    const choices = RINGLESS.filter((s) => s.number === spec.number);
+    if (!choices.length || !tileHasRings(spec)) return t;
+    const id = choices.find((s) => !used.has(s.id))?.id ?? choices[reused++ % choices.length].id;
+    used.add(id);
+    return { ...t, id };
   });
 }
 
@@ -487,8 +487,9 @@ export function LobbyBackdrop({ map }: { map: MapDef }) {
   return (
     <div className={`lobby-backdrop${still ? ' still' : ''}`} aria-hidden="true">
       <div className="backdrop-spin">
-        {/* Keyed by map: a new map fades in with fresh fleets. */}
-        <Plane key={`${map.id}:${fleet}`} map={map} fleet={fleet} still={still} />
+        {/* Keyed by map: a new map fades in with fresh fleets. And by motion: stopping cuts moves and returns
+            short, which would leave ships stranded mid-way or down for good. */}
+        <Plane key={`${map.id}:${fleet}:${still}`} map={map} fleet={fleet} still={still} />
       </div>
       <div className="backdrop-shade" />
     </div>

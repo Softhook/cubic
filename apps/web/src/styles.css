@@ -1246,6 +1246,8 @@ input { font: inherit; }
   animation: lobby-title-in 1.4s cubic-bezier(.2,.7,.2,1) both;
 }
 .lobby.intro-rise h1 { transition: transform calc(var(--intro-rise) * .75) cubic-bezier(.65,0,.25,1); }
+/* Not to be clicked until it's done: the tap that skips a phase would otherwise land on what's under it, unseen. */
+.lobby.intro-title > :not(.lobby-hero, .lobby-backdrop), .lobby.intro-rise > :not(.lobby-hero, .lobby-backdrop) { pointer-events: none; }
 .lobby.intro-title > :not(.lobby-hero, .lobby-backdrop) { opacity: 0; transform: translateY(16px); }
 .lobby.intro-rise > :not(.lobby-hero, .lobby-backdrop) {
   transition: opacity calc(var(--intro-rise) * .5) ease-out calc(var(--intro-rise) * .45),
