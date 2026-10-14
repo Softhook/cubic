@@ -1067,6 +1067,85 @@ input { font: inherit; }
   padding: calc(16px + var(--safe-top)) 16px 32px;
   gap: 20px;
 }
+/* Behind the lobby (LobbyBackdrop.tsx): the chosen map on a tilted plane that turns once every few minutes, with
+   fleets gliding over it. Fixed, under the lobby's content, and shaded so the form stays easy to read. */
+.lobby-backdrop {
+  position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+  perspective: 1400px;
+}
+/* One 3D space from here down to the dice, so they stand up on the board as cubes: nothing in the chain may take
+   opacity or a filter, which would flatten it (the tiles fade themselves instead). */
+.backdrop-spin {
+  position: absolute; left: 50%; top: 46%;
+  transform-style: preserve-3d;
+  transform: translate(-50%, -50%) rotateX(54deg) rotateZ(0deg);
+  animation: backdrop-turn 360s linear infinite;
+}
+@keyframes backdrop-turn {
+  from { transform: translate(-50%, -50%) rotateX(54deg) rotateZ(0deg); }
+  to { transform: translate(-50%, -50%) rotateX(54deg) rotateZ(360deg); }
+}
+.backdrop-plane {
+  position: relative; transform-style: preserve-3d;
+  width: calc(var(--cols) * var(--cell)); height: calc(var(--rows) * var(--cell));
+}
+.backdrop-tile {
+  position: absolute;
+  left: calc(var(--c) * var(--cell)); top: calc(var(--r) * var(--cell));
+  width: calc(3 * var(--cell)); height: calc(3 * var(--cell));
+  padding: calc(var(--cell) * .02);
+  opacity: .62;
+  animation: backdrop-in 1.4s ease-out both;
+}
+@keyframes backdrop-in { from { opacity: 0; } }
+.backdrop-tile img, .backdrop-tile::before {
+  display: block; width: 100%; height: 100%; border-radius: calc(var(--cell) * .12);
+  box-shadow: 0 0 0 1px rgba(127, 178, 255, .16);
+}
+.backdrop-tile:not(:has(img))::before { content: ''; background: #0b1124; }
+.backdrop-tile.void img { box-shadow: 0 0 0 1px rgba(197, 155, 255, .35); }
+/* Each planet breathes a little light, out of step with the others. */
+.backdrop-glow {
+  position: absolute;
+  left: calc((var(--c) - .4) * var(--cell)); top: calc((var(--r) - .4) * var(--cell));
+  width: calc(1.8 * var(--cell)); height: calc(1.8 * var(--cell)); border-radius: 50%;
+  background: radial-gradient(circle, rgba(143, 211, 255, .3), transparent 65%);
+  animation: backdrop-breathe 7s ease-in-out var(--delay) infinite alternate;
+}
+@keyframes backdrop-breathe { from { opacity: .2; transform: scale(.85); } to { opacity: 1; transform: scale(1.1); } }
+.backdrop-die {
+  position: absolute; left: 0; top: 0;
+  width: calc(var(--cell) * .56); height: calc(var(--cell) * .56);
+  transform-style: preserve-3d;
+  transform: translate(calc((var(--c) + .22) * var(--cell)), calc((var(--r) + .22) * var(--cell)));
+  transition: transform var(--glide) cubic-bezier(.45, 0, .2, 1);
+}
+/* The die's light on the board under it, in its player's colour. */
+.backdrop-die-pool {
+  position: absolute; inset: -60%; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--pc) 55%, transparent), transparent);
+}
+/* The cube sits on the board, its value face up (Die3D's front face points out of the plane). Its own
+   perspective and shadow are for a die seen head-on: here the scene's perspective draws it. */
+.backdrop-die > span:last-child { display: block; width: 100%; height: 100%; transform-style: preserve-3d; transform: translateZ(calc(var(--cell) * .28)); }
+.backdrop-die .die3d { perspective: none; transform-style: preserve-3d; }
+.backdrop-die .die3d-shadow { display: none; }
+/* A re-roll: the die jumps up off the board while it tumbles. */
+.backdrop-die-lift { animation: backdrop-lift 1s cubic-bezier(.3, .7, .4, 1); }
+@keyframes backdrop-lift {
+  from, to { transform: translateZ(calc(var(--cell) * .28)); }
+  35% { transform: translateZ(calc(var(--cell) * 1.1)); }
+}
+/* Darker towards the edges and behind the form in the middle, so the map reads as scenery. */
+.backdrop-shade {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 45%, rgba(5, 8, 19, .5), transparent),
+    radial-gradient(ellipse 90% 80% at 50% 40%, transparent 40%, rgba(5, 8, 19, .9));
+}
+.lobby-backdrop.still .backdrop-spin { animation: none; transform: translate(-50%, -50%) rotateX(54deg) rotateZ(-18deg); }
+.lobby-backdrop.still .backdrop-tile, .lobby-backdrop.still .backdrop-glow { animation: none; }
+
 .lobby-hero { text-align: center; }
 .lobby-dice { display: flex; justify-content: center; gap: 18px; margin-bottom: 18px; }
 .lobby h1 {

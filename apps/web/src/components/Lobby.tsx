@@ -13,6 +13,7 @@ import {
   type PlayerConfig,
 } from '@quantum/engine';
 import { Die3D } from './Die3D';
+import { LobbyBackdrop } from './LobbyBackdrop';
 import { Segmented } from './Segmented';
 import { fullscreenOnPhone, useFullscreenOnFirstTap } from './FullscreenButton';
 import { forgetFinishedGames, forgetGame, onlineGames } from '../online/games';
@@ -439,6 +440,7 @@ export function Lobby({
 
   return (
     <div className="lobby">
+      <LobbyBackdrop map={map} />
       <div className="lobby-hero">
         <div className="lobby-dice">
           {[1, 3, 6].map((v, i) => (
