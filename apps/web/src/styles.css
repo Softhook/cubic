@@ -1238,6 +1238,22 @@ input { font: inherit; }
   color: transparent;
   filter: drop-shadow(0 0 30px rgba(122,162,255,.35));
 }
+/* The opening (Lobby.tsx useIntro): the title fades in alone in the middle of the screen, over the backdrop, then
+   rises to its place while the rest of the lobby fades in under it. */
+.lobby.intro-title, .lobby.intro-rise { overflow: hidden; }
+.lobby.intro-title h1 {
+  transform: translateY(var(--intro-y)) scale(1.25);
+  animation: lobby-title-in 1.4s cubic-bezier(.2,.7,.2,1) both;
+}
+.lobby.intro-rise h1 { transition: transform calc(var(--intro-rise) * .75) cubic-bezier(.65,0,.25,1); }
+.lobby.intro-title > :not(.lobby-hero, .lobby-backdrop) { opacity: 0; transform: translateY(16px); }
+.lobby.intro-rise > :not(.lobby-hero, .lobby-backdrop) {
+  transition: opacity calc(var(--intro-rise) * .5) ease-out calc(var(--intro-rise) * .45),
+    transform calc(var(--intro-rise) * .5) ease-out calc(var(--intro-rise) * .45);
+}
+@keyframes lobby-title-in {
+  from { opacity: 0; letter-spacing: .6em; filter: blur(8px) drop-shadow(0 0 30px rgba(122,162,255,0)); }
+}
 /* On iPhone and iPad, how to play full screen (Lobby.tsx). */
 .home-hint {
   width: min(520px, 100%);

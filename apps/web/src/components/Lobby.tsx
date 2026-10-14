@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
 import {
   defaultMap,
@@ -22,6 +22,7 @@ import { remember, stored } from '../storage';
 import { APPLE_TOUCH, FROM_HOME_SCREEN } from '../platform';
 import { BUILD, checkForUpdate, useUpdateStatus, type UpdateStatus } from '../pwa';
 import { PLAYER_COLORS } from '../theme';
+import { REDUCED_MOTION } from '../game/useMediaQuery';
 
 const PLAYER_COUNTS = [...new Set(MAPS.map((m) => m.players))];
 
@@ -30,6 +31,43 @@ const AI_LEVEL_KEY = 'quantum.aiLevel';
 const MODE_KEY = 'quantum.mode';
 const mapKey = (players: number) => `quantum.map.${players}`;
 const HOME_HINT_KEY = 'quantum.homeScreenHint';
+
+/** The opening, once per page load: how long the title holds in the middle, and how long it takes to rise. */
+const INTRO_HOLD_MS = 2600;
+const INTRO_RISE_MS = 1300;
+let introPlayed = false;
+
+/**
+ * The lobby's opening: the title alone over the backdrop, in the middle of the screen, then rising to its place
+ * as the rest fades in. Only on the first visit of a page load (not back from a game), never under reduced
+ * motion; a tap or key skips it. Returns the phase (null once done) and the offset that centres the title.
+ */
+function useIntro(title: RefObject<HTMLHeadingElement | null>) {
+  const [phase, setPhase] = useState<'title' | 'rise' | null>(() =>
+    introPlayed || matchMedia(REDUCED_MOTION).matches ? null : 'title',
+  );
+  const [offset, setOffset] = useState(0);
+  useLayoutEffect(() => {
+    if (phase !== 'title' || !title.current) return;
+    const r = title.current.getBoundingClientRect();
+    setOffset(innerHeight / 2 - (r.top + r.height / 2));
+  }, [phase, title]);
+  useEffect(() => {
+    if (!phase) return;
+    introPlayed = true;
+    const next = phase === 'title' ? 'rise' : null;
+    const t = setTimeout(() => setPhase(next), phase === 'title' ? INTRO_HOLD_MS : INTRO_RISE_MS);
+    const skip = () => setPhase(next);
+    addEventListener('pointerdown', skip);
+    addEventListener('keydown', skip);
+    return () => {
+      clearTimeout(t);
+      removeEventListener('pointerdown', skip);
+      removeEventListener('keydown', skip);
+    };
+  }, [phase]);
+  return { phase, offset };
+}
 
 export interface LobbyResult {
   players: PlayerConfig[];
@@ -381,6 +419,8 @@ export function Lobby({
   onResume: (saved: GameState) => void;
 }) {
   useFullscreenOnFirstTap();
+  const title = useRef<HTMLHeadingElement>(null);
+  const intro = useIntro(title);
   // Read on each visit: a game played since keeps saving itself.
   const [saved, setSaved] = useState(loadSavedGame);
   const discard = () => {
@@ -438,10 +478,13 @@ export function Lobby({
   };
 
   return (
-    <div className="lobby">
+    <div
+      className={`lobby${intro.phase ? ` intro-${intro.phase}` : ''}`}
+      style={{ '--intro-y': `${intro.offset}px`, '--intro-rise': `${INTRO_RISE_MS}ms` } as CSSProperties}
+    >
       <LobbyBackdrop map={map} />
       <div className="lobby-hero">
-        <h1>Cubic</h1>
+        <h1 ref={title}>Cubic</h1>
       </div>
       <HomeScreenHint />
 
