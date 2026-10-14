@@ -38,6 +38,34 @@ export function Modal({
   );
 }
 
+/** A yes-or-no question before something that can't be undone; Escape, the backdrop or × say no. */
+export function Confirm({
+  title,
+  message,
+  yes,
+  onYes,
+  onNo,
+}: {
+  title: string;
+  message: string;
+  yes: string;
+  onYes: () => void;
+  onNo: () => void;
+}) {
+  return (
+    <Dialog title={title} subtitle={message} onClose={onNo}>
+      <div className="modal-actions">
+        <button className="btn" onClick={onNo}>
+          Cancel
+        </button>
+        <button className="btn btn-primary" onClick={onYes}>
+          {yes}
+        </button>
+      </div>
+    </Dialog>
+  );
+}
+
 /**
  * A dismissable modal: closes on Escape, a backdrop click or the × button, and returns focus to
  * whatever opened it. Portalled to <body> so ancestors with backdrop-filter (e.g. .panel) can't

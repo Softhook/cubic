@@ -28,6 +28,7 @@
     "online:sim": "npm run data && vite-node scripts/online-sim.ts --",
     "mobile:play": "npm run data && vite-node scripts/mobile-play.ts --",
     "pwa:check": "npm run data && vite-node scripts/pwa-check.ts",
+    "fullscreen:check": "npm run data && vite-node scripts/fullscreen-check.ts --",
     "perf:probe": "npm run data && vite-node scripts/perf-probe.ts --",
     "perf:zoom": "npm run data && vite-node scripts/zoom-probe.ts --",
     "lint": "eslint .",

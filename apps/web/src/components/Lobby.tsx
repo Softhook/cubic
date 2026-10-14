@@ -14,7 +14,9 @@ import {
 } from '@quantum/engine';
 import { LobbyBackdrop } from './LobbyBackdrop';
 import { Segmented } from './Segmented';
-import { fullscreenOnPhone, useFullscreenOnFirstTap } from './FullscreenButton';
+import { Confirm } from './Dialog';
+import { FullscreenButton } from './FullscreenButton';
+import { fullscreenWaiting, resumeFullscreen } from '../fullscreen';
 import { forgetFinishedGames, forgetGame, onlineGames } from '../online/games';
 import { defaultSeat } from '../game/seats';
 import { clearSavedGame, loadSavedGame } from '../game/savedGame';
@@ -22,7 +24,7 @@ import { remember, stored } from '../storage';
 import { APPLE_TOUCH, FROM_HOME_SCREEN } from '../platform';
 import { BUILD, checkForUpdate, useUpdateStatus, type UpdateStatus } from '../pwa';
 import { PLAYER_COLORS } from '../theme';
-import { REDUCED_MOTION } from '../game/useMediaQuery';
+import { COARSE, REDUCED_MOTION } from '../game/useMediaQuery';
 
 const PLAYER_COUNTS = [...new Set(MAPS.map((m) => m.players))];
 
@@ -32,7 +34,10 @@ const MODE_KEY = 'quantum.mode';
 const mapKey = (players: number) => `quantum.map.${players}`;
 const HOME_HINT_KEY = 'quantum.homeScreenHint';
 
-/** The opening, once per page load: how long the title holds in the middle, and how long it takes to rise. */
+/**
+ * The opening, once per page load: how long the title holds in the middle (unless it waits for a click), and how long
+ * it takes to rise.
+ */
 const INTRO_HOLD_MS = 2600;
 const INTRO_RISE_MS = 1300;
 let introPlayed = false;
@@ -40,31 +45,61 @@ let introPlayed = false;
 /**
  * The lobby's opening: the title alone over the backdrop, in the middle of the screen, then rising to its place
  * as the rest fades in. Only on the first visit of a page load (not back from a game), never under reduced
- * motion; a tap or key skips it. Returns the phase (null once done) and the offset that centres the title.
+ * motion; a click (or tap) or key skips it. Where that click goes full screen (a phone, the app installed on a
+ * computer), the title waits for it, asking after a while, and holds, centred in the new size, until the window
+ * has settled: the lobby then comes in full screen. Returns the phase (null once done), whether it waits for a
+ * click and has had it, and the offset that centres the title.
  */
 function useIntro(title: RefObject<HTMLHeadingElement | null>) {
   const [phase, setPhase] = useState<'title' | 'rise' | null>(() => (introPlayed || matchMedia(REDUCED_MOTION).matches ? null : 'title'));
+  const [waits] = useState(fullscreenWaiting);
+  const [started, setStarted] = useState(false);
   const [offset, setOffset] = useState(0);
+  const shown = useRef(0);
+  useLayoutEffect(() => {
+    shown.current = offset;
+  }, [offset]);
   useLayoutEffect(() => {
     if (phase !== 'title' || !title.current) return;
-    const r = title.current.getBoundingClientRect();
-    setOffset(innerHeight / 2 - (r.top + r.height / 2));
+    const h1 = title.current;
+    // Measured with the offset on screen (the scale is about its centre), so a new window size re-centres it.
+    const centre = () => {
+      const r = h1.getBoundingClientRect();
+      setOffset(shown.current + innerHeight / 2 - (r.top + r.height / 2));
+    };
+    centre();
+    addEventListener('resize', centre);
+    return () => removeEventListener('resize', centre);
   }, [phase, title]);
   useEffect(() => {
     if (!phase) return;
     introPlayed = true;
     const next = phase === 'title' ? 'rise' : null;
-    const t = setTimeout(() => setPhase(next), phase === 'title' ? INTRO_HOLD_MS : INTRO_RISE_MS);
-    const skip = () => setPhase(next);
-    addEventListener('pointerdown', skip);
-    addEventListener('keydown', skip);
-    return () => {
-      clearTimeout(t);
-      removeEventListener('pointerdown', skip);
+    let live = true;
+    const t = phase === 'title' && waits ? undefined : setTimeout(() => setPhase(next), phase === 'title' ? INTRO_HOLD_MS : INTRO_RISE_MS);
+    const unlisten = () => {
+      removeEventListener('click', skip);
       removeEventListener('keydown', skip);
     };
-  }, [phase]);
-  return { phase, offset };
+    const skip = (e: Event) => {
+      setStarted(true);
+      // Where this goes full screen, the title waits for the window to settle.
+      const settling = phase === 'title' ? resumeFullscreen(e) : null;
+      if (!settling) return setPhase(next);
+      clearTimeout(t);
+      unlisten();
+      void settling.then(() => live && setPhase('rise'));
+    };
+    // On a click rather than a press: a phone only allows full screen once the finger lifts.
+    addEventListener('click', skip);
+    addEventListener('keydown', skip);
+    return () => {
+      live = false;
+      clearTimeout(t);
+      unlisten();
+    };
+  }, [phase, waits]);
+  return { phase, waits, started, offset };
 }
 
 export interface LobbyResult {
@@ -195,7 +230,7 @@ function GameRow({
   return (
     <li className={yourMove ? 'my-turn' : ''}>
       {href ? (
-        <a className="game-row-open" href={href} onClick={fullscreenOnPhone}>
+        <a className="game-row-open" href={href}>
           {body}
         </a>
       ) : (
@@ -222,6 +257,13 @@ function YourGames({ saved, onResume, onDiscard }: { saved: GameState | null; on
   const [watched] = useState(() => onlineGames().filter((g) => !g.over));
   // The games still being checked on the relays, each until one has answered.
   const [checking, setChecking] = useState(() => new Set(watched.map((g) => g.secret)));
+  /** The game being asked about before it's removed: the one on this device, or an online one. */
+  const [removing, setRemoving] = useState<{ saved: true } | { secret: string } | null>(null);
+  const forget = (secret: string) => {
+    setRemoving(null);
+    forgetGame(secret);
+    setGames(onlineGames());
+  };
   useEffect(() => {
     if (!watched.length) return;
     let stop: (() => void) | undefined;
@@ -260,9 +302,7 @@ function YourGames({ saved, onResume, onDiscard }: { saved: GameState | null; on
             online={false}
             onOpen={onResume}
             removeLabel="Discard this game"
-            onRemove={() => {
-              if (confirm('Discard the game on this device?')) onDiscard();
-            }}
+            onRemove={() => setRemoving({ saved: true })}
           />
         )}
         {online.map((g) => (
@@ -275,15 +315,30 @@ function YourGames({ saved, onResume, onDiscard }: { saved: GameState | null; on
             checking={checking.has(g.secret)}
             href={`#online/${g.secret}`}
             removeLabel="Remove from this browser"
-            onRemove={() => {
-              if (!g.over && !confirm('Remove this game from this browser? The others can go on playing; you can rejoin with the link.'))
-                return;
-              forgetGame(g.secret);
-              setGames(onlineGames());
-            }}
+            onRemove={() => (g.over ? forget(g.secret) : setRemoving({ secret: g.secret }))}
           />
         ))}
       </ul>
+      {removing && 'saved' in removing ? (
+        <Confirm
+          title="Discard this game?"
+          message="The game on this device is gone for good."
+          yes="Discard"
+          onYes={() => {
+            setRemoving(null);
+            onDiscard();
+          }}
+          onNo={() => setRemoving(null)}
+        />
+      ) : removing ? (
+        <Confirm
+          title="Remove this game?"
+          message="It goes from this browser. The others can go on playing; you can rejoin with the link."
+          yes="Remove"
+          onYes={() => forget(removing.secret)}
+          onNo={() => setRemoving(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -416,7 +471,6 @@ export function Lobby({
   onRules: () => void;
   onResume: (saved: GameState) => void;
 }) {
-  useFullscreenOnFirstTap();
   const title = useRef<HTMLHeadingElement>(null);
   const intro = useIntro(title);
   // Read on each visit: a game played since keeps saving itself.
@@ -462,8 +516,10 @@ export function Lobby({
   const friendSeats = playing.filter((s, i) => isFriendSeat(s, i, online)).length;
   const canStart = !online || friendSeats > 0;
 
+  // Starting a new game here discards the one in progress on this device: asked first.
+  const [confirmingNew, setConfirmingNew] = useState(false);
   const start = () => {
-    if (!online && saved && !confirm('Starting a new game discards the game in progress. Continue?')) return;
+    setConfirmingNew(false);
     onStart({
       players: playing.map((s, i) => ({
         ...s,
@@ -483,6 +539,12 @@ export function Lobby({
       <LobbyBackdrop map={map} />
       <div className="lobby-hero">
         <h1 ref={title}>Cubic</h1>
+        {intro.phase && intro.waits && (
+          <p className={`intro-prompt${intro.started ? ' gone' : ''}`}>{matchMedia(COARSE).matches ? 'Tap' : 'Click'} to start</p>
+        )}
+      </div>
+      <div className="lobby-corner">
+        <FullscreenButton />
       </div>
       <HomeScreenHint />
 
@@ -541,11 +603,24 @@ export function Lobby({
 
         {!canStart && <p className="field-hint">Make at least one seat a Friend to play online.</p>}
         <div className="modal-actions">
-          <button className="btn btn-primary btn-lg" disabled={!canStart} onClick={start}>
+          <button
+            className="btn btn-primary btn-lg"
+            disabled={!canStart}
+            onClick={() => (!online && saved ? setConfirmingNew(true) : start())}
+          >
             {online ? 'Create online game' : 'Launch fleet'}
           </button>
         </div>
       </div>
+      {confirmingNew && (
+        <Confirm
+          title="Start a new game?"
+          message="The game in progress on this device is discarded."
+          yes="Start new game"
+          onYes={start}
+          onNo={() => setConfirmingNew(false)}
+        />
+      )}
       <nav className="lobby-links">
         <button onClick={onRules}>How to play</button>
         <a href="#rulebook">Manual (PDF)</a>

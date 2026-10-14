@@ -66,6 +66,7 @@ More tools, all headless:
 | `npm run test:deep` | The legal-move cross-check over many more games (minutes) |
 | `npm run mobile:shots` / `mobile:play` | Phone and tablet layouts in emulated Chrome; whole games played by tapping |
 | `npm run pwa:check` | Install, offline and update behaviour of the home-screen app |
+| `npm run fullscreen:check` | Full screen on a phone, the app installed on a computer and a browser tab: the opening's click to start, leaving and coming back |
 | `npm run perf:probe` / `perf:zoom` | Timings on a throttled CPU (roughly a mid-range phone) |
 | `npm run relays:check` | Which public Nostr relays carry online games |
 | `npm run online:sim` | Five browsers join and play a 5-player online game over the real relays (by hand only: it posts a few hundred events) |

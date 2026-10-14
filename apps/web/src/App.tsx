@@ -7,7 +7,6 @@ import { devStartGame } from './game/devStart';
 import { Lobby, type LobbyResult } from './components/Lobby';
 import { Game } from './components/GameScreen';
 import { onlineSecret } from './online/link';
-import { fullscreenOnPhone } from './components/FullscreenButton';
 
 // Loaded when first wanted, so the lobby and a game on this device start without them: the manual, and
 // online play (with its cryptography).
@@ -34,7 +33,6 @@ export function App() {
   }, []);
 
   const start = (r: LobbyResult) => {
-    fullscreenOnPhone();
     if (r.online) {
       // The online code loads first: a second tap meanwhile would create a second game.
       if (creatingOnline) return;
@@ -65,14 +63,7 @@ export function App() {
       ) : game ? (
         <LocalGame key={game.seed} initial={game} onQuit={quit} onLobby={toLobby} onRules={() => setRules(true)} />
       ) : (
-        <Lobby
-          onStart={start}
-          onRules={() => setRules(true)}
-          onResume={(saved) => {
-            fullscreenOnPhone();
-            setGame(saved);
-          }}
-        />
+        <Lobby onStart={start} onRules={() => setRules(true)} onResume={setGame} />
       )}
       {/* Its own boundary: while the manual loads, the screen under it stays. */}
       {rules && (

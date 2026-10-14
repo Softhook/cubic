@@ -1,8 +1,8 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { unclaimedSeats, type AskMode, type Replay } from '@quantum/online';
-import { Modal } from '../components/Dialog';
+import { Dialog, Modal } from '../components/Dialog';
 import { Game } from '../components/GameScreen';
-import { restoreFullscreen } from '../components/FullscreenButton';
+import { resumeFullscreen } from '../fullscreen';
 import { COARSE } from '../game/useMediaQuery';
 import { inviteLink } from './create';
 import { useOnlineGame, type OnlineGame } from './useOnlineGame';
@@ -143,6 +143,8 @@ const ASK_LABELS: Record<AskMode, string> = {
 /** Online extras at the top of the sidebar: connection, invite link, and which battles to be asked about. */
 function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJoin?: () => void }) {
   const [copied, setCopied] = useState(false);
+  /** The link shown to copy by hand, where it couldn't be shared or copied. */
+  const [shown, setShown] = useState<string | null>(null);
   const r = g.replay!;
   const open = unclaimedSeats(r).length;
   const ask = g.mySeats.length ? r.seats[g.mySeats[0]].ask : null;
@@ -155,9 +157,9 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
       window.setTimeout(() => setCopied(false), 2000);
     } catch (e) {
       // Closing the share sheet without sharing isn't a failure.
-      if (!(e instanceof DOMException && e.name === 'AbortError')) prompt('Send this link to your friends:', url);
+      if (!(e instanceof DOMException && e.name === 'AbortError')) setShown(url);
     }
-    restoreFullscreen();
+    void resumeFullscreen();
   };
   const ok = g.relays.connected > 0;
   const unsent = g.relays.unsent;
@@ -192,6 +194,18 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
         <button className="btn btn-primary" onClick={onJoin}>
           Join
         </button>
+      )}
+      {shown && (
+        <Dialog title="Invite friends" subtitle="Send this link to your friends:" onClose={() => setShown(null)}>
+          <input
+            className="invite-link"
+            readOnly
+            value={shown}
+            autoFocus
+            onFocus={(e) => e.target.select()}
+            aria-label="Link to this game"
+          />
+        </Dialog>
       )}
       {r.crash && <Stopped replay={r} />}
       {r.desync && <OutOfSync replay={r} />}

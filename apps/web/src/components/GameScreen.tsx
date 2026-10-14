@@ -16,7 +16,7 @@ import { TurnPanel } from './TurnPanel';
 import { CombatOverlay } from './CombatOverlay';
 import { ConquerChoice, DecisionOverlay, GameOver } from './Overlays';
 import { ErrorToast, PlayedCard, Toasts } from './Toasts';
-import { FullscreenButton, useFullscreenOnFirstTap } from './FullscreenButton';
+import { FullscreenButton } from './FullscreenButton';
 
 /**
  * The game screen, for a game on this device or online. `side` goes at the top of the sidebar,
@@ -67,7 +67,6 @@ export function Game({
   const { error, toasts } = view;
   const ctl = useController(game, dispatch, review ? NOBODY : view.mine);
   const [hideGameOver, setHideGameOver] = useState(false);
-  useFullscreenOnFirstTap();
   const head = game.pending[0];
   const sheet = useMediaQuery(SHEET);
   const cards = rulesOf(game).cards;

@@ -106,7 +106,7 @@ Already done, mostly as side effects of other work:
 | Market is collapsible, remembers the choice, opens itself during a card pick | [Market.tsx](../apps/web/src/components/Market.tsx) |
 | Cards (skills, tech, decks) open a large `CardViewer` on tap, so card text works on touch | [PlayerList.tsx](../apps/web/src/components/PlayerList.tsx), [CardViewer.tsx](../apps/web/src/components/CardViewer.tsx) |
 | Ships and highlights take the whole cell as their tap area (option G for ships) | [Board.tsx](../apps/web/src/components/Board.tsx) |
-| Fullscreen button (iPad, Android; the API doesn't exist on iPhone Safari, so the button hides there) | [FullscreenButton.tsx](../apps/web/src/components/FullscreenButton.tsx) |
+| Full screen on Android and on the app installed on a computer: from the opening's click to start, back after the phone drops it; a button to leave or return. Not on iPhone (no API) or iPad (Safari's misbehaves) | [fullscreen.ts](../apps/web/src/fullscreen.ts), [FullscreenButton.tsx](../apps/web/src/components/FullscreenButton.tsx) |
 | Lobby and dialogs (fleet roll etc.) fit a 320px phone, *as long as the board doesn't widen the page* (§2, point 1) | |
 | Invite uses the native share sheet on touch devices | [OnlineScreen.tsx](../apps/web/src/online/OnlineScreen.tsx) |
 

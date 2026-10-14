@@ -938,6 +938,11 @@ input { font: inherit; }
 .modal h2 { margin: 0; font-family: var(--display); font-size: 22px; letter-spacing: .04em; }
 .modal-sub { color: var(--muted); margin: 6px 0 18px; font-size: 14px; line-height: 1.5; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+/* The invite link to copy by hand (OnlineScreen.tsx), where it couldn't be shared or copied. */
+.invite-link {
+  width: 100%; margin-top: 12px; background: rgba(255,255,255,.05); color: var(--text); border: 1px solid var(--line-2);
+  border-radius: 8px; padding: 8px 10px; font-size: 15px;
+}
 .card-choice { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; }
 .card-choice.wrap { gap: 10px; }
 .card-art { position: relative; width: 180px; max-width: 100%; aspect-ratio: 63.5 / 88.9; flex: none; }
@@ -1223,6 +1228,8 @@ input { font: inherit; }
 .lobby-backdrop.still .backdrop-map, .lobby-backdrop.still .backdrop-cube, .lobby-backdrop.still .backdrop-cube-spin { animation: none; }
 
 .lobby-hero { text-align: center; }
+/* The full screen button, top right; it comes in with the rest after the opening. */
+.lobby-corner { position: absolute; top: calc(12px + var(--safe-top)); right: 12px; }
 .lobby h1 {
   margin: 0;
   font-family: var(--display);
@@ -1256,6 +1263,18 @@ input { font: inherit; }
 @keyframes lobby-title-in {
   from { opacity: 0; letter-spacing: .6em; filter: blur(8px) drop-shadow(0 0 30px rgba(122,162,255,0)); }
 }
+/* Where the opening waits for a click (to go full screen from it): asked under the title only after a while, so
+   the title has the screen to itself first; gone as soon as the click comes. */
+.intro-prompt {
+  position: fixed; left: 0; right: 0; top: calc(50% + 64px); margin: 0;
+  font-size: 13px; font-weight: 600; letter-spacing: .32em; text-transform: uppercase; color: var(--muted);
+  text-shadow: 0 0 12px rgba(5,8,19,.9), 0 1px 2px rgba(5,8,19,.9);
+  pointer-events: none;
+  animation: intro-prompt-in 1.2s ease-out 4s both, intro-prompt-pulse 2.4s ease-in-out 5.2s infinite;
+}
+.intro-prompt.gone { opacity: 0; animation: none; transition: opacity .2s; }
+@keyframes intro-prompt-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes intro-prompt-pulse { 50% { opacity: .45; } }
 /* On iPhone and iPad, how to play full screen (Lobby.tsx). */
 .home-hint {
   width: min(520px, 100%);
