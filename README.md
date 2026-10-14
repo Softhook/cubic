@@ -97,6 +97,7 @@ More tools, all headless:
 | [GRAPHICS.md](docs/GRAPHICS.md) | The art package, Art Lab and print pipeline |
 | [PROTOTYPING.md](docs/PROTOTYPING.md) | Ideas for a fourth rule set of our own |
 | [ROADMAP.md](docs/ROADMAP.md) | Milestones, what's done and the backlog |
+| [VISUAL-IDEAS.md](docs/VISUAL-IDEAS.md) | Ideas for making the game look better and appeal to new players: card art in play, battles, game over, lobby |
 | [card-benchmark.md](docs/card-benchmark.md) | Card balance from AI self-play: each Community skill's value against no skill, and card pick and win rates |
 
 ## Credits
