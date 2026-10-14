@@ -668,12 +668,14 @@ input { font: inherit; }
 @media (hover: hover) { .log-toggle:hover { color: var(--text); } }
 .log ol { list-style: none; margin: 0; padding: 0; overflow-y: auto; max-height: 220px; font-size: 12px; line-height: 1.45; }
 .log li { padding: 3px 0 3px 10px; border-left: 2px solid var(--pc); margin-bottom: 3px; color: #c3cbea; animation: fade-up .25s ease-out; }
-/* Routine actions (moves, reconfigures…) stay quiet between the events of the game. */
-.log li.minor { font-size: 11px; color: var(--muted); border-left-color: color-mix(in srgb, var(--pc) 45%, transparent); padding-block: 1px; margin-bottom: 1px; }
+/* Routine actions (moves, reconfigures…) stay quiet between the events of the game, indented under them. */
+.log li.minor { margin-left: 12px; font-size: 11px; color: var(--muted); border-left-color: color-mix(in srgb, var(--pc) 45%, transparent); padding-block: 1px; margin-bottom: 1px; }
 /* An entry is a button that shows the map as it was then (GameScreen's review). */
 .log li button { display: block; width: 100%; border: 0; padding: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .log li.picked { background: color-mix(in srgb, var(--pc) 16%, transparent); color: var(--text); }
 @media (hover: hover) { .log li button:hover { color: var(--text); } }
+/* Beside the map the open log takes the rest of the sidebar, rather than stopping at 220px above an empty one. */
+@media (min-width: 981px) { .log ol { flex: 1; min-height: 0; max-height: none; } }
 /* Touch: each entry is a tap (to look back at it), so it gets a finger's height. Padding rather than a hit area
    reaching past the entry, which would take taps meant for its neighbours. */
 @media (pointer: coarse) { .log li button { padding-block: 8px; } .log li.minor button { padding-block: 6px; } }
