@@ -22,7 +22,7 @@ import { battleStage, inBattle, nextStep, resumeAt, seenPost } from './playback'
 import { onlineGames } from './games';
 import { identity, keepStorage, loadEvents, rememberGame, saveEvents } from './storage';
 import { RelayLink, type RelayStatus } from './relays';
-import { summary, yourMoveSince } from './summary';
+import { ownMove, summary, yourMoveSince } from './summary';
 import { alertYourMove, attending } from './alerts';
 
 /**
@@ -278,7 +278,7 @@ function usePlayback(replay: Replay | null, me: string, resume: string | null) {
         return setShown(replay.steps[i]);
       }
     }
-    const own = (p: Post) => p.author === me && 'seat' in p.body && !replay.seats[p.body.seat]?.ai;
+    const own = (p: Post) => ownMove(replay, me, p);
     const battle = { mine: ownBattle, dismissed: !!shown && dismissed === battleStage(shown.state) };
     const next = nextStep(replay.steps, shown, own, performance.now() - shownAt.current, battle);
     if (!next) return;

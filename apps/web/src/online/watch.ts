@@ -36,6 +36,7 @@ export function watchGames(games: OnlineGameEntry[], onChange: () => void, onChe
     };
     for (const e of loadEvents(keys.tag)) receive(e, true);
     let timer: number | undefined;
+    let checked = false;
     const refresh = () => {
       timer = undefined;
       const r = timeline.replay();
@@ -48,7 +49,6 @@ export function watchGames(games: OnlineGameEntry[], onChange: () => void, onChe
       onChange();
       if (turn) alertYourMove({ secret, turn, where: 'lobby', battle: !!r.combat });
     };
-    let checked = false;
     const check = () => {
       if (checked) return;
       window.clearTimeout(timeout);

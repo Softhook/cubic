@@ -668,7 +668,7 @@ input { font: inherit; }
 @media (hover: hover) { .log-toggle:hover { color: var(--text); } }
 .log ol { list-style: none; margin: 0; padding: 0; overflow-y: auto; max-height: 220px; font-size: 12px; line-height: 1.45; }
 .log li { padding: 3px 0 3px 10px; border-left: 2px solid var(--pc); margin-bottom: 3px; color: #c3cbea; animation: fade-up .25s ease-out; }
-/* Routine actions (moves, reconfigures…) stay quiet between the events of the game, indented under them. */
+/* Everything but the start of a turn stays quiet, indented under it. */
 .log li.minor { margin-left: 12px; font-size: 11px; color: var(--muted); border-left-color: color-mix(in srgb, var(--pc) 45%, transparent); padding-block: 1px; margin-bottom: 1px; }
 /* An entry is a button that shows the map as it was then (GameScreen's review). */
 .log li button { display: block; width: 100%; border: 0; padding: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
@@ -709,7 +709,7 @@ input { font: inherit; }
   .review-bar { flex-wrap: wrap; gap: 6px; }
   .review-text { order: -1; flex-basis: 100%; padding: 0 4px; }
   .review-bar > .btn { min-height: 44px; }
-  .review-step { flex: 1 1 0 !important; gap: 4px; padding: 0 10px; font-size: 14px; }
+  .review-bar > .review-step { flex: 1 1 0; gap: 4px; padding: 0 10px; font-size: 14px; }
   .review-step span { display: inline; }
   .app.reviewing .toasts { top: 120px; }
 }

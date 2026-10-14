@@ -180,12 +180,13 @@ function GameRow({
 function YourGames({ saved, onResume, onDiscard }: { saved: GameState | null; onResume: () => void; onDiscard: () => void }) {
   // Finished games are done with: they leave the list once the lobby shows again.
   const [games, setGames] = useState(forgetFinishedGames);
-  // The games still being checked on the relays (those that aren't over), each until one has answered.
-  const [checking, setChecking] = useState(() => new Set(onlineGames().flatMap((g) => (g.over ? [] : [g.secret]))));
   // The list holds how each game stood when this browser last had it open: follow the unfinished
   // ones on the relays, so a move made since then shows (the online code loads for it, if there are any).
+  // Those listed when the lobby opens: games added later are opened from here anyway.
+  const [watched] = useState(() => onlineGames().filter((g) => !g.over));
+  // The games still being checked on the relays, each until one has answered.
+  const [checking, setChecking] = useState(() => new Set(watched.map((g) => g.secret)));
   useEffect(() => {
-    const watched = onlineGames().filter((g) => !g.over);
     if (!watched.length) return;
     let stop: (() => void) | undefined;
     let gone = false;
@@ -204,8 +205,7 @@ function YourGames({ saved, onResume, onDiscard }: { saved: GameState | null; on
       gone = true;
       stop?.();
     };
-    // Once, for the games listed when the lobby opens: those added later are opened from here anyway.
-  }, []);
+  }, [watched]);
   if (!saved && !games.length) return null;
   const online = [...games].sort((a, b) => Number(!!b.myTurn) - Number(!!a.myTurn));
   return (

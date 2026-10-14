@@ -52,10 +52,9 @@ export function log(s: GameState, text: string, player?: PlayerId, event?: LogEv
   if (s.log.length > LOG_LIMIT) s.log.splice(0, s.log.length - LOG_LIMIT);
 }
 
-/** Logs a routine action (a move, a reconfigure…): shown quieter than the events of the game. */
+/** Logs a routine action (a move, a reconfigure…): no event, only the planets it names. */
 export function note(s: GameState, text: string, player: PlayerId, planets?: number[]) {
   log(s, text, player, undefined, planets);
-  s.log[s.log.length - 1].minor = true;
 }
 
 /**

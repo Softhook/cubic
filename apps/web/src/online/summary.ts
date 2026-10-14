@@ -1,5 +1,8 @@
 import { actor, MAPS, RULESETS, type PlayerId } from '@quantum/engine';
-import { unclaimedSeats, type Replay } from '@quantum/online';
+import { unclaimedSeats, type Post, type Replay } from '@quantum/online';
+
+/** Whether `p` is a move by the player `me` for one of their own seats (not one of the AI seats they play). */
+export const ownMove = (r: Replay, me: string, p: Post) => p.author === me && 'seat' in p.body && !r.seats[p.body.seat]?.ai;
 
 /** How the game stands, for the lobby's list. */
 export function summary(r: Replay, mySeats: PlayerId[]) {
@@ -33,7 +36,7 @@ export function summary(r: Replay, mySeats: PlayerId[]) {
 export function yourMoveSince(r: Replay, mySeats: PlayerId[], me: string, was: boolean | null) {
   const { myTurn } = summary(r, mySeats);
   const last = r.steps.at(-1)!.post;
-  const own = !!last && last.author === me && 'seat' in last.body && !r.seats[last.body.seat]?.ai;
+  const own = !!last && ownMove(r, me, last);
   const turn = myTurn && was === false && !own ? `${r.tip}|${r.combat?.stage ?? ''}` : null;
   return { myTurn, turn };
 }

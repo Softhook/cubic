@@ -15,7 +15,8 @@ export function shouldAutoScroll(scrollTop: number, clientHeight: number, scroll
 }
 
 /**
- * The game's log: each turn's start a heading, everything else (battles too) small and indented under it. Collapsed (the default, remembered) it is just its title; the whole row toggles it.
+ * The game's log: each turn's start a heading, everything else (battles too) small and indented under it.
+ * Collapsed (the default, remembered, except on a big screen) it is just its title; the whole row toggles it.
  * An entry `review.can` show is a button: it shows the map as it was just after it (`review.pick`), and
  * the list keeps it, with the rest of its `move`, lit and in view. One it can't (from before the game was opened here) says why on hover.
  */
