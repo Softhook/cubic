@@ -112,18 +112,14 @@ async function info(url: string): Promise<{ text: string; bad: boolean }> {
   }
 }
 
-/** A game-like event: our kind, a random `d`, the test's tag and an opaque blob of a move's size. */
+/** A game-like event: our kind, the test's tag and an opaque blob of a move's size. */
 function testEvent(sk: Uint8Array, tag: string): NostrEvent {
   const blob = Buffer.from(crypto.getRandomValues(new Uint8Array(200))).toString('base64url');
-  const d = Buffer.from(crypto.getRandomValues(new Uint8Array(12))).toString('base64url');
   return finalizeEvent(
     {
       kind: KIND,
       created_at: Math.floor(Date.now() / 1000),
-      tags: [
-        ['d', d],
-        ['t', tag],
-      ],
+      tags: [['t', tag]],
       content: blob,
     },
     sk,

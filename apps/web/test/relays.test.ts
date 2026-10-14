@@ -16,7 +16,7 @@ import { RELAYS, RelayLink } from '../src/online/relays';
 import type { NostrEvent } from '@quantum/online';
 
 function event(id: string): NostrEvent {
-  return { id, pubkey: '', created_at: 1, kind: 30078, tags: [], content: '', sig: '' };
+  return { id, pubkey: '', created_at: 1, kind: 4747, tags: [], content: '', sig: '' };
 }
 
 async function flushPromises() {

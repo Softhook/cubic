@@ -14,8 +14,12 @@ import type { Body, Post } from './protocol';
  * must work too.
  */
 
-/** NIP-78 application data: a kind relays store and other Nostr apps ignore. */
-export const KIND = 30078;
+/**
+ * A regular kind (1000–9999: relays keep every event), unassigned in the NIPs, so other Nostr apps
+ * ignore it. Not a replaceable kind (30000+), where events with the same author and `d` replace
+ * each other.
+ */
+export const KIND = 4747;
 
 export type { NostrEvent };
 
@@ -80,11 +84,7 @@ export function encodePost(
     {
       kind: KIND,
       created_at: Math.floor(at / 1000),
-      // `d` makes every event its own (NIP-78 events with the same `d` replace each other).
-      tags: [
-        ['d', b64url(crypto.getRandomValues(new Uint8Array(12)))],
-        ['t', keys.tag],
-      ],
+      tags: [['t', keys.tag]],
       content: b64url(blob),
     },
     sk,
