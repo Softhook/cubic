@@ -336,14 +336,16 @@ const Cube = memo(function Cube({ value, color, turn, delay }: { value: number; 
 
 /**
  * Keeps an upright thing (a planet, an explosion's flash) facing the camera: its turn against the map's
- * (.backdrop-face) runs on the map's clock, whenever it was added.
+ * (.backdrop-face) runs on the map's clock, whenever it was added. Added in the same frame as the map, the map's
+ * turn hasn't started yet (no start time, and setting a null one would stop the face's turn for good), so it
+ * waits for the turn to start.
  */
 function faceCamera(el: HTMLElement | null) {
   const named = (target: Element | null | undefined, name: string) =>
     target?.getAnimations().find((a) => (a as CSSAnimation).animationName === name);
   const turn = named(el?.closest('.backdrop-plane'), 'backdrop-turn');
   const face = named(el, 'backdrop-face');
-  if (turn && face) face.startTime = turn.startTime;
+  if (turn && face) turn.ready.then(() => (face.startTime = turn.startTime), () => {});
 }
 
 /**
