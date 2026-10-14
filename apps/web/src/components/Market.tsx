@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import { EXPANSION, card, cardKind, rulesOf, type DeckKind, type GameState } from '@quantum/engine';
 import type { Legal } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
-import { PHONE, useMediaQuery } from '../game/useMediaQuery';
+import { FOLD_MARKET, useMediaQuery } from '../game/useMediaQuery';
 import { useShortcut } from '../game/useShortcut';
 import { remember, stored } from '../storage';
 import { CardView, categoryStyle } from './Card';
@@ -300,8 +300,7 @@ function useGrowOnly(el: RefObject<HTMLElement>, hold: boolean) {
  * C toggles it.
  */
 function useCollapse(picking: boolean) {
-  // Collapsed by default on phones, where the open market is taller than the space under the board.
-  const [collapsed, setCollapsed] = useState(() => (stored(STORAGE_KEY) ?? (matchMedia(PHONE).matches ? '1' : '0')) === '1');
+  const [collapsed, setCollapsed] = useState(() => (stored(STORAGE_KEY) ?? (matchMedia(FOLD_MARKET).matches ? '1' : '0')) === '1');
   // Follows `picking` during render (not in an effect), so the market never flashes collapsed first.
   const [autoOpen, setAutoOpen] = useState(picking);
   const [wasPicking, setWasPicking] = useState(picking);

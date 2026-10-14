@@ -4,6 +4,9 @@
   --safe-top: env(safe-area-inset-top);
   /* The screen's height below the topbar, clear of the notch and the home indicator (dvh below). */
   --below-topbar: calc(100vh - var(--topbar-h) - var(--safe-top) - env(safe-area-inset-bottom));
+  /* A strip above the map for the game's news (.toasts), so it doesn't cover the map's top row. None on short
+     screens (phones on their side), where the map needs every pixel of height and the news goes over it. */
+  --toast-lane: 40px;
   --bg: #050813;
   --bg-2: #0a1022;
   --panel: rgba(14, 20, 40, 0.78);
@@ -194,6 +197,9 @@ input { font: inherit; }
 /* Tablets on their side (an iPad's 1180px): a narrower sidebar, so the market's seven cards fit on one line
    at a readable width beside it. */
 @media (max-width: 1280px) { .layout { grid-template-columns: minmax(0, 1fr) 300px; } }
+/* Big screens (a desktop monitor): a wider sidebar, and bigger market cards with type you read from a desk's
+   distance (the market's rules below). */
+@media (min-width: 1600px) and (min-height: 900px) { .layout { grid-template-columns: minmax(0, 1fr) 400px; } }
 
 .panel {
   background: var(--panel);
@@ -271,6 +277,7 @@ input { font: inherit; }
   min-width: 0;
   min-height: 0;
   position: relative;
+  margin-top: var(--toast-lane);
   /* The page still scrolls over the map; pinches are ours (useBoardZoom), and so is every drag once zoomed in. */
   touch-action: pan-x pan-y;
 }
@@ -569,6 +576,9 @@ input { font: inherit; }
 .turn-actions .btn-primary { margin-left: auto; }
 .turn-actions .undo-btn { margin-left: auto; }
 .turn-actions .undo-btn + .btn-primary { margin-left: 0; }
+/* The 300px sidebar (laptops, an iPad on its side): Research, Undo and End turn stay on one line, Undo as its icon. */
+.turn-panel { container: turn-panel / inline-size; }
+@container turn-panel (max-width: 280px) { .turn-actions .undo-label { display: none; } }
 
 .ship-panel { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); animation: fade-up .2s ease-out; }
 .ship-panel-head { display: flex; align-items: center; gap: 10px; }
@@ -613,7 +623,7 @@ input { font: inherit; }
 .track { display: flex; align-items: center; gap: 6px; }
 .track .track-cells { flex: 1; margin-top: 0; }
 .player-row:empty, .player-scrap:empty { display: none; }
-.track-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+.track-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
 .track-cells { display: flex; gap: 3px; margin-top: 3px; }
 .track-cells span { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.07); transition: background .4s, box-shadow .4s; }
 .track-dom .track-cells span.on { background: linear-gradient(90deg, var(--dom-1), var(--dom-2)); box-shadow: 0 0 6px color-mix(in srgb, var(--dom-2) 50%, transparent); }
@@ -683,7 +693,7 @@ input { font: inherit; }
 /* Always two lines tall, so the bar (and the map under it) keeps its size from step to step. */
 .review-text span { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; height: 2.6em; }
 /* The game's news goes on while looking back: under the review bar, not over it, marked as news of now. */
-.app.reviewing .toasts { top: 124px; }
+.app.reviewing .toasts { top: 72px; }
 /* Phones: the text gets the top row to itself, and under it big, labelled steps either side of the way back. */
 @media (max-width: 600px) {
   .review-bar { flex-wrap: wrap; gap: 6px; }
@@ -691,7 +701,7 @@ input { font: inherit; }
   .review-bar > .btn { min-height: 44px; }
   .review-step { flex: 1 1 0 !important; gap: 4px; padding: 0 10px; font-size: 14px; }
   .review-step span { display: inline; }
-  .app.reviewing .toasts { top: 172px; }
+  .app.reviewing .toasts { top: 120px; }
 }
 .toast-now { margin-right: 8px; padding: 1px 6px; border-radius: 6px; background: var(--line-2); color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; vertical-align: 1px; }
 /* The turn panel shows the position looked back at, where nobody plays: it steps back, and nobody is thinking there. */
@@ -776,12 +786,28 @@ input { font: inherit; }
 .market-card.empty { opacity: .3; }
 /* 134px fits the longest names, e.g. Reorganisation, on one line; narrower cards scale their type down to a
    readable floor, and a name that still doesn't fit breaks at its soft hyphen (NAME_BREAKS in Card.tsx). */
-.market .qcard-sm { flex: 1 1 0; width: auto; min-width: var(--card-min); max-width: 134px; container-type: inline-size; }
+.market .qcard-sm { flex: 1 1 0; width: auto; min-width: var(--card-min); max-width: var(--card-max); container-type: inline-size; }
 .market .qcard-sm .qcard-name { font-size: max(10.5px, min(12.5px, 11cqi)); overflow-wrap: anywhere; }
 .market .qcard-sm .qcard-text { font-size: max(9px, min(10px, 8.6cqi)); }
 .market .qcard-sm.long .qcard-text { font-size: max(8.8px, min(9.2px, 7.9cqi)); }
 .market .qcard-cat { min-width: 0; overflow: hidden; white-space: nowrap; }
 .market .qcard-badge { flex: none; }
+/* A narrow card: the category tightens up, and a badge that still doesn't fit beside it goes under it, rather than
+   cutting it short (CONQUE·Peek, EXPANSIO·×5 on a laptop). */
+.market .qcard-sm .qcard-top { flex-wrap: wrap; row-gap: 3px; }
+@container (max-width: 124px) { .market .qcard-cat { letter-spacing: .03em; gap: 3px; } }
+/* A row stops growing when its cards do (--card-max), so on a wide screen the decks stay together instead of
+   spreading across it with gaps between them. */
+.market { --card-max: 134px; }
+.market-row { max-width: calc(var(--fixed) + var(--cards, 3) * (var(--card-max) + 8px)); }
+@media (min-width: 1600px) and (min-height: 900px) {
+  .market { --card-max: 168px; }
+  .market .deck, .market .qcard-sm { height: 192px; }
+  .market .qcard-sm .qcard-name { font-size: max(10.5px, min(14.5px, 11cqi)); }
+  .market .qcard-sm .qcard-text { font-size: max(9px, min(11.5px, 8.6cqi)); }
+  .market .qcard-sm.long .qcard-text { font-size: max(8.8px, min(10.5px, 7.9cqi)); }
+  .market .qcard-cat, .market .qcard-badge { font-size: 11px; }
+}
 @media (hover: hover) { .market-card.clickable:not(.takeable):hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0,0,0,.45), 0 0 0 1px var(--cat); } }
 .market-refresh { align-self: center; max-width: 140px; font-size: 12px; white-space: normal; }
 .market .qcard-sub { display: none; } /* the name and rules text are what matter when choosing */
@@ -814,7 +840,7 @@ input { font: inherit; }
 }
 @keyframes togglepulse { 50% { opacity: 1; } }
 .market-strip-group { display: flex; align-items: center; gap: 5px; flex: none; }
-.market-strip-deck { border: 0; background: none; color: var(--muted); font: inherit; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; cursor: pointer; padding: 0 2px; white-space: nowrap; }
+.market-strip-deck { border: 0; background: none; color: var(--muted); font: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; cursor: pointer; padding: 0 2px; white-space: nowrap; }
 .market-strip-deck b { color: var(--text); font-size: 12px; letter-spacing: 0; }
 @media (hover: hover) { .market-strip-deck:hover { color: var(--text); } }
 .market-chip {
@@ -841,7 +867,7 @@ input { font: inherit; }
 .deck:focus-visible { outline: none; }
 .deck-skill .deck-stack { background: repeating-linear-gradient(45deg, #d7deef 0 6px, #c7d0e6 6px 12px); }
 .deck-tactic .deck-stack { background: repeating-linear-gradient(45deg, #2a1d47 0 6px, #1d1433 6px 12px); border: 1px solid rgba(185,140,255,.3); }
-.deck-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.deck-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
 .deck-count { font-weight: 700; font-size: 13px; }
 
 /* Beside the sidebar (wider than the column layouts below), the market and the sidebar reach the screen's bottom
@@ -965,9 +991,11 @@ input { font: inherit; }
 .autobar span { display: block; height: 100%; background: var(--accent); transform-origin: left; animation: autobar 2.6s linear both; }
 @keyframes autobar { from { transform: scaleX(0); } }
 
-.toasts { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; z-index: 60; width: min(520px, 90%); }
+/* Over the map's stage, in the strip kept free above the map (--toast-lane): centred on the map, not the window, so a
+   column beside it never covers it. */
+.toasts { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; z-index: 60; width: min(520px, calc(100% - 16px)); }
 .toast {
-  padding: 8px 14px;
+  padding: 7px 14px;
   border-radius: 10px;
   font-size: 13px;
   background: rgba(12, 18, 38, .92);
@@ -1068,7 +1096,7 @@ input { font: inherit; }
 .lobby-card h2 { margin: 0 0 14px; font-family: var(--display); font-size: 16px; letter-spacing: .1em; text-transform: uppercase; }
 .mode-badge {
   display: inline-block; margin-right: 8px; padding: 2px 8px; border-radius: 999px;
-  font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
   background: rgba(122,162,255,.15); color: var(--accent);
 }
 .mode-badge.mode-basic { background: rgba(94,240,176,.13); color: var(--good); }
@@ -1081,6 +1109,16 @@ input { font: inherit; }
 .segmented.small button { padding: 4px 10px; font-size: 12px; }
 .narrow-only { display: none; }
 @media (max-width: 480px) { .wide-only { display: none; } .narrow-only { display: inline; } }
+/* A choice that doesn't fit beside its label goes under it, and shrinks to the card rather than running off it
+   (the four rule sets on a 320px phone). */
+.field { flex-wrap: wrap; row-gap: 6px; }
+.field > [role=group] { margin-left: auto; max-width: 100%; }
+.field .segmented { max-width: 100%; }
+.field .segmented button { white-space: nowrap; }
+@media (max-width: 380px) {
+  .lobby-card { padding: 18px 14px; }
+  .field .segmented button { padding-inline: 8px; }
+}
 .seats { display: flex; flex-direction: column; gap: 8px; }
 .seat { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid color-mix(in srgb, var(--pc) 25%, transparent); }
 .seat input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--text); font-weight: 600; outline: none; padding: 4px 0; }
@@ -1100,7 +1138,7 @@ input { font: inherit; }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
 .mini-map { display: grid; gap: 3px; flex-shrink: 0; }
-.mini-tile { width: var(--tile, 26px); height: var(--tile, 26px); border-radius: 6px; display: grid; place-items: center; font-size: 10.5px; font-weight: 700; background: #18223f; border: 1px solid var(--line); }
+.mini-tile { width: var(--tile, 26px); height: var(--tile, 26px); border-radius: 6px; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: #18223f; border: 1px solid var(--line); }
 .mini-tile.n7 { color: #7ef0d0; } .mini-tile.n8 { color: #7fb2ff; } .mini-tile.n9 { color: #c59bff; } .mini-tile.n10 { color: #ffb27a; }
 .mini-tile.gap { background: transparent; border-color: transparent; }
 .mini-tile.n0 { background: repeating-linear-gradient(45deg, #18223f 0 3px, #0d1428 3px 6px); }
@@ -1294,7 +1332,7 @@ input { font: inherit; }
   }
   /* As tall as the map at full width (--map-ratio is rows / cols), within the screen below the topbar.
      In portrait, room is kept below it for the turn panel. */
-  .stage { --map-h: calc((100vw - 8px) * var(--map-ratio, 1) + 8px); height: min(var(--map-h), var(--below-topbar)); padding: 4px; }
+  .stage { --map-h: calc((100vw - 8px) * var(--map-ratio, 1) + 8px + var(--toast-lane)); height: min(var(--map-h), var(--below-topbar)); padding: 4px; }
   .fleet-roll { gap: 18px; }
   /* Collapsed: wrap onto more lines instead of scrolling sideways, so every card name shows. */
   .market.collapsed { row-gap: 6px; column-gap: 10px; padding: 6px 8px; }
@@ -1328,7 +1366,7 @@ input { font: inherit; }
 
   /* Open: each deck's cards as a list, one card a row with its whole text, so nothing is cut off and short
      cards stay short. A deck's name and count above its cards open the deck. */
-  .market .market-row { display: flex; flex: none; flex-direction: column; align-items: stretch; gap: 6px; }
+  .market .market-row { display: flex; flex: none; flex-direction: column; align-items: stretch; gap: 6px; max-width: none; }
   .market-row + .market-row, .market-expansion { margin-top: 4px; }
   .market .deck { flex-direction: row; justify-content: flex-start; align-items: baseline; gap: 8px; width: auto; height: auto; min-height: 22px; padding: 0 2px; margin: 0; }
   .market .deck-stack { display: none; }
@@ -1475,6 +1513,9 @@ body:has(.sheet-layout) { overflow: hidden; }
 /* Battle on landscape phones (≈ 340px high): each side's roll and ship on one row, and the rule beside
    the verdict, so Resolve battle stays on screen. */
 @media (max-height: 500px) {
+  /* Phones on their side: a slimmer topbar, for the map. */
+  :root { --toast-lane: 0px; --topbar-h: 40px; }
+  .topbar .btn { padding-top: 5px; padding-bottom: 5px; }
   .combat-parts { display: flex; justify-content: center; gap: 12px; max-width: none; }
   .combat-parts li { gap: 4px; }
   .combat-rule, .combat-verdict { display: inline-block; vertical-align: baseline; margin: 8px 6px 0; min-height: 0; }
@@ -1493,11 +1534,15 @@ body:has(.sheet-layout) { overflow: hidden; }
 /* Touch: small buttons keep their look but get a 44px hit area. */
 @media (pointer: coarse) {
   /* :where() keeps this from overriding a button's own position, e.g. the dialogs' top-right ×. */
-  :where(.icon-btn, .mini-btn, .segmented button, .topbar .btn, .zoom-controls button) { position: relative; }
-  .icon-btn::after, .mini-btn::after, .segmented button::after, .topbar .btn::after, .zoom-controls button::after, .zoom-hint::after {
+  :where(.icon-btn, .mini-btn, .segmented button, .topbar .btn, .zoom-controls button, .btn-icon, .brand, .skill-chip, .lobby-links a, .lobby-links button) { position: relative; }
+  .icon-btn::after, .mini-btn::after, .segmented button::after, .topbar .btn::after, .zoom-controls button::after, .zoom-hint::after,
+  .btn-icon::after, .brand::after, .skill-chip::after, .lobby-links a::after, .lobby-links button::after {
     content: ''; position: absolute; left: 50%; top: 50%;
     width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
   }
+  /* Fields can't take the hit area above, and the market's chips clip it (their names end in …): they grow instead. */
+  .ai-level, .map-select select, .seat input { min-height: 38px; }
+  .market-chip, .market.collapsed .market-chip { min-height: 34px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

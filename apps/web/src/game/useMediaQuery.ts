@@ -32,6 +32,13 @@ export const PHONE = '(max-width: 600px), (max-height: 500px)';
 /** Short screens (phones on their side): the popups' dice shrink, as in styles.css. */
 export const SHORT = '(max-height: 500px)';
 
+/**
+ * Where the market starts collapsed, until the player chooses: phones, where the open market is taller than the
+ * space under the map, and screens with the sidebar that are short (an iPad or a laptop on its side), where it
+ * would take a quarter of the map's height.
+ */
+export const FOLD_MARKET = `${PHONE}, (min-width: 981px) and (max-height: 820px)`;
+
 /** A finger, not a mouse: phones and tablets. */
 export const COARSE = '(pointer: coarse)';
 

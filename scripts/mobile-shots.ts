@@ -16,6 +16,7 @@
  * Then each device opens the in-game popups (`-combat`, `-changeOfHeart`, `-over`, `-rules`, see
  * POPUPS): the popup must fit the screen, and its buttons must be on screen without scrolling inside
  * it (Change of Heart and the rules scroll their content, so only their heading and × must show).
+ * Each device also opens the lobby (`-lobby`): every control of the new-game form must be inside its card and on screen.
  * On touch screens it also pinches, pans and fits the map on your turn (checkZoom; Chrome only).
  */
 import { mkdirSync } from 'node:fs';
@@ -273,6 +274,33 @@ async function checkPopups(newPage: () => Promise<Page>, base: string, device: s
   return issues;
 }
 
+/**
+ * The new-game form, played here and online: every control in the card is inside it and on screen (the four rule
+ * sets once ran off the card of a 320px phone, without widening the page). Screenshot `-lobby`.
+ */
+async function checkLobby(page: Page, device: string, base: string): Promise<string[]> {
+  await page.goto(base);
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  const issues: string[] = [];
+  for (const play of ['On this device', 'Online with friends']) {
+    await page.locator('.lobby-card button', { hasText: play }).click();
+    await page.waitForTimeout(300);
+    if (play === 'On this device') await page.screenshot({ path: `${OUT}/${device}-lobby.png`, fullPage: true });
+    const outside = await page.evaluate(() => {
+      const card = document.querySelector('.lobby-card')!.getBoundingClientRect();
+      return [...document.querySelectorAll('.lobby-card :is(button, select, input)')].flatMap((el) => {
+        const r = el.getBoundingClientRect();
+        if (!r.width) return [];
+        const out = r.left < Math.max(card.left, 0) - 1 || r.right > Math.min(card.right, innerWidth) + 1;
+        return out ? [`"${(el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 30)}"`] : [];
+      });
+    });
+    if (outside.length) issues.push(`lobby (${play}): ${outside.join(', ')} outside the card`);
+  }
+  return issues;
+}
+
 async function main() {
   const server = await devServer(5180);
   const { base } = server;
@@ -363,6 +391,11 @@ async function main() {
           problems.push(...issues.map((i) => `${name}: ${i}`));
           await ctx.close();
         }
+        const lobbyPage = await (await browser.newContext({ ...options, ignoreHTTPSErrors: true })).newPage();
+        const lobbyIssues = await checkLobby(lobbyPage, device, base);
+        await lobbyPage.context().close();
+        lines.push(`${`${device} lobby`.padEnd(36)} ${lobbyIssues.length ? '✗ ' + lobbyIssues.join('; ') : '✓'}`);
+        problems.push(...lobbyIssues.map((i) => `${device}: ${i}`));
         const popIssues = await checkPopups(
           async () => (await browser.newContext({ ...options, ignoreHTTPSErrors: true })).newPage(),
           base,

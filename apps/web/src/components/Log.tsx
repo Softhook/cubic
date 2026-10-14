@@ -4,6 +4,8 @@ import { logText } from '../game/logText';
 import { remember, stored } from '../storage';
 
 const STORAGE_KEY = 'quantum.logOpen';
+/** Until the player chooses, the log starts open where the sidebar has room for it (a desktop monitor). */
+const ROOMY = '(min-width: 1600px) and (min-height: 900px)';
 const AUTO_SCROLL_THRESHOLD = 12;
 /** How long the list's own scroll to the newest entry may take (a smooth scroll). */
 const FOLLOW_MS = 700;
@@ -25,7 +27,7 @@ export function Log({
   review?: { can(id: number): boolean; pick(id: number): void; picked?: number; move?: ReadonlySet<number> };
 }) {
   const ref = useRef<HTMLOListElement>(null);
-  const [open, setOpen] = useState(() => stored(STORAGE_KEY) === '1');
+  const [open, setOpen] = useState(() => (stored(STORAGE_KEY) ?? (matchMedia(ROOMY).matches ? '1' : '0')) === '1');
   const picked = review?.picked;
   const wasPicked = useRef(picked);
   // Whether the list follows the newest entry: it does until the player scrolls away from the bottom,
