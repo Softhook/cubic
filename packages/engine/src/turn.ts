@@ -47,6 +47,7 @@ function startTurn(s: GameState, player: PlayerId, actions: number, bonus: boole
   if (onVoid) gainResearch(s, player, onVoid);
   if (askBrilliant(s, player)) s.pending.push({ kind: 'brilliant', player });
   log(s, bonus ? `${pl.name} takes a bonus turn.` : `${pl.name}'s turn.`, player);
+  s.log[s.log.length - 1].turn = true;
 }
 
 /** Setup is complete: the first player starts. */
