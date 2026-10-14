@@ -49,15 +49,7 @@ const shownFor = (e: LogEntry) => (e.event === 'cardTaken' ? TAKEN_MS : PLAYED_M
  * `review`: the entries of the move being looked back at; the card among them, anyone's, is shown
  * instead, and the game's own wait until the review ends.
  */
-export function PlayedCard({
-  game,
-  mine,
-  review,
-}: {
-  game: GameState;
-  mine: (p: PlayerId) => boolean;
-  review?: readonly LogEntry[];
-}) {
+export function PlayedCard({ game, mine, review }: { game: GameState; mine: (p: PlayerId) => boolean; review?: readonly LogEntry[] }) {
   // The last log entry already seen: only plays made while the screen is open are shown.
   const seen = useRef(game.log.at(-1)?.id ?? 0);
   const [queue, setQueue] = useState<LogEntry[]>([]);
