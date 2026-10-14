@@ -22,9 +22,10 @@ const doc = document as FsDocument;
 const root = document.documentElement as FsElement;
 const keyboard = (navigator as Navigator & { keyboard?: KeyboardLock }).keyboard;
 
-/** Whether this page can go full screen; not where it opens full screen already (the app installed on Android). */
-export const FULLSCREEN_SUPPORTED =
-  !!(root.requestFullscreen || root.webkitRequestFullscreen) && !matchMedia('(display-mode: fullscreen)').matches && !APPLE_TOUCH;
+/** Opened full screen already, from the manifest (the app installed on Android). */
+export const OPENS_FULLSCREEN = matchMedia('(display-mode: fullscreen)').matches;
+/** Whether this page can go full screen; not where it opens full screen already. */
+export const FULLSCREEN_SUPPORTED = !!(root.requestFullscreen || root.webkitRequestFullscreen) && !OPENS_FULLSCREEN && !APPLE_TOUCH;
 export const isFullscreen = () => !!(doc.fullscreenElement ?? doc.webkitFullscreenElement);
 const phone = () => FULLSCREEN_SUPPORTED && matchMedia(COARSE).matches;
 const computerApp = () => FULLSCREEN_SUPPORTED && FROM_HOME_SCREEN && !matchMedia(COARSE).matches;

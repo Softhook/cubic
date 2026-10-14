@@ -16,7 +16,7 @@ import { LobbyBackdrop } from './LobbyBackdrop';
 import { Segmented } from './Segmented';
 import { Confirm } from './Dialog';
 import { FullscreenButton } from './FullscreenButton';
-import { fullscreenWaiting, resumeFullscreen } from '../fullscreen';
+import { OPENS_FULLSCREEN, fullscreenWaiting, resumeFullscreen } from '../fullscreen';
 import { forgetFinishedGames, forgetGame, onlineGames } from '../online/games';
 import { defaultSeat } from '../game/seats';
 import { clearSavedGame, loadSavedGame } from '../game/savedGame';
@@ -47,12 +47,13 @@ let introPlayed = false;
  * as the rest fades in. Only on the first visit of a page load (not back from a game), never under reduced
  * motion; a click (or tap) or key skips it. Where that click goes full screen (a phone, the app installed on a
  * computer), the title waits for it, asking after a while, and holds, centred in the new size, until the window
- * has settled: the lobby then comes in full screen. Returns the phase (null once done), whether it waits for a
- * click and has had it, and the offset that centres the title.
+ * has settled: the lobby then comes in full screen. The app installed on Android, already full screen, waits for
+ * it too, so it opens the same way. Returns the phase (null once done), whether it waits for a click and has had
+ * it, and the offset that centres the title.
  */
 function useIntro(title: RefObject<HTMLHeadingElement | null>) {
   const [phase, setPhase] = useState<'title' | 'rise' | null>(() => (introPlayed || matchMedia(REDUCED_MOTION).matches ? null : 'title'));
-  const [waits] = useState(fullscreenWaiting);
+  const [waits] = useState(() => OPENS_FULLSCREEN || fullscreenWaiting());
   const [started, setStarted] = useState(false);
   const [offset, setOffset] = useState(0);
   const shown = useRef(0);
