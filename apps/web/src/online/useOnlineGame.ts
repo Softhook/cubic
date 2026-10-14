@@ -19,7 +19,8 @@ import {
 import { aiLevelOf, combatResponse, think } from '../game/aiClient';
 import { useErrorToast, useToasts } from '../game/toasts';
 import type { GameView } from '../game/view';
-import { battleStage, inBattle, nextStep } from './playback';
+import { battleStage, inBattle, nextStep, resumeAt, seenPost } from './playback';
+import { onlineGames } from './games';
 import { identity, keepStorage, loadEvents, rememberGame, saveEvents } from './storage';
 import { RelayLink, type RelayStatus } from './relays';
 
@@ -53,13 +54,19 @@ export function useOnlineGame(secret: string): OnlineGame {
   const { me, replay, relays, failure, post } = usePostLog(secret);
   const mySeats = useMemo(() => replay?.seats.filter((s) => s.owner === me).map((s) => s.id) ?? [], [replay, me]);
   const head = replay?.steps.at(-1)!.state ?? null;
-  const { shown, live, toasts, ownBattle, dismissBattle } = usePlayback(replay, me);
+  // Where the player left off last time, so the screen carries on from there.
+  const resume = useMemo(() => onlineGames().find((g) => g.secret === secret)?.seen ?? null, [secret]);
+  const { shown, live, toasts, ownBattle, dismissBattle } = usePlayback(replay, me, resume);
   const { error, showError } = useErrorToast();
   useAiSeats(replay, me, post, showError);
 
   useEffect(() => {
     if (replay) rememberGame({ secret, ...summary(replay, mySeats) });
   }, [replay, mySeats, secret]);
+  useEffect(() => {
+    const i = shown && replay ? replay.steps.indexOf(shown) : -1;
+    if (i >= 0) rememberGame({ secret, seen: seenPost(replay!.steps, i) ?? undefined });
+  }, [replay, shown, secret]);
 
   const dispatch = useCallback(
     (a: Action): boolean => {
@@ -236,22 +243,39 @@ function usePostLog(secret: string) {
 
 /**
  * What the screen shows: the current position, or, while catching up on moves made by others,
- * each one in turn (see `nextStep`). Toasts announce what each shown step changed.
+ * each one in turn (see `nextStep`), from post `resume` (where the player left off) when the game
+ * opens. Toasts announce what each shown step changed.
  */
-function usePlayback(replay: Replay | null, me: string) {
+function usePlayback(replay: Replay | null, me: string, resume: string | null) {
   const { toasts, announce } = useToasts();
   const [shown, setShown] = useState<Step | null>(null);
   const shownAt = useRef(0);
   // The battle stage the player has dismissed: playback moves on from that battle once it ends.
   const [dismissed, setDismissed] = useState<string | null>(null);
   const dismissBattle = useCallback(() => setDismissed(shown && battleStage(shown.state)), [shown]);
-  // Whether one of this browser's (human) seats attacks or defends in the battle on screen.
-  const ownBattle = !!replay && !!shown && inBattle(shown.state, (p) => replay.seats[p]?.owner === me && !replay.seats[p].ai);
+  const human = (p: PlayerId) => !!replay && replay.seats[p]?.owner === me && !replay.seats[p].ai;
+  // Once it is the player's turn, battles from earlier turns no longer wait for them: they move on
+  // like anyone else's, so the player can get on with their turn.
+  const head = replay?.steps.at(-1)!.state;
+  const myTurn = !!head && head.phase !== 'over' && !replay!.combat && human(actor(head));
+  const earlier = !!shown && !!head && shown.state.turn.number < head.turn.number;
+  // Whether one of this browser's (human) seats attacks or defends in the battle on screen, and it waits for them.
+  const ownBattle = !!shown && inBattle(shown.state, human) && !(myTurn && earlier);
+  // Playback waits while the page is hidden, so a player who comes back sees what happened while
+  // they were away; the step on screen then gets its full time again.
+  const visible = useVisible(() => (shownAt.current = performance.now()));
 
   // A layout effect, so a step shown at once (this browser's own move) replaces the previous one
   // before the screen is painted: no frame where the game looks like it's catching up.
   useLayoutEffect(() => {
-    if (!replay) return;
+    if (!replay || !visible) return;
+    if (!shown) {
+      const i = resumeAt(replay.steps, resume);
+      if (i >= 0) {
+        shownAt.current = performance.now();
+        return setShown(replay.steps[i]);
+      }
+    }
     const own = (p: Post) => p.author === me && 'seat' in p.body && !replay.seats[p.body.seat]?.ai;
     const battle = { mine: ownBattle, dismissed: !!shown && dismissed === battleStage(shown.state) };
     const next = nextStep(replay.steps, shown, own, performance.now() - shownAt.current, battle);
@@ -264,7 +288,7 @@ function usePlayback(replay: Replay | null, me: string) {
     if (next.delay === 0) return show();
     const t = window.setTimeout(show, next.delay);
     return () => window.clearTimeout(t);
-  }, [replay, shown, me, announce, dismissed, ownBattle]);
+  }, [replay, shown, me, announce, dismissed, ownBattle, visible, resume]);
 
   return { shown, live: !!shown && shown === replay?.steps.at(-1), toasts, ownBattle, dismissBattle };
 }
@@ -344,6 +368,23 @@ function summary(r: Replay, mySeats: PlayerId[]) {
             ? 'Setting up'
             : `Turn ${s.turn.number}`,
   };
+}
+
+/** Whether the page is visible; `onShow` runs as it becomes visible again, before the re-render. */
+function useVisible(onShow: () => void) {
+  const [visible, setVisible] = useState(() => document.visibilityState === 'visible');
+  const latest = useRef(onShow);
+  latest.current = onShow;
+  useEffect(() => {
+    const change = () => {
+      const now = document.visibilityState === 'visible';
+      if (now) latest.current();
+      setVisible(now);
+    };
+    document.addEventListener('visibilitychange', change);
+    return () => document.removeEventListener('visibilitychange', change);
+  }, []);
+  return visible;
 }
 
 /** `fn` at most once per `ms`; anything still waiting runs when the page or the game closes. */

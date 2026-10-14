@@ -19,6 +19,8 @@ export interface OnlineGameEntry {
   status?: string;
   myTurn?: boolean;
   over?: boolean;
+  /** The last post the player has seen played out, so the game picks up from there next time. */
+  seen?: string;
 }
 
 export function onlineGames(): OnlineGameEntry[] {
