@@ -2,12 +2,20 @@ import { useState, type CSSProperties } from 'react';
 import { card, rulesOf, type GameState, type PlayerState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
+import { reducedMotion } from '../game/useMediaQuery';
 import { CategoryIcon, MissileIcon, categoryStyle } from './Card';
 import { CardViewer } from './CardViewer';
 import { Tip } from './InfoPop';
 import { Scrapyard, turnScrapOwner } from './Scrapyard';
 
-function Track({ label, value, tone }: { label: string; value: number; tone: string }) {
+/** A player's track. With `pulse`, a gain sends a pulse up it, to the new value (none under reduced motion). */
+function Track({ label, value, tone, pulse }: { label: string; value: number; tone: string; pulse?: boolean }) {
+  const [was, setWas] = useState(value);
+  const [gains, setGains] = useState(0);
+  if (value !== was) {
+    setWas(value);
+    if (pulse && value > was && !reducedMotion()) setGains((n) => n + 1);
+  }
   return (
     <Tip as="div" className={`track track-${tone}`} tip={`${label}: ${value} of 6`}>
       <span className="track-label">{label}</span>
@@ -15,6 +23,7 @@ function Track({ label, value, tone }: { label: string; value: number; tone: str
         {[1, 2, 3, 4, 5, 6].map((n) => (
           <span key={n} className={n <= value ? 'on' : ''} />
         ))}
+        {gains > 0 && <i key={gains} className="track-pulse" style={{ '--to': value / 6 } as CSSProperties} />}
       </div>
     </Tip>
   );
@@ -51,7 +60,7 @@ function PlayerCard({
   const [viewing, setViewing] = useState<string | null>(null);
 
   return (
-    <div className={`player ${active ? 'active' : ''}`} style={{ '--pc': p.color } as CSSProperties}>
+    <div className={`player ${active ? 'active' : ''}`} data-player={p.id} style={{ '--pc': p.color } as CSSProperties}>
       <div className="player-head">
         <strong>{p.name}</strong>
         {p.ai && <span className="tag">AI</span>}
@@ -66,7 +75,7 @@ function PlayerCard({
       </div>
       <div className="player-tracks">
         <Track label="Dominance" value={p.dominance} tone="dom" />
-        {rules.cards && <Track label="Research" value={p.research} tone="res" />}
+        {rules.cards && <Track label="Research" value={p.research} tone="res" pulse />}
       </div>
       <div className="player-row">
         {rules.startingMissiles > 0 && (

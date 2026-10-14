@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState } from '@quantum/engine';
-import { COARSE, REDUCED_MOTION } from '../../game/useMediaQuery';
+import { COARSE, reducedMotion } from '../../game/useMediaQuery';
 import { useEffectEvent } from '../../game/useEffectEvent';
 import type { Controller } from '../../game/controller';
 import type { ShipSpots } from './geometry';
@@ -61,7 +61,7 @@ export function useZoomIntro(game: GameState, ctl: Controller, zoom: BoardZoom, 
     const glowing = game.board.planets.find((p) => ctl.highlights.planets.has(p.id));
     const spot = glowing ?? { r: (game.board.rows - 1) / 2, c: (game.board.cols - 1) / 2 };
     setTip(matchMedia(COARSE).matches ? 'Pinch to zoom the map' : 'Scroll or press + to zoom the map');
-    if (!matchMedia(REDUCED_MOTION).matches) zoom.demo(spot.r, spot.c);
+    if (!reducedMotion()) zoom.demo(spot.r, spot.c);
   });
   // `introduce` holds only during setup, and `done` is reset only outside it.
   useEffect(() => start(), [introduce, zoom.canZoom, start]);

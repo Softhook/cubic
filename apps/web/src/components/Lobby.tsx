@@ -24,7 +24,7 @@ import { remember, stored } from '../storage';
 import { APPLE_TOUCH, FROM_HOME_SCREEN } from '../platform';
 import { BUILD, checkForUpdate, useUpdateStatus, type UpdateStatus } from '../pwa';
 import { PLAYER_COLORS } from '../theme';
-import { COARSE, REDUCED_MOTION } from '../game/useMediaQuery';
+import { COARSE, reducedMotion } from '../game/useMediaQuery';
 
 const PLAYER_COUNTS = [...new Set(MAPS.map((m) => m.players))];
 
@@ -52,7 +52,7 @@ let introPlayed = false;
  * it, and the offset that centres the title.
  */
 function useIntro(title: RefObject<HTMLHeadingElement | null>) {
-  const [phase, setPhase] = useState<'title' | 'rise' | null>(() => (introPlayed || matchMedia(REDUCED_MOTION).matches ? null : 'title'));
+  const [phase, setPhase] = useState<'title' | 'rise' | null>(() => (introPlayed || reducedMotion() ? null : 'title'));
   const [waits] = useState(() => OPENS_FULLSCREEN || fullscreenWaiting());
   const [started, setStarted] = useState(false);
   const [offset, setOffset] = useState(0);

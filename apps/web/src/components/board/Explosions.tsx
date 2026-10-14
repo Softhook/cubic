@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
 import type { GameState } from '@quantum/engine';
+import { lastLogId, useTransient } from '../../game/useTransient';
 import { shipSpots } from './geometry';
 
 interface Explosion {
@@ -14,12 +15,12 @@ const SPARKS = 10;
 
 /** Ships knocked off the map by a battle or a card blow up where they stood. */
 function useExplosions(game: GameState): Explosion[] {
-  const [booms, setBooms] = useState<Explosion[]>([]);
+  const [booms, show] = useTransient<Explosion>(EXPLOSION_MS);
   const prev = useRef(game);
   useEffect(() => {
     const before = prev.current;
     prev.current = game;
-    const lastId = before.log.at(-1)?.id ?? 0;
+    const lastId = lastLogId(before);
     // Only fresh destruction events count: undo also moves ships, but never adds log entries.
     const destroyed = game.log.some((e) => e.id > lastId && (e.event === 'battleWon' || e.event === 'shipDestroyed'));
     if (!destroyed) return;
@@ -30,10 +31,8 @@ function useExplosions(game: GameState): Explosion[] {
       if (!was || d.loc.zone !== 'scrapyard') continue;
       fresh.push({ id: `${d.id}:${d.rolls}`, ...was, color: game.players[d.owner].color });
     }
-    if (!fresh.length) return;
-    setBooms((b) => [...b, ...fresh]);
-    window.setTimeout(() => setBooms((b) => b.filter((x) => !fresh.includes(x))), EXPLOSION_MS);
-  }, [game]);
+    show(fresh);
+  }, [game, show]);
   return booms;
 }
 

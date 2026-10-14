@@ -44,5 +44,8 @@ export const COARSE = '(pointer: coarse)';
 
 export const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 
+/** Whether motion is reduced now: for a one-off check, where a re-render on change isn't needed. */
+export const reducedMotion = () => matchMedia(REDUCED_MOTION).matches;
+
 /** Phones held upright: the map above a bottom sheet (GameScreen, which marks it `.sheet-layout` for styles.css). */
 export const SHEET = '(max-width: 699px) and (orientation: portrait)';

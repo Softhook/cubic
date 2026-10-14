@@ -326,8 +326,15 @@ input { font: inherit; }
 .board-svg { position: absolute; inset: 0; overflow: visible; }
 .info-anchor { position: absolute; pointer-events: none; anchor-name: var(--anchor); }
 .planet-num { font-family: var(--body); pointer-events: none; }
-.cube { animation: cube-in .5s cubic-bezier(.3,1.6,.5,1); transform-box: fill-box; transform-origin: center; }
-@keyframes cube-in { from { transform: scale(0) rotate(-90deg); } to { transform: scale(1) rotate(0); } }
+/* A cube placed drops in from above and squashes as it lands (the shockwave is .fx-conquer). */
+.cube { animation: cube-in .4s cubic-bezier(.5,0,.75,0) backwards; transform-box: fill-box; transform-origin: center bottom; }
+@keyframes cube-in {
+  from { transform: translateY(-320%) scale(1.5); opacity: 0; }
+  20% { opacity: 1; }
+  60% { transform: none; animation-timing-function: ease-out; }
+  75% { transform: scale(1.2, .75); }
+  to { transform: none; }
+}
 .gate-spin { position: absolute; pointer-events: none; animation: spin 6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -510,6 +517,58 @@ input { font: inherit; }
   0% { transform: rotate(var(--a)) translateX(0) scale(1.4); opacity: 1; }
   100% { transform: rotate(var(--a)) translateX(calc(var(--cell) * var(--d) * 1.6)) scale(.3); opacity: 0; }
 }
+/* Each move's effect on the map (ActionEffects), all over in under 500 ms. */
+.fx { position: absolute; left: 0; top: 0; z-index: 4; pointer-events: none; }
+.fx > span { position: absolute; left: 50%; top: 50%; border-radius: 50%; }
+/* Deploy: a warp-in flash, and a ring expanding from the planet. */
+.fx-deploy > span:first-child {
+  width: 80%; height: 80%; margin: -40% 0 0 -40%;
+  background: radial-gradient(circle, #fff 0%, color-mix(in srgb, var(--pc) 80%, #fff) 30%, transparent 68%);
+  animation: fx-flash .35s ease-out forwards;
+}
+.fx-deploy > span:last-child {
+  width: 100%; height: 100%; margin: -50% 0 0 -50%;
+  border: calc(var(--bw) * 1.5) solid var(--pc); box-shadow: 0 0 12px var(--pc), inset 0 0 8px var(--pc);
+  animation: fx-ring .45s cubic-bezier(.2,.7,.3,1) forwards;
+}
+@keyframes fx-flash { 0% { transform: scale(.2); opacity: 1; } 40% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1.3); opacity: 0; } }
+@keyframes fx-ring { 0% { transform: scale(.3); opacity: 1; } 100% { transform: scale(1.9); opacity: 0; } }
+/* Move: a faint engine trail behind the ship as it glides (.ship), from the space it left. */
+.fx-trail { z-index: 2; }
+.fx-trail > span {
+  width: var(--len); height: 16%; margin-top: -8%; border-radius: 999px; transform-origin: 0 50%; transform: rotate(var(--angle));
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--pc) 70%, transparent) 70%, color-mix(in srgb, var(--pc) 40%, #fff));
+  filter: blur(2px);
+  animation: fx-trail .48s forwards;
+}
+@keyframes fx-trail {
+  0% { clip-path: inset(0 100% 0 0); opacity: .75; }
+  70% { clip-path: inset(0 0 0 0); opacity: .55; animation-timing-function: ease-in; }
+  100% { clip-path: inset(0 0 0 100%); opacity: 0; }
+}
+/* Reconfigure (any re-roll in place): two arcs swirl round the die as it tumbles. */
+.fx-reroll > span {
+  width: 86%; height: 86%; margin: -43% 0 0 -43%;
+  border: calc(var(--bw) * 1.5) solid transparent; border-top-color: var(--pc); border-bottom-color: var(--pc);
+  filter: drop-shadow(0 0 4px var(--pc));
+  animation: fx-swirl .45s ease-out forwards;
+}
+.fx-reroll > span:last-child { width: 64%; height: 64%; margin: -32% 0 0 -32%; animation-direction: reverse; border-color: transparent #fff; opacity: .8; }
+@keyframes fx-swirl { 0% { transform: rotate(0) scale(.7); opacity: 0; } 25% { opacity: 1; } 100% { transform: rotate(540deg) scale(1.15); opacity: 0; } }
+/* Conquer: a shockwave across the tile as the cube lands (.cube). */
+.fx-conquer { z-index: 2; }
+.fx-conquer > span:first-child {
+  width: 100%; height: 100%; margin: -50% 0 0 -50%;
+  border: calc(var(--bw) * 2) solid color-mix(in srgb, var(--pc) 70%, #fff); box-shadow: 0 0 14px var(--pc);
+  opacity: 0; animation: fx-wave .26s .22s ease-out forwards;
+}
+.fx-conquer > span:last-child {
+  width: 100%; height: 100%; margin: -50% 0 0 -50%; border-radius: 18%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--pc) 45%, transparent), transparent 70%);
+  opacity: 0; animation: fx-glow .26s .22s ease-out forwards;
+}
+@keyframes fx-wave { 0% { transform: scale(.25); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; border-width: 1px; } }
+@keyframes fx-glow { 0% { opacity: 1; } 100% { opacity: 0; } }
 .board:has(.explosion) { animation: boom-shake .35s linear; }
 @keyframes boom-shake {
   20% { translate: -3px 2px; }
@@ -627,6 +686,16 @@ input { font: inherit; }
 .track-cells { display: flex; gap: 3px; margin-top: 3px; }
 .track-cells span { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.07); transition: background .4s, box-shadow .4s; }
 .track-dom .track-cells span.on { background: linear-gradient(90deg, var(--dom-1), var(--dom-2)); box-shadow: 0 0 6px color-mix(in srgb, var(--dom-2) 50%, transparent); }
+/* A research gain: a purple pulse up the track, to the new value (PlayerList's Track). */
+.track-cells { position: relative; }
+.track-pulse {
+  position: absolute; left: 0; top: 50%; height: 14px; margin-top: -7px; width: calc(var(--to) * 100%);
+  border-radius: 7px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--res-2) 60%, transparent) 75%, #fff);
+  box-shadow: 0 0 10px var(--res-2);
+  transform-origin: left; animation: track-pulse .45s ease-out forwards;
+}
+@keyframes track-pulse { 0% { transform: scaleX(0); opacity: 1; } 60% { transform: none; opacity: .9; } 100% { transform: none; opacity: 0; } }
 .track-res .track-cells span.on { background: linear-gradient(90deg, var(--res-1), var(--res-2)); box-shadow: 0 0 6px color-mix(in srgb, var(--res-2) 50%, transparent); }
 .player-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .missile-icon { display: inline-block; vertical-align: -0.2em; flex: none; }
@@ -1033,6 +1102,17 @@ input { font: inherit; }
 .toast-good { border-left-color: var(--good); }
 .toast-bad { border-left-color: var(--bad); }
 @keyframes toast { 0% { opacity: 0; transform: translateY(-8px); } 8%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+/* A card taken from the market flies to its player (CardFlight). Fixed over everything, never in the way. */
+.card-flight {
+  position: fixed; z-index: 60; pointer-events: none;
+  animation: card-flight .48s cubic-bezier(.4,0,.6,1) forwards;
+}
+.card-flight .card-art img, .card-flight .card-art-ph { box-shadow: 0 0 0 2px var(--pc), 0 0 18px var(--pc); }
+@keyframes card-flight {
+  0% { transform: none; opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(.25); opacity: 0; }
+}
 .played-card {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 55; pointer-events: none;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -1770,6 +1850,8 @@ body:has(.sheet-layout) { overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  /* No move effects at all (they aren't made then, either). */
+  .fx, .track-pulse, .card-flight { display: none; }
 }
 
 /* ------------------------------------------------------------------ crash screen (ErrorBoundary) */

@@ -6,6 +6,7 @@ import { FOLD_MARKET, useMediaQuery } from '../game/useMediaQuery';
 import { useShortcut } from '../game/useShortcut';
 import { remember, stored } from '../storage';
 import { CardView, categoryStyle } from './Card';
+import { useCardFlights } from './CardFlight';
 import { CardViewer } from './CardViewer';
 import { warmCardImages } from '../art/cardImages';
 import { Dialog } from './Dialog';
@@ -39,6 +40,7 @@ export function Market({ game, dispatch, legal, steady }: { game: GameState; dis
   const section = useRef<HTMLElement>(null);
   useGrowOnly(section, !!steady);
   useWarmCards(game);
+  const flights = useCardFlights(game, !steady);
   // A pick over, the turn panel comes back into view: in phone landscape's column you may have scrolled down to a card.
   useEffect(() => {
     if (picking) return () => document.querySelector('.turn-panel')?.scrollIntoView({ block: 'nearest' });
@@ -262,6 +264,7 @@ export function Market({ game, dispatch, legal, steady }: { game: GameState; dis
       {viewer}
       {cardViewer}
       {patientDialog}
+      {flights}
     </section>
   );
 }
