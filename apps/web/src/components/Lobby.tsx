@@ -94,10 +94,41 @@ function MiniMap({ map }: { map: MapDef }) {
   );
 }
 
+/** Where a game is played: on this device (a tablet) or online (a globe). */
+function WhereIcon({ online }: { online: boolean }) {
+  return (
+    <svg
+      className="where-icon"
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {online ? (
+        <>
+          <circle cx="8" cy="8" r="6.5" />
+          <path d="M1.5 8h13M8 1.5c-2.2 2.4-2.2 10.6 0 13M8 1.5c2.2 2.4 2.2 10.6 0 13" />
+        </>
+      ) : (
+        <>
+          <rect x="3" y="1.5" width="10" height="13" rx="2" />
+          <path d="M7 12h2" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 /** One game to pick up: opened by its link (online) or a click (this device), and removable. */
 function GameRow({
   title,
   meta,
+  online,
   yourMove,
   href,
   onOpen,
@@ -106,6 +137,7 @@ function GameRow({
 }: {
   title: string;
   meta: string;
+  online: boolean;
   yourMove?: boolean;
   href?: string;
   onOpen?: () => void;
@@ -114,8 +146,11 @@ function GameRow({
 }) {
   const body = (
     <>
-      <strong>{title}</strong>
-      <span className="muted">{meta}</span>
+      <WhereIcon online={online} />
+      <span className="game-row-text">
+        <strong>{title}</strong>
+        <span className="muted">{meta}</span>
+      </span>
     </>
   );
   return (
@@ -156,6 +191,7 @@ function YourGames({ saved, onResume, onDiscard }: { saved: GameState | null; on
               saved.board.mapName,
               saved.phase === 'setup' ? 'Setting up' : `Turn ${saved.turn.number}`,
             ].join(' · ')}
+            online={false}
             onOpen={onResume}
             removeLabel="Discard this game"
             onRemove={() => {
@@ -168,6 +204,7 @@ function YourGames({ saved, onResume, onDiscard }: { saved: GameState | null; on
             key={g.secret}
             title={g.players?.join(', ') ?? 'New game'}
             meta={['Online', g.mode, g.map, g.status].filter(Boolean).join(' · ')}
+            online
             yourMove={g.myTurn}
             href={`#online/${g.secret}`}
             removeLabel="Remove from this browser"
@@ -397,8 +434,20 @@ export function Lobby({
           >
             <Segmented
               options={[
-                [false, 'On this device'],
-                [true, 'Online with friends'],
+                [
+                  false,
+                  <>
+                    <WhereIcon online={false} />
+                    On this device
+                  </>,
+                ],
+                [
+                  true,
+                  <>
+                    <WhereIcon online />
+                    Online with friends
+                  </>,
+                ],
               ]}
               value={online}
               onPick={setOnline}
