@@ -99,7 +99,8 @@ async function main() {
   await buildAll();
   await new Promise<void>((r) => server.listen(PORT, '127.0.0.1', r));
   const browser = await launchChrome();
-  const context = await browser.newContext(MOTO_G55);
+  // Reduced motion skips the lobby's opening, which on a phone waits for a tap.
+  const context = await browser.newContext({ ...MOTO_G55, reducedMotion: 'reduce' });
   try {
     let page = await context.newPage();
     page.on('load', () => (openedAt = Date.now()));

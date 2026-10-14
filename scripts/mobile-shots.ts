@@ -391,7 +391,8 @@ async function main() {
           problems.push(...issues.map((i) => `${name}: ${i}`));
           await ctx.close();
         }
-        const lobbyPage = await (await browser.newContext({ ...options, ignoreHTTPSErrors: true })).newPage();
+        // Reduced motion skips the opening, which on a phone waits for a tap with the title over the card.
+        const lobbyPage = await (await browser.newContext({ ...options, ignoreHTTPSErrors: true, reducedMotion: 'reduce' })).newPage();
         const lobbyIssues = await checkLobby(lobbyPage, device, base);
         await lobbyPage.context().close();
         lines.push(`${`${device} lobby`.padEnd(36)} ${lobbyIssues.length ? '✗ ' + lobbyIssues.join('; ') : '✓'}`);
