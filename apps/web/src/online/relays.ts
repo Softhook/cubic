@@ -78,6 +78,8 @@ export class RelayLink {
     private known: () => NostrEvent[],
     private onEvent: (e: NostrEvent) => void,
     private onStatus: (s: RelayStatus) => void,
+    /** Told each time a relay has sent everything it held for the game. */
+    private onSynced: () => void = () => {},
   ) {}
 
   start() {
@@ -177,6 +179,7 @@ export class RelayLink {
         void this.backfill(url, r, page, since).then(() => {
           this.synced.set(url, startedAt);
           this.resend(url);
+          this.onSynced();
         }),
       // The relay ended the subscription (some do after a while); ask again unless we're leaving.
       onclose: (reason) => {

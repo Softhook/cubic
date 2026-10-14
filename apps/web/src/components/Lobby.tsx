@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
 import {
   defaultMap,
@@ -130,6 +130,7 @@ function GameRow({
   meta,
   online,
   yourMove,
+  checking,
   href,
   onOpen,
   onRemove,
@@ -139,6 +140,8 @@ function GameRow({
   meta: string;
   online: boolean;
   yourMove?: boolean;
+  /** Still asking the relays whether there have been moves since. */
+  checking?: boolean;
   href?: string;
   onOpen?: () => void;
   onRemove: () => void;
@@ -164,6 +167,7 @@ function GameRow({
           {body}
         </button>
       )}
+      {checking && <span className="spinner" role="status" aria-label="Checking for new moves" title="Checking for new moves" />}
       {yourMove && <span className="tag your-turn">Your move</span>}
       <button className="icon-btn" title={removeLabel} aria-label={removeLabel} onClick={onRemove}>
         ×
@@ -176,6 +180,32 @@ function GameRow({
 function YourGames({ saved, onResume, onDiscard }: { saved: GameState | null; onResume: () => void; onDiscard: () => void }) {
   // Finished games are done with: they leave the list once the lobby shows again.
   const [games, setGames] = useState(forgetFinishedGames);
+  // The games still being checked on the relays (those that aren't over), each until one has answered.
+  const [checking, setChecking] = useState(() => new Set(onlineGames().flatMap((g) => (g.over ? [] : [g.secret]))));
+  // The list holds how each game stood when this browser last had it open: follow the unfinished
+  // ones on the relays, so a move made since then shows (the online code loads for it, if there are any).
+  useEffect(() => {
+    const watched = onlineGames().filter((g) => !g.over);
+    if (!watched.length) return;
+    let stop: (() => void) | undefined;
+    let gone = false;
+    const checked = (secret: string) =>
+      setChecking((c) => {
+        const next = new Set(c);
+        next.delete(secret);
+        return next;
+      });
+    import('../online/watch')
+      .then(({ watchGames }) => {
+        if (!gone) stop = watchGames(watched, () => setGames(onlineGames()), checked);
+      })
+      .catch(() => setChecking(new Set()));
+    return () => {
+      gone = true;
+      stop?.();
+    };
+    // Once, for the games listed when the lobby opens: those added later are opened from here anyway.
+  }, []);
   if (!saved && !games.length) return null;
   const online = [...games].sort((a, b) => Number(!!b.myTurn) - Number(!!a.myTurn));
   return (
@@ -206,6 +236,7 @@ function YourGames({ saved, onResume, onDiscard }: { saved: GameState | null; on
             meta={['Online', g.mode, g.map, g.status].filter(Boolean).join(' · ')}
             online
             yourMove={g.myTurn}
+            checking={checking.has(g.secret)}
             href={`#online/${g.secret}`}
             removeLabel="Remove from this browser"
             onRemove={() => {

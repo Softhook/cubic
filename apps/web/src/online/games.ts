@@ -32,6 +32,15 @@ export function saveOnlineGames(games: OnlineGameEntry[]): boolean {
   return remember(GAMES, JSON.stringify(games));
 }
 
+/** Updates a game still on the list, leaving when it was last seen (and so its place) as it was. */
+export function updateGame(secret: string, patch: Partial<OnlineGameEntry>): boolean {
+  const list = onlineGames();
+  const i = list.findIndex((g) => g.secret === secret);
+  if (i < 0) return false;
+  list[i] = { ...list[i], ...patch };
+  return saveOnlineGames(list);
+}
+
 /** Whether the game is off the list (it may not be, when storage can't be written). */
 export function forgetGame(secret: string): boolean {
   const list = onlineGames();

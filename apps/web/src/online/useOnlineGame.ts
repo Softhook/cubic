@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { getPublicKey } from 'nostr-tools/pure';
-import { actor, apply, legalActions, MAPS, RuleError, RULESETS, type Action, type GameState, type PlayerId } from '@quantum/engine';
+import { actor, apply, legalActions, RuleError, type Action, type GameState, type PlayerId } from '@quantum/engine';
 import {
   actBody,
   CHAINED,
@@ -8,7 +8,6 @@ import {
   encodePost,
   gameKeys,
   Timeline,
-  unclaimedSeats,
   type AskMode,
   type Body,
   type NostrEvent,
@@ -23,6 +22,7 @@ import { battleStage, inBattle, nextStep, resumeAt, seenPost } from './playback'
 import { onlineGames } from './games';
 import { identity, keepStorage, loadEvents, rememberGame, saveEvents } from './storage';
 import { RelayLink, type RelayStatus } from './relays';
+import { summary } from './summary';
 
 /**
  * The browser that made the last move also moves the AI players. If it went away, the other
@@ -344,30 +344,6 @@ function aiWork(r: Replay, s: GameState): { seat: PlayerId; combat: boolean } | 
   }
   const who = actor(s);
   return r.seats[who].ai ? { seat: who, combat: false } : null;
-}
-
-/** How the game stands, for the lobby's list. */
-function summary(r: Replay, mySeats: PlayerId[]) {
-  const s = r.steps.at(-1)!.state;
-  const open = unclaimedSeats(r).length;
-  const waitingOnMe = r.combat
-    ? r.combat.waitingOn.some((id) => mySeats.includes(id) && !r.combat!.passed.includes(id))
-    : mySeats.includes(actor(s));
-  return {
-    mode: RULESETS[r.config.mode]?.name,
-    map: MAPS.find((m) => m.id === r.config.mapId)?.name,
-    players: r.seats.map((x) => x.name),
-    over: s.phase === 'over',
-    myTurn: s.phase !== 'over' && waitingOnMe,
-    status:
-      s.phase === 'over'
-        ? `${s.players[s.winner ?? 0].name} won`
-        : open
-          ? `Waiting for ${open} player${open > 1 ? 's' : ''} to join`
-          : s.phase === 'setup'
-            ? 'Setting up'
-            : `Turn ${s.turn.number}`,
-  };
 }
 
 /** Whether the page is visible; `onShow` runs as it becomes visible again, before the re-render. */

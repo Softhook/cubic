@@ -1297,6 +1297,7 @@ input { font: inherit; }
 .field-hint { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
 .lobby-card > .field-hint { margin-top: 14px; }
 .tag.your-turn { background: var(--accent); color: #07102a; }
+.your-games .spinner { --pc: var(--accent); }
 .join-dialog .field { margin: 14px 0; }
 .join-dialog .field input { flex: 1; min-width: 0; background: rgba(255,255,255,.05); color: var(--text); border: 1px solid var(--line-2); border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 15px; }
 .join-dialog .field input:focus { outline: none; border-color: var(--accent); }
