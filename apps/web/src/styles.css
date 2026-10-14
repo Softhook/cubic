@@ -134,7 +134,7 @@ input { font: inherit; }
 }
 @media (hover: hover) { .icon-btn:hover { background: rgba(255,255,255,.06); color: var(--text); } }
 .mini-btn {
-  font-size: 10px; padding: 2px 6px; margin-left: 2px;
+  font-size: 11px; padding: 2px 6px; margin-left: 2px;
   border-radius: 6px; border: 1px solid var(--line-2);
   background: transparent; cursor: pointer; color: var(--muted);
 }
@@ -520,7 +520,7 @@ input { font: inherit; }
 .ship-badge {
   position: absolute;
   right: 8%; top: 6%;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--gold);
   text-shadow: 0 0 6px rgba(0,0,0,.9);
 }
@@ -568,7 +568,7 @@ input { font: inherit; }
 .action-pips small { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin-right: 2px; }
 .action-pips .action-hex { color: var(--pc); opacity: .35; transition: all .3s; }
 .action-pips .action-hex.on { opacity: 1; filter: drop-shadow(0 0 4px var(--pc)); }
-.action-pips em { font-style: normal; font-size: 10px; color: var(--good); margin-left: 4px; }
+.action-pips em { font-style: normal; font-size: 11px; color: var(--good); margin-left: 4px; }
 .hint { margin: 10px 0 0; font-size: 13px; color: #c3cbea; line-height: 1.45; }
 .hint.thinking { display: flex; align-items: center; gap: 8px; color: var(--muted); }
 .spinner { display: inline-block; flex: none; box-sizing: border-box; width: 14px; height: 14px; vertical-align: middle; border-radius: 50%; border: 2px solid var(--line-2); border-top-color: var(--pc); animation: spin .8s linear infinite; }
@@ -614,7 +614,7 @@ input { font: inherit; }
 .player-head { display: flex; align-items: center; gap: 8px; }
 .player-head strong { font-size: 14px; }
 .player-swatch { width: 10px; height: 10px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 8px var(--pc); flex: none; }
-.tag { font-size: 9.5px; font-weight: 700; letter-spacing: .08em; padding: 2px 5px; border-radius: 4px; background: rgba(255,255,255,.08); color: var(--muted); }
+.tag { font-size: 11px; font-weight: 700; letter-spacing: .08em; padding: 2px 5px; border-radius: 4px; background: rgba(255,255,255,.08); color: var(--muted); }
 .cubes { margin-left: auto; display: flex; align-items: center; gap: 3px; }
 .cubes small { color: var(--text); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-right: 4px; white-space: nowrap; }
 .cubes span { width: 10px; height: 10px; border-radius: 2.5px; border: 1.5px solid color-mix(in srgb, var(--pc) 60%, transparent); }
@@ -635,7 +635,7 @@ input { font: inherit; }
 .stat.gold { color: var(--gold); background: rgba(255,200,87,.1); }
 .stat.bad { color: var(--bad); background: rgba(255,93,115,.1); }
 .scrapyard { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.scrap-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-right: 2px; }
+.scrap-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-right: 2px; }
 .scrap-die-wrap { display: inline-flex; align-items: center; }
 .scrap-die { display: inline-grid; place-items: center; padding: 4px; border-radius: 7px; border: 1px solid transparent; }
 .scrap-die.clickable { cursor: pointer; border-color: var(--line-2); }
@@ -674,6 +674,9 @@ input { font: inherit; }
 .log li button { display: block; width: 100%; border: 0; padding: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .log li.picked { background: color-mix(in srgb, var(--pc) 16%, transparent); color: var(--text); }
 @media (hover: hover) { .log li button:hover { color: var(--text); } }
+/* Touch: each entry is a tap (to look back at it), so it gets a finger's height. Padding rather than a hit area
+   reaching past the entry, which would take taps meant for its neighbours. */
+@media (pointer: coarse) { .log li button { padding-block: 8px; } .log li.minor button { padding-block: 6px; } }
 
 /* Above the map, not over it: the map makes room (it is what's being looked at). */
 .app.reviewing .stage { flex-direction: column; gap: 6px; }
@@ -688,12 +691,17 @@ input { font: inherit; }
 .review-step svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .review-step span { display: none; }
 .review-text { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 13px; line-height: 1.3; }
-.review-text small { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.review-text small { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .review-text small.review-waiting { color: var(--gold); }
 /* Always two lines tall, so the bar (and the map under it) keeps its size from step to step. */
 .review-text span { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; height: 2.6em; }
 /* The game's news goes on while looking back: under the review bar, not over it, marked as news of now. */
 .app.reviewing .toasts { top: 72px; }
+/* Only the newest news while looking back: the game goes on meanwhile, and a stack of it covered the map (the log
+   has the rest). The card of the move looked at stays under the bar, smaller, so the bar's steps stay in view. */
+.app.reviewing .toast:not(:last-child) { display: none; }
+.app.reviewing .played-card { z-index: 15; }
+.app.reviewing .played-card .card-art { width: min(200px, 45vw, 26vh); }
 /* Phones: the text gets the top row to itself, and under it big, labelled steps either side of the way back. */
 @media (max-width: 600px) {
   .review-bar { flex-wrap: wrap; gap: 6px; }
@@ -703,7 +711,7 @@ input { font: inherit; }
   .review-step span { display: inline; }
   .app.reviewing .toasts { top: 120px; }
 }
-.toast-now { margin-right: 8px; padding: 1px 6px; border-radius: 6px; background: var(--line-2); color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; vertical-align: 1px; }
+.toast-now { margin-right: 8px; padding: 1px 6px; border-radius: 6px; background: var(--line-2); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; vertical-align: 1px; }
 /* The turn panel shows the position looked back at, where nobody plays: it steps back, and nobody is thinking there. */
 .app.reviewing .turn-panel { opacity: .5; }
 .app.reviewing .turn-panel .thinking { visibility: hidden; }
@@ -800,6 +808,15 @@ input { font: inherit; }
    spreading across it with gaps between them. */
 .market { --card-max: 134px; }
 .market-row { max-width: calc(var(--fixed) + var(--cards, 3) * (var(--card-max) + 8px)); }
+/* Tablets (a finger, and the open market's row of cards rather than a phone's list): taller cards, so their text
+   can be 10px or more without being cut short sooner. */
+@media (pointer: coarse) and (min-width: 700px) {
+  .market .deck, .market .qcard-sm { height: 184px; }
+  .market .qcard-sm .qcard-text { font-size: max(10px, min(11px, 8.6cqi)); }
+  .market .qcard-sm.long .qcard-text { font-size: max(9.8px, min(10.5px, 7.9cqi)); }
+  .market .qcard-sm .qcard-name { font-size: max(11.5px, min(13px, 11cqi)); }
+  .market .qcard-cat, .market .qcard-badge { font-size: 11px; }
+}
 @media (min-width: 1600px) and (min-height: 900px) {
   .market { --card-max: 168px; }
   .market .deck, .market .qcard-sm { height: 192px; }
@@ -816,7 +833,7 @@ input { font: inherit; }
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
   width: 30px; padding: 0; margin: -10px 0 -14px -16px;
   border: 0; border-right: 1px solid var(--line); background: rgba(5,8,19,.35);
-  color: var(--muted); font: inherit; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
   cursor: pointer; transition: color .15s, background .15s;
 }
 .market-toggle span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
