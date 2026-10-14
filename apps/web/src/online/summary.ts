@@ -24,3 +24,16 @@ export function summary(r: Replay, mySeats: PlayerId[]) {
             : `Turn ${s.turn.number}`,
   };
 }
+
+/**
+ * Whether it is the player's move, and `turn`, naming what made it so, if it has just become their
+ * move: it wasn't (`was`; null when not known, as when the game has only just been opened), and
+ * not through a post of their own (an undo; a claim).
+ */
+export function yourMoveSince(r: Replay, mySeats: PlayerId[], me: string, was: boolean | null) {
+  const { myTurn } = summary(r, mySeats);
+  const last = r.steps.at(-1)!.post;
+  const own = !!last && last.author === me && 'seat' in last.body && !r.seats[last.body.seat]?.ai;
+  const turn = myTurn && was === false && !own ? `${r.tip}|${r.combat?.stage ?? ''}` : null;
+  return { myTurn, turn };
+}

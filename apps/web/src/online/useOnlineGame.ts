@@ -22,7 +22,8 @@ import { battleStage, inBattle, nextStep, resumeAt, seenPost } from './playback'
 import { onlineGames } from './games';
 import { identity, keepStorage, loadEvents, rememberGame, saveEvents } from './storage';
 import { RelayLink, type RelayStatus } from './relays';
-import { summary } from './summary';
+import { summary, yourMoveSince } from './summary';
+import { alertYourMove, attending } from './alerts';
 
 /**
  * The browser that made the last move also moves the AI players. If it went away, the other
@@ -59,6 +60,7 @@ export function useOnlineGame(secret: string): OnlineGame {
   const { shown, live, toasts, ownBattle, dismissBattle } = usePlayback(replay, me, resume);
   const { error, showError } = useErrorToast();
   useAiSeats(replay, me, post, showError);
+  useYourMoveAlert(secret, replay, me, mySeats, live);
 
   useEffect(() => {
     if (replay) rememberGame({ secret, ...summary(replay, mySeats) });
@@ -344,6 +346,26 @@ function aiWork(r: Replay, s: GameState): { seat: PlayerId; combat: boolean } | 
   }
   const who = actor(s);
   return r.seats[who].ai ? { seat: who, combat: false } : null;
+}
+
+/**
+ * Alerts the player when it becomes their move (see `alertYourMove`). Looking at the game, only once
+ * the screen has caught up to it; not looking, at once (the screen waits for them anyway).
+ */
+function useYourMoveAlert(secret: string, replay: Replay | null, me: string, mySeats: PlayerId[], live: boolean) {
+  const was = useRef<boolean | null>(null);
+  // The turn change not yet alerted, while it is still the player's move.
+  const due = useRef<string | null>(null);
+  useEffect(() => {
+    if (!replay) return;
+    const { myTurn, turn } = yourMoveSince(replay, mySeats, me, was.current);
+    was.current = myTurn;
+    if (!myTurn) due.current = null;
+    else if (turn) due.current = turn;
+    if (!due.current || (!live && attending())) return;
+    alertYourMove({ secret, turn: due.current, where: 'game', battle: !!replay.combat });
+    due.current = null;
+  }, [secret, replay, me, mySeats, live]);
 }
 
 /** Whether the page is visible; `onShow` runs as it becomes visible again, before the re-render. */

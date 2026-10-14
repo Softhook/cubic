@@ -171,6 +171,11 @@ function boom(delay = 0, size = 1) {
 
 export const sfx = {
   select: () => tone(880, 0.07, 'sine', 0.05),
+  /** It's your move (online): two soft notes rising. `level` turns it down (in the game, where the player is watching). */
+  yourMove: (level = 1) => {
+    tone(784, 0.22, 'sine', 0.06 * level, 0, undefined, 0.01);
+    tone(1175, 0.4, 'sine', 0.05 * level, 0.15, undefined, 0.01);
+  },
   /** A ship flying across the board: a deep engine rumble that swells as it passes. */
   fly: () => {
     const f = jitter(1);

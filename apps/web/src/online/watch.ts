@@ -3,7 +3,8 @@ import { decodeEvent, gameKeys, Timeline, type NostrEvent } from '@quantum/onlin
 import { updateGame, type OnlineGameEntry } from './games';
 import { identity, loadEvents } from './storage';
 import { RelayLink } from './relays';
-import { summary } from './summary';
+import { summary, yourMoveSince } from './summary';
+import { alertYourMove } from './alerts';
 
 /** How long a burst of relay events is gathered before the game is replayed. */
 const BATCH_MS = 200;
@@ -20,6 +21,9 @@ const CHECK_TIMEOUT_MS = 15000;
 export function watchGames(games: OnlineGameEntry[], onChange: () => void, onChecked: (secret: string) => void): () => void {
   const me = getPublicKey(identity());
   const stops = games.map(({ secret }) => {
+    // Whether it was the player's move when last replayed; what the first check finds isn't alerted
+    // (the list shows it), only moves made while the lobby is open.
+    let was: boolean | null = null;
     const keys = gameKeys(secret);
     const timeline = new Timeline();
     const events = new Map<string, NostrEvent>();
@@ -37,18 +41,22 @@ export function watchGames(games: OnlineGameEntry[], onChange: () => void, onChe
       const r = timeline.replay();
       if (!r) return;
       const mine = r.seats.filter((s) => s.owner === me).map((s) => s.id);
-      if (updateGame(secret, summary(r, mine))) onChange();
+      const now = summary(r, mine);
+      const { turn } = yourMoveSince(r, mine, me, checked ? was : null);
+      was = now.myTurn;
+      if (!updateGame(secret, now)) return;
+      onChange();
+      if (turn) alertYourMove({ secret, turn, where: 'lobby', battle: !!r.combat });
     };
     let checked = false;
     const check = () => {
       if (checked) return;
-      checked = true;
       window.clearTimeout(timeout);
-      // What the relay sent shows with the spinner gone, not a moment after.
-      if (timer !== undefined) {
-        window.clearTimeout(timer);
-        refresh();
-      }
+      // What the relay sent shows with the spinner gone, not a moment after, and isn't alerted; and
+      // what it found is what the next move is alerted against.
+      window.clearTimeout(timer);
+      refresh();
+      checked = true;
       onChecked(secret);
     };
     const timeout = window.setTimeout(check, CHECK_TIMEOUT_MS);
