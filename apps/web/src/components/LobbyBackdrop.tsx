@@ -345,7 +345,11 @@ function faceCamera(el: HTMLElement | null) {
     target?.getAnimations().find((a) => (a as CSSAnimation).animationName === name);
   const turn = named(el?.closest('.backdrop-plane'), 'backdrop-turn');
   const face = named(el, 'backdrop-face');
-  if (turn && face) turn.ready.then(() => (face.startTime = turn.startTime), () => {});
+  if (turn && face)
+    turn.ready.then(
+      () => (face.startTime = turn.startTime),
+      () => {},
+    );
 }
 
 /**
