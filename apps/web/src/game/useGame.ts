@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { checkInvariants, RuleError, type Action, type GameState, type PlayerId } from '@quantum/engine';
 import { sfx } from '../sound';
-import { begin, play, restore, saved, takeBack, type Past } from './past';
+import { begin, current, play, restore, saved, takeBack, type Past } from './past';
 import { useErrorToast, useToasts } from './toasts';
 import { loadSavedPast, saveGame } from './savedGame';
 import { useAiDriver } from './useAiDriver';
@@ -25,7 +25,7 @@ function reportBug(what: string, state: GameState, action: Action, error?: unkno
  */
 export function useGame(initial: GameState): GameView {
   const [past, setPastState] = useState(() => restore(initial, loadSavedPast()));
-  const game = past.positions.at(-1)!;
+  const game = current(past);
   const { error, showError } = useErrorToast();
   const { toasts, announce } = useToasts();
   const ref = useRef(past);
@@ -37,7 +37,7 @@ export function useGame(initial: GameState): GameView {
   const dispatch = useCallback(
     (a: Action): boolean => {
       const before = ref.current;
-      const prev = before.positions.at(-1)!;
+      const prev = current(before);
       let after: Past;
       try {
         after = play(before, a);
@@ -51,7 +51,7 @@ export function useGame(initial: GameState): GameView {
         }
         return false;
       }
-      const next = after.positions.at(-1)!;
+      const next = current(after);
       if (import.meta.env.DEV) {
         const broken = checkInvariants(next);
         if (broken.length) reportBug(`invariants broken: ${broken.join('; ')}`, prev, a);
@@ -73,20 +73,20 @@ export function useGame(initial: GameState): GameView {
   const aiResponder = useAiDriver(game, dispatch, showError);
 
   // Keep the unfinished game in the browser so a revisit can resume it.
-  useEffect(() => saveGame(past.positions.at(-1)!, saved(past)), [past]);
+  useEffect(() => saveGame(current(past), saved(past)), [past]);
 
   // Dev-only hook for browser tests. A loaded state has no past.
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     const load = (s: GameState) => {
-      const prev = ref.current.positions.at(-1)!;
+      const prev = current(ref.current);
       setPast(begin(s, s.logCounter));
       announce(prev, s);
     };
-    (window as unknown as { __quantum: QuantumHook }).__quantum = { state: () => ref.current.positions.at(-1)!, load, dispatch };
+    (window as unknown as { __quantum: QuantumHook }).__quantum = { state: () => current(ref.current), load, dispatch };
   }, [announce, dispatch]);
 
-  const mine = useCallback((p: PlayerId) => !ref.current.positions.at(-1)!.players[p].ai, []);
+  const mine = useCallback((p: PlayerId) => !current(ref.current).players[p].ai, []);
   return {
     game,
     dispatch,

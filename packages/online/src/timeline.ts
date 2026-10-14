@@ -23,6 +23,9 @@ export interface Seat {
   ask: AskMode;
 }
 
+/** The seats left open for friends that nobody has claimed yet. */
+export const unclaimedSeats = (r: Pick<Replay, 'seats'>): Seat[] => r.seats.filter((s) => s.open && !s.owner);
+
 export interface Step {
   state: GameState;
   /** The post that led here; null for the starting position and for battles resolving by themselves. */

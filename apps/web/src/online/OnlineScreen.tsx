@@ -1,5 +1,6 @@
-import { useEffect, useState, type CSSProperties } from 'react';
-import type { AskMode, Replay } from '@quantum/online';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { unclaimedSeats, type AskMode, type Replay } from '@quantum/online';
+import { Modal } from '../components/Dialog';
 import { Game } from '../components/GameScreen';
 import { restoreFullscreen } from '../components/FullscreenButton';
 import { COARSE } from '../game/useMediaQuery';
@@ -17,7 +18,7 @@ export function OnlineScreen({ secret, onLeave, onRules }: { secret: string; onL
   const [watching, setWatching] = useState(false);
 
   if (!g.view || !g.replay) return <Searching relays={g.relays} failure={g.failure} onLeave={onLeave} />;
-  const openSeats = g.replay.seats.filter((s) => s.open && !s.owner);
+  const openSeats = unclaimedSeats(g.replay);
   const joining = !g.mySeats.length && openSeats.length > 0 && !watching;
 
   return (
@@ -75,7 +76,7 @@ function Searching({ relays, failure, onLeave }: { relays: RelayStatus; failure:
 
 function JoinDialog({ replay, onJoin, onWatch }: { replay: Replay; onJoin: (seat: number, name: string) => void; onWatch: () => void }) {
   const [name, setName] = useState(() => stored(NAME) ?? '');
-  const open = replay.seats.filter((s) => s.open && !s.owner);
+  const open = unclaimedSeats(replay);
   const seated = replay.seats.filter((x) => x.owner || x.ai);
   const [seat, setSeat] = useState(open[0].id);
   const chosen = open.some((s) => s.id === seat) ? seat : open[0].id;
@@ -87,56 +88,49 @@ function JoinDialog({ replay, onJoin, onWatch }: { replay: Replay; onJoin: (seat
     onJoin(chosen, n);
   };
   return (
-    <div className="overlay">
-      <div
-        className="modal join-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="join-title"
-        style={{ '--pc': s.players[chosen].color } as CSSProperties}
-      >
-        <h2 id="join-title">Join the game</h2>
-        <p className="modal-sub">
-          {seated.map((x) => `${x.name}${x.ai ? ' (AI)' : ''}`).join(', ')} {seated.length > 1 ? 'are' : 'is'} waiting for you.
-        </p>
+    <Modal
+      title="Join the game"
+      subtitle={`${seated.map((x) => `${x.name}${x.ai ? ' (AI)' : ''}`).join(', ')} ${seated.length > 1 ? 'are' : 'is'} waiting for you.`}
+      pc={s.players[chosen].color}
+      className="join-dialog"
+    >
+      <label className="field">
+        <span>Your name</span>
+        <input
+          autoFocus
+          value={name}
+          maxLength={14}
+          placeholder="Commander"
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && join()}
+        />
+      </label>
+      {open.length > 1 && (
         <label className="field">
-          <span>Your name</span>
-          <input
-            autoFocus
-            value={name}
-            maxLength={14}
-            placeholder="Commander"
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && join()}
-          />
+          <span>Colour</span>
+          <div className="segmented">
+            {open.map((o) => (
+              <button
+                key={o.id}
+                className={o.id === chosen ? 'on' : ''}
+                onClick={() => setSeat(o.id)}
+                style={{ '--pc': s.players[o.id].color } as CSSProperties}
+              >
+                <span className="player-swatch" /> Player {o.id + 1}
+              </button>
+            ))}
+          </div>
         </label>
-        {open.length > 1 && (
-          <label className="field">
-            <span>Colour</span>
-            <div className="segmented">
-              {open.map((o) => (
-                <button
-                  key={o.id}
-                  className={o.id === chosen ? 'on' : ''}
-                  onClick={() => setSeat(o.id)}
-                  style={{ '--pc': s.players[o.id].color } as CSSProperties}
-                >
-                  <span className="player-swatch" /> Player {o.id + 1}
-                </button>
-              ))}
-            </div>
-          </label>
-        )}
-        <div className="modal-actions">
-          <button className="btn" onClick={onWatch}>
-            Just watch
-          </button>
-          <button className="btn btn-primary" disabled={!name.trim()} onClick={join}>
-            Join
-          </button>
-        </div>
+      )}
+      <div className="modal-actions">
+        <button className="btn" onClick={onWatch}>
+          Just watch
+        </button>
+        <button className="btn btn-primary" disabled={!name.trim()} onClick={join}>
+          Join
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -150,7 +144,7 @@ const ASK_LABELS: Record<AskMode, string> = {
 function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJoin?: () => void }) {
   const [copied, setCopied] = useState(false);
   const r = g.replay!;
-  const open = r.seats.filter((s) => s.open && !s.owner).length;
+  const open = unclaimedSeats(r).length;
   const ask = g.mySeats.length ? r.seats[g.mySeats[0]].ask : null;
   const copy = async () => {
     const url = inviteLink(secret);
@@ -228,18 +222,12 @@ function OutOfSync({ replay }: { replay: Replay }) {
   const d = replay.desync!;
   const who = replay.seats[d.seat]?.name ?? 'Another player';
   return (
-    <div className="online-desync" role="alert">
-      <strong>Out of sync with {who}</strong>
-      <span>
-        {d.why === 'rejected'
-          ? `A move by ${who} doesn’t fit the game as this browser sees it.`
-          : `${who}’s browser sees a different game after their move.`}{' '}
-        One of you is probably running an older version: both reload the page.
-      </span>
-      <button className="btn" onClick={() => location.reload()}>
-        Reload
-      </button>
-    </div>
+    <ReloadAlert title={`Out of sync with ${who}`}>
+      {d.why === 'rejected'
+        ? `A move by ${who} doesn’t fit the game as this browser sees it.`
+        : `${who}’s browser sees a different game after their move.`}{' '}
+      One of you is probably running an older version: both reload the page.
+    </ReloadAlert>
   );
 }
 
@@ -248,11 +236,18 @@ function Stopped({ replay }: { replay: Replay }) {
   const { seat } = replay.crash!;
   const who = seat === null ? null : (replay.seats[seat]?.name ?? 'another player');
   return (
+    <ReloadAlert title={who ? `The game stopped on a move by ${who}` : 'The game stopped resolving a battle'}>
+      This browser’s game engine failed on it: a bug{who ? `, not a mistake by ${who}` : ''}. The details are in the browser console.
+    </ReloadAlert>
+  );
+}
+
+/** A problem this browser can't get past without reloading the page. */
+function ReloadAlert({ title, children }: { title: string; children: ReactNode }) {
+  return (
     <div className="online-desync" role="alert">
-      <strong>{who ? `The game stopped on a move by ${who}` : 'The game stopped resolving a battle'}</strong>
-      <span>
-        This browser’s game engine failed on it: a bug{who ? `, not a mistake by ${who}` : ''}. The details are in the browser console.
-      </span>
+      <strong>{title}</strong>
+      <span>{children}</span>
       <button className="btn" onClick={() => location.reload()}>
         Reload
       </button>

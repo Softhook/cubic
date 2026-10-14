@@ -8,6 +8,7 @@ import {
   encodePost,
   gameKeys,
   Timeline,
+  unclaimedSeats,
   type AskMode,
   type Body,
   type NostrEvent,
@@ -324,7 +325,7 @@ function aiWork(r: Replay, s: GameState): { seat: PlayerId; combat: boolean } | 
 /** How the game stands, for the lobby's list. */
 function summary(r: Replay, mySeats: PlayerId[]) {
   const s = r.steps.at(-1)!.state;
-  const open = r.seats.filter((x) => x.open && !x.owner).length;
+  const open = unclaimedSeats(r).length;
   const waitingOnMe = r.combat
     ? r.combat.waitingOn.some((id) => mySeats.includes(id) && !r.combat!.passed.includes(id))
     : mySeats.includes(actor(s));

@@ -1,9 +1,9 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { SHIP_NAMES, card, die, rulesOf, scrapyard, type Action, type ActionOf, type GameState } from '@quantum/engine';
 import { SHORT, useMediaQuery } from '../game/useMediaQuery';
 import type { Dispatch } from '../game/useGame';
 import { CardView } from './Card';
-import { Dialog } from './Dialog';
+import { Dialog, Modal } from './Dialog';
 import { Die3D } from './Die3D';
 
 /** Modal decisions for human players. Board-based decisions are handled by highlights instead. */
@@ -239,30 +239,6 @@ function SetupRoll({ game, dispatch, player, rerolled }: { game: GameState; disp
   );
 }
 
-function Modal({
-  title,
-  subtitle,
-  pc,
-  wide,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  pc?: string;
-  wide?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <div className="overlay">
-      <div className={`modal ${wide ? 'wide' : ''}`} style={{ '--pc': pc ?? 'var(--accent)' } as CSSProperties}>
-        <h2>{title}</h2>
-        {subtitle && <p className="modal-sub">{subtitle}</p>}
-        {children}
-      </div>
-    </div>
-  );
-}
-
 /**
  * How to conquer a planet that offers more than one way: an empty place, or over-conquest displacing
  * one opponent's cube (the conqueror chooses whose). `options` are the legal `conquer` actions for it.
@@ -322,10 +298,16 @@ export function GameOver({
   const w = game.players[game.winner];
   return (
     <div className="overlay">
-      <div className="modal gameover" style={{ '--pc': w.color } as CSSProperties}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="gameover-title"
+        className="modal gameover"
+        style={{ '--pc': w.color } as CSSProperties}
+      >
         <div className="gameover-burst" />
         <small>Victory</small>
-        <h2>{w.name} conquers the sector</h2>
+        <h2 id="gameover-title">{w.name} conquers the sector</h2>
         <p className="modal-sub">
           All cubes placed after {game.turn.number} turn{game.turn.number === 1 ? '' : 's'}.
         </p>

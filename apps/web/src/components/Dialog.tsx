@@ -1,5 +1,42 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+
+/**
+ * A modal that must be answered: no × button, and Escape or a backdrop click do nothing. `pc` is the
+ * player colour its accents take. `aria-modal` also tells the global shortcuts to stand down.
+ */
+export function Modal({
+  title,
+  subtitle,
+  pc,
+  wide,
+  className = '',
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  pc?: string;
+  wide?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  const titleId = useId();
+  return (
+    <div className="overlay">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className={`modal ${wide ? 'wide' : ''} ${className}`}
+        style={{ '--pc': pc ?? 'var(--accent)' } as CSSProperties}
+      >
+        <h2 id={titleId}>{title}</h2>
+        {subtitle && <p className="modal-sub">{subtitle}</p>}
+        {children}
+      </div>
+    </div>
+  );
+}
 
 /**
  * A dismissable modal: closes on Escape, a backdrop click or the × button, and returns focus to

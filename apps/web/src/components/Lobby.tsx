@@ -25,6 +25,12 @@ import { PLAYER_COLORS } from '../theme';
 
 const PLAYER_COUNTS = [...new Set(MAPS.map((m) => m.players))];
 
+/** What the lobby remembers between visits: the last choices, and a dismissed hint. */
+const AI_LEVEL_KEY = 'quantum.aiLevel';
+const MODE_KEY = 'quantum.mode';
+const mapKey = (players: number) => `quantum.map.${players}`;
+const HOME_HINT_KEY = 'quantum.homeScreenHint';
+
 export interface LobbyResult {
   players: PlayerConfig[];
   mapId: string;
@@ -34,17 +40,17 @@ export interface LobbyResult {
 }
 
 function storedAiLevel(): number {
-  const n = Number(stored('quantum.aiLevel'));
+  const n = Number(stored(AI_LEVEL_KEY));
   return AI_LEVELS.some((l) => l.level === n) ? n : DEFAULT_AI_LEVEL;
 }
 
 function storedMode(): GameMode {
-  const saved = stored('quantum.mode');
+  const saved = stored(MODE_KEY);
   return MODES.find((m) => m.id === saved || (saved === 'cubic' && m.id === 'prototyping'))?.id ?? 'community';
 }
 
 function storedMap(players: number): string {
-  const id = stored(`quantum.map.${players}`);
+  const id = stored(mapKey(players));
   return MAPS.find((m) => m.id === id && m.players === players)?.id ?? defaultMap(players)!.id;
 }
 
@@ -240,7 +246,7 @@ function SeatRow({
           title={AI_LEVELS.find((l) => l.level === aiLevel)?.summary}
           onChange={(e) => {
             onChange({ aiLevel: Number(e.target.value) });
-            remember('quantum.aiLevel', e.target.value);
+            remember(AI_LEVEL_KEY, e.target.value);
           }}
         >
           {AI_LEVELS.map((l) => (
@@ -336,11 +342,11 @@ export function Lobby({
 
   const chooseMode = (id: GameMode) => {
     setMode(id);
-    remember('quantum.mode', id);
+    remember(MODE_KEY, id);
   };
   const chooseMap = (id: string) => {
     setMapIds((ids) => ({ ...ids, [count]: id }));
-    remember(`quantum.map.${count}`, id);
+    remember(mapKey(count), id);
   };
   const updateSeat = (i: number, patch: Partial<PlayerConfig>) =>
     setSeatSets((sets) => ({ ...sets, [where]: sets[where].map((x, j) => (j === i ? { ...x, ...patch } : x)) }));
@@ -442,10 +448,10 @@ export function Lobby({
  * to get the next best thing: added to the Home Screen, the game opens without Safari's bars. Until dismissed.
  */
 function HomeScreenHint() {
-  const [shown, setShown] = useState(() => APPLE_TOUCH && !FROM_HOME_SCREEN && !stored('quantum.homeScreenHint'));
+  const [shown, setShown] = useState(() => APPLE_TOUCH && !FROM_HOME_SCREEN && !stored(HOME_HINT_KEY));
   if (!shown) return null;
   const dismiss = () => {
-    remember('quantum.homeScreenHint', 'dismissed');
+    remember(HOME_HINT_KEY, 'dismissed');
     setShown(false);
   };
   return (

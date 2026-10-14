@@ -26,6 +26,9 @@ export interface SavedPast {
   after: number;
 }
 
+/** The position the game is at now. */
+export const current = (past: Past): GameState => past.positions.at(-1)!;
+
 /** A game with no past yet: `state` is its start, or (`after` its log) where it was picked up. */
 export function begin(state: GameState, after = 0): Past {
   return { positions: [state], moves: [], undo: [], after };
@@ -33,7 +36,7 @@ export function begin(state: GameState, after = 0): Past {
 
 /** `past` with `a` played on its last position. Throws what `apply` throws. */
 export function play(past: Past, a: Action): Past {
-  const prev = past.positions.at(-1)!;
+  const prev = current(past);
   const next = apply(prev, a);
   const human = !prev.players[actor(prev)].ai;
   const undo = human && isUndoable(prev, a, next) ? [...past.undo, prev] : [];
@@ -75,7 +78,7 @@ export function restore(game: GameState, from: SavedPast | null): Past {
         if (!next) throw new Error('nothing to undo');
         past = next;
       }
-      if (JSON.stringify(past.positions.at(-1)) === JSON.stringify(game)) return past;
+      if (JSON.stringify(current(past)) === JSON.stringify(game)) return past;
     } catch {
       // falls through: the game goes on without its past
     }
