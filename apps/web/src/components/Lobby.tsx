@@ -48,6 +48,17 @@ function storedMap(players: number): string {
   return MAPS.find((m) => m.id === id && m.players === players)?.id ?? defaultMap(players)!.id;
 }
 
+/** A mode's name for the rules picker: the long one is cut short on a phone, so the four fit across. */
+function modeLabel(id: GameMode, name: string): ReactNode {
+  if (id !== 'prototyping') return name;
+  return (
+    <>
+      <span className="wide-only">{name}</span>
+      <span className="narrow-only">Proto</span>
+    </>
+  );
+}
+
 const MAP_GROUPS: { id: string; name: string }[] = [
   { id: 'basic', name: 'Basic' },
   { id: 'advanced', name: 'Advanced' },
@@ -389,7 +400,7 @@ export function Lobby({
           </Field>
 
           <Field label="Rules" hint={RULESETS[mode].summary}>
-            <Segmented options={MODES.map((m) => [m.id, m.name] as const)} value={mode} onPick={chooseMode} />
+            <Segmented options={MODES.map((m) => [m.id, modeLabel(m.id, m.name)] as const)} value={mode} onPick={chooseMode} />
           </Field>
 
           <Field label="Players">

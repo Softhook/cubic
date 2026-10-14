@@ -225,6 +225,17 @@ try {
     'on a phone, the review bar covers the map',
   );
   await p.screenshot({ path: `${OUT}/phone.png` });
+  const phoneSizes = new Set([await mapSize(p)]);
+  for (let i = 0; i < 12; i++) {
+    await p.locator('.review-step').nth(1).tap();
+    await p.waitForTimeout(250);
+    phoneSizes.add(await mapSize(p));
+  }
+  check(
+    phoneSizes.size === 1,
+    'on a phone, the map keeps its size from step to step',
+    `on a phone, the map changes size as it steps on: ${[...phoneSizes].join(', ')}`,
+  );
   await phone.close();
 } finally {
   await browser.close();

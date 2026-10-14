@@ -191,13 +191,16 @@ function ReviewBar({ review, game, waiting }: { review: Review; game: GameState;
     <div className="review-bar" style={colour}>
       <button
         type="button"
-        className="btn btn-ghost"
+        className="btn review-step"
         disabled={!review.prev}
         onClick={review.prev}
         title="Earlier (←)"
         aria-label="Earlier"
       >
-        ‹
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M15 5l-7 7 7 7" />
+        </svg>
+        <span>Earlier</span>
       </button>
       {/* Read out at each step; the buttons around it are not. */}
       <div className="review-text" role="status">
@@ -210,12 +213,15 @@ function ReviewBar({ review, game, waiting }: { review: Review; game: GameState;
       </div>
       <button
         type="button"
-        className="btn btn-ghost"
+        className="btn review-step"
         onClick={review.next}
         title={review.last ? 'Back to the game (→)' : 'Later (→)'}
         aria-label={review.last ? 'Back to the game' : 'Later'}
       >
-        ›
+        <span>Later</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 5l7 7-7 7" />
+        </svg>
       </button>
       <button type="button" className={`btn ${waiting ? 'btn-primary pulse' : ''}`} onClick={review.close} title="Back to the game (Esc)">
         Back to game
