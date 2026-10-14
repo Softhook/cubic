@@ -46,7 +46,9 @@ export function nextStep(
   const last = steps.length - 1;
   const i = indexOf(steps, shown);
   if (i < 0) return steps[last] === shown ? null : { step: steps[last], delay: 0, announce: false };
-  if (i === last) return null;
+  // At the last step, but a replay from scratch (a claim, say) made a new one for it: show that one,
+  // or the screen never counts as caught up.
+  if (i === last) return steps[last] === shown ? null : { step: steps[last], delay: 0, announce: false };
   const fighting = battleOnScreen(shown!.state);
   const pause = fighting ? COMBAT_MS : STEP_MS;
   if (battleEnds(steps, i) && battle.mine && !battle.dismissed) return null;

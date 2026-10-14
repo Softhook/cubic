@@ -66,6 +66,14 @@ describe('online playback', () => {
     expect(nextStep(steps, null, mine, 0)).toMatchObject({ step: steps.at(-1), announce: false });
   });
 
+  it('at the present, moves to its rebuilt step, so it still counts as caught up', () => {
+    // A claim rebuilds the steps without adding one: the same posts, new step objects.
+    const old = [step(), step()];
+    const rebuilt = old.map((s) => ({ ...s }));
+    expect(nextStep(rebuilt, old[1], mine, 0)).toMatchObject({ step: rebuilt[1], delay: 0, announce: false });
+    expect(walk(rebuilt, old[1])).toEqual([rebuilt[1]]);
+  });
+
   it('keeps your own battle on screen until it is dismissed, but not each stage of it', () => {
     const steps = [fighting(false), fighting(true), step()];
     // A missile changes the battle: shown after the usual pause.
