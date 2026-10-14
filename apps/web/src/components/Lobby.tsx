@@ -445,7 +445,8 @@ export function Lobby({
                   true,
                   <>
                     <WhereIcon online />
-                    Online with friends
+                    <span className="wide-only">Online with friends</span>
+                    <span className="narrow-only">Online</span>
                   </>,
                 ],
               ]}
