@@ -25,6 +25,7 @@
     "mobile:shots": "npm run data && vite-node scripts/mobile-shots.ts --",
     "ui:check": "npm run data && vite-node scripts/ui-check.ts --",
     "replay:check": "npm run data && vite-node scripts/replay-check.ts --",
+    "online:sim": "npm run data && vite-node scripts/online-sim.ts --",
     "mobile:play": "npm run data && vite-node scripts/mobile-play.ts --",
     "pwa:check": "npm run data && vite-node scripts/pwa-check.ts",
     "perf:probe": "npm run data && vite-node scripts/perf-probe.ts --",

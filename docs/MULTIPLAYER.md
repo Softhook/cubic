@@ -90,6 +90,10 @@ store small signed messages for anyone. We run nothing.
   malformed posts, and the codec.
 - `apps/web/test/playback.test.ts`: catching up on others' moves walks forward and settles,
   undo included.
+- `npm run online:sim`: five Chrome browsers, each its own identity, play a 5-player game over the
+  real relays: friends join after moves were made, late, and two at once for one seat, then all
+  play random moves; every screen must catch up and show the same game. Run it by hand, not
+  before every deploy: each run posts a few hundred events to public relays.
 - In the browser: create an online game, open the link in a private window (a second identity)
   and join. The dev server listens on the local network and invite links made on it use this
   machine's address, so a phone on the same Wi-Fi can join (encryption is plain JavaScript, so

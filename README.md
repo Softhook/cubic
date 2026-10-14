@@ -68,6 +68,7 @@ More tools, all headless:
 | `npm run pwa:check` | Install, offline and update behaviour of the home-screen app |
 | `npm run perf:probe` / `perf:zoom` | Timings on a throttled CPU (roughly a mid-range phone) |
 | `npm run relays:check` | Which public Nostr relays carry online games |
+| `npm run online:sim` | Five browsers join and play a 5-player online game over the real relays (by hand only: it posts a few hundred events) |
 
 ## Repository
 
