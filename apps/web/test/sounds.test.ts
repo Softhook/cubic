@@ -11,13 +11,20 @@ const die = (s: GameState, id: string) => s.dice.find((d) => d.id === id)!;
 const entry = (s: GameState, event: LogEntry['event']): LogEntry => ({ id: s.logCounter + 1, text: '', event });
 
 /** `change` turns the step's start (after `setup`) into its end. */
-function step(change: (s: GameState) => LogEntry[] | void, setup?: (s: GameState) => void) {
+function step(change: (s: GameState) => LogEntry[] | void, setup?: (s: GameState) => void, mine?: (p: number) => boolean) {
   const prev = start();
   setup?.(prev);
   const next = structuredClone(prev);
   const fresh = change(next) ?? [];
-  return soundsFor(prev, next, fresh);
+  return soundsFor(prev, next, fresh, mine);
 }
+
+/** Player 1 wins. */
+const victory = (s: GameState) => {
+  s.phase = 'over';
+  s.winner = 1;
+  return [entry(s, 'victory')];
+};
 
 describe('soundsFor', () => {
   it('hears a ship fly', () => {
@@ -66,5 +73,14 @@ describe('soundsFor', () => {
     });
     expect(first).toEqual(['coins']);
     expect(then).toEqual(['missileLoad']);
+  });
+
+  it('plays the fanfare for the winner, and for a screen that plays for nobody (an onlooker)', () => {
+    expect(step(victory, undefined, (p) => p === 1).first).toEqual(['win']);
+    expect(step(victory, undefined, () => false).first).toEqual(['win']);
+  });
+
+  it('plays the lament for a screen whose players all lost', () => {
+    expect(step(victory, undefined, (p) => p === 0).first).toEqual(['lose']);
   });
 });

@@ -1,5 +1,5 @@
 import { NEBULA_HUES } from '@quantum/art';
-import { FANFARE_HITS, fireworkSound } from '../../victorySound';
+import { FANFARE_HITS, fireworkSound } from '../../gameOverSound';
 import {
   RANDOM_SHAPES,
   SHAPES,

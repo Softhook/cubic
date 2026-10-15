@@ -15,6 +15,9 @@ export type Dispatch = (a: Action) => boolean;
 export type QuantumHook = { state(): GameState; load(s: GameState): void; dispatch: Dispatch };
 
 /** Logs an engine bug with the state and action that trigger it (replay with window.__quantum.load). */
+/** On this device, the screen plays for every human seat. */
+const human = (s: GameState) => (p: PlayerId) => !s.players[p].ai;
+
 function reportBug(what: string, state: GameState, action: Action, error?: unknown) {
   console.error(`[quantum] ${what}`, { action, error, state: JSON.stringify(state) });
 }
@@ -57,7 +60,7 @@ export function useGame(initial: GameState): GameView {
         if (broken.length) reportBug(`invariants broken: ${broken.join('; ')}`, prev, a);
       }
       setPast(after);
-      announce(prev, next);
+      announce(prev, next, human(next));
       return true;
     },
     [announce, showError],
@@ -81,12 +84,12 @@ export function useGame(initial: GameState): GameView {
     const load = (s: GameState) => {
       const prev = current(ref.current);
       setPast(begin(s, s.logCounter));
-      announce(prev, s);
+      announce(prev, s, human(s));
     };
     (window as unknown as { __quantum: QuantumHook }).__quantum = { state: () => current(ref.current), load, dispatch };
   }, [announce, dispatch]);
 
-  const mine = useCallback((p: PlayerId) => !current(ref.current).players[p].ai, []);
+  const mine = useCallback((p: PlayerId) => human(current(ref.current))(p), []);
   return {
     game,
     dispatch,

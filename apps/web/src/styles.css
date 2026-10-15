@@ -1180,12 +1180,18 @@ input { font: inherit; }
 @keyframes victory-flash { 0% { opacity: 0; } 8% { opacity: .9; } 100% { opacity: 0; } }
 .celebrate .gameover { animation: victory-rise .9s .25s cubic-bezier(.2, .9, .3, 1.25) both; background: linear-gradient(180deg, rgba(18, 26, 54, .9), rgba(11, 17, 38, .9)); }
 @keyframes victory-rise { from { opacity: 0; transform: scale(.6) translateY(30px); } }
-.gameover h2 {
+.celebrate .gameover h2 {
   background: linear-gradient(100deg, #fff 30%, #ffd36b 45%, #fff 50%, color-mix(in srgb, var(--pc) 40%, #fff) 60%, #fff 75%) 0 0 / 300% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent;
   animation: victory-shine 4s 1s linear infinite;
 }
 @keyframes victory-shine { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+/* Defeat: the board drains of colour and darkens, and the popup sinks in slowly as the lament (gameOverSound.ts) falls. */
+.overlay.mourn { background: rgba(2, 4, 12, .8); backdrop-filter: blur(5px) grayscale(1); animation: mourn-drain 2.4s ease-out both; }
+@keyframes mourn-drain { from { background: rgba(3, 6, 15, .3); backdrop-filter: blur(0) grayscale(0); } }
+.mourn .gameover { animation: defeat-sink 1.6s .9s ease-out both; }
+@keyframes defeat-sink { from { opacity: 0; transform: translateY(-14px); } }
+.mourn .gameover small { color: var(--muted); }
 
 /* ------------------------------------------------------------------ lobby */
 

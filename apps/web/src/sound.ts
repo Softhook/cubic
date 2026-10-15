@@ -1,7 +1,7 @@
 // Tiny synthesized sound kit (no audio files). All sounds are short and quiet.
 
 import { audio, envelope, filter, gain, glide, jitter, noiseSource, oscillator, out } from './audio';
-import { fanfare } from './victorySound';
+import { fanfare, lament } from './gameOverSound';
 
 let clickBufs: { sampleRate: number; buffers: AudioBuffer[] } | null = null;
 
@@ -231,5 +231,7 @@ export const sfx = {
   },
 
   win: fanfare,
+  /** The game won by someone else, heard by a player who lost. */
+  lose: lament,
   error: () => tone(200, 0.15, 'sine', 0.05, 0, 150),
 };

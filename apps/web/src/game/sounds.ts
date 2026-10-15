@@ -1,5 +1,6 @@
-import { effectOf, type Cell, type Die, type GameState, type LogEntry, type LogEvent } from '@quantum/engine';
+import { effectOf, type Cell, type Die, type GameState, type LogEntry, type LogEvent, type PlayerId } from '@quantum/engine';
 import { sfx } from '../sound';
+import { lost } from './view';
 
 type Sound = keyof typeof sfx;
 
@@ -37,8 +38,16 @@ const TACTIC_SOUNDS: Record<string, Sound> = {
 const onBoard = (d: Die) => (d.loc.zone === 'board' ? d.loc : null);
 const sameCell = (a: Cell, b: Cell) => a.r === b.r && a.c === b.c;
 
-/** What the step from `prev` to `next` sounds like. `fresh`: the log entries it added. */
-export function soundsFor(prev: GameState, next: GameState, fresh: LogEntry[]): { first: Sound[]; then: Sound[]; destroyed: number } {
+/**
+ * What the step from `prev` to `next` sounds like. `fresh`: the log entries it added. `mine`: whom this screen
+ * plays for, so a player who lost hears a lament rather than the winner's fanfare.
+ */
+export function soundsFor(
+  prev: GameState,
+  next: GameState,
+  fresh: LogEntry[],
+  mine: (p: PlayerId) => boolean = () => true,
+): { first: Sound[]; then: Sound[]; destroyed: number } {
   const first = new Set<Sound>();
   const then = new Set<Sound>();
 
@@ -49,7 +58,7 @@ export function soundsFor(prev: GameState, next: GameState, fresh: LogEntry[]): 
   for (let i = 0; i < played; i++) first.add((ids[i] && TACTIC_SOUNDS[effectOf(ids[i])]) || 'card');
   for (const e of fresh) {
     const s = e.event && EVENT_SOUNDS[e.event];
-    if (s) first.add(s);
+    if (s) first.add(s === 'win' && lost(next, mine) ? 'lose' : s);
   }
   // With nothing to go first, the effects themselves do.
   const effects = first.size ? then : first;
@@ -88,8 +97,8 @@ export function soundsFor(prev: GameState, next: GameState, fresh: LogEntry[]): 
 }
 
 /** Plays what the step from `prev` to `next` sounds like. */
-export function playSounds(prev: GameState, next: GameState, fresh: LogEntry[]) {
-  const { first, then, destroyed } = soundsFor(prev, next, fresh);
+export function playSounds(prev: GameState, next: GameState, fresh: LogEntry[], mine: (p: PlayerId) => boolean) {
+  const { first, then, destroyed } = soundsFor(prev, next, fresh, mine);
   const play = (s: Sound) => (s === 'explode' ? sfx.explode(destroyed) : sfx[s]());
   first.forEach(play);
   if (then.length) window.setTimeout(() => then.forEach(play), 350);

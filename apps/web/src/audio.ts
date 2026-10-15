@@ -1,4 +1,4 @@
-// The Web Audio plumbing every synthesized sound shares (sound.ts, victorySound.ts): the context, the
+// The Web Audio plumbing every synthesized sound shares (sound.ts, gameOverSound.ts): the context, the
 // output bus, white noise and a few node builders.
 
 let ctx: AudioContext | null = null;

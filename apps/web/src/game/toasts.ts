@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { GameState, LogEvent } from '@quantum/engine';
+import type { GameState, LogEvent, PlayerId } from '@quantum/engine';
 import { sfx } from '../sound';
 import { logText } from './logText';
 import { playSounds } from './sounds';
@@ -32,13 +32,13 @@ const TONES: Record<LogEvent, Toast['tone'] | undefined> = {
 const MAX_TOASTS = 4;
 const TOAST_MS = 4200;
 
-/** Toasts for notable log entries. `announce(prev, next)` reacts to the entries `next` adds. */
+/** Toasts for notable log entries. `announce(prev, next, mine)` reacts to the entries `next` adds, as heard by whom the screen plays for. */
 export function useToasts() {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const announce = useCallback((prev: GameState, next: GameState) => {
+  const announce = useCallback((prev: GameState, next: GameState, mine: (p: PlayerId) => boolean) => {
     const fresh = next.log.filter((e) => e.id > (prev.log.at(-1)?.id ?? 0));
-    playSounds(prev, next, fresh);
+    playSounds(prev, next, fresh, mine);
     const shown = fresh.flatMap((e): Toast[] => {
       const tone = e.event && TONES[e.event];
       return tone ? [{ id: e.id, text: logText(next, e), player: e.player, tone }] : [];

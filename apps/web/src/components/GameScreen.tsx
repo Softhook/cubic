@@ -3,7 +3,7 @@ import { actor, rulesOf, type GameState, type PlayerId } from '@quantum/engine';
 import { useController } from '../game/controller';
 import { useUndoShortcut } from '../game/useGame';
 import { conquerOptions } from '../game/legal';
-import type { GameView } from '../game/view';
+import { lost, type GameView } from '../game/view';
 import { useReview, type Review } from '../game/review';
 import { logText } from '../game/logText';
 import { SHEET, useMediaQuery } from '../game/useMediaQuery';
@@ -155,7 +155,13 @@ export function Game({
         <ConquerChoice game={game} options={conquering} dispatch={dispatch} onClose={() => ctl.select({ kind: 'none' })} />
       )}
       {!review && game.phase === 'over' && !hideGameOver && (
-        <GameOver game={game} onNew={onQuit} onClose={() => setHideGameOver(true)} newLabel={online ? 'Back to lobby' : undefined} />
+        <GameOver
+          game={game}
+          lost={lost(game, view.mine)}
+          onNew={onQuit}
+          onClose={() => setHideGameOver(true)}
+          newLabel={online ? 'Back to lobby' : undefined}
+        />
       )}
       {overlay}
     </div>

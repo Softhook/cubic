@@ -1,4 +1,4 @@
-import { FANFARE_HITS } from '../../victorySound';
+import { FANFARE_HITS } from '../../gameOverSound';
 import { GOLD, WHITE, type Rgb } from './sprites';
 
 // What the victory show fires (show.ts runs it): each shell's shape, and the programme timed to the fanfare.
@@ -182,7 +182,7 @@ export const SHAPES: Record<Shape, (kit: Kit, b: Burst, k: number) => Afterglow 
 };
 
 /**
- * The programme, timed to the fanfare (victorySound.ts): three quick bursts on the pickups, one on each long note,
+ * The programme, timed to the fanfare (gameOverSound.ts): three quick bursts on the pickups, one on each long note,
  * galaxies on the climb, a supernova on the last chord, a dense finale ending in a second supernova. Returns when
  * the slower display that follows starts.
  */

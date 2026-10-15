@@ -1,4 +1,5 @@
-// The victory show's sounds: a brass fanfare and the fireworks (components/fireworks/), all played in a hall.
+// The game's ending, all played in a hall: for a winner, a brass fanfare and the fireworks (components/fireworks/);
+// for a player who lost, a lament.
 
 import { audio, contour, envelope, filter, gain, glide, jitter, noiseSource, oscillator, out } from './audio';
 
@@ -168,6 +169,65 @@ function swell(ac: AudioContext, dest: AudioNode, at: number, dur: number, level
     .connect(dest);
 }
 
+const STEPS: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+
+/** A note's pitch from its name: 'C4' (middle C), 'Eb3', 'F#5'. */
+function note(name: string): number {
+  const [, letter, accidental, octave] = /^([A-G])(b|#)?(\d)$/.exec(name)!;
+  const midi = 12 * (Number(octave) + 1) + STEPS[letter] + (accidental === 'b' ? -1 : accidental === '#' ? 1 : 0);
+  return 440 * 2 ** ((midi - 69) / 12);
+}
+
+/** How each brass part plays: players per note, how bright its breath is, its attack and its usual level. */
+const PARTS = {
+  trumpet: { voices: 3, bright: 1.1, attack: 0.035, level: 0.05 },
+  horn: { voices: 2, bright: 0.55, attack: 0.05, level: 0.03 },
+  trombone: { voices: 2, bright: 0.7, attack: 0.04, level: 0.05 },
+  /** Horns played softly and dark: the lament's voice. */
+  muted: { voices: 2, bright: 0.35, attack: 0.08, level: 0.05 },
+  /** Muted horns holding a chord underneath. */
+  pad: { voices: 2, bright: 0.25, attack: 0.15, level: 0.026 },
+};
+type Part = keyof typeof PARTS;
+
+/**
+ * An orchestra in the hall, with times counted from the start of the piece: brass (through a little grit,
+ * when `grit` is given) and percussion, each sent `wet` into the hall. `perc` takes any other sound.
+ */
+function orchestra({ brassWet, percWet, grit }: { brassWet: number; percWet: number; grit?: number }) {
+  const ac = audio();
+  if (!ac) return null;
+  const t0 = ac.currentTime + 0.05;
+  const section = gain(ac, 0.9);
+  if (grit) send(ac, section.connect(warmth(ac, grit)), brassWet);
+  else send(ac, section, brassWet);
+  const perc = send(ac, gain(ac, 1), percWet);
+  const each = (notes: string | string[]) => (typeof notes === 'string' ? [notes] : notes).map(note);
+  return {
+    ac,
+    t0,
+    perc,
+    /** `notes` (one, or a chord) played by `part` from `at` for `dur`. */
+    brass(part: Part, notes: string | string[], at: number, dur: number, level = PARTS[part].level) {
+      for (const f of each(notes)) horn(ac, section, t0 + at, f, dur, level, PARTS[part]);
+    },
+    strings: (notes: string[], at: number, dur: number, level: number) => strings(ac, section, t0 + at, each(notes), dur, level),
+    timpani: (n: string, at: number, level: number, ring?: number) => kettle(ac, perc, t0 + at, note(n), level, ring),
+    bell: (n: string, at: number, level: number) => bell(ac, perc, t0 + at, note(n), level),
+    crash: (at: number, level: number, dur: number) => crash(ac, perc, t0 + at, level, dur),
+    swell: (at: number, dur: number, level: number) => swell(ac, perc, t0 + at, dur, level),
+    /** A tone (`type`) sliding from `from` to `to` Hz over `dur`, through a lowpass at `cutoff`. */
+    slide(type: OscillatorType, from: number, to: number, at: number, dur: number, level: number, cutoff = 20000) {
+      const osc = oscillator(ac, type, from, t0 + at, t0 + at + dur + 0.1);
+      osc.frequency.exponentialRampToValueAtTime(to, t0 + at + dur * 0.9);
+      osc
+        .connect(filter(ac, 'lowpass', cutoff))
+        .connect(envelope(ac, t0 + at, dur, level, 0.006))
+        .connect(perc);
+    },
+  };
+}
+
 /** When the fanfare's notes land, in seconds after it starts: the fireworks burst in time with them. */
 export const FANFARE_HITS = { pickups: [0.75, 0.89, 1.03], first: 1.17, second: 1.9, rise: [2.45, 2.85], final: 3.25 };
 
@@ -176,75 +236,88 @@ export const FANFARE_HITS = { pickups: [0.75, 0.89, 1.03], first: 1.17, second: 
  * A-flat and B-flat major (♭VI–♭VII) into a huge C major chord with a crash, strings and bells.
  */
 export function fanfare() {
-  const ac = audio();
-  if (!ac) return;
-  const t0 = ac.currentTime + 0.05;
+  const o = orchestra({ brassWet: 0.45, percWet: 0.35, grit: 1.6 });
+  if (!o) return;
   const H = FANFARE_HITS;
-
-  const grit = warmth(ac, 1.6);
-  const section = gain(ac, 0.9);
-  section.connect(grit);
-  send(ac, grit, 0.45);
-  const perc = send(ac, gain(ac, 1), 0.35);
-
-  const hz = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
-  // Notes by MIDI number: C4 = 60.
-  const [C2, G2, Ab2, Bb2, C3, G3, Ab3, Bb3, C4, D4, Eb4, E4, F4, G4, C5, E5, G5, Ab5, Bb5, C6] = [
-    36, 43, 44, 46, 48, 55, 56, 58, 60, 62, 63, 64, 65, 67, 72, 76, 79, 80, 82, 84,
-  ].map(hz);
-  const trumpet = (f: number, at: number, dur: number, g = 0.05) => horn(ac, section, t0 + at, f, dur, g, { voices: 3, bright: 1.1 });
-  const horns = (fs: number[], at: number, dur: number, g = 0.03) =>
-    fs.forEach((f) => horn(ac, section, t0 + at, f, dur, g, { voices: 2, bright: 0.55, attack: 0.05 }));
-  const trombone = (f: number, at: number, dur: number, g = 0.05) =>
-    horn(ac, section, t0 + at, f, dur, g, { voices: 2, bright: 0.7, attack: 0.04 });
-  const timpani = (f: number, at: number, g: number, ring?: number) => kettle(ac, perc, t0 + at, f, g, ring);
-  /** One chord of the climb: trumpet on top, horns and a trombone under it, and a drum stroke. */
-  const hit = (at: number, dur: number, top: number, chord: number[], bass: number, drum: number, g = 0.06) => {
-    trumpet(top, at, dur, g);
-    horns(chord, at, dur);
-    trombone(bass, at, dur);
-    timpani(drum, at, 0.27);
+  /** One chord of the climb: a trumpet on top, horns and a trombone under it, and a drum stroke. */
+  const hit = (at: number, dur: number, top: string, chord: string[], bass: string, drum: string, level = 0.06) => {
+    o.brass('trumpet', top, at, dur, level);
+    o.brass('horn', chord, at, dur);
+    o.brass('trombone', bass, at, dur);
+    o.timpani(drum, at, 0.27);
   };
 
   // The roll: soft to loud, and a reversed cymbal into the first note.
-  for (let i = 0; i < 15; i++) timpani(G2, i * 0.048, 0.04 + i * 0.012, 0.5);
-  swell(ac, perc, t0, H.pickups[0], 0.07);
+  for (let i = 0; i < 15; i++) o.timpani('G2', i * 0.048, 0.04 + i * 0.012, 0.5);
+  o.swell(0, H.pickups[0], 0.07);
 
   // Ta-ta-ta TAAA, ta TAAA…
   for (const at of H.pickups) {
-    trumpet(G4, at, 0.11);
-    horn(ac, section, t0 + at, G3, 0.11, 0.025, { voices: 2, bright: 0.6 });
+    o.brass('trumpet', 'G4', at, 0.11);
+    o.brass('horn', 'G3', at, 0.11, 0.025);
   }
-  hit(H.first, 0.6, C5, [C4, E4, G4], C3, C3);
-  trumpet(E5, H.second - 0.15, 0.13);
-  hit(H.second, 0.5, G5, [E4, G4, C5], C3, G2);
+  hit(H.first, 0.6, 'C5', ['C4', 'E4', 'G4'], 'C3', 'C3');
+  o.brass('trumpet', 'E5', H.second - 0.15, 0.13);
+  hit(H.second, 0.5, 'G5', ['E4', 'G4', 'C5'], 'C3', 'G2');
 
   // …climbing on A-flat and B-flat…
   const [rise1, rise2] = H.rise;
-  hit(rise1, 0.34, Ab5, [Ab3, C4, Eb4], Ab2, Ab2);
-  hit(rise2, 0.34, Bb5, [Bb3, D4, F4], Bb2, Bb2, 0.065);
-  swell(ac, perc, t0 + rise1, H.final - rise1, 0.05);
+  hit(rise1, 0.34, 'Ab5', ['Ab3', 'C4', 'Eb4'], 'Ab2', 'Ab2');
+  hit(rise2, 0.34, 'Bb5', ['Bb3', 'D4', 'F4'], 'Bb2', 'Bb2', 0.065);
+  o.swell(rise1, H.final - rise1, 0.05);
 
-  // …and home on a huge C major.
+  // …and home on a huge C major, over a deep sub drop.
   const F = H.final;
   const hold = 2.6;
-  trumpet(C6, F, hold, 0.07);
-  trumpet(G5, F, hold, 0.04);
-  trumpet(E5, F, hold, 0.035);
-  horns([C4, E4, G4, C5], F, hold, 0.032);
-  trombone(C3, F, hold, 0.06);
-  trombone(C2, F, hold, 0.05);
-  strings(ac, section, t0 + F, [C3, G3, C4, E4, G4], hold + 1.2, 0.02);
-  timpani(C3, F, 0.34, 2);
-  timpani(G2, F, 0.22, 2);
-  crash(ac, perc, t0 + F, 0.09, 3.5);
-  // A deep sub drop under the hit.
-  const sub = oscillator(ac, 'sine', 70, t0 + F, t0 + F + 1.9);
-  sub.frequency.exponentialRampToValueAtTime(34, t0 + F + 1.6);
-  sub.connect(envelope(ac, t0 + F, 1.8, 0.3, 0.006)).connect(perc);
+  o.brass('trumpet', 'C6', F, hold, 0.07);
+  o.brass('trumpet', 'G5', F, hold, 0.04);
+  o.brass('trumpet', 'E5', F, hold, 0.035);
+  o.brass('horn', ['C4', 'E4', 'G4', 'C5'], F, hold, 0.032);
+  o.brass('trombone', 'C3', F, hold, 0.06);
+  o.brass('trombone', 'C2', F, hold);
+  o.strings(['C3', 'G3', 'C4', 'E4', 'G4'], F, hold + 1.2, 0.02);
+  o.timpani('C3', F, 0.34, 2);
+  o.timpani('G2', F, 0.22, 2);
+  o.crash(F, 0.09, 3.5);
+  o.slide('sine', 70, 34, F, 1.8, 0.3);
   // A closing timpani flourish, and bells sparkling up through the chord.
-  [G2, G2, C3].forEach((f, i) => timpani(f, F + hold - 0.5 + i * 0.12, 0.14 + i * 0.05));
-  [C6, E5 * 2, G5 * 2, C6 * 2, G5 * 2, C6 * 2].forEach((f, i) => bell(ac, perc, t0 + F + 0.15 + i * 0.11, f, 0.035));
+  ['G2', 'G2', 'C3'].forEach((n, i) => o.timpani(n, F + hold - 0.5 + i * 0.12, 0.14 + i * 0.05));
+  ['C6', 'E6', 'G6', 'C7', 'G6', 'C7'].forEach((n, i) => o.bell(n, F + 0.15 + i * 0.11, 0.035));
+}
+
+/**
+ * The defeat lament: the ship's power failing, one deep drum, then muted horns falling E-flat, D, C over
+ * A-flat major, G major and C minor (♭VI–V–i), fading into a cold, distant chord.
+ */
+export function lament() {
+  // Further off in the hall than the fanfare.
+  const o = orchestra({ brassWet: 0.6, percWet: 0.5 });
+  if (!o) return;
+
+  // Power failing: a tone sinking to nothing through dying static.
+  o.slide('sawtooth', 220, 30, 0, 1.3, 0.05, 600);
+  const hiss = filter(o.ac, 'lowpass', 3000);
+  glide(hiss.frequency, o.t0, 3000, [[1.2, 200]]);
+  noiseSource(o.ac, o.t0, o.t0 + 1.3)
+    .connect(hiss)
+    .connect(envelope(o.ac, o.t0, 1.2, 0.03, 0.02))
+    .connect(o.perc);
+  o.timpani('C2', 0.2, 0.32, 2.4);
+
+  // The fall.
+  const fall: [at: number, dur: number, top: string, chord: string[], bass: string][] = [
+    [0.9, 0.7, 'Eb4', ['Ab2', 'C3', 'Eb3'], 'Ab1'],
+    [1.65, 0.7, 'D4', ['G2', 'B2', 'D3'], 'G1'],
+    [2.4, 2.6, 'C4', ['C3', 'Eb3', 'G3'], 'C2'],
+  ];
+  for (const [at, dur, top, chord, bass] of fall) {
+    o.brass('muted', top, at, dur);
+    o.brass('pad', chord, at, dur);
+    o.brass('muted', bass, at, dur, 0.04);
+  }
+  o.strings(['C2', 'G2', 'C3', 'Eb3'], 2.4, 3.6, 0.016);
+  o.timpani('C2', 2.4, 0.2, 2.5);
+  o.bell('C5', 2.9, 0.018);
 }
 
 let crackleBufs: { sampleRate: number; buffers: AudioBuffer[] } | null = null;

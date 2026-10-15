@@ -2,6 +2,11 @@ import type { GameState, PlayerId } from '@quantum/engine';
 import type { Toast } from './toasts';
 import type { Dispatch } from './useGame';
 
+/** Whether the game is over and lost for this screen: it plays for someone (`mine`), but not for the winner. */
+export function lost(game: GameState, mine: (p: PlayerId) => boolean): boolean {
+  return game.winner !== null && !mine(game.winner) && game.players.some((_, p) => mine(p));
+}
+
 /**
  * A game as the screen sees it, whether it is played on this device (useGame) or online
  * (useOnlineGame). Board, panels and overlays render it and don't care which it is.

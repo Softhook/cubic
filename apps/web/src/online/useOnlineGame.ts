@@ -243,6 +243,9 @@ function usePostLog(secret: string) {
   return { me, replay, relays, failure, post };
 }
 
+/** Whether seat `p` is a human player on this browser (`me`). */
+const humanSeat = (replay: Replay, me: string) => (p: PlayerId) => replay.seats[p]?.owner === me && !replay.seats[p].ai;
+
 /**
  * What the screen shows: the current position, or, while catching up on moves made by others,
  * each one in turn (see `nextStep`), from post `resume` (where the player left off) when the game
@@ -255,7 +258,7 @@ function usePlayback(replay: Replay | null, me: string, resume: string | null) {
   // The battle stage the player has dismissed: playback moves on from that battle once it ends.
   const [dismissed, setDismissed] = useState<string | null>(null);
   const dismissBattle = useCallback(() => setDismissed(shown && battleStage(shown.state)), [shown]);
-  const human = (p: PlayerId) => !!replay && replay.seats[p]?.owner === me && !replay.seats[p].ai;
+  const human = (p: PlayerId) => !!replay && humanSeat(replay, me)(p);
   // Once it is the player's turn, battles from earlier turns no longer wait for them: they move on
   // like anyone else's, so the player can get on with their turn.
   const head = replay?.steps.at(-1)!.state;
@@ -283,7 +286,7 @@ function usePlayback(replay: Replay | null, me: string, resume: string | null) {
     const next = nextStep(replay.steps, shown, own, performance.now() - shownAt.current, battle);
     if (!next) return;
     const show = () => {
-      if (next.announce && shown) announce(shown.state, next.step.state);
+      if (next.announce && shown) announce(shown.state, next.step.state, humanSeat(replay, me));
       shownAt.current = performance.now();
       setShown(next.step);
     };

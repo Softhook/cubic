@@ -283,14 +283,19 @@ export function ConquerChoice({
   );
 }
 
-/** `newLabel`: what leaving the finished game is called ("New game", or "Back to lobby" online). */
+/**
+ * `newLabel`: what leaving the finished game is called ("New game", or "Back to lobby" online). A winner (or
+ * an onlooker) gets fireworks; a player who `lost` sees the board drain of colour instead.
+ */
 export function GameOver({
   game,
+  lost,
   onNew,
   onClose,
   newLabel = 'New game',
 }: {
   game: GameState;
+  lost: boolean;
   onNew: () => void;
   onClose: () => void;
   newLabel?: string;
@@ -298,9 +303,13 @@ export function GameOver({
   if (game.winner === null) return null;
   const w = game.players[game.winner];
   return (
-    <div className="overlay celebrate">
-      <Fireworks color={w.color} />
-      <div className="gameover-flash" style={{ '--pc': w.color } as CSSProperties} />
+    <div className={`overlay ${lost ? 'mourn' : 'celebrate'}`}>
+      {!lost && (
+        <>
+          <Fireworks color={w.color} />
+          <div className="gameover-flash" style={{ '--pc': w.color } as CSSProperties} />
+        </>
+      )}
       <div
         role="dialog"
         aria-modal="true"
@@ -308,8 +317,8 @@ export function GameOver({
         className="modal gameover"
         style={{ '--pc': w.color } as CSSProperties}
       >
-        <div className="gameover-burst" />
-        <small>Victory</small>
+        {!lost && <div className="gameover-burst" />}
+        <small>{lost ? 'Defeat' : 'Victory'}</small>
         <h2 id="gameover-title">{w.name} conquers the sector</h2>
         <p className="modal-sub">
           All cubes placed after {game.turn.number} turn{game.turn.number === 1 ? '' : 's'}.
