@@ -5,7 +5,7 @@ import type { Dispatch } from '../game/useGame';
 import { CardView } from './Card';
 import { Dialog, Modal } from './Dialog';
 import { Die3D } from './Die3D';
-import { Fireworks } from './Fireworks';
+import { Fireworks } from './fireworks/Fireworks';
 
 /** Modal decisions for human players. Board-based decisions are handled by highlights instead. */
 export function DecisionOverlay({ game, dispatch, human }: { game: GameState; dispatch: Dispatch; human: boolean }) {
