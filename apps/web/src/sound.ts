@@ -1,31 +1,23 @@
 // Tiny synthesized sound kit (no audio files). All sounds are short and quiet.
 
-import { effects, envelope, filter, gain, glide, jitter, noiseSource, oscillator, out, prepare } from './audio';
+import { effects, envelope, filter, gain, glide, jitter, kept, noiseSource, oscillator, out } from './audio';
 import { fanfare, lament } from './gameOverSound';
-
-let clickBufs: { sampleRate: number; buffers: AudioBuffer[] } | null = null;
+import { pick } from './random';
 
 /** A few short random click samples reused by every dice clatter. */
-function clickBuffers(ac: AudioContext): AudioBuffer[] {
-  if (!clickBufs || clickBufs.sampleRate !== ac.sampleRate) {
-    const len = 0.035;
-    const size = Math.floor(ac.sampleRate * len);
-    const buffers = Array.from({ length: 8 }, () => {
-      const buf = ac.createBuffer(1, size, ac.sampleRate);
-      const data = buf.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) ** 3;
-      return buf;
-    });
-    clickBufs = { sampleRate: ac.sampleRate, buffers };
-  }
-  return clickBufs.buffers;
-}
-prepare(clickBuffers);
+const clickBuffers = kept((ac) => {
+  const size = Math.floor(ac.sampleRate * 0.035);
+  return Array.from({ length: 8 }, () => {
+    const buf = ac.createBuffer(1, size, ac.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) ** 3;
+    return buf;
+  });
+});
 
 function click(ac: AudioContext, at: number, level: number, freq: number) {
-  const buffers = clickBuffers(ac);
   const src = ac.createBufferSource();
-  src.buffer = buffers[Math.floor(Math.random() * buffers.length)];
+  src.buffer = pick(clickBuffers(ac));
   src
     .connect(filter(ac, 'bandpass', freq, 2.5))
     .connect(gain(ac, level))

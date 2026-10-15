@@ -1,4 +1,5 @@
 import { FANFARE_HITS } from '../../gameOverSound';
+import { pick, rand } from '../../random';
 import { GOLD, WHITE, type Rgb } from './sprites';
 
 // What the victory show fires (show.ts runs it): each shell's shape, and the programme timed to the fanfare.
@@ -66,9 +67,6 @@ export interface LaunchOptions {
 
 /** A shell that bursts `t` seconds into the show. */
 export type Fire = (t: number, o?: LaunchOptions) => void;
-
-export const rand = (a: number, b: number) => a + Math.random() * (b - a);
-export const pick = <T>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
 
 /** A velocity (ex, ey) turned by `turn` radians. */
 const turned = (ex: number, ey: number, turn: number) => ({

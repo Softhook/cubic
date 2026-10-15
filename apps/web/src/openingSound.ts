@@ -2,9 +2,9 @@
 // and as it lands a wide D minor chord blooming open with high chimes over it, all in a long reverb. It is the
 // drone's first chord (ambience.ts), so the one rings on into the other.
 
-import { contour, filter, gain, glide, hz, noiseSource, oscillator, reverb } from './audio';
+import { compressor, contour, filter, gain, glide, hz, noiseSource, oscillator, panner, reverb, spread } from './audio';
 
-/** Seconds from the start to the title landing: its rise (components/Lobby.tsx) takes about one, settling gently. */
+/** Seconds from the start to the title landing: its rise (components/lobby/useIntro.ts) takes about one, settling gently. */
 const LAND = 0.8;
 /** Seconds the chord rings after the landing. */
 const RING = 8;
@@ -27,9 +27,7 @@ export function opening(ac: AudioContext): { start: number; land: number } {
   const at = ac.currentTime + LEAD;
   const land = at + LAND;
   // Held in by a compressor, on its way out and into the reverb.
-  const comp = ac.createDynamicsCompressor();
-  comp.threshold.value = -12;
-  comp.ratio.value = 4;
+  const comp = compressor(ac, -12);
   comp.connect(ac.destination);
   comp.connect(verb);
   const mix = gain(ac, 0.8);
@@ -95,8 +93,7 @@ function bloom(ac: AudioContext, dest: AudioNode, land: number) {
     )
     .connect(dest);
   CHORD.forEach((note, i) => {
-    const pan = ac.createStereoPanner();
-    pan.pan.value = ((i / (CHORD.length - 1)) * 2 - 1) * 0.7;
+    const pan = panner(ac, spread(i, CHORD.length, 0.7));
     pan.connect(open);
     for (const cents of [-9, 9]) {
       const osc = oscillator(ac, 'sawtooth', hz(note), from, land + RING);

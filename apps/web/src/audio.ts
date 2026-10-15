@@ -16,7 +16,6 @@ const switches: Record<Switch, boolean> = {
   music: stored('quantum.music') !== 'off',
 };
 const listeners = new Set<() => void>();
-let noiseBuf: AudioBuffer | null = null;
 let verb: { input: ConvolverNode; level: GainNode } | null = null;
 /** The reverb's level, in the mix. */
 const WET = 0.9;
@@ -88,9 +87,7 @@ export function onSwitch(listener: () => void): () => void {
 /** Where every sound effect goes: a gentle compressor, so several sounds at once don't clip, then silence while sound is off. */
 export function out(ac: AudioContext): AudioNode {
   if (!bus) {
-    const comp = ac.createDynamicsCompressor();
-    comp.threshold.value = -14;
-    comp.ratio.value = 4;
+    const comp = compressor(ac, -14);
     effectsGain = gain(ac, switches.sound ? 1 : 0);
     comp.connect(effectsGain).connect(ac.destination);
     bus = comp;
@@ -104,8 +101,22 @@ const preparations: ((ac: AudioContext) => void)[] = [];
  * Has `build` make what a sound needs (a reverb, a set of samples) once the audio has started, when the page is
  * idle, rather than in the moment the sound is first played, where on a phone it holds up the page.
  */
-export function prepare(build: (ac: AudioContext) => void) {
+function prepare(build: (ac: AudioContext) => void) {
   preparations.push(build);
+}
+
+/**
+ * What `build` makes for the audio (a reverb, a set of samples), made once, prepared ahead (`prepare`), and
+ * then reused by every sound that asks for it.
+ */
+export function kept<T>(build: (ac: AudioContext) => T): (ac: AudioContext) => T {
+  let made: { ac: AudioContext; value: T } | null = null;
+  const get = (ac: AudioContext) => {
+    if (made?.ac !== ac) made = { ac, value: build(ac) };
+    return made.value;
+  };
+  prepare(get);
+  return get;
 }
 
 const idle = (fn: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 1000 }) : setTimeout(fn, 0));
@@ -160,14 +171,12 @@ if (TOUCH) {
 }
 
 /** Two seconds of white noise, made once and reused by every noise sound. */
-function whiteNoise(ac: AudioContext): AudioBuffer {
-  if (!noiseBuf || noiseBuf.sampleRate !== ac.sampleRate) {
-    noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
-    const data = noiseBuf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-  }
-  return noiseBuf;
-}
+const whiteNoise = kept((ac) => {
+  const buf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  return buf;
+});
 
 /**
  * Has `params` take one value for each slice of 128 samples rather than for every sample. A filter otherwise
@@ -234,6 +243,24 @@ export function filter(ac: AudioContext, type: BiquadFilterType, freq: number, q
   return f;
 }
 
+/** A compressor holding sound in above `threshold` dB, so several sounds at once don't clip. */
+export function compressor(ac: AudioContext, threshold: number, ratio = 4): DynamicsCompressorNode {
+  const comp = ac.createDynamicsCompressor();
+  comp.threshold.value = threshold;
+  comp.ratio.value = ratio;
+  return comp;
+}
+
+/** A stereo panner at `pan`, from -1 (left) to 1 (right). */
+export function panner(ac: AudioContext, pan: number): StereoPannerNode {
+  const p = ac.createStereoPanner();
+  p.pan.value = pan;
+  return p;
+}
+
+/** Where the `i`th of `n` voices sits when they are spread evenly across `width` of the stereo field (one, in the middle). */
+export const spread = (i: number, n: number, width: number) => (n > 1 ? ((i / (n - 1)) * 2 - 1) * width : 0);
+
 /** A gain node at `level`. */
 export function gain(ac: AudioContext, level: number): GainNode {
   const g = ac.createGain();
@@ -277,7 +304,6 @@ export function reverb(ac: AudioContext): AudioNode {
   return verb.input;
 }
 prepare(reverb);
-prepare(whiteNoise);
 
 /** `x` give or take a fraction `by`, so repeated sounds vary. */
 export const jitter = (x: number, by = 0.08) => x * (1 + (Math.random() * 2 - 1) * by);

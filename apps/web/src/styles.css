@@ -1206,7 +1206,7 @@ input { font: inherit; }
   padding: calc(16px + var(--safe-top)) 16px 32px;
   gap: 20px;
 }
-/* Behind the lobby (LobbyBackdrop.tsx): the chosen map on a tilted plane that turns once every few minutes, with
+/* Behind the lobby (lobby/Backdrop.tsx): the chosen map on a tilted plane that turns once every few minutes, with
    fleets gliding over it. Fixed, under the lobby's content, and shaded so the form stays easy to read. */
 .lobby-backdrop {
   position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
@@ -1279,7 +1279,7 @@ input { font: inherit; }
   width: calc(var(--half) * 2); height: calc(var(--half) * 2);
   transform-style: preserve-3d;
   transform: translate(calc((var(--c) + .22) * var(--cell)), calc((var(--r) + .22) * var(--cell)));
-  /* A space at a time (LobbyBackdrop.tsx sets the easing for each, so a move flows from start to end). */
+  /* A space at a time (lobby/Backdrop.tsx sets the easing for each, so a move flows from start to end). */
   transition: transform var(--glide) var(--ease, ease-in-out);
 }
 /* The cube rests on the board (a pixel above it, so its bottom face doesn't fight the map for depth), and
@@ -1365,7 +1365,7 @@ input { font: inherit; }
      filter can't interpolate, and Safari on iPad left the title blurred. */
   filter: blur(0) drop-shadow(0 0 30px rgba(122,162,255,.35));
 }
-/* The opening (Lobby.tsx useIntro): the title fades in alone in the middle of the screen, over the backdrop, then
+/* The opening (lobby/useIntro.ts): the title fades in alone in the middle of the screen, over the backdrop, then
    rises to its place while the rest of the lobby fades in under it. */
 .lobby.intro-title, .lobby.intro-rise { overflow: hidden; }
 .lobby.intro-title h1 {
@@ -1395,7 +1395,7 @@ input { font: inherit; }
 .intro-prompt.gone { opacity: 0; animation: none; transition: opacity .2s; }
 @keyframes intro-prompt-in { from { opacity: 0; transform: translateY(6px); } }
 @keyframes intro-prompt-pulse { 50% { opacity: .45; } }
-/* On iPhone and iPad, how to play full screen (Lobby.tsx). */
+/* On iPhone and iPad, how to play full screen (lobby/HomeScreenHint.tsx). */
 .home-hint {
   width: min(520px, 100%);
   display: flex; align-items: center; gap: 8px;

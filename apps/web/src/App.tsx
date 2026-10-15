@@ -4,7 +4,7 @@ import { useGame } from './game/useGame';
 import { clearSavedGame, gameOnScreenBeforeReload, markGameOnScreen, saveGame } from './game/savedGame';
 import { begin, saved } from './game/past';
 import { devStartGame } from './game/devStart';
-import { Lobby, type LobbyResult } from './components/Lobby';
+import { Lobby, type LobbyResult } from './components/lobby/Lobby';
 import { Game } from './components/GameScreen';
 import { onlineSecret } from './online/link';
 import { ambience } from './ambience';

@@ -6,15 +6,14 @@
 // node is disconnected, since the echo is a loop that would otherwise keep itself alive. The reverb is shared
 // with the opening, and kept (audio.ts).
 
-import { audio, contour, filter, gain, hz, isOn, noiseSource, onSwitch, oscillator, reverb } from './audio';
+import { audio, contour, filter, gain, hz, isOn, noiseSource, onSwitch, oscillator, panner, reverb, spread } from './audio';
 import { opening } from './openingSound';
+import { pick, rand } from './random';
 
 const FADE_IN = 6;
 const FADE_OUT = 2.5;
 /** Longer than any game, in seconds: the drone's sources are stopped when it fades out. */
 const FOREVER = 60 * 60 * 24;
-
-const between = (lo: number, hi: number) => lo + Math.random() * (hi - lo);
 
 // Open five-voice chords around D minor, as MIDI notes, low voice first. Each voice glides to its note in
 // the next chord, a little after the one below it, so a change drifts in like a slow melody.
@@ -152,7 +151,6 @@ function start(ac: AudioContext): Drone {
   fadeIn(d, t, FADE_IN);
   bus.connect(keep(d, gain(ac, 0.45))).connect(ac.destination);
   bus.connect(reverb(ac));
-  const mix = bus;
 
   // The chimes ring through a dark echo before the reverb.
   const echo = keep(d, ac.createDelay(2));
@@ -161,26 +159,24 @@ function start(ac: AudioContext): Drone {
     .connect(keep(d, filter(ac, 'lowpass', 1800)))
     .connect(keep(d, gain(ac, 0.42)))
     .connect(echo);
-  echo.connect(mix);
+  echo.connect(bus);
   d.chimes = keep(d, gain(ac, 1));
-  d.chimes.connect(mix);
+  d.chimes.connect(bus);
   d.chimes.connect(echo);
 
   // The pad: pairs of detuned saws, darkened by a lowpass that slowly opens and closes.
   const pad = keep(d, filter(ac, 'lowpass', 620, 0.6));
-  pad.connect(mix);
+  pad.connect(bus);
   lfo(ac, d, pad.frequency, 0.019, 260);
   const chord = CHORDS[0];
   chord.forEach((note, i) => {
     const level = keep(d, gain(ac, 0.02));
     // Each voice breathes at its own pace.
-    lfo(ac, d, level.gain, between(0.03, 0.08), 0.012);
-    const pan = keep(d, ac.createStereoPanner());
-    pan.pan.value = ((i / (chord.length - 1)) * 2 - 1) * 0.55;
-    level.connect(pan).connect(pad);
+    lfo(ac, d, level.gain, rand(0.03, 0.08), 0.012);
+    level.connect(keep(d, panner(ac, spread(i, chord.length, 0.55)))).connect(pad);
     const pair = [-6, 6].map((cents) => {
       const osc = source(d, oscillator(ac, 'sawtooth', hz(note), t, t + FOREVER));
-      osc.detune.value = cents + between(-2, 2);
+      osc.detune.value = cents + rand(-2, 2);
       osc.connect(level);
       return osc;
     });
@@ -194,10 +190,10 @@ function start(ac: AudioContext): Drone {
   wind
     .connect(band)
     .connect(keep(d, gain(ac, 0.025)))
-    .connect(mix);
+    .connect(bus);
 
-  later(d, between(22, 32), () => changeChord(d));
-  later(d, between(5, 9), () => chime(d));
+  later(d, rand(22, 32), () => changeChord(d));
+  later(d, rand(5, 9), () => chime(d));
   return d;
 }
 
@@ -220,26 +216,24 @@ function changeChord(d: Drone) {
   if (next >= d.chord) next++;
   d.chord = next;
   CHORDS[next].forEach((note, i) => {
-    const at = ac.currentTime + i * between(0.6, 1.4);
+    const at = ac.currentTime + i * rand(0.6, 1.4);
     for (const osc of d.voices[i]) osc.frequency.setTargetAtTime(hz(note), at, 2.2);
   });
-  later(d, between(24, 36), () => changeChord(d));
+  later(d, rand(24, 36), () => changeChord(d));
 }
 
 /** One soft bell-like note high above the pad, from the chord it is on; sometimes a second follows. */
 function chime(d: Drone, again = true) {
   const { ac } = d;
   const tones = CHORDS[d.chord].slice(1);
-  let note = tones[Math.floor(Math.random() * tones.length)];
+  let note = pick(tones);
   while (note < 74) note += 12;
   const at = ac.currentTime + 0.05;
   const env = contour(ac, at, [
     [0.2, 0.03],
     [5, 0],
   ]);
-  const pan = ac.createStereoPanner();
-  pan.pan.value = between(-0.7, 0.7);
-  env.connect(pan).connect(d.chimes);
+  env.connect(panner(ac, rand(-0.7, 0.7))).connect(d.chimes);
   for (const [ratio, level] of [
     [1, 1],
     [2.003, 0.18],
@@ -248,8 +242,8 @@ function chime(d: Drone, again = true) {
       .connect(gain(ac, level))
       .connect(env);
   }
-  if (again && Math.random() < 0.35) later(d, between(1.1, 1.8), () => chime(d, false));
-  if (again) later(d, between(8, 16), () => chime(d));
+  if (again && Math.random() < 0.35) later(d, rand(1.1, 1.8), () => chime(d, false));
+  if (again) later(d, rand(8, 16), () => chime(d));
 }
 
 /** Silent until `at`, then fading in over `seconds`. */

@@ -1,34 +1,29 @@
 // The game's ending, all played in a hall: for a winner, a brass fanfare and the fireworks (components/fireworks/);
 // for a player who lost, a lament.
 
-import { contour, effects, envelope, filter, gain, glide, jitter, noiseSource, oscillator, out, prepare } from './audio';
-
-let hallIn: AudioNode | null = null;
+import { contour, effects, envelope, filter, gain, glide, hz, jitter, kept, noiseSource, oscillator, out } from './audio';
+import { pick } from './random';
 
 /** A big hall: a synthesized reverb tail the fanfare and fireworks send into, so they ring out. */
-function hall(ac: AudioContext): AudioNode {
-  if (!hallIn) {
-    const len = Math.floor(ac.sampleRate * 3.2);
-    const ir = ac.createBuffer(2, len, ac.sampleRate);
-    // A short gap, then a dense tail dying away over about three seconds.
-    const gap = Math.floor(ac.sampleRate * 0.012);
-    const fall = Math.exp(-1 / (0.75 * ac.sampleRate));
-    for (let ch = 0; ch < 2; ch++) {
-      const data = ir.getChannelData(ch);
-      let level = Math.exp(-gap / (0.75 * ac.sampleRate));
-      for (let i = gap; i < len; i++) {
-        data[i] = (Math.random() * 2 - 1) * level * Math.min(1, (i * 25) / ac.sampleRate);
-        level *= fall;
-      }
+const hall = kept((ac): AudioNode => {
+  const len = Math.floor(ac.sampleRate * 3.2);
+  const ir = ac.createBuffer(2, len, ac.sampleRate);
+  // A short gap, then a dense tail dying away over about three seconds.
+  const gap = Math.floor(ac.sampleRate * 0.012);
+  const fall = Math.exp(-1 / (0.75 * ac.sampleRate));
+  for (let ch = 0; ch < 2; ch++) {
+    const data = ir.getChannelData(ch);
+    let level = Math.exp(-gap / (0.75 * ac.sampleRate));
+    for (let i = gap; i < len; i++) {
+      data[i] = (Math.random() * 2 - 1) * level * Math.min(1, (i * 25) / ac.sampleRate);
+      level *= fall;
     }
-    const conv = ac.createConvolver();
-    conv.buffer = ir;
-    conv.connect(gain(ac, 0.55)).connect(out(ac));
-    hallIn = conv;
   }
-  return hallIn;
-}
-prepare(hall);
+  const conv = ac.createConvolver();
+  conv.buffer = ir;
+  conv.connect(gain(ac, 0.55)).connect(out(ac));
+  return conv;
+});
 
 /** Plays `node` straight out and sends `wet` of it into the hall. */
 function send<T extends AudioNode>(ac: AudioContext, node: T, wet: number): T {
@@ -181,8 +176,7 @@ const STEPS: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 1
 /** A note's pitch from its name: 'C4' (middle C), 'Eb3', 'F#5'. */
 function note(name: string): number {
   const [, letter, accidental, octave] = /^([A-G])(b|#)?(\d)$/.exec(name)!;
-  const midi = 12 * (Number(octave) + 1) + STEPS[letter] + (accidental === 'b' ? -1 : accidental === '#' ? 1 : 0);
-  return 440 * 2 ** ((midi - 69) / 12);
+  return hz(12 * (Number(octave) + 1) + STEPS[letter] + (accidental === 'b' ? -1 : accidental === '#' ? 1 : 0));
 }
 
 /** How each brass part plays: players per note, how bright its breath is, its attack and its usual level. */
@@ -327,42 +321,34 @@ export function lament() {
   o.bell('C5', 2.9, 0.018);
 }
 
-let crackleBufs: { sampleRate: number; buffers: AudioBuffer[] } | null = null;
-
 /** Short bursts of crackle, made once: dense random snaps that flare then die away, like crackling microstars. */
-function crackleBuffers(ac: AudioContext): AudioBuffer[] {
-  if (!crackleBufs || crackleBufs.sampleRate !== ac.sampleRate) {
-    const sr = ac.sampleRate;
-    const buffers = Array.from({ length: 4 }, () => {
-      const len = Math.floor(sr * 1.6);
-      const buf = ac.createBuffer(2, len, sr);
-      const [left, right] = [buf.getChannelData(0), buf.getChannelData(1)];
-      const snaps = 260 + Math.floor(Math.random() * 120);
-      for (let k = 0; k < snaps; k++) {
-        // Most snaps come early, thinning out towards the end; a few are much louder than the rest.
-        const start = Math.floor(Math.random() ** 1.8 * 1.5 * sr);
-        const amp = 0.15 + 0.85 * Math.random() ** 4;
-        const decay = sr * (0.0004 + Math.random() * 0.0016);
-        const pan = Math.random();
-        for (let i = 0; i < decay * 6 && start + i < len; i++) {
-          const v = (Math.random() * 2 - 1) * amp * Math.exp(-i / decay);
-          left[start + i] += v * (1 - pan * 0.7);
-          right[start + i] += v * (0.3 + pan * 0.7);
-        }
+const crackleBuffers = kept((ac) => {
+  const sr = ac.sampleRate;
+  return Array.from({ length: 4 }, () => {
+    const len = Math.floor(sr * 1.6);
+    const buf = ac.createBuffer(2, len, sr);
+    const [left, right] = [buf.getChannelData(0), buf.getChannelData(1)];
+    const snaps = 260 + Math.floor(Math.random() * 120);
+    for (let k = 0; k < snaps; k++) {
+      // Most snaps come early, thinning out towards the end; a few are much louder than the rest.
+      const start = Math.floor(Math.random() ** 1.8 * 1.5 * sr);
+      const amp = 0.15 + 0.85 * Math.random() ** 4;
+      const decay = sr * (0.0004 + Math.random() * 0.0016);
+      const pan = Math.random();
+      for (let i = 0; i < decay * 6 && start + i < len; i++) {
+        const v = (Math.random() * 2 - 1) * amp * Math.exp(-i / decay);
+        left[start + i] += v * (1 - pan * 0.7);
+        right[start + i] += v * (0.3 + pan * 0.7);
       }
-      return buf;
-    });
-    crackleBufs = { sampleRate: sr, buffers };
-  }
-  return crackleBufs.buffers;
-}
-prepare(crackleBuffers);
+    }
+    return buf;
+  });
+});
 
 /** A crackle at `at`. */
 function crackle(ac: AudioContext, at: number, level: number) {
   const src = ac.createBufferSource();
-  const buffers = crackleBuffers(ac);
-  src.buffer = buffers[Math.floor(Math.random() * buffers.length)];
+  src.buffer = pick(crackleBuffers(ac));
   src.playbackRate.value = jitter(1, 0.12);
   src
     .connect(filter(ac, 'highpass', 700))

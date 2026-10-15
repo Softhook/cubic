@@ -1,18 +1,7 @@
 import { NEBULA_HUES } from '@quantum/art';
 import { FANFARE_HITS, fireworkSound } from '../../gameOverSound';
-import {
-  RANDOM_SHAPES,
-  SHAPES,
-  pick,
-  programme,
-  rand,
-  sphere,
-  type Burst,
-  type Fire,
-  type Kit,
-  type LaunchOptions,
-  type SparkStyle,
-} from './display';
+import { pick, rand } from '../../random';
+import { RANDOM_SHAPES, SHAPES, programme, sphere, type Burst, type Fire, type Kit, type LaunchOptions, type SparkStyle } from './display';
 import { GOLD, WHITE, glowSprite, lift, nebulaSprite, rgba, tint, toRgb, type Rgb } from './sprites';
 
 // The victory show's engine: it fires what display.ts programmes. Rockets climb and burst into sparks; every
