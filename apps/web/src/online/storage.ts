@@ -1,5 +1,5 @@
 import { generateSecretKey } from 'nostr-tools/pure';
-import { gameKeys, hex, type NostrEvent } from '@quantum/online';
+import { decodeEvent, gameKeys, hex, Timeline, type NostrEvent } from '@quantum/online';
 import { forget, remember, stored, storedJson } from '../storage';
 import { eventsKey, onlineGames, saveOnlineGames, type OnlineGameEntry } from './games';
 
@@ -28,12 +28,38 @@ export function keepStorage() {
   void navigator.storage?.persist?.().catch(() => {});
 }
 
-export function loadEvents(tag: string): NostrEvent[] {
-  return storedJson<NostrEvent[]>(eventsKey(tag)) ?? [];
+/** The saved events; anything else stored there (damaged, say) is left out. */
+function loadEvents(tag: string): NostrEvent[] {
+  const saved = storedJson<unknown>(eventsKey(tag));
+  return Array.isArray(saved) ? saved.filter((e): e is NostrEvent => typeof e?.id === 'string') : [];
 }
 
-export function saveEvents(tag: string, events: NostrEvent[]) {
-  if (!remember(eventsKey(tag), JSON.stringify(events))) console.warn('[quantum] could not save the online game locally');
+/** Whether they were saved. */
+export function saveEvents(tag: string, events: NostrEvent[]): boolean {
+  const saved = remember(eventsKey(tag), JSON.stringify(events));
+  if (!saved) console.warn('[quantum] could not save the online game locally');
+  return saved;
+}
+
+/**
+ * A game's events and the timeline they make. `load` adds those this browser saved (decrypting
+ * each, so not while rendering); `receive` adds one (a relay's): true if it was new and valid.
+ */
+export function openGameLog(secret: string) {
+  const keys = gameKeys(secret);
+  const timeline = new Timeline();
+  const events = new Map<string, NostrEvent>();
+  const receive = (e: NostrEvent, trusted = false) => {
+    if (events.has(e.id)) return false;
+    const p = decodeEvent(keys, e, trusted);
+    if (!p) return false;
+    events.set(e.id, e);
+    return timeline.add(p);
+  };
+  const load = () => {
+    for (const e of loadEvents(keys.tag)) receive(e, true);
+  };
+  return { keys, timeline, events, receive, load };
 }
 
 /** Finished games kept in this browser (the most recently seen); older ones are let go. */

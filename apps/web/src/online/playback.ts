@@ -16,6 +16,8 @@ export interface NextStep {
   delay: number;
   /** Whether to announce what it changed (toasts, sounds); not when skipping ahead. */
   announce: boolean;
+  /** Whether it is another position than the one after `shown` (skipping moves, or `shown` lost), not the same one rebuilt. */
+  jump: boolean;
 }
 
 /**
@@ -47,7 +49,7 @@ export function nextStep(
   const i = indexOf(steps, shown);
   // Lost, or at the last step but a replay from scratch (a claim, say) made a new one for it: show
   // that one, or the screen never counts as caught up.
-  if (i < 0 || i === last) return steps[last] === shown ? null : { step: steps[last], delay: 0, announce: false };
+  if (i < 0 || i === last) return steps[last] === shown ? null : { step: steps[last], delay: 0, announce: false, jump: i < 0 && !!shown };
   const fighting = battleOnScreen(shown!.state);
   const pause = fighting ? COMBAT_MS : STEP_MS;
   if (battleEnds(steps, i) && battle.mine && !battle.dismissed) return null;
@@ -55,12 +57,12 @@ export function nextStep(
     let j = i + 1;
     while (j < last && !battleEnds(steps, j)) j++;
     // Moves that were never shown only get their pause if there is a battle on screen to see.
-    return { step: steps[j], delay: fighting ? Math.max(0, pause - elapsed) : 0, announce: false };
+    return { step: steps[j], delay: fighting ? Math.max(0, pause - elapsed) : 0, announce: false, jump: j > i + 1 };
   }
   const next = steps[i + 1];
-  if (battleEnds(steps, i) && battle.mine) return { step: next, delay: 0, announce: true };
+  if (battleEnds(steps, i) && battle.mine) return { step: next, delay: 0, announce: true, jump: false };
   const min = !fighting && next.post && own(next.post) ? 0 : pause;
-  return { step: next, delay: Math.max(0, min - elapsed), announce: true };
+  return { step: next, delay: Math.max(0, min - elapsed), announce: true, jump: false };
 }
 
 /** Where `s` is among `steps`: the same step, or else the last step made by the same post; -1 if neither. */

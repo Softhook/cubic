@@ -61,16 +61,16 @@ describe('online playback', () => {
 
   it('jumps to the present when far behind or when the steps were rebuilt', () => {
     const steps = Array.from({ length: MAX_BEHIND + 3 }, () => step());
-    expect(nextStep(steps, steps[0], mine, 0)).toMatchObject({ step: steps.at(-1), delay: 0, announce: false });
-    expect(nextStep(steps, step(), mine, 0)).toMatchObject({ step: steps.at(-1), announce: false });
-    expect(nextStep(steps, null, mine, 0)).toMatchObject({ step: steps.at(-1), announce: false });
+    expect(nextStep(steps, steps[0], mine, 0)).toMatchObject({ step: steps.at(-1), delay: 0, announce: false, jump: true });
+    expect(nextStep(steps, step(), mine, 0)).toMatchObject({ step: steps.at(-1), announce: false, jump: true });
+    expect(nextStep(steps, null, mine, 0)).toMatchObject({ step: steps.at(-1), announce: false, jump: false });
   });
 
   it('at the present, moves to its rebuilt step, so it still counts as caught up', () => {
     // A claim rebuilds the steps without adding one: the same posts, new step objects.
     const old = [step(), step()];
     const rebuilt = old.map((s) => ({ ...s }));
-    expect(nextStep(rebuilt, old[1], mine, 0)).toMatchObject({ step: rebuilt[1], delay: 0, announce: false });
+    expect(nextStep(rebuilt, old[1], mine, 0)).toMatchObject({ step: rebuilt[1], delay: 0, announce: false, jump: false });
     expect(walk(rebuilt, old[1])).toEqual([rebuilt[1]]);
   });
 
@@ -95,8 +95,10 @@ describe('online playback', () => {
     expect(seen.slice(0, 2)).toEqual([first[1], second[0]]);
     expect(seen.at(-1)).toBe(steps.at(-1));
     // Skipping on from a result still leaves it on screen for its pause; from a move, at once.
-    expect(nextStep(steps, first[1], mine, 1000)).toMatchObject({ step: second[0], delay: COMBAT_MS - 1000, announce: false });
+    expect(nextStep(steps, first[1], mine, 1000)).toMatchObject({ step: second[0], delay: COMBAT_MS - 1000, announce: false, jump: true });
     expect(nextStep(steps, steps[0], mine, 0)).toMatchObject({ step: first[1], delay: 0 });
+    // A result right after the step on screen is just the next step, not a jump.
+    expect(nextStep(steps, first[0], mine, Infinity)).toMatchObject({ step: first[1], jump: false });
     // The player's own battle that they still have to see is not skipped past.
     expect(nextStep(steps, first[1], mine, Infinity, { mine: true, dismissed: false })).toBeNull();
   });
@@ -107,6 +109,6 @@ describe('online playback', () => {
     expect(resumeAt(steps, steps[1].post!.id)).toBe(1);
     expect(resumeAt(steps, 'gone')).toBe(-1);
     const rebuilt = steps.map((s) => ({ ...s }));
-    expect(nextStep(rebuilt, steps[1], mine, Infinity)).toMatchObject({ step: rebuilt[2], announce: true });
+    expect(nextStep(rebuilt, steps[1], mine, Infinity)).toMatchObject({ step: rebuilt[2], announce: true, jump: false });
   });
 });

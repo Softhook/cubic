@@ -1,8 +1,9 @@
-import { useLayoutEffect, useState, type CSSProperties } from 'react';
+import { Component, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import { card, type GameState } from '@quantum/engine';
+import type { GameState } from '@quantum/engine';
 import { reducedMotion } from '../game/useMediaQuery';
 import { lastLogId, useTransient } from '../game/useTransient';
+import { leftRow } from '../game/marketRow';
 import { CardArt } from './CardViewer';
 
 interface Flight {
@@ -17,18 +18,26 @@ interface Flight {
   color: string;
 }
 
+/** A card leaving the market for `player`, from where it was on screen. */
+interface Departure {
+  key: string;
+  card: string;
+  player: number;
+  from: DOMRect;
+}
+
 const FLIGHT_MS = 480;
 /** No wider than a market card, though a phone's list of them is a row each. */
 const MAX_WIDTH = 120;
 const CARD_RATIO = 88.9 / 63.5;
 
-/** A face-up card's place in the market (a card when open, a chip when collapsed), found by its title. */
-function marketSpot(id: string): DOMRect | undefined {
-  const def = card(id);
-  const title = `${def.name} — ${def.text}`;
-  const el = [...document.querySelectorAll<HTMLElement>('#market-cards .market-card, #market-cards .market-chip')].find(
-    (e) => e.title === title,
-  );
+/**
+ * A face-up card's place in the market (a card when open, a chip when collapsed): the copy at `index` in its
+ * row, or the first copy (a phone's list shows one of each).
+ */
+function marketSpot(id: string, index: number | undefined): DOMRect | undefined {
+  const card = `#market-cards :is(.market-card, .market-chip)[data-card="${CSS.escape(id)}"]`;
+  const el = (index !== undefined && document.querySelector(`${card}[data-index="${index}"]`)) || document.querySelector(card);
   const r = el?.getBoundingClientRect();
   return r && r.width > 0 ? r : undefined;
 }
@@ -42,74 +51,111 @@ function playerSpot(player: number): DOMRect | undefined {
 }
 
 /**
- * A card taken from the market flies from its place there to whoever took it, its art shrinking as it
- * goes. Where the cards were is measured while rendering the new market, before the taken one has gone.
- * None under reduced motion, while not `live` (looking back at the game), or for cards that leave otherwise
- * (a market refresh).
+ * The cards that left the market from `was` to `game` for a player: taken, or played straight from it (a Tactic),
+ * with where each was in its row.
  */
-export function useCardFlights(game: GameState, live: boolean) {
-  const [was, setWas] = useState(game);
-  const [leaving, setLeaving] = useState<{ card: string; player: number; from: DOMRect; key: string }[]>([]);
-  const [flights, show] = useTransient<Flight>(FLIGHT_MS);
-  if (game !== was) {
-    setWas(game);
-    const before = lastLogId(was);
-    const rows = [...was.market.skillRow, ...was.market.tacticRow];
-    // Taken, or played straight from the market (a Tactic): one flight a card.
-    const moved = game.log.filter(
-      (e) => e.id > before && (e.event === 'cardTaken' || e.event === 'cardPlayed') && e.player !== undefined && rows.includes(e.card!),
-    );
-    const taken = moved.filter((e, i) => moved.findIndex((x) => x.card === e.card) === i);
-    if (live && taken.length && !reducedMotion())
-      setLeaving(
-        taken.flatMap((e) => {
-          const from = marketSpot(e.card!);
-          return from ? [{ card: e.card!, player: e.player!, from, key: `${e.id}` }] : [];
-        }),
-      );
+function leaving(was: GameState, game: GameState) {
+  const before = lastLogId(was);
+  const { skillRow, tacticRow } = was.market;
+  const gone = [
+    ...leftRow(skillRow, game.market.skillRow).map((i) => ({ card: skillRow[i], index: i })),
+    ...leftRow(tacticRow, game.market.tacticRow).map((i) => ({ card: tacticRow[i], index: i })),
+  ];
+  return game.log.flatMap((e) => {
+    if (e.id <= before || (e.event !== 'cardTaken' && e.event !== 'cardPlayed') || e.player === undefined) return [];
+    const k = gone.findIndex((g) => g.card === e.card);
+    return k < 0 ? [] : [{ ...e, index: gone.splice(k, 1)[0].index }];
+  });
+}
+
+interface DeparturesProps {
+  game: GameState;
+  scene?: string;
+  onDepart: (d: Departure[]) => void;
+}
+
+/**
+ * Measures the cards leaving the market just before a new `game` reaches the screen, while they are still there:
+ * React calls getSnapshotBeforeUpdate before it changes the page. `onDepart` gets them once the new screen is laid
+ * out. Nothing for a jump to another position (`scene` changed), or under reduced motion.
+ */
+class Departures extends Component<DeparturesProps> {
+  getSnapshotBeforeUpdate(prev: Readonly<DeparturesProps>): Departure[] | null {
+    const { game, scene } = this.props;
+    if (prev.game === game || prev.scene !== scene || reducedMotion()) return null;
+    const out = leaving(prev.game, game).flatMap((e) => {
+      const from = marketSpot(e.card!, e.index);
+      return from ? [{ key: `${e.id}`, card: e.card!, player: e.player!, from }] : [];
+    });
+    return out.length ? out : null;
   }
 
-  // Once the new screen is laid out, aim each card at its player.
-  useLayoutEffect(() => {
-    if (!leaving.length) return;
-    const fresh = leaving.flatMap((l): Flight[] => {
-      const to = playerSpot(l.player);
-      if (!to) return [];
-      // Centred on where the card was, then on the player.
-      const w = Math.min(l.from.width, MAX_WIDTH);
-      const cx = l.from.left + l.from.width / 2;
-      const cy = l.from.top + l.from.height / 2;
-      const x = cx - w / 2;
-      const y = cy - (w * CARD_RATIO) / 2;
-      const dx = to.left + to.width / 2 - cx;
-      const dy = to.top + to.height / 2 - cy;
-      return [{ key: l.key, card: l.card, x, y, w, dx, dy, color: game.players[l.player].color }];
-    });
-    setLeaving([]);
-    show(fresh);
-  }, [leaving, game, show]);
+  componentDidUpdate(_prev: unknown, _state: unknown, departures: Departure[] | null) {
+    if (departures) this.props.onDepart(departures);
+  }
 
-  if (!flights.length) return null;
-  return createPortal(
-    flights.map((f) => (
-      <div
-        key={f.key}
-        className="card-flight"
-        aria-hidden
-        style={
-          {
-            left: f.x,
-            top: f.y,
-            width: f.w,
-            '--dx': `${f.dx}px`,
-            '--dy': `${f.dy}px`,
-            '--pc': f.color,
-          } as CSSProperties
-        }
-      >
-        <CardArt id={f.card} size="md" />
-      </div>
-    )),
-    document.body,
+  render() {
+    return null;
+  }
+}
+
+/** Aims each departing card at its player, centred on where it was. */
+function aim(departures: Departure[], game: GameState): Flight[] {
+  return departures.flatMap(({ key, card, player, from }): Flight[] => {
+    const to = playerSpot(player);
+    if (!to) return [];
+    const w = Math.min(from.width, MAX_WIDTH);
+    const cx = from.left + from.width / 2;
+    const cy = from.top + from.height / 2;
+    return [
+      {
+        key,
+        card,
+        x: cx - w / 2,
+        y: cy - (w * CARD_RATIO) / 2,
+        w,
+        dx: to.left + to.width / 2 - cx,
+        dy: to.top + to.height / 2 - cy,
+        color: game.players[player].color,
+      },
+    ];
+  });
+}
+
+/**
+ * A card taken from the market flies from its place there to whoever took it, its art shrinking as it
+ * goes. None under reduced motion, for a jump to another position (`scene` changes: looking back at the
+ * game, or skipping ahead online), or for cards that leave otherwise (a market refresh). Cards already
+ * in the air land.
+ */
+export function CardFlights({ game, scene }: { game: GameState; scene?: string }) {
+  const [flights, show] = useTransient<Flight>(FLIGHT_MS);
+  return (
+    <>
+      <Departures game={game} scene={scene} onDepart={(d) => show(aim(d, game))} />
+      {flights.length > 0 &&
+        createPortal(
+          flights.map((f) => (
+            <div
+              key={f.key}
+              className="card-flight"
+              aria-hidden
+              style={
+                {
+                  left: f.x,
+                  top: f.y,
+                  width: f.w,
+                  '--dx': `${f.dx}px`,
+                  '--dy': `${f.dy}px`,
+                  '--pc': f.color,
+                } as CSSProperties
+              }
+            >
+              <CardArt id={f.card} size="md" />
+            </div>
+          )),
+          document.body,
+        )}
+    </>
   );
 }

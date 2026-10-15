@@ -66,17 +66,25 @@ store small signed messages for anyone. We run nothing.
   left out, as claims may still be in flight). A browser that gets a different position, or
   refuses a move the seat's owner made from the same position, shows *Out of sync* and asks
   both players to reload: almost always two app versions (a deploy during a game).
-- **Async.** Close the tab whenever; open the game from the lobby's *Online games* list or the
-  link and it catches up (moves you missed are replayed briefly, or skipped if many). Live
-  play works the same way, with moves arriving in about a second.
+- **Async.** Close the tab whenever; open the game from the lobby's *Your games* list or the
+  link and it catches up from the last move you saw there: moves you missed are replayed briefly,
+  or, if many, skipped, stopping only at each battle's result. While the page is hidden, playback
+  waits. Live play works the same way, with moves arriving in about a second.
+- **The lobby follows your games.** While it is open, each game in progress asks the relays only
+  for events newer than those saved, or for all of them if what's saved is missing moves
+  (`watch.ts`); the list then shows whose move it is. The lobby sends and saves nothing: the game does when opened.
+- **Your move.** When it becomes your move (`alerts.ts`): looking at the game, a soft chime once
+  the screen has caught up; looking at the lobby, the chime and a buzz (Android); not looking, the
+  chime and a count in the tab's title. Each change is alerted once across this browser's tabs.
 
 ### Limits (accepted trade-offs)
 
 | Limit | Why / mitigation |
 |---|---|
 | **Players can cheat with dev tools**: every browser holds the seed, so future rolls and deck order are predictable | Inherent without a trusted party. Fine between friends; a server (§2 C) fixes it |
-| No "your turn" notifications | The lobby shows *Your move* for games last seen waiting on you. Options, from none to a small stateless forwarder: [Turn notifications](#turn-notifications-proposed-2026-10-08) |
+| No "your turn" notifications with the app closed | Open, it alerts (see *Your move* above); closed, nothing can listen for moves. Options: [Turn notifications](#turn-notifications-proposed-2026-10-08) |
 | A seat lives in one browser | Moving to another device would need exporting the key (not built). Safari may clear a site's storage after ~7 days without a visit, losing the seat; we ask for persistent storage, which helps elsewhere |
+| The lobby may miss a move until the game is opened | It asks only for events from an hour before the newest saved one, so it misses a move posted with an older time: from a browser that was offline, or one whose clock is over an hour slow (or this browser's, over an hour fast). Opening the game fetches everything |
 | Public relays may rate-limit or drop events | Six relays, paced sending, re-sending from every browser |
 | **Engine changes can break games in progress**: replay must give the same result on every browser | `golden.test.ts` flags any behaviour change; bump `PROTOCOL` (protocol.ts) when one would alter replays, which retires older games. A player still on the old version is caught by the position hash (*Out of sync*) |
 | Relays promise nothing: they may prune old events or start refusing new keys | Every player's browser is a full copy and re-seeds the relays when it opens the game; the list in `relays.ts` is easy to change. A friend joining an idle game may need the creator to open it first |
@@ -89,7 +97,11 @@ store small signed messages for anyone. We run nothing.
   reordering network (they must end identical), seat authorisation, claim races, rival moves,
   malformed posts, and the codec.
 - `apps/web/test/playback.test.ts`: catching up on others' moves walks forward and settles,
-  undo included.
+  undo included, skipping far behind but stopping at battle results.
+- `apps/web/test/summary.test.ts`: the lobby's line for a game, and when it has just become your
+  move. `apps/web/test/relays.test.ts`: sending, re-sending, and asking only for what's new.
+  The lobby only reads: it asks for what's new since the game last saved a complete sync
+  (`syncedAt`), and sends nothing; the game re-sends when it opens. `apps/web/test/leftRow.test.ts`: which market copy a card flies from.
 - `npm run online:sim`: five Chrome browsers, each its own identity, play a 5-player game over the
   real relays: friends join after moves were made, late, and two at once for one seat, then all
   play random moves; every screen must catch up and show the same game. Run it by hand, not
@@ -102,8 +114,8 @@ store small signed messages for anyone. We run nothing.
 
 ### Turn notifications (proposed, 2026-10-08)
 
-Not built. Today a player learns it is their move only by opening the game or the lobby (*Your
-move*, as last seen). The hard case is a phone with the app closed: iOS suspends a backgrounded
+Partly built: option 1 while the game or the lobby is open (a chime, a buzz, the tab's title), not
+`Notification` or the app badge, and not for game B while game A is on screen. The hard case is a phone with the app closed: iOS suspends a backgrounded
 page within seconds, so nothing in the page can listen for moves.
 
 **Can a browser push straight to another browser?** Web Push needs a POST to the recipient's push

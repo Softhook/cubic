@@ -49,7 +49,7 @@ export interface RelayStatus {
  * stored ones, then new ones as they are posted), publishes this browser's events, and re-sends
  * known events a relay doesn't have.
  *
- * Every relay sends the whole game on connecting. The relay library still parses and verifies
+ * Every relay sends the whole game on connecting (or what's new since `since`). The relay library still parses and verifies
  * already-known events before this client skips their decryption and replay.
  */
 export class RelayLink {
@@ -78,8 +78,16 @@ export class RelayLink {
     private known: () => NostrEvent[],
     private onEvent: (e: NostrEvent) => void,
     private onStatus: (s: RelayStatus) => void,
-    /** Told each time a relay has sent everything it held for the game. */
-    private onSynced: () => void = () => {},
+    /**
+     * Told each time a relay has sent everything it held for the game, with when (unix seconds)
+     * it was asked: every event posted before then is known from then on.
+     */
+    private onSynced: (at: number) => void = () => {},
+    /**
+     * When (unix seconds) this browser last had every event of the game, to ask only for those
+     * from about then on. `known` should then be empty: what a relay holds from before isn't known.
+     */
+    private since?: number,
   ) {}
 
   start() {
@@ -168,7 +176,7 @@ export class RelayLink {
    * that), then every new one as it is posted. Once it has sent what it has, it gets what it lacks.
    */
   private subscribe(url: string, r: Relay) {
-    const last = this.synced.get(url);
+    const last = this.synced.get(url) ?? this.since;
     const since = last === undefined ? undefined : last - SINCE_MARGIN_S;
     const startedAt = Math.floor(Date.now() / 1000);
     const page = { count: 0, oldest: Infinity };
@@ -179,7 +187,7 @@ export class RelayLink {
         void this.backfill(url, r, page, since).then(() => {
           this.synced.set(url, startedAt);
           this.resend(url);
-          this.onSynced();
+          this.onSynced(startedAt);
         }),
       // The relay ended the subscription (some do after a while); ask again unless we're leaving.
       onclose: (reason) => {

@@ -6,13 +6,28 @@ import { FOLD_MARKET, useMediaQuery } from '../game/useMediaQuery';
 import { useShortcut } from '../game/useShortcut';
 import { remember, stored } from '../storage';
 import { CardView, categoryStyle } from './Card';
-import { useCardFlights } from './CardFlight';
+import { CardFlights } from './CardFlight';
 import { CardViewer } from './CardViewer';
 import { warmCardImages } from '../art/cardImages';
 import { Dialog } from './Dialog';
 
-/** `steady` (looking back at the game): the market only grows, so the map above it keeps its size from step to step. */
-export function Market({ game, dispatch, legal, steady }: { game: GameState; dispatch: Dispatch; legal: Legal; steady?: boolean }) {
+/**
+ * `steady` (looking back at the game): the market only grows, so the map above it keeps its size from step to step.
+ * `scene` changes when the screen jumps to another position (see Board): no cards fly then.
+ */
+export function Market({
+  game,
+  dispatch,
+  legal,
+  steady,
+  scene,
+}: {
+  game: GameState;
+  dispatch: Dispatch;
+  legal: Legal;
+  steady?: boolean;
+  scene?: string;
+}) {
   const patientPick = legal.can('patientTactic');
   const picking = legal.can('takeCard') || patientPick;
   const m = game.market;
@@ -40,7 +55,6 @@ export function Market({ game, dispatch, legal, steady }: { game: GameState; dis
   const section = useRef<HTMLElement>(null);
   useGrowOnly(section, !!steady);
   useWarmCards(game);
-  const flights = useCardFlights(game, !steady);
   // A pick over, the turn panel comes back into view: in phone landscape's column you may have scrolled down to a card.
   useEffect(() => {
     if (picking) return () => document.querySelector('.turn-panel')?.scrollIntoView({ block: 'nearest' });
@@ -84,6 +98,7 @@ export function Market({ game, dispatch, legal, steady }: { game: GameState; dis
             size="sm"
             className={`market-card ${canTake(deck, index) ? 'takeable' : ''}`}
             badge={badge}
+            index={index}
             onClick={() => clickCard(deck, index, id)}
           />
         ))}
@@ -153,6 +168,8 @@ export function Market({ game, dispatch, legal, steady }: { game: GameState; dis
             className={`market-chip market-chip-${kind} ${canTake(deck, index) ? 'takeable' : ''}`}
             style={categoryStyle(def.category, kind === 'skill')}
             title={`${def.name} — ${def.text}`}
+            data-card={id}
+            data-index={index}
             onClick={() => setViewingCard(id)}
           >
             {def.name}
@@ -264,7 +281,7 @@ export function Market({ game, dispatch, legal, steady }: { game: GameState; dis
       {viewer}
       {cardViewer}
       {patientDialog}
-      {flights}
+      <CardFlights game={game} scene={scene} />
     </section>
   );
 }

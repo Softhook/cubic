@@ -21,6 +21,11 @@ export interface GameView {
   positions: readonly GameState[];
   /** Log entries up to this id were written before `positions[0]`, and can't be looked back at (none if 0 or missing: it is the game's start). */
   reviewAfter?: number;
+  /**
+   * Online: counts the times the screen has skipped ahead over moves instead of playing them out, so
+   * the board treats each as a jump to another position (no moves or explosions drawn across the gap).
+   */
+  jumps?: number;
   toasts: Toast[];
   error: { id: number; text: string } | null;
   /** On this device: the AI about to fire a missile or re-roll in the battle on screen. */

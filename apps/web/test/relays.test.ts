@@ -6,6 +6,7 @@ const harness = vi.hoisted(() => ({
     url: string;
     publish: ReturnType<typeof vi.fn>;
     subscriptions: Record<string, unknown>[];
+    filters: unknown[];
     openSubs: Map<string, { close: ReturnType<typeof vi.fn> }>;
   }[],
 }));
@@ -15,8 +16,8 @@ vi.mock('nostr-tools/relay', () => ({ Relay: { connect: (...args: unknown[]) => 
 import { RELAYS, RelayLink } from '../src/online/relays';
 import type { NostrEvent } from '@quantum/online';
 
-function event(id: string): NostrEvent {
-  return { id, pubkey: '', created_at: 1, kind: 4747, tags: [], content: '', sig: '' };
+function event(id: string, created_at = 1): NostrEvent {
+  return { id, pubkey: '', created_at, kind: 4747, tags: [], content: '', sig: '' };
 }
 
 async function flushPromises() {
@@ -39,9 +40,11 @@ describe('online relay link', () => {
         url,
         connected: true,
         subscriptions: [] as Record<string, unknown>[],
+        filters: [] as unknown[],
         openSubs: new Map<string, { close: ReturnType<typeof vi.fn> }>(),
         publish: vi.fn(),
-        subscribe: vi.fn((_filters: unknown, params: Record<string, unknown>) => {
+        subscribe: vi.fn((filters: unknown, params: Record<string, unknown>) => {
+          relay.filters.push(filters);
           relay.subscriptions.push(params);
           const sub = { close: vi.fn() };
           relay.openSubs.set(`sub-${relay.subscriptions.length}`, sub);
@@ -68,6 +71,7 @@ describe('online relay link', () => {
         url,
         connected: true,
         subscriptions: [] as Record<string, unknown>[],
+        filters: [] as unknown[],
         openSubs: new Map<string, { close: ReturnType<typeof vi.fn> }>(),
         publish: vi.fn((e: NostrEvent) => {
           if (url === target && e.id === 'older' && failures++ === 0) return Promise.reject(new Error('publish timed out'));
@@ -112,6 +116,27 @@ describe('online relay link', () => {
       expect(relay.subscriptions[0]).not.toHaveProperty('alreadyHaveEvent');
     }
 
+    link.close();
+    await vi.runOnlyPendingTimersAsync();
+  });
+
+  it('with `since`, asks only for events from about then on', async () => {
+    const link = new RelayLink('tag', () => [], vi.fn(), vi.fn(), vi.fn(), 10_000);
+    link.start();
+    await flushPromises();
+    expect(harness.instances[0].filters[0]).toEqual([expect.objectContaining({ '#t': ['tag'], since: 10_000 - 3600 })]);
+    link.close();
+    await vi.runOnlyPendingTimersAsync();
+  });
+
+  it('says when it asked, once a relay has sent everything', async () => {
+    const onSynced = vi.fn();
+    const link = new RelayLink('tag', () => [], vi.fn(), vi.fn(), onSynced);
+    link.start();
+    await flushPromises();
+    (harness.instances[0].subscriptions[0].oneose as () => void)();
+    await flushPromises();
+    expect(onSynced).toHaveBeenCalledWith(expect.any(Number));
     link.close();
     await vi.runOnlyPendingTimersAsync();
   });

@@ -405,12 +405,12 @@ function OddsBadge({ chance, cell, zoomed }: { chance: number; cell: number; zoo
   );
 }
 
-/** A chance as a whole percentage; never 0% or 100% unless it is certain. */
 /** Green when the attack is likely to win, red when likely to lose, gold in between (see .ship-odds). */
 function oddsTone(chance: number): string {
   return chance >= 0.6 ? 'good' : chance <= 0.4 ? 'bad' : '';
 }
 
+/** A chance as a whole percentage; never 0% or 100% unless it is certain. */
 function percent(p: number): string {
   const n = Math.round(p * 100);
   return p > 0 && n === 0 ? '<1%' : p < 1 && n === 100 ? '>99%' : `${n}%`;

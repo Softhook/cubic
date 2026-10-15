@@ -80,9 +80,11 @@ export interface CardViewProps {
   badge?: string;
   inactive?: boolean;
   className?: string;
+  /** Its place in a row of cards (the market's), told apart from other copies of it there. */
+  index?: number;
 }
 
-export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, className = '' }: CardViewProps) {
+export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, className = '', index }: CardViewProps) {
   const def = card(id);
   const original = isOriginalCard(id);
   // The original Expansion is a Gambit card but looks like the CE Expansion card.
@@ -97,6 +99,8 @@ export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, 
       onClick={clickable ? onClick : undefined}
       disabled={!clickable}
       title={`${def.name} — ${def.text}`}
+      data-card={id}
+      data-index={index}
     >
       <div className="qcard-top">
         <span className="qcard-cat">

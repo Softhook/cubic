@@ -1,26 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { getPublicKey } from 'nostr-tools/pure';
 import { actor, apply, legalActions, RuleError, type Action, type GameState, type PlayerId } from '@quantum/engine';
-import {
-  actBody,
-  CHAINED,
-  decodeEvent,
-  encodePost,
-  gameKeys,
-  Timeline,
-  type AskMode,
-  type Body,
-  type NostrEvent,
-  type Post,
-  type Replay,
-  type Step,
-} from '@quantum/online';
+import { actBody, CHAINED, encodePost, type AskMode, type Body, type Post, type Replay, type Step } from '@quantum/online';
 import { aiLevelOf, combatResponse, think } from '../game/aiClient';
 import { useErrorToast, useToasts } from '../game/toasts';
 import type { GameView } from '../game/view';
 import { battleStage, inBattle, nextStep, resumeAt, seenPost } from './playback';
-import { onlineGames } from './games';
-import { identity, keepStorage, loadEvents, rememberGame, saveEvents } from './storage';
+import { onlineGames, updateGame } from './games';
+import { identity, keepStorage, openGameLog, rememberGame, saveEvents } from './storage';
 import { RelayLink, type RelayStatus } from './relays';
 import { ownMove, summary, yourMoveSince } from './summary';
 import { alertYourMove, attending } from './alerts';
@@ -57,7 +44,7 @@ export function useOnlineGame(secret: string): OnlineGame {
   const head = replay?.steps.at(-1)!.state ?? null;
   // Where the player left off last time, so the screen carries on from there.
   const resume = useMemo(() => onlineGames().find((g) => g.secret === secret)?.seen ?? null, [secret]);
-  const { shown, live, toasts, ownBattle, dismissBattle } = usePlayback(replay, me, resume);
+  const { shown, live, toasts, ownBattle, dismissBattle, jumps } = usePlayback(replay, me, resume);
   const { error, showError } = useErrorToast();
   useAiSeats(replay, me, post, showError);
   useYourMoveAlert(secret, replay, me, mySeats, live);
@@ -107,6 +94,7 @@ export function useOnlineGame(secret: string): OnlineGame {
       mine: (p) => live && mySeats.includes(p),
       undo: live && undoSeat !== null && mySeats.includes(undoSeat) ? () => post({ t: 'undo', seat: undoSeat }) : undefined,
       positions,
+      jumps,
       toasts,
       error,
       // While catching up, a battle waits for nobody: it is being replayed.
@@ -125,7 +113,7 @@ export function useOnlineGame(secret: string): OnlineGame {
           }
         : undefined,
     };
-  }, [replay, shown, live, mySeats, dispatch, post, positions, toasts, error, ownBattle, dismissBattle]);
+  }, [replay, shown, live, mySeats, dispatch, post, positions, jumps, toasts, error, ownBattle, dismissBattle]);
 
   // Dev-only hook for browser tests: window.__quantumOnline.{state(), view(), legal(), mySeats()}.
   const latest = useRef({ head, view, mySeats });
@@ -164,10 +152,7 @@ function usePostLog(secret: string) {
   const sk = useMemo(identity, []);
   const me = useMemo(() => getPublicKey(sk), [sk]);
   // Together, so a new game (`secret`) never shares a timeline with the last one.
-  const { keys, timeline, events } = useMemo(
-    () => ({ keys: gameKeys(secret), timeline: new Timeline(), events: new Map<string, NostrEvent>() }),
-    [secret],
-  );
+  const { keys, timeline, events, receive, load } = useMemo(() => openGameLog(secret), [secret]);
   const [replay, setReplay] = useState<Replay | null>(null);
   const [relays, setRelays] = useState<RelayStatus>({ connected: 0, total: 0, unsent: 0 });
   const [failure, setFailure] = useState<string | null>(null);
@@ -187,30 +172,29 @@ function usePostLog(secret: string) {
   }, [timeline]);
   useEffect(() => () => window.clearTimeout(batch.current), []);
 
-  const save = useThrottled(() => saveEvents(keys.tag, [...events.values()]), 400);
-
-  /** Adds an event (a relay's, or ours from storage); true if it was new and valid. */
-  const receive = useCallback(
-    (e: NostrEvent, trusted = false) => {
-      if (events.has(e.id)) return false;
-      const p = decodeEvent(keys, e, trusted);
-      if (!p) return false;
-      events.set(e.id, e);
-      return timeline.add(p);
-    },
-    [keys, events, timeline],
-  );
+  // When a relay last sent everything it held: saved with the events, so the lobby can ask for only
+  // what's newer (OnlineGameEntry.syncedAt), never ahead of what was saved.
+  const syncedAt = useRef<number | undefined>(undefined);
+  const save = useThrottled(() => {
+    if (saveEvents(keys.tag, [...events.values()]) && syncedAt.current !== undefined) updateGame(secret, { syncedAt: syncedAt.current });
+  }, 400);
 
   useEffect(() => {
     let l: RelayLink | null = null;
     try {
-      for (const e of loadEvents(keys.tag)) receive(e, true);
+      // Here rather than while rendering: each saved event is decrypted, and damaged ones end up below.
+      syncedAt.current = undefined;
+      load();
       publish();
       l = new RelayLink(
         keys.tag,
         () => [...events.values()],
         (e) => receive(e) && (save(), publish()),
         setRelays,
+        (at) => {
+          syncedAt.current = Math.max(syncedAt.current ?? 0, at);
+          save();
+        },
       );
       l.start();
       link.current = l;
@@ -222,7 +206,7 @@ function usePostLog(secret: string) {
       l?.close();
       link.current = null;
     };
-  }, [keys, events, receive, publish, save]);
+  }, [keys, events, receive, load, publish, save]);
 
   const post = useCallback(
     (req: PostRequest) => {
@@ -255,6 +239,8 @@ function usePlayback(replay: Replay | null, me: string, resume: string | null) {
   const { toasts, announce } = useToasts();
   const [shown, setShown] = useState<Step | null>(null);
   const shownAt = useRef(0);
+  // How many times the screen has skipped ahead over moves rather than playing them out (GameView.jumps).
+  const [jumps, setJumps] = useState(0);
   // The battle stage the player has dismissed: playback moves on from that battle once it ends.
   const [dismissed, setDismissed] = useState<string | null>(null);
   const dismissBattle = useCallback(() => setDismissed(shown && battleStage(shown.state)), [shown]);
@@ -287,6 +273,7 @@ function usePlayback(replay: Replay | null, me: string, resume: string | null) {
     if (!next) return;
     const show = () => {
       if (next.announce && shown) announce(shown.state, next.step.state, humanSeat(replay, me));
+      if (next.jump) setJumps((n) => n + 1);
       shownAt.current = performance.now();
       setShown(next.step);
     };
@@ -295,7 +282,7 @@ function usePlayback(replay: Replay | null, me: string, resume: string | null) {
     return () => window.clearTimeout(t);
   }, [replay, shown, me, announce, dismissed, ownBattle, visible, resume]);
 
-  return { shown, live: !!shown && shown === replay?.steps.at(-1), toasts, ownBattle, dismissBattle };
+  return { shown, live: !!shown && shown === replay?.steps.at(-1), toasts, ownBattle, dismissBattle, jumps };
 }
 
 /**

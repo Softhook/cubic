@@ -75,7 +75,9 @@ export function Game({
   const conquering = sel.kind === 'conquer' ? conquerOptions(ctl.legal, sel.planet) : [];
   // The same panels in both layouts, in a different order.
   const turnPanel = <TurnPanel game={game} ctl={ctl} dispatch={dispatch} undo={undo} />;
-  const market = cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} steady={!!review} />;
+  // Changes when the screen jumps to another position rather than following a move: looking back, or skipping ahead online.
+  const scene = review ? `review:${review.entry.id}` : `live:${view.jumps ?? 0}`;
+  const market = cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} steady={!!review} scene={scene} />;
   const players = <PlayerList game={game} ctl={ctl} dispatch={dispatch} />;
   const log = <Log game={live} review={{ can, pick: lookBack, picked: review?.entry.id, move: review?.move }} />;
 
@@ -109,7 +111,7 @@ export function Game({
           <Board
             game={returning ?? game}
             ctl={ctl}
-            scene={review ? `review:${review.entry.id}` : 'live'}
+            scene={scene}
             introduce={!review && game.phase === 'setup' && ctl.highlights.planets.size > 0}
           />
           {review && <ReviewBar review={review} game={live} waiting={waitingFor(view)} />}

@@ -75,7 +75,7 @@ export function useZoomIntro(game: GameState, ctl: Controller, zoom: BoardZoom, 
 
 /**
  * Zoomed in, a ship this screen doesn't play for (an opponent's, the AI's) that moves or arrives off screen
- * brings the map to it, so their moves aren't missed. Your own moves never move the map.
+ * brings the map to it, so their moves aren't missed. Your own moves never move the map; skipping ahead into a battle does.
  */
 export function useFollowMoves(game: GameState, ctl: Controller, spots: ShipSpots, zoom: BoardZoom, scene?: string) {
   const seen = useRef<{ map: string; scene?: string; spots: ShipSpots } | null>(null);
@@ -83,8 +83,16 @@ export function useFollowMoves(game: GameState, ctl: Controller, spots: ShipSpot
     const before = seen.current;
     const map = `${game.board.rows}x${game.board.cols}`;
     seen.current = { map, scene, spots };
-    // A jump to another position (see Board's `scene`) moves no ship.
-    if (before?.map !== map || before.scene !== scene) return;
+    if (before?.map !== map) return;
+    // A jump to another position (see Board's `scene`) moves no ship, but skipping ahead online
+    // (`live:` to `live:`) into a battle brings the map to it, whoever fights it: catching up stops at
+    // each result, so it is seen. Looking back (`review:`) leaves the map where the player put it.
+    if (before.scene !== scene) {
+      const head = game.pending[0];
+      const skipped = before.scene?.startsWith('live:') && scene?.startsWith('live:');
+      if (skipped && head?.kind === 'combat') zoom.reveal(head.at.r, head.at.c);
+      return;
+    }
     let moved: { r: number; c: number } | undefined;
     for (const d of game.dice) {
       const now = spots.get(d.id);

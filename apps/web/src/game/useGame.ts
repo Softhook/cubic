@@ -14,10 +14,10 @@ export type Dispatch = (a: Action) => boolean;
 /** The dev-only `window.__quantum` hook the browser tests (scripts/) drive a local game through. */
 export type QuantumHook = { state(): GameState; load(s: GameState): void; dispatch: Dispatch };
 
-/** Logs an engine bug with the state and action that trigger it (replay with window.__quantum.load). */
 /** On this device, the screen plays for every human seat. */
 const human = (s: GameState) => (p: PlayerId) => !s.players[p].ai;
 
+/** Logs an engine bug with the state and action that trigger it (replay with window.__quantum.load). */
 function reportBug(what: string, state: GameState, action: Action, error?: unknown) {
   console.error(`[quantum] ${what}`, { action, error, state: JSON.stringify(state) });
 }

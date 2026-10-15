@@ -1,7 +1,6 @@
 import { getPublicKey } from 'nostr-tools/pure';
-import { decodeEvent, gameKeys, Timeline, type NostrEvent } from '@quantum/online';
 import { updateGame, type OnlineGameEntry } from './games';
-import { identity, loadEvents } from './storage';
+import { identity, openGameLog } from './storage';
 import { RelayLink } from './relays';
 import { summary, yourMoveSince } from './summary';
 import { alertYourMove } from './alerts';
@@ -13,28 +12,28 @@ const CHECK_TIMEOUT_MS = 15000;
 
 /**
  * Follows the given games on the relays while the lobby shows them, so their entries (whose move it
- * is, above all) keep up with moves made since this browser last had them open. `onChange` runs
- * after an entry changes; `onChecked` once per game, when a relay has sent all it holds of it (or
- * none has answered in time). Events are not saved: the game saves its own when it opens, and a tab
- * playing the game meanwhile would otherwise have its newer events overwritten. Returns a stop.
+ * is, above all) keep up with moves made since this browser last had them open. Each game asks only
+ * for events from about when its saved events were last whole (`syncedAt`). `onChange` runs after
+ * an entry changes; `onChecked` once per game, when a relay has sent all it holds of it (or none has
+ * answered in time). Nothing is sent or saved: the game does that when it opens (re-sending this
+ * browser's moves no relay took), and a tab playing the game meanwhile would otherwise have its newer
+ * events overwritten. Returns a stop.
  */
 export function watchGames(games: OnlineGameEntry[], onChange: () => void, onChecked: (secret: string) => void): () => void {
   const me = getPublicKey(identity());
-  const stops = games.map(({ secret }) => {
+  const stops = games.map(({ secret, syncedAt }) => {
     // Whether it was the player's move when last replayed; what the first check finds isn't alerted
     // (the list shows it), only moves made while the lobby is open.
     let was: boolean | null = null;
-    const keys = gameKeys(secret);
-    const timeline = new Timeline();
-    const events = new Map<string, NostrEvent>();
-    const receive = (e: NostrEvent, trusted = false) => {
-      if (events.has(e.id)) return false;
-      const p = decodeEvent(keys, e, trusted);
-      if (!p) return false;
-      events.set(e.id, e);
-      return timeline.add(p);
-    };
-    for (const e of loadEvents(keys.tag)) receive(e, true);
+    const { keys, timeline, receive, load } = openGameLog(secret);
+    let since = syncedAt;
+    try {
+      load();
+    } catch (e) {
+      // Damaged saved events: the relays still have the whole game.
+      console.warn('[quantum] could not load a saved online game', e);
+      since = undefined;
+    }
     let timer: number | undefined;
     let checked = false;
     const refresh = () => {
@@ -62,10 +61,11 @@ export function watchGames(games: OnlineGameEntry[], onChange: () => void, onChe
     const timeout = window.setTimeout(check, CHECK_TIMEOUT_MS);
     const link = new RelayLink(
       keys.tag,
-      () => [...events.values()],
+      () => [],
       (e) => receive(e) && timer === undefined && (timer = window.setTimeout(refresh, BATCH_MS)),
       () => {},
       check,
+      since,
     );
     link.start();
     return () => {
