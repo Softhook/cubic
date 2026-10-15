@@ -5,6 +5,7 @@ import type { Dispatch } from '../game/useGame';
 import { CardView } from './Card';
 import { Dialog, Modal } from './Dialog';
 import { Die3D } from './Die3D';
+import { Fireworks } from './Fireworks';
 
 /** Modal decisions for human players. Board-based decisions are handled by highlights instead. */
 export function DecisionOverlay({ game, dispatch, human }: { game: GameState; dispatch: Dispatch; human: boolean }) {
@@ -297,7 +298,9 @@ export function GameOver({
   if (game.winner === null) return null;
   const w = game.players[game.winner];
   return (
-    <div className="overlay">
+    <div className="overlay celebrate">
+      <Fireworks color={w.color} />
+      <div className="gameover-flash" style={{ '--pc': w.color } as CSSProperties} />
       <div
         role="dialog"
         aria-modal="true"
