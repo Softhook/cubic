@@ -87,15 +87,26 @@ export function holdForTitle(): () => void {
   holding = true;
   sync();
   return () => {
-    holding = false;
     // Where the browser doesn't yet let sound start (the title rose without a click), there is no opening, and
     // the drone comes in with the first click.
     const ac = isOn('music') ? audio() : null;
     const allowed = ac && (ac.state === 'running' || navigator.userActivation?.hasBeenActive);
-    sync();
-    if (!ac || !allowed) return;
-    const land = opening(ac, ac.currentTime + 0.02);
-    if (drone) fadeIn(drone, land + 2, 7);
+    if (!ac || !allowed) {
+      holding = false;
+      sync();
+      return;
+    }
+    const land = opening(ac);
+    // The drone is built once the chord has bloomed, not with the opening: on a phone, building and playing
+    // both at once makes the opening stutter.
+    window.setTimeout(
+      () => {
+        holding = false;
+        sync();
+        if (drone) fadeIn(drone, ac.currentTime + 1, 7);
+      },
+      (land + 1 - ac.currentTime) * 1000,
+    );
   };
 }
 

@@ -13,14 +13,22 @@ const CHORD = [26, 38, 45, 50, 53, 57, 60, 64, 69];
 /** D, A and E high above it. */
 const CHIMES = [74, 81, 88];
 
-/** Plays the opening from `at`; returns when the title lands and the chord blooms. */
-export function opening(ac: AudioContext, at: number): number {
+/**
+ * Seconds from now to the start. Building the reverb can take tens of milliseconds on a phone, and its output
+ * buffers are long: starting sooner, the first notes would be scheduled in the past and come in late, stuttering.
+ */
+const LEAD = 0.12;
+
+/** Plays the opening, starting in a moment; returns when the title lands and the chord blooms. */
+export function opening(ac: AudioContext): number {
+  // The reverb is built first, so its time is not taken from the start.
+  const verb = reverb(ac);
+  const at = ac.currentTime + LEAD;
   const land = at + LAND;
   const comp = ac.createDynamicsCompressor();
   comp.threshold.value = -12;
   comp.ratio.value = 4;
   comp.connect(ac.destination);
-  const verb = reverb(ac);
   verb.connect(gain(ac, 0.9)).connect(comp);
   const mix = gain(ac, 0.8);
   mix.connect(comp);
