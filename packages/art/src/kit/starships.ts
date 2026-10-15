@@ -77,31 +77,25 @@ const destroyer = () => [
   ]),
 ];
 
-/** 4 · A core hull and two outrigger pods: a little of everything. */
+/** 4 · A cross: a hull with a beam across its middle and a blocky pod at each end, a little of everything. */
 const frigate = () => [
   sym([
     [0, -1],
-    [0.11, -0.84],
-    [0.16, -0.4],
-    [0.17, 0.7],
-    [0.1, 0.86],
-    [0, 0.86],
+    [0.12, -0.8],
+    [0.18, -0.3],
+    [0.44, -0.2],
+    [0.5, -0.38],
+    [0.64, -0.38],
+    [0.7, -0.22],
+    [0.7, 0.3],
+    [0.62, 0.44],
+    [0.5, 0.44],
+    [0.44, 0.24],
+    [0.2, 0.3],
+    [0.22, 0.74],
+    [0.12, 0.88],
+    [0, 0.8],
   ]),
-  ...[-0.5, 0.5].map((x) =>
-    poly(
-      (
-        [
-          [0, -0.56],
-          [0.09, -0.44],
-          [0.09, 0.44],
-          [0, 0.52],
-          [-0.09, 0.44],
-          [-0.09, -0.44],
-        ] as Pt[]
-      ).map(([px, py]): Pt => [px + x, py]),
-    ),
-  ),
-  both(0.17, 0.02, 0.41, 0.02),
 ];
 
 /** 5 · A dart with wings swept along the diagonals, its core in the middle. */
@@ -122,20 +116,18 @@ const interceptor = () => [
   ]),
 ];
 
-/** 6 · A needle with sensor booms and fins. */
+/** 6 · A needle with small swept fins, all speed. */
 const scout = () => [
   sym([
     [0, -1],
-    [0.05, -0.74],
-    [0.09, -0.2],
-    [0.12, 0.24],
-    [0.3, 0.46],
-    [0.3, 0.6],
-    [0.13, 0.56],
-    [0.12, 0.66],
-    [0, 0.7],
+    [0.05, -0.8],
+    [0.09, 0.14],
+    [0.34, 0.54],
+    [0.36, 0.76],
+    [0.1, 0.64],
+    [0.08, 0.92],
+    [0, 0.88],
   ]),
-  both(0.04, -0.56, 0.26, -0.88),
 ];
 
 const CLASSES: Record<number, () => string[]> = { 1: battlestation, 2: flagship, 3: destroyer, 4: frigate, 5: interceptor, 6: scout };
