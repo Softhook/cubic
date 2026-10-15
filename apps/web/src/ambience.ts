@@ -11,8 +11,6 @@ import { opening } from './openingSound';
 
 const FADE_IN = 6;
 const FADE_OUT = 2.5;
-/** Seconds to fade out as the app is hidden: done, with the reverb's, before the audio is suspended (audio.ts). */
-const HIDE_FADE = 0.08;
 /** Longer than any game, in seconds: the drone's sources are stopped when it fades out. */
 const FOREVER = 60 * 60 * 24;
 
@@ -67,7 +65,8 @@ function sync() {
       begun = true;
     }
   } else if (!play && drone) {
-    stop(drone, document.visibilityState === 'hidden' ? HIDE_FADE : FADE_OUT);
+    // Hidden, the audio is suspended at once (audio.ts): a fade would only be heard on return, over the new drone.
+    stop(drone, document.visibilityState === 'hidden' ? 0 : FADE_OUT);
     drone = null;
   }
 }
@@ -202,11 +201,15 @@ function start(ac: AudioContext): Drone {
   return d;
 }
 
-/** Runs `fn` in `seconds`, unless the drone stops first. */
+/**
+ * Runs `fn` in `seconds`, unless the drone stops first. While the audio is suspended (a phone's app losing focus,
+ * audio.ts) it waits again: its time stands still, and chimes played then would all ring out at once on return.
+ */
 function later(d: Drone, seconds: number, fn: () => void) {
   const id = window.setTimeout(() => {
     d.timers.delete(id);
-    fn();
+    if (d.ac.state === 'running') fn();
+    else later(d, seconds, fn);
   }, seconds * 1000);
   d.timers.add(id);
 }

@@ -49,7 +49,8 @@ function newContext(): AudioContext {
 export function audio(): AudioContext | null {
   try {
     ctx ??= newContext();
-    if (ctx.state === 'suspended') void ctx.resume();
+    // Not while the app is away: the audio stays suspended until it is back (below).
+    if (ctx.state === 'suspended' && !away()) void ctx.resume();
     return ctx;
   } catch {
     return null;
@@ -61,9 +62,12 @@ export function isOn(which: Switch): boolean {
   return switches[which];
 }
 
-/** The audio, for a sound effect: none while sound effects are off, so nothing is built to play unheard. */
+/**
+ * The audio, for a sound effect: none while sound effects are off, so nothing is built to play unheard, nor while
+ * the app is away, when the audio is suspended and every sound played would come out at once on its return.
+ */
 export function effects(): AudioContext | null {
-  return switches.sound ? audio() : null;
+  return switches.sound && !away() ? audio() : null;
 }
 
 export function turn(which: Switch, on: boolean) {
@@ -128,22 +132,32 @@ function warm() {
 window.addEventListener('pointerdown', warm, true);
 window.addEventListener('keydown', warm, true);
 
-// While the app is hidden its audio is suspended, once the music and its reverb have quickly faded (ambience.ts),
-// so nothing goes on playing, and stuttering, as a phone puts the app away. It resumes when the app is back, the
-// reverb coming back slowly, so what was left of its tail is hardly heard.
-const SUSPEND_MS = 200;
-document.addEventListener('visibilitychange', () => {
+// On a phone, losing focus is the first sign of the app going away (to another app, or the list of apps), before
+// it is hidden. On a computer it is only another window being clicked, and the music plays on.
+const TOUCH = matchMedia('(pointer: coarse)').matches;
+const away = () => document.visibilityState === 'hidden' || (TOUCH && !document.hasFocus());
+
+// At the first sign of the app going away its audio is suspended, with no fade: a phone slows a hidden page's
+// timers, and sound left playing as it puts the app away stutters on for seconds. The reverb is silenced too, so
+// its tail isn't heard on return; it comes back slowly once the app is.
+function leave() {
   if (!ctx) return;
-  const visible = document.visibilityState === 'visible';
-  verb?.level.gain.setTargetAtTime(visible ? WET : 0, ctx.currentTime, visible ? 1 : 0.02);
-  if (visible) {
-    if (ctx.state === 'suspended') void ctx.resume();
-    return;
-  }
-  setTimeout(() => {
-    if (document.visibilityState === 'hidden' && ctx?.state === 'running') void ctx.suspend();
-  }, SUSPEND_MS);
-});
+  verb?.level.gain.cancelScheduledValues(ctx.currentTime);
+  verb?.level.gain.setValueAtTime(0, ctx.currentTime);
+  if (ctx.state === 'running') void ctx.suspend();
+}
+function come() {
+  if (!ctx || away()) return;
+  verb?.level.gain.setTargetAtTime(WET, ctx.currentTime, 1);
+  if (ctx.state === 'suspended') void ctx.resume();
+}
+document.addEventListener('visibilitychange', () => (away() ? leave() : come()));
+window.addEventListener('pagehide', leave);
+document.addEventListener('freeze', leave);
+if (TOUCH) {
+  window.addEventListener('blur', leave);
+  window.addEventListener('focus', come);
+}
 
 /** Two seconds of white noise, made once and reused by every noise sound. */
 function whiteNoise(ac: AudioContext): AudioBuffer {
