@@ -1,5 +1,6 @@
-// The Web Audio plumbing every synthesized sound shares (sound.ts, gameOverSound.ts): the context, the
-// output bus, white noise and a few node builders, and the player's sound and music switches.
+// The Web Audio plumbing every synthesized sound shares (sound.ts, gameOverSound.ts, ambience.ts,
+// openingSound.ts): the context, the output bus, white noise, a reverb and a few node builders, and the
+// player's sound and music switches.
 
 import { remember, stored } from './storage';
 
@@ -15,6 +16,7 @@ const switches: Record<Switch, boolean> = {
 };
 const listeners = new Set<() => void>();
 let noiseBuf: AudioBuffer | null = null;
+let impulse: AudioBuffer | null = null;
 
 export function audio(): AudioContext | null {
   try {
@@ -134,6 +136,30 @@ export function gain(ac: AudioContext, level: number): GainNode {
   const g = ac.createGain();
   g.gain.value = level;
   return g;
+}
+
+/** A MIDI note's frequency: 69 is the A above middle C. */
+export const hz = (note: number) => 440 * 2 ** ((note - 69) / 12);
+
+/** A long, dark stereo reverb: a six-second tail, made once and shared (the music and its opening). */
+export function reverb(ac: AudioContext): ConvolverNode {
+  if (impulse?.sampleRate !== ac.sampleRate) {
+    const len = Math.floor(ac.sampleRate * 6);
+    impulse = ac.createBuffer(2, len, ac.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = impulse.getChannelData(ch);
+      let last = 0;
+      for (let i = 0; i < len; i++) {
+        const t = i / ac.sampleRate;
+        // Smoothed noise, so the tail is soft rather than hissy.
+        last = last * 0.6 + (Math.random() * 2 - 1) * 0.4;
+        data[i] = last * Math.exp(-t / 1.7) * Math.min(1, t * 8);
+      }
+    }
+  }
+  const conv = ac.createConvolver();
+  conv.buffer = impulse;
+  return conv;
 }
 
 /** `x` give or take a fraction `by`, so repeated sounds vary. */

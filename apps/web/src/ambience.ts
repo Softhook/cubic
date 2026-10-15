@@ -1,18 +1,18 @@
-// The ambience under a game: a slow, soft drone of a few voices drifting from chord to chord, a faint wind
-// of noise, and now and then a far-off chime, all in a long reverb. It plays while a game is on screen, music
-// is on and the page is visible, fading in and out.
+// The music: a slow, soft drone of a few voices drifting from chord to chord, a faint wind
+// of noise, and now and then a far-off chime, all in a long reverb. It plays from the lobby on while music
+// is on and the page is visible (once the browser lets sound start, after the first tap or key), fading in and out.
 //
 // Everything it builds is let go when it stops: the sources stop, and once the fade is over every lasting
 // node is disconnected, since the echo is a loop that would otherwise keep itself alive.
 
-import { audio, contour, filter, gain, isOn, noiseSource, onSwitch, oscillator } from './audio';
+import { audio, contour, filter, gain, hz, isOn, noiseSource, onSwitch, oscillator, reverb } from './audio';
+import { opening } from './openingSound';
 
 const FADE_IN = 6;
 const FADE_OUT = 2.5;
 /** Longer than any game, in seconds: the drone's sources are stopped when it fades out. */
 const FOREVER = 60 * 60 * 24;
 
-const hz = (note: number) => 440 * 2 ** ((note - 69) / 12);
 const between = (lo: number, hi: number) => lo + Math.random() * (hi - lo);
 
 // Open five-voice chords around D minor, as MIDI notes, low voice first. Each voice glides to its note in
@@ -40,9 +40,12 @@ interface Drone {
 
 let wanted = 0;
 let drone: Drone | null = null;
-let impulse: AudioBuffer | null = null;
+/** The lobby's title is showing on first opening: the drone waits for the opening (`holdForTitle`). */
+let holding = false;
+/** The music has begun since the page loaded: the opening is only for an app that opens on the lobby. */
+let begun = false;
 
-/** Starts the ambience, for as long as a game is on screen; returns the way to stop it (for a React effect). */
+/** Starts the music, for as long as the app is open; returns the way to stop it (for a React effect). */
 export function ambience(): () => void {
   wanted++;
   sync();
@@ -53,10 +56,13 @@ export function ambience(): () => void {
 }
 
 function sync() {
-  const play = wanted > 0 && isOn('music') && document.visibilityState === 'visible';
+  const play = wanted > 0 && !holding && isOn('music') && document.visibilityState === 'visible';
   if (play && !drone) {
     const ac = audio();
-    if (ac) drone = start(ac);
+    if (ac) {
+      drone = start(ac);
+      begun = true;
+    }
   } else if (!play && drone) {
     stop(drone);
     drone = null;
@@ -64,28 +70,33 @@ function sync() {
 }
 onSwitch(sync);
 document.addEventListener('visibilitychange', sync);
+// In development a code change swaps this module for a new one: stop this one's drone, or it plays on.
+import.meta.hot?.dispose(() => {
+  wanted = 0;
+  sync();
+});
 
-/** A long, dark stereo reverb tail, made once. */
-function space(ac: AudioContext): ConvolverNode {
-  const conv = ac.createConvolver();
-  conv.buffer = impulse?.sampleRate === ac.sampleRate ? impulse : (impulse = tail(ac));
-  return conv;
-}
-
-function tail(ac: AudioContext): AudioBuffer {
-  const len = Math.floor(ac.sampleRate * 6);
-  const ir = ac.createBuffer(2, len, ac.sampleRate);
-  for (let ch = 0; ch < 2; ch++) {
-    const data = ir.getChannelData(ch);
-    let last = 0;
-    for (let i = 0; i < len; i++) {
-      const t = i / ac.sampleRate;
-      // Smoothed noise, so the tail is soft rather than hissy.
-      last = last * 0.6 + (Math.random() * 2 - 1) * 0.4;
-      data[i] = last * Math.exp(-t / 1.7) * Math.min(1, t * 8);
-    }
-  }
-  return ir;
+/**
+ * The lobby's title is showing on the app's first screen: the drone waits, and when the title goes (rising into
+ * the lobby) the opening plays and the drone comes in under its tail, so one flows into the other. If the music
+ * has already begun (the app reopened on a game, then went to the lobby), it plays on and there is no opening.
+ * Returns the way to say the title has gone.
+ */
+export function holdForTitle(): () => void {
+  if (begun) return () => {};
+  holding = true;
+  sync();
+  return () => {
+    holding = false;
+    // Where the browser doesn't yet let sound start (the title rose without a click), there is no opening, and
+    // the drone comes in with the first click.
+    const ac = isOn('music') ? audio() : null;
+    const allowed = ac && (ac.state === 'running' || navigator.userActivation?.hasBeenActive);
+    sync();
+    if (!ac || !allowed) return;
+    const land = opening(ac, ac.currentTime + 0.02);
+    if (drone) fadeIn(drone, land + 2, 7);
+  };
 }
 
 /** A slow sine wobbling `param` by `depth` around its value. */
@@ -110,11 +121,10 @@ function start(ac: AudioContext): Drone {
   const t = ac.currentTime;
   const bus = gain(ac, 0);
   const d: Drone = { ac, bus, chimes: bus, voices: [], sources: [], nodes: [bus], timers: new Set(), chord: 0 };
-  bus.gain.setValueAtTime(0, t);
-  bus.gain.linearRampToValueAtTime(1, t + FADE_IN);
+  fadeIn(d, t, FADE_IN);
   bus.connect(ac.destination);
 
-  const verb = keep(d, space(ac));
+  const verb = keep(d, reverb(ac));
   verb.connect(keep(d, gain(ac, 0.9))).connect(bus);
   const mix = keep(d, gain(ac, 1));
   mix.connect(keep(d, gain(ac, 0.45))).connect(bus);
@@ -212,6 +222,14 @@ function chime(d: Drone, again = true) {
   }
   if (again && Math.random() < 0.35) later(d, between(1.1, 1.8), () => chime(d, false));
   if (again) later(d, between(8, 16), () => chime(d));
+}
+
+/** Silent until `at`, then fading in over `seconds`. */
+function fadeIn({ ac, bus }: Drone, at: number, seconds: number) {
+  bus.gain.cancelScheduledValues(ac.currentTime);
+  bus.gain.setValueAtTime(0, ac.currentTime);
+  bus.gain.setValueAtTime(0, at);
+  bus.gain.linearRampToValueAtTime(1, at + seconds);
 }
 
 function stop(d: Drone) {

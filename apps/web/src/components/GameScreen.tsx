@@ -18,7 +18,6 @@ import { ConquerChoice, DecisionOverlay, GameOver } from './Overlays';
 import { ErrorToast, PlayedCard, Toasts } from './Toasts';
 import { FullscreenButton } from './FullscreenButton';
 import { MusicButton, SoundButton } from './SoundButton';
-import { ambience } from '../ambience';
 
 /**
  * The game screen, for a game on this device or online. `side` goes at the top of the sidebar,
@@ -54,7 +53,6 @@ export function Game({
   const dispatch = review ? NO_DISPATCH : view.dispatch;
   const undo = review ? undefined : view.undo;
   useUndoShortcut(undo);
-  useEffect(ambience, []);
   // The game as it was when the review began. On the way back the map shows it for a moment, then
   // follows play from there to the game now, so what happened meanwhile rolls, blows up and is
   // brought into view as usual instead of just being there.

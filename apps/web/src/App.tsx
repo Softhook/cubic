@@ -7,6 +7,7 @@ import { devStartGame } from './game/devStart';
 import { Lobby, type LobbyResult } from './components/Lobby';
 import { Game } from './components/GameScreen';
 import { onlineSecret } from './online/link';
+import { ambience } from './ambience';
 
 // Loaded when first wanted, so the lobby and a game on this device start without them: the manual, and
 // online play (with its cryptography).
@@ -20,6 +21,8 @@ export function App() {
   // An online game is opened by its link: #online/<secret>.
   const [online, setOnline] = useState(onlineSecret);
   useEffect(() => markGameOnScreen(!!game && !online), [game, online]);
+  // The music plays from the lobby on, as soon as the browser lets it: after the first tap or key.
+  useEffect(ambience, []);
   useEffect(() => {
     const follow = () => {
       const secret = onlineSecret();

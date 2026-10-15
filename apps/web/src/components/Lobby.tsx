@@ -16,6 +16,7 @@ import { LobbyBackdrop } from './LobbyBackdrop';
 import { Segmented } from './Segmented';
 import { Confirm } from './Dialog';
 import { FullscreenButton } from './FullscreenButton';
+import { holdForTitle } from '../ambience';
 import { OPENS_FULLSCREEN, fullscreenWaiting, resumeFullscreen } from '../fullscreen';
 import { forgetFinishedGames, forgetGame, onlineGames } from '../online/games';
 import { defaultSeat } from '../game/seats';
@@ -75,6 +76,8 @@ function useIntro(title: RefObject<HTMLHeadingElement | null>) {
   useEffect(() => {
     if (!phase) return;
     introPlayed = true;
+    // The music waits under the title and opens as it rises.
+    const titleGone = phase === 'title' ? holdForTitle() : undefined;
     const next = phase === 'title' ? 'rise' : null;
     let live = true;
     const t = phase === 'title' && waits ? undefined : setTimeout(() => setPhase(next), phase === 'title' ? INTRO_HOLD_MS : INTRO_RISE_MS);
@@ -98,6 +101,7 @@ function useIntro(title: RefObject<HTMLHeadingElement | null>) {
       live = false;
       clearTimeout(t);
       unlisten();
+      titleGone?.();
     };
   }, [phase, waits]);
   return { phase, waits, started, offset };
