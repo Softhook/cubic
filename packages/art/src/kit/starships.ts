@@ -23,15 +23,6 @@ const sym = (right: Pt[]) =>
   ]);
 /** Lines, as one path: each pair of points is a segment. */
 const segs = (pts: Pt[]) => pts.map(([x, y], i) => `${i % 2 ? 'L' : 'M'}${n(x)} ${n(y)}`).join('');
-/** A segment and its mirror image. */
-const both = (x1: number, y1: number, x2: number, y2: number) =>
-  segs([
-    [x1, y1],
-    [x2, y2],
-    [-x1, y1],
-    [-x2, y2],
-  ]);
-
 /** 1 · A ringed fortress, a gun facing each way it can strike. */
 const battlestation = () => [
   `<circle r=".74"/>`,
@@ -187,7 +178,8 @@ export function shipDie(id: string, value: number, cx: number, cy: number, size:
   const r = size * 0.08;
   // Inverted: a white face with a black edge, ship and pips, as printed on paper.
   const pipFill = inverted ? '#000' : hsl(hue, 100, 70);
-  const glow = (px: number, py: number) => (inverted ? '' : `<circle cx="${n(px)}" cy="${n(py)}" r="${n(r * 1.8)}" fill="url(#${id}-glow)"/>`);
+  const glow = (px: number, py: number) =>
+    inverted ? '' : `<circle cx="${n(px)}" cy="${n(py)}" r="${n(r * 1.8)}" fill="url(#${id}-glow)"/>`;
   const pips = PIP_SPOTS[value]
     .map(([x, y]) => {
       const px = cx + x * size;
