@@ -1,0 +1,5 @@
+#!/bin/sh
+# The deploy's tests, before each push (slower than the commit checks, so here once rather than on every commit).
+# Skip in a pinch with `git push --no-verify`.
+set -e
+npm test --silent

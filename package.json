@@ -7,6 +7,7 @@
     "apps/*"
   ],
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "data": "node scripts/build-data.mjs",
     "dev": "npm run data && npm run dev -w @quantum/web",
     "dev:https": "npm run data && npm run dev:https -w @quantum/web",

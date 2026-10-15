@@ -1,0 +1,16 @@
+#!/bin/sh
+# The checks the deploy runs (.github/workflows), before each commit, so a commit that would fail it doesn't get
+# pushed. Formatting is fixed rather than failed: staged files are run through Prettier and re-staged.
+# Skip in a pinch with `git commit --no-verify`.
+set -e
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+if [ -n "$staged" ]; then
+  echo "$staged" | xargs npx prettier --write --ignore-unknown --log-level warn
+  echo "$staged" | xargs git add
+fi
+
+npm run --silent typecheck
+npx eslint . --max-warnings 0
+npm run --silent circular
+npm run --silent knip
