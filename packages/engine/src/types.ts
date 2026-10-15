@@ -273,7 +273,8 @@ export type Action =
   | { type: 'placeShip'; die: string; to: Cell }
   // phase 1 actions
   | { type: 'move'; die: string; to: Cell }
-  | { type: 'attack'; die: string; target: string }
+  /** `from`: the space to attack from (moveOptions launches); the nearest when left out. */
+  | { type: 'attack'; die: string; target: string; from?: Cell }
   /** A prototype ship power's action (ShipHooks.action), aimed at a ship, a space or both. */
   | { type: 'power'; die: string; target?: string; to?: Cell }
   | { type: 'deploy'; die: string; to: Cell }

@@ -19,7 +19,24 @@ export function candidates(s: GameState, opts?: { includeCarry?: boolean }): Act
     const rank = (a: Action) => (a.type === 'clever' ? CALCULATING_ORDER.indexOf(a.value) : 99);
     all.sort((a, b) => rank(a) - rank(b));
   }
-  return s.turn.actionsLeft > 0 ? all.filter((a) => a.type !== 'playStoredTactic') : all;
+  const options = nearestAttacks(all);
+  return s.turn.actionsLeft > 0 ? options.filter((a) => a.type !== 'playStoredTactic') : options;
+}
+
+/**
+ * One Move attack per target, from the nearest space (the first offered). The other spaces would
+ * each be scored as a separate action: noisy samples favour whichever got lucky, and the search
+ * spends its budget on near-copies.
+ */
+function nearestAttacks(all: Action[]): Action[] {
+  const seen = new Set<string>();
+  return all.filter((a) => {
+    if (a.type !== 'attack') return true;
+    const k = `${a.die}>${a.target}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
 /**

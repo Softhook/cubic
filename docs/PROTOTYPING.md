@@ -266,7 +266,7 @@ on game length and Flagship survival.
 
 | Power | Engine | AI | UI |
 |---|---|---|---|
-| Picket | `stopsEnemies` hook; **current** on every ship (zone of control) | Automatic via legal moves | Highlights automatic; zone overlay optional |
+| Picket | `stopsEnemies` hook; **current** on every ship (zone of control) | Automatic via legal moves | With a ship selected, enemy zones are tinted and moves into one ringed (the ship stops there) |
 | Shoot | `action` hook; **current** | Handled via legal actions | Action button and target highlights |
 | Beacon | `deployTargets` hook available; candidate not registered | Automatic | Target cell highlights |
 | Escort, Anchor | Combat modifier / conquer-sum hook | Automatic | Combat breakdown line |

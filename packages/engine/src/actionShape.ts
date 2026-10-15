@@ -37,7 +37,7 @@ export const SHAPES: { [K in Action['type']]: Shape<K> } = {
   placeStart: { planet },
   placeShip: { die: str, to: cell },
   move: { die: str, to: cell },
-  attack: { die: str, target: str },
+  attack: { die: str, target: str, from: opt(cell) },
   power: { die: str, target: opt(str), to: opt(cell) },
   deploy: { die: str, to: cell },
   reconfigure: { die: str },

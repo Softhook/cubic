@@ -5,6 +5,7 @@ import type { PendingOf } from './core';
 import { reserve, scrapyard, shipsOnBoard } from './lookups';
 import {
   actionsClosed,
+  attackLaunches,
   canCurious,
   canGainResearch,
   canMoveDie,
@@ -159,7 +160,11 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
     if (canPayMove && canMoveDie(s, d)) {
       const moves = moveOptions(s, d.id);
       for (const m of moves.moves.values()) out.push({ type: 'move', die: d.id, to: m.cell });
-      if (canAttack(1)) for (const target of moves.attacks.keys()) out.push({ type: 'attack', die: d.id, target });
+      if (canAttack(1)) {
+        for (const target of moves.attacks.keys()) {
+          for (const { from } of attackLaunches(s, d.id, target, moves)) out.push({ type: 'attack', die: d.id, target, from });
+        }
+      }
     }
     const action = hooksOf(s, d)?.action;
     if (action) for (const c of action.options(s, d)) out.push({ type: 'power', die: d.id, ...c });

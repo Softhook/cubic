@@ -1,5 +1,6 @@
 /** Read-only questions about a state: movement, deploying, conquering, combat totals… */
 import {
+  cellAt,
   diagonals,
   delta,
   grid,
@@ -151,8 +152,18 @@ export function stopZone(state: GameState, mover: PlayerId, at: (Die | undefined
 export interface MoveOptions {
   /** Reachable empty spaces, keyed by "r,c". `diagonal` means the interceptor ability is needed. */
   moves: Map<string, { cell: Cell; steps: number; diagonal: boolean }>;
-  /** Attackable enemy dice, keyed by die id, with the space the attack is launched from. */
-  attacks: Map<string, { from: Cell; at: Cell; diagonal: boolean }>;
+  /**
+   * Attackable enemy dice, keyed by die id: every space the attack may be launched from (`launches`,
+   * nearest first; the attacker chooses), and the first of them.
+   */
+  attacks: Map<string, AttackLaunch & { launches: AttackLaunch[] }>;
+}
+
+/** A space to attack from, the target's space, and whether it takes the interceptor ability. */
+export interface AttackLaunch {
+  from: Cell;
+  at: Cell;
+  diagonal: boolean;
 }
 
 /**
@@ -237,8 +248,92 @@ export function moveOptions(state: GameState, dieId: string): MoveOptions {
   const { moves, attacks } = moveIndexes(state, dieId);
   const result: MoveOptions = { moves: new Map(), attacks: new Map() };
   for (const [i, m] of moves) result.moves.set(key(cells[i]), { cell: cells[i], ...m });
-  for (const [id, x] of attacks) result.attacks.set(id, { from: cells[x.from], at: cells[x.at], diagonal: x.diagonal });
+  for (const [id, list] of attacks) {
+    const launches = list.map((x) => ({ from: cells[x.from], at: cells[x.at], diagonal: x.diagonal }));
+    result.attacks.set(id, { ...launches[0], launches });
+  }
   return result;
+}
+
+/**
+ * The spaces worth choosing between to attack `target` from (moveOptions launches), nearest first:
+ * the nearest of each outcome. Where the attack goes in from is where a repelled ship, or a winner
+ * that stays, ends up, so spaces differ when the chance to win, the use of the interceptor ability,
+ * the planets it would orbit (with Ingenious, the corners too) or the ships next to it (zones of
+ * control, support; through a Warp Gate too) differ.
+ */
+export function attackLaunches(state: GameState, dieId: string, target: string, opts = moveOptions(state, dieId)): AttackLaunch[] {
+  const launches = opts.attacks.get(target)?.launches ?? [];
+  if (launches.length < 2) return launches;
+  const attacker = die(state, dieId);
+  const defender = die(state, target);
+  const g = grid(state.board);
+  const at = shipsByIndex(state);
+  const gate = gates(state, g);
+  const corners = skillRules(state, attacker.owner).some((r) => r.conquer?.diagonals);
+  const seen = new Set<string>();
+  return launches.filter(({ from, diagonal }) => {
+    const i = from.r * g.cols + from.c;
+    const near: string[] = [];
+    for (const p of (corners ? g.around : g.ortho)[i]) {
+      const planet = cellAt(state.board, g.cells[p])?.planet;
+      if (planet !== undefined) near.push(`planet ${planet}`);
+    }
+    for (const p of [...g.ortho[i], gate(i)]) {
+      const ship = at[p];
+      if (ship && ship !== attacker && ship !== defender) near.push(ship.id);
+    }
+    const outcome = [attackChance(state, attacker, defender, from), diagonal, ...near.sort()].join();
+    if (seen.has(outcome)) return false;
+    seen.add(outcome);
+    return true;
+  });
+}
+
+/**
+ * The way a ship flies to `to` with a plain move (a destination in moveOptions, or the space an
+ * attack goes in from), its own space first: one of the shortest, with as few turns as it can.
+ * `diagonal`: with the interceptor ability, as moveOptions says. Each space is next to the one before
+ * it, across a joined edge of the map or through a Warp Gate. Empty if the ship can't get there.
+ */
+export function movePath(state: GameState, dieId: string, to: Cell, diagonal = false): Cell[] {
+  const d = die(state, dieId);
+  const start = cellOf(d);
+  if (!start) return [];
+  const at = shipsByIndex(state);
+  const through = anySkill(state, d.owner, (r) => r.moveThroughEnemies) ? d.owner : undefined;
+  const zone = stopZone(state, d.owner, at);
+  const range = movementRange(state, d);
+  const { steps, passing } = reach(state, start, range, diagonal, [], through, at, zone);
+  const g = grid(state.board);
+  const gate = gates(state, g);
+  const near = diagonal ? g.around : g.ortho;
+  const from = start.r * g.cols + start.c;
+  const path = [to.r * g.cols + to.c];
+  if (steps[path[0]] < 0) return [];
+  // Back from `to`, over spaces one step nearer the start (or as near, passed through for free), the
+  // straight one first; back up from a dead end, which only a free pass can lead into.
+  const back = (cur: number, next: number): boolean => {
+    if (cur === from) return true;
+    const before = [...near[cur], gate(cur)].filter(
+      // A space the search went on from: reached, with movement left, and not in a zone of control.
+      (p) =>
+        p >= 0 &&
+        steps[p] >= 0 &&
+        steps[p] < range &&
+        steps[p] + (passing[cur] ? 0 : 1) === steps[cur] &&
+        (p === from || !zone?.[p]) &&
+        !path.includes(p),
+    );
+    if (next >= 0) before.sort((a, b) => Number(b - cur === cur - next) - Number(a - cur === cur - next));
+    for (const p of before) {
+      path.push(p);
+      if (back(p, cur)) return true;
+      path.pop();
+    }
+    return false;
+  };
+  return back(path[0], -1) ? path.reverse().map((i) => g.cells[i]) : [];
 }
 
 /** The ships on the map by board cell index (see board.ts grid), for moveIndexes. */
@@ -251,13 +346,15 @@ export function shipsByIndex(state: GameState): (Die | undefined)[] {
 
 /**
  * moveOptions by board cell index (see board.ts grid), for code that asks about many ships and positions: the AI.
- * It may pass the ship itself and `at` (shipsByIndex), to look them up once for all ships.
+ * It may pass the ship itself and `at` (shipsByIndex), to look them up once for all ships. Each
+ * attack lists every space it may be launched from, nearest first, a space reached without the
+ * interceptor ability before one that needs it.
  */
 export function moveIndexes(state: GameState, ship: string | Die, at = shipsByIndex(state)) {
   const d = typeof ship === 'string' ? die(state, ship) : ship;
   const result = {
     moves: new Map<number, { steps: number; diagonal: boolean }>(),
-    attacks: new Map<string, { from: number; at: number; diagonal: boolean }>(),
+    attacks: new Map<string, { from: number; at: number; diagonal: boolean }[]>(),
   };
   const start = cellOf(d);
   if (!start) return result;
@@ -279,8 +376,10 @@ export function moveIndexes(state: GameState, ship: string | Die, at = shipsByIn
     const near = diagonal ? g.around : g.ortho;
     const attack = (from: number, nb: number) => {
       const target = at[nb];
-      if (!target || target.owner === d.owner || result.attacks.has(target.id)) return;
-      result.attacks.set(target.id, { from, at: nb, diagonal });
+      if (!target || target.owner === d.owner) return;
+      const launches = result.attacks.get(target.id);
+      if (!launches) result.attacks.set(target.id, [{ from, at: nb, diagonal }]);
+      else if (!launches.some((x) => x.from === from)) launches.push({ from, at: nb, diagonal });
     };
     for (const i of found) {
       if (steps[i] >= range || passing[i]) continue;

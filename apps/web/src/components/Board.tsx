@@ -1,9 +1,10 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-import { SHIP_NAMES, die, key, moveOptions, shipOf, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, die, key, moveOptions, same, shipOf, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { ActionEffects } from './board/ActionEffects';
 import { Explosions } from './board/Explosions';
+import { Routes } from './board/Routes';
 import { shipSpots, type ShipSpots } from './board/geometry';
 import { useBoardZoom } from './board/useBoardZoom';
 import { OffscreenHints, ZoomControls, useFollowMoves, useZoomIntro } from './board/ZoomUi';
@@ -81,19 +82,38 @@ export function Board({
         <BoardArt game={game} cell={cell} />
 
         <div className="board-layer" onClick={onBoardClick}>
-          {[...ctl.highlights.cells.values()].map(({ cell: c, tone }) => (
-            <button
-              key={key(c)}
-              className={`hl hl-${tone}`}
-              data-r={c.r}
-              data-c={c.c}
-              style={{ left: c.c * cell, top: c.r * cell, width: cell, height: cell }}
-              onClick={() => ctl.onCell(c)}
-              aria-label={`${tone} ${c.r},${c.c}`}
-            >
-              <span />
-            </button>
-          ))}
+          {ctl.highlights.zones.length > 0 && (
+            <div className="zones" aria-hidden>
+              {ctl.highlights.zones.map((c) => (
+                <span key={key(c)} style={{ left: c.c * cell, top: c.r * cell, width: cell, height: cell }} />
+              ))}
+            </div>
+          )}
+          {[...ctl.highlights.cells.values()].map(({ cell: c, tone }) => {
+            const route = ctl.routes.find((r) => same(r.from, c));
+            const odds = route?.odds;
+            return (
+              <button
+                key={key(c)}
+                className={`hl hl-${tone}${route?.cells.length ? ' routed' : ''}`}
+                data-r={c.r}
+                data-c={c.c}
+                style={{ left: c.c * cell, top: c.r * cell, width: cell, height: cell }}
+                onClick={() => ctl.onCell(c)}
+                aria-label={`${tone} ${c.r},${c.c}${odds === undefined ? '' : `, ${percent(odds)} chance to win`}`}
+              >
+                <span />
+                {odds !== undefined && <b className={`hl-odds ${oddsTone(odds)}`}>{percent(odds)}</b>}
+              </button>
+            );
+          })}
+
+          <Routes
+            routes={ctl.routes}
+            cell={cell}
+            color={ctl.sel.kind === 'attackFrom' ? game.players[die(game, ctl.sel.die).owner].color : ''}
+            onPick={ctl.onCell}
+          />
 
           {planets.map((p) => {
             const hl = ctl.highlights.planets.get(p.id);
@@ -375,7 +395,7 @@ function OddsBadge({ chance, cell, zoomed }: { chance: number; cell: number; zoo
     io.observe(ship);
     return () => io.disconnect();
   }, [cell, zoomed]);
-  const tone = chance >= 0.6 ? 'good' : chance <= 0.4 ? 'bad' : '';
+  const tone = oddsTone(chance);
   return (
     <span ref={ref} className={['ship-odds', tone, flip.below && 'below', flip.left && 'left'].filter(Boolean).join(' ')} aria-hidden>
       {/* The % sign smaller: a narrower badge. */}
@@ -386,6 +406,11 @@ function OddsBadge({ chance, cell, zoomed }: { chance: number; cell: number; zoo
 }
 
 /** A chance as a whole percentage; never 0% or 100% unless it is certain. */
+/** Green when the attack is likely to win, red when likely to lose, gold in between (see .ship-odds). */
+function oddsTone(chance: number): string {
+  return chance >= 0.6 ? 'good' : chance <= 0.4 ? 'bad' : '';
+}
+
 function percent(p: number): string {
   const n = Math.round(p * 100);
   return p > 0 && n === 0 ? '<1%' : p < 1 && n === 100 ? '>99%' : `${n}%`;

@@ -1,5 +1,6 @@
 import {
   apply,
+  attackLaunches,
   canRespondToCombat,
   createGame,
   defaultMap,
@@ -19,7 +20,8 @@ import { defaultSeat } from './seats';
  * one human (Commander) and AI opponents. `play` is a mode's id or name; `map` defaults to the
  * basic map for the player count; `seed` makes the dice the same every time. Reloading starts the
  * game again. Like any game on this device, it replaces the saved game.
- * `scene=combat|advance|changeOfHeart|takeCard|over` opens on that popup instead, `scene=turn` on your first turn (see `scene`).
+ * `scene=combat|advance|changeOfHeart|takeCard|over` opens on that popup instead, `scene=turn` on your first turn, and
+ * `scene=attackFrom` with a ship that can attack from spaces with different outcomes (see `scene`).
  */
 export function devStartGame(): GameState | null {
   if (!import.meta.env.DEV) return null;
@@ -65,6 +67,7 @@ function scene(game: GameState, name: string): GameState {
     if (s.market.skillRow.length) s.pending.unshift({ kind: 'takeCard', player: 0, count: 1 });
     return s;
   }
+  if (name === 'attackFrom') return attackFrom(s);
   if (name !== 'combat' && name !== 'advance') return s;
   // Two empty spaces side by side: one of the human's ships attacks one of the next player's, trying
   // ship values until the human can answer the roll (so the battle waits, with its buttons).
@@ -94,4 +97,23 @@ function scene(game: GameState, name: string): GameState {
     }
   }
   return fallback ?? s;
+}
+
+/** One of the human's ships (a 3) diagonally next but one to an enemy 6 it can attack from spaces with different outcomes. */
+function attackFrom(s: GameState): GameState {
+  const { rows, cols } = s.board;
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++) {
+      const t = structuredClone(s);
+      const [mine, theirs] = [t.dice.find((x) => x.owner === 0)!, t.dice.find((x) => x.owner === 1)!];
+      mine.loc = theirs.loc = { zone: 'scrapyard' };
+      const near = { r: r + 1, c: c - 1 };
+      if (!isEmptySpace(t, { r, c }) || !isEmptySpace(t, near)) continue;
+      Object.assign(mine, { loc: { zone: 'board', ...near }, value: 3 });
+      Object.assign(theirs, { loc: { zone: 'board', r, c }, value: 6 });
+      t.turn.seen[mine.id] = [3];
+      t.turn.seen[theirs.id] = [6];
+      if (attackLaunches(t, mine.id, theirs.id).length >= 2) return t;
+    }
+  return s;
 }

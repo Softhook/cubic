@@ -17,9 +17,11 @@ import {
   orbitals,
   conquerCheck,
   grid,
+  attackLaunches,
   legalActions,
   MODES,
   moveIndexes,
+  movePath,
   moveOptions,
   mulberry32,
   planetFreeSlots,
@@ -314,6 +316,72 @@ function referenceReach(s: GameState, id: string) {
   steps.delete(from);
   return { moves: [...steps.keys()].sort((a, b) => a - b), attacks: [...attacks].sort() };
 }
+
+describe('where an attack goes in from', () => {
+  // Planets are at rows and columns 1, 4 and 7. A 4 at (3,2) can attack p1d0 at (2,3) from every space next to it:
+  // (2,2) and (3,3) are next to nothing else, (1,3) and (2,4) are both in the orbit of the planet at (1,4).
+  const launches = (s: GameState) => attackLaunches(s, 'p0d0', 'p1d0').map((x) => `${x.from.r},${x.from.c}`);
+  const attack = (r: number, c: number): Action => ({ type: 'attack', die: 'p0d0', target: 'p1d0', from: { r, c } });
+
+  it('offers one space for each different outcome, the nearest', () => {
+    const s = scenario({ p0d0: [3, 2, 4], p1d0: [2, 3, 6] }, 'community');
+    expect(moveOptions(s, 'p0d0').attacks.get('p1d0')?.launches).toHaveLength(4);
+    expect(launches(s)).toEqual(['2,2', '1,3']);
+    expect(offered(s, 'attack')).toHaveLength(2);
+  });
+
+  it('refuses a space with the same outcome as an offered one, and attacks from the one chosen', () => {
+    const s = scenario({ p0d0: [3, 2, 4], p1d0: [2, 3, 6] }, 'community');
+    expect(tryApply(s, attack(3, 3))).toBeNull();
+    expect(tryApply(s, attack(2, 4))).toBeNull();
+    const after = tryApply(s, attack(1, 3))!;
+    expect(at(after, 'p0d0').loc).toEqual({ zone: 'board', r: 1, c: 3 });
+  });
+
+  it('offers no choice with only one space to attack from', () => {
+    expect(launches(scenario({ p0d0: [2, 2, 2], p1d0: [2, 3, 6] }, 'community'))).toEqual(['2,2']);
+  });
+
+  it('tells apart the planets in the corners with Ingenious, which conquers from them', () => {
+    // (2,2) has the planet at (1,1) in a corner, (3,3) the one at (4,4).
+    const s = scenario({ p0d0: [3, 2, 4], p1d0: [2, 3, 6] }, 'community', ['ingenious']);
+    expect(launches(s).sort()).toEqual(['1,3', '2,2', '3,3']);
+  });
+
+  it('tells apart a space next to another enemy ship, which stops a ship in its zone of control', () => {
+    // (2,2) is next to p1d1 as well; (2,4) is out of reach, as p1d0's zone stops the ship at (3,3).
+    const s = scenario({ p0d0: [3, 2, 3], p1d0: [2, 3, 6], p1d1: [2, 1, 6] });
+    expect(launches(s)).toEqual(['2,2', '3,3']);
+  });
+});
+
+describe('the way a ship flies (movePath)', () => {
+  const path = (s: GameState, r: number, c: number) => movePath(s, 'p0d0', { r, c }).map((p) => `${p.r},${p.c}`);
+
+  it('goes straight when it can', () => {
+    expect(path(scenario({ p0d0: [2, 2, 4] }, 'community'), 2, 5)).toEqual(['2,2', '2,3', '2,4', '2,5']);
+  });
+
+  it('goes round a ship in the way, one space at a time, by a shortest way', () => {
+    const way = path(scenario({ p0d0: [2, 2, 4], p1d0: [2, 3, 6] }, 'community'), 2, 4);
+    expect(way).toHaveLength(5);
+    expect(way).not.toContain('2,3');
+    for (let i = 1; i < way.length; i++) {
+      const [[r0, c0], [r1, c1]] = [way[i - 1], way[i]].map((p) => p.split(',').map(Number));
+      expect(Math.abs(r1 - r0) + Math.abs(c1 - c0), way.join(' ')).toBe(1);
+    }
+  });
+
+  it('passes through enemy ships for free with Devious', () => {
+    const s = scenario({ p0d0: [2, 0, 1], p1d0: [2, 1, 6], p1d1: [2, 2, 6] }, 'community', ['devious']);
+    expect(path(s, 2, 3)).toEqual(['2,0', '2,1', '2,2', '2,3']);
+  });
+
+  it('is empty where the ship can’t go, as past a zone of control', () => {
+    expect(path(scenario({ p0d0: [2, 2, 3], p1d0: [1, 3, 6] }), 2, 4)).toEqual([]);
+    expect(path(scenario({ p0d0: [2, 2, 3], p1d0: [1, 3, 6] }), 2, 3)).toEqual(['2,2', '2,3']);
+  });
+});
 
 describe('classic 5 ability is gone, 4 and 6 are kept', () => {
   it('a Frigate can change and a Scout can reconfigure for free, as in Community', () => {

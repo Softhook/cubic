@@ -15,15 +15,19 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  cellOf,
   checkInvariants,
   decisionCandidates,
   distance,
   legalActions,
   moveIndexes,
+  moveOptions,
+  movePath,
   shipReach,
   shipsByIndex,
   shipsOnBoard,
   spaces,
+  surrounding,
   tryApply,
   type Action,
   type GameMode,
@@ -72,6 +76,8 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
       else
         out.push(
           { type: 'attack', die: d.id, target: o.id },
+          // Next to the target, or on a Warp Gate: an attack through the gate goes in from the other end.
+          ...[...surrounding(s.board, cellOf(o)!), ...s.gates].map((from) => ({ type: 'attack' as const, die: d.id, target: o.id, from })),
           { type: 'freeAttack', die: d.id, target: o.id },
           { type: 'tactical', die: d.id, target: o.id },
         );
@@ -115,6 +121,14 @@ function playChecked(mode: GameMode, players: number, seed: number) {
         expect(marked, `${where}: shipReach moves of ${d.id}`).toEqual([...moves.keys()].sort((a, b) => a - b));
         expect(fast.count).toBe(moves.size);
         expect(fast.attacks.map((x) => x.id).sort(), `${where}: shipReach attacks of ${d.id}`).toEqual([...attacks.keys()].sort());
+        // The board draws the way to every space an attack goes in from (movePath): it must find one.
+        // Moves too, which ask the same search. Sampled, like the brute force below.
+        if (!DEEP && step % 4) continue;
+        const opts = moveOptions(s, d.id);
+        const ends = [...opts.moves.values()].map((m) => ({ to: m.cell, diagonal: m.diagonal }));
+        for (const x of opts.attacks.values()) for (const l of x.launches) ends.push({ to: l.from, diagonal: l.diagonal });
+        for (const { to, diagonal } of ends)
+          expect(movePath(s, d.id, to, diagonal).length, `${where}: movePath of ${d.id} to ${to.r},${to.c}`).toBeGreaterThan(0);
       }
 
       // Decisions are cheap to brute-force, so every one is. Phase-1 actions are slow, so their states
@@ -125,6 +139,12 @@ function playChecked(mode: GameMode, players: number, seed: number) {
         const offered = new Set(legal.map(keyOf));
         for (const a of deciding ? bruteForceDecision(s) : bruteForce(s, DEEP || step % 20 === 0)) {
           if (offered.has(keyOf(a))) continue;
+          // An attack without `from` is shorthand for the nearest space: accepted exactly when one is offered.
+          if (a.type === 'attack' && !a.from) {
+            const any = legal.some((x) => x.type === 'attack' && x.die === a.die && x.target === a.target);
+            expect(tryApply(s, a) !== null, `${where}: attack shorthand: ${keyOf(a)}`).toBe(any);
+            continue;
+          }
           expect(tryApply(s, a), `${where}: accepted but not offered: ${keyOf(a)}`).toBeNull();
         }
       }

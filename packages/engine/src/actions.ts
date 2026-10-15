@@ -1,5 +1,5 @@
 /** The five phase-1 actions (Move/Attack, Deploy, Reconfigure, Research, Conquer) and ending the turn. */
-import { cellIndex, grid, same } from './board';
+import { cellIndex, same } from './board';
 import { startCombat } from './combat';
 import {
   fail,
@@ -22,7 +22,17 @@ import {
   type Handlers,
 } from './core';
 import { boardLoc, die } from './lookups';
-import { canGainResearch, canMoveDie, canReconfigure, conquerCheck, deployTargets, deploysFree, moveIndexes } from './queries';
+import {
+  attackLaunches,
+  canGainResearch,
+  canMoveDie,
+  canReconfigure,
+  conquerCheck,
+  deployTargets,
+  deploysFree,
+  moveIndexes,
+  moveOptions,
+} from './queries';
 import { rulesOf } from './rules';
 import { endTurn } from './turn';
 
@@ -43,12 +53,15 @@ export const actionHandlers = {
     requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     if (!canMoveDie(s, d)) fail('This ship already moved this turn');
-    const opt = moveIndexes(s, d).attacks.get(a.target);
-    if (!opt) fail('Target out of range');
+    const opts = moveOptions(s, d.id);
+    if (!opts.attacks.has(a.target)) fail('Target out of range');
+    // Only the spaces offered (attackLaunches): a space with the same outcome as a nearer one isn't.
+    const opt = a.from ? attackLaunches(s, d.id, a.target, opts).find((x) => same(x.from, a.from!)) : opts.attacks.get(a.target)!;
+    if (!opt) fail('Cannot attack from there');
     spend(s, 1);
     if (opt.diagonal) markAbility(s, d);
     markMoved(s, d);
-    startCombat(s, d, die(s, a.target), grid(s.board).cells[opt.from]);
+    startCombat(s, d, die(s, a.target), opt.from);
   },
   deploy(s, a) {
     const t = requireActionPhase(s);

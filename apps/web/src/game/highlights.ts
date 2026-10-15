@@ -1,8 +1,21 @@
-import { die as getDie, key, moveOptions, same, scrapyard, tacticalOptions, type Cell, type GameState } from '@quantum/engine';
+import {
+  die as getDie,
+  grid,
+  isEmptySpace,
+  key,
+  moveOptions,
+  same,
+  scrapyard,
+  shipsByIndex,
+  stopZone,
+  tacticalOptions,
+  type Cell,
+  type GameState,
+} from '@quantum/engine';
 import type { Sel } from './controller';
 import type { Legal } from './legal';
 
-type CellTone = 'move' | 'diagonal' | 'deploy' | 'gate' | 'drop';
+type CellTone = 'move' | 'diagonal' | 'zone' | 'deploy' | 'gate' | 'drop' | 'launch';
 type DieTone = 'attack' | 'swap' | 'target' | 'passenger';
 type PlanetTone = 'conquer' | 'infamy' | 'start' | 'blocked';
 
@@ -10,9 +23,11 @@ export interface Highlights {
   cells: Map<string, { cell: Cell; tone: CellTone }>;
   dice: Map<string, DieTone>;
   planets: Map<number, { tone: PlanetTone; label: string }>;
+  /** The empty spaces where enemy zones of control would stop the selected ship (stopZone), shown only. */
+  zones: Cell[];
 }
 
-export const noHighlights = (): Highlights => ({ cells: new Map(), dice: new Map(), planets: new Map() });
+export const noHighlights = (): Highlights => ({ cells: new Map(), dice: new Map(), planets: new Map(), zones: [] });
 
 /**
  * What to light up on the board for a human: the targets of the legal actions that fit the current
@@ -90,12 +105,27 @@ export function highlightsFor(game: GameState, sel: Sel, legal: Legal, actionPha
   switch (sel.kind) {
     case 'ship': {
       const diagonal = moveOptions(game, sel.die).moves;
-      for (const a of legal.of('move', (a) => a.die === sel.die)) {
-        h.cells.set(key(a.to), { cell: a.to, tone: diagonal.get(key(a.to))?.diagonal ? 'diagonal' : 'move' });
+      const moves = legal.of('move', (a) => a.die === sel.die);
+      // The zones only while the ship may still go somewhere.
+      if (moves.length || legal.can('attack', (a) => a.die === sel.die)) h.zones = zonesFor(game, sel.die);
+      const stops = new Set(h.zones.map(key));
+      for (const a of moves) {
+        // A space in a zone of control: the ship stops there, next to an enemy.
+        const tone = stops.has(key(a.to)) ? 'zone' : diagonal.get(key(a.to))?.diagonal ? 'diagonal' : 'move';
+        h.cells.set(key(a.to), { cell: a.to, tone });
       }
       for (const a of legal.of('attack', (a) => a.die === sel.die)) h.dice.set(a.target, 'attack');
       break;
     }
+    case 'attackFrom':
+      h.zones = zonesFor(game, sel.die);
+      // The chosen target, the spaces to attack it from, and the other targets, to change one's mind.
+      for (const a of legal.of('attack', (a) => a.die === sel.die)) {
+        if (a.target !== sel.target) h.dice.set(a.target, 'attack');
+        else if (a.from) h.cells.set(key(a.from), { cell: a.from, tone: 'launch' });
+      }
+      h.dice.set(sel.target, 'target');
+      break;
     case 'scrap':
       addCells(
         legal.of('deploy', (a) => a.die === sel.die).map((a) => a.to),
@@ -149,4 +179,12 @@ export function highlightsFor(game: GameState, sel: Sel, legal: Legal, actionPha
       break;
   }
   return h;
+}
+
+/** The empty spaces in enemy zones of control, for the ship's owner; none in a mode without them. */
+function zonesFor(game: GameState, die: string): Cell[] {
+  const zone = stopZone(game, getDie(game, die).owner, shipsByIndex(game));
+  if (!zone) return [];
+  const { cells } = grid(game.board);
+  return cells.filter((c, i) => zone[i] && isEmptySpace(game, c));
 }

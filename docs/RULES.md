@@ -208,7 +208,7 @@ use one ability per turn**, even if it changes type.
 |---|:-:|---|
 | **Conquer** | 2 | Place a cube on an empty cube location of a planet where you have no cube, if the values of **your ships in its orbital positions sum exactly** to the planet number. |
 | **Deploy** | 1 | Move a ship from your scrapyard (keeping its value) to an empty orbital position of a planet that holds one of your cubes. This is not that ship's move. |
-| **Move / Attack** | 1 | Move one ship orthogonally up to its value in spaces. Can't pass through planets or ships. To attack, move "halfway" into an enemy ship's space as part of the move; the move ends there. |
+| **Move / Attack** | 1 | Move one ship orthogonally up to its value in spaces. Can't pass through planets or ships. To attack, move "halfway" into an enemy ship's space as part of the move; the move ends there. Engine: the attacker chooses the space it attacks from; spaces with the same outcome (odds, Interceptor ability, neighbouring planets and ships) are offered once, and a single option is taken without asking. |
 | **Reconfigure** | 1 | Re-roll one of your ships (on the map **or** in your scrapyard). Keep re-rolling until it shows a value it has not shown this turn. |
 | **Research** | 1 | +1 research (max 6). |
 

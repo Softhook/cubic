@@ -41,6 +41,8 @@ export function hintFor(game: GameState, sel: Sel): string {
   switch (sel.kind) {
     case 'ship':
       return 'Click a highlighted space to move, or a red target to attack.';
+    case 'attackFrom':
+      return 'Choose a way to attack along, or click the target again for the solid one.';
     case 'scrap':
       return 'Click a highlighted orbital space to deploy this ship.';
     case 'swap':

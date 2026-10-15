@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   actor,
   attackChance,
+  attackLaunches,
   attackFactors,
   cellOf,
   die as getDie,
   key,
   moveOptions,
+  movePath,
   scrapyard,
   type Action,
   type Cell,
@@ -22,6 +24,8 @@ import type { Dispatch } from './useGame';
 export type Sel =
   | { kind: 'none' }
   | { kind: 'ship'; die: string }
+  // A Move attack on `target` that can go in from more than one space, waiting for the player to choose it.
+  | { kind: 'attackFrom'; die: string; target: string }
   | { kind: 'scrap'; die: string }
   | { kind: 'swap'; die: string }
   | { kind: 'freeAttack'; die: string }
@@ -66,6 +70,7 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
   );
 
   const attacks = useMemo(() => attackPreviews(game, sel, highlights.dice), [game, sel, highlights]);
+  const routes = useMemo(() => attackRoutes(game, sel), [game, sel]);
 
   const select = useCallback((s: Sel) => {
     if (s.kind !== 'none') sfx.select();
@@ -92,7 +97,18 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
       if (sel.kind === 'freeAttack' && tone === 'attack') return void dispatch({ type: 'freeAttack', die: sel.die, target: id });
       if (sel.kind === 'power' && tone === 'attack') return void (dispatch({ type: 'power', die: sel.die, target: id }) && setSel(NONE));
       if (sel.kind === 'tactical' && tone === 'attack') return void dispatch({ type: 'tactical', die: sel.die, target: id });
-      if (sel.kind === 'ship' && tone === 'attack') return void dispatch({ type: 'attack', die: sel.die, target: id });
+      if ((sel.kind === 'ship' || sel.kind === 'attackFrom') && (tone === 'attack' || tone === 'target')) {
+        // One space to attack from: attack. Several: choose one, or tap the target again for the nearest.
+        const options = legal.of('attack', (a) => a.die === sel.die && a.target === id);
+        if (options.length === 1 || (sel.kind === 'attackFrom' && sel.target === id)) return void dispatch(options[0]);
+        return select({ kind: 'attackFrom', die: sel.die, target: id });
+      }
+      if (sel.kind === 'attackFrom' && id === sel.die) {
+        // The ship covers its own space: a tap on it attacks from where it is, if it may, or goes back.
+        const here = cellOf(getDie(game, id))!;
+        if (highlights.cells.has(key(here))) return void dispatch({ type: 'attack', die: sel.die, target: sel.target, from: here });
+        return select({ kind: 'ship', die: sel.die });
+      }
       if (sel.kind === 'carryPassenger' && tone === 'passenger')
         return select({ kind: 'carryDest', die: sel.die, passenger: id, tactical: sel.tactical });
       if (sel.kind === 'carryDest' && id === sel.die) {
@@ -107,13 +123,14 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
       setSel(NONE);
       return false;
     },
-    [human, highlights, head, sel, game, actionPhase, dispatch, select],
+    [human, highlights, head, sel, game, actionPhase, legal, dispatch, select],
   );
 
   const onCell = useCallback(
     (cell: Cell) => {
       if (!human) return;
-      if (!highlights.cells.has(key(cell))) return setSel(sel.kind === 'scrap' ? sel : NONE);
+      if (!highlights.cells.has(key(cell)))
+        return setSel(sel.kind === 'scrap' ? sel : sel.kind === 'attackFrom' ? { kind: 'ship', die: sel.die } : NONE);
       if (head?.kind === 'advance') return void dispatch({ type: 'advance', move: true });
       if (head?.kind === 'warpGate') return void dispatch({ type: 'warpGate', cell });
       if (head?.kind === 'placeExpansion') return void dispatch({ type: 'placeExpansion', to: cell });
@@ -130,6 +147,8 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
       switch (sel.kind) {
         case 'ship':
           return place({ type: 'move', die: sel.die, to: cell });
+        case 'attackFrom':
+          return place({ type: 'attack', die: sel.die, target: sel.target, from: cell });
         case 'scrap':
           return place({ type: 'deploy', die: sel.die, to: cell });
         case 'tactical':
@@ -171,7 +190,7 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
     [human, highlights, head, sel, legal, dispatch, select],
   );
 
-  return { sel, select, highlights, legal, attacks, onDie, onCell, onPlanet, human, actionPhase, mine };
+  return { sel, select, highlights, legal, attacks, routes, onDie, onCell, onPlanet, human, actionPhase, mine };
 }
 
 export type Controller = ReturnType<typeof useController>;
@@ -185,15 +204,50 @@ export interface AttackPreview {
 /** For each ship the selected ship may attack: how it would go, from the space it would attack from. */
 function attackPreviews(game: GameState, sel: Sel, dice: ReadonlyMap<string, string>): Map<string, AttackPreview> {
   const out = new Map<string, AttackPreview>();
-  if (sel.kind !== 'ship' && sel.kind !== 'freeAttack' && sel.kind !== 'power' && sel.kind !== 'tactical') return out;
+  if (sel.kind !== 'ship' && sel.kind !== 'attackFrom' && sel.kind !== 'freeAttack' && sel.kind !== 'power' && sel.kind !== 'tactical')
+    return out;
   const attacker = getDie(game, sel.die);
-  // A Move attack goes in from a space next to the target; the others attack from where the ship is.
-  const moves = sel.kind === 'ship' ? moveOptions(game, sel.die).attacks : null;
+  // A Move attack goes in from a space next to the target (the nearest, until the player chooses);
+  // the others attack from where the ship is.
+  const moves = sel.kind === 'ship' || sel.kind === 'attackFrom' ? moveOptions(game, sel.die).attacks : null;
   for (const [id, tone] of dice) {
-    if (tone !== 'attack') continue;
+    if (tone !== 'attack' && !(tone === 'target' && sel.kind === 'attackFrom')) continue;
     const defender = getDie(game, id);
     const from = moves?.get(id)?.from ?? cellOf(attacker)!;
     out.set(id, { chance: attackChance(game, attacker, defender, from), factors: attackFactors(game, attacker, defender, from) });
   }
   return out;
+}
+
+/** A way a ship can attack along, drawn on the map, while the player chooses where to attack from. */
+export interface Route {
+  /** The space it attacks from: a tap on it, or on the way, chooses this way. */
+  from: Cell;
+  /** The spaces it flies over, from its own to `from`. */
+  cells: Cell[];
+  /** The target's space, which the ship goes halfway into from the last of `cells`. */
+  strike: Cell;
+  /** The nearest way, taken unless another is chosen. */
+  main: boolean;
+  /** The chance to win from there, when it differs between the ways (support from neighbouring ships). */
+  odds?: number;
+}
+
+/**
+ * Choosing where to attack from, the only time the way a ship flies matters: a way to each space
+ * worth choosing (attackLaunches, the same spaces as the legal attacks), the nearest as the main one.
+ */
+function attackRoutes(game: GameState, sel: Sel): Route[] {
+  if (sel.kind !== 'attackFrom') return [];
+  const attacker = getDie(game, sel.die);
+  const defender = getDie(game, sel.target);
+  const routes = attackLaunches(game, sel.die, sel.target).map(({ from, at, diagonal }, i): Route => ({
+    from,
+    cells: movePath(game, sel.die, from, diagonal),
+    strike: at,
+    main: i === 0,
+    odds: attackChance(game, attacker, defender, from),
+  }));
+  if (new Set(routes.map((r) => r.odds)).size < 2) for (const r of routes) delete r.odds;
+  return routes;
 }
