@@ -1315,12 +1315,13 @@ input { font: inherit; }
 .backdrop-face.east   { transform: rotateY(90deg) translateZ(var(--half)); }
 .backdrop-face.west   { transform: rotateY(-90deg) translateZ(var(--half)); }
 /* The tip of each top corner, where three rounded corners and the bevels along them meet, would show the map:
-   a plane just under the top face fills it. The camera always looks down on the dice, so the top corners are the
-   only ones that need it (the bottom ones sit on the board). */
+   a plane under the top face fills it. The camera always looks down on the dice, so the top corners are the
+   only ones that need it (the bottom ones sit on the board). Well under it (and under the bevels): a pixel or so
+   below (.95), Safari on iPad drew it through the top face in patches that flickered as the map turned. */
 .backdrop-core {
   position: absolute; inset: calc(var(--half) * .05);
   background: color-mix(in srgb, var(--die-color) 70%, black);
-  transform: translateZ(calc(var(--half) * .95));
+  transform: translateZ(calc(var(--half) * .7));
 }
 /* A bevel along each edge: the chord across the rounded edge, from where one face's rounded corner starts to
    where the other's does. Seen edge-on, two faces' rounded corners left a notch in the outline; this fills it.
@@ -1377,7 +1378,9 @@ input { font: inherit; }
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 30px rgba(122,162,255,.35));
+  /* blur(0) to match the opening's keyframe (lobby-title-in) function for function: with lists that differ, the
+     filter can't interpolate, and Safari on iPad left the title blurred. */
+  filter: blur(0) drop-shadow(0 0 30px rgba(122,162,255,.35));
 }
 /* The opening (Lobby.tsx useIntro): the title fades in alone in the middle of the screen, over the backdrop, then
    rises to its place while the rest of the lobby fades in under it. */

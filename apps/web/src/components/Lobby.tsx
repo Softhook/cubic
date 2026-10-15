@@ -80,9 +80,11 @@ function useIntro(title: RefObject<HTMLHeadingElement | null>) {
     // opening is heard, with its rush.
     const music = phase === 'title' ? holdForTitle() : undefined;
     let live = true;
-    const rise = (settling?: Promise<void> | null) =>
-      void Promise.all([music?.open(), settling]).then(() => live && setPhase('rise'));
-    const t = phase === 'title' && waits ? undefined : setTimeout(() => (phase === 'title' ? rise() : setPhase(null)), phase === 'title' ? INTRO_HOLD_MS : INTRO_RISE_MS);
+    const rise = (settling?: Promise<void> | null) => void Promise.all([music?.open(), settling]).then(() => live && setPhase('rise'));
+    const t =
+      phase === 'title' && waits
+        ? undefined
+        : setTimeout(() => (phase === 'title' ? rise() : setPhase(null)), phase === 'title' ? INTRO_HOLD_MS : INTRO_RISE_MS);
     const unlisten = () => {
       removeEventListener('click', skip);
       removeEventListener('keydown', skip);
