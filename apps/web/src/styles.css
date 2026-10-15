@@ -1298,8 +1298,10 @@ input { font: inherit; }
 .backdrop-face {
   position: absolute; inset: 0;
   display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-  /* Rounder corners than Die3D's 16% would need wider bevels (.backdrop-edge) to fill the outline seen edge-on. */
-  padding: 12%; border-radius: 9%;
+  /* Rounded less than Die3D's 16%: where two faces' rounded corners meet, they leave a notch in the outline seen
+     edge-on, and at 6% it's under a pixel or so. (Bevels filling it, a pixel inside the faces along each edge,
+     crossed each other and the core, and Safari on iPad drew them through the faces in flickering patches.) */
+  padding: 12%; border-radius: 6%;
   /* Lit as Die3D's faces are: a highlight top left, shade towards the bottom edge, a thin bright rim. */
   background:
     radial-gradient(circle at 28% 22%, color-mix(in srgb, var(--die-color) 55%, white) 0%, transparent 55%),
@@ -1309,42 +1311,23 @@ input { font: inherit; }
     inset 0 calc(var(--half) * -.12) calc(var(--half) * .24) rgba(0, 0, 0, .28);
   backface-visibility: hidden;
 }
+/* The sides turned a hair past 90deg: Safari (17 on, with its "CSS 3D Transform Interoperability") drops an
+   element whose own transform turns it exactly edge-on, as if it couldn't be seen, even inside a 3D context that
+   turns it back to face the camera; so whole side faces went missing (WebKit bugs 265309, 264343). */
 .backdrop-face.top    { transform: translateZ(var(--half)); }
-.backdrop-face.north  { transform: rotateX(90deg) translateZ(var(--half)); }
-.backdrop-face.south  { transform: rotateX(-90deg) translateZ(var(--half)); }
-.backdrop-face.east   { transform: rotateY(90deg) translateZ(var(--half)); }
-.backdrop-face.west   { transform: rotateY(-90deg) translateZ(var(--half)); }
-/* The tip of each top corner, where three rounded corners and the bevels along them meet, would show the map:
+.backdrop-face.north  { transform: rotateX(90.01deg) translateZ(var(--half)); }
+.backdrop-face.south  { transform: rotateX(-90.01deg) translateZ(var(--half)); }
+.backdrop-face.east   { transform: rotateY(90.01deg) translateZ(var(--half)); }
+.backdrop-face.west   { transform: rotateY(-90.01deg) translateZ(var(--half)); }
+/* The tip of each top corner, where three rounded corners meet, would show the map:
    a plane under the top face fills it. The camera always looks down on the dice, so the top corners are the
-   only ones that need it (the bottom ones sit on the board). Well under it (and under the bevels): a pixel or so
+   only ones that need it (the bottom ones sit on the board). Well under it: a pixel or so
    below (.95), Safari on iPad drew it through the top face in patches that flickered as the map turned. */
 .backdrop-core {
   position: absolute; inset: calc(var(--half) * .05);
   background: color-mix(in srgb, var(--die-color) 70%, black);
   transform: translateZ(calc(var(--half) * .7));
 }
-/* A bevel along each edge: the chord across the rounded edge, from where one face's rounded corner starts to
-   where the other's does. Seen edge-on, two faces' rounded corners left a notch in the outline; this fills it.
-   With the 9% radius r = .18 of the half-size: the chord is r√2 = .25 wide, and r/√2 in from the edge, so √2 -
-   r/√2 = 1.287 half-sizes from the centre. It lies inside the outline, so it only shows where the faces don't;
-   drawn narrower (.16), so its long edges sit clearly inside the faces: any closer (.22) and the 3D sorting
-   drew them over the faces, as lines along each edge. */
-.backdrop-edge {
-  --w: calc(var(--half) * .16);
-  --d: calc(var(--half) * 1.287);
-  position: absolute;
-  left: 0; top: calc(50% - var(--w) / 2); width: 100%; height: var(--w);
-  background: color-mix(in srgb, var(--die-color) 82%, black);
-}
-.backdrop-edge.te, .backdrop-edge.tw { top: 0; height: 100%; left: calc(50% - var(--w) / 2); width: var(--w); }
-.backdrop-edge.tn { transform: rotateX(45deg) translateZ(var(--d)); }
-.backdrop-edge.ts { transform: rotateX(-45deg) translateZ(var(--d)); }
-.backdrop-edge.te { transform: rotateY(45deg) translateZ(var(--d)); }
-.backdrop-edge.tw { transform: rotateY(-45deg) translateZ(var(--d)); }
-.backdrop-edge.ne { transform: rotateZ(-45deg) rotateY(90deg) translateZ(var(--d)); }
-.backdrop-edge.se { transform: rotateZ(45deg) rotateY(90deg) translateZ(var(--d)); }
-.backdrop-edge.sw { transform: rotateZ(135deg) rotateY(90deg) translateZ(var(--d)); }
-.backdrop-edge.nw { transform: rotateZ(-135deg) rotateY(90deg) translateZ(var(--d)); }
 /* The face on the board also casts the die's light around it, in its player's colour: no extra layer for it. */
 .backdrop-face.bottom {
   transform: rotateX(180deg) translateZ(var(--half));

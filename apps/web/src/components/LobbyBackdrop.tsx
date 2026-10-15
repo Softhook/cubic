@@ -290,9 +290,6 @@ function aroundFaces(top: number): number[] {
 }
 
 const SIDES = ['bottom', 'north', 'east', 'south', 'west'];
-/** A bevel along each edge that shows (not the bottom four, on the board): top north, east, south and west,
- * then the upright ones at the north-east, south-east, south-west and north-west corners. */
-const EDGES = ['tn', 'te', 'ts', 'tw', 'ne', 'se', 'sw', 'nw'];
 /** Tumble directions, so dice rolling together don't turn alike. */
 const TUMBLES = [
   ['540deg', '-360deg'],
@@ -324,11 +321,8 @@ const Cube = memo(function Cube({ value, color, turn, delay }: { value: number; 
         {aroundFaces(value).map((n, i) => (
           <Face key={SIDES[i]} n={n} side={SIDES[i]} />
         ))}
-        {/* Under the top face, filling the tips of its corners where the bevels meet. */}
+        {/* Under the top face, filling the tips of its rounded corners. */}
         <span className="backdrop-core" />
-        {EDGES.map((edge) => (
-          <span key={edge} className={`backdrop-edge ${edge}`} />
-        ))}
       </span>
     </span>
   );
