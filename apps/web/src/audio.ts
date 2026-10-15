@@ -1,8 +1,19 @@
 // The Web Audio plumbing every synthesized sound shares (sound.ts, gameOverSound.ts): the context, the
-// output bus, white noise and a few node builders.
+// output bus, white noise and a few node builders, and the player's sound and music switches.
+
+import { remember, stored } from './storage';
+
+/** The two switches in the game's top bar: sound effects, and the music (ambience.ts). */
+type Switch = 'sound' | 'music';
 
 let ctx: AudioContext | null = null;
 let bus: AudioNode | null = null;
+let effectsGain: GainNode | null = null;
+const switches: Record<Switch, boolean> = {
+  sound: stored('quantum.sound') !== 'off',
+  music: stored('quantum.music') !== 'off',
+};
+const listeners = new Set<() => void>();
 let noiseBuf: AudioBuffer | null = null;
 
 export function audio(): AudioContext | null {
@@ -15,13 +26,34 @@ export function audio(): AudioContext | null {
   }
 }
 
-/** Where every sound goes: a gentle compressor, so several sounds at once don't clip. */
+/** Whether sound effects or music are on, as the player last set them (kept across visits). */
+export function isOn(which: Switch): boolean {
+  return switches[which];
+}
+
+export function turn(which: Switch, on: boolean) {
+  if (switches[which] === on) return;
+  switches[which] = on;
+  remember(`quantum.${which}`, on ? 'on' : 'off');
+  if (which === 'sound' && ctx && effectsGain) effectsGain.gain.setTargetAtTime(on ? 1 : 0, ctx.currentTime, 0.05);
+  if (on) audio();
+  listeners.forEach((l) => l());
+}
+
+/** Calls `listener` whenever sound effects or music are turned on or off; returns the way to stop. */
+export function onSwitch(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+/** Where every sound effect goes: a gentle compressor, so several sounds at once don't clip, then silence while sound is off. */
 export function out(ac: AudioContext): AudioNode {
   if (!bus) {
     const comp = ac.createDynamicsCompressor();
     comp.threshold.value = -14;
     comp.ratio.value = 4;
-    comp.connect(ac.destination);
+    effectsGain = gain(ac, switches.sound ? 1 : 0);
+    comp.connect(effectsGain).connect(ac.destination);
     bus = comp;
   }
   return bus;
