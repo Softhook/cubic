@@ -13,6 +13,7 @@ import {
   type PlanetType,
 } from './tokens';
 import { planetFlavour, type PlanetFlavour } from './flavour';
+import { icon } from './icons';
 import { dieCut, document, hex, hsl, join, n, type Fragment } from './svg';
 import type { TileSpec } from './tileset';
 
@@ -111,6 +112,9 @@ export function numberPlacement(number: number): NumberPlacement {
   return { x: d, y: d, size, halfW, halfH };
 }
 
+/** The research flask on each Void space (mm). */
+const VOID_ICON = 8;
+
 /** Gap between hatch lines and their inset from the pad's edge, inside its rounded corners (mm). */
 const HATCH = { gap: 3, inset: 1.5 };
 
@@ -143,6 +147,9 @@ function markings(spec: TileSpec, spacesOnly = false): Fragment {
       body += `<rect x="${n(x - p / 2)}" y="${n(y - p / 2)}" width="${p}" height="${p}" rx="4" fill="#fff" fill-opacity=".03" stroke="${hex(222, 80, 82)}" stroke-opacity=".3" stroke-width=".3"/>`;
       // The four spaces beside a planet are where dice go to conquer it: faint diagonal hatching marks them.
       if (spec.number > 0 && (x === MID) !== (y === MID)) body += hatch(x, y);
+      // Ships on the Void gain Research: a faint flask on each space, in the pad outline's colour.
+      if (spec.number === 0)
+        body += `<g stroke-opacity=".15">${icon('research', x, y, VOID_ICON, hex(222, 80, 82), (0.3 * 24) / VOID_ICON)}</g>`;
     }),
   );
   if (spec.number > 0 && !spacesOnly) {
