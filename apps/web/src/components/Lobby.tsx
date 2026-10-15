@@ -76,23 +76,24 @@ function useIntro(title: RefObject<HTMLHeadingElement | null>) {
   useEffect(() => {
     if (!phase) return;
     introPlayed = true;
-    // The music waits under the title and opens as it rises.
-    const titleGone = phase === 'title' ? holdForTitle() : undefined;
-    const next = phase === 'title' ? 'rise' : null;
+    // The music waits under the title; its opening starts as the title is to rise, and the title rises when the
+    // opening is heard, with its rush.
+    const music = phase === 'title' ? holdForTitle() : undefined;
     let live = true;
-    const t = phase === 'title' && waits ? undefined : setTimeout(() => setPhase(next), phase === 'title' ? INTRO_HOLD_MS : INTRO_RISE_MS);
+    const rise = (settling?: Promise<void> | null) =>
+      void Promise.all([music?.open(), settling]).then(() => live && setPhase('rise'));
+    const t = phase === 'title' && waits ? undefined : setTimeout(() => (phase === 'title' ? rise() : setPhase(null)), phase === 'title' ? INTRO_HOLD_MS : INTRO_RISE_MS);
     const unlisten = () => {
       removeEventListener('click', skip);
       removeEventListener('keydown', skip);
     };
     const skip = (e: Event) => {
       setStarted(true);
-      // Where this goes full screen, the title waits for the window to settle.
-      const settling = phase === 'title' ? resumeFullscreen(e) : null;
-      if (!settling) return setPhase(next);
+      if (phase !== 'title') return setPhase(null);
       clearTimeout(t);
       unlisten();
-      void settling.then(() => live && setPhase('rise'));
+      // Where this goes full screen, the title also waits for the window to settle.
+      rise(resumeFullscreen(e));
     };
     // On a click rather than a press: a phone only allows full screen once the finger lifts.
     addEventListener('click', skip);
@@ -101,7 +102,7 @@ function useIntro(title: RefObject<HTMLHeadingElement | null>) {
       live = false;
       clearTimeout(t);
       unlisten();
-      titleGone?.();
+      music?.release();
     };
   }, [phase, waits]);
   return { phase, waits, started, offset };

@@ -2,6 +2,7 @@
 // openingSound.ts): the context, the output bus, white noise, a reverb and a few node builders, and the
 // player's sound and music switches.
 
+import { APPLE_TOUCH } from './platform';
 import { remember, stored } from './storage';
 
 /** The two switches in the game's top bar: sound effects, and the music (ambience.ts). */
@@ -16,11 +17,38 @@ const switches: Record<Switch, boolean> = {
 };
 const listeners = new Set<() => void>();
 let noiseBuf: AudioBuffer | null = null;
-let impulse: AudioBuffer | null = null;
+let verb: { input: ConvolverNode; level: GainNode } | null = null;
+/** The reverb's level, in the mix. */
+const WET = 0.9;
+
+/**
+ * A slow device: few cores or little memory. Not an iPhone or iPad, which are quick, and whose Safari is not to be
+ * trusted with a sample rate of its own.
+ */
+const SLOW =
+  !APPLE_TOUCH &&
+  ((navigator.hardwareConcurrency || 8) <= 4 || ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) <= 2);
+
+/**
+ * How the audio is made. The browser's default is as little ahead as it can, so taps sound at once; on a phone that
+ * leaves no slack, and when the page is busy (the fireworks) the sound breaks up. A few hundredths of a second
+ * later is unnoticed in a board game, and a slow device is given more still. A slow device also makes its sound
+ * at a lower rate, which more than halves the work of the reverbs, and loses only what is above 16 kHz (nothing
+ * in the music; the very top of a cymbal).
+ */
+const OPTIONS: AudioContextOptions = SLOW ? { latencyHint: 'playback', sampleRate: 32000 } : { latencyHint: 'balanced' };
+
+function newContext(): AudioContext {
+  try {
+    return new AudioContext(OPTIONS);
+  } catch {
+    return new AudioContext();
+  }
+}
 
 export function audio(): AudioContext | null {
   try {
-    ctx ??= new AudioContext();
+    ctx ??= newContext();
     if (ctx.state === 'suspended') void ctx.resume();
     return ctx;
   } catch {
@@ -31,6 +59,11 @@ export function audio(): AudioContext | null {
 /** Whether sound effects or music are on, as the player last set them (kept across visits). */
 export function isOn(which: Switch): boolean {
   return switches[which];
+}
+
+/** The audio, for a sound effect: none while sound effects are off, so nothing is built to play unheard. */
+export function effects(): AudioContext | null {
+  return switches.sound ? audio() : null;
 }
 
 export function turn(which: Switch, on: boolean) {
@@ -61,16 +94,56 @@ export function out(ac: AudioContext): AudioNode {
   return bus;
 }
 
+const preparations: ((ac: AudioContext) => void)[] = [];
+
+/**
+ * Has `build` make what a sound needs (a reverb, a set of samples) once the audio has started, when the page is
+ * idle, rather than in the moment the sound is first played, where on a phone it holds up the page.
+ */
+export function prepare(build: (ac: AudioContext) => void) {
+  preparations.push(build);
+}
+
+const idle = (fn: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 1000 }) : setTimeout(fn, 0));
+
+/** Each preparation in an idle moment of its own, so together they don't hold up the page. */
+function prepareFrom(ac: AudioContext, i: number) {
+  if (i < preparations.length)
+    idle(() => {
+      preparations[i](ac);
+      prepareFrom(ac, i + 1);
+    });
+}
+
 // Starting the audio can take ~100 ms: it is done when the page is next idle after the first touch or key
 // (browsers only let sound start after one), not inside the tap that first plays a sound.
 function warm() {
   window.removeEventListener('pointerdown', warm, true);
   window.removeEventListener('keydown', warm, true);
-  if ('requestIdleCallback' in window) requestIdleCallback(() => audio(), { timeout: 1000 });
-  else setTimeout(audio, 0);
+  idle(() => {
+    const ac = audio();
+    if (ac) prepareFrom(ac, 0);
+  });
 }
 window.addEventListener('pointerdown', warm, true);
 window.addEventListener('keydown', warm, true);
+
+// While the app is hidden its audio is suspended, once the music and its reverb have quickly faded (ambience.ts),
+// so nothing goes on playing, and stuttering, as a phone puts the app away. It resumes when the app is back, the
+// reverb coming back slowly, so what was left of its tail is hardly heard.
+const SUSPEND_MS = 200;
+document.addEventListener('visibilitychange', () => {
+  if (!ctx) return;
+  const visible = document.visibilityState === 'visible';
+  verb?.level.gain.setTargetAtTime(visible ? WET : 0, ctx.currentTime, visible ? 1 : 0.02);
+  if (visible) {
+    if (ctx.state === 'suspended') void ctx.resume();
+    return;
+  }
+  setTimeout(() => {
+    if (document.visibilityState === 'hidden' && ctx?.state === 'running') void ctx.suspend();
+  }, SUSPEND_MS);
+});
 
 /** Two seconds of white noise, made once and reused by every noise sound. */
 function whiteNoise(ac: AudioContext): AudioBuffer {
@@ -80,6 +153,20 @@ function whiteNoise(ac: AudioContext): AudioBuffer {
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
   }
   return noiseBuf;
+}
+
+/**
+ * Has `params` take one value for each slice of 128 samples rather than for every sample. A filter otherwise
+ * works out its shape afresh for every sample while its frequency moves, the most costly thing these sounds do;
+ * at the speeds they move, the steps are not heard.
+ */
+function sliced(...params: AudioParam[]) {
+  for (const p of params)
+    try {
+      p.automationRate = 'k-rate';
+    } catch {
+      // A browser that doesn't allow it works per sample.
+    }
 }
 
 /** Sets `param` to `from` at `at`, then glides through `points`, each [seconds after `at`, value], exponentially (as pitch and loudness are heard). */
@@ -106,6 +193,7 @@ export function envelope(ac: AudioContext, at: number, dur: number, peak: number
 /** An oscillator playing from `at` to `end`; ramp its frequency from `at` on. */
 export function oscillator(ac: AudioContext, type: OscillatorType, freq: number, at: number, end: number): OscillatorNode {
   const osc = ac.createOscillator();
+  sliced(osc.frequency, osc.detune);
   osc.type = type;
   osc.frequency.setValueAtTime(freq, at);
   osc.start(at);
@@ -125,6 +213,7 @@ export function noiseSource(ac: AudioContext, at: number, end: number): AudioBuf
 
 export function filter(ac: AudioContext, type: BiquadFilterType, freq: number, q = 1): BiquadFilterNode {
   const f = ac.createBiquadFilter();
+  sliced(f.frequency, f.Q);
   f.type = type;
   f.frequency.value = freq;
   f.Q.value = q;
@@ -141,26 +230,40 @@ export function gain(ac: AudioContext, level: number): GainNode {
 /** A MIDI note's frequency: 69 is the A above middle C. */
 export const hz = (note: number) => 440 * 2 ** ((note - 69) / 12);
 
-/** A long, dark stereo reverb: a six-second tail, made once and shared (the music and its opening). */
-export function reverb(ac: AudioContext): ConvolverNode {
-  if (impulse?.sampleRate !== ac.sampleRate) {
-    const len = Math.floor(ac.sampleRate * 6);
-    impulse = ac.createBuffer(2, len, ac.sampleRate);
+/**
+ * Where the music (ambience.ts) and its opening (openingSound.ts) send their sound to ring out: a long, dark stereo
+ * reverb with a six-second tail, played out on its own. There is one, kept: building it takes a phone tens of
+ * milliseconds, and the opening rings on into the drone, so two would work at once. It only works while something
+ * is sent into it.
+ */
+export function reverb(ac: AudioContext): AudioNode {
+  if (!verb) {
+    const sr = ac.sampleRate;
+    const len = Math.floor(sr * 6);
+    const impulse = ac.createBuffer(2, len, sr);
+    // Dying away over 1.7 seconds, after a swell of an eighth of a second.
+    const fall = Math.exp(-1 / (1.7 * sr));
     for (let ch = 0; ch < 2; ch++) {
       const data = impulse.getChannelData(ch);
       let last = 0;
+      let level = 1;
       for (let i = 0; i < len; i++) {
-        const t = i / ac.sampleRate;
         // Smoothed noise, so the tail is soft rather than hissy.
         last = last * 0.6 + (Math.random() * 2 - 1) * 0.4;
-        data[i] = last * Math.exp(-t / 1.7) * Math.min(1, t * 8);
+        data[i] = last * level * Math.min(1, (i * 8) / sr);
+        level *= fall;
       }
     }
+    const input = ac.createConvolver();
+    input.buffer = impulse;
+    const level = gain(ac, document.visibilityState === 'visible' ? WET : 0);
+    input.connect(level).connect(ac.destination);
+    verb = { input, level };
   }
-  const conv = ac.createConvolver();
-  conv.buffer = impulse;
-  return conv;
+  return verb.input;
 }
+prepare(reverb);
+prepare(whiteNoise);
 
 /** `x` give or take a fraction `by`, so repeated sounds vary. */
 export const jitter = (x: number, by = 0.08) => x * (1 + (Math.random() * 2 - 1) * by);

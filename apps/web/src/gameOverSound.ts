@@ -1,7 +1,7 @@
 // The game's ending, all played in a hall: for a winner, a brass fanfare and the fireworks (components/fireworks/);
 // for a player who lost, a lament.
 
-import { audio, contour, envelope, filter, gain, glide, jitter, noiseSource, oscillator, out } from './audio';
+import { contour, effects, envelope, filter, gain, glide, jitter, noiseSource, oscillator, out, prepare } from './audio';
 
 let hallIn: AudioNode | null = null;
 
@@ -10,12 +10,15 @@ function hall(ac: AudioContext): AudioNode {
   if (!hallIn) {
     const len = Math.floor(ac.sampleRate * 3.2);
     const ir = ac.createBuffer(2, len, ac.sampleRate);
+    // A short gap, then a dense tail dying away over about three seconds.
+    const gap = Math.floor(ac.sampleRate * 0.012);
+    const fall = Math.exp(-1 / (0.75 * ac.sampleRate));
     for (let ch = 0; ch < 2; ch++) {
       const data = ir.getChannelData(ch);
-      for (let i = 0; i < len; i++) {
-        const t = i / ac.sampleRate;
-        // A short gap, then a dense tail dying away over about three seconds.
-        data[i] = t < 0.012 ? 0 : (Math.random() * 2 - 1) * Math.exp(-t / 0.75) * Math.min(1, t * 25);
+      let level = Math.exp(-gap / (0.75 * ac.sampleRate));
+      for (let i = gap; i < len; i++) {
+        data[i] = (Math.random() * 2 - 1) * level * Math.min(1, (i * 25) / ac.sampleRate);
+        level *= fall;
       }
     }
     const conv = ac.createConvolver();
@@ -25,6 +28,7 @@ function hall(ac: AudioContext): AudioNode {
   }
   return hallIn;
 }
+prepare(hall);
 
 /** Plays `node` straight out and sends `wet` of it into the hall. */
 function send<T extends AudioNode>(ac: AudioContext, node: T, wet: number): T {
@@ -41,8 +45,8 @@ function warmth(ac: AudioContext, drive: number): WaveShaperNode {
     const x = (i / (curve.length - 1)) * 2 - 1;
     curve[i] = Math.tanh(x * drive) / Math.tanh(drive);
   }
+  // Not oversampled: the brass is quiet enough going in that its grit doesn't alias, and oversampling is costly.
   shaper.curve = curve;
-  shaper.oversample = '2x';
   return shaper;
 }
 
@@ -86,17 +90,20 @@ function horn(
   lp.connect(env).connect(dest);
 
   // Vibrato that creeps in on held notes.
-  const depth = ac.createGain();
-  depth.gain.setValueAtTime(0, at);
-  depth.gain.linearRampToValueAtTime(dur > 0.4 ? freq * 0.007 : 0, at + Math.min(dur, 0.7));
-  oscillator(ac, 'sine', jitter(5.2, 0.1), at, end).connect(depth);
+  let depth: GainNode | null = null;
+  if (dur > 0.4) {
+    depth = ac.createGain();
+    depth.gain.setValueAtTime(0, at);
+    depth.gain.linearRampToValueAtTime(freq * 0.007, at + Math.min(dur, 0.7));
+    oscillator(ac, 'sine', jitter(5.2, 0.1), at, end).connect(depth);
+  }
 
   for (let v = 0; v < voices; v++) {
     const start = at + Math.random() * 0.014;
     const osc = oscillator(ac, 'sawtooth', freq * 0.975, start, end);
     osc.frequency.exponentialRampToValueAtTime(freq, start + 0.05);
     osc.detune.value = (v - (voices - 1) / 2) * 7 + Math.random() * 4;
-    depth.connect(osc.frequency);
+    depth?.connect(osc.frequency);
     osc.connect(gain(ac, 1 / Math.sqrt(voices))).connect(lp);
   }
 }
@@ -195,7 +202,7 @@ type Part = keyof typeof PARTS;
  * when `grit` is given) and percussion, each sent `wet` into the hall. `perc` takes any other sound.
  */
 function orchestra({ brassWet, percWet, grit }: { brassWet: number; percWet: number; grit?: number }) {
-  const ac = audio();
+  const ac = effects();
   if (!ac) return null;
   const t0 = ac.currentTime + 0.05;
   const section = gain(ac, 0.9);
@@ -349,6 +356,7 @@ function crackleBuffers(ac: AudioContext): AudioBuffer[] {
   }
   return crackleBufs.buffers;
 }
+prepare(crackleBuffers);
 
 /** A crackle at `at`. */
 function crackle(ac: AudioContext, at: number, level: number) {
@@ -367,7 +375,7 @@ function crackle(ac: AudioContext, at: number, level: number) {
 export const fireworkSound = {
   /** A mortar firing: a muffled thump and the rocket's hiss (sometimes a whistle) as it climbs for `flight` seconds. */
   launch: (flight: number, level = 1) => {
-    const ac = audio();
+    const ac = effects();
     if (!ac) return;
     const at = ac.currentTime;
     const dest = send(ac, gain(ac, level), 0.3);
@@ -391,7 +399,7 @@ export const fireworkSound = {
    * `crackling` the snapping of microstars a moment later. Heard a little after it's seen, as from far off.
    */
   burst: (size = 1, { crackling = false, distance = Math.random(), level = 1 } = {}) => {
-    const ac = audio();
+    const ac = effects();
     if (!ac) return;
     const at = ac.currentTime + 0.03 + distance * 0.18;
     const dest = send(ac, gain(ac, level * size * (1 - distance * 0.45)), 0.5 + distance * 0.3);
@@ -414,7 +422,7 @@ export const fireworkSound = {
   },
   /** Crossette stars splitting: a handful of sharp pops. */
   pops: (level = 1) => {
-    const ac = audio();
+    const ac = effects();
     if (!ac) return;
     const dest = send(ac, gain(ac, level), 0.4);
     for (let i = 0; i < 4; i++) {

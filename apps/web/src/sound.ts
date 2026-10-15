@@ -1,6 +1,6 @@
 // Tiny synthesized sound kit (no audio files). All sounds are short and quiet.
 
-import { audio, envelope, filter, gain, glide, jitter, noiseSource, oscillator, out } from './audio';
+import { effects, envelope, filter, gain, glide, jitter, noiseSource, oscillator, out, prepare } from './audio';
 import { fanfare, lament } from './gameOverSound';
 
 let clickBufs: { sampleRate: number; buffers: AudioBuffer[] } | null = null;
@@ -20,6 +20,7 @@ function clickBuffers(ac: AudioContext): AudioBuffer[] {
   }
   return clickBufs.buffers;
 }
+prepare(clickBuffers);
 
 function click(ac: AudioContext, at: number, level: number, freq: number) {
   const buffers = clickBuffers(ac);
@@ -34,13 +35,13 @@ function click(ac: AudioContext, at: number, level: number, freq: number) {
 
 /** A click `delay` seconds from now, as `tone` and `noise` take theirs. */
 function tick(gain: number, freq: number, delay = 0) {
-  const ac = audio();
+  const ac = effects();
   if (ac) click(ac, ac.currentTime + delay, gain, freq);
 }
 
 /** Dice clattering on a table: clicks that slow down and soften. */
 export function playRoll(count = 1) {
-  const ac = audio();
+  const ac = effects();
   if (!ac) return;
   const now = ac.currentTime;
   let t = 0;
@@ -52,7 +53,7 @@ export function playRoll(count = 1) {
 }
 
 function tone(freq: number, dur: number, type: OscillatorType, gain: number, delay = 0, slideTo?: number, rise = 0.01) {
-  const ac = audio();
+  const ac = effects();
   if (!ac) return;
   const at = ac.currentTime + delay;
   const osc = oscillator(ac, type, freq, at, at + dur + 0.05);
@@ -80,7 +81,7 @@ function noise(
     rise?: number;
   } = {},
 ) {
-  const ac = audio();
+  const ac = effects();
   if (!ac) return;
   const at = ac.currentTime + delay;
   const f = filter(ac, type, from, q);

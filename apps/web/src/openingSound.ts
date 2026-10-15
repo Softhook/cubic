@@ -14,34 +14,35 @@ const CHORD = [26, 38, 45, 50, 53, 57, 60, 64, 69];
 const CHIMES = [74, 81, 88];
 
 /**
- * Seconds from now to the start. Building the reverb can take tens of milliseconds on a phone, and its output
- * buffers are long: starting sooner, the first notes would be scheduled in the past and come in late, stuttering.
+ * Seconds from now to the start. Building the reverb, if it isn't ready yet (audio.ts), can take tens of
+ * milliseconds on a phone, and its output buffers are long: starting sooner, the first notes would be scheduled
+ * in the past and come in late, stuttering.
  */
 const LEAD = 0.12;
 
-/** Plays the opening, starting in a moment; returns when the title lands and the chord blooms. */
-export function opening(ac: AudioContext): number {
-  // The reverb is built first, so its time is not taken from the start.
+/** Plays the opening, starting in a moment; returns when it starts, and when the title lands and the chord blooms. */
+export function opening(ac: AudioContext): { start: number; land: number } {
+  // The reverb is ready first, so building it takes no time from the start.
   const verb = reverb(ac);
   const at = ac.currentTime + LEAD;
   const land = at + LAND;
+  // Held in by a compressor, on its way out and into the reverb.
   const comp = ac.createDynamicsCompressor();
   comp.threshold.value = -12;
   comp.ratio.value = 4;
   comp.connect(ac.destination);
-  verb.connect(gain(ac, 0.9)).connect(comp);
+  comp.connect(verb);
   const mix = gain(ac, 0.8);
   mix.connect(comp);
-  mix.connect(verb);
 
   thud(ac, mix, at);
   rush(ac, mix, at);
   bloom(ac, mix, land);
   chimes(ac, mix, verb, land);
 
-  // Once the reverb has rung out, nothing is left playing.
-  window.setTimeout(() => comp.disconnect(), (land + RING + 6.5 - ac.currentTime) * 1000);
-  return land;
+  // Once the chord has gone, nothing is left playing.
+  window.setTimeout(() => comp.disconnect(), (land + RING + 0.5 - ac.currentTime) * 1000);
+  return { start: at, land };
 }
 
 /** A deep thud falling in pitch. */

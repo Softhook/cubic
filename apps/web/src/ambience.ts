@@ -3,13 +3,16 @@
 // is on and the page is visible (once the browser lets sound start, after the first tap or key), fading in and out.
 //
 // Everything it builds is let go when it stops: the sources stop, and once the fade is over every lasting
-// node is disconnected, since the echo is a loop that would otherwise keep itself alive.
+// node is disconnected, since the echo is a loop that would otherwise keep itself alive. The reverb is shared
+// with the opening, and kept (audio.ts).
 
 import { audio, contour, filter, gain, hz, isOn, noiseSource, onSwitch, oscillator, reverb } from './audio';
 import { opening } from './openingSound';
 
 const FADE_IN = 6;
 const FADE_OUT = 2.5;
+/** Seconds to fade out as the app is hidden: done, with the reverb's, before the audio is suspended (audio.ts). */
+const HIDE_FADE = 0.08;
 /** Longer than any game, in seconds: the drone's sources are stopped when it fades out. */
 const FOREVER = 60 * 60 * 24;
 
@@ -64,7 +67,7 @@ function sync() {
       begun = true;
     }
   } else if (!play && drone) {
-    stop(drone);
+    stop(drone, document.visibilityState === 'hidden' ? HIDE_FADE : FADE_OUT);
     drone = null;
   }
 }
@@ -77,37 +80,51 @@ import.meta.hot?.dispose(() => {
 });
 
 /**
- * The lobby's title is showing on the app's first screen: the drone waits, and when the title goes (rising into
- * the lobby) the opening plays and the drone comes in under its tail, so one flows into the other. If the music
- * has already begun (the app reopened on a game, then went to the lobby), it plays on and there is no opening.
- * Returns the way to say the title has gone.
+ * The lobby's title is showing on the app's first screen: the drone waits. `open` plays the opening, as the title
+ * is about to rise, and resolves when it is heard, so the title rises with its rush; the drone then comes in under
+ * its tail, so one flows into the other. Where the browser doesn't yet let sound start (no click yet), there is no
+ * opening: `open` resolves at once, and the drone comes in with the first click. If the music has already begun
+ * (the app reopened on a game, then went to the lobby), it plays on and there is no opening. `release` says the
+ * title has gone.
  */
-export function holdForTitle(): () => void {
-  if (begun) return () => {};
+export function holdForTitle(): { open: () => Promise<void>; release: () => void } {
+  if (begun) return { open: () => Promise.resolve(), release: () => {} };
   holding = true;
   sync();
-  return () => {
-    // Where the browser doesn't yet let sound start (the title rose without a click), there is no opening, and
-    // the drone comes in with the first click.
-    const ac = isOn('music') ? audio() : null;
-    const allowed = ac && (ac.state === 'running' || navigator.userActivation?.hasBeenActive);
-    if (!ac || !allowed) {
-      holding = false;
-      sync();
-      return;
-    }
-    const land = opening(ac);
-    // The drone is built once the chord has bloomed, not with the opening: on a phone, building and playing
-    // both at once makes the opening stutter.
-    window.setTimeout(
-      () => {
-        holding = false;
-        sync();
-        if (drone) fadeIn(drone, ac.currentTime + 1, 7);
-      },
-      (land + 1 - ac.currentTime) * 1000,
-    );
+  let opened: Promise<void> | null = null;
+  return {
+    open: () => (opened ??= playOpening()),
+    release: () => {
+      if (!opened) letGo();
+    },
   };
+}
+
+function letGo() {
+  holding = false;
+  sync();
+}
+
+const wait = (ms: number) => new Promise((done) => setTimeout(done, ms));
+
+async function playOpening() {
+  const ac = isOn('music') ? audio() : null;
+  if (!ac || !(ac.state === 'running' || navigator.userActivation?.hasBeenActive)) return letGo();
+  // The audio may only just be starting (a phone takes a moment): the opening's times only run once it has.
+  await Promise.race([ac.resume().catch(() => undefined), wait(500)]);
+  if (ac.state !== 'running') return letGo();
+  const { start, land } = opening(ac);
+  // The drone is built once the chord has bloomed, not with the opening: on a phone, building and playing
+  // both at once makes the opening stutter.
+  window.setTimeout(
+    () => {
+      letGo();
+      if (drone) fadeIn(drone, ac.currentTime + 1, 7);
+    },
+    (land + 1 - ac.currentTime) * 1000,
+  );
+  // Until it comes out of the speaker, which on a phone is a good while after it is played.
+  await wait((start - ac.currentTime + ac.baseLatency + (ac.outputLatency || 0)) * 1000);
 }
 
 /** A slow sine wobbling `param` by `depth` around its value. */
@@ -130,16 +147,13 @@ function source<T extends AudioScheduledSourceNode>(d: Drone, node: T): T {
 
 function start(ac: AudioContext): Drone {
   const t = ac.currentTime;
+  // The drone fades in and out on its way into the reverb, which rings on as it fades out.
   const bus = gain(ac, 0);
   const d: Drone = { ac, bus, chimes: bus, voices: [], sources: [], nodes: [bus], timers: new Set(), chord: 0 };
   fadeIn(d, t, FADE_IN);
-  bus.connect(ac.destination);
-
-  const verb = keep(d, reverb(ac));
-  verb.connect(keep(d, gain(ac, 0.9))).connect(bus);
-  const mix = keep(d, gain(ac, 1));
-  mix.connect(keep(d, gain(ac, 0.45))).connect(bus);
-  mix.connect(verb);
+  bus.connect(keep(d, gain(ac, 0.45))).connect(ac.destination);
+  bus.connect(reverb(ac));
+  const mix = bus;
 
   // The chimes ring through a dark echo before the reverb.
   const echo = keep(d, ac.createDelay(2));
@@ -243,14 +257,14 @@ function fadeIn({ ac, bus }: Drone, at: number, seconds: number) {
   bus.gain.linearRampToValueAtTime(1, at + seconds);
 }
 
-function stop(d: Drone) {
+function stop(d: Drone, fade: number) {
   const { ac, bus } = d;
   d.timers.forEach(clearTimeout);
   d.timers.clear();
   const t = ac.currentTime;
   bus.gain.cancelScheduledValues(t);
   bus.gain.setValueAtTime(bus.gain.value, t);
-  bus.gain.linearRampToValueAtTime(0, t + FADE_OUT);
-  for (const s of d.sources) s.stop(t + FADE_OUT + 0.1);
-  window.setTimeout(() => d.nodes.forEach((n) => n.disconnect()), (FADE_OUT + 0.5) * 1000);
+  bus.gain.linearRampToValueAtTime(0, t + fade);
+  for (const s of d.sources) s.stop(t + fade + 0.1);
+  window.setTimeout(() => d.nodes.forEach((n) => n.disconnect()), (fade + 0.5) * 1000);
 }
