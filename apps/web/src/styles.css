@@ -404,13 +404,6 @@ input { font: inherit; }
   box-shadow: inset 0 0 0 1px rgba(255, 200, 87, .22);
   animation: route-in .2s ease-out both;
 }
-/* A move into a zone of control: a ring, as the ship stops there. */
-.hl-zone span {
-  background: transparent;
-  border: var(--bw) solid var(--gold);
-  box-shadow: 0 0 10px rgba(255, 200, 87, .55);
-  width: 44%; height: 44%;
-}
 /* Where another player's ship could move: shown only, in its owner's colour, under the ships. */
 .reach { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
 .reach > span { position: absolute; display: grid; place-items: center; }
