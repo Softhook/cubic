@@ -400,7 +400,7 @@ export function Manual({ dark }: { dark?: boolean }) {
         <div className="mn-ships">
           {[1, 2, 3, 4, 5, 6].map((v) => (
             <div key={v} className="mn-ship">
-              <DieIcon v={v} size={30} shipIllustration />
+              <DieIcon v={v} size={64} shipIllustration />
               <div>
                 <b>{CLASSIC_SHIPS[v].name}</b> <span className="mn-ability">{CLASSIC_SHIPS[v].ability.name}</span>
                 <p>{SHIP_TEXT[v]}</p>

@@ -233,8 +233,8 @@ export function DieFace({
       </g>
     );
   if (shipIllustration && (kind === 'you' || kind === 'foe')) {
-    // Ships are drawn as on the player aid: the starship on its die face, in the player's colour.
-    const ship = shipDie(id, v, x, y, size, PLAYER_HUES[kind === 'you' ? 0 : 1]);
+    // Ships are drawn as on the player aid: a white face with a black edge, starship and pips.
+    const ship = shipDie(id, v, x, y, size, PLAYER_HUES[kind === 'you' ? 0 : 1], true);
     return <g className={cls} dangerouslySetInnerHTML={{ __html: `<defs>${ship.defs}</defs>${ship.body}` }} />;
   }
   const { face, pip } = COLOURS[kind];

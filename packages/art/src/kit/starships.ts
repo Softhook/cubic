@@ -141,11 +141,11 @@ const scout = () => [
 const CLASSES: Record<number, () => string[]> = { 1: battlestation, 2: flagship, 3: destroyer, 4: frigate, 5: interceptor, 6: scout };
 
 /** A ship of class `value` (1–6) as a white outline centred on (cx, cy), `size` mm from nose to tail, lines `line` mm wide. */
-function starship(value: number, cx: number, cy: number, size: number, line = 0.18): string {
+function starship(value: number, cx: number, cy: number, size: number, line = 0.18, color = '#fff'): string {
   const k = size / 2;
   const parts = CLASSES[value]().map((p) => (p.startsWith('<') ? p : `<path d="${p}"/>`));
   return (
-    `<g transform="translate(${n(cx)} ${n(cy)}) scale(${n(k)})" fill="none" stroke="#fff" stroke-width="${n(line / k)}" stroke-linejoin="round" stroke-linecap="round">` +
+    `<g transform="translate(${n(cx)} ${n(cy)}) scale(${n(k)})" fill="none" stroke="${color}" stroke-width="${n(line / k)}" stroke-linejoin="round" stroke-linecap="round">` +
     parts.join('') +
     `</g>`
   );
@@ -191,18 +191,21 @@ const PIP_SPOTS: Record<number, Pt[]> = {
  * A ship on its die face: a rounded square `size` mm across, the ship in the middle and the value's
  * pips around it in the accent colour. A centre pip is the ship's core, so it is drawn over the hull.
  */
-export function shipDie(id: string, value: number, cx: number, cy: number, size: number, hue: number): Fragment {
+export function shipDie(id: string, value: number, cx: number, cy: number, size: number, hue: number, inverted = false): Fragment {
   const r = size * 0.08;
+  // Inverted: a white face with a black edge, ship and pips, as printed on paper.
+  const pipFill = inverted ? '#000' : hsl(hue, 100, 70);
+  const glow = (px: number, py: number) => (inverted ? '' : `<circle cx="${n(px)}" cy="${n(py)}" r="${n(r * 1.8)}" fill="url(#${id}-glow)"/>`);
   const pips = PIP_SPOTS[value]
     .map(([x, y]) => {
       const px = cx + x * size;
       const py = cy + y * size;
-      return `<circle cx="${n(px)}" cy="${n(py)}" r="${n(r * 1.8)}" fill="url(#${id}-glow)"/><circle cx="${n(px)}" cy="${n(py)}" r="${n(r)}" fill="${hsl(hue, 100, 70)}"/>`;
+      return `${glow(px, py)}<circle cx="${n(px)}" cy="${n(py)}" r="${n(r)}" fill="${pipFill}"/>`;
     })
     .join('');
   // The Battlestation is round, so it is drawn smaller to sit inside the corners.
   // Line and blur scale with the die, so it looks the same at any size (0.18 mm on the aid's 17 mm dice).
-  const ship = starship(value, cx, cy, size * (value === 1 ? 0.64 : 0.78), size * 0.0106);
+  const ship = starship(value, cx, cy, size * (value === 1 ? 0.64 : 0.78), size * 0.0106, inverted ? '#000' : '#fff');
   const box = `x="${n(cx - size / 2)}" y="${n(cy - size / 2)}" width="${n(size)}" height="${n(size)}" rx="${n(size * 0.16)}"`;
   return {
     defs:
@@ -210,8 +213,11 @@ export function shipDie(id: string, value: number, cx: number, cy: number, size:
       `<filter id="${id}-soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${n(size * 0.007)}"/></filter>` +
       `<radialGradient id="${id}-glow"><stop offset="0" stop-color="${hsl(hue, 100, 65)}" stop-opacity=".6"/><stop offset="1" stop-color="${hsl(hue, 100, 65)}" stop-opacity="0"/></radialGradient>`,
     body:
-      `<rect ${box} fill="${hsl(228, 32, 14)}"/><rect ${box} fill="none" stroke="${hsl(hue, 70, 60)}" stroke-width="${n(size * 0.012)}" stroke-opacity=".5"/>` +
-      `<g filter="url(#${id}-soft)" opacity=".82">${ship}</g>` +
+      `<rect ${box} fill="${inverted ? '#fff' : hsl(228, 32, 14)}"/>` +
+      (inverted
+        ? `<rect ${box} fill="none" stroke="#000" stroke-width="${n(size * 0.02)}"/>`
+        : `<rect ${box} fill="none" stroke="${hsl(hue, 70, 60)}" stroke-width="${n(size * 0.012)}" stroke-opacity=".5"/>`) +
+      (inverted ? ship : `<g filter="url(#${id}-soft)" opacity=".82">${ship}</g>`) +
       pips,
   };
 }
