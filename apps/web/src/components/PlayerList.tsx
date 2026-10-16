@@ -134,18 +134,21 @@ function PlayerCard({
           {p.skills.map((s, i) => {
             const def = card(s.id);
             const disabled = s.disabledUntil !== undefined;
+            const flash = effectAt(fx, `skill:${s.id}`);
+            // Greyed out only once its flash is over: the chip's filter and opacity would grey that too.
+            const dim = disabled && flash?.kind !== 'off';
             return (
               <button
                 type="button"
                 key={`${s.id}${i}`}
                 onClick={() => setViewing(s.id)}
-                className={`skill-chip ${s.active ? '' : 'pending'} ${disabled ? 'disabled-chip' : ''}`}
+                className={`skill-chip ${s.active ? '' : 'pending'} ${dim ? 'disabled-chip' : ''}`}
                 style={categoryStyle(def.category, true)}
                 title={`${def.name}: ${def.text}${disabled ? `\n(Disabled by ${game.players[s.disabledUntil!].name} until their next turn)` : s.active ? '' : '\n(Takes effect from the next player’s turn)'}`}
               >
                 <CategoryIcon category={def.category} size={11} />
                 {def.name}
-                <Flash e={effectAt(fx, `skill:${s.id}`)} />
+                <Flash e={flash} />
               </button>
             );
           })}

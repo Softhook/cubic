@@ -1,6 +1,9 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { Cell } from '@quantum/engine';
 
+/** How many of `owner`'s cubes a planet holds. */
+export const cubeCount = (cubes: readonly number[], owner: number) => cubes.filter((x) => x === owner).length;
+
 /** A short effect on the map: on the space `at`, or from `at` to `to`, in a player's colour. */
 export interface MapEffect {
   id: string;

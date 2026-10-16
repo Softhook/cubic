@@ -2,17 +2,17 @@ import type { ReactNode } from 'react';
 import { cellOf, effectOf, same, type Cell, type GameState } from '@quantum/engine';
 import { lastLogId, useStepEffects } from '../../game/useTransient';
 import { GATE_COLOR } from './BoardArt';
-import { EffectBox, type MapEffect } from './EffectBox';
+import { EffectBox, cubeCount, type MapEffect } from './EffectBox';
 
 /**
  * A card's mark on the map, over the plain action effects (ActionEffects): Show of Force striking a ship,
  * Warp Gates linked and the old pair closed (the board draws the gates themselves), a cube relocated,
  * an expansion ship arriving, a fleet cloaked and unveiled, a ship number nudged (Flexible, Clever) or
  * re-rolled (Scrappy), a ship scrapped (Resourceful) or jumping to another planet (Nomadic), and the
- * two ships Dangerous destroys.
+ * two ships Dangerous destroys. `replaces` names what the effect stands in for an action's effect on
+ * (ActionEffects): a ship, or `planet:<id>` for the planet a cube was relocated to.
  */
-type CardEffect = MapEffect &
-  (
+type CardEffect = MapEffect & { replaces?: string } & (
     | { kind: 'strike' | 'expansion' | 'cloak' | 'decloak' | 'implode' | 'raise' | 'lower' | 'reroll' | 'blink' }
     | { kind: 'beam' | 'arc'; to: Cell }
   );
@@ -21,11 +21,9 @@ type CardEffect = MapEffect &
 const CARD_EFFECT_MS = 900;
 
 const gatesKey = (g: GameState) => g.gates.map((c) => `${c.r},${c.c}`).join(' ');
-const cubesOf = (g: GameState, planet: number, owner: number) =>
-  g.board.planets.find((pl) => pl.id === planet)?.cubes.filter((x) => x === owner).length ?? 0;
 
 /** What a card did on the map in the step from `before` to `game`, as effects. */
-function cardEffectsOf(before: GameState, game: GameState): CardEffect[] {
+export function cardEffectsOf(before: GameState, game: GameState): CardEffect[] {
   const step = lastLogId(game);
   const out: CardEffect[] = [];
   const head = before.pending[0];
@@ -42,7 +40,7 @@ function cardEffectsOf(before: GameState, game: GameState): CardEffect[] {
     if (!p) continue;
     const from = cellOf(p);
     const to = cellOf(d);
-    const fx = { id: `${d.id}:${step}`, color: colorOf(d.owner) };
+    const fx = { id: `${d.id}:${step}`, color: colorOf(d.owner), replaces: d.id };
     if (from && !to) {
       // Dangerous: both ships go, joined by an arc (below).
       if (head?.kind === 'dangerous') continue;
@@ -55,7 +53,7 @@ function cardEffectsOf(before: GameState, game: GameState): CardEffect[] {
     } else if (from && to) {
       // Nomadic relocates the ship, it doesn't fly there: it folds away and opens again at the planet.
       if (!same(from, to) && used.has('nomadic')) {
-        out.push({ kind: 'implode', ...fx, id: `${fx.id}:from`, at: from });
+        out.push({ kind: 'implode', ...fx, at: from });
         out.push({ kind: 'blink', ...fx, at: to });
       }
       if (d.rolls !== p.rolls && used.has('scrappy')) out.push({ kind: 'reroll', ...fx, at: to });
@@ -77,14 +75,16 @@ function cardEffectsOf(before: GameState, game: GameState): CardEffect[] {
   }
 
   if (head?.kind === 'relocation') {
-    // The cube left one planet and landed on another.
-    for (let o = 0; o < game.players.length; o++) {
-      const src = game.board.planets.find((pl) => cubesOf(game, pl.id, o) < cubesOf(before, pl.id, o));
-      const dst = game.board.planets.find((pl) => cubesOf(game, pl.id, o) > cubesOf(before, pl.id, o));
-      if (src && dst) {
-        out.push({ kind: 'implode', id: `uproot:${step}`, at: src, color: colorOf(o) });
-        out.push({ kind: 'beam', id: `relocate:${step}`, at: src, to: dst, color: colorOf(o) });
-      }
+    // The player's cube left one planet and landed on another.
+    const old = new Map(before.board.planets.map((pl) => [pl.id, pl.cubes]));
+    const gained = (pl: (typeof game.board.planets)[number]) =>
+      cubeCount(pl.cubes, head.player) - cubeCount(old.get(pl.id) ?? [], head.player);
+    const src = game.board.planets.find((pl) => gained(pl) < 0);
+    const dst = game.board.planets.find((pl) => gained(pl) > 0);
+    if (src && dst) {
+      const color = colorOf(head.player);
+      out.push({ kind: 'implode', id: `relocation:${step}`, at: src, color });
+      out.push({ kind: 'beam', id: `relocation:${step}`, at: src, to: dst, color, replaces: `planet:${dst.id}` });
     }
   }
 
@@ -164,10 +164,13 @@ const PARTS: Record<CardEffect['kind'], ReactNode> = {
   arc: <span className="cfx-ray" />,
 };
 
-/** Over the ships and explosions. Remounted for a jump to another position (`key`), so that shows none. */
+/**
+ * Over the ships and explosions. Remounted for a jump to another position (`key`), so that shows none.
+ * Ids are only unique per kind (Nomadic's fold and open share the ship's), hence the kind in each `key`.
+ */
 export function CardEffects({ game, cell }: { game: GameState; cell: number }) {
   return useStepEffects(game, CARD_EFFECT_MS, cardEffectsOf).map((e) => (
-    <EffectBox key={e.id} e={e} cell={cell} className={`cfx cfx-${e.kind}`}>
+    <EffectBox key={`${e.kind}:${e.id}`} e={e} cell={cell} className={`cfx cfx-${e.kind}`}>
       {PARTS[e.kind]}
     </EffectBox>
   ));

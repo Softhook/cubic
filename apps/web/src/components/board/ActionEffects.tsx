@@ -1,6 +1,7 @@
-import { cellOf, effectOf, same, type Cell, type GameState } from '@quantum/engine';
+import { cellOf, same, type Cell, type GameState } from '@quantum/engine';
 import { lastLogId, useStepEffects } from '../../game/useTransient';
-import { EffectBox, type MapEffect } from './EffectBox';
+import { cardEffectsOf } from './CardEffects';
+import { EffectBox, cubeCount, type MapEffect } from './EffectBox';
 
 /** A short effect on the map for one action: a ship warping in, flying (from `at` to `to`), or a planet conquered. */
 type Effect = MapEffect & ({ kind: 'deploy' | 'conquer' } | { kind: 'trail'; to: Cell });
@@ -8,29 +9,25 @@ type Effect = MapEffect & ({ kind: 'deploy' | 'conquer' } | { kind: 'trail'; to:
 /** Every effect is over by then, so none slows play down. */
 const EFFECT_MS = 500;
 
-const cubeCount = (cubes: readonly number[], owner: number) => cubes.filter((x) => x === owner).length;
-
 /** What the step from `before` to `game` did on the map, as effects. */
 function effectsOf(before: GameState, game: GameState): Effect[] {
   const step = lastLogId(game);
   const out: Effect[] = [];
-  // A card's own effect (CardEffects) marks a ship placed by Expansion or Unveil, one Nomadic relocates,
-  // and a relocated cube.
-  const card = before.pending[0]?.kind;
-  const nomadic = game.log.some((e) => e.id > lastLogId(before) && e.card && effectOf(e.card) === 'nomadic');
+  // A card's own effect (CardEffects) stands in for these on a ship or planet it marks: one placed by
+  // Expansion or Unveil, one Nomadic relocates, a relocated cube.
+  const replaced = new Set(cardEffectsOf(before, game).flatMap((e) => e.replaces ?? []));
   const was = new Map(before.dice.map((d) => [d.id, d]));
   for (const d of game.dice) {
     const p = was.get(d.id);
     const to = cellOf(d);
-    if (!p || !to) continue;
+    if (!p || !to || replaced.has(d.id)) continue;
     const from = cellOf(p);
     const fx = { id: `${d.id}:${step}`, at: to, color: game.players[d.owner].color };
-    if (!from) {
-      if (card !== 'placeExpansion' && card !== 'unveil') out.push({ kind: 'deploy', ...fx });
-    } else if (!same(from, to) && !nomadic) out.push({ kind: 'trail', ...fx, at: from, to });
+    if (!from) out.push({ kind: 'deploy', ...fx });
+    else if (!same(from, to)) out.push({ kind: 'trail', ...fx, at: from, to });
   }
-  if (card === 'relocation') return out;
   for (const pl of game.board.planets) {
+    if (replaced.has(`planet:${pl.id}`)) continue;
     const old = before.board.planets.find((x) => x.id === pl.id)?.cubes ?? [];
     // Whose cubes there grew in number: a cube taken off shifts the rest, so their order says nothing.
     const owner = pl.cubes.find((o) => cubeCount(pl.cubes, o) > cubeCount(old, o));

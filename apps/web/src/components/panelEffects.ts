@@ -45,12 +45,13 @@ export function panelEffectsOf(before: GameState, game: GameState): PanelEffect[
     const had = counts(was.skills.map((s) => s.id));
     for (const s of p.skills) {
       const n = had.get(s.id) ?? 0;
-      if (n > 0) had.set(s.id, n - 1);
-      else out.push({ ...fx(`skill:${s.id}`), spot: `skill:${s.id}`, kind: 'in' });
-    }
-    for (const s of p.skills) {
+      if (n === 0) {
+        out.push({ ...fx(`skill:${s.id}`), spot: `skill:${s.id}`, kind: 'in' });
+        continue;
+      }
+      had.set(s.id, n - 1);
       const old = was.skills.find((x) => x.id === s.id);
-      if (old && old.disabledUntil === undefined && s.disabledUntil !== undefined) {
+      if (old?.disabledUntil === undefined && s.disabledUntil !== undefined) {
         out.push({ ...fx(`off:${s.id}`), spot: `skill:${s.id}`, kind: 'off' });
       }
     }
