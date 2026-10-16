@@ -595,6 +595,110 @@ input { font: inherit; }
 }
 @keyframes fx-wave { 0% { transform: scale(.25); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; border-width: 1px; } }
 @keyframes fx-glow { 0% { opacity: 1; } 100% { opacity: 0; } }
+/* A card's mark on the map (CardEffects), over ships and explosions, all over in under 900 ms. */
+.cfx { position: absolute; left: 0; top: 0; z-index: 7; pointer-events: none; }
+.cfx > span { position: absolute; left: 50%; top: 50%; }
+/* Show of Force: a reticle locks on and a lance of light strikes from above. Expansion: a golden one. */
+.cfx-reticle {
+  width: 96%; height: 96%; margin: -48% 0 0 -48%; border-radius: 50%;
+  border: var(--bw) dashed var(--pc); box-shadow: 0 0 10px var(--pc);
+  background:
+    linear-gradient(var(--pc), var(--pc)) center / var(--bw) 100% no-repeat,
+    linear-gradient(var(--pc), var(--pc)) center / 100% var(--bw) no-repeat;
+  -webkit-mask: radial-gradient(circle, transparent 22%, #000 23%);
+          mask: radial-gradient(circle, transparent 22%, #000 23%);
+  animation: cfx-lock .45s cubic-bezier(.2,.8,.3,1) forwards;
+}
+@keyframes cfx-lock {
+  0% { transform: scale(1.8) rotate(-90deg); opacity: 0; }
+  60% { transform: scale(.9) rotate(0); opacity: 1; }
+  100% { transform: scale(.75) rotate(0); opacity: 0; }
+}
+.cfx-lance {
+  width: 22%; height: 400%; margin: -400% 0 0 -11%; border-radius: 999px;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--pc) 70%, transparent) 60%, #fff);
+  box-shadow: 0 0 18px var(--pc);
+  transform-origin: 50% 100%;
+  opacity: 0;
+  animation: cfx-lance .4s .12s cubic-bezier(.5,0,.8,.4) forwards;
+}
+.cfx-expansion .cfx-lance { --pc: var(--gold); width: 60%; margin-left: -30%; animation-delay: 0s; animation-duration: .6s; }
+@keyframes cfx-lance {
+  0% { transform: scaleY(0); opacity: 1; }
+  45% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1) scaleX(.1); opacity: 0; }
+}
+/* Expansion: rings of light spreading as it lands. */
+.cfx-halo {
+  width: 100%; height: 100%; margin: -50% 0 0 -50%; border-radius: 50%;
+  border: calc(var(--bw) * 1.5) solid var(--gold); box-shadow: 0 0 14px var(--gold), inset 0 0 8px var(--pc);
+  opacity: 0;
+  animation: fx-ring .6s .25s cubic-bezier(.2,.7,.3,1) forwards;
+}
+.cfx-halo.late { animation-delay: .4s; border-color: var(--pc); }
+/* Warp Gates joined, or a relocated cube: a beam from one space to the other, a spark riding along it. */
+.cfx-ray {
+  width: var(--len); height: 10%; margin-top: -5%; transform-origin: 0 50%; transform: rotate(var(--angle));
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pc) 60%, transparent), var(--pc));
+  box-shadow: 0 0 10px var(--pc);
+  animation: cfx-beam .85s ease-out forwards;
+}
+.cfx-ray > i {
+  position: absolute; left: 0; top: 50%; width: 32%; max-width: calc(var(--cell) * .3); aspect-ratio: 1; translate: -50% -50%;
+  border-radius: 25%; background: #fff; box-shadow: 0 0 10px 4px var(--pc);
+  animation: cfx-ride .6s cubic-bezier(.5,0,.3,1) forwards;
+}
+@keyframes cfx-beam {
+  0% { clip-path: inset(0 100% 0 0); opacity: 1; }
+  40% { clip-path: inset(0 0 0 0); opacity: 1; }
+  100% { clip-path: inset(0 0 0 0); opacity: 0; }
+}
+@keyframes cfx-ride { 0% { left: 0; opacity: 1; } 90% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+/* Unveil the Fleet: each ship fades under a cloak as it leaves the map, and shimmers out of it when placed. */
+.cfx-shimmer {
+  width: 100%; height: 100%; margin: -50% 0 0 -50%; border-radius: 22%;
+  background: repeating-linear-gradient(0deg, color-mix(in srgb, var(--pc) 55%, transparent) 0 6%, transparent 6% 12%);
+  animation: cfx-shimmer .7s ease-out forwards;
+}
+@keyframes cfx-shimmer {
+  0% { transform: scaleY(0); opacity: 1; filter: blur(2px); }
+  40% { transform: scaleY(1.15); opacity: .9; }
+  100% { transform: scaleY(1) translateY(-25%); opacity: 0; filter: blur(0); }
+}
+.cfx-veil {
+  width: 110%; height: 110%; margin: -55% 0 0 -55%; border-radius: 50%;
+  border: var(--bw) dashed var(--pc); box-shadow: 0 0 12px var(--pc);
+  animation: cfx-unveil .6s ease-in forwards;
+}
+@keyframes cfx-unveil { 0% { transform: scale(1.8) rotate(0); opacity: 0; } 30% { opacity: 1; } 100% { transform: scale(.7) rotate(120deg); opacity: 0; } }
+.cfx-cloak > span { animation-direction: reverse; }
+/* Resourceful, or a cube relocated: rings collapse to a point as it goes. */
+.cfx-collapse {
+  width: 100%; height: 100%; margin: -50% 0 0 -50%; border-radius: 50%;
+  border: calc(var(--bw) * 1.5) solid var(--pc); box-shadow: 0 0 12px var(--pc), inset 0 0 8px var(--pc);
+  animation: cfx-collapse .5s cubic-bezier(.6,0,.9,.5) forwards;
+}
+.cfx-collapse.late { animation-delay: .12s; border-color: #fff; opacity: 0; }
+@keyframes cfx-collapse { 0% { transform: scale(1.4); opacity: 0; } 30% { opacity: 1; } 100% { transform: scale(0); opacity: 1; } }
+.cfx-core {
+  width: 30%; height: 30%; margin: -15% 0 0 -15%; border-radius: 50%;
+  background: radial-gradient(circle, #fff, var(--pc) 60%, transparent 70%);
+  opacity: 0;
+  animation: cfx-core .4s .5s ease-out forwards;
+}
+@keyframes cfx-core { 0% { transform: scale(.4); opacity: 1; } 40% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0); opacity: 0; } }
+/* Flexible or Clever: chevrons float the way the number went. */
+.cfx-chevrons { width: 40%; margin: -30% 0 0 -20%; display: flex; flex-direction: column; }
+.cfx-chevrons svg {
+  width: 100%; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px var(--pc)) drop-shadow(0 0 6px var(--pc));
+  opacity: 0;
+  animation: cfx-rise .6s ease-out forwards;
+}
+.cfx-chevrons svg:last-child { animation-delay: .12s; }
+.cfx-lower .cfx-chevrons { rotate: 180deg; }
+@keyframes cfx-rise { 0% { transform: translateY(80%); opacity: 0; } 35% { opacity: 1; } 100% { transform: translateY(-90%); opacity: 0; } }
 .board:has(.explosion) { animation: boom-shake .35s linear; }
 @keyframes boom-shake {
   20% { translate: -3px 2px; }

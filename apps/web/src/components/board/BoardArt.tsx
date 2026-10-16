@@ -6,6 +6,9 @@ import { tileArt, type TileArt } from '../../art/boardTiles';
 import { wrapMarks, type WrapMark } from './geometry';
 import { PlanetMarkings } from './PlanetMarkings';
 
+/** A Warp Gate's colour, on the map and in its effects (CardEffects). */
+export const GATE_COLOR = '#5ef0b0';
+
 /** Which way each board edge faces, for the wrap chevrons. */
 const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number }> = {
   right: { angle: 0, r: 0, c: 1 },
@@ -49,6 +52,10 @@ export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState
   const mm = cell / TILE.cell;
   // Gap between neighbouring tiles, scaled with the cell so zooming doesn't change the look.
   const inset = cell * 0.015;
+  // The open gates, then any of a Warp Gate pair placed so far: faint until the pair is complete.
+  const head = game.pending[0];
+  const placing = head?.kind === 'warpGate' ? head.placed : [];
+  const gates = [...game.gates.map((g) => ({ ...g, open: true })), ...placing.map((g) => ({ ...g, open: false }))];
   return (
     <>
       <svg className="board-svg" width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
@@ -123,9 +130,9 @@ export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState
           );
         })}
 
-        {game.gates.map((g, i) => (
-          <g key={i} transform={`translate(${(g.c + 0.5) * cell} ${(g.r + 0.5) * cell})`}>
-            <circle r={cell * 0.4} fill="none" stroke="#5ef0b0" strokeWidth={cell * 0.05} filter="url(#glow)" />
+        {gates.map((g, i) => (
+          <g key={i} transform={`translate(${(g.c + 0.5) * cell} ${(g.r + 0.5) * cell})`} opacity={g.open ? 1 : 0.5}>
+            <circle r={cell * 0.4} fill="none" stroke={GATE_COLOR} strokeWidth={cell * 0.05} filter="url(#glow)" />
           </g>
         ))}
 
@@ -163,11 +170,11 @@ export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState
         })}
       </svg>
       {/* Each gate's turning ring is its own element over the map, so turning it doesn't repaint the map. */}
-      {game.gates.map((g, i) => (
+      {gates.map((g, i) => (
         <svg
           key={i}
           className="gate-spin"
-          style={{ left: g.c * cell, top: g.r * cell }}
+          style={{ left: g.c * cell, top: g.r * cell, opacity: g.open ? 1 : 0.5 }}
           width={cell}
           height={cell}
           viewBox={`0 0 ${cell} ${cell}`}
@@ -177,7 +184,7 @@ export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState
             cy={cell / 2}
             r={cell * 0.36}
             fill="none"
-            stroke="#5ef0b0"
+            stroke={GATE_COLOR}
             strokeWidth={cell * 0.025}
             strokeDasharray={`${cell * 0.065} ${cell * 0.065}`}
           />

@@ -3,6 +3,7 @@ import { SHIP_NAMES, die, key, moveOptions, same, shipOf, type GameState } from 
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { ActionEffects } from './board/ActionEffects';
+import { CardEffects } from './board/CardEffects';
 import { Explosions } from './board/Explosions';
 import { Routes } from './board/Routes';
 import { shipSpots, type ShipSpots } from './board/geometry';
@@ -18,7 +19,7 @@ const inspectKey = (i: Inspect) => ('ship' in i ? `ship:${i.ship}` : `planet:${i
 
 /**
  * The map: artwork underneath (SVG), then clickable layers for highlighted spaces, planets and
- * ships, then the effects of each move and explosions. What is clickable comes from the controller's highlights; a tap on a ship
+ * ships, then the effects of each move, explosions and the effects of cards. What is clickable comes from the controller's highlights; a tap on a ship
  * or planet that isn't shows its info instead. It fits its box, and zooms and pans (useBoardZoom).
  * `children` float over the map (positioned in percent of its size). `introduce` (the start of a game)
  * shows that it zooms. `scene` changes when the map jumps to another position instead of following a
@@ -151,6 +152,7 @@ export function Board({
           />
           <ActionEffects key={`fx:${scene}`} game={game} cell={cell} />
           <Explosions key={scene} game={game} cell={cell} />
+          <CardEffects key={`cfx:${scene}`} game={game} cell={cell} />
           {inspect && (
             <BoardInfo key={inspectKey(inspect)} game={game} spots={spots} what={inspect} cell={cell} onClose={() => setInspect(null)} />
           )}
