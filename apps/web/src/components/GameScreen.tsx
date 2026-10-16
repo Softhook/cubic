@@ -78,7 +78,7 @@ export function Game({
   // Changes when the screen jumps to another position rather than following a move: looking back, or skipping ahead online.
   const scene = review ? `review:${review.entry.id}` : `live:${view.jumps ?? 0}`;
   const market = cards && <Market game={game} dispatch={dispatch} legal={ctl.legal} steady={!!review} scene={scene} />;
-  const players = <PlayerList game={game} ctl={ctl} dispatch={dispatch} />;
+  const players = <PlayerList game={game} ctl={ctl} dispatch={dispatch} scene={scene} />;
   const log = <Log game={live} review={{ can, pick: lookBack, picked: review?.entry.id, move: review?.move }} />;
 
   return (

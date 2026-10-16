@@ -2,20 +2,22 @@ import { useState, type CSSProperties } from 'react';
 import { card, rulesOf, type GameState, type PlayerState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
-import { reducedMotion } from '../game/useMediaQuery';
+import { useStepEffects } from '../game/useTransient';
 import { CategoryIcon, MissileIcon, categoryStyle } from './Card';
 import { CardViewer } from './CardViewer';
 import { Tip } from './InfoPop';
+import { PANEL_EFFECT_MS, panelEffectsOf, type PanelEffect } from './panelEffects';
 import { Scrapyard, turnScrapOwner } from './Scrapyard';
 
-/** A player's track. With `pulse`, a gain sends a pulse up it, to the new value (none under reduced motion). */
-function Track({ label, value, tone, pulse }: { label: string; value: number; tone: string; pulse?: boolean }) {
-  const [was, setWas] = useState(value);
-  const [gains, setGains] = useState(0);
-  if (value !== was) {
-    setWas(value);
-    if (pulse && value > was && !reducedMotion()) setGains((n) => n + 1);
-  }
+/** The effect on one spot of a panel, if any: the latest, so a fresh one restarts it (`key`). */
+const effectAt = (fx: PanelEffect[], spot: PanelEffect['spot']) => fx.filter((e) => e.spot === spot).at(-1);
+
+/** An effect on a stat or a chip, over it. */
+const Flash = ({ e }: { e?: PanelEffect }) => (e ? <i key={e.id} className={`panel-fx panel-fx-${e.kind}`} aria-hidden /> : null);
+
+/** A player's track. A gain sends a pulse up it to the new value; a loss burns off the cells lost. */
+function Track({ label, value, tone, fx }: { label: string; value: number; tone: string; fx?: PanelEffect }) {
+  const moved = fx && 'from' in fx ? fx : undefined;
   return (
     <Tip as="div" className={`track track-${tone}`} tip={`${label}: ${value} of 6`}>
       <span className="track-label">{label}</span>
@@ -23,18 +25,34 @@ function Track({ label, value, tone, pulse }: { label: string; value: number; to
         {[1, 2, 3, 4, 5, 6].map((n) => (
           <span key={n} className={n <= value ? 'on' : ''} />
         ))}
-        {gains > 0 && <i key={gains} className="track-pulse" style={{ '--to': value / 6 } as CSSProperties} />}
+        {moved && (
+          <i
+            key={moved.id}
+            className={moved.kind === 'up' ? 'track-pulse' : 'track-drop'}
+            style={{ '--from': Math.min(moved.from, 6) / 6, '--to': Math.min(moved.to, 6) / 6 } as CSSProperties}
+          />
+        )}
       </div>
     </Tip>
   );
 }
 
-export function PlayerList({ game, ctl, dispatch }: { game: GameState; ctl: Controller; dispatch: Dispatch }) {
+/** The players' panels. `scene` changes for a jump to another position, which shows no effects. */
+export function PlayerList({ game, ctl, dispatch, scene }: { game: GameState; ctl: Controller; dispatch: Dispatch; scene?: string }) {
   const inTurnPanel = turnScrapOwner(game, ctl).id;
+  const fx = useStepEffects(game, PANEL_EFFECT_MS, panelEffectsOf, scene);
   return (
     <section className="panel players">
       {game.players.map((p) => (
-        <PlayerCard key={p.id} game={game} p={p} ctl={ctl} dispatch={dispatch} showScrap={p.id !== inTurnPanel} />
+        <PlayerCard
+          key={p.id}
+          game={game}
+          p={p}
+          ctl={ctl}
+          dispatch={dispatch}
+          showScrap={p.id !== inTurnPanel}
+          fx={fx.filter((e) => e.player === p.id)}
+        />
       ))}
     </section>
   );
@@ -46,12 +64,14 @@ function PlayerCard({
   ctl,
   dispatch,
   showScrap,
+  fx,
 }: {
   game: GameState;
   p: PlayerState;
   ctl: Controller;
   dispatch: Dispatch;
   showScrap: boolean;
+  fx: PanelEffect[];
 }) {
   const active = game.phase === 'play' && game.turn.player === p.id;
   const rules = rulesOf(game);
@@ -74,28 +94,32 @@ function PlayerCard({
         </Tip>
       </div>
       <div className="player-tracks">
-        <Track label="Dominance" value={p.dominance} tone="dom" />
-        {rules.cards && <Track label="Research" value={p.research} tone="res" pulse />}
+        <Track label="Dominance" value={p.dominance} tone="dom" fx={effectAt(fx, 'dominance')} />
+        {rules.cards && <Track label="Research" value={p.research} tone="res" fx={effectAt(fx, 'research')} />}
       </div>
       <div className="player-row">
         {rules.startingMissiles > 0 && (
           <Tip className="stat" tip="Missiles: in a battle you are losing, set your own combat roll to 1">
             <MissileIcon size={14} /> {p.missiles}
+            <Flash e={effectAt(fx, 'missiles')} />
           </Tip>
         )}
         {p.planAhead > 0 && (
           <Tip className="stat gold" tip="Plan Ahead: all your combat rolls are 1">
             Plan Ahead
+            <Flash e={effectAt(fx, 'planAhead')} />
           </Tip>
         )}
         {p.actionPenalty > 0 && (
           <Tip className="stat bad" tip="Sabotaged: fewer actions next turn">
             −{p.actionPenalty} action
+            <Flash e={effectAt(fx, 'penalty')} />
           </Tip>
         )}
         {p.ambitionTokens > 0 && (
           <Tip className="stat" tip="Ambition tokens">
             Ambition {p.ambitionTokens}/3
+            <Flash e={effectAt(fx, 'ambition')} />
           </Tip>
         )}
       </div>
@@ -121,6 +145,7 @@ function PlayerCard({
               >
                 <CategoryIcon category={def.category} size={11} />
                 {def.name}
+                <Flash e={effectAt(fx, `skill:${s.id}`)} />
               </button>
             );
           })}
@@ -138,6 +163,7 @@ function PlayerCard({
               >
                 <CategoryIcon category={def.category} size={11} />
                 {def.name} [Tactic]
+                <Flash e={effectAt(fx, `stored:${tId}`)} />
               </button>
             );
           })}

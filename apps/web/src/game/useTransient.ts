@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameState } from '@quantum/engine';
+import { reducedMotion } from './useMediaQuery';
 
 /** The id of the game's last log entry, 0 before there is one. */
 export const lastLogId = (game: GameState) => game.log.at(-1)?.id ?? 0;
 
 /** Whether the step from `before` to `game` was play: undo moves ships and takes cubes away too, but never adds log entries. */
-export const isPlayStep = (before: GameState, game: GameState) => lastLogId(game) > lastLogId(before);
+const isPlayStep = (before: GameState, game: GameState) => lastLogId(game) > lastLogId(before);
 
 /**
  * Things shown for a moment (an effect, an explosion, a flying card): `show` adds some, and each batch
@@ -31,4 +32,25 @@ export function useTransient<T>(ms: number): [items: T[], show: (fresh: T[]) => 
     [ms],
   );
   return [items, show];
+}
+
+/**
+ * The effects `effectsOf` finds in each step of play, each gone after `ms`: on the map (board/) and the
+ * player panels (PlayerList). None under reduced motion, none for undo (no new log entries), and none when
+ * `scene` changes (a jump to another position, see Game).
+ */
+export function useStepEffects<T>(
+  game: GameState,
+  ms: number,
+  effectsOf: (before: GameState, game: GameState) => T[],
+  scene?: string,
+): T[] {
+  const [effects, show] = useTransient<T>(ms);
+  const prev = useRef({ game, scene });
+  useEffect(() => {
+    const before = prev.current;
+    prev.current = { game, scene };
+    if (before.scene === scene && isPlayStep(before.game, game) && !reducedMotion()) show(effectsOf(before.game, game));
+  }, [game, scene, show, effectsOf]);
+  return effects;
 }

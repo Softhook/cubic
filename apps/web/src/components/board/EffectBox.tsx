@@ -1,7 +1,5 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
-import type { Cell, GameState } from '@quantum/engine';
-import { reducedMotion } from '../../game/useMediaQuery';
-import { isPlayStep, useTransient } from '../../game/useTransient';
+import type { CSSProperties, ReactNode } from 'react';
+import type { Cell } from '@quantum/engine';
 
 /** A short effect on the map: on the space `at`, or from `at` to `to`, in a player's colour. */
 export interface MapEffect {
@@ -9,25 +7,6 @@ export interface MapEffect {
   at: Cell;
   to?: Cell;
   color: string;
-}
-
-/**
- * The effects `effectsOf` finds in each step of play, each gone after `ms`. None under reduced motion,
- * and none for undo (no new log entries).
- */
-export function useStepEffects<T extends MapEffect>(
-  game: GameState,
-  ms: number,
-  effectsOf: (before: GameState, game: GameState) => T[],
-): T[] {
-  const [effects, show] = useTransient<T>(ms);
-  const prev = useRef(game);
-  useEffect(() => {
-    const before = prev.current;
-    prev.current = game;
-    if (isPlayStep(before, game) && !reducedMotion()) show(effectsOf(before, game));
-  }, [game, show, effectsOf]);
-  return effects;
 }
 
 /**
