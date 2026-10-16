@@ -45,6 +45,10 @@ export interface BoardZoom extends View {
   demo: (r: number, c: number) => void;
 }
 
+/** Safari's (non-standard) GestureEvent: `scale` since the gesture began. */
+type SafariGesture = Event & { scale: number; clientX: number; clientY: number };
+const GESTURES = ['gesturestart', 'gesturechange', 'gestureend'];
+
 /** Whether something around `el` scrolls vertically: then a plain wheel over the board scrolls it, not the zoom. */
 function scrollsAround(el: HTMLElement): boolean {
   for (let p = el.parentElement; p; p = p.parentElement) {
@@ -161,11 +165,13 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     let wheelTimer: ReturnType<typeof setTimeout> | undefined;
     let lastWheel = -Infinity; // when the last wheel event came, so a burst measures the page once
     let scrolls = false; // whether something around the board scrolls, as of this wheel burst
+    let ctrlWheel = -Infinity; // when the last Ctrl+wheel (another browser's trackpad pinch) came
+    let pinchFrom: View | null = null; // where Safari's trackpad pinch started
     // The wrap's place on the page, measured when a gesture starts (the board moves, the wrap doesn't).
     let rect = el.getBoundingClientRect();
     const reduced = matchMedia(REDUCED_MOTION);
 
-    const local = (e: PointerEvent | WheelEvent) => ({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    const local = (e: { clientX: number; clientY: number }) => ({ x: e.clientX - rect.left, y: e.clientY - rect.top });
     /** What's on screen. */
     const shown = () => live ?? committed ?? latest.current.current;
     /** Show `v` as a transform of the committed view, clipped to the wrap. */
@@ -365,6 +371,8 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       e.stopPropagation();
       e.preventDefault();
     };
+    /** Commits once the map has been still for a moment (the wheel's events, a trackpad pinch), not mid-gesture. */
+    const settle = () => void (wheelTimer = setTimeout(() => (chasing ? settle() : finish()), WHEEL_SETTLE));
     const wheel = (e: WheelEvent) => {
       latest.current.stopDemo();
       const { f } = latest.current;
@@ -374,6 +382,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
         rect = el.getBoundingClientRect();
       }
       lastWheel = now;
+      if (e.ctrlKey) ctrlWheel = now;
       if (!zoomable(f) || pointers.size || (!e.ctrlKey && scrolls)) return;
       e.preventDefault();
       const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
@@ -384,8 +393,32 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       clearTimeout(wheelTimer);
       // A mouse wheel moves in notches (or a trackpad flicked hard: big steps).
       chase(next, e.deltaMode !== 0 || (!e.ctrlKey && Math.abs(dy) >= 40) ? NOTCH_LAG : TRACKPAD_LAG);
-      const settle = () => void (wheelTimer = setTimeout(() => (chasing ? settle() : finish()), WHEEL_SETTLE));
       settle();
+    };
+    /**
+     * Safari's trackpad pinch comes as gesture events, not a Ctrl+wheel, and would zoom the page. On iOS a
+     * pinch fires them too, alongside its touches, which zoom the map already (above), as does a Ctrl+wheel.
+     */
+    const gesture = (e: SafariGesture) => {
+      e.preventDefault();
+      const { f } = latest.current;
+      if (e.type === 'gesturestart') {
+        pinchFrom = null;
+        if (pointers.size || !zoomable(f)) return;
+        latest.current.stopDemo();
+        stop();
+        clearTimeout(wheelTimer);
+        rect = el.getBoundingClientRect();
+        pinchFrom = shown();
+      } else if (e.type === 'gesturechange') {
+        if (!pinchFrom || pointers.size || performance.now() - ctrlWheel < WHEEL_SETTLE) return;
+        const at = Number.isFinite(e.clientX) ? local(e) : { x: f.w / 2, y: f.h / 2 };
+        clearTimeout(wheelTimer);
+        chase(zoomAround(f, pinchFrom, e.scale, at.x, at.y), TRACKPAD_LAG);
+      } else if (pinchFrom) {
+        pinchFrom = null;
+        settle();
+      }
     };
 
     el.addEventListener('pointerdown', down);
@@ -394,7 +427,9 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     el.addEventListener('pointercancel', up);
     el.addEventListener('click', click, true);
     el.addEventListener('wheel', wheel, { passive: false });
+    for (const type of GESTURES) el.addEventListener(type, gesture as EventListener);
     return () => {
+      for (const type of GESTURES) el.removeEventListener(type, gesture as EventListener);
       stop();
       clearTimeout(wheelTimer);
       glide.current = undefined;

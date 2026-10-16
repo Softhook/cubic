@@ -372,6 +372,9 @@ input { font: inherit; }
 /* A space to attack from: its way (.route) marks it, so the space only takes the tap and shows the odds when they differ.
    Without a way drawn, its dot shows. */
 .hl-launch.routed span { opacity: 0; }
+/* Over the ways (.routes, z-index 2), under the ships: a longer way often crosses another's space, and a tap there
+   is for that space, not the way over it. */
+.hl.routed { z-index: 3; }
 .hl-odds {
   position: absolute; bottom: 6%;
   padding: 0 .35em; border-radius: .5em;

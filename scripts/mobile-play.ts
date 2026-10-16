@@ -159,7 +159,7 @@ function look(page: Page, tapsThisTurn: number, tried: string[], want: Want | nu
           // meant for a planet); panels take them anywhere inside; a popup's own dice may overlap a little.
           const hit = document.elementFromPoint(x, y);
           const home = el.closest('.overlay .modal, .combat-card, .panel, .sheet') ?? el;
-          if (!hit || !home.contains(hit)) problem = `covered by .${hit?.className.toString().split(' ').join('.')}`;
+          if (!hit || !home.contains(hit)) problem = `covered by .${(hit?.getAttribute('class') ?? '').split(' ').join('.')}`;
         }
         target = { label, x, y, problem };
       }
