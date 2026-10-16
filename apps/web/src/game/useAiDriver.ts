@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { actor, canRespondToCombat, type CombatPending, type GameState, type PlayerId } from '@quantum/engine';
 import { combatStage } from '@quantum/online';
 import { aiLevelOf, combatResponse, think } from './aiClient';
+import { landingNext } from './cast';
 import { shotWait } from './strike';
 import type { Dispatch } from './useGame';
 
@@ -12,6 +13,8 @@ function aiDelay(s: GameState): number {
   if (!head) return s.turn.actionsLeft === 3 && !Object.keys(s.turn.moved).length ? 1100 : 850;
   if (head.kind === 'takeCard' || head.kind === 'peek' || head.kind === 'patientTactic') return 1100;
   if (head.kind === 'advance') return 700;
+  // A Tactic just played (PlayedCard) lands once it has been read: Show of Force's target, the Warp Gates…
+  if (landingNext(s)) return 1500;
   return 800;
 }
 

@@ -56,6 +56,7 @@ export function Tip({
   style,
   onClick,
   children,
+  'data-fx': fx,
 }: {
   tip: ReactNode;
   as?: 'span' | 'div' | 'em';
@@ -63,6 +64,8 @@ export function Tip({
   style?: CSSProperties;
   onClick?: () => boolean;
   children: ReactNode;
+  /** The spot a moment's effect marks (see CardCasts). */
+  'data-fx'?: string;
 }) {
   const anchor = useAnchorName();
   const [open, setOpen] = useState(false);
@@ -77,6 +80,7 @@ export function Tip({
     <>
       <Tag
         className={`has-tip ${className}`}
+        data-fx={fx}
         style={{ ...style, '--anchor': anchor } as CSSProperties}
         tabIndex={0}
         aria-expanded={open}

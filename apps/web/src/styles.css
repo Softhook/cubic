@@ -852,6 +852,7 @@ input { font: inherit; }
 .panel.log { padding-inline: 14px 4px; } /* the title lines up with the players' names */
 .players { display: flex; flex-direction: column; gap: 4px; padding: 0; }
 .player {
+  position: relative;
   padding: 6px 4px 6px 12px;
   border-left: 2px solid color-mix(in srgb, var(--pc) 35%, transparent);
   transition: border-color .3s;
@@ -907,6 +908,8 @@ input { font: inherit; }
 .panel-fx-down, .stat.bad > .panel-fx-up { box-shadow: 0 0 0 2px var(--bad), 0 0 12px var(--bad); }
 .panel-fx-in { box-shadow: 0 0 0 2px #fff, 0 0 14px var(--pc); background: rgba(255,255,255,.6); opacity: 0; animation-delay: .3s; }
 .panel-fx-off { box-shadow: 0 0 0 2px var(--bad), 0 0 12px var(--bad); background: color-mix(in srgb, var(--bad) 40%, transparent); }
+/* A skill gone: the whole panel flashes red, as the chip is no longer there to. */
+.panel-fx-out { box-shadow: inset 0 0 0 2px var(--bad), inset 0 0 18px color-mix(in srgb, var(--bad) 60%, transparent); }
 @keyframes panel-fx { 0% { opacity: 1; transform: scale(1.15); } 30% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 .player-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .missile-icon { display: inline-block; vertical-align: -0.2em; flex: none; }
@@ -1333,7 +1336,49 @@ input { font: inherit; }
 .played-card small { padding: 3px 10px; border-radius: 999px; background: rgba(12, 18, 38, .92); border: 1px solid var(--pc); color: var(--pc); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
 .played-card .card-art { width: min(200px, 45vw); }
 .played-card .card-art img, .played-card .card-art-ph { box-shadow: 0 0 0 2px var(--pc), 0 16px 40px rgba(0,0,0,.6); }
-@keyframes played-card { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.85); } 10%, 85% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; } }
+@keyframes played-card { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.85); } 5%, 85% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; } }
+/* The card casting what it does (CardCast): it flashes, and a beam leaves its edge for each spot it changes,
+   a spark riding it to a ring where it lands, as the effect there plays. Under dialogs (.overlay); all over in under 900 ms. */
+.played-card-art { position: relative; }
+/* Once cast at the map, the card fades back a little, so what it hit shows through (a ship under it). */
+.played-card-art.spent { opacity: .55; transition: opacity .3s .25s; }
+.played-card-cast {
+  position: absolute; inset: -3px; border-radius: 6%/4.5%; pointer-events: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 22px 6px var(--pc);
+  background: radial-gradient(circle, rgba(255, 255, 255, .35), transparent 70%);
+  animation: played-card-cast .6s ease-out forwards;
+}
+@keyframes played-card-cast { 0% { opacity: 0; transform: scale(.97); } 20% { opacity: 1; } 100% { opacity: 0; transform: scale(1.07); } }
+.cast-beam { position: fixed; z-index: 45; width: var(--len); height: 0; transform-origin: 0 0; transform: rotate(var(--angle)); pointer-events: none; }
+.cast-beam > span { position: absolute; left: 0; top: 0; }
+.cast-line {
+  width: 100%; height: 4px; margin-top: -2px; border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pc) 35%, transparent), var(--pc) 70%, #fff);
+  box-shadow: 0 0 8px var(--pc), 0 0 16px var(--pc);
+  animation: cast-line .7s cubic-bezier(.3,.7,.3,1) forwards;
+}
+/* Drawn out to the spot, then drawn in after the spark, as if the card's energy went into it. */
+@keyframes cast-line {
+  0% { clip-path: inset(0 100% 0 0); opacity: 1; }
+  35% { clip-path: inset(0 0 0 0); opacity: 1; }
+  100% { clip-path: inset(0 0 0 100%); opacity: .3; }
+}
+.cast-head {
+  width: 12px; height: 12px; translate: -50% -50%; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 10px 4px var(--pc);
+  animation: cast-head .26s cubic-bezier(.5,0,.7,1) forwards;
+}
+@keyframes cast-head { 0% { left: 0; opacity: 1; } 95% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+.cast-beam > .cast-hit {
+  left: 100%; width: var(--size); height: var(--size); translate: -50% -50%; border-radius: 50%;
+  border: 3px solid var(--pc); box-shadow: 0 0 12px var(--pc), inset 0 0 8px var(--pc);
+  opacity: 0;
+  animation: cast-hit .5s .22s cubic-bezier(.2,.7,.3,1) forwards;
+}
+/* Out of view (zoomed in, or under a phone's closed sheet): the beam stops at the edge, with a dashed ring pointing on. */
+.cast-beam.edge > .cast-hit { border-style: dashed; }
+.cast-beam[hidden] { display: none; }
+@keyframes cast-hit { 0% { transform: scale(.3); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
 .error-toast {
   position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
   padding: 8px 14px; border-radius: 10px; font-size: 13px;
@@ -2068,7 +2113,7 @@ body:has(.sheet-layout) { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
   /* No move effects at all (they aren't made then, either). */
-  .fx, .track-pulse, .card-flight { display: none; }
+  .fx, .track-pulse, .card-flight, .cast-beam, .played-card-cast { display: none; }
 }
 
 /* ------------------------------------------------------------------ crash screen (ErrorBoundary) */

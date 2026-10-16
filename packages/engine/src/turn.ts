@@ -1,16 +1,18 @@
 /** Turn structure: start of turn, the end-of-turn card phase, and passing the turn on. */
-import { checkInfamy, emptyTurn, gainResearch, log, name, type PendingOf } from './core';
+import { checkInfamy, emptyTurn, gainResearch, log, logBonus, name, type PendingOf } from './core';
 import { cellOf, scrapyard, shipsOnBoard } from './lookups';
 import { breakthroughAt, canProfiteer, canTakeAnyCard, infamyTargets, startSlots } from './queries';
 import { rulesOf } from './rules';
-import { askBrilliant, ruleOf, skillRules, stealableSkill, type TurnBonus } from './skillRules';
+import { activeSkills, askBrilliant, ruleOf, stealableSkill, type TurnBonus } from './skillRules';
 import type { GameState, OwnedSkill, Pending, PlayerId } from './types';
 
 /** The start-of-turn bonuses of the player's skills, added up. */
-function startOfTurnBonus(s: GameState, player: PlayerId): Required<TurnBonus> {
-  const total = { actions: 0, freeDeploys: 0, freeMoves: 0, research: 0 };
-  for (const r of skillRules(s, player)) {
-    const b = r.startOfTurn?.(s, player) ?? {};
+function startOfTurnBonus(s: GameState, player: PlayerId): Required<TurnBonus> & { named: [string, TurnBonus][] } {
+  const total = { actions: 0, freeDeploys: 0, freeMoves: 0, research: 0, named: [] as [string, TurnBonus][] };
+  for (const { rule, card } of activeSkills(s, player)) {
+    const b = rule.startOfTurn?.(s, player) ?? {};
+    // Only an extra action is news: the others come every turn.
+    if (b.actions) total.named.push([card, { actions: b.actions }]);
     total.actions += b.actions ?? 0;
     total.freeDeploys += b.freeDeploys ?? 0;
     total.freeMoves += b.freeMoves ?? 0;
@@ -48,6 +50,7 @@ function startTurn(s: GameState, player: PlayerId, actions: number, bonus: boole
   if (askBrilliant(s, player)) s.pending.push({ kind: 'brilliant', player });
   log(s, bonus ? `${pl.name} takes a bonus turn.` : `${pl.name}'s turn.`, player);
   s.log[s.log.length - 1].turn = true;
+  for (const [card, b] of extra.named) logBonus(s, player, card, b);
 }
 
 /** Setup is complete: the first player starts. */

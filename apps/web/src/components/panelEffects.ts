@@ -15,11 +15,13 @@ type PanelNumber = keyof typeof NUMBERS;
 
 /**
  * A moment's mark on a player's panel (PlayerList): one of its numbers going up or down (from `from` to
- * `to`), or a card chip arriving (taken, stolen by Prideful, stored by Patient) or switched off (Ruthless).
+ * `to`), a card chip arriving (taken, stolen by Prideful, stored by Patient) or switched off (Ruthless),
+ * or a skill gone (discarded, to Sabotage or the skill limit, or stolen), on the whole panel.
  */
 export type PanelEffect = { id: string; player: PlayerId } & (
   | { spot: PanelNumber; kind: 'up' | 'down'; from: number; to: number }
   | { spot: `skill:${string}` | `stored:${string}`; kind: 'in' | 'off' }
+  | { spot: 'skills'; kind: 'out' }
 );
 
 /** Long enough for a card flying from the market (CardFlight) to land on the chip it becomes. */
@@ -55,6 +57,7 @@ export function panelEffectsOf(before: GameState, game: GameState): PanelEffect[
         out.push({ ...fx(`off:${s.id}`), spot: `skill:${s.id}`, kind: 'off' });
       }
     }
+    if ([...had.values()].some((n) => n > 0)) out.push({ ...fx('skills'), spot: 'skills', kind: 'out' });
     const stored = counts(was.storedTactics ?? []);
     for (const id of p.storedTactics ?? []) {
       const n = stored.get(id) ?? 0;

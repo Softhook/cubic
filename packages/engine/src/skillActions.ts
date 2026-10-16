@@ -171,6 +171,13 @@ export const skillHandlers = {
   },
 } satisfies Partial<Handlers>;
 
+/** CE Curious, when the step from `prev` to `s` spent its extra Move or Research. */
+export function curiousUsed(prev: GameState, s: GameState): { player: PlayerId; card: string } | undefined {
+  if (prev.turn.curiousUsed || !s.turn.curiousUsed) return undefined;
+  const card = skillCard(prev, prev.turn.player, 'curious');
+  return card ? { player: prev.turn.player, card } : undefined;
+}
+
 /**
  * The skill card `action` uses, and its owner, judged before the action (Ambitious may be gone after).
  * None for an action that declines a skill's offer, or that isn't a skill's at all.

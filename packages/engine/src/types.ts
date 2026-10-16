@@ -229,6 +229,13 @@ export type LogEvent =
   | 'discard'
   | 'breakthrough';
 
+/** A skill's bonus, as actually gained (after the research and dominance limits). */
+export interface Gains {
+  actions?: number;
+  research?: number;
+  dominance?: number;
+}
+
 export interface LogEntry {
   id: number;
   player?: PlayerId;
@@ -238,6 +245,8 @@ export interface LogEntry {
   planets?: number[];
   /** The card an entry is about (played, taken or used), so the UI can show it. */
   card?: string;
+  /** What a skill firing by itself (Hostile, Plundering, Arrogant…) gave, so the UI can point at just that. */
+  gains?: Gains;
   /** A player's turn starting: the log's headings, with everything else under them. */
   turn?: true;
 }

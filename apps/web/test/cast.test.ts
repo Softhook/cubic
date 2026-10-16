@@ -1,0 +1,68 @@
+/** Which card a step is the doing of (the card on screen casts it), and which start-of-turn bonuses are news. */
+import { describe, expect, it } from 'vitest';
+import { apply, type GameState, type LogEntry } from '@quantum/engine';
+import { arrange, quickStart } from '../../../packages/engine/test/helpers';
+import { castOf, repeatsLastTurn } from '../src/game/cast';
+
+/** Player `me` has taken a card after conquering and will take the first Tactic: `card`. */
+function taking(card: string, skills: string[] = []): GameState {
+  let s = quickStart(2, 42, 'community');
+  const me = s.turn.player;
+  s = arrange(s, { [`p${me}d0`]: [0, 0, 6], [`p${1 - me}d0`]: [0, 1, 3] });
+  s.players[me].skills = skills.map((id) => ({ id, active: true }));
+  s.market.tacticRow[0] = card;
+  s.pending.unshift({ kind: 'takeCard', player: me, count: 1 });
+  return s;
+}
+
+describe('castOf', () => {
+  it('is the Tactic played in the step', () => {
+    const s = taking('aggression');
+    const after = apply(s, { type: 'takeCard', deck: 'tactic', index: 0 });
+    expect(castOf(s, after)?.card).toBe('aggression');
+  });
+
+  it('is the Tactic whose target the step chooses, before a skill its blow sets off', () => {
+    const s = apply(taking('show-of-force', ['plundering']), { type: 'takeCard', deck: 'tactic', index: 0 });
+    const me = s.turn.player;
+    const after = apply(s, { type: 'showOfForce', die: `p${1 - me}d0` });
+    // Plundering fired too, on an entry of its own.
+    expect(after.log.some((e) => e.card === 'plundering' && e.gains)).toBe(true);
+    expect(castOf(s, after)?.card).toBe('show-of-force');
+  });
+
+  it('is nothing for a card taken', () => {
+    const s = quickStart(2, 42, 'community');
+    s.pending.unshift({ kind: 'takeCard', player: s.turn.player, count: 1 });
+    s.market.skillRow[0] = 'agile';
+    const after = apply(s, { type: 'takeCard', deck: 'skill', index: 0 });
+    expect(castOf(s, after)).toBeUndefined();
+  });
+});
+
+describe('repeatsLastTurn', () => {
+  let id = 0;
+  const heading = (player: number): LogEntry => ({ id: ++id, player, text: '', turn: true });
+  const bonus = (player: number, card = 'o-arrogant'): LogEntry => ({ id: ++id, player, text: '', card, gains: { actions: 1 } });
+  const other = (player: number): LogEntry => ({ id: ++id, player, text: '' });
+
+  it('is news the first turn, not the turns after it repeats', () => {
+    const first = bonus(0);
+    const again = bonus(0);
+    const log = [heading(0), first, other(0), heading(1), other(1), heading(0), again];
+    expect(repeatsLastTurn(log, first)).toBe(false);
+    expect(repeatsLastTurn(log, again)).toBe(true);
+  });
+
+  it('is news again after a turn without it', () => {
+    const back = bonus(0);
+    const log = [heading(0), bonus(0), heading(1), heading(0), other(0), heading(1), heading(0), back];
+    expect(repeatsLastTurn(log, back)).toBe(false);
+  });
+
+  it('is always news for a bonus that is not a turn’s start (Plundering)', () => {
+    const plunder = bonus(0, 'plundering');
+    const log = [heading(0), bonus(0, 'plundering'), heading(1), heading(0), other(0), plunder];
+    expect(repeatsLastTurn(log, plunder)).toBe(false);
+  });
+});

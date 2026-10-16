@@ -16,10 +16,10 @@ const effectAt = (fx: PanelEffect[], spot: PanelEffect['spot']) => fx.filter((e)
 const Flash = ({ e }: { e?: PanelEffect }) => (e ? <i key={e.id} className={`panel-fx panel-fx-${e.kind}`} aria-hidden /> : null);
 
 /** A player's track. A gain sends a pulse up it to the new value; a loss burns off the cells lost. */
-function Track({ label, value, tone, fx }: { label: string; value: number; tone: string; fx?: PanelEffect }) {
+function Track({ label, value, tone, spot, fx }: { label: string; value: number; tone: string; spot: string; fx?: PanelEffect }) {
   const moved = fx && 'from' in fx ? fx : undefined;
   return (
-    <Tip as="div" className={`track track-${tone}`} tip={`${label}: ${value} of 6`}>
+    <Tip as="div" className={`track track-${tone}`} data-fx={spot} tip={`${label}: ${value} of 6`}>
       <span className="track-label">{label}</span>
       <div className="track-cells">
         {[1, 2, 3, 4, 5, 6].map((n) => (
@@ -81,6 +81,7 @@ function PlayerCard({
 
   return (
     <div className={`player ${active ? 'active' : ''}`} data-player={p.id} style={{ '--pc': p.color } as CSSProperties}>
+      <Flash e={effectAt(fx, 'skills')} />
       <div className="player-head">
         <strong>{p.name}</strong>
         {p.ai && <span className="tag">AI</span>}
@@ -94,30 +95,30 @@ function PlayerCard({
         </Tip>
       </div>
       <div className="player-tracks">
-        <Track label="Dominance" value={p.dominance} tone="dom" fx={effectAt(fx, 'dominance')} />
-        {rules.cards && <Track label="Research" value={p.research} tone="res" fx={effectAt(fx, 'research')} />}
+        <Track label="Dominance" value={p.dominance} tone="dom" spot="dominance" fx={effectAt(fx, 'dominance')} />
+        {rules.cards && <Track label="Research" value={p.research} tone="res" spot="research" fx={effectAt(fx, 'research')} />}
       </div>
       <div className="player-row">
         {rules.startingMissiles > 0 && (
-          <Tip className="stat" tip="Missiles: in a battle you are losing, set your own combat roll to 1">
+          <Tip className="stat" data-fx="missiles" tip="Missiles: in a battle you are losing, set your own combat roll to 1">
             <MissileIcon size={14} /> {p.missiles}
             <Flash e={effectAt(fx, 'missiles')} />
           </Tip>
         )}
         {p.planAhead > 0 && (
-          <Tip className="stat gold" tip="Plan Ahead: all your combat rolls are 1">
+          <Tip className="stat gold" data-fx="planAhead" tip="Plan Ahead: all your combat rolls are 1">
             Plan Ahead
             <Flash e={effectAt(fx, 'planAhead')} />
           </Tip>
         )}
         {p.actionPenalty > 0 && (
-          <Tip className="stat bad" tip="Sabotaged: fewer actions next turn">
+          <Tip className="stat bad" data-fx="penalty" tip="Sabotaged: fewer actions next turn">
             −{p.actionPenalty} action
             <Flash e={effectAt(fx, 'penalty')} />
           </Tip>
         )}
         {p.ambitionTokens > 0 && (
-          <Tip className="stat" tip="Ambition tokens">
+          <Tip className="stat" data-fx="ambition" tip="Ambition tokens">
             Ambition {p.ambitionTokens}/3
             <Flash e={effectAt(fx, 'ambition')} />
           </Tip>
@@ -142,6 +143,7 @@ function PlayerCard({
                 type="button"
                 key={`${s.id}${i}`}
                 onClick={() => setViewing(s.id)}
+                data-fx={`skill:${s.id}`}
                 className={`skill-chip ${s.active ? '' : 'pending'} ${dim ? 'disabled-chip' : ''}`}
                 style={categoryStyle(def.category, true)}
                 title={`${def.name}: ${def.text}${disabled ? `\n(Disabled by ${game.players[s.disabledUntil!].name} until their next turn)` : s.active ? '' : '\n(Takes effect from the next player’s turn)'}`}
@@ -160,6 +162,7 @@ function PlayerCard({
                 type="button"
                 key={`stored-${tId}${i}`}
                 onClick={() => setViewing(tId)}
+                data-fx={`stored:${tId}`}
                 className={`skill-chip stored-tactic ${canPlay ? 'playable' : ''}`}
                 style={categoryStyle(def.category, true)}
                 title={`${def.name} (Stored Tactic): ${def.text}${canPlay ? '\n(Click to view / play)' : ''}`}

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { GameState, LogEntry, PlayerId } from '@quantum/engine';
 import type { Toast } from '../game/toasts';
 import { CardArt } from './CardViewer';
+import { useCardCasts } from './CardCast';
+import { repeatsLastTurn } from '../game/cast';
 
 /** The game's news. `now`: the screen shows an earlier position (looking back), so it says the news is of the game now. */
 export function Toasts({ toasts, game, now }: { toasts: Toast[]; game: GameState; now?: boolean }) {
@@ -49,6 +51,7 @@ const shownFor = (e: LogEntry) => (e.event === 'cardTaken' ? TAKEN_MS : PLAYED_M
  * `review`: the entries of the move being looked back at; the card among them, anyone's, is shown
  * instead, and the game's own wait until the review ends.
  * `hold`: something is in front of the map (a battle); the game's cards wait for it to go rather than cover it.
+ * The card casts what it does: a flash, and beams to what it changes (useCardCasts).
  */
 export function PlayedCard({
   game,
@@ -73,26 +76,35 @@ export function PlayedCard({
     }
     const fresh = game.log.filter((e) => e.id > seen.current);
     seen.current = last;
-    const played = fresh.filter((e) => e.card && e.player !== undefined && !mine(e.player));
+    // A start-of-turn bonus is news only the first turn it comes (Arrogant, every turn its player leads).
+    const played = fresh.filter((e) => e.card && e.player !== undefined && !mine(e.player) && !repeatsLastTurn(game.log, e));
     if (played.length) setQueue((q) => [...q, ...played]);
   }, [game, mine]);
 
   const reviewed = review?.find((e) => e.card && e.player !== undefined);
   const shown = review ? reviewed : hold ? undefined : queue[0];
+  const art = useRef<HTMLDivElement>(null);
+  const { beams, flash, spent } = useCardCasts(game, mine, review ? undefined : shown, art);
   useEffect(() => {
     if (!shown || review) return;
     const t = window.setTimeout(() => setQueue((q) => q.slice(1)), shownFor(shown));
     return () => window.clearTimeout(t);
   }, [shown, review]);
-  if (!shown) return null;
+  if (!shown) return beams || null;
   const player = game.players[shown.player!];
   const style = { '--pc': player.color, '--pc-ms': `${shownFor(shown)}ms` } as CSSProperties;
   return (
-    <div className="played-card" key={`${review ? 'r' : 'l'}${shown.id}`} style={style} aria-hidden>
-      <small>
-        {player.name} {shown.event === 'cardPlayed' ? 'plays' : shown.event === 'cardTaken' ? 'takes' : 'uses'}
-      </small>
-      <CardArt id={shown.card!} size="md" />
-    </div>
+    <>
+      <div className="played-card" key={`${review ? 'r' : 'l'}${shown.id}`} style={style} aria-hidden>
+        <small>
+          {player.name} {shown.event === 'cardPlayed' ? 'plays' : shown.event === 'cardTaken' ? 'takes' : 'uses'}
+        </small>
+        <div className={`played-card-art ${spent ? 'spent' : ''}`} ref={art}>
+          <CardArt id={shown.card!} size="md" />
+          {flash > 0 && <i key={flash} className="played-card-cast" />}
+        </div>
+      </div>
+      {beams}
+    </>
   );
 }

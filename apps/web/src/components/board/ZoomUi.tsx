@@ -3,6 +3,8 @@ import type { GameState } from '@quantum/engine';
 import { COARSE, reducedMotion } from '../../game/useMediaQuery';
 import { useEffectEvent } from '../../game/useEffectEvent';
 import { shotOf } from '../../game/strike';
+import { castOf } from '../../game/cast';
+import { cardEffectsOf } from './CardEffects';
 import type { Controller } from '../../game/controller';
 import type { ShipSpots } from './geometry';
 import type { BoardZoom } from './useBoardZoom';
@@ -102,6 +104,9 @@ export function useFollowMoves(game: GameState, ctl: Controller, spots: ShipSpot
     }
     const shot = shotOf(before.game, game);
     if (!moved && shot && !ctl.mine(shot.attacker.player)) moved = shot.at;
+    // Another player's card striking the map (Show of Force's target, a relocated cube): its card beams there.
+    const card = moved ? undefined : castOf(before.game, game);
+    if (card?.player !== undefined && !ctl.mine(card.player)) moved = cardEffectsOf(before.game, game)[0]?.at;
     if (moved) zoom.reveal(Math.round(moved.r), Math.round(moved.c));
   });
   // Only a new game state can move a ship.

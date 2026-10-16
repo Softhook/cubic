@@ -3,18 +3,19 @@
  * dominance / research / cube bookkeeping that many rules touch.
  */
 import { diagonals, orbitals, same } from './board';
-import { cardWithEffect, SHIP_NAMES } from './data';
+import { card, cardWithEffect, SHIP_NAMES } from './data';
 import type { SkillEffect } from './effects';
 import { die } from './lookups';
 import { actionsClosed, canCurious, canGainResearch, canUseAbility, infamyAt, usedThisTurn } from './queries';
 import { d6 } from './rng';
 import { rulesOf } from './rules';
-import { anySkill, hasSkill, skillRules, stealableSkill } from './skillRules';
+import { activeSkills, anySkill, hasSkill, skillRules, stealableSkill } from './skillRules';
 import {
   RuleError,
   type Action,
   type Cell,
   type Die,
+  type Gains,
   type GameState,
   type LogEntry,
   type LogEvent,
@@ -273,6 +274,28 @@ export function checkInfamy(s: GameState, p: PlayerId) {
 }
 
 /**
+ * A skill that fires by itself (Hostile, Plundering, Arrogant…) says what it gave, on an entry naming
+ * its card and its gains so the UI can show it. Nothing for a bonus of nothing (a track already full).
+ */
+export function logBonus(s: GameState, p: PlayerId, id: string, b: Gains) {
+  const gains: Gains = {};
+  const parts: string[] = [];
+  for (const [k, what] of [
+    ['actions', 'action'],
+    ['research', 'research'],
+    ['dominance', 'dominance'],
+  ] as const) {
+    const n = b[k];
+    if (!n) continue;
+    gains[k] = n;
+    parts.push(`${n} ${what}${k === 'actions' && n > 1 ? 's' : ''}`);
+  }
+  if (!parts.length) return;
+  log(s, `${name(s, p)} gains ${parts.join(' and ')} (${card(id).name}).`, p);
+  Object.assign(s.log[s.log.length - 1], { card: id, gains });
+}
+
+/**
  * `winner` destroyed an enemy ship, in combat or with a card such as Show of Force: gains `dominance`
  * plus the bonuses of their "destroy" skills (Hostile, Plundering, Ravenous; RULE-SUGGESTIONS #26).
  */
@@ -281,12 +304,25 @@ export function destroyedEnemyShip(s: GameState, winner: PlayerId, dominance: nu
   if (first) s.turn.destroyedBy.push(winner);
   const ownTurn = winner === s.turn.player;
   const ctx = { first, ownTurn, ownActionPhase: ownTurn && s.turn.phase === 'actions' };
+  const pl = s.players[winner];
+  const limit = rulesOf(s).researchLimit;
+  // Where the tracks will stand, for logging what each skill really adds: the stakes come first.
+  let res = pl.research;
+  let dom = Math.min(6, pl.dominance + dominance);
   let research = 0;
-  for (const r of skillRules(s, winner)) {
-    const b = r.onDestroy?.(ctx) ?? {};
+  for (const { rule, card: id } of activeSkills(s, winner)) {
+    const b = rule.onDestroy?.(ctx) ?? {};
+    const got: Gains = {
+      actions: b.actions,
+      research: b.research && canGainResearch(s, winner) ? Math.min(limit, res + b.research) - res : 0,
+      dominance: b.dominance ? Math.min(6, dom + b.dominance) - dom : 0,
+    };
+    res += got.research!;
+    dom += got.dominance!;
     research += b.research ?? 0;
     s.turn.actionsLeft += b.actions ?? 0;
     dominance += b.dominance ?? 0;
+    logBonus(s, winner, id, got);
   }
   if (research) gainResearch(s, winner, research);
   gainDominance(s, winner, dominance);

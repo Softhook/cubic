@@ -32,7 +32,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
           <strong>{shown.name}</strong>
         </div>
         {game.phase === 'play' && (
-          <Tip as="div" className="action-pips" tip={`${t.actionsLeft} action${t.actionsLeft === 1 ? '' : 's'} left`}>
+          <Tip as="div" className="action-pips" data-fx="actions" tip={`${t.actionsLeft} action${t.actionsLeft === 1 ? '' : 's'} left`}>
             <small>Actions</small>
             {Array.from({ length: Math.max(3, t.actionsLeft) }, (_, i) => (
               <ActionHex key={i} off={i >= t.actionsLeft} />
