@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { actor, canRespondToCombat, type CombatPending, type GameState, type PlayerId } from '@quantum/engine';
 import { combatStage } from '@quantum/online';
 import { aiLevelOf, combatResponse, think } from './aiClient';
+import { shotWait } from './strike';
 import type { Dispatch } from './useGame';
 
 /** How long the AI waits before acting (thinking time included), so humans can follow along. */
@@ -49,6 +50,7 @@ export function useAiDriver(game: GameState, dispatch: Dispatch, onError: (text:
     let timer: number | undefined;
 
     if (head?.kind === 'combat' && stage) {
+      const shot = shotWait(head);
       // Asked again after anything changes the battle (a re-roll or a missile).
       for (const p of game.players) {
         const k = `${stage}:${p.id}`;
@@ -65,12 +67,12 @@ export function useAiDriver(game: GameState, dispatch: Dispatch, onError: (text:
           // Cleared even if the move is refused, so the battle can't wait on it for ever.
           setResponding(null);
           dispatch(m);
-        }, COMBAT_RESPONSE_MS);
+        }, COMBAT_RESPONSE_MS + shot);
         return () => window.clearTimeout(timer);
       }
       // No AI responds (any more): asked again, one may have changed its mind.
       setResponding(null);
-      if (!humanFights(game, head)) timer = window.setTimeout(() => dispatch({ type: 'resolveCombat' }), COMBAT_RESOLVE_MS);
+      if (!humanFights(game, head)) timer = window.setTimeout(() => dispatch({ type: 'resolveCombat' }), COMBAT_RESOLVE_MS + shot);
       return () => window.clearTimeout(timer);
     }
 

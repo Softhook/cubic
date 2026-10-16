@@ -728,6 +728,39 @@ input { font: inherit; }
   animation: cfx-beam .5s ease-out forwards, cfx-flicker .08s steps(2) 6;
 }
 @keyframes cfx-flicker { 50% { filter: brightness(2.2); } }
+/* Shoot (a prototype power): the shooter stays put and fires; a muzzle flash, a missile streaking down the
+   line with its exhaust trail, and a burst where it hits (board/Shots; the flight is SHOT_MS). */
+.shot-flash {
+  width: 70%; height: 70%; margin: -35% 0 0 -35%; border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, color-mix(in srgb, var(--pc) 75%, #fff) 30%, transparent 68%);
+  animation: fx-flash .3s ease-out forwards;
+}
+.shot-path { width: var(--len); height: 0; transform-origin: 0 0; transform: rotate(var(--angle)); }
+.shot-path > i { position: absolute; top: 0; }
+.shot-trail {
+  left: 0; width: 100%; height: calc(var(--cell) * .07); translate: 0 -50%; border-radius: 999px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--pc) 55%, transparent) 60%, color-mix(in srgb, var(--pc) 60%, #fff));
+  box-shadow: 0 0 8px var(--pc);
+  filter: blur(1px);
+  animation: shot-trail .6s cubic-bezier(.45,0,.9,.6) forwards, shot-fade .3s .6s ease-out forwards;
+}
+.shot-missile {
+  left: 0; width: calc(var(--cell) * .34); height: calc(var(--cell) * .11); translate: -85% -50%;
+  border-radius: 30% 999px 999px 30%;
+  background: linear-gradient(90deg, transparent, var(--pc) 35%, color-mix(in srgb, var(--pc) 40%, #fff) 70%, #fff);
+  box-shadow: 0 0 10px 2px var(--pc), 0 0 4px #fff;
+  animation: shot-fly .6s cubic-bezier(.45,0,.9,.6) forwards;
+}
+.shot-hit {
+  left: 100%; width: var(--cell); height: var(--cell); translate: -50% -50%; border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, color-mix(in srgb, var(--pc) 70%, #fff) 25%, color-mix(in srgb, var(--pc) 50%, transparent) 45%, transparent 70%);
+  opacity: 0;
+  animation: shot-hit .35s .58s ease-out forwards;
+}
+@keyframes shot-trail { 0% { clip-path: inset(0 100% 0 0); } 100% { clip-path: inset(0 0 0 0); } }
+@keyframes shot-fade { to { opacity: 0; } }
+@keyframes shot-fly { 0% { left: 0; opacity: 1; } 96% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+@keyframes shot-hit { 0% { transform: scale(.2); opacity: 1; } 45% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
 .board:has(.explosion) { animation: boom-shake .35s linear; }
 @keyframes boom-shake {
   20% { translate: -3px 2px; }

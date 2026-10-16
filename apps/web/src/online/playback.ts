@@ -1,5 +1,6 @@
 import type { CombatPending, GameState } from '@quantum/engine';
 import { combatStage, type Post, type Step } from '@quantum/online';
+import { shotWait } from '../game/strike';
 
 /** How long a move by someone else stays on screen before the next one is shown. */
 export const STEP_MS = 1500;
@@ -51,7 +52,7 @@ export function nextStep(
   // that one, or the screen never counts as caught up.
   if (i < 0 || i === last) return steps[last] === shown ? null : { step: steps[last], delay: 0, announce: false, jump: i < 0 && !!shown };
   const fighting = battleOnScreen(shown!.state);
-  const pause = fighting ? COMBAT_MS : STEP_MS;
+  const pause = fighting ? COMBAT_MS + shotWait(fighting) : STEP_MS;
   if (battleEnds(steps, i) && battle.mine && !battle.dismissed) return null;
   if (last - i > MAX_BEHIND) {
     let j = i + 1;

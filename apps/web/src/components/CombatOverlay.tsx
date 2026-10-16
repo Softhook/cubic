@@ -19,7 +19,8 @@ import { combatStage } from '@quantum/online';
 import type { Dispatch } from '../game/useGame';
 import type { GameView } from '../game/view';
 import { COMBAT_RESOLVE_MS, humanFights } from '../game/useAiDriver';
-import { PHONE, useMediaQuery } from '../game/useMediaQuery';
+import { shotWait } from '../game/strike';
+import { PHONE, reducedMotion, useMediaQuery } from '../game/useMediaQuery';
 import { useShortcut } from '../game/useShortcut';
 import { COMBAT_MS } from '../online/playback';
 import { COMBAT_DICE } from '../theme';
@@ -28,7 +29,21 @@ import { Die3D } from './Die3D';
 
 const REVEAL_MS = 1250;
 
-export function CombatOverlay({
+type Props = Parameters<typeof Battle>[0];
+
+/** A shot's battle (a ranged attack) opens once its missile has crossed the map (board/Shots). */
+export function CombatOverlay(props: Props) {
+  const [wait] = useState(() => (reducedMotion() ? 0 : shotWait(props.combat)));
+  const [landed, setLanded] = useState(!wait);
+  useEffect(() => {
+    if (!wait) return;
+    const t = window.setTimeout(() => setLanded(true), wait);
+    return () => window.clearTimeout(t);
+  }, [wait]);
+  return landed ? <Battle {...props} /> : null;
+}
+
+function Battle({
   game,
   combat,
   dispatch,

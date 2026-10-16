@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { GameState } from '@quantum/engine';
 import { COARSE, reducedMotion } from '../../game/useMediaQuery';
 import { useEffectEvent } from '../../game/useEffectEvent';
+import { shotOf } from '../../game/strike';
 import type { Controller } from '../../game/controller';
 import type { ShipSpots } from './geometry';
 import type { BoardZoom } from './useBoardZoom';
@@ -75,14 +76,14 @@ export function useZoomIntro(game: GameState, ctl: Controller, zoom: BoardZoom, 
 
 /**
  * Zoomed in, a ship this screen doesn't play for (an opponent's, the AI's) that moves or arrives off screen
- * brings the map to it, so their moves aren't missed. Your own moves never move the map; skipping ahead into a battle does.
+ * brings the map to it, so their moves aren't missed (their shots too: to the target). Your own moves never move the map; skipping ahead into a battle does.
  */
 export function useFollowMoves(game: GameState, ctl: Controller, spots: ShipSpots, zoom: BoardZoom, scene?: string) {
-  const seen = useRef<{ map: string; scene?: string; spots: ShipSpots } | null>(null);
+  const seen = useRef<{ map: string; scene?: string; spots: ShipSpots; game: GameState } | null>(null);
   const follow = useEffectEvent(() => {
     const before = seen.current;
     const map = `${game.board.rows}x${game.board.cols}`;
-    seen.current = { map, scene, spots };
+    seen.current = { map, scene, spots, game };
     if (before?.map !== map) return;
     // A jump to another position (see Board's `scene`) moves no ship, but skipping ahead online
     // (`live:` to `live:`) into a battle brings the map to it, whoever fights it: catching up stops at
@@ -99,6 +100,8 @@ export function useFollowMoves(game: GameState, ctl: Controller, spots: ShipSpot
       const was = before.spots.get(d.id);
       if (now && !ctl.mine(d.owner) && (!was || was.r !== now.r || was.c !== now.c)) moved = now;
     }
+    const shot = shotOf(before.game, game);
+    if (!moved && shot && !ctl.mine(shot.attacker.player)) moved = shot.at;
     if (moved) zoom.reveal(Math.round(moved.r), Math.round(moved.c));
   });
   // Only a new game state can move a ship.

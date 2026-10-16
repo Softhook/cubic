@@ -3,7 +3,7 @@ import { cellOf, delta, onBoard, type Board, type GameState } from '@quantum/eng
 /** Where each ship on the map is drawn, by id, in cell units. */
 export type ShipSpots = Map<string, { r: number; c: number }>;
 
-/** Where each ship on the map is drawn, in cell units (an attacker sits part-way into its target). */
+/** Where each ship on the map is drawn, in cell units (an attacker sits part-way into its target, unless it shot from where it is). */
 export function shipSpots(game: GameState): ShipSpots {
   const head = game.pending[0];
   const combat = head?.kind === 'combat' ? head : null;
@@ -12,7 +12,7 @@ export function shipSpots(game: GameState): ShipSpots {
     const at = cellOf(d);
     if (!at) continue;
     let { r, c } = at;
-    if (combat && combat.attacker.die === d.id) {
+    if (combat && !combat.ranged && combat.attacker.die === d.id) {
       const d = delta(combat.from, combat.at, game.board);
       r += d.r * 0.42;
       c += d.c * 0.42;

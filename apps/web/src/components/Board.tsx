@@ -6,6 +6,7 @@ import { ActionEffects } from './board/ActionEffects';
 import { CardEffects } from './board/CardEffects';
 import { Explosions } from './board/Explosions';
 import { Routes } from './board/Routes';
+import { Shots } from './board/Shots';
 import { shipSpots, type ShipSpots } from './board/geometry';
 import { useStaging, type Staging } from './board/staging';
 import { useBoardZoom } from './board/useBoardZoom';
@@ -156,6 +157,7 @@ export function Board({
           <ActionEffects key={`fx:${scene}`} game={game} cell={cell} />
           <Explosions key={scene} game={game} cell={cell} />
           <CardEffects key={`cfx:${scene}`} game={game} cell={cell} />
+          <Shots key={`shot:${scene}`} game={game} cell={cell} />
           {inspect && (
             <BoardInfo key={inspectKey(inspect)} game={game} spots={spots} what={inspect} cell={cell} onClose={() => setInspect(null)} />
           )}

@@ -1,6 +1,6 @@
 import { effectOf, type Cell, type Die, type GameState, type LogEntry, type LogEvent, type PlayerId } from '@quantum/engine';
 import { sfx } from '../sound';
-import { strikeOf } from './strike';
+import { shotOf, strikeOf } from './strike';
 import { lost } from './view';
 
 type Sound = keyof typeof sfx;
@@ -86,6 +86,8 @@ export function soundsFor(
   if (swapped) effects.add('swap');
   else if (moved.length) effects.add('fly');
   if (destroyed) effects.add('explode');
+  // A shot: the missile's launch, flight and impact (board/Shots).
+  if (shotOf(prev, next)) effects.add('missile');
 
   if (next.players.some((pl, i) => pl.missiles > prev.players[i].missiles)) effects.add('missileLoad');
   if (next.gates.length > prev.gates.length) effects.add('portal');
