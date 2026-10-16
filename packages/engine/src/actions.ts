@@ -19,6 +19,7 @@ import {
   spend,
   spendMove,
   spendPeaceful,
+  tally,
   type Handlers,
 } from './core';
 import { boardLoc, die } from './lookups';
@@ -107,6 +108,7 @@ export const actionHandlers = {
     spend(s, 2);
     t.conquered = (t.conquered ?? 0) + 1;
     log(s, `${name(s, t.player)} conquers planet ${s.board.planets[a.planet].number}.`, t.player, 'conquer', [a.planet]);
+    tally(s, t.player, 'planetsTaken');
     placeCube(s, t.player, a.planet);
   },
   endTurn(s) {

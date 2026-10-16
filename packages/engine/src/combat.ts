@@ -12,6 +12,7 @@ import {
   payForAttack,
   placeCube,
   shipName,
+  tally,
   type Handlers,
   type PendingOf,
 } from './core';
@@ -78,16 +79,22 @@ function resolveCombat(s: GameState, combat: PendingOf<'combat'>) {
   const D = combat.defender.player;
   if (out.attackerWins) {
     log(s, `${name(s, A)} wins the battle (${out.attacker.total} vs ${out.defender.total}).`, A, 'battleWon');
+    tally(s, A, 'battlesWon');
+    tally(s, D, 'battlesLost');
     destroyShip(s, def);
     if (!combat.ranged) s.pending.unshift({ kind: 'advance', player: A, die: att.id, to: combat.at });
     onDestroy(s, A, D);
   } else if (out.stubborn) {
     log(s, `${name(s, D)} holds firm and destroys the attacker (${out.defender.total} vs ${out.attacker.total}).`, D, 'battleWon');
+    tally(s, D, 'battlesWon');
+    tally(s, A, 'battlesLost');
     destroyShip(s, att);
     onDestroy(s, D, A);
   } else {
     // Repelled: the attacker is already back on the space it attacked from.
     log(s, `${name(s, D)} repels the attack (${out.defender.total} vs ${out.attacker.total}).`, D, 'repelled');
+    tally(s, D, 'battlesWon');
+    tally(s, A, 'battlesLost');
   }
 }
 
@@ -122,6 +129,12 @@ export const combatHandlers = {
     const def = die(s, head.defender);
     if (!a.destroy) return rollCombat(s, att, def, head.from, head.ranged);
     log(s, `${name(s, head.player)} is Dangerous: both ships are destroyed.`, head.player, 'shipDestroyed');
+    // No "destroy" effects (destroyedEnemyShip), but the losses count.
+    for (const d of [att, def]) {
+      if (d.owner === head.player) continue;
+      tally(s, head.player, 'shipsDestroyed');
+      tally(s, d.owner, 'shipsLost');
+    }
     destroyShip(s, def);
     destroyShip(s, att);
   },
@@ -143,6 +156,7 @@ export const combatHandlers = {
     s.pending.shift();
     s.players[head.player].dominance = 1;
     log(s, `${name(s, head.player)} seizes planet ${s.board.planets[a.planet].number} through Infamy.`, head.player, 'seize', [a.planet]);
+    tally(s, head.player, 'planetsTaken');
     placeCube(s, head.player, a.planet);
     if (s.phase !== 'play' || !rulesOf(s).cards) return;
     const ownTurn = head.player === s.turn.player;

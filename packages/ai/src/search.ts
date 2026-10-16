@@ -354,7 +354,7 @@ function signature(s: GameState): string {
   return JSON.stringify([
     s.dice.map((d) => [d.value, d.loc.zone === 'board' ? d.loc.r * 100 + d.loc.c : d.loc.zone]),
     s.turn,
-    s.players.map(({ id: _id, name: _name, color: _color, ai: _ai, aiLevel: _aiLevel, ...changing }) => changing),
+    s.players.map(({ id: _id, name: _name, color: _color, ai: _ai, aiLevel: _aiLevel, stats: _stats, ...changing }) => changing),
     [m.skillRow, m.tacticRow, m.skillDeck.length, m.tacticDeck.length, m.skillDiscard.length, m.tacticDiscard.length, m.expansions],
     s.board.planets.map((p) => p.cubes),
     s.gates,

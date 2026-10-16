@@ -77,12 +77,13 @@ export function byTime(a: Post, b: Post): number {
  * the same posts build their states the same way, so their fingerprints match.
  *
  * Leaves out player names and the log (which quotes them): names come from claims, and a browser
- * may not have every claim yet when it posts a move. The mode hash stays on its original wire value
+ * may not have every claim yet when it posts a move. Leaves out the players' stats too: they are
+ * history, not position, so a browser whose engine keeps none (or counts them differently) stays in sync. The mode hash stays on its original wire value
  * so existing online games remain in sync across a mode rename.
  */
 export function stateHash(state: GameState): string {
   const json = JSON.stringify(state, (k, v) => {
-    if (k === 'name' || (k === 'log' && Array.isArray(v))) return undefined;
+    if (k === 'name' || k === 'stats' || (k === 'log' && Array.isArray(v))) return undefined;
     if (k === 'mode' && v === 'prototyping') return 'cubic';
     return v;
   });

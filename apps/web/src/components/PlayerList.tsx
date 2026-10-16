@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react';
-import { card, rulesOf, type GameState, type PlayerState } from '@quantum/engine';
+import { card, rulesOf, type GameState, type PlayerConfig, type PlayerState } from '@quantum/engine';
+import { aiLevelInfo } from '../game/aiClient';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
 import { useStepEffects } from '../game/useTransient';
@@ -34,6 +35,16 @@ function Track({ label, value, tone, spot, fx }: { label: string; value: number;
         )}
       </div>
     </Tip>
+  );
+}
+
+/** An AI player's tag, with its level: "AI · Admiral". */
+export function AiTag({ p }: { p: PlayerConfig }) {
+  const level = aiLevelInfo(p);
+  return (
+    <span className="tag" title={`${level.name}: ${level.summary}`}>
+      AI · {level.name}
+    </span>
   );
 }
 
@@ -84,7 +95,7 @@ function PlayerCard({
       <Flash e={effectAt(fx, 'skills')} />
       <div className="player-head">
         <strong>{p.name}</strong>
-        {p.ai && <span className="tag">AI</span>}
+        {p.ai && <AiTag p={p} />}
         <Tip className="cubes" tip={`${placed} of ${totalCubes} cubes placed`}>
           <small>
             Cubes {placed}/{totalCubes}

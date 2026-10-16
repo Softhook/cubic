@@ -20,6 +20,7 @@ import {
   rollShip,
   aShip,
   shipName,
+  tally,
   type Handlers,
   type PendingOf,
 } from './core';
@@ -142,6 +143,7 @@ function takeFromRow(s: GameState, deck: DeckKind, index: number): string {
 }
 
 function gainCard(s: GameState, p: PlayerId, id: string) {
+  tally(s, p, 'cardsTaken');
   const def = card(id);
   const pl = s.players[p];
   if (cardKind(id) === 'skill') {
@@ -170,6 +172,7 @@ function playTactic(s: GameState, p: PlayerId, id: string, message: string) {
 function takeOrStore(s: GameState, p: PlayerId, id: string, store: boolean | undefined) {
   if (!store) return gainCard(s, p, id);
   const pl = s.players[p];
+  tally(s, p, 'cardsTaken');
   (pl.storedTactics ??= []).push(id);
   log(s, `${pl.name} stores ${card(id).name} (Patient).`, p, 'cardTaken');
   s.log[s.log.length - 1].card = id;
@@ -206,6 +209,7 @@ export const cardHandlers = {
       s.pending.unshift({ kind: 'placeExpansion', player: p, die: res[0].id });
       rollShip(s, res[0]);
       log(s, `${name(s, p)} expands their fleet.`, p, 'expansion');
+      tally(s, p, 'cardsTaken');
       return;
     }
     const row = a.deck === 'skill' ? s.market.skillRow : s.market.tacticRow;

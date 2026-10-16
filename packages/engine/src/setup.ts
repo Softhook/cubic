@@ -49,6 +49,7 @@ export function createGame(opts: NewGameOptions): GameState {
       planAhead: 0,
       bonusTurns: [],
       storedTactics: [],
+      stats: { battlesWon: 0, battlesLost: 0, shipsDestroyed: 0, shipsLost: 0, planetsTaken: 0, cardsTaken: 0 },
     })),
     dice: [],
     market: {

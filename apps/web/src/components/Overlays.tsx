@@ -5,6 +5,8 @@ import type { Dispatch } from '../game/useGame';
 import { CardView } from './Card';
 import { Dialog, Modal } from './Dialog';
 import { Die3D } from './Die3D';
+import { cubeCount } from './board/EffectBox';
+import { AiTag } from './PlayerList';
 import { Fireworks } from './fireworks/Fireworks';
 
 /** Modal decisions for human players. Board-based decisions are handled by highlights instead. */
@@ -323,6 +325,7 @@ export function GameOver({
         <p className="modal-sub">
           All cubes placed after {game.turn.number} turn{game.turn.number === 1 ? '' : 's'}.
         </p>
+        <GameStats game={game} />
         <div className="modal-actions">
           <button className="btn" onClick={onClose}>
             View board
@@ -333,5 +336,63 @@ export function GameOver({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Each player's game in numbers, winner first, then by cubes placed. A game saved before stats were kept
+ * shows the cubes alone.
+ */
+function GameStats({ game }: { game: GameState }) {
+  const cubes = game.players.map((p) => game.board.planets.reduce((n, pl) => n + cubeCount(pl.cubes, p.id), 0));
+  const players = [...game.players].sort(
+    (a, b) => Number(b.id === game.winner) - Number(a.id === game.winner) || cubes[b.id] - cubes[a.id],
+  );
+  const kept = game.players.every((p) => p.stats);
+  const cards = kept && !!rulesOf(game).cards;
+  return (
+    <table className="gameover-stats">
+      <thead>
+        <tr>
+          <th />
+          <th title="Cubes on planets">Cubes</th>
+          {kept && (
+            <>
+              <th title="Planets conquered">Planets</th>
+              <th title="Battles won – lost">Battles</th>
+              <th title="Enemy ships destroyed – own ships lost">Ships</th>
+            </>
+          )}
+          {cards && <th title="Cards gained">Cards</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {players.map((p) => {
+          const { id, name, color, stats: st } = p;
+          return (
+            <tr key={id} style={{ '--pc': color } as CSSProperties}>
+              <th scope="row">
+                {name}
+                {id === game.winner && ' ★'}
+                {p.ai && <AiTag p={p} />}
+              </th>
+              <td>{cubes[id]}</td>
+              {kept && (
+                <>
+                  <td>{st!.planetsTaken}</td>
+                  <td>
+                    {st!.battlesWon}–{st!.battlesLost}
+                  </td>
+                  <td>
+                    {st!.shipsDestroyed}–{st!.shipsLost}
+                  </td>
+                </>
+              )}
+              {cards && <td>{st!.cardsTaken}</td>}
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }

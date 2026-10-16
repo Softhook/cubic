@@ -1,19 +1,43 @@
 # Visual & Appeal Ideas
 
 Ideas for making Cubic look better and pull people in, from a review of the whole game
-(lobby, board, market, battle, game over and the Art Lab) on desktop and phone in October 2026.
-Nothing here is scheduled yet; the backlog lives in [ROADMAP.md](ROADMAP.md), and the art pipeline
-in [GRAPHICS.md](GRAPHICS.md).
+(lobby, board, market, battle, game over and the Art Lab) on desktop and phone in October 2026,
+updated on 16 October 2026 after the first round of polish landed. The backlog lives in
+[ROADMAP.md](ROADMAP.md), and the art pipeline in [GRAPHICS.md](GRAPHICS.md).
 
-The foundation is already strong: a consistent dark space theme, seeded planet tiles, CSS 3D dice,
-ships that glide between spaces, explosions and synthesised sound. What's missing is **spectacle
-and personality at the moments that matter**, and the best art in the project (the card
-illustrations) is mostly hidden in the Art Lab.
+The game now *moves* well: every action has its effect, cards fly and cast, shots cross the map,
+the lobby has a live backdrop, and there is music. What's still missing is **information and
+identity at the moments that matter**: the market still hides the card art, the game over
+doesn't say what happened, and the players have no faces.
 
-**Top three:** [1. Card art in the market](#1-card-art-in-the-market),
-[2. Battles as a show](#2-battles-as-a-show), [3. A game over worth sharing](#3-a-game-over-worth-sharing).
-1 and 3 mostly reuse art and data we already have; 2 is more work but is where players will feel
-the difference most.
+**Top three now:** [1. Card art in the market](#1-card-art-in-the-market),
+[2. A game over that tells the story](#2-a-game-over-that-tells-the-story),
+[3. Battles as a show](#3-battles-as-a-show).
+
+---
+
+## Done since the first review
+
+- **Effects for every move** ([ActionEffects](../apps/web/src/components/board/ActionEffects.tsx)):
+  deploy warp-in, engine trail, conquer shockwave. Reconfigure was tried and dropped.
+- **Card effects** ([CardEffects](../apps/web/src/components/board/CardEffects.tsx),
+  [CardCast](../apps/web/src/components/CardCast.tsx),
+  [CardFlight](../apps/web/src/components/CardFlight.tsx)): a taken card flies from the market to
+  its player with its art; a played card casts beams to what it marks.
+- **Panel effects** ([panelEffects.ts](../apps/web/src/components/panelEffects.ts)): track pulses,
+  chips flashing on, off and away.
+- **Shots** ([Shots](../apps/web/src/components/board/Shots.tsx)): a missile crosses the map before
+  a ranged battle opens, with its own sound.
+- **Following the action**: zoomed in, the map pans to an opponent's moves
+  (`useFollowMoves` in [ZoomUi.tsx](../apps/web/src/components/board/ZoomUi.tsx)), and the AI
+  pauses to let a played card be read.
+- **Victory and defeat**: fireworks, a flash in the winner's colour and a fanfare; a lament and a
+  board drained of colour for the loser ([Overlays.tsx](../apps/web/src/components/Overlays.tsx),
+  [gameOverSound.ts](../apps/web/src/gameOverSound.ts)).
+- **Lobby backdrop** ([Backdrop.tsx](../apps/web/src/components/lobby/Backdrop.tsx)): the chosen
+  map's real tiles on a turning plane, with fleets drifting and fighting; a title intro with its
+  own opening sound. Its planets stand up as 3D spheres.
+- **Music** ([ambience.ts](../apps/web/src/ambience.ts)): a generative drone with its own toggle.
 
 ---
 
@@ -21,181 +45,127 @@ the difference most.
 
 ### 1. Card art in the market
 
-**Today.** Every card has a full illustrated scene drawn by `cardSvg`
-([card.ts](../packages/art/src/card.ts), scenes in [`scenes/`](../packages/art/src/scenes)): the
-Agile grid, the Momentum orbit, the Precocious flask. In game, the market
-([Market.tsx](../apps/web/src/components/Market.tsx)) shows the same cards as plain HTML tiles
-(white for skills, dark for tactics), and the art only appears when you tap a card and the
-[CardViewer](../apps/web/src/components/CardViewer.tsx) opens.
+**Today.** Every card has a full illustrated scene ([card.ts](../packages/art/src/card.ts), scenes
+in [`scenes/`](../packages/art/src/scenes)), and the art now shows in play when a card flies or
+casts. But the market itself ([Market.tsx](../apps/web/src/components/Market.tsx)), on screen all
+game, is still plain HTML tiles.
 
 **Idea.** Give each market card an art band across its top, cropped from the printed card's
 illustration, with the category stripe, name and text below, as on the printed card.
 
-- The images already exist: [cardImages.ts](../apps/web/src/art/cardImages.ts) renders and caches
-  them, and the market already warms them (`warmCardImages`). What's needed is a cropped version
-  (or `object-position` on the full image) for the band.
-- Fall back to today's tile while an image is still rendering, so nothing waits on art.
-- On a phone the cards are small, so a short band (about a third of the card) is enough. The
-  colour and shape carry the recognition.
-- The same thumbnails can be used for the skill chips in the player list and for the "card played"
-  flash.
+- The images exist and are warmed ([cardImages.ts](../apps/web/src/art/cardImages.ts)), and
+  `CardArt` is already used by CardFlight. What's needed is a band (`object-position` on the full
+  image, or a cropped render).
+- Fall back to today's tile while an image is still rendering.
+- On a phone a short band (about a third of the card) is enough.
+- The same thumbnails can go on the skill chips in the player list (see 6).
 
-**Why.** This is the cheapest change with the biggest effect. The market is on screen all game,
-and illustrated cards are what make a card game look premium.
+**Why.** Still the cheapest change with the biggest effect, and the flights now make the
+mismatch more visible: an illustrated card flies out of a plain tile.
 
-### 2. Battles as a show
+### 2. A game over that tells the story
 
-**Today.** [CombatOverlay.tsx](../apps/web/src/components/CombatOverlay.tsx) opens a modal with
-both fleets side by side, reveals the dice after 1.25 s, prints the totals, announces the winner
-("Vex will repel the attack") and waits for *Resolve battle*. The explosion then plays on the
-board after the popup closes ([Explosions.tsx](../apps/web/src/components/board/Explosions.tsx)).
-It's clear, but it reads as a scoreboard.
-
-**Idea.** Stage the battle in beats:
-
-1. **Approach.** Before the popup, the attacking ship lunges toward the defender on the board
-   (or the board zooms to the two spaces), with a short charge-up sound.
-2. **Roll.** Both combat dice tumble at once with `Die3D`, landing a few hundred ms apart to
-   build tension.
-3. **Count.** The totals count up from the ship value, and the lower one pulses.
-4. **Verdict.** The winner's side flares in their colour, and the loser's ship explodes *inside*
-   the popup (or the popup fades and the board explosion follows straight on).
-5. **Missile.** Firing a missile gets its own streak of light across the popup and a distinct
-   sound, since it's a big swing.
-
-- Keep it skippable: a tap or key skips to the verdict. Online playback (`COMBAT_MS` in
-  [playback.ts](../apps/web/src/online/playback.ts)) and the AI driver (`COMBAT_RESOLVE_MS`) need
-  to agree on the new length.
-- Respect `prefers-reduced-motion`: keep only the fades.
-
-**Why.** Battles are the emotional peak of Quantum (the moment your 1 survives or your 6 dies),
-and right now they get the least drama.
-
-### 3. A game over worth sharing
-
-**Today.** A blurred board behind one card: "Victory · Commander conquers the sector · All cubes
-placed after 1 turn", with *View board* and *New game*.
+**Today.** The celebration is done. The text is still "Commander conquers the sector · All cubes
+placed after 14 turns", with *View board* and *New game*.
 
 **Idea.**
 
-- **Celebrate.** Flood the board in the winner's colour, then light up their cubes one planet at
-  a time with a chime each.
 - **A real headline.** Name the defeated: "Fleet Admiral Vex defeated in 14 turns".
-- **Stats panel.** Battles won and lost, planets taken, ships destroyed, research gained, the
-  turn the game was decided, each player's cube count. The log already holds all of it (the
-  events in `game.log`).
-- **Timeline.** A small strip of dominance or cubes per turn per player, so you can see where the
-  game swung. *View board* could step through it with the existing look-back mode
+- **Stats panel.** Done: cubes, planets conquered, battles won–lost, ships destroyed–lost and
+  cards taken per player, counted by the engine (`PlayerState.stats`). Could still add research
+  gained and the turn the game was decided.
+- **Timeline.** A small strip of cubes (or dominance) per turn per player, showing where the game
+  swung. *View board* could step through it with look-back mode
   ([past.ts](../apps/web/src/game/past.ts)).
 - **Share image.** See [Share card](#share-card).
 
-**Why.** A screen people want to screenshot is free marketing, and a finish that feels earned is
-what makes people play again.
+**Why.** The ending now *feels* good but says nothing, and a screen worth screenshotting is free
+marketing.
 
-### 4. A lobby that shows the game
+### 3. Battles as a show
 
-**Today.** The three-die logo and gradient title are good, but below them is a settings form.
-The map picker shows a grid of planet numbers.
+**Today.** Ranged battles open after the missile lands, but the battle itself is unchanged:
+[CombatOverlay.tsx](../apps/web/src/components/CombatOverlay.tsx) reveals the dice after 1.25 s,
+prints the totals and the verdict, and the explosion plays on the board after the popup closes.
+
+**Idea.** Stage the popup in beats:
+
+1. **Approach.** For a normal attack, the attacker lunges at the defender on the board before the
+   popup opens, as the shot does for ranged ones.
+2. **Roll.** Both combat dice tumble at once with `Die3D`, landing a few hundred ms apart.
+3. **Count.** The totals count up from the ship value; the lower one pulses.
+4. **Verdict.** The winner's side flares in their colour and the loser's ship explodes inside the
+   popup (or the board explosion follows straight on).
+5. **Missile.** Using a missile to set your roll to 1 gets its own streak and sound.
+
+- Skippable with a tap or key. `COMBAT_MS` ([playback.ts](../apps/web/src/online/playback.ts)),
+  `COMBAT_RESOLVE_MS` and `shotWait` ([strike.ts](../apps/web/src/game/strike.ts)) must agree on
+  the new length.
+- Under `prefers-reduced-motion`, fades only.
+
+**Why.** Battles are the emotional peak of Quantum, and now that everything around them animates,
+the static popup stands out more.
+
+### 4. A lobby for first-timers
+
+**Today.** The live backdrop is in. The map preview is still a grid of planet numbers
+([NewGameFields.tsx](../apps/web/src/components/lobby/NewGameFields.tsx), `MiniMap`), and AI seats
+are dropdowns.
 
 **Idea.**
 
-- **Live background.** Behind the form, show the selected map with its real tiles, slowly
-  drifting, planets turning, a few dice gliding between spaces as if in a quiet AI game.
-  Re-render when the map changes.
-- **Map preview with art.** Replace the number grid with a small render of the tiles, with
-  player-colour starting spots marked.
-- **Opponent cards.** Each AI seat shows its name, portrait (see 7) and level as a little
-  "rival" card, not just a dropdown.
-- **One-tap start.** A big "Quick game vs AI" button above the form for first-timers, with the
-  full setup below.
+- **One-tap start.** A big "Quick game vs AI" button above the form, with the full setup below.
+- **Map preview with art.** A small render of the real tiles (the backdrop already draws them),
+  with player-colour starting spots.
+- **Rival cards.** Each AI seat as a little card with name, portrait (see 6) and level.
 
-**Why.** People decide whether to try a game in the first five seconds, and the lobby is the
-first thing they see.
+**Why.** The backdrop sells the game; the form still asks a newcomer to make decisions they can't
+judge yet.
 
 ---
 
 ## Board & layout
 
-### 5. Use the space on big maps
+### 5. Space and planets
 
-**Today.** On Event Horizon (4 players, cross-shaped) at 1440×900, the map fills about a third
-of the board area and the dice are small. On a phone (412 px wide) the dice are about 12 px.
+**Use the space on big maps.** On Event Horizon at 1440×900 the map fills about a third of the
+board area, and on a phone the dice are about 12 px.
 
-**Idea.**
+- Fit the zoom to the occupied tiles, not the bounding box
+  ([zoomGeometry.ts](../apps/web/src/components/board/zoomGeometry.ts)).
+- On phones, open zoomed onto your home sector at your first turn, with a clear "fit map" control.
 
-- Fit the zoom to the map's actual occupied tiles, not its bounding box, and let it crop
-  empty corners ([zoomGeometry.ts](../apps/web/src/components/board/zoomGeometry.ts)).
-- On phones, open zoomed onto your home sector at your first turn, with a clear "fit map"
-  control (the zoom UI is in [ZoomUi.tsx](../apps/web/src/components/board/ZoomUi.tsx)).
-- When it's an AI's turn on a phone, gently pan to where they act, then back.
+**Planets that read as prizes.** Ownership is still a small cube beside the planet number.
 
-### 6. Planets that read as prizes
+- **3D planets.** Bring the lobby backdrop's spheres onto the board.
 
-**Today.** Ownership is a small square cube on the planet; the planet number sits beside it.
-Basic maps print the planet's name and stats in tiny text on the tile.
+- **Ownership.** An orbit ring or atmosphere glow in the owner's colour, so the board reads as
+  territory at a glance.
+- **Within reach.** Light a planet up when your ships orbiting it add up to its number, or are one
+  away ([highlights.ts](../apps/web/src/game/highlights.ts)).
+- **Names** as a proper label on hover or tap, instead of the tiny print on Basic tiles.
+- **Contested.** A subtle crackle when two colours orbit the same planet.
 
-**Idea.**
+The markings live in [PlanetMarkings.tsx](../apps/web/src/components/board/PlanetMarkings.tsx).
 
-- **Ownership.** A planet you hold gets an orbit ring or atmosphere glow in your colour, so the
-  board reads as territory at a glance.
-- **Race to conquer.** When your ships orbiting a planet add up to its number (or are one away),
-  light the planet up, telling you "you can take this".
-- **Names.** Show the planet's name as a proper label on hover or tap, instead of the
-  unreadable print.
-- **Contested planets.** A subtle crackle when ships of two colours orbit the same planet.
+### 6. A sidebar with character
 
-The markings live in [PlanetMarkings.tsx](../apps/web/src/components/board/PlanetMarkings.tsx);
-the reachability logic for the hints is in [highlights.ts](../apps/web/src/game/highlights.ts).
-
-### 7. A sidebar with character
-
-**Today.** The player list is tidy but text-only, and below it the space is empty except for a
-collapsed Captain's Log.
-
-**Idea.**
+**Today.** The player panels now animate, but are text-only, and below them is a collapsed
+Captain's Log.
 
 - **Portraits.** Commander, Vex, Orion, Lyra and the fifth seat each get a portrait or faction
-  emblem. They can be generated in the same seeded-SVG style as the art package, so they print
-  too. This alone adds a lot of personality.
-- **Your hand.** Your skills shown as small art cards, not text chips.
-- **Live log.** Open the Captain's Log by default when there's room, with an icon per event
-  (battle, conquest, research, card) and the player's colour.
-- **Standings.** A small race bar: cubes placed per player, so you always know who's close to
-  winning.
+  emblem, generated in the art package's seeded-SVG style so they print too. Used here, on rival
+  cards (4), turn changes (7) and the game over (2). The biggest gain in personality left.
+- **Your hand.** Skills as small art cards, not text chips (shares the work of 1).
+- **Standings.** A small race bar of cubes placed per player.
+- **Live log.** Open the Captain's Log by default when there's room, with an icon and colour per
+  event.
 
----
+### 7. Clear turn changes
 
-## Feel & polish
-
-### 8. An effect for every move
-
-Cubes already pop in (`cube-in` in [styles.css](../apps/web/src/styles.css)) and ships glide.
-Extend that to every action, short and different from each other:
-
-| Action | Effect |
-|---|---|
-| Deploy | Warp-in flash and a ring expanding from the planet |
-| Move | The glide we have, plus a faint engine trail |
-| Reconfigure | The die spins and re-rolls in place |
-| Research | A purple pulse up the research track |
-| Conquer | The cube drops in from above with a shockwave across the tile |
-| Card played | The card's art (see 1) flies from the market to the player |
-
-All under 500 ms, so they never slow play down, and none under reduced motion.
-
-### 9. Clear turn changes
-
-- When a turn starts, sweep that player's colour across the top bar or the action panel, with
-  their portrait.
-- Pace AI turns so each action is readable (a short pause between actions), with the camera
-  nudging toward the action on small screens.
-- "Your turn" already chimes; add a visible banner when the window was in the background.
-
-### 10. Music & ambience
-
-Sound effects are synthesised in [sound.ts](../apps/web/src/sound.ts). Add a quiet generative
-space drone in the same way (slow pads, no download), which swells a little during battles and
-on your turn, with its own toggle separate from effects.
+- When a turn starts, sweep that player's colour across the top bar or action panel, with their
+  portrait.
+- "Your turn" chimes; add a visible banner when the window was in the background.
 
 ---
 
@@ -204,19 +174,24 @@ on your turn, with its own toggle separate from effects.
 ### Interactive first game
 
 A guided three-minute Basic game against a Cadet: the board highlights what to do ("tap your 4,
-it can move 4 spaces", "your ships add up to 7: conquer!") and the rules are learnt by doing.
-The in-app rules and the [hints](../apps/web/src/game/hints.ts) are a start; this makes it a
-first experience rather than a reference.
+it can move 4 spaces", "your ships add up to 7: conquer!"). The in-app rules and the
+[hints](../apps/web/src/game/hints.ts) are a start; pairs well with the quick-start button (4).
 
 ### Share card
 
 An image made at the end of a game: the final board, the winner, the stats from
-[3](#3-a-game-over-worth-sharing) and a link to play. Online games could post it to the
-invite chat; anywhere else it goes through the share sheet (`navigator.share`) or downloads.
-The art package already renders boards to images, so it can reuse that.
+[2](#2-a-game-over-that-tells-the-story) and a link to play. Online games post it to the invite
+chat; elsewhere it goes through `navigator.share` or downloads. The art package already renders
+boards to images.
 
 ### Name & identity
 
-"Cubic" is a working title. A final name and a logo mark beyond the three dice (something that
-works at 32 px for the home-screen icon and the browser tab) would make the game feel finished.
-The icons are in [`public/`](../apps/web/public).
+"Cubic" is a working title. A final name and a logo mark beyond the three dice (one that works at
+32 px for the home-screen icon and browser tab) would make the game feel finished. The icons are
+in [`public/`](../apps/web/public).
+
+---
+
+## Small leftovers
+
+- Let the music swell a little during battles and on your turn.

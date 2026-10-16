@@ -8,8 +8,13 @@ const waiting = new Map<number, (r: AiResponse) => void>();
 let nextId = 0;
 
 export function aiLevelOf(p: PlayerConfig): AiLevel {
+  return aiLevelInfo(p).level;
+}
+
+/** An AI player's level, named and summed up (AI_LEVELS). */
+export function aiLevelInfo(p: PlayerConfig) {
   const level = p.aiLevel ?? DEFAULT_AI_LEVEL;
-  return AI_LEVELS.find((candidate) => candidate.level === level)?.level ?? DEFAULT_AI_LEVEL;
+  return AI_LEVELS.find((candidate) => candidate.level === level) ?? AI_LEVELS.find((l) => l.level === DEFAULT_AI_LEVEL)!;
 }
 
 function getWorker(): Worker | null {

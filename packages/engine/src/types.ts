@@ -88,6 +88,22 @@ export interface PlayerState extends PlayerConfig {
   carriedConquerPicks?: number;
   /** Turns in a row this player ended without spending an action (the AI uses it to avoid stalemates). */
   idleTurns?: number;
+  /** What this player has done so far, for the game over (counted as it happens: the log keeps only the latest entries). */
+  stats?: PlayerStats;
+}
+
+/** A player's tally over the game, from its start. Missing from a game saved before it was kept. */
+export interface PlayerStats {
+  battlesWon: number;
+  battlesLost: number;
+  /** Enemy ships destroyed, in battle or by a card. */
+  shipsDestroyed: number;
+  /** This player's ships destroyed by someone else. */
+  shipsLost: number;
+  /** Planets conquered (or seized through Infamy). */
+  planetsTaken: number;
+  /** Cards gained: taken from the market (Skills, Tactics, Expansions) or drawn by a card (Change of Heart). */
+  cardsTaken: number;
 }
 
 export type DeckKind = 'skill' | 'tactic';

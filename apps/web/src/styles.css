@@ -863,7 +863,9 @@ input { font: inherit; }
 .player-head, .player-tracks { flex: 1 1 100%; }
 .player-scrap { margin-top: 6px; }
 .player-scrap .scrapyard { margin-top: 0; }
-.player-head { display: flex; align-items: center; gap: 8px; }
+.player-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+/* An AI's level makes its tag long: kept whole, with the cubes moving to a line of their own when the panel is narrow. */
+.player-head .tag { white-space: nowrap; }
 .player-head strong { font-size: 14px; }
 .player-swatch { width: 10px; height: 10px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 8px var(--pc); flex: none; }
 .tag { font-size: 11px; font-weight: 700; letter-spacing: .08em; padding: 2px 5px; border-radius: 4px; background: rgba(255,255,255,.08); color: var(--muted); }
@@ -1390,6 +1392,13 @@ input { font: inherit; }
 .gameover small { color: var(--pc); text-transform: uppercase; letter-spacing: .3em; font-weight: 700; font-size: 12px; }
 .gameover h2 { font-size: 26px; margin-top: 8px; }
 .gameover .modal-actions { justify-content: center; }
+.gameover-stats { width: 100%; margin: 14px 0 4px; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.gameover-stats th, .gameover-stats td { padding: 5px 6px; text-align: center; white-space: nowrap; }
+.gameover-stats thead th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; cursor: help; }
+.gameover-stats tbody tr { border-top: 1px solid rgba(255, 255, 255, .08); }
+.gameover-stats tbody th { text-align: left; font-weight: 600; color: var(--pc); }
+.gameover-stats tbody th .tag { display: block; width: fit-content; margin-top: 2px; font-size: 10px; font-weight: 600; }
+@media (max-width: 420px) { .gameover-stats { font-size: 12px; } .gameover-stats th, .gameover-stats td { padding: 4px 3px; } .gameover-stats thead th { font-size: 10px; letter-spacing: 0; } }
 .card-viewer-action { justify-content: center; }
 /* A thin white edge lifts the card art off the dark popup. */
 .card-viewer .card-art img, .card-viewer .card-art-ph { box-shadow: 0 0 0 1px rgba(255,255,255,.85), 0 12px 28px rgba(0,0,0,.5); }

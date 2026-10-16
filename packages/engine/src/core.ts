@@ -23,6 +23,7 @@ import {
   type Pending,
   type Planet,
   type PlayerId,
+  type PlayerStats,
   type TurnState,
 } from './types';
 
@@ -51,6 +52,12 @@ export function log(s: GameState, text: string, player?: PlayerId, event?: LogEv
   if (planets) entry.planets = planets;
   s.log.push(entry);
   if (s.log.length > LOG_LIMIT) s.log.splice(0, s.log.length - LOG_LIMIT);
+}
+
+/** Adds to one of a player's game stats: none in a game saved before they were kept, which would only count part of it. */
+export function tally(s: GameState, p: PlayerId, stat: keyof PlayerStats, n = 1) {
+  const st = s.players[p].stats;
+  if (st) st[stat] += n;
 }
 
 /** Logs a routine action (a move, a reconfigure…): no event, only the planets it names. */
@@ -300,6 +307,8 @@ export function logBonus(s: GameState, p: PlayerId, id: string, b: Gains) {
  * plus the bonuses of their "destroy" skills (Hostile, Plundering, Ravenous; RULE-SUGGESTIONS #26).
  */
 export function destroyedEnemyShip(s: GameState, winner: PlayerId, dominance: number, victim?: PlayerId) {
+  tally(s, winner, 'shipsDestroyed');
+  if (victim !== undefined) tally(s, victim, 'shipsLost');
   const first = !s.turn.destroyedBy.includes(winner);
   if (first) s.turn.destroyedBy.push(winner);
   const ownTurn = winner === s.turn.player;
