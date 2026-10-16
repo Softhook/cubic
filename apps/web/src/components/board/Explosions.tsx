@@ -2,6 +2,7 @@ import { useEffect, useRef, type CSSProperties } from 'react';
 import type { GameState } from '@quantum/engine';
 import { lastLogId, useTransient } from '../../game/useTransient';
 import { shipSpots } from './geometry';
+import { strikeOf } from '../../game/strike';
 
 interface Explosion {
   id: string;
@@ -31,7 +32,8 @@ function useExplosions(game: GameState): Explosion[] {
       if (!was || d.loc.zone !== 'scrapyard') continue;
       fresh.push({ id: `${d.id}:${d.rolls}`, ...was, color: game.players[d.owner].color });
     }
-    show(fresh);
+    // A card's blow (Show of Force, Dangerous) lands a moment in: they blow up then.
+    show(fresh, strikeOf(before));
   }, [game, show]);
   return booms;
 }

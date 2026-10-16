@@ -1,5 +1,6 @@
 import { effectOf, type Cell, type Die, type GameState, type LogEntry, type LogEvent, type PlayerId } from '@quantum/engine';
 import { sfx } from '../sound';
+import { strikeOf } from './strike';
 import { lost } from './view';
 
 type Sound = keyof typeof sfx;
@@ -99,7 +100,10 @@ export function soundsFor(
 /** Plays what the step from `prev` to `next` sounds like. */
 export function playSounds(prev: GameState, next: GameState, fresh: LogEntry[], mine: (p: PlayerId) => boolean) {
   const { first, then, destroyed } = soundsFor(prev, next, fresh, mine);
-  const play = (s: Sound) => (s === 'explode' ? sfx.explode(destroyed) : sfx[s]());
+  // Ships a card's blow destroys (Show of Force, Dangerous) blow up as it lands, heard as seen (Explosions).
+  const strike = strikeOf(prev);
+  const explode = () => sfx.explode(destroyed);
+  const play = (s: Sound) => (s !== 'explode' ? sfx[s]() : strike ? window.setTimeout(explode, strike) : explode());
   first.forEach(play);
   if (then.length) window.setTimeout(() => then.forEach(play), 350);
 }

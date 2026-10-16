@@ -6,13 +6,13 @@ import { reducedMotion } from './useMediaQuery';
 export const lastLogId = (game: GameState) => game.log.at(-1)?.id ?? 0;
 
 /** Whether the step from `before` to `game` was play: undo moves ships and takes cubes away too, but never adds log entries. */
-const isPlayStep = (before: GameState, game: GameState) => lastLogId(game) > lastLogId(before);
+export const isPlayStep = (before: GameState, game: GameState) => lastLogId(game) > lastLogId(before);
 
 /**
- * Things shown for a moment (an effect, an explosion, a flying card): `show` adds some, and each batch
- * goes again after `ms`. Nothing is left waiting once the component has gone.
+ * Things shown for a moment (an effect, an explosion, a flying card): `show` adds some (after `delay` ms,
+ * if given), and each batch goes again `ms` later. Nothing is left waiting once the component has gone.
  */
-export function useTransient<T>(ms: number): [items: T[], show: (fresh: T[]) => void] {
+export function useTransient<T>(ms: number): [items: T[], show: (fresh: T[], delay?: number) => void] {
   const [items, setItems] = useState<T[]>([]);
   const timers = useRef(new Set<number>());
   useEffect(() => {
@@ -20,14 +20,21 @@ export function useTransient<T>(ms: number): [items: T[], show: (fresh: T[]) => 
     return () => pending.forEach((t) => window.clearTimeout(t));
   }, []);
   const show = useCallback(
-    (fresh: T[]) => {
+    (fresh: T[], delay = 0) => {
       if (!fresh.length) return;
-      setItems((x) => [...x, ...fresh]);
-      const t = window.setTimeout(() => {
-        timers.current.delete(t);
-        setItems((x) => x.filter((i) => !fresh.includes(i)));
-      }, ms);
-      timers.current.add(t);
+      const later = (wait: number, then: () => void) => {
+        const t = window.setTimeout(() => {
+          timers.current.delete(t);
+          then();
+        }, wait);
+        timers.current.add(t);
+      };
+      const add = () => {
+        setItems((x) => [...x, ...fresh]);
+        later(ms, () => setItems((x) => x.filter((i) => !fresh.includes(i))));
+      };
+      if (delay) later(delay, add);
+      else add();
     },
     [ms],
   );

@@ -4,8 +4,11 @@ import { canZoom as zoomable, centredOn, clampCell, fitted, frame, place, softCe
 
 /** A pointer that moves less than this before it lifts is a tap, not a pan. */
 const TAP_SLOP = 8;
-/** The wheel's zoom is drawn as a transform and committed once the wheel has been still this long. */
-const WHEEL_SETTLE = 150;
+/**
+ * The wheel's zoom is drawn as a transform and committed once the wheel has been still this long. Long
+ * enough not to land mid-pinch, where redrawing the map at its new size would drop frames.
+ */
+const WHEEL_SETTLE = 250;
 /** The click a browser sends right after a drag ends, within this long, is the drag's and is ignored. */
 const DRAG_CLICK = 400;
 /** A flung map slows down with this time constant (ms), as a scrolled page does. */
@@ -14,7 +17,13 @@ const FLING_DECAY = 325;
 const FLING_MIN = 0.25;
 /** How long the buttons' zoom, a wheel notch and the spring back from past an edge take (ms). */
 const GLIDE_MS = 260;
-const WHEEL_GLIDE_MS = 180;
+/**
+ * How closely the map follows the wheel (time constants, ms): a mouse wheel's notches ease in over a few
+ * frames; a trackpad's stream is only evened out, as its events don't keep time with the screen's frames
+ * (some frames get two steps, some none, and the map would stutter).
+ */
+const NOTCH_LAG = 60;
+const TRACKPAD_LAG = 28;
 
 export interface BoardZoom extends View {
   /** The wrap's size in pixels. */
@@ -94,6 +103,8 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
   const latest = useRef({ f, current, zoomed, commit, stopDemo: () => {} });
   /** Glides the map to the view `to` makes of where it's going (set by the gesture effect once mounted). */
   const glide = useRef<(to: (from: View) => View) => void>();
+  /** Shows a view just committed and drawn: as is, or as the gesture under way (set by the gesture effect). */
+  const redraw = useRef<() => void>();
   /** Whether a pointer is down on the map (set by the gesture effect). */
   const touching = useRef<() => boolean>(() => false);
 
@@ -126,6 +137,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
   // The committed view has been drawn: drop the gesture's transform, and only now its clip, or the
   // transformed board shows outside the wrap for a frame (over the top bar, zooming in from the whole map).
   useLayoutEffect(() => {
+    if (redraw.current) return redraw.current();
     wrap.current?.classList.remove('gesture');
     if (board.current) board.current.style.transform = '';
   }, [wrap, board, current.cell, current.x, current.y]);
@@ -137,7 +149,11 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     let base: View = latest.current.current; // the view when the pointers last changed
     let start = new Map<number, { x: number; y: number }>();
     let live: View | null = null; // what's on screen while panning, pinching, wheeling or gliding
-    let goal: View | null = null; // where a glide is heading
+    let goal: View | null = null; // where a glide or the wheel is heading
+    let chasing = false; // the wheel's easing loop is running (towards `goal`)
+    let lag = TRACKPAD_LAG; // its time constant
+    // A view committed but not drawn yet: a gesture that starts in between carries on from it.
+    let committed: View | null = null;
     let focus = { x: 0, y: 0 }; // the middle of the last pinch, which a spring back zooms around
     let track: { t: number; x: number; y: number }[] = []; // the last 100ms of a one-finger pan, for its speed
     let frame = 0; // a glide or fling under way
@@ -150,6 +166,8 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     const reduced = matchMedia(REDUCED_MOTION);
 
     const local = (e: PointerEvent | WheelEvent) => ({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    /** What's on screen. */
+    const shown = () => live ?? committed ?? latest.current.current;
     /** Show `v` as a transform of the committed view, clipped to the wrap. */
     const preview = (v: View) => {
       live = v;
@@ -161,19 +179,21 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       cancelAnimationFrame(frame);
       frame = 0;
       goal = null;
+      chasing = false;
     };
     /** Commit what's on screen, so it redraws crisp. The clip stays until that's drawn (see above). */
     const finish = () => {
       stop();
       clearTimeout(wheelTimer);
       if (!live) return el.classList.remove('gesture');
-      latest.current.commit(live);
+      committed = live;
       live = null;
+      latest.current.commit(committed);
     };
     /** Ease from what's on screen to `to`, then `done`. */
     const tween = (to: View, ms: number, done: () => void = finish) => {
       stop();
-      const from = live ?? latest.current.current;
+      const from = shown();
       if (reduced.matches) {
         preview(to);
         return done();
@@ -193,6 +213,38 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
         }
       };
       frame = requestAnimationFrame(step);
+    };
+    /**
+     * Head for `to`, easing what's on screen towards it a little each frame (time constant `ms`), so the
+     * map moves evenly however unevenly the wheel's events come. A new `to` just moves the target.
+     */
+    const chase = (to: View, ms: number) => {
+      if (reduced.matches) {
+        stop();
+        return preview(to);
+      }
+      lag = ms;
+      if (!chasing) {
+        stop();
+        chasing = true;
+        let last = performance.now();
+        const step = (now: number) => {
+          const dt = Math.min(50, now - last);
+          last = now;
+          const v = shown();
+          const g = goal!;
+          if (Math.abs(g.cell - v.cell) < 0.05 && Math.abs(g.x - v.x) < 0.3 && Math.abs(g.y - v.y) < 0.3) {
+            preview(g);
+            return stop();
+          }
+          // Size and position change in step, so the point under the cursor stays put.
+          const k = 1 - Math.exp(-dt / lag);
+          preview({ cell: v.cell + (g.cell - v.cell) * k, x: v.x + (g.x - v.x) * k, y: v.y + (g.y - v.y) * k });
+          frame = requestAnimationFrame(step);
+        };
+        frame = requestAnimationFrame(step);
+      }
+      goal = to;
     };
     /** Let go while moving: the map carries on and slows down, stopping at the edges. */
     const fling = (vx: number, vy: number) => {
@@ -235,7 +287,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     };
     /** Pointers came or went: carry on from where the gesture is now. */
     const rebase = () => {
-      base = live ?? latest.current.current;
+      base = shown();
       start = new Map(pointers);
       track = [];
     };
@@ -245,10 +297,17 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       else rebase();
     };
     touching.current = () => pointers.size > 0;
+    redraw.current = () => {
+      committed = null;
+      // A gesture went on while the view was being committed: show it over the new one.
+      if (live) return preview(live);
+      el.classList.remove('gesture');
+      if (board.current) board.current.style.transform = '';
+    };
     glide.current = (to) => {
       latest.current.stopDemo();
       clearTimeout(wheelTimer);
-      tween(to(goal ?? live ?? latest.current.current), GLIDE_MS);
+      tween(to(goal ?? shown()), GLIDE_MS);
     };
 
     const down = (e: PointerEvent) => {
@@ -308,7 +367,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     };
     const wheel = (e: WheelEvent) => {
       latest.current.stopDemo();
-      const { f, current } = latest.current;
+      const { f } = latest.current;
       const now = performance.now();
       if (now - lastWheel > WHEEL_SETTLE) {
         scrolls = scrollsAround(el);
@@ -319,15 +378,13 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       e.preventDefault();
       const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
       const at = local(e);
-      const from = goal ?? live ?? current;
+      const from = goal ?? shown();
       const next = zoomAround(f, from, Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.002)), at.x, at.y);
       if (next.cell === from.cell && next.x === from.x && next.y === from.y) return;
       clearTimeout(wheelTimer);
-      const settle = () => void (wheelTimer = setTimeout(finish, WHEEL_SETTLE));
-      // A mouse wheel moves in notches: each glides. A trackpad's stream of small steps is smooth already.
-      if (e.deltaMode !== 0 || (!e.ctrlKey && Math.abs(dy) >= 40)) return tween(next, WHEEL_GLIDE_MS, settle);
-      stop();
-      preview(next);
+      // A mouse wheel moves in notches (or a trackpad flicked hard: big steps).
+      chase(next, e.deltaMode !== 0 || (!e.ctrlKey && Math.abs(dy) >= 40) ? NOTCH_LAG : TRACKPAD_LAG);
+      const settle = () => void (wheelTimer = setTimeout(() => (chasing ? settle() : finish()), WHEEL_SETTLE));
       settle();
     };
 
@@ -341,6 +398,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
       stop();
       clearTimeout(wheelTimer);
       glide.current = undefined;
+      redraw.current = undefined;
       touching.current = () => false;
       el.removeEventListener('pointerdown', down);
       el.removeEventListener('pointermove', move);

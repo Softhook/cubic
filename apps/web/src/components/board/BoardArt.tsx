@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState, type CSSProperties } from 'react';
 import type { Board, GameState } from '@quantum/engine';
 import { PLANET_DIAMETER, TILE } from '@quantum/art';
 import { decodedTileImage } from '../../art/tileImages';
@@ -43,7 +43,16 @@ function useTileImages(game: GameState) {
  * The map drawn in SVG: tile art, spaces, warp gates, and each planet's number and cube slots. Memoised:
  * a pan moves the board, not what's drawn on it.
  */
-export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState; cell: number }) {
+export const BoardArt = memo(function BoardArt({
+  game,
+  cell,
+  lateCube,
+}: {
+  game: GameState;
+  cell: number;
+  /** A planet whose new cube drops in late, and when (a relocated cube, see staging). */
+  lateCube?: { planet: number; ms: number };
+}) {
   const { rows, cols, cells, planets } = game.board;
   const { tiles, images } = useTileImages(game);
   const W = cols * cell;
@@ -143,7 +152,7 @@ export const BoardArt = memo(function BoardArt({ game, cell }: { game: GameState
           // and sized as on the printed tile.
           const R = (PLANET_DIAMETER[p.number] / 2) * mm;
           return (
-            <g key={p.id}>
+            <g key={p.id} style={lateCube?.planet === p.id ? ({ '--cube-late': `${lateCube.ms}ms` } as CSSProperties) : undefined}>
               {p.start && game.phase === 'setup' && (
                 <circle
                   cx={cx}

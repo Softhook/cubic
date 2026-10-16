@@ -7,6 +7,7 @@ import { CardEffects } from './board/CardEffects';
 import { Explosions } from './board/Explosions';
 import { Routes } from './board/Routes';
 import { shipSpots, type ShipSpots } from './board/geometry';
+import { useStaging, type Staging } from './board/staging';
 import { useBoardZoom } from './board/useBoardZoom';
 import { OffscreenHints, ZoomControls, useFollowMoves, useZoomIntro } from './board/ZoomUi';
 import { Die3D } from './Die3D';
@@ -45,6 +46,7 @@ export function Board({
   const zoom = useBoardZoom(wrap, boardRef, rows, cols);
   const { cell } = zoom;
   const spots = shipSpots(game);
+  const staging = useStaging(game, scene);
   const tip = useZoomIntro(game, ctl, zoom, !!introduce);
   useFollowMoves(game, ctl, spots, zoom, scene);
   const [inspect, setInspect] = useState<Inspect | null>(null);
@@ -80,7 +82,7 @@ export function Board({
         className="board"
         style={{ left: zoom.x, top: zoom.y, width: cols * cell, height: rows * cell, '--cell': `${cell}px` } as CSSProperties}
       >
-        <BoardArt game={game} cell={cell} />
+        <BoardArt game={game} cell={cell} lateCube={staging.cube} />
 
         <div className="board-layer" onClick={onBoardClick}>
           {ctl.highlights.zones.length > 0 && (
@@ -140,6 +142,7 @@ export function Board({
           <Ships
             game={game}
             scene={scene}
+            staging={staging}
             ctl={ctl}
             zoomed={zoom.zoomed}
             spots={spots}
@@ -205,9 +208,13 @@ function Reach({ game, id, cell, spots }: { game: GameState; id: string; cell: n
   );
 }
 
-/** Every ship on the map, as a die; selected, highlighted, spent or in combat. `onPress`: a pointer went down on another player's ship. */
+/**
+ * Every ship on the map, as a die; selected, highlighted, spent or in combat. `onPress`: a pointer went down on another player's ship.
+ * `staging`: ships a card brings appear as its effect gets there, and ships it destroys stay until its blow lands.
+ */
 function Ships({
   game,
+  staging,
   ctl,
   zoomed,
   spots,
@@ -218,6 +225,7 @@ function Ships({
 }: {
   game: GameState;
   scene?: string;
+  staging: Staging;
   ctl: Controller;
   zoomed: boolean;
   spots: ShipSpots;
@@ -229,7 +237,25 @@ function Ships({
   const combat = head?.kind === 'combat' ? head : null;
   const me = game.turn.player;
   const yours = yoursOf(game, ctl);
-  return game.dice.map((d) => {
+  const struck = staging.struck.map(({ die: d, r, c, ms }) => (
+    <div
+      key={`struck:${d.id}`}
+      className="ship struck"
+      style={
+        {
+          transform: `translate(${c * 100}%, ${r * 100}%)`,
+          width: cell,
+          height: cell,
+          '--pc': game.players[d.owner].color,
+          '--late': `${ms}ms`,
+        } as CSSProperties
+      }
+      aria-hidden
+    >
+      <Die3D value={d.value} rolls={d.rolls} scene={scene} size={cell * 0.56} color={game.players[d.owner].color} />
+    </div>
+  ));
+  const ships = game.dice.map((d) => {
     const at = spots.get(d.id);
     if (!at) return null;
     const { r, c } = at;
@@ -246,6 +272,7 @@ function Ships({
     const who = `${game.players[d.owner].name} · ${SHIP_NAMES[d.value]} (${d.value})`;
     // In percent of its own size (one space), so a zoom or resize doesn't count as a move and glide.
     const place = { transform: `translate(${c * 100}%, ${r * 100}%)`, width: cell, height: cell };
+    const late = staging.late.get(d.id);
     return (
       <Fragment key={d.id}>
         <div
@@ -257,12 +284,13 @@ function Ships({
             fighting && 'fighting',
             ctl.actionPhase && d.owner === me && 'own',
             yours(d.owner) && 'yours',
+            late !== undefined && 'late',
           ]
             .filter(Boolean)
             .join(' ')}
           data-r={r}
           data-c={c}
-          style={{ ...place, '--pc': game.players[d.owner].color } as CSSProperties}
+          style={{ ...place, '--pc': game.players[d.owner].color, '--late': `${late ?? 0}ms` } as CSSProperties}
           onClick={() => ctl.onDie(d.id) === false && onInfo(d.id)}
           onPointerDown={yours(d.owner) ? undefined : (e) => onPress(d.id, e.pointerType !== 'mouse')}
           onContextMenu={(e) => e.preventDefault()}
@@ -294,6 +322,7 @@ function Ships({
       </Fragment>
     );
   });
+  return [...ships, ...struck];
 }
 
 /** The info bubble for a ship or planet, anchored to its space on the map. */
