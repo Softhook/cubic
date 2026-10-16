@@ -6,7 +6,7 @@ import { aiLevelOf, combatResponse, think } from '../game/aiClient';
 import { useErrorToast, useToasts } from '../game/toasts';
 import type { GameView } from '../game/view';
 import { battleStage, inBattle, nextStep, resumeAt, seenPost } from './playback';
-import { onlineGames, updateGame } from './games';
+import { onlineGames } from './games';
 import { identity, keepStorage, openGameLog, rememberGame, saveEvents } from './storage';
 import { RelayLink, type RelayStatus } from './relays';
 import { ownMove, summary, yourMoveSince } from './summary';
@@ -173,18 +173,16 @@ function usePostLog(secret: string) {
   useEffect(() => () => window.clearTimeout(batch.current), []);
 
   // When a relay last sent everything it held: saved with the events, so the lobby can ask for only
-  // what's newer (OnlineGameEntry.syncedAt), never ahead of what was saved.
+  // what's newer. It starts as the loaded one, which holds for the loaded events and so for any set
+  // they grow into, whatever other tabs save meanwhile.
   const syncedAt = useRef<number | undefined>(undefined);
-  const save = useThrottled(() => {
-    if (saveEvents(keys.tag, [...events.values()]) && syncedAt.current !== undefined) updateGame(secret, { syncedAt: syncedAt.current });
-  }, 400);
+  const save = useThrottled(() => saveEvents(keys.tag, [...events.values()], syncedAt.current), 400);
 
   useEffect(() => {
     let l: RelayLink | null = null;
     try {
       // Here rather than while rendering: each saved event is decrypted, and damaged ones end up below.
-      syncedAt.current = undefined;
-      load();
+      syncedAt.current = load();
       publish();
       l = new RelayLink(
         keys.tag,

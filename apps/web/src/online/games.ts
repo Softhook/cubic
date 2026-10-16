@@ -21,11 +21,6 @@ export interface OnlineGameEntry {
   over?: boolean;
   /** The last post the player has seen played out, so the game picks up from there next time. */
   seen?: string;
-  /**
-   * When (unix seconds) a relay had last sent the game everything it held, as of the events saved
-   * with it: the lobby asks only for events from about then on.
-   */
-  syncedAt?: number;
 }
 
 export function onlineGames(): OnlineGameEntry[] {

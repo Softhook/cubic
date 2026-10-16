@@ -71,8 +71,9 @@ store small signed messages for anyone. We run nothing.
   or, if many, skipped, stopping only at each battle's result. While the page is hidden, playback
   waits. Live play works the same way, with moves arriving in about a second.
 - **The lobby follows your games.** While it is open, each game in progress asks the relays only
-  for events newer than those saved, or for all of them if what's saved is missing moves
-  (`watch.ts`); the list then shows whose move it is. The lobby sends and saves nothing: the game does when opened.
+  for events from about when a relay last sent the game everything it held (`syncedAt`, saved in
+  the same entry as the events), or for all of them if that isn't known or a saved event can't be
+  read (`watch.ts`); the list then shows whose move it is. The lobby sends and saves nothing: the game does when opened.
 - **Your move.** When it becomes your move (`alerts.ts`): looking at the game, a soft chime once
   the screen has caught up; looking at the lobby, the chime and a buzz (Android); not looking, the
   chime and a count in the tab's title. Each change is alerted once across this browser's tabs.
@@ -100,8 +101,7 @@ store small signed messages for anyone. We run nothing.
   undo included, skipping far behind but stopping at battle results.
 - `apps/web/test/summary.test.ts`: the lobby's line for a game, and when it has just become your
   move. `apps/web/test/relays.test.ts`: sending, re-sending, and asking only for what's new.
-  The lobby only reads: it asks for what's new since the game last saved a complete sync
-  (`syncedAt`), and sends nothing; the game re-sends when it opens. `apps/web/test/leftRow.test.ts`: which market copy a card flies from.
+  `apps/web/test/storage.test.ts`: `syncedAt` is used only when every saved event can be read. `apps/web/test/leftRow.test.ts`: which market copy a card flies from.
 - `npm run online:sim`: five Chrome browsers, each its own identity, play a 5-player game over the
   real relays: friends join after moves were made, late, and two at once for one seat, then all
   play random moves; every screen must catch up and show the same game. Run it by hand, not

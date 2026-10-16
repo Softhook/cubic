@@ -4,7 +4,9 @@ import { createGame, defaultMap } from '@quantum/engine';
 import { forget, remember, stored } from '../src/storage';
 import { loadSavedGame } from '../src/game/savedGame';
 import { forgetFinishedGames, onlineGames } from '../src/online/games';
-import { rememberGame, saveEvents } from '../src/online/storage';
+import { generateSecretKey } from 'nostr-tools/pure';
+import { encodePost, gameKeys, newSecret, PROTOCOL } from '@quantum/online';
+import { openGameLog, rememberGame, saveEvents } from '../src/online/storage';
 
 /** localStorage holding at most `quota` characters (keys and values), like a browser's. */
 class FakeStorage {
@@ -103,5 +105,55 @@ describe('online games in storage', () => {
     };
     expect(remember('quantum.mode', 'basic')).toBe(false);
     forget('quantum.mode');
+  });
+
+  describe('when the saved events were last whole (syncedAt)', () => {
+    const game = newSecret();
+    const { tag } = gameKeys(game);
+    const players = [
+      { name: 'A', color: '#fff', ai: false, aiLevel: 1 },
+      { name: 'B', color: '#000', ai: true, aiLevel: 1 },
+    ];
+    const { event } = encodePost(
+      gameKeys(game),
+      generateSecretKey(),
+      { t: 'create', protocol: PROTOCOL, config: { players, mapId: defaultMap(2)!.id, mode: 'community', seed: 1 }, creator: 0, open: [] },
+      null,
+    );
+
+    it('is saved with the events, and only once a relay has sent everything', () => {
+      saveEvents(tag, [event]);
+      expect(openGameLog(game).load()).toBeUndefined();
+      saveEvents(tag, [event], 1234);
+      const log = openGameLog(game);
+      expect(log.load()).toBe(1234);
+      expect(log.events.has(event.id)).toBe(true);
+    });
+
+    it('carries over to a later save with more events (what a game does before it next syncs)', () => {
+      saveEvents(tag, [event], 1234);
+      const log = openGameLog(game);
+      const loaded = log.load();
+      const { event: claim } = encodePost(gameKeys(game), generateSecretKey(), { t: 'claim', seat: 1, name: 'B' }, null);
+      log.receive(claim);
+      saveEvents(tag, [...log.events.values()], loaded);
+      const again = openGameLog(game);
+      expect(again.load()).toBe(1234);
+      expect(again.events.size).toBe(2);
+    });
+
+    it('is not trusted when a saved event cannot be read', () => {
+      saveEvents(tag, [event, { ...event, id: 'other', content: 'damaged' }], 1234);
+      expect(openGameLog(game).load()).toBeUndefined();
+      store.setItem(`quantum.online.events.${tag}`, JSON.stringify({ events: [event, 42], syncedAt: 1234 }));
+      expect(openGameLog(game).load()).toBeUndefined();
+    });
+
+    it('reads the older saves, a bare array of events, as never synced', () => {
+      store.setItem(`quantum.online.events.${tag}`, JSON.stringify([event]));
+      const log = openGameLog(game);
+      expect(log.load()).toBeUndefined();
+      expect(log.events.has(event.id)).toBe(true);
+    });
   });
 });

@@ -28,22 +28,40 @@ export function keepStorage() {
   void navigator.storage?.persist?.().catch(() => {});
 }
 
-/** The saved events; anything else stored there (damaged, say) is left out. */
-function loadEvents(tag: string): NostrEvent[] {
-  const saved = storedJson<unknown>(eventsKey(tag));
-  return Array.isArray(saved) ? saved.filter((e): e is NostrEvent => typeof e?.id === 'string') : [];
+/**
+ * What a game saves of itself: its events and, if a relay had sent it everything it held as of
+ * them, when (unix seconds) that relay was asked. Kept in one entry, so a tab that saves fewer
+ * events (another tab on the same game) never leaves a later tab's `syncedAt` with them.
+ */
+interface SavedLog {
+  events: NostrEvent[];
+  syncedAt?: number;
 }
 
-/** Whether they were saved. */
-export function saveEvents(tag: string, events: NostrEvent[]): boolean {
-  const saved = remember(eventsKey(tag), JSON.stringify(events));
+/** The saved log, and how many of its entries were damaged (left out). Older saves are a bare array of events. */
+function loadLog(tag: string): SavedLog & { damaged: number } {
+  const saved = storedJson<unknown>(eventsKey(tag));
+  if (saved === null) return { events: [], damaged: 0 };
+  const log: Partial<SavedLog> = Array.isArray(saved) ? { events: saved } : (saved as Partial<SavedLog>);
+  // Not a log at all: one damaged entry.
+  if (!Array.isArray(log.events)) return { events: [], damaged: 1 };
+  const events = log.events.filter((e): e is NostrEvent => typeof (e as NostrEvent | null)?.id === 'string');
+  const syncedAt = typeof log.syncedAt === 'number' ? log.syncedAt : undefined;
+  return { events, syncedAt, damaged: log.events.length - events.length };
+}
+
+/** Whether they were saved. `syncedAt`: see SavedLog; left out until a relay has sent everything. */
+export function saveEvents(tag: string, events: NostrEvent[], syncedAt?: number): boolean {
+  const saved = remember(eventsKey(tag), JSON.stringify({ events, syncedAt } satisfies SavedLog));
   if (!saved) console.warn('[quantum] could not save the online game locally');
   return saved;
 }
 
 /**
  * A game's events and the timeline they make. `load` adds those this browser saved (decrypting
- * each, so not while rendering); `receive` adds one (a relay's): true if it was new and valid.
+ * each, so not while rendering) and returns when they were last whole (`syncedAt`), or undefined
+ * if they weren't known to be, or some could not be read; `receive` adds one (a relay's): true if
+ * it was new and valid.
  */
 export function openGameLog(secret: string) {
   const keys = gameKeys(secret);
@@ -56,8 +74,13 @@ export function openGameLog(secret: string) {
     events.set(e.id, e);
     return timeline.add(p);
   };
-  const load = () => {
-    for (const e of loadEvents(keys.tag)) receive(e, true);
+  const load = (): number | undefined => {
+    const saved = loadLog(keys.tag);
+    for (const e of saved.events) receive(e, true);
+    // One that didn't decode (damaged, or another game's) never made it in.
+    const damaged = saved.damaged + saved.events.filter((e) => !events.has(e.id)).length;
+    if (damaged) console.warn(`[quantum] ${damaged} saved event(s) of an online game could not be read`);
+    return damaged ? undefined : saved.syncedAt;
   };
   return { keys, timeline, events, receive, load };
 }

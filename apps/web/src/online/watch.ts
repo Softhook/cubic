@@ -13,7 +13,8 @@ const CHECK_TIMEOUT_MS = 15000;
 /**
  * Follows the given games on the relays while the lobby shows them, so their entries (whose move it
  * is, above all) keep up with moves made since this browser last had them open. Each game asks only
- * for events from about when its saved events were last whole (`syncedAt`). `onChange` runs after
+ * for events from about when its saved events were last whole (`syncedAt`, saved with them), or
+ * all of them if that isn't known or some saved events can't be read. `onChange` runs after
  * an entry changes; `onChecked` once per game, when a relay has sent all it holds of it (or none has
  * answered in time). Nothing is sent or saved: the game does that when it opens (re-sending this
  * browser's moves no relay took), and a tab playing the game meanwhile would otherwise have its newer
@@ -21,19 +22,13 @@ const CHECK_TIMEOUT_MS = 15000;
  */
 export function watchGames(games: OnlineGameEntry[], onChange: () => void, onChecked: (secret: string) => void): () => void {
   const me = getPublicKey(identity());
-  const stops = games.map(({ secret, syncedAt }) => {
+  const stops = games.map(({ secret }) => {
     // Whether it was the player's move when last replayed; what the first check finds isn't alerted
     // (the list shows it), only moves made while the lobby is open.
     let was: boolean | null = null;
     const { keys, timeline, receive, load } = openGameLog(secret);
-    let since = syncedAt;
-    try {
-      load();
-    } catch (e) {
-      // Damaged saved events: the relays still have the whole game.
-      console.warn('[quantum] could not load a saved online game', e);
-      since = undefined;
-    }
+    // Undefined (never synced, or some saved events unreadable): the relays send the whole game.
+    const since = load();
     let timer: number | undefined;
     let checked = false;
     const refresh = () => {
