@@ -503,24 +503,12 @@ input { font: inherit; }
 @keyframes sel { 50% { opacity: 0; } }
 .ship.spent .die3d { filter: saturate(.45) brightness(.72); }
 .ship-attack, .ship-target { cursor: crosshair; }
-.ship-attack .ship-ring, .ship-target /* A ship a card brings (Expansion, Nomadic) appears as its effect gets there, without gliding there (staging). */
-.ship.late { transition: none; animation: ship-late .25s var(--late) cubic-bezier(.2,.8,.3,1.3) backwards; }
-@keyframes ship-late { from { scale: .3; opacity: 0; } }
-/* A ship a card destroys, as it was, until the blow lands (it blows up then: Explosions). */
-.ship.struck { pointer-events: none; animation: ship-struck 0s var(--late) forwards; }
-@keyframes ship-struck { to { visibility: hidden; } }
-.ship-ring {
+.ship-attack .ship-ring, .ship-target .ship-ring {
   opacity: 1; border-color: var(--bad); inset: 2%;
   box-shadow: 0 0 16px var(--bad), inset 0 0 10px rgba(255,93,115,.5);
   animation: ring 1.1s ease-in-out infinite;
 }
-.ship-swap .ship-ring, .ship-passenger /* A ship a card brings (Expansion, Nomadic) appears as its effect gets there, without gliding there (staging). */
-.ship.late { transition: none; animation: ship-late .25s var(--late) cubic-bezier(.2,.8,.3,1.3) backwards; }
-@keyframes ship-late { from { scale: .3; opacity: 0; } }
-/* A ship a card destroys, as it was, until the blow lands (it blows up then: Explosions). */
-.ship.struck { pointer-events: none; animation: ship-struck 0s var(--late) forwards; }
-@keyframes ship-struck { to { visibility: hidden; } }
-.ship-ring {
+.ship-swap .ship-ring, .ship-passenger .ship-ring {
   opacity: 1; border-color: var(--good); inset: 2%; border-style: dashed;
   box-shadow: 0 0 12px rgba(94,240,176,.6);
   cursor: pointer;
