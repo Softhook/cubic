@@ -581,15 +581,6 @@ input { font: inherit; }
   70% { clip-path: inset(0 0 0 0); opacity: .55; animation-timing-function: ease-in; }
   100% { clip-path: inset(0 0 0 100%); opacity: 0; }
 }
-/* Reconfigure (any re-roll in place): two arcs swirl round the die as it tumbles. */
-.fx-reroll > span {
-  width: 86%; height: 86%; margin: -43% 0 0 -43%;
-  border: calc(var(--bw) * 1.5) solid transparent; border-top-color: var(--pc); border-bottom-color: var(--pc);
-  filter: drop-shadow(0 0 4px var(--pc));
-  animation: fx-swirl .45s ease-out forwards;
-}
-.fx-reroll > span:last-child { width: 64%; height: 64%; margin: -32% 0 0 -32%; animation-direction: reverse; border-color: transparent #fff; opacity: .8; }
-@keyframes fx-swirl { 0% { transform: rotate(0) scale(.7); opacity: 0; } 25% { opacity: 1; } 100% { transform: rotate(540deg) scale(1.15); opacity: 0; } }
 /* Conquer: a shockwave across the tile as the cube lands (.cube). */
 .fx-conquer { z-index: 2; }
 .fx-conquer > span:first-child {

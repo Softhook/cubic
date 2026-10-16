@@ -3,10 +3,9 @@ import { cellOf, type Cell, type GameState } from '@quantum/engine';
 import { reducedMotion } from '../../game/useMediaQuery';
 import { isPlayStep, lastLogId, useTransient } from '../../game/useTransient';
 
-/** A short effect on the map for one action: a ship warping in, flying (from `at` to `to`), re-rolling, or a planet conquered. */
+/** A short effect on the map for one action: a ship warping in, flying (from `at` to `to`), or a planet conquered. */
 type Effect =
-  | { kind: 'deploy' | 'reroll' | 'conquer'; id: string; at: Cell; color: string }
-  | { kind: 'trail'; id: string; at: Cell; to: Cell; color: string };
+  { kind: 'deploy' | 'conquer'; id: string; at: Cell; color: string } | { kind: 'trail'; id: string; at: Cell; to: Cell; color: string };
 
 /** Every effect is over by then, so none slows play down. */
 const EFFECT_MS = 500;
@@ -26,7 +25,6 @@ function effectsOf(before: GameState, game: GameState): Effect[] {
     const fx = { id: `${d.id}:${step}`, at: to, color: game.players[d.owner].color };
     if (!from) out.push({ kind: 'deploy', ...fx });
     else if (!sameCell(from, to)) out.push({ kind: 'trail', ...fx, at: from, to });
-    else if (d.rolls !== p.rolls || d.value !== p.value) out.push({ kind: 'reroll', ...fx });
   }
   for (const pl of game.board.planets) {
     const old = before.board.planets.find((x) => x.id === pl.id)?.cubes ?? [];
@@ -67,7 +65,7 @@ export function ActionEffects({ game, cell }: { game: GameState; cell: number })
     return (
       <div key={e.id} className={`fx fx-${e.kind}`} style={style as CSSProperties} aria-hidden>
         <span />
-        {/* Each effect but the trail is two parts (a flash and a ring, two arcs…). */}
+        {/* Each effect but the trail is two parts (a flash and a ring, a shockwave and a glow). */}
         {e.kind !== 'trail' && <span />}
       </div>
     );
