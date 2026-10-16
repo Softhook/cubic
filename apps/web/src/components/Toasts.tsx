@@ -48,8 +48,19 @@ const shownFor = (e: LogEntry) => (e.event === 'cardTaken' ? TAKEN_MS : PLAYED_M
  * `mine`: whether this screen plays for a player (their own plays aren't shown). Needs no tap to go.
  * `review`: the entries of the move being looked back at; the card among them, anyone's, is shown
  * instead, and the game's own wait until the review ends.
+ * `hold`: something is in front of the map (a battle); the game's cards wait for it to go rather than cover it.
  */
-export function PlayedCard({ game, mine, review }: { game: GameState; mine: (p: PlayerId) => boolean; review?: readonly LogEntry[] }) {
+export function PlayedCard({
+  game,
+  mine,
+  review,
+  hold,
+}: {
+  game: GameState;
+  mine: (p: PlayerId) => boolean;
+  review?: readonly LogEntry[];
+  hold?: boolean;
+}) {
   // The last log entry already seen: only plays made while the screen is open are shown.
   const seen = useRef(game.log.at(-1)?.id ?? 0);
   const [queue, setQueue] = useState<LogEntry[]>([]);
@@ -67,7 +78,7 @@ export function PlayedCard({ game, mine, review }: { game: GameState; mine: (p: 
   }, [game, mine]);
 
   const reviewed = review?.find((e) => e.card && e.player !== undefined);
-  const shown = review ? reviewed : queue[0];
+  const shown = review ? reviewed : hold ? undefined : queue[0];
   useEffect(() => {
     if (!shown || review) return;
     const t = window.setTimeout(() => setQueue((q) => q.slice(1)), shownFor(shown));
