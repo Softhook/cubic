@@ -1778,6 +1778,7 @@ input { font: inherit; }
 @media (max-width: 800px) { .lab-aid-page { grid-template-columns: 1fr; } }
 .lab-sub { font-family: var(--display); font-size: 13px; letter-spacing: .04em; margin: 8px 0 0; }
 .lab-progress { margin: 0; font-size: 13px; color: var(--gold); }
+.lab-error { margin: 0; font-size: 13px; color: var(--bad); }
 .lab-spec { margin: 0; padding: 8px 10px; font-size: 11.5px; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 6px; white-space: pre-wrap; word-break: break-all; }
 @media (max-width: 800px) { .lab-body { grid-template-columns: 1fr; } .lab-detail { position: static; order: -1; } }
 /* No label in the header breaks over two lines. */

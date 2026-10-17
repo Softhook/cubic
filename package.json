@@ -25,6 +25,7 @@
     "relays:check": "vite-node scripts/relay-check.ts --",
     "mobile:shots": "npm run data && vite-node scripts/mobile-shots.ts --",
     "ui:check": "npm run data && vite-node scripts/ui-check.ts --",
+    "print:cmyk-table": "vite-node scripts/cmyk-table.ts --",
     "replay:check": "npm run data && vite-node scripts/replay-check.ts --",
     "online:sim": "npm run data && vite-node scripts/online-sim.ts --",
     "mobile:play": "npm run data && vite-node scripts/mobile-play.ts --",

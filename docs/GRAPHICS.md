@@ -389,8 +389,15 @@ same way:
   Exports refuse to run when the fonts didn't load, rather than print in system fonts.
 - `press.ts` gets files ready for a press: PNGs are opaque, tagged sRGB (an embedded ICC profile) and
   carry their dpi, so a RIP converts the colours as we see them and opens the file at its physical size.
-  "Lift shadows for print" (off by default) applies a tone curve that raises the art's black to about
-  L* 6 and keeps the darkest steps apart (below).
+  `toCmyk` converts to the press's CMYK through a table (`cmykTable.ts`, below).
+- **CMYK PDFs** (`pdf.ts`, "CMYK PDFs · FOGRA39 · ZIP" in the panel): for a print service that wants
+  CMYK and a file per piece (Doxzoo asks for PDF/X-1a, Coated FOGRA39, one PDF per card). A ZIP with a
+  PDF per front, named like the PNGs (`skill/07-agile.pdf`), with "Backs (duplex)" its back as page 2
+  (double-sided printing takes pages front, back); every page with its bleed and no crop marks, a
+  flattened CMYK image at the piece's `dpi`. How many of each to order is in `order.csv` (a card's
+  copies), not repeated pages. Made to the PDF/X-1a rules (PDF 1.3, CMYK only, no fonts or transparency,
+  TrimBox and BleedBox, a FOGRA39 output intent with the press profile embedded); only a preflight such as
+  Acrobat's can certify it. Upload with "Do not scale". The press test exports as a single CMYK PDF.
 - `sheets.ts` lays out print sheets: pieces at trim size in a grid (cards 3 × 3, tiles 2 × 2),
   butted so one cut serves two pieces, crop marks drawn as borders so they print without
   "Background graphics", optional backs mirrored for long-edge duplex. A4 or US Letter; the
@@ -438,24 +445,34 @@ Tile, planet and cube-pad sizes are in §2a.
   take a `mode: 'live' | 'baked'` prop for this.
 - **The same trick helps in-game performance.** Rendering a turbulence nebula per tile every frame is
   slow; the game can bake each tile's background once into an image (cached by seed) and draw that.
-- **Colour.** We send RGB, tagged sRGB, and let the printer's RIP convert with its press profile
-  (don't convert to CMYK ourselves with a generic profile). Ask the printer for the press (HP Indigo or
-  toner), stock and finish, rendering intent and black point compensation, ink limit, and their ICC
-  profile. Dark space art needs care:
-  - **Black point.** A press's darkest black is about L* 9–12 on coated stock (lighter on uncoated);
-    below it everything prints as one flat black. The tiles sit at a median L* of 3.5, with the nebulae
-    and wells in L* 2–15. Many RIPs handle this themselves with black point compensation, so the
-    exports send the art as it is; "Lift shadows for print" (`press.ts`) is there for a RIP that
-    doesn't, where the dark steps would run together. With both, prints come out greyer. Decide from
-    the press test.
+- **Colour.** For a service that prints CMYK, we convert ourselves rather than leave it to their RIP,
+  whose settings we can't see: the CMYK PDFs, for the press's profile (Coated FOGRA39 for Doxzoo). For one
+  that wants RGB (most card printers), the PNGs, tagged sRGB. Ask the printer for the press (HP Indigo
+  or toner, or offset), stock and finish, and ink limit. Dark space art needs care:
+  - **Black point.** FOGRA39's darkest black is about L* 9 (L* 12 with the 300 % ink cap); below it
+    everything prints as one flat black. The tiles sit at a median L* of 3.5, with the nebulae and wells
+    in L* 2–15. A plain relative colorimetric conversion prints all of L* 0–5 (black up to the tiles'
+    base colour) as the same black, so the art's darkest detail disappears; with black point
+    compensation they stay apart (ISO Coated v2 300 %: black L* 11.8, the tiles' base 13.7, card ink
+    14.5, the aid's pads 16.5). The CMYK table uses relative colorimetric with black point
+    compensation. Expect dark pieces to print a deep navy-charcoal rather than the screen's near-black.
+  - **The press profile and table.** The CMYK is made for ECI's ISO Coated v2 300 % (FOGRA39 with
+    the ink capped at 300 %, safer for dark, full-bleed art on a digital press), in
+    `apps/web/src/print/press.icc` (from www.eci.org, unmodified; © Heidelberger Druckmaschinen, made
+    for the ECI, who distribute it free of charge; their package has no separate licence file). Every PDF
+    embeds it as its output intent, the use it's made for. `npm run print:cmyk-table -- --profile <file.icc>` swaps it (e.g. for the 330 %
+    `ISOcoated_v2_eci.icc` if the printer wants it) and rebuilds `cmykTable.ts`: ImageMagick (LittleCMS)
+    converts an 18³ grid of sRGB colours, and the export interpolates between grid points (ΔE ≈ 0.6 on
+    average). The darkest areas print at about 290–300 % ink.
   - **Gamut.** Saturated violets, greens and blues lose half or more of their chroma in CMYK. Research
-    moved from 268° to 290°, as at 268° it printed barely apart from ship blue (ΔE ≈ 13 against 50 on
-    screen, soft-proofed with a generic CMYK profile; the printer's will differ). Conquer green and expansion teal also print duller, but stay apart.
+    moved from 268° to 290°: with ISO Coated v2 300 % that takes it from ΔE ≈ 27–30 to ≈ 37–39 from
+    ship blue (about 50 and 65 on screen). Conquer green and expansion teal also print duller, but stay apart.
   - **Light tints.** The light card paper (`hsl(225 30% 95%)`, about C6 M4 Y2) can mottle on toner
     presses; the press test shows it beside white and stronger tints.
   - **The press test** (`#lab/proof`, `proof.ts`): one A4 page with a dark tile and a dark card at
     100 %, the space and neutral ramps, the wells, every category colour, the text sizes and hairlines.
-    It exports with and without the shadow lift; print both on the real press and stock before a run.
+    It exports as a CMYK PDF and as an RGB PNG; print the one the pieces will go as, on the real press
+    and stock, before a run.
 - **Fonts.** Every print file carries its fonts: cards and the aid embed Inter and Orbitron, tiles
   Inter ExtraBold (the number) and JetBrains Mono (the label). All are SIL Open Font License, so
   embedding is allowed. The files are rasterised, so there is no live text to outline; a future vector
@@ -495,6 +512,7 @@ Each phase leaves the game working and better-looking.
       and backs.
 - [x] Text fit: card text shrinks until it fits; a test checks the player aid's text sizes.
 - [ ] PDF checks.
+- [x] CMYK PDFs for print services that want CMYK, one per piece (FOGRA39, PDF/X-1a rules), and the A4 press test.
 
 **Phase 3 — Art Lab**
 - [x] Lab route (`#lab`): all 30 tiles, seed/type/rings controls, and the standard print exports (§4) plus SVG for Illustrator.

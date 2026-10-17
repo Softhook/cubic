@@ -1,54 +1,52 @@
+import { CMYK_TABLE } from './cmykTable';
 import { crc32 } from './zip';
 
 /**
- * Getting print files ready for a press: a tone curve that lifts the art's deepest shadows above what
- * ink can hold, and PNGs tagged with their colour space and resolution. See docs/GRAPHICS.md §4.
+ * Getting print files ready for a press: RGB PNGs tagged with their colour space and resolution, and
+ * the conversion to the press's CMYK. See docs/GRAPHICS.md §4.
  */
+
+const N = CMYK_TABLE.grid;
+const TABLE = Uint8Array.from(atob(CMYK_TABLE.data), (c) => c.charCodeAt(0));
+/** For each 0–255 channel value, the grid point below it and how far it is towards the next (0–1). */
+const CELL = Array.from({ length: 256 }, (_, v) => Math.min(Math.floor((v / 255) * (N - 1)), N - 2));
+const FRAC = Float32Array.from({ length: 256 }, (_, v) => (v / 255) * (N - 1) - CELL[v]);
 
 /**
- * The shadow lift, as L* in → L* out (CIE lightness, 0–100). Screens show tones down to L* 0, but a
- * press's darkest black is around L* 9–12 on coated stock and lighter on uncoated, and below that
- * everything prints as one flat black. Much of the art (the space between stars, nebulae, the wells)
- * lives in L* 2–15, so it is lifted: black to L* 6, the darkest tones spread at least as far apart as
- * they were, and the curve back to unchanged from L* 60. Check it against a physical proof (the press test, #lab/proof).
+ * Converts RGBA pixels (opaque, sRGB) to CMYK bytes for the press, by trilinear interpolation in the
+ * table from scripts/cmyk-table.ts (relative colorimetric with black point compensation, so the art's
+ * darkest tones stay apart rather than all printing as the press's black).
  */
-const LIFT: [number, number][] = [
-  [0, 6],
-  [5, 11.5],
-  [10, 16.5],
-  [20, 25],
-  [30, 33.5],
-  [45, 46],
-  [60, 60],
-  [100, 100],
-];
-
-const toLinear = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
-const fromLinear = (y: number) => (y <= 0.0031308 ? 12.92 * y : 1.055 * y ** (1 / 2.4) - 0.055);
-const lightness = (y: number) => (y > 216 / 24389 ? 116 * Math.cbrt(y) - 16 : (24389 / 27) * y);
-const luminance = (l: number) => (l > 8 ? ((l + 16) / 116) ** 3 : (l * 27) / 24389);
-
-/** The lift for one 0–255 channel value, treated as the grey of that value (so greys stay grey). */
-const LIFT_TABLE = Uint8ClampedArray.from({ length: 256 }, (_, v) => {
-  const l = lightness(toLinear(v / 255));
-  const k = LIFT.findIndex(([x]) => x >= l);
-  const [x0, y0] = LIFT[Math.max(0, k - 1)];
-  const [x1, y1] = LIFT[k];
-  const out = x1 === x0 ? y1 : y0 + ((l - x0) / (x1 - x0)) * (y1 - y0);
-  return Math.round(fromLinear(luminance(out)) * 255);
-});
-
-/** Applies the shadow lift to a canvas, in place. */
-export function liftShadows(canvas: HTMLCanvasElement): void {
-  const ctx = canvas.getContext('2d')!;
-  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const d = img.data;
-  for (let i = 0; i < d.length; i += 4) {
-    d[i] = LIFT_TABLE[d[i]];
-    d[i + 1] = LIFT_TABLE[d[i + 1]];
-    d[i + 2] = LIFT_TABLE[d[i + 2]];
+export function toCmyk(rgba: Uint8ClampedArray): Uint8Array<ArrayBuffer> {
+  const out = new Uint8Array(rgba.length);
+  // Offsets of a cell's corners in the table, from its lowest corner: red slowest, then green, then blue.
+  const sr = N * N * 4;
+  const sg = N * 4;
+  const corners = [0, 4, sg, sg + 4, sr, sr + 4, sr + sg, sr + sg + 4];
+  const w = new Float32Array(8);
+  for (let i = 0; i < rgba.length; i += 4) {
+    const r = rgba[i];
+    const g = rgba[i + 1];
+    const b = rgba[i + 2];
+    const fr = FRAC[r];
+    const fg = FRAC[g];
+    const fb = FRAC[b];
+    w[0] = (1 - fr) * (1 - fg) * (1 - fb);
+    w[1] = (1 - fr) * (1 - fg) * fb;
+    w[2] = (1 - fr) * fg * (1 - fb);
+    w[3] = (1 - fr) * fg * fb;
+    w[4] = fr * (1 - fg) * (1 - fb);
+    w[5] = fr * (1 - fg) * fb;
+    w[6] = fr * fg * (1 - fb);
+    w[7] = fr * fg * fb;
+    const o = CELL[r] * sr + CELL[g] * sg + CELL[b] * 4;
+    for (let k = 0; k < 4; k++) {
+      let v = 0;
+      for (let c = 0; c < 8; c++) v += w[c] * TABLE[o + corners[c] + k];
+      out[i + k] = v + 0.5;
+    }
   }
-  ctx.putImageData(img, 0, 0);
+  return out;
 }
 
 /** An sRGB ICC profile (LittleCMS's built-in one, free to use), zlib-compressed as a PNG `iCCP` chunk wants it. */

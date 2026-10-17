@@ -19,6 +19,7 @@ export async function zip(files: { name: string; blob: Blob }[]): Promise<Blob> 
   const central: Uint8Array<ArrayBuffer>[] = [];
   let offset = 0;
   for (const f of files) {
+    // Read only for the checksum: the archive refers to the file's own blob, so a large set isn't held in memory twice.
     const data = new Uint8Array(await f.blob.arrayBuffer());
     const name = enc.encode(f.name);
     const crc = crc32(data);
@@ -44,7 +45,7 @@ export async function zip(files: { name: string; blob: Blob }[]): Promise<Blob> 
     dir.setUint32(24, data.length, true);
     dir.setUint16(28, name.length, true);
     dir.setUint32(42, offset, true);
-    parts.push(local.buffer, name, data);
+    parts.push(local.buffer, name, f.blob);
     central.push(new Uint8Array(dir.buffer), name);
     offset += 30 + name.length + data.length;
   }

@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreBinaries": ["magick"],
   "workspaces": {
     ".": { "entry": ["scripts/*.{ts,mjs}"], "project": ["scripts/**/*.{ts,mjs}"] },
     "packages/engine": {

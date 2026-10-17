@@ -1,4 +1,5 @@
 import { AID, CARD, TILE } from '@quantum/art';
+import { CMYK_TABLE } from './cmykTable';
 
 /**
  * The printed pieces, and the one convention every print file follows: size, bleed, sheet layout and
@@ -48,6 +49,14 @@ export function sizeNote(p: Piece, bleed: boolean): string {
 export function fileName(p: Piece, item: Printable, o: { bleed: boolean; dpi?: number; ext: string }): string {
   return `cubic-${p.id}-${item.name.replaceAll('/', '-')}${o.bleed ? '-bleed' : ''}${o.dpi ? `-${o.dpi}dpi` : ''}.${o.ext}`;
 }
+
+/** One face's CMYK PDF: `cubic-proof-a4-fogra39.pdf` (always with the bleed). */
+export const cmykName = (p: Piece, item: Printable) =>
+  `cubic-${p.id}-${item.name.replaceAll('/', '-')}-${CMYK_TABLE.condition.toLowerCase()}.pdf`;
+
+/** A set of CMYK PDFs, one per piece: `cubic-cards-community-fogra39.zip`. */
+export const cmykSetName = (p: Piece, o: { part?: string }) =>
+  `cubic-${p.plural}${o.part ? `-${o.part}` : ''}-${CMYK_TABLE.condition.toLowerCase()}.zip`;
 
 /** A whole set's file name: `cubic-cards-community-bleed.zip`. */
 export const setName = (p: Piece, o: { bleed: boolean; part?: string }) =>

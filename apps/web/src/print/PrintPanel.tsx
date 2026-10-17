@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
-import { exportPng, exportSvg, exportZip, printSheets, type Progress } from './exports';
+import { CMYK_TABLE } from './cmykTable';
+import { exportCmykPdf, exportCmykSet, exportPng, exportSvg, exportZip, printSheets, type Progress } from './exports';
 import { sizeNote, type Piece, type Printable } from './pieces';
 import { PAPER, type Paper } from './sheets';
 
@@ -49,15 +50,27 @@ export function PrintPanel({
 }: Props) {
   const [paper, setPaper] = useState<Paper>('a4');
   const [allCopies, setAllCopies] = useState(true);
-  const [withBacks, setWithBacks] = useState(false);
-  const [lift, setLift] = useState(false);
+  // On wherever there are backs: a print service needs them, and forgetting them prints blank backs.
+  const [withBacks, setWithBacks] = useState(!!backs);
   const [progress, setProgress] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const busy = progress !== null || !ready || !!fontsMissing;
+  /** How many of each face a full set prints, by front name: its copies. */
+  const quantities = () => {
+    const count = new Map<string, number>();
+    for (const f of sheets(true)) count.set(f.front.name, (count.get(f.front.name) ?? 0) + 1);
+    return count;
+  };
 
   const run: Run = (task) => {
+    setError(null);
     setProgress('Rendering…');
-    void task(setProgress).finally(() => setProgress(null));
+    void task(setProgress)
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setProgress(null));
   };
+  /** The face's back, when the set has one and backs are on. */
+  const backOf = (front: Printable) => (backs && withBacks ? sheets(false).find((f) => f.front.name === front.name)?.back : undefined);
 
   return (
     <>
@@ -65,14 +78,19 @@ export function PrintPanel({
         <label>
           <input type="checkbox" checked={bleed} onChange={(e) => onBleed(e.target.checked)} /> Bleed
         </label>
-        <label title="Lifts the deepest shadows above the press's darkest black, so detail there doesn't print as flat black">
-          <input type="checkbox" checked={lift} onChange={(e) => setLift(e.target.checked)} /> Lift shadows for print
-        </label>
-        <button className="btn" disabled={busy} onClick={() => run(() => exportPng(piece, item, bleed, 300, lift))}>
+        <button className="btn" disabled={busy} onClick={() => run(() => exportPng(piece, item, bleed, 300))}>
           PNG 300 dpi
         </button>
-        <button className="btn" disabled={busy} onClick={() => run(() => exportPng(piece, item, bleed, 600, lift))}>
+        <button className="btn" disabled={busy} onClick={() => run(() => exportPng(piece, item, bleed, 600))}>
           PNG 600 dpi
+        </button>
+        <button
+          className="btn"
+          disabled={busy}
+          onClick={() => run(() => exportCmykPdf(piece, item, backOf(item)))}
+          title={`CMYK for ${CMYK_TABLE.profile}, always with the bleed${backs ? '; its back as page 2 with Backs on' : ''}`}
+        >
+          CMYK PDF
         </button>
         {extra?.(run, busy)}
         <button
@@ -95,7 +113,7 @@ export function PrintPanel({
         <button
           className="btn btn-primary"
           disabled={busy}
-          onClick={() => run((p) => exportZip(piece, set, { bleed, lift, part: part?.toLowerCase(), notes }, p))}
+          onClick={() => run((p) => exportZip(piece, set, { bleed, part: part?.toLowerCase(), notes }, p))}
         >
           All {piece.plural} · ZIP
         </button>
@@ -103,11 +121,32 @@ export function PrintPanel({
           {set.length} PNGs at {piece.dpi} dpi{bleed ? ', with bleed' : ''}.
         </span>
       </div>
+      {backs && (
+        <div className="lab-controls">
+          <label>
+            <input type="checkbox" checked={withBacks} onChange={(e) => setWithBacks(e.target.checked)} /> Backs (duplex)
+          </label>
+        </div>
+      )}
       <div className="lab-controls">
         <button
           className="btn btn-primary"
           disabled={busy}
-          onClick={() => run((p) => printSheets(piece, sheets(allCopies), { paper, withBacks, lift }, p))}
+          onClick={() => run((p) => exportCmykSet(piece, sheets(false), quantities(), { withBacks, part: part?.toLowerCase(), notes }, p))}
+        >
+          CMYK PDFs · {CMYK_TABLE.condition} · ZIP
+        </button>
+        <span className="lab-note">
+          For print services that want CMYK and a file per {piece.id}: one PDF each with {piece.bleed} mm bleed, no crop marks, {piece.dpi}{' '}
+          dpi{backs && withBacks ? ', its back as page 2' : ''}, and how many to order of each in order.csv. Converted for{' '}
+          {CMYK_TABLE.profile}.
+        </span>
+      </div>
+      <div className="lab-controls">
+        <button
+          className="btn btn-primary"
+          disabled={busy}
+          onClick={() => run((p) => printSheets(piece, sheets(allCopies), { paper, withBacks }, p))}
         >
           Print sheets · PDF
         </button>
@@ -123,17 +162,13 @@ export function PrintPanel({
             <input type="checkbox" checked={allCopies} onChange={(e) => setAllCopies(e.target.checked)} /> All copies
           </label>
         )}
-        {backs && (
-          <label>
-            <input type="checkbox" checked={withBacks} onChange={(e) => setWithBacks(e.target.checked)} /> Backs (duplex)
-          </label>
-        )}
       </div>
       <p className="lab-note">
         {piece.cols * piece.rows} per page at trim size with crop marks; choose “Save as PDF” in the print dialog and print at 100 % (no fit
         to page).
         {backs && withBacks && ' Backs follow each page, mirrored for long-edge duplex.'}
       </p>
+      {error && <p className="lab-error">Export failed: {error}</p>}
       {progress && (
         <p className="lab-progress">
           <span className="spinner" /> {progress}
