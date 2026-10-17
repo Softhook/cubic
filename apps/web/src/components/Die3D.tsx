@@ -225,7 +225,7 @@ export const Die3D = memo(function Die3D({
   return (
     <div className={`die3d ${className}`} style={style} title={title} onClick={onClick}>
       <div className="die3d-shadow" />
-      <div className="die3d-hop" ref={hop}>
+      <div className={moving ? 'die3d-hop moving' : 'die3d-hop'} ref={hop}>
         {moving ? (
           <div className="die3d-cube" ref={cube}>
             {/* The die's solid inside, seen through the gaps the faces' rounded corners leave at the cube's corners. */}
@@ -244,11 +244,15 @@ export const Die3D = memo(function Die3D({
   );
 });
 
+/** Where pip `i` of the 3 × 3 grid goes (row / column). */
+const PIP_AREA = Array.from({ length: 9 }, (_, i) => ({ gridArea: `${Math.floor(i / 3) + 1} / ${(i % 3) + 1}` }));
+
+/** A face: its lit pips only, each in its cell of the grid (a cube is six faces, and a map has many dice). */
 function Face({ n, className }: { n: number; className: string }) {
   return (
     <div className={`die3d-face ${className}`}>
-      {Array.from({ length: 9 }, (_, i) => (
-        <span key={i} className={PIPS[n].includes(i) ? 'pip on' : 'pip'} />
+      {PIPS[n].map((i) => (
+        <span key={i} className="pip on" style={PIP_AREA[i]} />
       ))}
     </div>
   );

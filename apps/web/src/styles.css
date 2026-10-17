@@ -226,9 +226,10 @@ input { font: inherit; }
   background: radial-gradient(closest-side, rgba(0,0,0,.55), transparent);
   filter: blur(1px);
 }
-/* Keep the die permanently composited: promoting layers mid-tumble under the overlay's
-   backdrop-filter can flash a white frame (seen on the setup re-roll). The cube's planes each carry its turn (Die3D). */
-.die3d-hop, .die3d-cube > * { will-change: transform; }
+/* Keep a moving die composited from when its cube is built: promoting layers mid-tumble under the overlay's
+   backdrop-filter can flash a white frame (seen on the setup re-roll). The cube's planes each carry its turn (Die3D).
+   A die at rest isn't a layer: a map of them made every frame of a zoom or pan slower. */
+.die3d-hop.moving, .die3d-cube > * { will-change: transform; }
 .die3d-hop, .die3d-cube { width: 100%; height: 100%; }
 /* The cube isn't a tap target (the flat .die3d box and whatever holds it are): a face turned edge-on is hit-tested
    as a thin line reaching far beyond the die, which took taps meant for a planet above a ship showing a 3. */
@@ -250,8 +251,9 @@ input { font: inherit; }
   backface-visibility: hidden;
 }
 /* Three planes crossing at the cube's centre: through the corner gaps the die looks solid, not hollow (the page
-   behind showed through, black on the dark map). They reach only the middle of each edge, so the corners stay round. */
-.die3d-core { position: absolute; inset: 0; background: color-mix(in srgb, var(--die-color) 70%, black); }
+   behind showed through, black on the dark map). They reach only the middle of each edge, so the corners stay round,
+   and are rounded like the faces: seen face on, a square plane's corners showed past the front face's (Safari). */
+.die3d-core { position: absolute; inset: 0; border-radius: 16%; background: color-mix(in srgb, var(--die-color) 70%, black); }
 /* A die at rest (Die3D): its front face alone, flat, at the size the cube's perspective draws it (7 / 6.5), with no
    3D transform, which would make it a layer of its own. */
 .die3d-face.still  { transform: scale(1.0769); backface-visibility: visible; }
