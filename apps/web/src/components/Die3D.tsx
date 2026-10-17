@@ -46,22 +46,23 @@ export const PIPS: Record<number, number[]> = {
   6: [0, 2, 3, 5, 6, 8],
 };
 
-/** The cube's planes, each with where it sits after the cube's turn (`at`). */
-const FACES: { n: number; cls: string; at: string }[] = [
-  { n: 1, cls: 'front', at: 'translateZ(var(--half))' },
-  { n: 6, cls: 'back', at: 'rotateY(180deg) translateZ(var(--half))' },
-  { n: 3, cls: 'right', at: 'rotateY(90deg) translateZ(var(--half))' },
-  { n: 4, cls: 'left', at: 'rotateY(-90deg) translateZ(var(--half))' },
-  { n: 2, cls: 'top', at: 'rotateX(90deg) translateZ(var(--half))' },
-  { n: 5, cls: 'bottom', at: 'rotateX(-90deg) translateZ(var(--half))' },
+/**
+ * The cube's planes, in the order they're drawn, each with where it sits after the cube's turn (`at`). First the
+ * die's solid inside (`face` unset: three planes crossing at its centre, seen through the gaps the faces' rounded
+ * corners leave at the cube's corners), then the faces over it. One list renders the cube and turns it (Die3D's
+ * `turn` goes by child index), so the two can't drift apart.
+ */
+const PLANES: { face?: number; at: string }[] = [
+  { at: 'rotateY(90deg)' },
+  { at: 'rotateX(90deg)' },
+  { at: '' },
+  { face: 1, at: 'translateZ(var(--half))' },
+  { face: 6, at: 'rotateY(180deg) translateZ(var(--half))' },
+  { face: 3, at: 'rotateY(90deg) translateZ(var(--half))' },
+  { face: 4, at: 'rotateY(-90deg) translateZ(var(--half))' },
+  { face: 2, at: 'rotateX(90deg) translateZ(var(--half))' },
+  { face: 5, at: 'rotateX(-90deg) translateZ(var(--half))' },
 ];
-const CORES: { axis: string; at: string }[] = [
-  { axis: 'x', at: 'rotateY(90deg)' },
-  { axis: 'y', at: 'rotateX(90deg)' },
-  { axis: 'z', at: '' },
-];
-/** The cube's children in order: the core first, so the faces are drawn over it. */
-const PLANES = [...CORES, ...FACES].map((p) => p.at);
 
 export interface Die3DProps {
   value: number;
@@ -82,7 +83,7 @@ export interface Die3DProps {
   onClick?: () => void;
 }
 
-/** Memoised: the map re-renders on every move, and a die is up to six faces of nine pips. */
+/** Memoised: the map re-renders on every move, and a moving die is nine planes and 21 pips. */
 export const Die3D = memo(function Die3D({
   value,
   rolls = 0,
@@ -142,7 +143,7 @@ export const Die3D = memo(function Die3D({
   const turn = (el: HTMLDivElement, transition: string, rotate: string) => {
     Array.from(el.children as HTMLCollectionOf<HTMLElement>).forEach((plane, i) => {
       plane.style.transition = transition;
-      plane.style.transform = `perspective(calc(var(--die-size) * 7)) ${rotate} ${PLANES[i]}`;
+      plane.style.transform = `perspective(calc(var(--die-size) * 7)) ${rotate} ${PLANES[i].at}`;
     });
     turned.current = el;
   };
@@ -228,13 +229,7 @@ export const Die3D = memo(function Die3D({
       <div className={moving ? 'die3d-hop moving' : 'die3d-hop'} ref={hop}>
         {moving ? (
           <div className="die3d-cube" ref={cube}>
-            {/* The die's solid inside, seen through the gaps the faces' rounded corners leave at the cube's corners. */}
-            {CORES.map((c) => (
-              <div key={c.axis} className={`die3d-core ${c.axis}`} />
-            ))}
-            {FACES.map((f) => (
-              <Face key={f.n} n={f.n} className={f.cls} />
-            ))}
+            {PLANES.map((p, i) => (p.face ? <Face key={i} n={p.face} /> : <div key={i} className="die3d-core" />))}
           </div>
         ) : (
           <Face n={value} className="still" />
@@ -248,9 +243,9 @@ export const Die3D = memo(function Die3D({
 const PIP_AREA = Array.from({ length: 9 }, (_, i) => ({ gridArea: `${Math.floor(i / 3) + 1} / ${(i % 3) + 1}` }));
 
 /** A face: its lit pips only, each in its cell of the grid (a cube is six faces, and a map has many dice). */
-function Face({ n, className }: { n: number; className: string }) {
+function Face({ n, className }: { n: number; className?: string }) {
   return (
-    <div className={`die3d-face ${className}`}>
+    <div className={className ? `die3d-face ${className}` : 'die3d-face'}>
       {PIPS[n].map((i) => (
         <span key={i} className="pip on" style={PIP_AREA[i]} />
       ))}
