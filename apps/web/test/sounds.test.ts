@@ -75,6 +75,57 @@ describe('soundsFor', () => {
     expect(then).toEqual(['missileLoad']);
   });
 
+  it('hears a cube placed, from the state rather than the log', () => {
+    expect(
+      step((s) => {
+        s.board.planets[0].cubes.push(0);
+        s.players[0].cubesLeft--;
+      }).first,
+    ).toEqual(['cube']);
+  });
+
+  it('hears a cube displaced as another takes its place', () => {
+    const { first } = step(
+      (s) => {
+        s.board.planets[0].cubes = [0];
+        s.players[1].cubesLeft++;
+        s.players[0].cubesLeft--;
+      },
+      (s) => {
+        s.board.planets[0].cubes = [1];
+        s.players[1].cubesLeft--;
+      },
+    );
+    expect(first).toEqual(['cube', 'displace']);
+  });
+
+  it('hears a cube relocated', () => {
+    const { first } = step(
+      (s) => {
+        s.board.planets[0].cubes = [];
+        s.board.planets[1].cubes.push(1);
+      },
+      (s) => void s.board.planets[0].cubes.push(1),
+    );
+    expect(first).toEqual(['relocate']);
+  });
+
+  it('hears research and dominance gained', () => {
+    const { first } = step((s) => {
+      s.players[0].research++;
+      s.players[0].dominance++;
+    });
+    expect(first).toEqual(['research', 'dominance']);
+  });
+
+  it('hears no dominance chime under a kill’s explosion', () => {
+    const { first } = step((s) => {
+      die(s, 'p1d0').loc = { zone: 'scrapyard' };
+      s.players[0].dominance++;
+    });
+    expect(first).toEqual(['explode']);
+  });
+
   it('plays the fanfare for the winner, and for a screen that plays for nobody (an onlooker)', () => {
     expect(step(victory, undefined, (p) => p === 1).first).toEqual(['win']);
     expect(step(victory, undefined, () => false).first).toEqual(['win']);

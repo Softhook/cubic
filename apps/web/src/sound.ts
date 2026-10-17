@@ -91,6 +91,18 @@ function boom(delay = 0, size = 1) {
   noise(0.35, 0.08, { delay: delay + 0.08, type: 'highpass', from: 3000, to: 1200, rise: 0.02 });
 }
 
+/**
+ * A cube dropped on a planet, heard as the board shows it (styles.css `cube-in`, landing 0.24 s in): a falling
+ * whistle, the clack of it landing, then a ringing chord as the planet is claimed. `delay`: when the drop starts.
+ */
+function cubeDrop(delay = 0) {
+  noise(0.24, 0.05, { delay, type: 'bandpass', from: 2600, to: 900, q: 2, rise: 0.18 });
+  const land = delay + 0.24;
+  tone(jitter(150), 0.2, 'sine', 0.28, land, 70, 0.003);
+  noise(0.05, 0.25, { delay: land, type: 'bandpass', from: 2400, q: 3, rise: 0.002 });
+  [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.8, 'sine', 0.04, land + 0.03 + i * 0.035));
+}
+
 export const sfx = {
   select: () => tone(880, 0.07, 'sine', 0.05),
   /** It's your move (online): two soft notes rising. `level` turns it down (in the game, where the player is watching). */
@@ -143,9 +155,26 @@ export const sfx = {
       noise(0.05, 0.12, { delay: d, type: 'bandpass', from: 3400, q: 6, rise: 0.003 });
     }
   },
-  cube: () => {
-    tone(660, 0.18, 'sine', 0.07);
-    tone(990, 0.3, 'sine', 0.06, 0.09);
+  /** A cube placed on a planet: conquered, seized, or a starting planet. */
+  cube: () => cubeDrop(),
+  /** A cube knocked off a planet (a conquest displacing it): a clack, the cube tumbling away, a falling note. */
+  displace: () => {
+    noise(0.05, 0.22, { type: 'bandpass', from: 1800, q: 3, rise: 0.002 });
+    [0.09, 0.17, 0.23].forEach((d, i) => tick(0.14 - i * 0.03, 1500 - i * 250, d));
+    tone(392, 0.4, 'triangle', 0.045, 0.02, 196);
+  },
+  /** A cube relocated: the beam carrying it (board/CardEffects), then its drop where it lands (board/staging). */
+  relocate: () => {
+    tone(1400, 0.36, 'sine', 0.035, 0, 500, 0.05);
+    noise(0.36, 0.05, { type: 'highpass', from: 6000, to: 2000, rise: 0.1 });
+    cubeDrop(0.36);
+  },
+  /** Research gained: a quick rising data chirp. */
+  research: () => [880, 1175, 1760].forEach((f, i) => tone(f, 0.09, 'triangle', 0.035, i * 0.05)),
+  /** Dominance gained: a low surge of power. */
+  dominance: () => {
+    tone(98, 0.45, 'sawtooth', 0.03, 0, 147, 0.08);
+    tone(196, 0.4, 'triangle', 0.04, 0.03, 294, 0.08);
   },
   /** A card taken: a paper flick. */
   card: () => {

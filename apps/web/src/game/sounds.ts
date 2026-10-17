@@ -5,13 +5,13 @@ import { lost } from './view';
 
 type Sound = keyof typeof sfx;
 
-/** The sound for each logged event. Ships destroyed, moved or deployed are heard from the state instead (see `playSounds`). */
+/**
+ * The sound for each logged event. Ships destroyed, moved or deployed, cubes placed or moved and tracks gained are
+ * heard from the state instead (see `soundsFor`).
+ */
 const EVENT_SOUNDS: Partial<Record<LogEvent, Sound>> = {
   victory: 'win',
   infamy: 'infamy',
-  seize: 'cube',
-  conquer: 'cube',
-  startPlanet: 'cube',
   repelled: 'repel',
   missile: 'missile',
   cardTaken: 'card',
@@ -61,6 +61,14 @@ export function soundsFor(
     const s = e.event && EVENT_SOUNDS[e.event];
     if (s) first.add(s === 'win' && lost(next, mine) ? 'lose' : s);
   }
+  // Cubes: placed, knocked off, or relocated (a planet's cubes changed with none placed or taken back). Heard as they drop.
+  const placed = next.players.some((pl, i) => pl.cubesLeft < prev.players[i].cubesLeft);
+  const displaced = next.players.some((pl, i) => pl.cubesLeft > prev.players[i].cubesLeft);
+  if (placed) first.add('cube');
+  if (displaced) first.add('displace');
+  const cubesOf = (s: GameState) => s.board.planets.map((p) => [...p.cubes].sort().join()).join('|');
+  if (!placed && !displaced && cubesOf(prev) !== cubesOf(next)) first.add('relocate');
+
   // With nothing to go first, the effects themselves do.
   const effects = first.size ? then : first;
 
@@ -91,6 +99,11 @@ export function soundsFor(
 
   if (next.players.some((pl, i) => pl.missiles > prev.players[i].missiles)) effects.add('missileLoad');
   if (next.gates.length > prev.gates.length) effects.add('portal');
+
+  // The tracks, unless a louder sound already says so: a breakthrough (research), Infamy or a kill (dominance).
+  const rose = (k: 'research' | 'dominance') => next.players.some((pl, i) => pl[k] > prev.players[i][k]);
+  if (rose('research') && !first.has('breakthrough')) effects.add('research');
+  if (rose('dominance') && !destroyed && !first.has('infamy')) effects.add('dominance');
 
   // Once-per-turn skills used this step.
   const sameTurn = prev.turn.number === next.turn.number && prev.turn.player === next.turn.player;
