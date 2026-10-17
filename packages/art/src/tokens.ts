@@ -66,8 +66,8 @@ const COOL_BACK_LIGHT: Hsl = [196, 90, 70];
  * Planet number → look. The planet carries the number's identity, so each number has its own kind of
  * world and its own colours, far apart in hue *and* lightness so they also differ for colour-blind
  * players: 7 small green-and-blue Earth-like worlds, 8 golden banded gas giants, 9 white ice worlds and
- * pale ice giants (the lightest), 10 big black-and-red molten worlds (the darkest). None is
- * blue-violet, so no planet blends into the nebula.
+ * pale ice giants (the lightest), 10 big black-and-red molten worlds (the darkest). These are
+ * the base hues: planets vary around them and sometimes take an off-type colour (planet.ts).
  */
 export const PLANET_FAMILY: Record<number, PlanetFamily> = {
   7: { hue: 150, rimLight: 78, backLight: WARM_BACK_LIGHT, types: ['ocean'] },

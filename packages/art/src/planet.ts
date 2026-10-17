@@ -19,7 +19,7 @@ export interface PlanetOptions {
 
 /**
  * Land on Earth-like worlds: hue, saturation, lightness from shore to highland, and the peaks. Listed
- * by how common each is; all green, so every 7 reads as green and blue (no orange that could pass for a 9).
+ * by how common each is; mostly green, so most 7s read as green and blue.
  */
 const TEMPERATE = { hue: 100, sat: 42, light: [26, 44] as [number, number], peaks: [0, 0, 90] as Hsl };
 const JUNGLE = { hue: 128, sat: 48, light: [18, 32] as [number, number], peaks: [100, 25, 50] as Hsl };
@@ -28,8 +28,41 @@ const SWAMP = { hue: 150, sat: 34, light: [16, 30] as [number, number], peaks: [
 const STEPPE = { hue: 76, sat: 36, light: [36, 54] as [number, number], peaks: [60, 20, 80] as Hsl };
 const LANDS = [TEMPERATE, TEMPERATE, TEMPERATE, JUNGLE, JUNGLE, JUNGLE, TUNDRA, SWAMP, STEPPE];
 
-/** The sea on Earth-like worlds: always blue, whatever the family hue. */
+/** Alien vegetation, on some Earth-like worlds: crimson, violet, amber or teal. */
+const ALIEN_LANDS = [
+  { hue: 350, sat: 42, light: [22, 38] as [number, number], peaks: [0, 0, 92] as Hsl },
+  { hue: 282, sat: 32, light: [22, 40] as [number, number], peaks: [0, 0, 92] as Hsl },
+  { hue: 36, sat: 48, light: [30, 48] as [number, number], peaks: [30, 20, 86] as Hsl },
+  { hue: 168, sat: 40, light: [20, 36] as [number, number], peaks: [0, 0, 92] as Hsl },
+];
+
+/** The sea on Earth-like worlds: blue, from teal to deep blue, whatever the family hue. */
 const SEA_HUE = 208;
+
+/**
+ * Off-type colours some planets take instead of their family hue (absolute hues). Each number keeps
+ * its lightness (the ice the palest, the lava the darkest), so numbers still tell apart.
+ */
+const EXOTIC_HUES: Record<'giant' | 'iceGiant' | PlanetType, number[]> = {
+  giant: [352, 16, 70, 165, 280],
+  iceGiant: [160, 176, 228, 262],
+  ice: [160, 228, 268, 330],
+  lava: [110, 190, 285, 328, 46],
+  rocky: [20, 40, 200],
+  ocean: [176, 196],
+  gas: [],
+};
+
+/** How often a planet takes an off-type colour. */
+const EXOTIC_CHANCE = 0.3;
+
+/** The planet's main hue: its family's, shifted a fair way, or now and then an off-type colour. */
+function planetHue(o: PlanetOptions, rng: Rng): number {
+  const base = PLANET_FAMILY[o.number].hue;
+  const kind = o.type === 'gas' ? (o.number === 9 ? 'iceGiant' : 'giant') : o.type;
+  if (rng.chance(EXOTIC_CHANCE)) return rng.pick(EXOTIC_HUES[kind]) + rng.range(-10, 10);
+  return base + rng.range(-16, 16);
+}
 
 /** Light comes from the top left on every planet, card and tile. */
 const LIGHT = { x: 0.32, y: 0.28 };
@@ -450,7 +483,7 @@ function ocean(c: Ctx): Surface {
   const { o, rng, s, f } = c;
   const { id, cx, cy, r } = o;
   // An Earth-like world: blue sea, then one kind of land, how much of each varying per planet.
-  const land = rng.pick(LANDS);
+  const land = rng.pick(rng.chance(0.25) ? ALIEN_LANDS : LANDS);
   // How land and sea are laid out: continents, scattered islands, one supercontinent, or land with lakes.
   const layout = rng.pick(['continents', 'continents', 'islands', 'pangaea', 'lakes'] as const);
   const [freq, seaStops] = {
@@ -460,7 +493,7 @@ function ocean(c: Ctx): Surface {
     lakes: [rng.range(0.06, 0.1), 2],
   }[layout];
   const landStops = 9 - seaStops;
-  const sea = SEA_HUE + rng.range(-14, 12);
+  const sea = SEA_HUE + rng.range(-30, 18);
   const stops: Hsl[] = [];
   for (let i = 0; i < seaStops; i++) {
     const t = i / (seaStops - 1);
@@ -543,7 +576,7 @@ function lightDefs(o: PlanetOptions, hue: number): string {
 export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
   const { id, cx, cy, r, rng } = o;
   const look = rng.fork('look');
-  const hue = PLANET_FAMILY[o.number].hue + look.range(-8, 8);
+  const hue = planetHue(o, look);
   const region = `filterUnits="userSpaceOnUse" x="${n(cx - r)}" y="${n(cy - r)}" width="${n(2 * r)}" height="${n(2 * r)}"`;
   const surf = surface(o, hue, rng.fork('surface'));
   const tilt = look.range(-28, 28);

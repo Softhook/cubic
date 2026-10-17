@@ -115,7 +115,7 @@ in hue *and* lightness (`PLANET_FAMILY` in tokens):
 | 9 | Ice: white, frost, turquoise or blue ice, cracked, criss-crossed with long lines, striped, broken into floes or cratered; pale cyan, turquoise or blue ice giants, smooth or banded, with polar hoods and cloud streaks | pale, tinted cyan to blue (lightest) |
 | 10 | Molten lava worlds: black basalt, dark red or ash crust; red, orange or yellow magma as thin cracks, wide rivers, fine veins or lakes; sometimes glowing vents | black and red (darkest) |
 
-No planet is blue-violet, so none blends into the nebula. The number also sets the **size**, in big
+Hues vary a fair way around each family's colour, and about one planet in three takes an off-type colour instead (rose or teal gas giants, mint or lilac ice, green, cyan or violet magma, crimson or violet vegetation; `EXOTIC_HUES` in `planet.ts`). Each number keeps its lightness, so the 9 is still the palest and the 10 the darkest. The number also sets the **size**, in big
 steps (7: 24.2 mm up to 10: 46.2 mm, nearly twice as wide). So a planet's number reads from its look,
 its size and the numeral, which also helps colour-blind players. Within a number, the seed picks the
 variant and surface, so every planet is distinct.
