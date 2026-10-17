@@ -6,7 +6,7 @@ import { AID, CARD, TILE } from '@quantum/art';
  */
 
 export interface Piece {
-  id: 'card' | 'tile' | 'aid';
+  id: 'card' | 'tile' | 'aid' | 'proof';
   /** For file names: `cubic-cards-…`. */
   plural: string;
   /** Trim size, mm. */
@@ -17,12 +17,14 @@ export interface Piece {
   /** How many fit across and down a print sheet (A4 and US Letter both). */
   cols: number;
   rows: number;
+  /** Resolution of the set's PNGs and the print sheets: 600 for pieces with small text, so it prints crisp. */
+  dpi: number;
 }
 
 export const PIECES = {
-  card: { id: 'card', plural: 'cards', w: CARD.w, h: CARD.h, bleed: CARD.bleed, cols: 3, rows: 3 },
-  tile: { id: 'tile', plural: 'tiles', w: TILE.size, h: TILE.size, bleed: TILE.bleed, cols: 2, rows: 2 },
-  aid: { id: 'aid', plural: 'aids', w: AID.w, h: AID.h, bleed: AID.bleed, cols: 1, rows: 2 },
+  card: { id: 'card', plural: 'cards', w: CARD.w, h: CARD.h, bleed: CARD.bleed, cols: 3, rows: 3, dpi: 600 },
+  tile: { id: 'tile', plural: 'tiles', w: TILE.size, h: TILE.size, bleed: TILE.bleed, cols: 2, rows: 2, dpi: 300 },
+  aid: { id: 'aid', plural: 'aids', w: AID.w, h: AID.h, bleed: AID.bleed, cols: 1, rows: 2, dpi: 600 },
 } as const satisfies Record<string, Piece>;
 
 /** One printable face: a card front, a deck's back, a tile. */
@@ -32,9 +34,6 @@ export interface Printable {
   /** The face as an SVG document, at trim size or with the bleed. */
   svg: (bleed: boolean) => string;
 }
-
-/** The DPI for sets and sheets; single exports offer 600 too. */
-export const PRINT_DPI = 300;
 
 /** A piece's size with or without its bleed, mm. */
 export const pieceSize = (p: Piece, bleed: boolean) => ({ w: p.w + (bleed ? 2 * p.bleed : 0), h: p.h + (bleed ? 2 * p.bleed : 0) });

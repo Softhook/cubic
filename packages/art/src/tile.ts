@@ -33,6 +33,8 @@ export interface TileOptions {
   idPrefix?: string;
   /** Draw only the painted art (no markings) or only the markings (no art). Default: both. */
   only?: 'art' | 'markings';
+  /** `@font-face` rules to embed, so print files set the number and label in their own fonts, not the system's. */
+  fontCss?: string;
 }
 
 const CELL_CENTRES = [0, 1, 2].map((i) => (i + 0.5) * TILE.cell);
@@ -138,7 +140,7 @@ const HATCH = { gap: 3, inset: 1.5 };
  * Diagonal hatching across the pad centred on (cx, cy): plain line segments, clipped by hand to a
  * square inset from the pad, so they stay editable vectors without a clip path.
  */
-function hatch(cx: number, cy: number): string {
+export function hatch(cx: number, cy: number): string {
   const h = TILE.pad / 2 - HATCH.inset;
   let out = '';
   // Lines u + v = c across the square |u|, |v| ≤ h (u right, v down from the centre): bottom left to top right.
@@ -235,7 +237,7 @@ function label(spec: TileSpec): Fragment {
         .map((t, i) => line(top - 0.3 + i * 1.75, LABEL_TEXT.line, t, `letter-spacing=".04" fill="#c7d6ff" fill-opacity=".55"`))
         .join('') +
       (tip > start
-        ? `<line x1="${n(start)}" y1="${n(start)}" x2="${n(tip)}" y2="${n(tip)}" stroke="#c7d6ff" stroke-opacity=".45" stroke-width=".12"/>` +
+        ? `<line x1="${n(start)}" y1="${n(start)}" x2="${n(tip)}" y2="${n(tip)}" stroke="#c7d6ff" stroke-opacity=".45" stroke-width=".15"/>` +
           `<circle cx="${n(tip)}" cy="${n(tip)}" r=".35" fill="#c7d6ff" fill-opacity=".7"/>`
         : ''),
   };
@@ -479,6 +481,8 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
   }
   if (!isVoid && o.only !== 'art') parts.push(label(spec));
   if (o.markings && o.only !== 'art') parts.push(marks());
+
+  if (o.fontCss) parts.push({ defs: `<style>${o.fontCss}</style>`, body: '' });
 
   const all = join(...parts);
   return document(o.rounded ? dieCut(all, id, TILE.size, TILE.size, TILE.corner) : all, area);

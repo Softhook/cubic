@@ -19,16 +19,30 @@ export const blobToDataUrl = (blob: Blob) =>
     r.readAsDataURL(blob);
   });
 
-/** Draws an SVG document to a `w` × `h` px bitmap, encoded as `type` (browsers that can't encode it give PNG). */
-export async function rasterise(svg: string, w: number, h: number, type = 'image/png', quality?: number): Promise<Blob> {
+/** Draws an SVG document to a `w` × `h` px canvas, over `background` when given (else transparent). */
+export async function drawSvg(svg: string, w: number, h: number, background?: string): Promise<HTMLCanvasElement> {
   const img = new Image();
   img.src = dataUrl(svg);
   await img.decode();
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
-  canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
-  return new Promise((resolve, reject) =>
+  const ctx = canvas.getContext('2d')!;
+  if (background) {
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, w, h);
+  }
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas;
+}
+
+/** A canvas encoded as `type` (browsers that can't encode it give PNG). */
+export const encode = (canvas: HTMLCanvasElement, type = 'image/png', quality?: number) =>
+  new Promise<Blob>((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('drawing the SVG failed'))), type, quality),
   );
+
+/** Draws an SVG document to a `w` × `h` px bitmap, encoded as `type`. */
+export async function rasterise(svg: string, w: number, h: number, type = 'image/png', quality?: number): Promise<Blob> {
+  return encode(await drawSvg(svg, w, h), type, quality);
 }

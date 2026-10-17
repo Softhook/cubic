@@ -247,6 +247,7 @@ export function CardLab() {
             copies
             backs
             ready={fonts !== null}
+            fontsMissing={fonts === ''}
           />
         </aside>
       </div>

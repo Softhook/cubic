@@ -211,7 +211,7 @@ function art(face: CardFace, id: string, hue: number, p: CardPalette, r: Rng): F
 function hud(face: CardFace, label: string): string {
   const { x, y } = HUD;
   const text = (tx: number, s: string, anchor: string) =>
-    `<text x="${n(tx)}" y="${n(y)}" font-family="${FONTS.body}" font-size="1.9" font-weight="700" letter-spacing=".22" fill="#fff" text-anchor="${anchor}" opacity=".92">${esc(s.toUpperCase())}</text>`;
+    `<text x="${n(tx)}" y="${n(y)}" font-family="${FONTS.body}" font-size="2.1" font-weight="700" letter-spacing=".22" fill="#fff" text-anchor="${anchor}" opacity=".92">${esc(s.toUpperCase())}</text>`;
   return text(x, label, 'start') + (face.copies && face.copies > 1 ? text(CARD.w - x, `×${face.copies}`, 'end') : '');
 }
 
@@ -260,7 +260,7 @@ function textPanel(face: CardFace, category: string, area: Box, p: CardPalette, 
   const fx = 3.2;
   const fy = H - 2.4;
   const foot = (x: number, text: string, anchor: string) =>
-    `<text x="${n(x)}" y="${n(fy)}" font-family="${FONTS.body}" font-size="1.35" font-weight="600" letter-spacing=".15" fill="${p.muted}" text-anchor="${anchor}">${esc(text.toUpperCase())}</text>`;
+    `<text x="${n(x)}" y="${n(fy)}" font-family="${FONTS.body}" font-size="1.8" font-weight="600" letter-spacing=".15" fill="${p.muted}" text-anchor="${anchor}">${esc(text.toUpperCase())}</text>`;
   const num = face.index !== undefined && face.deckSize ? `${String(face.index).padStart(2, '0')}/${face.deckSize}` : '';
   return out + (num ? foot(fx, num, 'start') : '') + foot(W - fx, info.edition, 'end');
 }

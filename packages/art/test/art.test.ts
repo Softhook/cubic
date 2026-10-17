@@ -21,6 +21,7 @@ import { ILLUSTRATIONS } from '../src/illustrations';
 import { rng } from '../src/rng';
 import { MIN_TEXT, playerAidSvg } from '../src/aid';
 import { shipDie } from '../src/kit/starships';
+import { PRESS_TEST, pressTestSvg } from '../src/proof';
 
 /** Gap between a box (centre, half-width, half-height) and a square (centre, half-size). */
 const boxGap = (cx: number, cy: number, hw: number, hh: number, x: number, y: number, h: number) =>
@@ -217,5 +218,20 @@ describe('player aid', () => {
     const ships = [1, 2, 3, 4, 5, 6].map((v) => shipDie('s', v, 0, 0, 19, 200).body);
     expect(new Set(ships).size).toBe(6);
     for (const s of ships) expect(s).not.toMatch(/NaN|undefined/);
+  });
+});
+
+describe('press test', () => {
+  it('renders an A4 page with every category, the ramps and the pieces it is given', () => {
+    const svg = pressTestSvg({ tile: 'data:image/svg+xml,a', card: 'data:image/svg+xml,b' });
+    expect(svg).not.toMatch(/NaN|undefined|Infinity/);
+    expect(svg).toContain(`viewBox="0 0 ${PRESS_TEST.w} ${PRESS_TEST.h}"`);
+    for (const c of Object.values(CARD_CATEGORIES)) expect(svg).toContain(`>${c.label}<`);
+    expect(svg.match(/<image /g)).toHaveLength(2);
+    // A repeated attribute makes the SVG unreadable as an image.
+    for (const [tag] of svg.matchAll(/<[a-z][^>]*>/g)) {
+      const names = [...tag.matchAll(/\s([\w:-]+)=/g)].map((m) => m[1]);
+      expect(new Set(names).size, tag.slice(0, 80)).toBe(names.length);
+    }
   });
 });

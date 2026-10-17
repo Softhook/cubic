@@ -97,8 +97,12 @@ export const FONTS = {
 /** Near-black ink: dark card paper, outlines behind big numerals, glyphs on lit chips. */
 export const INK = 'hsl(228 45% 8%)';
 
-/** Hues of the two tracks every player has: research violet, dominance red-orange. */
-export const RESEARCH = 268;
+/**
+ * Hues of the two tracks every player has: research purple, dominance red-orange. Research sits at 290°
+ * rather than a bluer violet: CMYK can't reach saturated violet, and at 268° it printed barely apart
+ * from the ship blue (218°); towards magenta, ink holds more of the gap.
+ */
+export const RESEARCH = 290;
 export const DOMINANCE = 12;
 
 /** The two combat dice, in print and in the game: black for the attacker, white for the defender. */

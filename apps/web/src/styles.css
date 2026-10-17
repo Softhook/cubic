@@ -24,8 +24,8 @@
   /* Player tracks: Dominance red-orange, Research violet. */
   --dom-1: #ff8a5c;
   --dom-2: #ff5d73;
-  --res-1: hsl(256 90% 72%);
-  --res-2: hsl(268 90% 66%);
+  --res-1: hsl(278 90% 72%);
+  --res-2: hsl(290 90% 66%);
   --radius: 14px;
   --display: 'Orbitron', 'Inter', system-ui, sans-serif;
   --body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;

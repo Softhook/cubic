@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { TILE_SET, dataUrl, editableTileSvg, tileSvg, type PlanetType, type TileSpec } from '@quantum/art';
 import { blobToDataUrl, download } from '../files';
 import { svgToPng } from '../print/exports';
 import { PIECES, fileName, pieceSize, type Printable } from '../print/pieces';
 import { PrintPanel } from '../print/PrintPanel';
+import { tileFontCss } from './cards';
 import { LabHeader } from './LabHeader';
 
 /**
@@ -20,15 +21,21 @@ export function TileLab() {
   const [selected, setSelected] = useState(TILE_SET[0].id);
   const [markings, setMarkings] = useState(true);
   const [bleed, setBleed] = useState(false);
+  // The number and label fonts, embedded in the detail view and the print files (thumbnails use the system's).
+  const [fonts, setFonts] = useState<string | null>(null);
+
+  useEffect(() => {
+    void tileFontCss().then(setFonts);
+  }, []);
 
   const specs = useMemo(() => TILE_SET.map((t) => ({ ...t, ...overrides[t.id] })), [overrides]);
   const thumbs = useMemo(() => specs.map((t) => ({ spec: t, url: dataUrl(tileSvg(t, { markings, rounded: true })) })), [specs, markings]);
   const spec = specs.find((t) => t.id === selected)!;
-  const svg = useMemo(() => tileSvg(spec, { markings, bleed }), [spec, markings, bleed]);
+  const svg = useMemo(() => tileSvg(spec, { markings, bleed, fontCss: fonts ?? '' }), [spec, markings, bleed, fonts]);
   const set = (o: Override) => setOverrides((all) => ({ ...all, [spec.id]: { ...all[spec.id], ...o } }));
 
   // Prints the set as shown: seeds and types being explored, and the markings setting, included.
-  const printable = (t: TileSpec): Printable => ({ name: t.id, svg: (b) => tileSvg(t, { markings, bleed: b }) });
+  const printable = (t: TileSpec): Printable => ({ name: t.id, svg: (b) => tileSvg(t, { markings, bleed: b, fontCss: fonts ?? '' }) });
   const item = printable(spec);
 
   /** Illustrator can't render SVG filters, so the art goes in as a 600 dpi bitmap with vector markings on top. */
@@ -107,6 +114,8 @@ export function TileLab() {
             set={specs.map(printable)}
             notes={markings ? '' : 'Without print markings.\n'}
             sheets={() => specs.map((t) => ({ front: printable(t) }))}
+            ready={fonts !== null}
+            fontsMissing={fonts === ''}
             extra={(run, busy) => (
               <button
                 className="btn"

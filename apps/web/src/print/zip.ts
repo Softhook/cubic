@@ -6,7 +6,7 @@ const CRC_TABLE = Array.from({ length: 256 }, (_, i) => {
   return c >>> 0;
 });
 
-function crc32(data: Uint8Array): number {
+export function crc32(data: Uint8Array): number {
   let c = 0xffffffff;
   for (const byte of data) c = CRC_TABLE[(c ^ byte) & 0xff] ^ (c >>> 8);
   return (c ^ 0xffffffff) >>> 0;

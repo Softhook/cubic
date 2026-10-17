@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { exportPng, exportSvg, exportZip, printSheets, type Progress } from './exports';
-import { PRINT_DPI, sizeNote, type Piece, type Printable } from './pieces';
+import { sizeNote, type Piece, type Printable } from './pieces';
 import { PAPER, type Paper } from './sheets';
 
 /** Runs an export with progress messages; the panel is busy until it ends. */
@@ -25,17 +25,34 @@ interface Props {
   backs?: boolean;
   /** False while the faces can't be drawn yet (fonts loading). */
   ready?: boolean;
+  /** The fonts didn't load (offline): exports are off, so no print file falls back to system fonts. */
+  fontsMissing?: boolean;
   /** More single-face exports, beside the standard ones. */
   extra?: (run: Run, busy: boolean) => ReactNode;
 }
 
 /** The print exports for a piece, the same on every Art Lab page: this face, then the whole set. */
-export function PrintPanel({ piece, item, bleed, onBleed, set, part, notes, sheets, copies, backs, ready = true, extra }: Props) {
+export function PrintPanel({
+  piece,
+  item,
+  bleed,
+  onBleed,
+  set,
+  part,
+  notes,
+  sheets,
+  copies,
+  backs,
+  ready = true,
+  fontsMissing,
+  extra,
+}: Props) {
   const [paper, setPaper] = useState<Paper>('a4');
   const [allCopies, setAllCopies] = useState(true);
   const [withBacks, setWithBacks] = useState(false);
+  const [lift, setLift] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
-  const busy = progress !== null || !ready;
+  const busy = progress !== null || !ready || !!fontsMissing;
 
   const run: Run = (task) => {
     setProgress('Rendering…');
@@ -48,10 +65,13 @@ export function PrintPanel({ piece, item, bleed, onBleed, set, part, notes, shee
         <label>
           <input type="checkbox" checked={bleed} onChange={(e) => onBleed(e.target.checked)} /> Bleed
         </label>
-        <button className="btn" disabled={busy} onClick={() => run(() => exportPng(piece, item, bleed, PRINT_DPI))}>
-          PNG {PRINT_DPI} dpi
+        <label title="Lifts the deepest shadows above the press's darkest black, so detail there doesn't print as flat black">
+          <input type="checkbox" checked={lift} onChange={(e) => setLift(e.target.checked)} /> Lift shadows for print
+        </label>
+        <button className="btn" disabled={busy} onClick={() => run(() => exportPng(piece, item, bleed, 300, lift))}>
+          PNG 300 dpi
         </button>
-        <button className="btn" disabled={busy} onClick={() => run(() => exportPng(piece, item, bleed, 600))}>
+        <button className="btn" disabled={busy} onClick={() => run(() => exportPng(piece, item, bleed, 600, lift))}>
           PNG 600 dpi
         </button>
         {extra?.(run, busy)}
@@ -66,27 +86,28 @@ export function PrintPanel({ piece, item, bleed, onBleed, set, part, notes, shee
       </div>
       <p className="lab-note">
         {sizeNote(piece, bleed)}
-        {bleed ? ', as print services want it' : ''}.
+        {bleed ? ', as print services want it' : ''}. PNGs are opaque, tagged sRGB and carry their dpi.
       </p>
+      {fontsMissing && <p className="lab-note">The fonts didn’t load (offline?), so exports are off: they would print in system fonts.</p>}
 
       <h3 className="lab-sub">Whole set{part && ` (${part})`}</h3>
       <div className="lab-controls">
         <button
           className="btn btn-primary"
           disabled={busy}
-          onClick={() => run((p) => exportZip(piece, set, { bleed, part: part?.toLowerCase(), notes }, p))}
+          onClick={() => run((p) => exportZip(piece, set, { bleed, lift, part: part?.toLowerCase(), notes }, p))}
         >
           All {piece.plural} · ZIP
         </button>
         <span className="lab-note">
-          {set.length} PNGs at {PRINT_DPI} dpi{bleed ? ', with bleed' : ''}.
+          {set.length} PNGs at {piece.dpi} dpi{bleed ? ', with bleed' : ''}.
         </span>
       </div>
       <div className="lab-controls">
         <button
           className="btn btn-primary"
           disabled={busy}
-          onClick={() => run((p) => printSheets(piece, sheets(allCopies), paper, withBacks, p))}
+          onClick={() => run((p) => printSheets(piece, sheets(allCopies), { paper, withBacks, lift }, p))}
         >
           Print sheets · PDF
         </button>

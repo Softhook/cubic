@@ -46,5 +46,6 @@ export {
   type Measure,
 } from './card';
 export { AID, MIN_TEXT, playerAidSvg, type AidEdition, type AidOptions } from './aid';
+export { PRESS_TEST, pressTestSvg } from './proof';
 export { missile } from './kit/effects';
 export { shipDie } from './kit/starships';

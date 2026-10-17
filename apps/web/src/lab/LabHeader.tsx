@@ -4,6 +4,7 @@ const PAGES = [
   { id: 'tiles', name: 'Tiles', href: '#lab' },
   { id: 'cards', name: 'Cards', href: '#lab/cards' },
   { id: 'aid', name: 'Player aid', href: '#lab/aid' },
+  { id: 'proof', name: 'Press test', href: '#lab/proof' },
 ];
 
 /** The Art Lab's top bar: page tabs, the page's own controls, and the way back. */

@@ -118,44 +118,50 @@ export function cardFontsReady(): Promise<void> {
   return fontsReady;
 }
 
-let fontCss: Promise<string> | null = null;
-
 /**
- * The card fonts as `@font-face` rules with the font files inlined. An SVG drawn as an image can't
- * reach the page's fonts, so exports carry their own. Empty when offline: cards then fall back to
- * system fonts, and the first call after the browser is back online tries again.
+ * Fonts as `@font-face` rules with the font files inlined, from a Google Fonts query. An SVG drawn as
+ * an image can't reach the page's fonts, so exports carry their own. Empty when offline: the art then
+ * falls back to system fonts (print exports refuse to run), and the first call after the browser is
+ * back online tries again.
  */
-export function cardFontCss(): Promise<string> {
-  fontCss ??= (async () => {
-    try {
-      await cardFontsReady();
-      const css = await (
-        await fetch('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;1,400&family=Orbitron:wght@900&display=block')
-      ).text();
-      // Latin only: the card text needs nothing else, and each subset is another file.
-      const blocks = [...css.matchAll(/\/\* latin \*\/\s*(@font-face\s*\{[^}]*\})/g)].map((m) => m[1]);
-      const files = new Map<string, Promise<string>>();
-      const inline = (url: string) => {
-        if (!files.has(url))
-          files.set(
-            url,
-            fetch(url)
-              .then((r) => r.blob())
-              .then(blobToDataUrl),
-          );
-        return files.get(url)!;
-      };
-      const out = await Promise.all(
-        blocks.map(async (b) => {
-          const url = /url\(([^)]+)\)/.exec(b)?.[1];
-          return url ? b.replace(url, await inline(url)) : b;
-        }),
-      );
-      return out.join('');
-    } catch {
-      addEventListener('online', () => (fontCss = null), { once: true });
-      return '';
-    }
-  })();
-  return fontCss;
+function embeddedFonts(query: string, ready: () => Promise<void>): () => Promise<string> {
+  let css: Promise<string> | null = null;
+  return () => {
+    css ??= (async () => {
+      try {
+        await ready();
+        const sheet = await (await fetch(`https://fonts.googleapis.com/css2?${query}&display=block`)).text();
+        // Latin only: the text needs nothing else, and each subset is another file.
+        const blocks = [...sheet.matchAll(/\/\* latin \*\/\s*(@font-face\s*\{[^}]*\})/g)].map((m) => m[1]);
+        const files = new Map<string, Promise<string>>();
+        const inline = (url: string) => {
+          if (!files.has(url))
+            files.set(
+              url,
+              fetch(url)
+                .then((r) => r.blob())
+                .then(blobToDataUrl),
+            );
+          return files.get(url)!;
+        };
+        const out = await Promise.all(
+          blocks.map(async (b) => {
+            const url = /url\(([^)]+)\)/.exec(b)?.[1];
+            return url ? b.replace(url, await inline(url)) : b;
+          }),
+        );
+        return out.join('');
+      } catch {
+        addEventListener('online', () => (css = null), { once: true });
+        return '';
+      }
+    })();
+    return css;
+  };
 }
+
+/** The card fonts, for card and player aid images. */
+export const cardFontCss = embeddedFonts('family=Inter:ital,wght@0,400;0,700;1,400&family=Orbitron:wght@900', cardFontsReady);
+
+/** The tile fonts: Inter ExtraBold for the planet number, JetBrains Mono for the flavour label. */
+export const tileFontCss = embeddedFonts('family=Inter:wght@800&family=JetBrains+Mono:wght@400;700', async () => {});

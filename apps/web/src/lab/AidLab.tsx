@@ -67,6 +67,7 @@ export function AidLab() {
             sheets={(copies) => Array(copies ? PLAYERS : 1).fill({ front: board })}
             copies
             ready={fonts !== null}
+            fontsMissing={fonts === ''}
           />
         </div>
       </div>

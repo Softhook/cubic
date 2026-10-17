@@ -264,7 +264,7 @@ the backs. The print set is still picked by edition, so a print run is always a 
 - **Face**: illustration (top ~half), HUD label with the category and ×copies, a category emblem
   straddling art and panel, name (Orbitron), subtitle, rules text with game terms in bold, small footer in
   the bottom corners: `07/35` left, the set (`CE` or `CLASSIC`) right.
-- **Colour = category** (movement cyan, action amber, combat red, conquer green, research violet,
+- **Colour = category** (movement cyan, action amber, combat red, conquer green, research purple,
   ship blue, cards orange, expansion teal). Every card has a `category` in `data/cards.yaml` (Tactics
   and Gambits take their effect's); hues and labels are `CARD_CATEGORIES` in tokens.ts, icons
   `ICONS` in icons.ts. The game's on-screen cards use the same accent colours (`cardPalette`) and
@@ -278,7 +278,7 @@ the backs. The print set is still picked by edition, so a print run is always a 
 - **One drawing kit** (`packages/art/src/kit/`: ships, board, hud, effects, props) keeps the set consistent: ships are isometric dice with real pip
   layouts, cubes are plain dice, the board is an isometric holo-grid the dice stand on, planets and
   skies come from the tile generators. Rules quantities are flat HUD readouts over the scene, always
-  drawn the same way: research (violet) and dominance (red-orange) tracks, hexagonal action chips
+  drawn the same way: research (purple) and dominance (red-orange) tracks, hexagonal action chips
   (always yellow, `ACTION_HUE`, with the bolt, whatever the card's colour; a hexagon means an action and
   nothing else, so other badges are round), the dominance crest (`crest`: the crown on a red-orange medallion; never a cube or die), a cube only
   ever a player's cube on a planet (counters on cards are grey `token`s),
@@ -384,8 +384,13 @@ same way:
   `cubic-<piece>-<name>[-bleed][-<dpi>dpi].<ext>` for one face, `cubic-<pieces>[-<part>][-bleed].zip`
   for a set.
 - `PrintPanel.tsx` is the export panel on every lab page: this face as PNG 300/600 dpi or SVG (plus
-  page extras such as SVG for Illustrator), the whole set as a ZIP of 300 dpi PNGs with a README,
-  and print sheets.
+  page extras such as SVG for Illustrator), the whole set as a ZIP of PNGs with a README, and print
+  sheets. Sets and sheets use the piece's `dpi`: 600 for cards and the aid (small text), 300 for tiles.
+  Exports refuse to run when the fonts didn't load, rather than print in system fonts.
+- `press.ts` gets files ready for a press: PNGs are opaque, tagged sRGB (an embedded ICC profile) and
+  carry their dpi, so a RIP converts the colours as we see them and opens the file at its physical size.
+  "Lift shadows for print" (off by default) applies a tone curve that raises the art's black to about
+  L* 6 and keeps the darkest steps apart (below).
 - `sheets.ts` lays out print sheets: pieces at trim size in a grid (cards 3 × 3, tiles 2 × 2),
   butted so one cut serves two pieces, crop marks drawn as borders so they print without
   "Background graphics", optional backs mirrored for long-edge duplex. A4 or US Letter; the
@@ -433,17 +438,32 @@ Tile, planet and cube-pad sizes are in §2a.
   take a `mode: 'live' | 'baked'` prop for this.
 - **The same trick helps in-game performance.** Rendering a turbulence nebula per tile every frame is
   slow; the game can bake each tile's background once into an image (cached by seed) and draw that.
-- **Colour.** Chromium produces RGB PDFs. Most print-on-demand vendors accept RGB and convert;
-  if one needs CMYK, convert with Ghostscript and an ICC profile as a last step. Dark space art
-  needs care either way:
-  - neon cyans, violets and greens on screen fall outside CMYK and print duller; choose palette
-    colours that survive conversion, and check them in the lab's soft-proof;
-  - large dark areas: use a deliberate rich black rather than pure RGB black, and stay under the
-    vendor's ink limit;
-  - order one physical proof before any real run.
-- **Fonts.** Self-host the font files (Inter and Orbitron are both SIL Open Font License, so
-  embedding is allowed) instead of the Google CDN, so PDFs embed them and builds work offline.
-- **Thin lines.** Keep printed strokes ≥ 0.15 mm and text ≥ 6 pt; tokens enforce minimums.
+- **Colour.** We send RGB, tagged sRGB, and let the printer's RIP convert with its press profile
+  (don't convert to CMYK ourselves with a generic profile). Ask the printer for the press (HP Indigo or
+  toner), stock and finish, rendering intent and black point compensation, ink limit, and their ICC
+  profile. Dark space art needs care:
+  - **Black point.** A press's darkest black is about L* 9–12 on coated stock (lighter on uncoated);
+    below it everything prints as one flat black. The tiles sit at a median L* of 3.5, with the nebulae
+    and wells in L* 2–15. Many RIPs handle this themselves with black point compensation, so the
+    exports send the art as it is; "Lift shadows for print" (`press.ts`) is there for a RIP that
+    doesn't, where the dark steps would run together. With both, prints come out greyer. Decide from
+    the press test.
+  - **Gamut.** Saturated violets, greens and blues lose half or more of their chroma in CMYK. Research
+    moved from 268° to 290°, as at 268° it printed barely apart from ship blue (ΔE ≈ 13 against 50 on
+    screen, soft-proofed with a generic CMYK profile; the printer's will differ). Conquer green and expansion teal also print duller, but stay apart.
+  - **Light tints.** The light card paper (`hsl(225 30% 95%)`, about C6 M4 Y2) can mottle on toner
+    presses; the press test shows it beside white and stronger tints.
+  - **The press test** (`#lab/proof`, `proof.ts`): one A4 page with a dark tile and a dark card at
+    100 %, the space and neutral ramps, the wells, every category colour, the text sizes and hairlines.
+    It exports with and without the shadow lift; print both on the real press and stock before a run.
+- **Fonts.** Every print file carries its fonts: cards and the aid embed Inter and Orbitron, tiles
+  Inter ExtraBold (the number) and JetBrains Mono (the label). All are SIL Open Font License, so
+  embedding is allowed. The files are rasterised, so there is no live text to outline; a future vector
+  PDF should embed the fonts, and outline them only if the printer asks. Self-hosting the fonts instead
+  of the Google CDN would let exports work offline.
+- **Thin lines and small text.** Keep printed strokes ≥ 0.15 mm and text ≥ 6 pt. Exceptions: the card
+  footer and HUD label (1.8 and 2.1 mm), numerals in the card art (from 1.66 mm, bold), and the tile's
+  flavour label (1.2–1.7 mm), which is texture rather than text.
 
 ### Checks
 
