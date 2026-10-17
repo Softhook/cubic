@@ -116,7 +116,7 @@ in hue *and* lightness (`PLANET_FAMILY` in tokens):
 | 10 | Molten lava worlds: black crust, from thin red cracks to wide orange magma rivers | black and red (darkest) |
 
 No planet is blue-violet, so none blends into the nebula. The number also sets the **size**, in big
-steps (7: 22 mm up to 10: 42 mm, nearly twice as wide). So a planet's number reads from its look,
+steps (7: 24.2 mm up to 10: 46.2 mm, nearly twice as wide). So a planet's number reads from its look,
 its size and the numeral, which also helps colour-blind players. Within a number, the seed picks the
 variant and surface, so every planet is distinct.
 
@@ -131,7 +131,7 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
 - `VoidTile` = its own look (distorted, darker, violet), as the current gradient suggests.
 - Print adds a tile back and corners matched to the die-cut.
 - On screen, the whole map renders as tiles in a single SVG, as today, with the interactive HTML
-  layer above. The tile art itself is the same as print (planet up to 1.19 cells), so the screen
+  layer above. The tile art itself is the same as print (planet up to 1.44 cells), so the screen
   and the table look alike. **Screen and print stay in sync:** the tile images include the space wells
   and the conquer outlines (`markings: 'spaces'`), drawn by the same code as print, and the live layer draws
   the number and the cube slots from the printed geometry (`numberPlacement`, `cubePadCentres`,
@@ -182,7 +182,7 @@ Designed for **19 mm dice**. All numbers live in tokens so they can change after
 | Bleed | 3 mm → 102 × 102 mm artwork | |
 | Corner radius | 2 mm | Kind to die-cutting; the small gap where four tiles meet doesn't matter |
 | Cube | **assumed ≤ 10 mm** (measure ours) | Standard wooden cubes are 8 or 10 mm; pads are sized for 10 |
-| Planet diameter | 7: 22 mm · 8: 28 mm · 9: 35 mm · 10: 42 mm | Big steps so size alone tells numbers apart; bigger than the cell is fine (below) |
+| Planet diameter | 7: 24.2 mm · 8: 30.8 mm · 9: 38.5 mm · 10: 46.2 mm | Big steps so size alone tells numbers apart; bigger than the cell is fine (below) |
 | Cube pad | 11 mm square well, 1.5 mm apart | 10 mm cube + tolerance |
 | Planet number | **14 mm** type (12.5 mm for "10"), white with a dark outline, no disc | Where the spaces meet at the planet's bottom right; large and never covered by cubes or dice |
 | Flavour label | 1.7 mm name, 1.2 mm monospace lines, inside the 8 mm strip between space pads | Where the spaces meet at the planet's top left; made-up survey data, not meant to be read in play |
@@ -190,7 +190,8 @@ Designed for **19 mm dice**. All numbers live in tokens so they can change after
 **Why the planet can be bigger than its cell.** Ships can't enter a planet's space, so only the dice
 in the eight surrounding spaces limit its size. A die in the space next to the planet starts
 32/2 + 6.5 = 22.5 mm from the planet's centre; a diagonal die's nearest corner is ~31.8 mm away. A
-42 mm planet (radius 21 mm) keeps 1.5 mm clear of the nearest die. The 9 and 10 can't go below
+planet under 45 mm keeps clear of the nearest die; the 46.2 mm 10 (radius 23.1 mm) reaches 0.6 mm under
+it, which is fine for a die resting on the tile. The 9 and 10 can't go below
 33.2 mm, or their cube pads would stick out past the planet's edge.
 
 **Cube pads and number.** Cube pads (capacity 7→1, 8→2, 9→3, 10→4) form a cluster centred on the
@@ -203,7 +204,8 @@ pads reach into it, so its number moves 1.2 mm further out along the same diagon
 **Flavour label.** The opposite corner, at the planet's top left, holds a tiny star-atlas label: a
 made-up name, catalogue number, class and orbit, and a few measurements to suit the kind of world
 (`planetFlavour()`), with a thin leader line to the planet. It stays inside the strip between the
-space pads above and below, and no stars are drawn under it. It is seeded like the art, so each tile
+space pads above and below, and no stars are drawn under it. On the 10, whose planet reaches into
+that strip, the label moves left to clear it. It is seeded like the art, so each tile
 always gets the same text. On the Illustrator export it is its own vector layer, `label`.
 
 ```
@@ -214,7 +216,7 @@ always gets the same text. On the Illustrator export it is its own vector layer,
          ╰───╯               ╰─────╯          │   [ ]   │        │ [ ] [ ]  │
                7                     8         ╰───────╯          ╰─────────╯
                                                          9                    10
-       7: 22 mm               8: 28 mm          9: 35 mm           10: 42 mm
+       7: 24.2 mm             8: 30.8 mm        9: 38.5 mm         10: 46.2 mm
 ```
 
 A test checks every number's box against the cube pads and against 19 mm dice in the spaces beside,

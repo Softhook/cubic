@@ -215,10 +215,14 @@ export function tileFlavour(spec: TileSpec): PlanetFlavour {
 function label(spec: TileSpec): Fragment {
   const fl = tileFlavour(spec);
   const r = PLANET_DIAMETER[spec.number] / 2;
-  const right = MID - CORNER - 1.6;
   // The four lines fit the 8 mm strip between the space pads above and below (pads end 4 mm from
   // the corner), with 0.5 mm to spare: name caps from -3.5, last baseline at +3.2.
   const top = MID - CORNER;
+  // Right aligned at the corner, or further left where a big planet (with its atmosphere) reaches the
+  // strip: its edge is nearest at the last line, 3.2 mm below the corner.
+  const glow = r * 1.08;
+  const dy = MID - (top + 3.2);
+  const right = Math.min(MID - CORNER - 1.6, glow > dy ? MID - Math.sqrt(glow * glow - dy * dy) - 1.2 : Infinity);
   const line = (y: number, size: number, text: string, extra: string) =>
     `<text x="${n(right)}" y="${n(y)}" font-family="${LABEL_TEXT.font}" font-size="${size}" text-anchor="end" ${extra}>${text}</text>`;
   const tip = MID - (r + 0.8) / Math.SQRT2;

@@ -16,10 +16,10 @@ export const TILE = {
 
 /**
  * Printed planet diameter per planet number: bigger numbers hold more cubes. Steps are large so the
- * number reads from size alone. Limits: 9 and 10 need > 33.2 mm for their cube pads; 10 stays under
- * 45 mm so it clears a die in the next space (docs/GRAPHICS.md §2a).
+ * number reads from size alone. Limits: 9 and 10 need > 33.2 mm for their cube pads. Under 45 mm a
+ * planet clears a die in the next space; the 10, at 46.2 mm, reaches 0.6 mm under it (docs/GRAPHICS.md §2a).
  */
-export const PLANET_DIAMETER: Record<number, number> = { 7: 22, 8: 28, 9: 35, 10: 42 };
+export const PLANET_DIAMETER: Record<number, number> = { 7: 24.2, 8: 30.8, 9: 38.5, 10: 46.2 };
 
 /** Cube pads printed on planets (physical cubes up to 10 mm). The on-screen cubes are smaller. */
 export const CUBE_PAD = { size: 11, gap: 1.5, corner: 1.6 } as const;
