@@ -9,7 +9,7 @@ import { PIP } from '../theme';
  * the viewer. When `rolls` changes the die tumbles: several extra full turns on both
  * axes with an ease-out, plus a hop, so it always lands on the engine's result.
  *
- * At rest only the front face shows, so a still die is that one face, drawn flat: a cube is eleven
+ * At rest only the front face shows, so a still die is that one face, drawn flat: a cube is ten
  * composited layers, and a map of them made every frame of a zoom or pan slower. The cube is built
  * when the die starts to move (at the face it showed) and goes again once it has landed. Dice that
  * tumble on mount (the fleet, battle and lobby rolls) keep theirs: they roll again under a modal's
@@ -19,6 +19,11 @@ import { PIP } from '../theme';
  * (a hard-edged die that then turns into the real one) and skips the start of a tumble while it makes them,
  * and its flat face doesn't quite match the cube's, so building one per roll and dropping it after showed.
  * A newly built cube also waits two frames before it moves, so the tumble starts once it is on screen.
+ *
+ * The cube isn't a CSS 3D scene (preserve-3d): each face carries the whole turn, perspective included, and hides
+ * when it faces away. A cube is convex, so the faces that show never overlap and nothing needs sorting by depth.
+ * Chrome splits and sorts a 3D scene's planes, and a scene's new layers drew a face stretched far out of the die
+ * now and then mid-tumble.
  */
 
 // Rotation that brings each face to the front (front=1, top=2, right=3, left=4, bottom=5, back=6).
@@ -41,14 +46,22 @@ export const PIPS: Record<number, number[]> = {
   6: [0, 2, 3, 5, 6, 8],
 };
 
-const FACES: { n: number; cls: string }[] = [
-  { n: 1, cls: 'front' },
-  { n: 6, cls: 'back' },
-  { n: 3, cls: 'right' },
-  { n: 4, cls: 'left' },
-  { n: 2, cls: 'top' },
-  { n: 5, cls: 'bottom' },
+/** The cube's planes, each with where it sits after the cube's turn (`at`). */
+const FACES: { n: number; cls: string; at: string }[] = [
+  { n: 1, cls: 'front', at: 'translateZ(var(--half))' },
+  { n: 6, cls: 'back', at: 'rotateY(180deg) translateZ(var(--half))' },
+  { n: 3, cls: 'right', at: 'rotateY(90deg) translateZ(var(--half))' },
+  { n: 4, cls: 'left', at: 'rotateY(-90deg) translateZ(var(--half))' },
+  { n: 2, cls: 'top', at: 'rotateX(90deg) translateZ(var(--half))' },
+  { n: 5, cls: 'bottom', at: 'rotateX(-90deg) translateZ(var(--half))' },
 ];
+const CORES: { axis: string; at: string }[] = [
+  { axis: 'x', at: 'rotateY(90deg)' },
+  { axis: 'y', at: 'rotateX(90deg)' },
+  { axis: 'z', at: '' },
+];
+/** The cube's children in order: the core first, so the faces are drawn over it. */
+const PLANES = [...CORES, ...FACES].map((p) => p.at);
 
 export interface Die3DProps {
   value: number;
@@ -98,6 +111,8 @@ export const Die3D = memo(function Die3D({
   const clatter = useRef<number>();
   const frame = useRef<number>();
   const hopAnimation = useRef<Animation | undefined>(undefined);
+  /** The cube element that has been turned (a cube just built hasn't been). */
+  const turned = useRef<HTMLDivElement | null>(null);
   /** Drop a move still waiting on a new cube. */
   const cancelFrame = () => {
     if (frame.current) cancelAnimationFrame(frame.current);
@@ -123,6 +138,15 @@ export const Die3D = memo(function Die3D({
     });
   };
 
+  /** Turn the cube (its planes, each on its own) to `rotate`. */
+  const turn = (el: HTMLDivElement, transition: string, rotate: string) => {
+    Array.from(el.children as HTMLCollectionOf<HTMLElement>).forEach((plane, i) => {
+      plane.style.transition = transition;
+      plane.style.transform = `perspective(calc(var(--die-size) * 7)) ${rotate} ${PLANES[i]}`;
+    });
+    turned.current = el;
+  };
+
   const rotation = (v: number) => {
     const [bx, by] = FACE_ROTATION[v] ?? [0, 0];
     return `rotateX(${bx + spins.current.x}deg) rotateY(${by + spins.current.y}deg)`;
@@ -132,8 +156,7 @@ export const Die3D = memo(function Die3D({
   const setRotation = (duration: number) => {
     const el = cube.current;
     if (!el) return;
-    el.style.transition = `transform ${duration}ms cubic-bezier(.12,.72,.22,1) ${delay}s`;
-    el.style.transform = rotation(value);
+    turn(el, `transform ${duration}ms cubic-bezier(.12,.72,.22,1) ${delay}s`, rotation(value));
     clearTimeout(settle.current);
     if (flatten) settle.current = window.setTimeout(() => setMoving(false), delay * 1000 + duration + 50);
   };
@@ -162,12 +185,11 @@ export const Die3D = memo(function Die3D({
     if (!mounted.current) {
       mounted.current = true;
       if (!el) return;
-      el.style.transition = 'none';
       if (tumbleOnMount) {
         // Start from a random orientation, then tumble to the value.
-        el.style.transform = `rotateX(${Math.random() * 360}deg) rotateY(${Math.random() * 360}deg)`;
+        turn(el, 'none', `rotateX(${Math.random() * 360}deg) rotateY(${Math.random() * 360}deg)`);
         afterPaint(tumble);
-      } else el.style.transform = rotation(value);
+      } else turn(el, 'none', rotation(value));
       return;
     }
     const rolled = rolls !== lastRolls.current;
@@ -177,12 +199,9 @@ export const Die3D = memo(function Die3D({
     }
     // A still die builds its cube first; this runs again once it's there (before anything is painted).
     if (!el) return setMoving(true);
-    const built = !el.style.transform;
-    if (built) {
-      // Just built: start from the face the die was showing.
-      el.style.transition = 'none';
-      el.style.transform = rotation(lastValue.current);
-    }
+    const built = turned.current !== el;
+    // Just built: start from the face the die was showing.
+    if (built) turn(el, 'none', rotation(lastValue.current));
     const jumped = scene !== lastScene.current;
     lastRolls.current = rolls;
     lastValue.current = value;
@@ -209,12 +228,12 @@ export const Die3D = memo(function Die3D({
       <div className="die3d-hop" ref={hop}>
         {moving ? (
           <div className="die3d-cube" ref={cube}>
+            {/* The die's solid inside, seen through the gaps the faces' rounded corners leave at the cube's corners. */}
+            {CORES.map((c) => (
+              <div key={c.axis} className={`die3d-core ${c.axis}`} />
+            ))}
             {FACES.map((f) => (
               <Face key={f.n} n={f.n} className={f.cls} />
-            ))}
-            {/* The die's solid inside, seen through the gaps the faces' rounded corners leave at the cube's corners. */}
-            {['x', 'y', 'z'].map((axis) => (
-              <div key={axis} className={`die3d-core ${axis}`} />
             ))}
           </div>
         ) : (
