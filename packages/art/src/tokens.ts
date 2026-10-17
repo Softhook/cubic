@@ -58,22 +58,22 @@ export interface PlanetFamily {
   types: PlanetType[];
 }
 
-/** Back lights: warm behind the cool worlds (7, 10), cool behind the warm ones (8, 9). */
+/** Back lights: warm behind the cool worlds (7, 9), cool behind the warm ones (8, 10). */
 const WARM_BACK_LIGHT: Hsl = [28, 95, 66];
 const COOL_BACK_LIGHT: Hsl = [196, 90, 70];
 
 /**
  * Planet number → look. The planet carries the number's identity, so each number has its own kind of
  * world and its own colours, far apart in hue *and* lightness so they also differ for colour-blind
- * players: 7 small green-and-blue Earth-like worlds, 8 black-and-red molten worlds (the darkest), 9
- * golden banded gas giants, 10 big white ice worlds and pale ice giants (the lightest). None is
+ * players: 7 small green-and-blue Earth-like worlds, 8 golden banded gas giants, 9 white ice worlds and
+ * pale ice giants (the lightest), 10 big black-and-red molten worlds (the darkest). None is
  * blue-violet, so no planet blends into the nebula.
  */
 export const PLANET_FAMILY: Record<number, PlanetFamily> = {
   7: { hue: 150, rimLight: 78, backLight: WARM_BACK_LIGHT, types: ['ocean'] },
-  8: { hue: 6, rimLight: 60, backLight: COOL_BACK_LIGHT, types: ['lava'] },
-  9: { hue: 38, rimLight: 78, backLight: COOL_BACK_LIGHT, types: ['gas'] },
-  10: { hue: 195, rimLight: 78, backLight: WARM_BACK_LIGHT, types: ['ice', 'gas'] },
+  8: { hue: 38, rimLight: 78, backLight: COOL_BACK_LIGHT, types: ['gas'] },
+  9: { hue: 195, rimLight: 78, backLight: WARM_BACK_LIGHT, types: ['ice', 'gas'] },
+  10: { hue: 6, rimLight: 60, backLight: COOL_BACK_LIGHT, types: ['lava'] },
 };
 
 /** Nebula hues stay between blue and pink-purple, so every tile's sky belongs to one set. */

@@ -83,7 +83,7 @@ function craters(c: Ctx, count: number, size: [number, number], strength = 1): P
   };
 }
 
-/** Gas giant palettes (9): all gold to amber, from pale cream to deep rust, so every 9 reads golden. */
+/** Gas giant palettes (8): all gold to amber, from pale cream to deep rust, so every 8 reads golden. */
 const GIANTS: Record<string, (h: number, light: number) => Hsl[]> = {
   jupiter: (h, light) => [
     [h - 12, 62, 30],
@@ -153,7 +153,7 @@ const GIANTS: Record<string, (h: number, light: number) => Hsl[]> = {
   ],
 };
 
-/** Ice giant palettes (10): pale and tinted, turquoise to blue. */
+/** Ice giant palettes (9): pale and tinted, turquoise to blue. */
 function iceGiant(c: Ctx): Hsl[] {
   const h = c.hue + c.rng.pick([-22, -10, 0, 10, 18]);
   const sat = c.rng.range(38, 64);
@@ -172,7 +172,7 @@ function gas(c: Ctx): Surface {
   const { o, hue, rng, s, f } = c;
   const { id, cx, cy, r } = o;
   // An ice giant (pale, soft bands) on the light planets; otherwise a vivid banded giant.
-  const pale = o.number === 10;
+  const pale = o.number === 9;
   const stops = pale ? iceGiant(c) : GIANTS[rng.pick(Object.keys(GIANTS))](hue, rng.range(62, 74));
   if (rng.chance(0.5)) stops.reverse();
   // How the bands flow: calm and smooth, the usual, many fine belts, or churning.
@@ -234,7 +234,7 @@ function gas(c: Ctx): Surface {
 function rocky(c: Ctx): Surface {
   const { o, hue, rng, f } = c;
   // Rust-red desert (Mars-like) on the hot planets; grey stone elsewhere.
-  const sat = o.number === 8 ? 55 : 18;
+  const sat = o.number === 10 ? 55 : 18;
   const stops: Hsl[] = [
     [hue, sat * 0.8, 13],
     [hue + 5, sat * 0.9, 23],
@@ -248,7 +248,7 @@ function rocky(c: Ctx): Surface {
   };
 }
 
-/** Ice palettes (10): base from dark to light, and the colour of the cracks. All pale but tinted. */
+/** Ice palettes (9): base from dark to light, and the colour of the cracks. All pale but tinted. */
 const ICES: Record<string, (h: number) => { stops: Hsl[]; cracks: Hsl }> = {
   glacier: (h) => ({
     stops: [
@@ -346,7 +346,7 @@ function ice(c: Ctx): Surface {
         extraDefs: '',
       };
     case 'floes': {
-      // White floes on a mid-blue frozen sea (kept light so the 10 stays the palest planet).
+      // White floes on a mid-blue frozen sea (kept light so the 9 stays the palest planet).
       const sea: Hsl = [hue + rng.range(0, 14), rng.range(45, 60), rng.range(50, 58)];
       const thr = rng.range(0.44, 0.5);
       return {
