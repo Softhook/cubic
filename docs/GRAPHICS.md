@@ -110,10 +110,10 @@ in hue *and* lightness (`PLANET_FAMILY` in tokens):
 
 | Number | World | Colours |
 |---|---|---|
-| 7 | Earth-like: blue sea and green land (temperate, jungle or tundra), more or less cloud, sometimes polar caps | green and blue |
-| 8 | Ice: white glaciers, frozen seas, turquoise or blue ice; pale cyan, turquoise or blue ice giants | pale, tinted cyan to blue (lightest) |
-| 9 | Banded gas giants (Jupiter-gold, Saturn-cream, amber or rust), often with storms or rings | gold and amber |
-| 10 | Molten lava worlds: black crust, from thin red cracks to wide orange magma rivers | black and red (darkest) |
+| 7 | Earth-like: blue sea (sometimes turquoise shallows) and green land (temperate, jungle, tundra, swamp or steppe) laid out as continents, islands, one supercontinent or land with lakes; clear, scattered, streaky or heavy cloud; sometimes polar caps | green and blue |
+| 8 | Molten lava worlds: black basalt, dark red or ash crust; red, orange or yellow magma as thin cracks, wide rivers, fine veins or lakes; sometimes glowing vents | black and red (darkest) |
+| 9 | Banded gas giants (Jupiter-gold, Saturn-cream, amber, rust, copper, striped or khaki), with smooth, banded, fine or turbulent belts; often a great storm, a string of small white storms, or rings | gold and amber |
+| 10 | Ice: white, frost, turquoise or blue ice, cracked, criss-crossed with long lines, striped, broken into floes or cratered; pale cyan, turquoise or blue ice giants, smooth or banded, with polar hoods and cloud streaks | pale, tinted cyan to blue (lightest) |
 
 No planet is blue-violet, so none blends into the nebula. The number also sets the **size**, in big
 steps (7: 24.2 mm up to 10: 46.2 mm, nearly twice as wide). So a planet's number reads from its look,
@@ -361,7 +361,7 @@ A dev-only route in the web app, e.g. `/#/lab`:
 
 ```yaml
 planets:            # keyed by map + planet, or by number for defaults
-  default: { 7: { palette: green }, 8: { palette: ice }, 9: { palette: gold }, 10: { palette: magma } }
+  default: { 7: { palette: green }, 8: { palette: magma }, 9: { palette: gold }, 10: { palette: ice } }
   overrides:
     - { map: alpha-sector, planet: p3, seed: 81723, type: gas, rings: true }
 cards:

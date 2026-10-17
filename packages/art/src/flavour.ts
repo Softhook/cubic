@@ -57,7 +57,7 @@ function profile(type: PlanetType, number: number, r: Rng): { cls: string; data:
     case 'ice':
       return { cls: 'CLASS P CRYOGENIC', data: `${f(0.2, 0.9)} ME · ${k(38, 140)} · ALB ${f(0.6, 0.92)}` };
     case 'gas':
-      return number === 8
+      return number === 10
         ? { cls: 'CLASS U ICE GIANT', data: `${f(9, 22, 1)} ME · ${k(48, 90)} · H2 HE CH4` }
         : { cls: 'CLASS J GAS GIANT', data: `${f(0.4, 3.2)} MJ · ${k(105, 170)} · H2 HE` };
     case 'lava':

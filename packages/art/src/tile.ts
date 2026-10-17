@@ -398,7 +398,7 @@ function moons(r: number, id: string, number: number, type: PlanetType, rand: Re
   const pal =
     type === 'lava'
       ? { h: 8, s: 40, l: 38 }
-      : type === 'ice' || number === 8
+      : type === 'ice' || number === 10
         ? { h: 200, s: 30, l: 84 }
         : type === 'gas'
           ? { h: 36, s: 42, l: 66 }
