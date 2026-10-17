@@ -144,9 +144,6 @@ function MapCanvas({
         ctx.fillStyle = '#0b1124';
         ctx.fill();
       }
-      ctx.strokeStyle = t.void ? 'rgba(197,155,255,.35)' : 'rgba(127,178,255,.16)';
-      ctx.lineWidth = 1 / k;
-      ctx.stroke();
     }
     for (const p of board.planets) {
       const x = (p.c + 0.5) * cell;

@@ -14,6 +14,3 @@ export const PIP = '#0a0f1e';
 
 /** The two combat dice: black for the attacker, white for the defender (shared with the card art). */
 export { COMBAT_DICE } from '@quantum/art';
-
-/** A free cube space on a planet. */
-export const CUBE_SLOT = { fill: 'rgba(0,0,0,.22)', stroke: 'rgba(255,255,255,.35)' } as const;

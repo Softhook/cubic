@@ -10,12 +10,14 @@ import {
   PLANET_FAMILY,
   TILE,
   VOID_NEBULA_HUES,
+  WELL,
   type PlanetType,
+  type WellStyle,
 } from './tokens';
 import { planetFlavour, type PlanetFlavour } from './flavour';
 import { icon } from './icons';
-import { dieCut, document, hex, hsl, join, n, type Fragment } from './svg';
-import type { TileSpec } from './tileset';
+import { dieCut, document, gradientMask, hex, hsl, join, n, ridges, tint, turbulence, type Fragment } from './svg';
+import type { TileSpec, VoidHeart } from './tileset';
 
 export interface TileOptions {
   /** Include the 3 mm print bleed around the trim. */
@@ -115,6 +117,20 @@ export function numberPlacement(number: number): NumberPlacement {
 /** The research flask on each Void space (mm). */
 const VOID_ICON = 8;
 
+/**
+ * The edges of a well: a rounded square of side `size` with its top left at (x, y), sunk into the
+ * tile. Light comes from the top left, so the top and left inner edges are in shade and the bottom and
+ * right ones catch the light. Path data for each, inset to sit inside the well's outline.
+ */
+function wellEdges(x: number, y: number, size: number, rx: number): { shade: string; lit: string } {
+  const a = 0.4;
+  const b = size - 0.3;
+  return {
+    shade: `M${n(x + a)} ${n(y + size - rx)}V${n(y + rx)}Q${n(x + a)} ${n(y + a)} ${n(x + rx)} ${n(y + a)}H${n(x + size - rx)}`,
+    lit: `M${n(x + b)} ${n(y + rx)}V${n(y + size - rx)}Q${n(x + b)} ${n(y + b)} ${n(x + size - rx)} ${n(y + b)}H${n(x + rx)}`,
+  };
+}
+
 /** Gap between hatch lines and their inset from the pad's edge, inside its rounded corners (mm). */
 const HATCH = { gap: 3, inset: 1.5 };
 
@@ -129,14 +145,33 @@ function hatch(cx: number, cy: number): string {
   for (let c = -2 * h + HATCH.gap; c < 2 * h - 0.01; c += HATCH.gap) {
     const u1 = Math.max(-h, c - h);
     const u2 = Math.min(h, c + h);
-    out += `<line x1="${n(cx + u1)}" y1="${n(cy + c - u1)}" x2="${n(cx + u2)}" y2="${n(cy + c - u2)}" stroke="${hex(222, 80, 82)}" stroke-opacity=".3" stroke-width=".3"/>`;
+    out += `<line x1="${n(cx + u1)}" y1="${n(cy + c - u1)}" x2="${n(cx + u2)}" y2="${n(cy + c - u2)}" stroke="${hex(222, 80, 82)}" stroke-opacity=".14" stroke-width=".25"/>`;
   }
   return out;
 }
 
 /**
- * Print markings. Plain SVG only (hex colours, no `paint-order` or `dominant-baseline`), so they import
- * into Illustrator as editable vectors.
+ * A well centred on (cx, cy): a dark fill with a shaded and a lit inner edge. Plain vectors, so they
+ * stay editable in Illustrator; the game draws its empty cube slots with it too.
+ */
+export function well(cx: number, cy: number, size: number, rx: number, style: WellStyle): string {
+  const x = cx - size / 2;
+  const y = cy - size / 2;
+  const e = wellEdges(x, y, size, rx);
+  return (
+    `<rect x="${n(x)}" y="${n(y)}" width="${n(size)}" height="${n(size)}" rx="${rx}" fill="#000" fill-opacity="${style.fill}"/>` +
+    `<path d="${e.shade}" fill="none" stroke="#000" stroke-opacity="${style.shade}" stroke-width="${style.shadeWidth}"/>` +
+    `<path d="${e.lit}" fill="none" stroke="#fff" stroke-opacity="${style.lit}" stroke-width="${style.litWidth}"/>`
+  );
+}
+
+/** The four spaces beside a planet are a shade darker than the rest. */
+const CONQUER_WELL: WellStyle = { ...WELL.space, fill: 0.24 };
+
+/**
+ * Print markings: each space a well etched into the tile, the four beside a planet (where dice go to
+ * conquer it) faintly hatched, and wells for the cubes on the planet. Plain SVG only
+ * (hex colours, no `paint-order` or `dominant-baseline`), so they import into Illustrator as editable vectors.
  */
 function markings(spec: TileSpec, spacesOnly = false): Fragment {
   let body = '';
@@ -144,19 +179,17 @@ function markings(spec: TileSpec, spacesOnly = false): Fragment {
     CELL_CENTRES.forEach((y) => {
       if (spec.number > 0 && x === MID && y === MID) return;
       const p = TILE.pad;
-      body += `<rect x="${n(x - p / 2)}" y="${n(y - p / 2)}" width="${p}" height="${p}" rx="4" fill="#fff" fill-opacity=".03" stroke="${hex(222, 80, 82)}" stroke-opacity=".3" stroke-width=".3"/>`;
-      // The four spaces beside a planet are where dice go to conquer it: faint diagonal hatching marks them.
-      if (spec.number > 0 && (x === MID) !== (y === MID)) body += hatch(x, y);
-      // Ships on the Void gain Research: a faint flask on each space, in the pad outline's colour.
+      const conquer = spec.number > 0 && (x === MID) !== (y === MID);
+      body += well(x, y, p, 4, conquer ? CONQUER_WELL : WELL.space);
+      // The four spaces beside a planet are where dice go to conquer it: very faint diagonal hatching marks them.
+      if (conquer) body += hatch(x, y);
+      // Ships on the Void gain Research: a faint flask on each space.
       if (spec.number === 0)
         body += `<g stroke-opacity=".15">${icon('research', x, y, VOID_ICON, hex(222, 80, 82), (0.3 * 24) / VOID_ICON)}</g>`;
     }),
   );
   if (spec.number > 0 && !spacesOnly) {
-    const s = CUBE_PAD.size;
-    for (const p of cubePadCentres(spec.number - 6, MID, MID)) {
-      body += `<rect x="${n(p.x - s / 2)}" y="${n(p.y - s / 2)}" width="${s}" height="${s}" rx="1.6" fill="#000" fill-opacity=".22" stroke="#fff" stroke-opacity=".35" stroke-width=".3"/>`;
-    }
+    for (const p of cubePadCentres(spec.number - 6, MID, MID)) body += well(p.x, p.y, CUBE_PAD.size, CUBE_PAD.corner, WELL.cube);
     const at = numberPlacement(spec.number);
     const hue = PLANET_FAMILY[spec.number].hue;
     // White with a dark outline reads on any planet surface and on the space around it. The outline
@@ -204,7 +237,65 @@ function label(spec: TileSpec): Fragment {
   };
 }
 
-/** The Void tile: a violet nebula pulled into a dark rift. */
+/**
+ * A Void tile's black hole. A hot disc of matter circles a black shadow, brighter on the side that
+ * spins toward the viewer; its far side is bent by gravity over the top of the shadow and, fainter,
+ * under it, and a thin bright ring hugs the shadow's edge.
+ */
+function blackHole(id: string): Fragment {
+  const r = rng(`${id}:hole`);
+  const ramp = [hsl(48, 100, 94), hsl(38, 100, 72), hsl(26, 100, 56), hsl(14, 95, 42)];
+  /** The shadow's radius (mm). */
+  const shadow = 8;
+  const tilt = r.range(-13, -5);
+  const ring = (rx: number, ry: number, w: number, c: string, o: number) =>
+    `<ellipse rx="${n(rx)}" ry="${n(ry)}" fill="none" stroke="${c}" stroke-width="${n(w)}" stroke-opacity="${n(o)}"/>`;
+  const colour = (t: number) => ramp[Math.min(3, Math.floor(t * 4))];
+  // The disc: rings from the hot inner edge out, seen nearly edge on.
+  const flat = r.range(0.17, 0.21);
+  let disc = '';
+  for (let i = 0; i < 9; i++) {
+    const t = i / 8;
+    const rx = 11 + t * 23;
+    disc += ring(rx, rx * flat, 2.6, colour(t), 0.95 - t * 0.7);
+  }
+  // The lensed far side: nearly circular rings just outside the shadow.
+  let lens = '';
+  for (let i = 0; i < 5; i++) {
+    const t = i / 4;
+    lens += ring(shadow + 1.6 + t * 4.5, shadow + 1.2 + t * 3.6, 1.4, colour(t), 0.9 - t * 0.6);
+  }
+  const soft = (inner: string) => `<g filter="url(#${id}-soft)">${inner}</g>`;
+  const discG = `<g mask="url(#${id}-doppler)">${soft(disc)}</g>`;
+  // Everything here (disc, lens and their blur) fits this box, in the hole's rotated frame (mm).
+  const box = { x: -44, y: -24, w: 88, h: 48 };
+  const region = `filterUnits="userSpaceOnUse" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"`;
+  return {
+    defs:
+      `<filter id="${id}-near" ${region}><feGaussianBlur stdDeviation=".7"/></filter>` +
+      // A wide glow at 70% under a near one, laid together in sRGB like two layers.
+      `<filter id="${id}-soft" ${region}><feGaussianBlur in="SourceGraphic" stdDeviation="2.2"/><feComponentTransfer result="wide"><feFuncA type="linear" slope=".7"/></feComponentTransfer>` +
+      `<feGaussianBlur in="SourceGraphic" stdDeviation=".7" result="near"/><feMerge color-interpolation-filters="sRGB"><feMergeNode in="wide"/><feMergeNode in="near"/></feMerge></filter>` +
+      `<linearGradient id="${id}-dopg" gradientUnits="userSpaceOnUse" x1="-34" y1="0" x2="34" y2="0"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity=".3"/></linearGradient>` +
+      gradientMask(`${id}-doppler`, box, `${id}-dopg`) +
+      `<clipPath id="${id}-near-half"><rect x="-50" y="0" width="100" height="50"/></clipPath>` +
+      `<clipPath id="${id}-far-half"><rect x="-50" y="-50" width="100" height="50"/></clipPath>` +
+      `<radialGradient id="${id}-halo" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="44"><stop offset="0" stop-color="${hsl(32, 100, 60)}" stop-opacity=".45"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>`,
+    body:
+      `<g transform="translate(${MID} ${MID}) rotate(${n(tilt)})">` +
+      `<circle r="44" fill="url(#${id}-halo)"/>` +
+      discG +
+      `<g clip-path="url(#${id}-far-half)">${soft(lens)}</g>` +
+      `<g clip-path="url(#${id}-near-half)" opacity=".55"><g filter="url(#${id}-near)">${lens}</g></g>` +
+      `<circle r="${shadow}" fill="#000"/>` +
+      `<circle r="${n(shadow + 0.35)}" fill="none" stroke="${ramp[0]}" stroke-width=".45" filter="url(#${id}-near)"/>` +
+      // The near half of the disc passes in front of the shadow.
+      `<g clip-path="url(#${id}-near-half)">${discG}</g>` +
+      `</g>`,
+  };
+}
+
+/** A Void tile's rift: the violet nebula pulled into a dark core. */
 function rift(id: string): Fragment {
   const r = rng(`${id}:rift`);
   let arms = '';
@@ -228,6 +319,69 @@ function rift(id: string): Fragment {
       `<circle cx="${MID}" cy="${MID}" r="16" fill="url(#${id}-core)"/>`,
   };
 }
+
+/**
+ * A Void tile's supernova: a blinding white-blue star at the centre with light spikes, inside an
+ * expanding shell of glowing gas, red and orange filaments at its shock front around a teal haze.
+ */
+function supernova(id: string): Fragment {
+  const r = rng(`${id}:nova`);
+  /** The shell's radius (mm). */
+  const shell = r.range(21, 25);
+  const at = `gradientUnits="userSpaceOnUse" cx="${MID}" cy="${MID}"`;
+  /** A square of half-size `h` round the centre, and a filter region on it. */
+  const square = (h: number) => ({ x: MID - h, y: MID - h, w: 2 * h, h: 2 * h });
+  const region = (b: ReturnType<typeof square>) =>
+    `filterUnits="userSpaceOnUse" x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}" color-interpolation-filters="sRGB"`;
+  const rect = (b: ReturnType<typeof square>, paint: string) =>
+    `<rect x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}" ${paint}/>`;
+  // The haze fills the shell, the filaments reach past it.
+  const haze = square(shell + 3);
+  // (The swirl shifts the noise up to 4.5 mm, so the filaments' region keeps that much spare.)
+  const fil = square(shell + 15);
+  // Light spikes: angle, length, thickness, opacity. Two long ones and two short diagonals.
+  const spikes = (
+    [
+      [0, 30, 0.22, 0.85],
+      [90, 30, 0.22, 0.85],
+      [45, 13, 0.14, 0.5],
+      [135, 13, 0.14, 0.5],
+    ] as const
+  )
+    .map(([a, rx, ry, o]) => `<ellipse rx="${rx}" ry="${ry}" transform="rotate(${n(a + r.range(-4, 4))})" fill="#fff" opacity="${o}"/>`)
+    .join('');
+  return {
+    defs:
+      // Filaments: ridge noise, swirled, turned into thin red lines with hot orange cores at the shock front.
+      `<filter id="${id}-fil" ${region(fil)}>` +
+      turbulence('.085', 4, r.noiseSeed(), 'n', 'turbulence') +
+      turbulence('.035', 2, r.noiseSeed(), 'w') +
+      `<feDisplacementMap in="n" in2="w" scale="9" xChannelSelector="R" yChannelSelector="G" result="d"/>` +
+      ridges([12, 100, 60], 4, 'd', 'red') +
+      ridges([34, 100, 74], 9, 'd', 'hot') +
+      `<feGaussianBlur in="red" stdDeviation=".6" result="glow"/>` +
+      `<feMerge><feMergeNode in="glow"/><feMergeNode in="red"/><feMergeNode in="hot"/></feMerge></filter>` +
+      // Haze: soft teal cloud filling the shell.
+      `<filter id="${id}-haze" ${region(haze)}>${turbulence('.05', 4, r.noiseSeed(), 'c')}${tint([186, 90, 60], 3.4, -1.2, 'c')}</filter>` +
+      `<radialGradient id="${id}-shellg" ${at} r="${n(shell + 10)}"><stop offset="${n((shell - 9) / (shell + 10))}" stop-color="#000"/><stop offset="${n(shell / (shell + 10))}" stop-color="#fff"/><stop offset="${n((shell + 4) / (shell + 10))}" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#000"/></radialGradient>` +
+      gradientMask(`${id}-shell`, fil, `${id}-shellg`) +
+      `<radialGradient id="${id}-innerg" ${at} r="${n(shell + 2)}"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".7" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#000"/></radialGradient>` +
+      gradientMask(`${id}-inner`, haze, `${id}-innerg`) +
+      `<radialGradient id="${id}-glow" ${at} r="18"><stop offset="0" stop-color="#fff"/><stop offset=".07" stop-color="${hsl(190, 100, 92)}" stop-opacity=".95"/><stop offset=".3" stop-color="${hsl(200, 100, 72)}" stop-opacity=".4"/><stop offset="1" stop-color="${hsl(210, 100, 60)}" stop-opacity="0"/></radialGradient>` +
+      `<radialGradient id="${id}-halo" ${at} r="46"><stop offset="0" stop-color="${hsl(330, 90, 60)}" stop-opacity=".12"/><stop offset="1" stop-color="${hsl(330, 90, 60)}" stop-opacity="0"/></radialGradient>` +
+      `<filter id="${id}-spike" filterUnits="userSpaceOnUse" x="-32" y="-32" width="64" height="64"><feGaussianBlur stdDeviation=".22"/></filter>`,
+    body:
+      rect(square(MID), `fill="url(#${id}-halo)"`) +
+      `<g mask="url(#${id}-inner)">${rect(haze, `filter="url(#${id}-haze)" opacity=".85"`)}</g>` +
+      `<g mask="url(#${id}-shell)">${rect(fil, `filter="url(#${id}-fil)"`)}</g>` +
+      `<circle cx="${MID}" cy="${MID}" r="18" fill="url(#${id}-glow)"/>` +
+      `<g transform="translate(${MID} ${MID})" filter="url(#${id}-spike)">${spikes}</g>` +
+      `<circle cx="${MID}" cy="${MID}" r=".9" fill="#fff"/>`,
+  };
+}
+
+/** What can sit at the centre of a Void tile (tileset.ts picks one per tile). */
+const VOID_HEARTS: Record<VoidHeart, (id: string) => Fragment> = { blackHole, rift, supernova };
 
 /**
  * One or two small moons beside the planet, lit from the top left like it, at varied angles and
@@ -297,7 +451,7 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
       ...(isVoid ? { hues: VOID_NEBULA_HUES, nebula: 1 } : {}),
     }),
   ];
-  if (isVoid) parts.push(rift(id));
+  if (isVoid) parts.push(VOID_HEARTS[spec.heart ?? 'blackHole'](id));
   else {
     parts.push(
       planet({

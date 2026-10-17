@@ -8,6 +8,7 @@ export {
   FONTS,
   NEBULA_HUES,
   VOID_NEBULA_HUES,
+  WELL,
   NUMBER_TEXT,
   PLANET_DIAMETER,
   PLANET_FAMILY,
@@ -25,6 +26,7 @@ export {
   tileFlavour,
   tileHasRings,
   tileSvg,
+  well,
   type NumberPlacement,
   type TileOptions,
 } from './tile';

@@ -74,7 +74,7 @@ export const BoardArt = memo(function BoardArt({
 
         {tiles.map((t) => (
           <g key={`${t.r},${t.c}`}>
-            {images[t.id] && (
+            {images[t.id] ? (
               <image
                 href={images[t.id]}
                 x={t.c * cell + inset}
@@ -82,16 +82,16 @@ export const BoardArt = memo(function BoardArt({
                 width={cell * 3 - 2 * inset}
                 height={cell * 3 - 2 * inset}
               />
+            ) : (
+              <rect
+                x={t.c * cell + inset}
+                y={t.r * cell + inset}
+                width={cell * 3 - 2 * inset}
+                height={cell * 3 - 2 * inset}
+                rx={(cell * 3 * TILE.corner) / TILE.size}
+                fill="#0b1124"
+              />
             )}
-            <rect
-              x={t.c * cell + inset}
-              y={t.r * cell + inset}
-              width={cell * 3 - 2 * inset}
-              height={cell * 3 - 2 * inset}
-              rx={(cell * 3 * TILE.corner) / TILE.size}
-              fill={images[t.id] ? 'none' : '#0b1124'}
-              stroke={t.void ? 'rgba(197,155,255,.35)' : 'rgba(127,178,255,.16)'}
-            />
           </g>
         ))}
 

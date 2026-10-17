@@ -4,7 +4,6 @@ import { assignTiles, tileFlavour, tileSpec } from '@quantum/art';
 export interface TileArt {
   r: number;
   c: number;
-  void: boolean;
   /** The physical tile whose artwork (starfield and planet) goes here. */
   id: string;
 }
@@ -17,11 +16,11 @@ export function tileArt(board: Board): TileArt[] {
 
 /** The map's tiles by index (`BoardCell.tile`), and the physical tile id each one uses. */
 function tileIds(board: Board) {
-  const tiles = new Map<number, { r: number; c: number; void: boolean; number: number }>();
+  const tiles = new Map<number, { r: number; c: number; number: number }>();
   board.cells.forEach((row, r) =>
     row.forEach((x, c) => {
       if (x.kind === 'off' || tiles.has(x.tile)) return;
-      tiles.set(x.tile, { r, c, void: !!x.void, number: 0 });
+      tiles.set(x.tile, { r, c, number: 0 });
     }),
   );
   for (const p of board.planets) tiles.get(board.cells[p.r][p.c].tile)!.number = p.number;

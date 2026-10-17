@@ -132,10 +132,10 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
 - Print adds a tile back and corners matched to the die-cut.
 - On screen, the whole map renders as tiles in a single SVG, as today, with the interactive HTML
   layer above. The tile art itself is the same as print (planet up to 1.19 cells), so the screen
-  and the table look alike. **Screen and print stay in sync:** the tile images include the space pads
-  and their hatching (`markings: 'spaces'`), drawn by the same code as print, and the live layer draws
+  and the table look alike. **Screen and print stay in sync:** the tile images include the space wells
+  and the conquer outlines (`markings: 'spaces'`), drawn by the same code as print, and the live layer draws
   the number and the cube slots from the printed geometry (`numberPlacement`, `cubePadCentres`,
-  `CUBE_PAD`) scaled from millimetres to the cell size.
+  `CUBE_PAD`, `WELL`, `well`) scaled from millimetres to the cell size.
 - **Loading.** Drawing a tile's noise filters takes ~45 ms (~1.1 s for a 25-tile map), so the game
   draws each tile once to a 576 px image and keeps it in the browser's IndexedDB
   ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)). Tiles are drawn in the background while
@@ -146,7 +146,7 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
 **Star backgrounds per tile.** Each of the 30 tiles gets its own seeded starfield and nebula, so a
 map never looks like a repeated pattern. Nebula colours are random but kept between blue and pink-purple
 (`NEBULA_HUES`, 215–330°) so the set looks consistent (blue clouds are lifted, since blue looks darker), and kept **behind the planet**, so the sky stays in the background and the planet's colour is what tells tiles apart. (The
-Void tile keeps a stronger magenta nebula around its rift.) Because tiles are rearranged for every map, backgrounds
+Void tiles keep a stronger magenta nebula around their centrepiece.) Because tiles are rearranged for every map, backgrounds
 can't line up across edges; instead every tile follows the same edge rules so any two tiles sit
 together cleanly:
 
@@ -155,6 +155,16 @@ together cleanly:
 - the brightest features (big stars, nebula cores) sit in the gutters and corners, not in the middle
   of a space, so the grid stays readable and dice don't hide the best bits;
 - the planet gets a soft dark halo so it stands out from any background.
+
+**Planet lighting.** Each planet is lit like a film shot: a hard terminator between day and night, its
+atmosphere glowing along the lit edge (inside the disc and just past it), and a back light in a
+contrasting colour on the far edge (cool behind the 9s and 10s, warm behind the 7s and 8s).
+
+**The Void** tiles each have their own centrepiece, in set order: `void` a black hole (a hot disc seen
+nearly edge on, brighter on the side spinning toward the viewer, its far side bent over the top of the
+shadow and fainter under it, a thin bright ring round the shadow), `void-2` the violet rift, and
+`void-3` a supernova (a white-blue star with light spikes in a teal haze, inside a shell of red and
+orange filaments). A map with one Void always shows the black hole.
 
 ---
 
@@ -166,14 +176,14 @@ Designed for **19 mm dice**. All numbers live in tokens so they can change after
 |---|---|---|
 | Die | 19 mm | Chosen dice |
 | Cell (space) | **32 mm** | Die + 6.5 mm each side: 13 mm between neighbouring dice, enough for fingers; ≈ 1.7× die |
-| Space pad | 24 mm rounded square, centred | Shows where a die sits; 2.5 mm clear around the die |
-| Attack hatching | Faint diagonal hatching (3 mm apart) in the four spaces beside the planet | Where dice go to conquer it; hidden once a die sits there |
+| Space pad | 24 mm rounded square, centred, drawn as a well etched into the tile (shaded top and left inner edges, lit bottom and right) | Shows where a die sits; 2.5 mm clear around the die |
+| Attack hatching | Very faint diagonal hatching (3 mm apart) in the four spaces beside the planet | Where dice go to conquer it; hidden once a die sits there |
 | Tile (trim) | **96 × 96 mm** (3 × 3 cells) | |
 | Bleed | 3 mm → 102 × 102 mm artwork | |
 | Corner radius | 2 mm | Kind to die-cutting; the small gap where four tiles meet doesn't matter |
 | Cube | **assumed ≤ 10 mm** (measure ours) | Standard wooden cubes are 8 or 10 mm; pads are sized for 10 |
 | Planet diameter | 7: 22 mm · 8: 28 mm · 9: 35 mm · 10: 42 mm | Big steps so size alone tells numbers apart; bigger than the cell is fine (below) |
-| Cube pad | 11 mm square outline, 1.5 mm apart | 10 mm cube + tolerance |
+| Cube pad | 11 mm square well, 1.5 mm apart | 10 mm cube + tolerance |
 | Planet number | **14 mm** type (12.5 mm for "10"), white with a dark outline, no disc | Where the spaces meet at the planet's bottom right; large and never covered by cubes or dice |
 | Flavour label | 1.7 mm name, 1.2 mm monospace lines, inside the 8 mm strip between space pads | Where the spaces meet at the planet's top left; made-up survey data, not meant to be read in play |
 

@@ -1,6 +1,6 @@
 import type { Rng } from './rng';
 import { PLANET_FAMILY, SPACE_BASE, type PlanetType } from './tokens';
-import { gradientMap, greyFromRed, hsl, hslToRgb, n, stretch, type Fragment, type Hsl } from './svg';
+import { gradientMap, gradientMask, greyFromRed, hsl, n, ridges, stretch, turbulence, type Fragment, type Hsl } from './svg';
 
 export interface PlanetOptions {
   rng: Rng;
@@ -31,15 +31,6 @@ const SEA_HUE = 208;
 
 /** Light comes from the top left on every planet, card and tile. */
 const LIGHT = { x: 0.32, y: 0.28 };
-
-const turbulence = (freq: string | number, octaves: number, seed: number, result: string, kind = 'fractalNoise') =>
-  `<feTurbulence type="${kind}" baseFrequency="${freq}" numOctaves="${octaves}" seed="${seed}" result="${result}"/>`;
-
-/** Turns ridge noise (`type="turbulence"`, near 0 along thin lines) into opaque lines of one colour. */
-const ridges = (colour: Hsl, sharpness: number, input: string, result: string) => {
-  const [r, g, b] = hslToRgb(...colour);
-  return `<feColorMatrix in="${input}" result="${result}" type="matrix" values="0 0 0 0 ${n(r)} 0 0 0 0 ${n(g)} 0 0 0 0 ${n(b)} ${n(-sharpness)} 0 0 0 1"/>`;
-};
 
 interface Surface {
   /** Filter primitives that produce the surface colour. */
@@ -303,8 +294,34 @@ function surface(o: PlanetOptions, hue: number, rng: Rng): Surface {
 }
 
 /**
- * A planet centred on (cx, cy): a noise surface shaded as a sphere lit from the top left, a thin
- * atmosphere, a dark halo so it stands out from any background, and sometimes rings.
+ * Film-style edge light: the atmosphere glows along the lit edge (inside the disc and just past it),
+ * and a back light in a contrasting colour catches the opposite edge, lifting the planet off the sky.
+ * Both colours come from the planet's family (tokens.ts).
+ */
+function lightDefs(o: PlanetOptions, hue: number): string {
+  const { id, cx, cy, r } = o;
+  const family = PLANET_FAMILY[o.number];
+  const rim = hsl(hue, 90, family.rimLight);
+  const back = hsl(...family.backLight);
+  const at = `gradientUnits="userSpaceOnUse" cx="${n(cx)}" cy="${n(cy)}"`;
+  const box = { x: cx - r * 1.2, y: cy - r * 1.2, w: r * 2.4, h: r * 2.4 };
+  // A square around the planet, shaded along the light's diagonal: white towards the light (`lit`) or away from it (`dark`).
+  const diagonal = (name: string, stops: string) =>
+    `<linearGradient id="${id}-${name}g" x1="0" y1="0" x2="1" y2="1">${stops}</linearGradient>` +
+    gradientMask(`${id}-${name}`, box, `${id}-${name}g`);
+  return (
+    `<radialGradient id="${id}-litrim" ${at} r="${n(r)}"><stop offset=".72" stop-color="${rim}" stop-opacity="0"/><stop offset=".95" stop-color="${rim}"/><stop offset="1" stop-color="#fff"/></radialGradient>` +
+    `<radialGradient id="${id}-atmos" ${at} r="${n(r * 1.14)}"><stop offset="${n(1 / 1.14)}" stop-color="${rim}" stop-opacity=".85"/><stop offset="1" stop-color="${rim}" stop-opacity="0"/></radialGradient>` +
+    `<radialGradient id="${id}-back" ${at} r="${n(r * 1.05)}"><stop offset=".86" stop-color="${back}" stop-opacity="0"/><stop offset=".96" stop-color="${back}" stop-opacity=".6"/><stop offset="1" stop-color="${back}" stop-opacity="0"/></radialGradient>` +
+    diagonal('lit', `<stop offset=".1" stop-color="#fff"/><stop offset=".5" stop-color="#000"/>`) +
+    diagonal('dark', `<stop offset=".62" stop-color="#000"/><stop offset=".95" stop-color="#fff"/>`)
+  );
+}
+
+/**
+ * A planet centred on (cx, cy): a noise surface shaded as a sphere lit from the top left with a hard
+ * terminator, an edge-lit atmosphere and a back light, a dark halo so it stands out from any
+ * background, and sometimes rings.
  */
 export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
   const { id, cx, cy, r, rng } = o;
@@ -324,9 +341,11 @@ export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
     surf.extraDefs +
     `<radialGradient id="${id}-halo"><stop offset=".55" stop-color="${hsl(bh, bs, bl)}" stop-opacity=".8"/><stop offset="1" stop-color="${hsl(bh, bs, bl)}" stop-opacity="0"/></radialGradient>` +
     `<radialGradient id="${id}-glow"><stop offset=".78" stop-color="${hsl(hue, 80, 65)}" stop-opacity=".4"/><stop offset="1" stop-color="${hsl(hue, 80, 65)}" stop-opacity="0"/></radialGradient>` +
-    `<radialGradient id="${id}-hi" cx="${LIGHT.x}" cy="${LIGHT.y}" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>` +
+    `<radialGradient id="${id}-hi" cx="${LIGHT.x}" cy="${LIGHT.y}" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".35" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>` +
     `<radialGradient id="${id}-rim"><stop offset=".8" stop-color="${hsl(hue, 80, 72)}" stop-opacity="0"/><stop offset="1" stop-color="${hsl(hue, 80, 72)}" stop-opacity=".4"/></radialGradient>` +
-    `<radialGradient id="${id}-night" cx="${LIGHT.x + 0.04}" cy="${LIGHT.y + 0.04}" r=".92"><stop offset=".22" stop-color="${night}" stop-opacity="0"/><stop offset=".5" stop-color="${night}" stop-opacity=".5"/><stop offset=".72" stop-color="${night}" stop-opacity=".88"/><stop offset="1" stop-color="${night}" stop-opacity=".97"/></radialGradient>`;
+    // A hard terminator: the lit side stays bright, then falls quickly into the night side.
+    `<radialGradient id="${id}-night" cx="${LIGHT.x}" cy="${LIGHT.y}" r="1"><stop offset=".22" stop-color="${night}" stop-opacity="0"/><stop offset=".36" stop-color="${night}" stop-opacity=".15"/><stop offset=".5" stop-color="${night}" stop-opacity=".87"/><stop offset=".62" stop-color="${night}" stop-opacity=".98"/></radialGradient>` +
+    lightDefs(o, hue);
 
   let back = '';
   let front = '';
@@ -345,10 +364,11 @@ export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
     front = `<g transform="${at}"><g clip-path="url(#${id}-front)">${ellipses}</g></g>`;
   }
 
-  const disc = (fill: string) => `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="${fill}"/>`;
+  /** A circle on the planet, `k` times its radius. */
+  const disc = (fill: string, k = 1, extra = '') => `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r * k)}" fill="${fill}"${extra}/>`;
   const body =
-    `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r * 1.6)}" fill="url(#${id}-halo)"/>` +
-    `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r * 1.2)}" fill="url(#${id}-glow)"/>` +
+    disc(`url(#${id}-halo)`, 1.6) +
+    disc(`url(#${id}-glow)`, 1.2) +
     back +
     `<g clip-path="url(#${id}-disc)">` +
     `<rect x="${n(cx - r)}" y="${n(cy - r)}" width="${n(2 * r)}" height="${n(2 * r)}" filter="url(#${id}-surface)"${o.type === 'gas' ? ` transform="rotate(${n(tilt)} ${n(cx)} ${n(cy)})"` : ''}/>` +
@@ -356,7 +376,10 @@ export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
     disc(`url(#${id}-rim)`) +
     disc(`url(#${id}-hi)`) +
     disc(`url(#${id}-night)`) +
+    disc(`url(#${id}-litrim)`, 1, ` mask="url(#${id}-lit)"`) +
     `</g>` +
+    disc(`url(#${id}-atmos)`, 1.14, ` mask="url(#${id}-lit)"`) +
+    disc(`url(#${id}-back)`, 1.05, ` mask="url(#${id}-dark)"`) +
     front;
   return { defs, body, rings };
 }

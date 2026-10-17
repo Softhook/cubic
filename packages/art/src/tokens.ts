@@ -1,3 +1,5 @@
+import type { Hsl } from './svg';
+
 /** Physical sizes (mm) and colours shared by the game and print. See docs/GRAPHICS.md §2a. */
 
 export const TILE = {
@@ -20,7 +22,25 @@ export const TILE = {
 export const PLANET_DIAMETER: Record<number, number> = { 7: 22, 8: 28, 9: 35, 10: 42 };
 
 /** Cube pads printed on planets (physical cubes up to 10 mm). The on-screen cubes are smaller. */
-export const CUBE_PAD = { size: 11, gap: 1.5 } as const;
+export const CUBE_PAD = { size: 11, gap: 1.5, corner: 1.6 } as const;
+
+/** How a well is sunk into the tile: opacities of its black fill, its shaded top-left and lit bottom-right edges, and the edges' widths (mm). */
+export interface WellStyle {
+  fill: number;
+  shade: number;
+  shadeWidth: number;
+  lit: number;
+  litWidth: number;
+}
+
+/**
+ * The wells printed for the spaces and the cube pads (tile.ts `well`). The cube wells are gentler, so
+ * the planet's surface shows through; the game draws its empty cube slots with the same function.
+ */
+export const WELL: Record<'space' | 'cube', WellStyle> = {
+  space: { fill: 0.22, shade: 0.55, shadeWidth: 0.7, lit: 0.16, litWidth: 0.35 },
+  cube: { fill: 0.24, shade: 0.3, shadeWidth: 0.45, lit: 0.09, litWidth: 0.25 },
+};
 
 /** The shared base colour every tile's background fades to at its edge, so any two tiles sit together. */
 export const SPACE_BASE: [number, number, number] = [228, 52, 6];
@@ -30,9 +50,17 @@ export type PlanetType = 'gas' | 'rocky' | 'ice' | 'lava' | 'ocean';
 export interface PlanetFamily {
   /** Signature hue: atmosphere, glow and the number's outline. Each planet varies it a little. */
   hue: number;
+  /** Lightness of the atmosphere along the lit edge (in the signature hue). */
+  rimLight: number;
+  /** The back light on the far edge: a contrasting colour, cool behind the warm worlds and warm behind the cool ones. */
+  backLight: Hsl;
   /** Planet types this number comes in; a full set cycles through them. */
   types: PlanetType[];
 }
+
+/** Back lights: warm behind the cool worlds (7, 8), cool behind the warm ones (9, 10). */
+const WARM_BACK_LIGHT: Hsl = [28, 95, 66];
+const COOL_BACK_LIGHT: Hsl = [196, 90, 70];
 
 /**
  * Planet number → look. The planet carries the number's identity, so each number has its own kind of
@@ -42,10 +70,10 @@ export interface PlanetFamily {
  * blue-violet, so no planet blends into the nebula.
  */
 export const PLANET_FAMILY: Record<number, PlanetFamily> = {
-  7: { hue: 150, types: ['ocean'] },
-  8: { hue: 195, types: ['ice', 'gas'] },
-  9: { hue: 38, types: ['gas'] },
-  10: { hue: 6, types: ['lava'] },
+  7: { hue: 150, rimLight: 78, backLight: WARM_BACK_LIGHT, types: ['ocean'] },
+  8: { hue: 195, rimLight: 78, backLight: WARM_BACK_LIGHT, types: ['ice', 'gas'] },
+  9: { hue: 38, rimLight: 78, backLight: COOL_BACK_LIGHT, types: ['gas'] },
+  10: { hue: 6, rimLight: 60, backLight: COOL_BACK_LIGHT, types: ['lava'] },
 };
 
 /** Nebula hues stay between blue and pink-purple, so every tile's sky belongs to one set. */

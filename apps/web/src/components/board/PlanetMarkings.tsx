@@ -1,5 +1,4 @@
-import { CUBE_PAD, PLANET_FAMILY, cubePadCentres, numberPlacement } from '@quantum/art';
-import { CUBE_SLOT } from '../../theme';
+import { CUBE_PAD, PLANET_FAMILY, WELL, cubePadCentres, numberPlacement, well } from '@quantum/art';
 
 /** A planet's number as the tile prints it: white, outlined in a dark shade of the planet's hue. `y` is the baseline. */
 export function PlanetNumber({ n, x, y, size, className }: { n: number; x: number; y: number; size: number; className?: string }) {
@@ -49,25 +48,31 @@ export function PlanetMarkings({
 }) {
   const at = numberPlacement(n);
   const slot = CUBE_PAD.size * mm;
+  const pads = cubePadCentres(capacity, 0, 0);
+  // The empty spaces are wells in the planet, drawn by the same code as print, in printed millimetres.
+  const wells = pads.flatMap((q, i) => (cubes[i] ? [] : [well(q.x, q.y, CUBE_PAD.size, CUBE_PAD.corner, WELL.cube)])).join('');
   return (
     <>
       <PlanetNumber n={n} x={cx + at.x * mm} y={cy + (at.y + at.size * 0.4) * mm} size={at.size * mm} className={numberClass} />
-      {cubePadCentres(capacity, 0, 0).map((q, i) => {
+      {wells && <g transform={`translate(${cx} ${cy}) scale(${mm})`} dangerouslySetInnerHTML={{ __html: wells }} />}
+      {pads.map((q, i) => {
         const colour = cubes[i];
         return (
-          <rect
-            key={i}
-            x={cx + q.x * mm - slot / 2}
-            y={cy + q.y * mm - slot / 2}
-            width={slot}
-            height={slot}
-            rx={1.6 * mm}
-            fill={colour ?? CUBE_SLOT.fill}
-            stroke={colour ? '#fff' : CUBE_SLOT.stroke}
-            strokeWidth={(colour ? 0.5 : 0.4) * mm}
-            className={colour ? cubeClass : undefined}
-            style={colour ? { filter: `drop-shadow(0 0 ${1.2 * mm}px rgba(255,255,255,.6))` } : undefined}
-          />
+          colour && (
+            <rect
+              key={i}
+              x={cx + q.x * mm - slot / 2}
+              y={cy + q.y * mm - slot / 2}
+              width={slot}
+              height={slot}
+              rx={CUBE_PAD.corner * mm}
+              fill={colour}
+              stroke="#fff"
+              strokeWidth={0.5 * mm}
+              className={cubeClass}
+              style={{ filter: `drop-shadow(0 0 ${1.2 * mm}px rgba(255,255,255,.6))` }}
+            />
+          )
         );
       })}
     </>

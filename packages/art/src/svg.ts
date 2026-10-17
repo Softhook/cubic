@@ -76,6 +76,25 @@ export const stretch = (slope: number, input = '', result = '') => {
   );
 };
 
+/** A noise primitive: `fractalNoise` for clouds, `turbulence` for ridge noise (near 0 along thin lines). */
+export const turbulence = (freq: string | number, octaves: number, seed: number, result: string, kind = 'fractalNoise') =>
+  `<feTurbulence type="${kind}" baseFrequency="${freq}" numOctaves="${octaves}" seed="${seed}" result="${result}"/>`;
+
+/** Paints one colour, its alpha taken from the input's red channel as `a · red + b`. */
+export const tint = (colour: Hsl, a: number, b: number, input = '', result = '') => {
+  const [r, g, bl] = hslToRgb(...colour);
+  return `<feColorMatrix${input ? ` in="${input}"` : ''}${result ? ` result="${result}"` : ''} type="matrix" values="0 0 0 0 ${n(r)} 0 0 0 0 ${n(g)} 0 0 0 0 ${n(bl)} ${n(a)} 0 0 0 ${n(b)}"/>`;
+};
+
+/** Turns ridge noise (`type="turbulence"`) into opaque lines of one colour: higher `sharpness` is thinner. */
+export const ridges = (colour: Hsl, sharpness: number, input: string, result: string) => tint(colour, -sharpness, 1, input, result);
+
+/** A mask over `box` (user units) whose strength is the luminance of the paint server `fill` (a gradient's id). */
+export const gradientMask = (id: string, box: { x: number; y: number; w: number; h: number }, fill: string) => {
+  const at = `x="${n(box.x)}" y="${n(box.y)}" width="${n(box.w)}" height="${n(box.h)}"`;
+  return `<mask id="${id}" maskUnits="userSpaceOnUse" ${at}><rect ${at} fill="url(#${fill})"/></mask>`;
+};
+
 /** Wraps fragments in a standalone SVG document with a viewBox in mm. */
 export function document(f: Fragment, view: { x: number; y: number; w: number; h: number }, physical = true): string {
   const size = physical ? ` width="${n(view.w)}mm" height="${n(view.h)}mm"` : '';
