@@ -49,6 +49,7 @@ Done: SVG board, player panel, card market with Peek, action and combat UX, miss
 
 - [ ] **Mobile** — built and passing in emulation (Steps 0–5 in [MOBILE.md](MOBILE.md), including zoom, the phone-portrait bottom sheet and the offline PWA); the real-device pass on the Moto G55 is still to do.
 - [ ] Any CE booklet fan maps not already in from BGA (check against the booklet).
+- [ ] **One cue sheet per step for effects and sounds.** Today the timings are shared ([`beats.ts`](../apps/web/src/beats.ts): CSS custom properties for the animations, constants for the sounds and staging) and so is the list of ships destroyed (`destroyedOf`). But each step is still worked out separately by the sounds (`game/sounds`), the staging (`board/staging`), the explosions and the card effects, and timed four ways: CSS, Web Animations (Die3D), timers and the audio clock. They agree by convention, and `game/sounds` imports the staging from `components/`. Plan: a pure `cuesOf(prev, next)` in `game/` returns the step's timed cues (offset, what it marks, its sound), with reduced motion, order and counts decided there once. The board, Explosions, CardEffects and the sounds all read it, and `beats.ts` keeps only the timings it uses. Move the data half of `cardEffectsOf` and `stagingOf` out of `components/` for it. Later, if drift shows on slow phones: start each sound from its animation's real start (`getAnimations()`), not from when the step arrives (about a frame early). (Noted 2026-10-17.)
 
 ## M3 — AI opponent
 

@@ -1,5 +1,6 @@
 // Tiny synthesized sound kit (no audio files). All sounds are short and quiet.
 
+import { BEAM_ARRIVES, boomAt, CUBE, DICE, MOST_BOOMS, SHIP, SHOT, WARP } from './beats';
 import { effects, envelope, filter, gain, glide, jitter, kept, noiseSource, oscillator, out } from './audio';
 import { fanfare, lament } from './gameOverSound';
 import { pick } from './random';
@@ -31,16 +32,22 @@ function tick(gain: number, freq: number, delay = 0) {
   if (ac) click(ac, ac.currentTime + delay, gain, freq);
 }
 
-/** Dice clattering on a table: clicks that slow down and soften. */
+/**
+ * A die rolled, heard as Die3D shows it (beats.ts): a faint toss as it leaves the table, then clicks that slow
+ * down and soften from when it lands back to when it settles.
+ */
 export function playRoll(count = 1) {
   const ac = effects();
   if (!ac) return;
   const now = ac.currentTime;
-  let t = 0;
+  click(ac, now, 0.05, 2600 + Math.random() * 1200);
   const hits = 7 + count * 2;
+  const gaps = Array.from({ length: hits - 1 }, (_, i) => 0.035 + (i + 1) * 0.012 + Math.random() * 0.03);
+  const fit = (DICE.hop - DICE.lands) / 1000 / gaps.reduce((a, b) => a + b, 0);
+  let t = DICE.lands / 1000;
   for (let i = 0; i < hits; i++) {
-    t += 0.035 + i * 0.012 + Math.random() * 0.03;
     click(ac, now + t, 0.22 * (1 - i / hits) + 0.03, 1800 + Math.random() * 2200);
+    t += (gaps[i] ?? 0) * fit;
   }
 }
 
@@ -92,12 +99,13 @@ function boom(delay = 0, size = 1) {
 }
 
 /**
- * A cube dropped on a planet, heard as the board shows it (styles.css `cube-in`, landing 0.24 s in): a falling
- * whistle, the clack of it landing, then a ringing chord as the planet is claimed. `delay`: when the drop starts.
+ * A cube dropped on a planet, heard as the board shows it (beats.ts): a falling whistle, the clack of it
+ * landing, then a ringing chord as the planet is claimed. `delay`: when the drop starts, in seconds.
  */
 function cubeDrop(delay = 0) {
-  noise(0.24, 0.05, { delay, type: 'bandpass', from: 2600, to: 900, q: 2, rise: 0.18 });
-  const land = delay + 0.24;
+  const fall = CUBE.fall / 1000;
+  noise(fall, 0.05, { delay, type: 'bandpass', from: 2600, to: 900, q: 2, rise: fall * 0.75 });
+  const land = delay + fall;
   tone(jitter(150), 0.2, 'sine', 0.28, land, 70, 0.003);
   noise(0.05, 0.25, { delay: land, type: 'bandpass', from: 2400, q: 3, rise: 0.002 });
   [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.8, 'sine', 0.04, land + 0.03 + i * 0.035));
@@ -110,19 +118,23 @@ export const sfx = {
     tone(784, 0.22, 'sine', 0.06 * level, 0, undefined, 0.01);
     tone(1175, 0.4, 'sine', 0.05 * level, 0.15, undefined, 0.01);
   },
-  /** A ship flying across the board: a deep engine rumble that swells as it passes. */
+  /** A ship flying across the board: a deep engine rumble that swells as it passes, for as long as it glides (beats.ts). */
   fly: () => {
     const f = jitter(1);
-    noise(0.6, 0.3, { type: 'lowpass', from: 160 * f, to: 520 * f, q: 3, rise: 0.25 });
-    tone(48 * f, 0.6, 'sine', 0.16, 0, 72 * f, 0.2);
-    tone(96 * f, 0.55, 'triangle', 0.05, 0.02, 140 * f, 0.2);
+    const glide = SHIP.glide / 1000;
+    noise(glide, 0.3, { type: 'lowpass', from: 160 * f, to: 520 * f, q: 3, rise: 0.25 });
+    tone(48 * f, glide, 'sine', 0.16, 0, 72 * f, 0.2);
+    tone(96 * f, glide - 0.05, 'triangle', 0.05, 0.02, 140 * f, 0.2);
   },
-  /** A ship arriving on the board from the scrapyard or reserve: a rising shimmer that lands. */
-  warpIn: () => {
+  /**
+   * A ship arriving on the board from the scrapyard or reserve, or brought by a card: a rising shimmer, and
+   * the thump of it landing `land` ms in, as it appears (beats.ts).
+   */
+  warpIn: (land: number = WARP.land) => {
     tone(300, 0.35, 'sine', 0.05, 0, 1300, 0.12);
     tone(450, 0.35, 'triangle', 0.025, 0.02, 1950, 0.12);
     noise(0.35, 0.05, { type: 'highpass', from: 2000, to: 7000, rise: 0.25 });
-    tone(180, 0.12, 'sine', 0.12, 0.33, 120);
+    tone(180, 0.12, 'sine', 0.12, land / 1000, 120);
   },
   /** Two ships trading places: two tones crossing. */
   swap: () => {
@@ -136,17 +148,18 @@ export const sfx = {
     tone(330, 0.09, 'square', 0.025, 0.08, 440);
     noise(0.04, 0.1, { delay: 0.17, type: 'bandpass', from: 3200, q: 2.5, rise: 0.003 });
   },
-  /** A ship destroyed. `count` > 1 stagger a few booms. */
+  /** A ship destroyed. `count` > 1 stagger a few booms, as Explosions does (beats.ts). */
   explode: (count = 1) => {
-    for (let i = 0; i < Math.min(count, 3); i++) boom(i * 0.16, i ? 0.8 : 1);
+    for (let i = 0; i < Math.min(count, MOST_BOOMS); i++) boom(boomAt(i) / 1000, i ? 0.8 : 1);
   },
   repel: () => tone(300, 0.2, 'square', 0.03, 0, 180),
-  /** A missile fired: ignition, a screaming climb with a hissing trail, then the impact. */
+  /** A missile fired: ignition, a screaming climb with a hissing trail, then the impact as a shot lands (beats.ts). */
   missile: () => {
+    const flight = SHOT.flight / 1000;
     noise(0.12, 0.25, { type: 'lowpass', from: 900, to: 300, rise: 0.003 });
-    tone(260, 0.55, 'sawtooth', 0.03, 0.03, 1800, 0.05);
-    noise(0.6, 0.12, { delay: 0.03, type: 'bandpass', from: 1200, to: 5000, q: 1.2, rise: 0.08 });
-    boom(0.62, 0.7);
+    tone(260, flight - 0.05, 'sawtooth', 0.03, 0.03, 1800, 0.05);
+    noise(flight, 0.12, { delay: 0.03, type: 'bandpass', from: 1200, to: 5000, q: 1.2, rise: 0.08 });
+    boom(flight, 0.7);
   },
   /** Missiles gained: two metal clunks of rounds racked into place. */
   missileLoad: () => {
@@ -165,9 +178,10 @@ export const sfx = {
   },
   /** A cube relocated: the beam carrying it (board/CardEffects), then its drop where it lands (board/staging). */
   relocate: () => {
-    tone(1400, 0.36, 'sine', 0.035, 0, 500, 0.05);
-    noise(0.36, 0.05, { type: 'highpass', from: 6000, to: 2000, rise: 0.1 });
-    cubeDrop(0.36);
+    const ride = BEAM_ARRIVES / 1000;
+    tone(1400, ride, 'sine', 0.035, 0, 500, 0.05);
+    noise(ride, 0.05, { type: 'highpass', from: 6000, to: 2000, rise: 0.1 });
+    cubeDrop(ride);
   },
   /** Research gained: a quick rising data chirp. */
   research: () => [880, 1175, 1760].forEach((f, i) => tone(f, 0.09, 'triangle', 0.035, i * 0.05)),

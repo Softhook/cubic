@@ -1,10 +1,11 @@
 import { delta, type GameState } from '@quantum/engine';
-import { SHOT_MS, shotOf } from '../../game/strike';
+import { SHOT } from '../../beats';
+import { shotOf } from '../../game/strike';
 import { useStepEffects } from '../../game/useTransient';
 import { EffectBox, type MapEffect } from './EffectBox';
 
-/** The impact's flash outlasts the flight (styles.css: .shot-hit). */
-const SHOT_EFFECT_MS = SHOT_MS + 350;
+/** The impact's flash outlasts the flight. */
+const SHOT_EFFECT_MS = SHOT.flight + SHOT.hit;
 
 /** A shot fired in the step from `before` to `game`: from the shooter to its target, the short way round on a wrapping map. */
 function shotsOf(before: GameState, game: GameState): MapEffect[] {

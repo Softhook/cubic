@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { GameState, LogEntry } from '@quantum/engine';
 import { arrange, quickStart } from '../../../packages/engine/test/helpers';
+import { EXPANSION } from '../src/beats';
 
 vi.mock('../src/sound', () => ({ sfx: {} }));
 const { soundsFor } = await import('../src/game/sounds');
@@ -29,6 +30,27 @@ const victory = (s: GameState) => {
 describe('soundsFor', () => {
   it('hears a ship fly', () => {
     expect(step((s) => void (die(s, 'p0d0').loc = { zone: 'board', r: 1, c: 0 })).first).toEqual(['fly']);
+  });
+
+  it('hears a ship warp in from the reserve', () => {
+    const { first, lands } = step(
+      (s) => void (die(s, 'p0d1').loc = { zone: 'board', r: 2, c: 2 }),
+      (s) => void (die(s, 'p0d1').loc = { zone: 'reserve' }),
+    );
+    expect(first).toEqual(['warpIn']);
+    expect(lands).toBeUndefined();
+  });
+
+  it('hears an expansion ship land as its lance brings it', () => {
+    const { first, lands } = step(
+      (s) => void (die(s, 'p0d1').loc = { zone: 'board', r: 2, c: 2 }),
+      (s) => {
+        die(s, 'p0d1').loc = { zone: 'reserve' };
+        s.pending.unshift({ kind: 'placeExpansion', player: 0, die: 'p0d1' });
+      },
+    );
+    expect(first).toEqual([]);
+    expect(lands).toBe(EXPANSION.strike);
   });
 
   it('hears two ships trade places as a swap', () => {

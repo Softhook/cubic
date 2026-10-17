@@ -1,4 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { DICE, HOP_EASING, HOP_LANDS } from '../beats';
 import { playRoll } from '../sound';
 import { APPLE_TOUCH } from '../platform';
 import { useEffectEvent } from '../game/useEffectEvent';
@@ -165,17 +166,18 @@ export const Die3D = memo(function Die3D({
   const tumble = () => {
     const turns = () => (2 + Math.floor(Math.random() * 2)) * 360 * (Math.random() < 0.5 ? -1 : 1);
     spins.current = { x: spins.current.x + turns(), y: spins.current.y + turns() };
-    setRotation(1100);
+    setRotation(DICE.turn);
     hopAnimation.current?.cancel();
     hopAnimation.current = hop.current?.animate(
       [
         { transform: 'translateY(0) scale(1)' },
         { transform: `translateY(${-size * 0.55}px) scale(1.12)`, offset: 0.28 },
-        { transform: 'translateY(0) scale(0.96)', offset: 0.6 },
+        // It lands back here: heard as the clatter starts (beats.ts).
+        { transform: 'translateY(0) scale(0.96)', offset: HOP_LANDS },
         { transform: `translateY(${-size * 0.12}px) scale(1.02)`, offset: 0.78 },
         { transform: 'translateY(0) scale(1)' },
       ],
-      { duration: 1000, delay: delay * 1000, easing: 'ease-out' },
+      { duration: DICE.hop, delay: delay * 1000, easing: HOP_EASING },
     );
     clearTimeout(clatter.current); // a roll still waiting to sound is overtaken by this one
     if (sound) clatter.current = window.setTimeout(() => playRoll(), delay * 1000);

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { setBeatVars } from './beats';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { warmTileImages } from './art/tileImages';
 import { startServiceWorker } from './pwa';
@@ -13,6 +14,9 @@ const page = pageOf(location.hash);
 window.addEventListener('hashchange', () => {
   if (pageOf(location.hash) !== page) location.reload();
 });
+
+// The effects' timings, for their animations (beats.ts).
+setBeatVars();
 
 // Draw the map tiles in the background while the player is in the lobby.
 if (page === 'game') void warmTileImages();

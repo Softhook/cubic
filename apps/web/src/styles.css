@@ -319,14 +319,24 @@ input { font: inherit; }
 .board-svg { position: absolute; inset: 0; overflow: visible; }
 .info-anchor { position: absolute; pointer-events: none; anchor-name: var(--anchor); }
 .planet-num { font-family: var(--body); pointer-events: none; }
-/* A cube placed drops in from above and squashes as it lands (the shockwave is .fx-conquer). */
-/* A relocated cube waits for the beam bringing it (--cube-late). */
-.cube { animation: cube-in .4s cubic-bezier(.5,0,.75,0) var(--cube-late, 0s) backwards; transform-box: fill-box; transform-origin: center bottom; }
-@keyframes cube-in {
+/* A cube placed drops in from above and squashes as it lands (the shockwave is .fx-conquer). Timed by beats.ts,
+   as are the card effects and shots below that sounds keep time with. */
+/* It falls, then squashes as it lands: two animations, so the landing is a beat rather than a keyframe. A relocated
+   cube waits for the beam bringing it (--cube-late). */
+.cube {
+  animation:
+    cube-fall var(--cube-fall) cubic-bezier(.5,0,.75,0) var(--cube-late, 0s) backwards,
+    cube-squash var(--cube-squash) cubic-bezier(.5,0,.75,0) calc(var(--cube-late, 0s) + var(--cube-fall));
+  transform-box: fill-box; transform-origin: center bottom;
+}
+@keyframes cube-fall {
   from { transform: translateY(-320%) scale(1.5); opacity: 0; }
-  20% { opacity: 1; }
-  60% { transform: none; animation-timing-function: ease-out; }
-  75% { transform: scale(1.2, .75); }
+  33.333% { opacity: 1; }
+  to { transform: none; }
+}
+@keyframes cube-squash {
+  from { transform: none; animation-timing-function: ease-out; }
+  37.5% { transform: scale(1.2, .75); }
   to { transform: none; }
 }
 .gate-spin { position: absolute; pointer-events: none; animation: spin 6s linear infinite; }
@@ -465,7 +475,8 @@ input { font: inherit; }
   left: 0; top: 0;
   display: grid;
   place-items: center;
-  transition: transform .6s cubic-bezier(.22,.9,.24,1);
+  /* Its glide is heard (beats.ts). */
+  transition: transform var(--ship-glide) cubic-bezier(.22,.9,.24,1);
   z-index: 3;
 }
 /* A ship a card brings (Expansion, Nomadic) appears as its effect gets there, without gliding there (staging). */
@@ -589,12 +600,12 @@ input { font: inherit; }
 .fx-conquer > span:first-child {
   width: 100%; height: 100%; margin: -50% 0 0 -50%;
   border: calc(var(--bw) * 2) solid color-mix(in srgb, var(--pc) 70%, #fff); box-shadow: 0 0 14px var(--pc);
-  opacity: 0; animation: fx-wave .26s .22s ease-out forwards;
+  opacity: 0; animation: fx-wave .26s var(--cube-fall) ease-out forwards;
 }
 .fx-conquer > span:last-child {
   width: 100%; height: 100%; margin: -50% 0 0 -50%; border-radius: 18%;
   background: radial-gradient(circle, color-mix(in srgb, var(--pc) 45%, transparent), transparent 70%);
-  opacity: 0; animation: fx-glow .26s .22s ease-out forwards;
+  opacity: 0; animation: fx-glow .26s var(--cube-fall) ease-out forwards;
 }
 @keyframes fx-wave { 0% { transform: scale(.25); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; border-width: 1px; } }
 @keyframes fx-glow { 0% { opacity: 1; } 100% { opacity: 0; } }
@@ -623,39 +634,54 @@ input { font: inherit; }
   box-shadow: 0 0 18px var(--pc);
   transform-origin: 50% 0;
   opacity: 0;
-  animation: cfx-lance .4s .12s cubic-bezier(.5,0,.8,.4) forwards;
+  /* It strikes down, then thins away: the strike's end is when it hits (beats.ts). */
+  animation:
+    cfx-lance-strike var(--lance-strike) var(--lance-delay) cubic-bezier(.5,0,.8,.4) forwards,
+    cfx-lance-fade var(--lance-fade) calc(var(--lance-delay) + var(--lance-strike)) cubic-bezier(.5,0,.8,.4) forwards;
 }
-.cfx-expansion .cfx-lance { --pc: var(--gold); width: 60%; margin-left: -30%; animation-delay: 0s; animation-duration: .6s; }
-@keyframes cfx-lance {
-  0% { transform: scaleY(0); opacity: 1; }
-  45% { transform: scaleY(1); opacity: 1; }
-  100% { transform: scaleY(1) scaleX(.1); opacity: 0; }
+.cfx-expansion .cfx-lance {
+  --pc: var(--gold); width: 60%; margin-left: -30%;
+  animation:
+    cfx-lance-strike var(--expansion-strike) cubic-bezier(.5,0,.8,.4) forwards,
+    cfx-lance-fade var(--expansion-fade) var(--expansion-strike) cubic-bezier(.5,0,.8,.4) forwards;
 }
-/* Expansion: rings of light spreading as it lands. */
+@keyframes cfx-lance-strike {
+  from { transform: scaleY(0); opacity: 1; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+@keyframes cfx-lance-fade {
+  from { transform: scaleY(1); opacity: 1; }
+  to { transform: scaleY(1) scaleX(.1); opacity: 0; }
+}
+/* Expansion: rings of light spreading as it lands, the first just before. */
 .cfx-halo {
   width: 100%; height: 100%; margin: -50% 0 0 -50%; border-radius: 50%;
   border: calc(var(--bw) * 1.5) solid var(--gold); box-shadow: 0 0 14px var(--gold), inset 0 0 8px var(--pc);
   opacity: 0;
-  animation: fx-ring .6s .15s cubic-bezier(.2,.7,.3,1) forwards;
+  animation: fx-ring .6s calc(var(--expansion-strike) - 120ms) cubic-bezier(.2,.7,.3,1) forwards;
 }
-.cfx-halo.late { animation-delay: .28s; border-color: var(--pc); }
+.cfx-halo.late { animation-delay: var(--expansion-strike); border-color: var(--pc); }
 /* Warp Gates joined, or a relocated cube: a beam from one space to the other, a spark riding along it. */
 .cfx-ray {
   width: var(--len); height: 10%; margin-top: -5%; transform-origin: 0 50%; transform: rotate(var(--angle));
   border-radius: 999px;
   background: linear-gradient(90deg, color-mix(in srgb, var(--pc) 60%, transparent), var(--pc));
   box-shadow: 0 0 10px var(--pc);
-  animation: cfx-beam .85s ease-out forwards;
+  /* It spans the way, then fades. */
+  animation: cfx-beam-span var(--beam-span) ease-out forwards, cfx-beam-fade var(--beam-fade) var(--beam-span) ease-out forwards;
 }
 .cfx-ray > i {
   position: absolute; left: 0; top: 50%; width: 32%; max-width: calc(var(--cell) * .3); aspect-ratio: 1; translate: -50% -50%;
   border-radius: 25%; background: #fff; box-shadow: 0 0 10px 4px var(--pc);
-  animation: cfx-ride .6s cubic-bezier(.5,0,.3,1) forwards;
+  animation: cfx-ride var(--beam-ride) var(--beam-ease) forwards;
 }
-@keyframes cfx-beam {
-  0% { clip-path: inset(0 100% 0 0); opacity: 1; }
-  40% { clip-path: inset(0 0 0 0); opacity: 1; }
-  100% { clip-path: inset(0 0 0 0); opacity: 0; }
+@keyframes cfx-beam-span {
+  from { clip-path: inset(0 100% 0 0); opacity: 1; }
+  to { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+@keyframes cfx-beam-fade {
+  from { clip-path: inset(0 0 0 0); opacity: 1; }
+  to { clip-path: inset(0 0 0 0); opacity: 0; }
 }
 @keyframes cfx-ride { 0% { left: 0; opacity: 1; } 90% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
 /* Unveil the Fleet: each ship fades under a cloak as it leaves the map, and shimmers out of it when placed. */
@@ -711,18 +737,22 @@ input { font: inherit; }
 .cfx-spin.late { border-style: solid; border-color: #fff; opacity: 0; animation-delay: .2s; animation-direction: reverse; }
 @keyframes cfx-spin { 0% { transform: scale(1.3) rotate(0); opacity: 0; } 25% { opacity: 1; } 100% { transform: scale(.85) rotate(270deg); opacity: 0; } }
 /* Nomadic: the ship opens out at its new planet (it folded away where it was: .cfx-collapse). */
-.cfx-blink .cfx-halo { border-color: var(--pc); box-shadow: 0 0 14px var(--pc), inset 0 0 8px #fff; animation-delay: .3s; }
-.cfx-blink .cfx-halo.late { border-color: #fff; animation-delay: .4s; animation-duration: .45s; }
+.cfx-blink .cfx-halo { border-color: var(--pc); box-shadow: 0 0 14px var(--pc), inset 0 0 8px #fff; animation-delay: var(--blink-open); }
+.cfx-blink .cfx-halo.late { border-color: #fff; animation-delay: calc(var(--blink-open) + 100ms); animation-duration: .45s; }
 /* Dangerous: a crackling arc between the two ships it destroys. */
 .cfx-arc .cfx-ray {
   height: 6%; margin-top: -3%;
   background: linear-gradient(90deg, #fff, var(--pc), #fff);
   box-shadow: 0 0 8px var(--pc), 0 0 16px var(--pc);
-  animation: cfx-beam .5s ease-out forwards, cfx-flicker .08s steps(2) 6;
+  /* It joins the two ships when its span ends, and they blow up then (beats.ts). */
+  animation:
+    cfx-beam-span var(--arc-span) ease-out forwards,
+    cfx-beam-fade var(--arc-fade) var(--arc-span) ease-out forwards,
+    cfx-flicker .08s steps(2) 6;
 }
 @keyframes cfx-flicker { 50% { filter: brightness(2.2); } }
 /* Shoot (a prototype power): the shooter stays put and fires; a muzzle flash, a missile streaking down the
-   line with its exhaust trail, and a burst where it hits (board/Shots; the flight is SHOT_MS). */
+   line with its exhaust trail, and a burst where it hits (board/Shots; timed by beats.ts). */
 .shot-flash {
   width: 70%; height: 70%; margin: -35% 0 0 -35%; border-radius: 50%;
   background: radial-gradient(circle, #fff 0%, color-mix(in srgb, var(--pc) 75%, #fff) 30%, transparent 68%);
@@ -735,20 +765,20 @@ input { font: inherit; }
   background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--pc) 55%, transparent) 60%, color-mix(in srgb, var(--pc) 60%, #fff));
   box-shadow: 0 0 8px var(--pc);
   filter: blur(1px);
-  animation: shot-trail .6s cubic-bezier(.45,0,.9,.6) forwards, shot-fade .3s .6s ease-out forwards;
+  animation: shot-trail var(--shot-flight) cubic-bezier(.45,0,.9,.6) forwards, shot-fade .3s var(--shot-flight) ease-out forwards;
 }
 .shot-missile {
   left: 0; width: calc(var(--cell) * .34); height: calc(var(--cell) * .11); translate: -85% -50%;
   border-radius: 30% 999px 999px 30%;
   background: linear-gradient(90deg, transparent, var(--pc) 35%, color-mix(in srgb, var(--pc) 40%, #fff) 70%, #fff);
   box-shadow: 0 0 10px 2px var(--pc), 0 0 4px #fff;
-  animation: shot-fly .6s cubic-bezier(.45,0,.9,.6) forwards;
+  animation: shot-fly var(--shot-flight) cubic-bezier(.45,0,.9,.6) forwards;
 }
 .shot-hit {
   left: 100%; width: var(--cell); height: var(--cell); translate: -50% -50%; border-radius: 50%;
   background: radial-gradient(circle, #fff 0%, color-mix(in srgb, var(--pc) 70%, #fff) 25%, color-mix(in srgb, var(--pc) 50%, transparent) 45%, transparent 70%);
   opacity: 0;
-  animation: shot-hit .35s .58s ease-out forwards;
+  animation: shot-hit var(--shot-hit) var(--shot-flight) ease-out forwards;
 }
 @keyframes shot-trail { 0% { clip-path: inset(0 100% 0 0); } 100% { clip-path: inset(0 0 0 0); } }
 @keyframes shot-fade { to { opacity: 0; } }
@@ -773,7 +803,7 @@ input { font: inherit; }
    edge of the map on screen would cut it off, it takes the bottom or left corner instead (OddsBadge). */
 .ship-attack { z-index: 4; }
 /* The badge's space, over every ship (Ships), and gliding with its own. */
-.ship-odds-spot { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; transition: transform .6s cubic-bezier(.22,.9,.24,1); }
+.ship-odds-spot { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; transition: transform var(--ship-glide) cubic-bezier(.22,.9,.24,1); }
 .ship-odds {
   position: absolute;
   right: 0; top: 0;

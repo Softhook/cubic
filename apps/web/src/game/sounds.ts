@@ -1,9 +1,14 @@
 import { effectOf, type Cell, type Die, type GameState, type LogEntry, type LogEvent, type PlayerId } from '@quantum/engine';
+import { stagingOf } from '../components/board/staging';
 import { sfx } from '../sound';
-import { shotOf, strikeOf } from './strike';
+import { destroyedOf, shotOf, strikeOf } from './strike';
+import { reducedMotion } from './useMediaQuery';
 import { lost } from './view';
 
 type Sound = keyof typeof sfx;
+
+/** A card's own sound plays first, then its effects (ships, missiles) this much later, in ms. */
+const CARD_THEN = 350;
 
 /**
  * The sound for each logged event. Ships destroyed, moved or deployed, cubes placed or moved and tracks gained are
@@ -48,7 +53,7 @@ export function soundsFor(
   next: GameState,
   fresh: LogEntry[],
   mine: (p: PlayerId) => boolean = () => true,
-): { first: Sound[]; then: Sound[]; destroyed: number } {
+): { first: Sound[]; then: Sound[]; destroyed: number; lands?: number } {
   const first = new Set<Sound>();
   const then = new Set<Sound>();
 
@@ -74,21 +79,24 @@ export function soundsFor(
 
   // Ships: flown, arrived, destroyed, swapped or renumbered.
   const before = new Map(prev.dice.map((d) => [d.id, d]));
-  // Reorganization takes the ships it re-rolls off the map: a recall, not a loss (its roll is the dice's own clatter).
-  const head = prev.pending[0];
-  const recalling = head?.kind === 'unveil' && !!head.reorganize;
+  const destroyed = destroyedOf(prev, next).length;
+  // A ship a card brings (Expansion, Nomadic) appears as its effect gets there (board/staging): heard landing
+  // then, rather than flying or warping in on its own.
+  const late = stagingOf(prev, next).late;
+  let lands: number | undefined;
   const moved: { from: Cell; to: Cell }[] = [];
-  let destroyed = 0;
   for (const d of next.dice) {
     const p = before.get(d.id);
     if (!p) continue;
     const from = onBoard(p);
     const to = onBoard(d);
-    if (from && to && !sameCell(from, to)) moved.push({ from, to });
+    const brought = late.get(d.id);
+    if (to && brought !== undefined) lands = Math.max(lands ?? 0, brought);
+    else if (from && to && !sameCell(from, to)) moved.push({ from, to });
     else if (!from && to) effects.add('warpIn');
-    else if (from && !to) {
-      if (!recalling) destroyed++;
-    } else if (d.value !== p.value && d.rolls === p.rolls) effects.add('retune');
+    // One that left the map was destroyed (counted above) or recalled.
+    else if (from && !to) continue;
+    else if (d.value !== p.value && d.rolls === p.rolls) effects.add('retune');
   }
   const swapped = moved.some((a) => moved.some((b) => a !== b && sameCell(a.from, b.to) && sameCell(a.to, b.from)));
   if (swapped) effects.add('swap');
@@ -109,16 +117,20 @@ export function soundsFor(
   const sameTurn = prev.turn.number === next.turn.number && prev.turn.player === next.turn.player;
   if (sameTurn && next.turn.oncePerTurn.length > prev.turn.oncePerTurn.length) effects.add('skill');
 
-  return { first: [...first], then: [...then], destroyed };
+  return { first: [...first], then: [...then], destroyed, lands };
 }
 
 /** Plays what the step from `prev` to `next` sounds like. */
 export function playSounds(prev: GameState, next: GameState, fresh: LogEntry[], mine: (p: PlayerId) => boolean) {
-  const { first, then, destroyed } = soundsFor(prev, next, fresh, mine);
+  const { first, then, destroyed, lands } = soundsFor(prev, next, fresh, mine);
+  // Under reduced motion the staging has none of a card's effects wait: ships go and come at once, heard so.
+  const still = reducedMotion();
   // Ships a card's blow destroys (Show of Force, Dangerous) blow up as it lands, heard as seen (Explosions).
-  const strike = strikeOf(prev);
+  const strike = still ? 0 : strikeOf(prev);
   const explode = () => sfx.explode(destroyed);
   const play = (s: Sound) => (s !== 'explode' ? sfx[s]() : strike ? window.setTimeout(explode, strike) : explode());
   first.forEach(play);
-  if (then.length) window.setTimeout(() => then.forEach(play), 350);
+  // A ship a card brings lands as it appears, whatever the card's own sound.
+  if (lands !== undefined) sfx.warpIn(still ? undefined : lands);
+  if (then.length) window.setTimeout(() => then.forEach(play), CARD_THEN);
 }

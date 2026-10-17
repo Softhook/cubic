@@ -3,11 +3,9 @@ import type { Board, GameState } from '@quantum/engine';
 import { PLANET_DIAMETER, TILE } from '@quantum/art';
 import { decodedTileImage } from '../../art/tileImages';
 import { tileArt, type TileArt } from '../../art/boardTiles';
+import { GATE_COLOR } from '../../theme';
 import { wrapMarks, type WrapMark } from './geometry';
 import { PlanetMarkings } from './PlanetMarkings';
-
-/** A Warp Gate's colour, on the map and in its effects (CardEffects). */
-export const GATE_COLOR = '#5ef0b0';
 
 /** Which way each board edge faces, for the wrap chevrons. */
 const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number }> = {

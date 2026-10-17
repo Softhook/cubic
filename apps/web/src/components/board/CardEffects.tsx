@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { cellOf, effectOf, same, type Cell, type GameState } from '@quantum/engine';
 import { lastLogId, useStepEffects } from '../../game/useTransient';
-import { GATE_COLOR } from './BoardArt';
+import { GATE_COLOR } from '../../theme';
 import { EffectBox, cubeCount, type MapEffect } from './EffectBox';
 
 /**
