@@ -40,7 +40,7 @@ export interface CardFace {
   category: string;
   /** How many copies the deck has. */
   copies?: number;
-  /** Position in its deck, for the "07/35" footer. */
+  /** Position in its deck, for the "7/35 C" footer. */
   index?: number;
   deckSize?: number;
 }
@@ -256,13 +256,14 @@ function textPanel(face: CardFace, category: string, area: Box, p: CardPalette, 
     )
     .join('');
 
-  // Footer, tucked into the bottom corners: position in the deck, and edition.
-  const fx = 3.2;
-  const fy = H - 2.4;
-  const foot = (x: number, text: string, anchor: string) =>
-    `<text x="${n(x)}" y="${n(fy)}" font-family="${FONTS.body}" font-size="1.8" font-weight="600" letter-spacing=".15" fill="${p.muted}" text-anchor="${anchor}">${esc(text.toUpperCase())}</text>`;
-  const num = face.index !== undefined && face.deckSize ? `${String(face.index).padStart(2, '0')}/${face.deckSize}` : '';
-  return out + (num ? foot(fx, num, 'start') : '') + foot(W - fx, info.edition, 'end');
+  // Footer: one small tag in the bottom-right corner, inside the safe area and below the rules text,
+  // e.g. "7/13 C": position in the deck, then the edition (C community, Q classic).
+  const edition = info.edition === 'CE' ? 'C' : 'Q';
+  const tag = face.index !== undefined && face.deckSize ? `${face.index}/${face.deckSize} ${edition}` : edition;
+  return (
+    out +
+    `<text x="${n(W - HUD.x)}" y="${n(H - safe - 0.3)}" font-family="${FONTS.body}" font-size="1.5" font-weight="600" letter-spacing=".1" fill="${p.muted}" text-anchor="end">${esc(tag)}</text>`
+  );
 }
 
 /** The front of a card as a standalone SVG document. */

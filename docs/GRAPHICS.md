@@ -262,8 +262,8 @@ the backs. The print set is still picked by edition, so a print run is always a 
   (Tactics, Gambits, Expansion) are dark. Every card runs its art to the top and side edges. The decks
   tell apart across the table and face down, like the physical game's light and dark decks.
 - **Face**: illustration (top ~half), HUD label with the category and ×copies, a category emblem
-  straddling art and panel, name (Orbitron), subtitle, rules text with game terms in bold, small footer in
-  the bottom corners: `07/35` left, the set (`CE` or `CLASSIC`) right.
+  straddling art and panel, name (Orbitron), subtitle, rules text with game terms in bold, one small tag in
+  the bottom-right corner inside the safe area: `7/35 C`, position in the deck then the set (`C` community, `Q` classic).
 - **Colour = category** (movement cyan, action amber, combat red, conquer green, research purple,
   ship blue, cards orange, expansion teal). Every card has a `category` in `data/cards.yaml` (Tactics
   and Gambits take their effect's); hues and labels are `CARD_CATEGORIES` in tokens.ts, icons
@@ -502,7 +502,7 @@ Tile, planet and cube-pad sizes are in §2a.
   PDF should embed the fonts, and outline them only if the printer asks. Self-hosting the fonts instead
   of the Google CDN would let exports work offline.
 - **Thin lines and small text.** Keep printed strokes ≥ 0.15 mm and text ≥ 6 pt. Exceptions: the card
-  footer and HUD label (1.8 and 2.1 mm), numerals in the card art (from 1.66 mm, bold), and the tile's
+  footer and HUD label (1.5 and 2.1 mm), numerals in the card art (from 1.66 mm, bold), and the tile's
   flavour label (1.2–1.7 mm), which is texture rather than text.
 
 ### Checks
