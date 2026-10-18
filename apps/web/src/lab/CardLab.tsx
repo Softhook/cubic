@@ -244,6 +244,7 @@ export function CardLab() {
             part={edition === 'all' ? undefined : EDITION_LABEL[edition]}
             notes={`Copies per card: the ×N mark on the card.\nEach folder's back.png is the back for every card in it.\n`}
             sheets={sheets}
+            cmyk="files"
             copies
             backs
             ready={fonts !== null}

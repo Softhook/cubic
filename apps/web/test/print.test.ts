@@ -1,7 +1,7 @@
-/** Print files: every piece fits its sheets with room for crop marks, backs land behind their fronts, names follow one pattern. */
+/** Print files: every piece fits its sheets with room for crop marks, backs land behind their fronts, press sheets bleed only round each block, names follow one pattern. */
 import { describe, expect, it } from 'vitest';
-import { PIECES, fileName, pieceSize, setName, type Piece } from '../src/print/pieces';
-import { PAPER, sheetsHtml, type Paper } from '../src/print/sheets';
+import { PIECES, fileName, pieceSize, setName, sheetName, type Piece } from '../src/print/pieces';
+import { PAPER, pressPages, sheetsHtml, type Paper } from '../src/print/sheets';
 
 const pieces = Object.values(PIECES) as Piece[];
 const papers = Object.keys(PAPER) as Paper[];
@@ -66,13 +66,54 @@ describe('print sheets', () => {
   });
 });
 
+describe('press sheets', () => {
+  const { w, h, bleed: b } = PIECES.tile;
+  const pages = pressPages(PIECES.tile, [0, 1, 2, 3, 4], 'a4');
+
+  it('fills each page of the grid and starts a new one when it is full', () => {
+    expect(pages.map((p) => p.images.length)).toEqual([4, 1]);
+  });
+
+  it('draws each face with its bleed, showing the bleed only where no piece is next to it', () => {
+    const [topLeft, , , bottomRight] = pages[0].images;
+    const x0 = (PAPER.a4.w - 2 * w) / 2;
+    const y0 = (PAPER.a4.h - 2 * h) / 2;
+    expect(topLeft.at).toEqual({ x: x0 - b, y: y0 - b, w: w + 2 * b, h: h + 2 * b });
+    expect(topLeft.clip).toEqual({ x: x0 - b, y: y0 - b, w: w + b, h: h + b });
+    expect(bottomRight.clip).toEqual({ x: x0 + w, y: y0 + h, w: w + b, h: h + b });
+    // Alone on its page: bleed all round.
+    expect(pages[1].images[0].clip).toEqual(pages[1].images[0].at);
+  });
+
+  it.each([PIECES.tile, PIECES.aid])('keeps the crop marks on the paper and clear of the bleed: $id', (piece) => {
+    const { w, h, cols, rows, bleed } = piece;
+    const x0 = (PAPER.a4.w - cols * w) / 2;
+    const y0 = (PAPER.a4.h - rows * h) / 2;
+    const [page] = pressPages(piece, [0], 'a4');
+    for (const [x1, y1, x2, y2] of page.marks!) {
+      for (const [x, y] of [
+        [x1, y1],
+        [x2, y2],
+      ]) {
+        expect(x).toBeGreaterThanOrEqual(0);
+        expect(y).toBeGreaterThanOrEqual(0);
+        expect(x).toBeLessThanOrEqual(PAPER.a4.w);
+        expect(y).toBeLessThanOrEqual(PAPER.a4.h);
+        const inside = x > x0 - bleed && x < x0 + cols * w + bleed && y > y0 - bleed && y < y0 + rows * h + bleed;
+        expect(inside).toBe(false);
+      }
+    }
+  });
+});
+
 describe('print file names', () => {
-  it('follow cubic-<piece>-<name>[-bleed][-<dpi>dpi]', () => {
+  it('follow cubic-<piece>-<name>[-bleed][-<dpi>dpi] cubic-<pieces>[-<part>][-<tag>] and cubic-<name>-a4-<condition>', () => {
     const card = { name: 'skill/07-agile', svg: () => '' };
     expect(fileName(PIECES.card, card, { bleed: true, dpi: 300, ext: 'png' })).toBe('cubic-card-skill-07-agile-bleed-300dpi.png');
     expect(fileName(PIECES.tile, { name: 'p7-01', svg: () => '' }, { bleed: false, ext: 'svg' })).toBe('cubic-tile-p7-01.svg');
-    expect(setName(PIECES.card, { bleed: true, part: 'community' })).toBe('cubic-cards-community-bleed.zip');
-    expect(setName(PIECES.tile, { bleed: false })).toBe('cubic-tiles.zip');
+    expect(setName(PIECES.card, { part: 'community', tag: 'bleed' })).toBe('cubic-cards-community-bleed.zip');
+    expect(setName(PIECES.tile, {})).toBe('cubic-tiles.zip');
+    expect(sheetName('tiles-aids')).toBe('cubic-tiles-aids-a4-fogra39.pdf');
   });
 
   it('size pieces with their bleed on every side', () => {

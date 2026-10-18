@@ -1,6 +1,7 @@
+import type { PdfPage, Rect } from './pdf';
 import type { Piece } from './pieces';
 
-/** Print sheets: pieces laid out on paper with crop marks, and printing them from the browser. */
+/** Sheets: pieces laid out on paper with crop marks, printed from the browser or as CMYK PDF pages for a press. */
 
 export type Paper = 'a4' | 'letter';
 
@@ -9,47 +10,103 @@ export const PAPER: Record<Paper, { w: number; h: number; name: string }> = {
   letter: { w: 215.9, h: 279.4, name: 'US Letter' },
 };
 
+type Line = [number, number, number, number];
+
 /**
- * Print sheets: faces (image URLs) at trim size in the piece's grid, butted together so one cut serves
- * two pieces, with crop marks in the margin. With backs, each page of fronts is followed by its backs,
- * columns mirrored so they land behind their fronts when printed double-sided on the long edge.
+ * Where a sheet puts a piece: its grid centred on the paper, pieces butted so one cut serves two, and
+ * crop marks on every cut, in the margin from `gap` mm outside the grid.
  */
-export function sheetsHtml(piece: Piece, faces: { front: string; back?: string }[], paper: Paper, withBacks = false): string {
+function sheetLayout(piece: Piece, paper: Paper, gap: number) {
   const size = PAPER[paper];
   const { w, h, cols, rows } = piece;
   const x0 = (size.w - cols * w) / 2;
   const y0 = (size.h - rows * h) / 2;
-  const markV = Math.min(5, y0 - 1.5);
-  const markH = Math.min(5, x0 - 1.5);
-  let marks = '';
+  const x1 = x0 + cols * w;
+  const y1 = y0 + rows * h;
+  const lenV = Math.min(5, y0 - gap - 0.5);
+  const lenH = Math.min(5, x0 - gap - 0.5);
+  const marks: Line[] = [];
   for (let i = 0; i <= cols; i++) {
-    // Less half the 0.2 mm line, so each mark is centred on its cut.
-    const x = x0 + i * w - 0.1;
-    marks += `<i style="left:${x}mm;top:${y0 - markV - 1}mm;height:${markV}mm" class="v"></i><i style="left:${x}mm;top:${y0 + rows * h + 1}mm;height:${markV}mm" class="v"></i>`;
+    const x = x0 + i * w;
+    marks.push([x, y0 - gap - lenV, x, y0 - gap], [x, y1 + gap, x, y1 + gap + lenV]);
   }
   for (let i = 0; i <= rows; i++) {
-    const y = y0 + i * h - 0.1;
-    marks += `<i style="top:${y}mm;left:${x0 - markH - 1}mm;width:${markH}mm" class="h"></i><i style="top:${y}mm;left:${x0 + cols * w + 1}mm;width:${markH}mm" class="h"></i>`;
+    const y = y0 + i * h;
+    marks.push([x0 - gap - lenH, y, x0 - gap, y], [x1 + gap, y, x1 + gap + lenH, y]);
   }
+  return { size, cell: (col: number, row: number): Rect => ({ x: x0 + col * w, y: y0 + row * h, w, h }), marks };
+}
+
+/** Faces split into pages of the piece's grid, each with its column and row. */
+function pagesOf<T>(piece: Piece, faces: T[]): { face: T; col: number; row: number }[][] {
+  const perPage = piece.cols * piece.rows;
+  const pages = [];
+  for (let p = 0; p < faces.length; p += perPage)
+    pages.push(faces.slice(p, p + perPage).map((face, k) => ({ face, col: k % piece.cols, row: Math.floor(k / piece.cols) })));
+  return pages;
+}
+
+/**
+ * Print sheets for home printing: faces (image URLs) at trim size, crop marks 1 mm outside the grid.
+ * With backs, each page of fronts is followed by its backs, columns mirrored so they land behind their
+ * fronts when printed double-sided on the long edge.
+ */
+export function sheetsHtml(piece: Piece, faces: { front: string; back?: string }[], paper: Paper, withBacks = false): string {
+  const { size, cell, marks } = sheetLayout(piece, paper, 1);
+  // Less half the 0.2 mm line, so each mark is centred on its cut.
+  const marksHtml = marks
+    .map(([x1, y1, x2, y2]) =>
+      x1 === x2
+        ? `<i class="v" style="left:${x1 - 0.1}mm;top:${y1}mm;height:${y2 - y1}mm"></i>`
+        : `<i class="h" style="top:${y1 - 0.1}mm;left:${x1}mm;width:${x2 - x1}mm"></i>`,
+    )
+    .join('');
   const page = (cells: { src: string; col: number; row: number }[]) =>
-    `<section class="sheet">${cells.map((c) => `<img src="${c.src}" style="left:${x0 + c.col * w}mm;top:${y0 + c.row * h}mm">`).join('')}${marks}</section>`;
-  const perPage = cols * rows;
+    `<section class="sheet">${cells
+      .map((c) => {
+        const { x, y } = cell(c.col, c.row);
+        return `<img src="${c.src}" style="left:${x}mm;top:${y}mm">`;
+      })
+      .join('')}${marksHtml}</section>`;
   let html = '';
-  for (let p = 0; p < faces.length; p += perPage) {
-    const chunk = faces.slice(p, p + perPage);
-    html += page(chunk.map((c, k) => ({ src: c.front, col: k % cols, row: Math.floor(k / cols) })));
-    if (withBacks)
-      html += page(chunk.flatMap((c, k) => (c.back ? [{ src: c.back, col: cols - 1 - (k % cols), row: Math.floor(k / cols) }] : [])));
+  for (const cells of pagesOf(piece, faces)) {
+    html += page(cells.map((c) => ({ src: c.face.front, col: c.col, row: c.row })));
+    if (withBacks) html += page(cells.flatMap((c) => (c.face.back ? [{ src: c.face.back, col: piece.cols - 1 - c.col, row: c.row }] : [])));
   }
   return (
     `<!doctype html><html><head><meta charset="utf-8"><title>Cubic ${piece.plural}</title><style>` +
     `@page{size:${size.w}mm ${size.h}mm;margin:0}html,body{margin:0}` +
     `.sheet{position:relative;width:${size.w}mm;height:${size.h}mm;overflow:hidden;break-after:page}` +
-    `.sheet img{position:absolute;width:${w}mm;height:${h}mm}.sheet i{position:absolute;width:0;height:0}` +
+    `.sheet img{position:absolute;width:${piece.w}mm;height:${piece.h}mm}.sheet i{position:absolute;width:0;height:0}` +
     // Borders, not backgrounds: browsers drop background colours when printing unless "Background graphics" is on.
     `.sheet i.v{border-left:.2mm solid #000}.sheet i.h{border-top:.2mm solid #000}` +
     `</style></head><body>${html}</body></html>`
   );
+}
+
+/**
+ * Press sheets, as pdf.ts pages: the print sheets' layout, each face (an index into the PDF's images)
+ * drawn with its bleed and clipped to its cell, except on sides with no piece next to it, so each block
+ * of pieces has its bleed all round. Crop marks start clear of the bleed.
+ */
+export function pressPages(piece: Piece, faces: number[], paper: Paper): PdfPage[] {
+  const { cell, marks } = sheetLayout(piece, paper, piece.bleed);
+  const b = piece.bleed;
+  return pagesOf(piece, faces).map((cells) => {
+    const has = (col: number, row: number) => cells.some((c) => c.col === col && c.row === row);
+    const images = cells.map(({ face, col, row }) => {
+      const c = cell(col, row);
+      const [left, right, top, bottom] = [has(col - 1, row), has(col + 1, row), has(col, row - 1), has(col, row + 1)].map((n) =>
+        n ? 0 : b,
+      );
+      return {
+        image: face,
+        at: { x: c.x - b, y: c.y - b, w: c.w + 2 * b, h: c.h + 2 * b },
+        clip: { x: c.x - left, y: c.y - top, w: c.w + left + right, h: c.h + top + bottom },
+      };
+    });
+    return { images, marks };
+  });
 }
 
 /** Prints an HTML document from a hidden frame, once its images have loaded. */

@@ -1,11 +1,11 @@
 import { download, drawSvg, encode } from '../files';
-import { cmykPdf, deflate, type PdfImage } from './pdf';
-import { cmykName, cmykSetName, fileName, pieceSize, setName, sizeNote, type Format, type Piece, type Printable } from './pieces';
+import { cmykPdf, deflate, fullPage, type PdfImage } from './pdf';
+import { cmykName, fileName, pieceSize, setName, sheetName, sizeNote, type Format, type Piece, type Printable } from './pieces';
 import { PRESS, tagPng, toCmyk } from './press';
-import { printDocument, sheetsHtml, type Paper } from './sheets';
+import { PAPER, pressPages, printDocument, sheetsHtml, type Paper } from './sheets';
 import { zip } from './zip';
 
-/** Print exports, the same for every piece: one face as PNG, a whole set as PNGs or CMYK PDFs, print sheets. */
+/** Print exports: one face as PNG, a whole set as PNGs, print sheets, and CMYK PDFs for a press (a file per card, or press sheets). */
 
 export type Progress = (message: string) => void;
 
@@ -45,7 +45,7 @@ export async function exportZip(
     (o.notes ?? '');
   files.push({ name: 'README.txt', blob: new Blob([readme], { type: 'text/plain' }) });
   progress('Packing…');
-  download(setName(piece, o), await zip(files));
+  download(setName(piece, { part: o.part, tag: o.bleed ? 'bleed' : undefined }), await zip(files));
 }
 
 /** Opens the print dialog on sheets of these faces at trim size; each distinct face is drawn once. */
@@ -82,7 +82,7 @@ async function cmykImage(f: Format, item: Printable): Promise<PdfImage> {
 /** A CMYK PDF of these images, one per page with the format's bleed (pdf.ts). */
 function cmykFile(f: Format, title: string, images: PdfImage[]): Blob {
   const { w, h } = pieceSize(f, true);
-  const pages = images.map((_, k) => k);
+  const pages = images.map((_, k) => fullPage(k, w, h));
   return cmykPdf({ title, w, h, bleed: f.bleed, condition: PRESS.condition, conditionInfo: PRESS.profile, images, pages });
 }
 
@@ -92,31 +92,36 @@ export async function exportCmykPdf(f: Format, item: Printable): Promise<void> {
 }
 
 /**
- * A set as CMYK PDFs for a print service that takes one file per piece (Doxzoo): a ZIP with a PDF per
- * front, its back as page 2 when it has one (double-sided printing takes pages front, back), every page
- * with its bleed and no crop marks, converted for the press (press.ts `toCmyk`). How many of each to
- * order goes in `order.csv` (from `quantities`, by front name), not as repeated pages. Each back is drawn once.
+ * A set as CMYK PDFs for a print service that takes one file per piece (cards, Doxzoo): a ZIP with a
+ * PDF per front, its back as page 2 when it has one (double-sided printing takes pages front, back),
+ * every page with its bleed and no crop marks, converted for the press (press.ts `toCmyk`). `faces` has
+ * every copy; how many of each to order goes in `order.csv`, not as repeated pages. Each back is drawn once.
  */
-export async function exportCmykSet(
+export async function exportCmykFiles(
   piece: Piece,
   faces: { front: Printable; back?: Printable }[],
-  quantities: Map<string, number>,
   o: { part?: string; notes?: string },
   progress: Progress,
 ): Promise<void> {
+  const fronts = new Map<string, { face: (typeof faces)[number]; copies: number }>();
+  for (const f of faces) {
+    const seen = fronts.get(f.front.name);
+    if (seen) seen.copies++;
+    else fronts.set(f.front.name, { face: f, copies: 1 });
+  }
   const backs = new Map<string, PdfImage>();
   const files: { name: string; blob: Blob }[] = [];
   const order = ['file,quantity,pages'];
-  for (const [k, f] of faces.entries()) {
-    progress(`Converting ${k + 1}/${faces.length}`);
-    const images = [await cmykImage(piece, f.front)];
-    if (f.back) {
-      if (!backs.has(f.back.name)) backs.set(f.back.name, await cmykImage(piece, f.back));
-      images.push(backs.get(f.back.name)!);
+  for (const [k, { face, copies }] of [...fronts.values()].entries()) {
+    progress(`Converting ${k + 1}/${fronts.size}`);
+    const images = [await cmykImage(piece, face.front)];
+    if (face.back) {
+      if (!backs.has(face.back.name)) backs.set(face.back.name, await cmykImage(piece, face.back));
+      images.push(backs.get(face.back.name)!);
     }
-    const name = `${f.front.name}.pdf`;
-    files.push({ name, blob: cmykFile(piece, `Cubic ${piece.id} ${f.front.name}`, images) });
-    order.push(`${name},${quantities.get(f.front.name) ?? 1},${images.length}`);
+    const name = `${face.front.name}.pdf`;
+    files.push({ name, blob: cmykFile(piece, `Cubic ${piece.id} ${face.front.name}`, images) });
+    order.push(`${name},${copies},${images.length}`);
   }
   const readme =
     `Cubic ${piece.plural}, ${sizeNote(piece, true)}.\n` +
@@ -127,5 +132,53 @@ export async function exportCmykSet(
   files.push({ name: 'order.csv', blob: new Blob([order.join('\n') + '\n'], { type: 'text/csv' }) });
   files.push({ name: 'README.txt', blob: new Blob([readme], { type: 'text/plain' }) });
   progress('Packing…');
-  download(cmykSetName(piece, o), await zip(files));
+  download(setName(piece, { part: o.part, tag: PRESS.condition.toLowerCase() }), await zip(files));
+}
+
+/** Pieces that print together on one stock, as one CMYK PDF of A4 press sheets (`exportCmykSheets`). */
+export interface PressSheets {
+  /** For the file name and the panel: `tiles-aids`, "Tiles + aids". */
+  name: string;
+  label: string;
+  /** What's on the sheets, for the panel's note. */
+  contents: string;
+  /** Each piece and every copy of its faces, in page order; rejects if the fonts didn't load. */
+  groups: () => Promise<{ piece: Piece; faces: Printable[] }[]>;
+}
+
+/**
+ * Press sheets as one CMYK PDF: each piece in its sheet grid (sheets.ts `pressPages`), butted with crop
+ * marks, single-sided, a new page for each piece. Every copy is placed; each distinct face is converted once.
+ */
+export async function exportCmykSheets(sheets: PressSheets, progress: Progress): Promise<void> {
+  const groups = await sheets.groups();
+  const images: PdfImage[] = [];
+  const index = new Map<string, number>();
+  const total = new Set(groups.flatMap((g) => g.faces.map((f) => `${g.piece.id}/${f.name}`))).size;
+  const pages = [];
+  for (const { piece, faces } of groups) {
+    const placed: number[] = [];
+    for (const f of faces) {
+      const key = `${piece.id}/${f.name}`;
+      if (!index.has(key)) {
+        progress(`Converting ${index.size + 1}/${total}`);
+        index.set(key, images.push(await cmykImage(piece, f)) - 1);
+      }
+      placed.push(index.get(key)!);
+    }
+    pages.push(...pressPages(piece, placed, 'a4'));
+  }
+  progress('Writing PDF…');
+  const { w, h } = PAPER.a4;
+  const pdf = cmykPdf({
+    title: `Cubic ${sheets.label}`,
+    w,
+    h,
+    bleed: 0,
+    condition: PRESS.condition,
+    conditionInfo: PRESS.profile,
+    images,
+    pages,
+  });
+  download(sheetName(sheets.name), pdf);
 }

@@ -1,7 +1,8 @@
-import { cardPalette } from './card';
+import { GROUND, cubePad, diePad } from './aid';
+import { CARD, cardPalette } from './card';
 import { document, esc, hsl, hslToRgb, n } from './svg';
 import { hatch, well } from './tile';
-import { CARD_CATEGORIES, CUBE_PAD, FONTS, INK, LABEL_TEXT, SPACE_BASE, TILE, WELL } from './tokens';
+import { CARD_CATEGORIES, CUBE_PAD, DOMINANCE, FONTS, INK, LABEL_TEXT, SPACE_BASE, TILE, WELL } from './tokens';
 
 /**
  * The press test: one A4 page to print on the real press and stock before a run, to check what the
@@ -64,12 +65,12 @@ export function pressTestSvg(o: PressTestOptions = {}): string {
   const top = 20;
   if (o.tile) body += `<image x="${M}" y="${top}" width="${TILE.size}" height="${TILE.size}" href="${o.tile}"/>`;
   const cardX = M + TILE.size + 4;
-  if (o.card) body += `<image x="${cardX}" y="${top}" width="63.5" height="88.9" href="${o.card}"/>`;
+  if (o.card) body += `<image x="${cardX}" y="${top}" width="${CARD.w}" height="${CARD.h}" href="${o.card}"/>`;
 
   // Category colours: each as on a light card (accent and subtitle ink on paper) and a dark one.
-  const swX = cardX + 63.5 + 4;
+  const swX = cardX + CARD.w + 4;
   const cellW = (PRESS_TEST.w - M - swX - 1) / 2;
-  const cellH = 88.9 / 8;
+  const cellH = CARD.h / 8;
   Object.entries(CARD_CATEGORIES).forEach(([, c], i) => {
     const y = top + i * cellH;
     for (const [k, light] of [true, false].entries()) {
@@ -120,15 +121,11 @@ export function pressTestSvg(o: PressTestOptions = {}): string {
   body += well(M + 16, cy, TILE.pad, 4, WELL.space) + label(M + 16, 'space');
   body += well(M + 44, cy, TILE.pad, 4, { ...WELL.space, fill: 0.24 }) + hatch(M + 44, cy) + label(M + 44, 'conquer space');
   body += well(M + 68, cy, CUBE_PAD.size, CUBE_PAD.corner, WELL.cube) + label(M + 68, 'cube pad');
-  // The aid's ground and pad fill (aid.ts GROUND, PAD).
+  // The aid's own pads, on its ground.
   const aidX = M + 84;
-  body += rect(aidX, strip, M + WIDTH - aidX, h, hsl(228, 40, 8));
-  body +=
-    `<rect x="${n(aidX + 6)}" y="${n(cy - 12)}" width="24" height="24" rx="3.6" fill="${hsl(228, 32, 12)}" stroke="${hsl(12, 80, 62)}" stroke-width=".4"/>` +
-    label(aidX + 18, 'aid die pad');
-  body +=
-    `<rect x="${n(aidX + 36)}" y="${n(cy - 5.5)}" width="11" height="11" rx="1.6" fill="${hsl(228, 32, 12)}" stroke="${hsl(224, 20, 52)}" stroke-width=".3"/>` +
-    label(aidX + 41.5, 'aid cube pad');
+  body += rect(aidX, strip, M + WIDTH - aidX, h, GROUND);
+  body += diePad(aidX + 18, cy, DOMINANCE, 'dominance') + label(aidX + 18, 'aid die pad');
+  body += cubePad(aidX + 36, cy - CUBE_PAD.size / 2) + label(aidX + 36 + CUBE_PAD.size / 2, 'aid cube pad');
   // Faint stars, as small as the starfield draws them.
   for (let i = 0; i < 12; i++)
     body += `<circle cx="${n(aidX + 56 + (i % 4) * 4)}" cy="${n(cy - 6 + Math.floor(i / 4) * 5)}" r=".09" fill="#fff" opacity="${n(0.25 + (i % 4) * 0.25)}"/>`;

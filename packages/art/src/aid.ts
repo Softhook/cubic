@@ -118,7 +118,8 @@ function wrap(s: string, size: number, width: number, measure: Measure): string[
 // ---------------------------------------------------------------------------
 // The board
 
-const GROUND = hsl(228, 40, 8);
+/** The board's ground (the press test shows the pads on it). */
+export const GROUND = hsl(228, 40, 8);
 const WHITE = hsl(220, 30, 96);
 const MUTED = hsl(224, 18, 74);
 const HAIR = hsl(224, 20, 30);
@@ -136,13 +137,17 @@ function hex(cx: number, cy: number, r: number, glow: string): string {
 }
 
 /** A die pad: where the dominance or research die sits, the 24 mm of a tile's space (a 19 mm die with room round it). */
-function diePad(cx: number, cy: number, hue: number, kind: 'dominance' | 'research'): string {
+export function diePad(cx: number, cy: number, hue: number, kind: 'dominance' | 'research'): string {
   const s = TILE.pad;
   return (
     `<rect x="${n(cx - s / 2)}" y="${n(cy - s / 2)}" width="${s}" height="${s}" rx="3.6" fill="${PAD}" stroke="${hsl(hue, 80, 62)}" stroke-width=".4"/>` +
     icon(kind, cx, cy, 7, hsl(hue, 60, 40), 1.5)
   );
 }
+
+/** A cube pad on the rail, from its top left: the planets' cube pad in the die pads' quiet fill. */
+export const cubePad = (x: number, y: number) =>
+  `<rect x="${n(x)}" y="${n(y)}" width="${CUBE_PAD.size}" height="${CUBE_PAD.size}" rx="${CUBE_PAD.corner}" fill="${PAD}" stroke="${hsl(224, 20, 52)}" stroke-width=".3"/>`;
 
 /** The most cubes any map gives a player. */
 const MAX_CUBES = 7;
@@ -168,9 +173,7 @@ export function playerAidSvg(o: AidOptions = {}): string {
   const pad = CUBE_PAD.size;
   const step = (H - 2 * M - pad) / (MAX_CUBES - 1);
   for (let i = 0; i < MAX_CUBES; i++) {
-    out.push(
-      `<rect x="${M}" y="${n(M + i * step)}" width="${pad}" height="${pad}" rx="1.6" fill="${PAD}" stroke="${hsl(224, 20, 52)}" stroke-width=".3"/>`,
-    );
+    out.push(cubePad(M, M + i * step));
   }
   const spine = M + pad + 3.6;
   out.push(

@@ -1,5 +1,5 @@
 /**
- * A print PDF of CMYK images, one per page, made to the PDF/X-1a rules print services ask for: PDF 1.3,
+ * A print PDF of CMYK images placed on pages, with crop marks when it's a sheet, made to the PDF/X-1a rules print services ask for: PDF 1.3,
  * CMYK only, no transparency or fonts (the faces are flattened images), each page's TrimBox and
  * BleedBox, and an output intent naming the press's registered printing condition (FOGRA39), so a
  * preflight and the printer's RIP know exactly what the CMYK means. A registered condition needs no
@@ -13,9 +13,24 @@ export interface PdfImage {
   data: Uint8Array<ArrayBuffer>;
 }
 
+/** A rectangle on the page, mm from its top left. */
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface PdfPage {
+  /** Images drawn into `at`, an index into the PDF's `images` (one image can appear many times); only `clip` of it shows, when given. */
+  images: { image: number; at: Rect; clip?: Rect }[];
+  /** Crop marks, 0.2 mm in black: lines from x1 y1 to x2 y2, mm from the top left. */
+  marks?: [number, number, number, number][];
+}
+
 export interface PdfOptions {
   title: string;
-  /** The page with its bleed, and the bleed on each side, mm: the TrimBox is the page less the bleed. */
+  /** The page with its bleed, and the bleed on each side, mm: the TrimBox is the page less the bleed (none for a sheet). */
   w: number;
   h: number;
   bleed: number;
@@ -23,9 +38,12 @@ export interface PdfOptions {
   condition: string;
   conditionInfo: string;
   images: PdfImage[];
-  /** Each page, as an index into `images`, in print order (for duplex: front, back, front, back…). */
-  pages: number[];
+  /** In print order (for duplex: front, back, front, back…). */
+  pages: PdfPage[];
 }
+
+/** A page that is one image, edge to edge. */
+export const fullPage = (image: number, w: number, h: number): PdfPage => ({ images: [{ image, at: { x: 0, y: 0, w, h } }] });
 
 /** Compresses bytes for a PDF `FlateDecode` stream (zlib format, which `deflate` gives). */
 export async function deflate(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
@@ -88,13 +106,26 @@ export function cmykPdf(o: PdfOptions): Blob {
   const W = pt(o.w);
   const H = pt(o.h);
   const b = pt(o.bleed);
-  o.pages.forEach((image, k) => {
+  // PDF space is in points from the bottom left: a rectangle's bottom edge, and the rectangle as `re` takes it.
+  const bottom = (r: Rect) => pt(o.h - r.y - r.h);
+  const box = (r: Rect) => `${pt(r.x)} ${bottom(r)} ${pt(r.w)} ${pt(r.h)}`;
+  o.pages.forEach((page, k) => {
+    const used = [...new Set(page.images.map((i) => i.image))];
     object(
       pageRef(k),
       `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /BleedBox [0 0 ${W} ${H}] /TrimBox [${b} ${b} ${pt(o.w - o.bleed)} ${pt(o.h - o.bleed)}]` +
-        ` /Resources << /XObject << /Im ${imageRef(image)} 0 R >> >> /Contents ${pageRef(k) + 1} 0 R >>`,
+        ` /Resources << /XObject << ${used.map((i) => `/Im${i} ${imageRef(i)} 0 R`).join(' ')} >> >> /Contents ${pageRef(k) + 1} 0 R >>`,
     );
-    const content = `q ${W} 0 0 ${H} 0 0 cm /Im Do Q`;
+    let content = page.images
+      .map(
+        ({ image, at, clip }) =>
+          `q ${clip ? `${box(clip)} re W n ` : ''}${pt(at.w)} 0 0 ${pt(at.h)} ${pt(at.x)} ${bottom(at)} cm /Im${image} Do Q`,
+      )
+      .join('\n');
+    if (page.marks?.length)
+      content +=
+        `\n0 0 0 1 K ${pt(0.2)} w\n` +
+        page.marks.map(([x1, y1, x2, y2]) => `${pt(x1)} ${pt(o.h - y1)} m ${pt(x2)} ${pt(o.h - y2)} l S`).join('\n');
     object(pageRef(k) + 1, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
   });
 

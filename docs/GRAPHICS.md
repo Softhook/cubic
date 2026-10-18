@@ -381,29 +381,40 @@ Every printed piece goes through one module, `apps/web/src/print/`, so cards and
 same way:
 
 - `pieces.ts` holds each piece's print spec (trim, bleed, sheet grid) and the file-name pattern:
-  `cubic-<piece>-<name>[-bleed][-<dpi>dpi].<ext>` for one face, `cubic-<pieces>[-<part>][-bleed].zip`
+  `cubic-<piece>-<name>[-bleed][-<dpi>dpi].<ext>` for one face, `cubic-<pieces>[-<part>][-bleed|-fogra39].zip`
   for a set.
 - `PrintPanel.tsx` is the export panel on every lab page: this face as a PNG (plus page extras such
-  as SVG for Illustrator), the whole set as a ZIP of PNGs with a README or as CMYK PDFs, and print
-  sheets. Everything uses the piece's `dpi`: 600 for cards and the aid (small text), 300 for tiles.
-  Exports refuse to run when the fonts didn't load, rather than print in system fonts. `useExport.ts`
-  runs an export with its progress and error; the press test page uses it too.
+  as SVG for Illustrator), the whole set as a ZIP of PNGs with a README, the CMYK export for the press
+  (below), and print sheets. Everything uses the piece's `dpi`: 600 for cards and the aid (small text),
+  300 for tiles. Exports refuse to run when the fonts didn't load, rather than print in system fonts.
+  `useExport.ts` runs an export with its progress and error; the press test page uses it too.
 - `press.ts` gets files ready for a press: PNGs are opaque, tagged sRGB (an embedded ICC profile) and
   carry their dpi, so a RIP converts the colours as we see them and opens the file at its physical size.
   `toCmyk` converts to the press's CMYK through a table (`cmykTable.ts`, below).
-- **CMYK PDFs** (`pdf.ts`, "CMYK PDFs · FOGRA39 · ZIP" in the panel): for a print service that wants
-  CMYK and a file per piece (Doxzoo asks for PDF/X-1a, Coated FOGRA39, one PDF per card). A ZIP with a
-  PDF per front, named like the PNGs (`skill/07-agile.pdf`), its back as page 2 whenever it has one
-  (double-sided printing takes pages front, back); every page with its bleed and no crop marks, a
-  flattened CMYK image at the piece's `dpi`. How many of each to order is in `order.csv` (a card's
-  copies), not repeated pages. Made to the PDF/X-1a rules (PDF 1.3, CMYK only, no fonts or transparency,
-  TrimBox and BleedBox, an output intent naming the registered FOGRA39 condition; a registered condition
-  needs no embedded profile, which would add 1.4 MB to every file); only a preflight such as
-  Acrobat's can certify it. Upload with "Do not scale". The press test exports as a single CMYK PDF.
-- `sheets.ts` lays out print sheets: pieces at trim size in a grid (cards 3 × 3, tiles 2 × 2),
-  butted so one cut serves two pieces, crop marks drawn as borders so they print without
-  "Background graphics", optional backs ("Backs (duplex)", off by default) mirrored for long-edge duplex. A4 or US Letter; the
-  rulebook offers the same papers.
+- **CMYK PDFs** (`pdf.ts`): made to the PDF/X-1a rules (PDF 1.3, CMYK only, no fonts or
+  transparency, TrimBox and BleedBox, an output intent naming the registered FOGRA39 condition; a
+  registered condition needs no embedded profile, which would add 1.4 MB to every file); only a
+  preflight such as Acrobat's can certify it. Each face is a flattened CMYK image at the piece's
+  `dpi`. Two shapes, by how the piece is printed:
+  - **Cards: a file per card** ("CMYK PDFs · FOGRA39 · ZIP"), for a print service that takes one PDF
+    per card (Doxzoo asks for PDF/X-1a, Coated FOGRA39). A ZIP with a PDF per front, named like the
+    PNGs (`skill/07-agile.pdf`), its back as page 2 (double-sided printing takes pages front, back);
+    every page with its bleed and no crop marks. How many of each to order is in `order.csv` (a card's
+    copies), not repeated pages. Upload with "Do not scale".
+  - **Tiles and player aids: press sheets** ("Tiles + aids · CMYK PDF", the same button on both
+    pages, `lab/pressSheets.ts`): they print together on the same stock, as one PDF of A4 sheets,
+    `cubic-tiles-aids-a4-fogra39.pdf`. All 30 tiles (2 × 2 a page) then 4 aids (2 Community, 2
+    Classic; 1 × 2 a page), in the print sheets' grid, butted so one cut serves two pieces. Each face
+    is drawn with its bleed and clipped to its cell except where no piece is next to it, so each block
+    has its 3 mm bleed all round; crop marks start clear of the bleed. Single-sided, the set as it
+    ships (not seeds being explored), with print markings.
+
+  The press test exports as a single CMYK PDF.
+- `sheets.ts` lays out print sheets: pieces at trim size in a grid (cards 3 × 3, tiles 2 × 2, aid
+  1 × 2), butted so one cut serves two pieces, crop marks drawn as borders so they print without
+  "Background graphics", optional backs ("Backs (duplex)", off by default) mirrored for long-edge
+  duplex. A4 or US Letter; the rulebook offers the same papers. The CMYK press sheets use the same
+  layout (`pressPages`).
 - Bleed: on for exports meant for print services; the sheets are at trim size for home printing.
 
 A new piece (player board, tokens) is a `PIECES` entry and a `Printable` per face.
@@ -427,7 +438,7 @@ Because the print route is a normal page, it can be opened in a browser to check
 |---|---|---|
 | `cards-pod` | One PDF page (or PNG) per card face and back, with 3 mm bleed, no marks | 69.5 × 94.9 mm |
 | `cards-pnp` | Print-and-play sheets, 3×3 cards, crop marks, duplex backs mirrored | A4 and US Letter |
-| `tiles` | One file per tile (30) with bleed, plus backs | 102 × 102 mm |
+| `tiles` | Tiles and player aids on A4 press sheets, butted, crop marks (built as the CMYK PDF) | A4 |
 | `tiles-pnp` | Tiles 2 × 2 per page with crop marks | A4 and US Letter |
 | `player-board` | Player board / reference sheet (the A6 player aid is built, §2 Player aid) | A4 or A5 |
 | `proof` | Contact sheet of everything at reduced size, for review | A4 |

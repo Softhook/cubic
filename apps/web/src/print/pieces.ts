@@ -61,10 +61,9 @@ export function fileName(p: Format, item: Printable, o: { bleed: boolean; dpi?: 
 export const cmykName = (p: Format, item: Printable) =>
   `cubic-${p.id}-${item.name.replaceAll('/', '-')}-${PRESS.condition.toLowerCase()}.pdf`;
 
-/** A set of CMYK PDFs, one per piece: `cubic-cards-community-fogra39.zip`. */
-export const cmykSetName = (p: Piece, o: { part?: string }) =>
-  `cubic-${p.plural}${o.part ? `-${o.part}` : ''}-${PRESS.condition.toLowerCase()}.zip`;
+/** A whole set's ZIP: `cubic-cards-community-bleed.zip`, `cubic-cards-community-fogra39.zip`. */
+export const setName = (p: Piece, o: { part?: string; tag?: string }) =>
+  `cubic-${p.plural}${o.part ? `-${o.part}` : ''}${o.tag ? `-${o.tag}` : ''}.zip`;
 
-/** A whole set's file name: `cubic-cards-community-bleed.zip`. */
-export const setName = (p: Piece, o: { bleed: boolean; part?: string }) =>
-  `cubic-${p.plural}${o.part ? `-${o.part}` : ''}${o.bleed ? '-bleed' : ''}.zip`;
+/** Press sheets of pieces printed together: `cubic-tiles-aids-a4-fogra39.pdf`. */
+export const sheetName = (name: string) => `cubic-${name}-a4-${PRESS.condition.toLowerCase()}.pdf`;

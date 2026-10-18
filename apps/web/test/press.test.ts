@@ -1,7 +1,7 @@
 /** Files for a press: the CMYK conversion follows its table, and the CMYK PDF is well formed with the boxes and intent PDF/X wants. */
 import { describe, expect, it } from 'vitest';
 import { CMYK_TABLE } from '../src/print/cmykTable';
-import { cmykPdf, deflate } from '../src/print/pdf';
+import { cmykPdf, deflate, fullPage } from '../src/print/pdf';
 import { tagPng, toCmyk } from '../src/print/press';
 import { crc32, zip } from '../src/print/zip';
 
@@ -51,7 +51,7 @@ describe('CMYK PDF', () => {
       condition: 'FOGRA39',
       conditionInfo: 'Coated FOGRA39',
       images: [await image(4, 6), await image(4, 6)],
-      pages: [0, 1, 0, 1],
+      pages: [0, 1, 0, 1].map((k) => fullPage(k, 69.5, 94.9)),
     });
     const bytes = new Uint8Array(await pdf.arrayBuffer());
     const text = new TextDecoder('latin1').decode(bytes);
@@ -71,6 +71,26 @@ describe('CMYK PDF', () => {
     expect(text).toContain('/GTS_PDFXVersion (PDF/X-1:2001)');
     expect(text).toContain('/Title (Test \\(cards\\))');
     expect(text).not.toMatch(/DeviceRGB|\/Font|\/SMask/);
+  });
+
+  it('places clipped images and crop marks on a sheet, from the top left', async () => {
+    const pdf = cmykPdf({
+      title: 'Sheet',
+      w: 210,
+      h: 297,
+      bleed: 0,
+      condition: 'FOGRA39',
+      conditionInfo: 'Coated FOGRA39',
+      images: [await image(2, 2)],
+      pages: [
+        { images: [{ image: 0, at: { x: 10, y: 20, w: 50, h: 50 }, clip: { x: 13, y: 23, w: 44, h: 44 } }], marks: [[13, 0, 13, 5]] },
+      ],
+    });
+    const text = new TextDecoder('latin1').decode(await pdf.arrayBuffer());
+    expect(text).toContain('/TrimBox [0 0 595.276 841.89]');
+    expect(text).toContain('/XObject << /Im0 5 0 R >>');
+    expect(text).toContain('q 36.85 651.969 124.724 124.724 re W n 141.732 0 0 141.732 28.346 643.465 cm /Im0 Do Q');
+    expect(text).toContain('0 0 0 1 K 0.567 w\n36.85 841.89 m 36.85 827.717 l S');
   });
 });
 

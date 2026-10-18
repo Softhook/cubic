@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { exportCmykSet, exportPng, exportZip, printSheets } from './exports';
+import { exportCmykFiles, exportCmykSheets, exportPng, exportZip, printSheets, type PressSheets } from './exports';
 import { sizeNote, type Piece, type Printable } from './pieces';
 import { PRESS } from './press';
 import { PAPER, type Paper } from './sheets';
@@ -19,6 +19,8 @@ interface Props {
   notes?: string;
   /** The faces to print on sheets, with all copies or one of each. */
   sheets: (copies: boolean) => { front: Printable; back?: Printable }[];
+  /** The CMYK export for the press: a PDF per front (`'files'`, cards), or press sheets shared with other pieces. */
+  cmyk: 'files' | PressSheets;
   /** Offer the "All copies" and "Backs (duplex)" options on the print sheets. */
   copies?: boolean;
   backs?: boolean;
@@ -40,6 +42,7 @@ export function PrintPanel({
   part,
   notes,
   sheets,
+  cmyk,
   copies,
   backs,
   ready = true,
@@ -51,12 +54,6 @@ export function PrintPanel({
   const [withBacks, setWithBacks] = useState(false);
   const { run, progress, error } = useExport();
   const busy = progress !== null || !ready || !!fontsMissing;
-  /** How many of each face a full set prints, by front name: its copies. */
-  const quantities = () => {
-    const count = new Map<string, number>();
-    for (const f of sheets(true)) count.set(f.front.name, (count.get(f.front.name) ?? 0) + 1);
-    return count;
-  };
 
   return (
     <>
@@ -85,22 +82,35 @@ export function PrintPanel({
           All {piece.plural} · ZIP
         </button>
         <span className="lab-note">
-          For print services that want RGB: {set.length} PNGs at {piece.dpi} dpi{bleed ? ', with bleed' : ''}.
+          For print services that want RGB: {set.length === 1 ? 'one PNG' : `${set.length} PNGs`} at {piece.dpi} dpi
+          {bleed ? ', with bleed' : ''}.
         </span>
       </div>
-      <div className="lab-controls">
-        <button
-          className="btn btn-primary"
-          disabled={busy}
-          onClick={() => run((p) => exportCmykSet(piece, sheets(false), quantities(), { part: part?.toLowerCase(), notes }, p))}
-        >
-          CMYK PDFs · {PRESS.condition} · ZIP
-        </button>
-        <span className="lab-note">
-          For print services that want CMYK and a file per {piece.id}: one PDF each with {piece.bleed} mm bleed, no crop marks, {piece.dpi}{' '}
-          dpi{backs ? ', its back as page 2' : ''}, and how many to order of each in order.csv. Converted for {PRESS.profile}.
-        </span>
-      </div>
+      {cmyk === 'files' ? (
+        <div className="lab-controls">
+          <button
+            className="btn btn-primary"
+            disabled={busy}
+            onClick={() => run((p) => exportCmykFiles(piece, sheets(true), { part: part?.toLowerCase(), notes }, p))}
+          >
+            CMYK PDFs · {PRESS.condition} · ZIP
+          </button>
+          <span className="lab-note">
+            For print services that want CMYK and a file per {piece.id}: one PDF each with {piece.bleed} mm bleed, no crop marks,{' '}
+            {piece.dpi} dpi{backs ? ', its back as page 2' : ''}, and how many to order of each in order.csv. Converted for {PRESS.profile}.
+          </span>
+        </div>
+      ) : (
+        <div className="lab-controls">
+          <button className="btn btn-primary" disabled={busy} onClick={() => run((p) => exportCmykSheets(cmyk, p))}>
+            {cmyk.label} · CMYK PDF · {PRESS.condition}
+          </button>
+          <span className="lab-note">
+            The press file: A4 sheets with {cmyk.contents}, butted with crop marks and bleed round each block. The set as it ships, with
+            print markings. Converted for {PRESS.profile}.
+          </span>
+        </div>
+      )}
       <div className="lab-controls">
         <button
           className="btn btn-primary"

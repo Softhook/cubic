@@ -6,10 +6,12 @@ import { PIECES, fileName, pieceSize, type Printable } from '../print/pieces';
 import { PrintPanel } from '../print/PrintPanel';
 import { tileFontCss } from './cards';
 import { LabHeader } from './LabHeader';
+import { TILES_AND_AIDS } from './pressSheets';
 
 /**
  * Art Lab, tiles page (#lab): every tile of the physical set, with controls to explore seeds and
- * planet types and to export print files: single tiles, and print sheets of the whole set. See docs/GRAPHICS.md §3.
+ * planet types and to export print files: single tiles, the whole set, print sheets, and the CMYK press
+ * sheets the tiles share with the player aids. See docs/GRAPHICS.md §3–4.
  */
 
 const TYPES: PlanetType[] = ['gas', 'rocky', 'ice', 'lava', 'ocean'];
@@ -114,6 +116,7 @@ export function TileLab() {
             set={specs.map(printable)}
             notes={markings ? '' : 'Without print markings.\n'}
             sheets={() => specs.map((t) => ({ front: printable(t) }))}
+            cmyk={TILES_AND_AIDS}
             ready={fonts !== null}
             fontsMissing={fonts === ''}
             extra={(run, busy) => (
