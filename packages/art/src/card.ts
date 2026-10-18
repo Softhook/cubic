@@ -184,7 +184,7 @@ const ART_VIEW: Box = { x: 0, y: 0, w: CARD.w, h: CARD.artBottom };
 const HUD = { x: CARD.safe + 0.6, y: 5.6 };
 
 /** The illustration over a starfield in the category's colours, shaded towards the text panel. */
-function art(face: CardFace, id: string, hue: number, p: CardPalette, r: Rng): Fragment {
+function art(face: CardFace, id: string, hue: number, r: Rng): Fragment {
   const win = ART_WIN;
   const view = ART_VIEW;
   const players = [...PLAYER_HUES];
@@ -199,8 +199,9 @@ function art(face: CardFace, id: string, hue: number, p: CardPalette, r: Rng): F
     nebula: r.range(0.45, 0.6),
   });
   const scene = join(...(ILLUSTRATIONS[face.id]?.draw({ id: `${id}-m`, r: r.fork('motif'), hue, box: view, p1, p2 }) ?? []));
-  // Darken the art towards the panel so the emblem and title sit on calm ground.
-  const shade = `<linearGradient id="${id}-shade" x1="0" y1="0" x2="0" y2="1"><stop offset=".6" stop-color="${p.paper}" stop-opacity="0"/><stop offset="1" stop-color="${INK}" stop-opacity=".85"/></linearGradient>`;
+  // Darken the art towards the panel so the emblem and title sit on calm ground. Fade from transparent
+  // INK, not paper: a light card's paper would tint the fade into a pale haze.
+  const shade = `<linearGradient id="${id}-shade" x1="0" y1="0" x2="0" y2="1"><stop offset=".6" stop-color="${INK}" stop-opacity="0"/><stop offset="1" stop-color="${INK}" stop-opacity=".85"/></linearGradient>`;
   return {
     defs: sky.defs + scene.defs + shade + clipRect(`${id}-win`, win),
     body: `<g clip-path="url(#${id}-win)">${sky.body}${scene.body}${rect(win, `fill="url(#${id}-shade)"`)}</g>`,
@@ -274,7 +275,7 @@ export function cardSvg(face: CardFace, o: CardOptions = {}): string {
   const area = pageArea(o.bleed);
   const base: Fragment = { defs: fontStyle(o), body: rect(area, `fill="${p.paper}"`) };
   const front: Fragment = { defs: '', body: hud(face, cat.label) + textPanel(face, cat.name, area, p, o.measure ?? estimateWidth) };
-  return finish(join(base, art(face, id, cat.hue, p, rng(hash(`card:${face.id}`))), front), area, id, o.rounded);
+  return finish(join(base, art(face, id, cat.hue, rng(hash(`card:${face.id}`))), front), area, id, o.rounded);
 }
 
 /** The back of a deck's cards. */
