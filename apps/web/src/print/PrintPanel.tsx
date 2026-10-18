@@ -106,7 +106,8 @@ export function PrintPanel({
           </button>
           <span className="lab-note">
             For print services that want CMYK and a file per {piece.id}: one PDF each with {piece.bleed} mm bleed, no crop marks,{' '}
-            {piece.dpi} dpi{backs ? ', its back as page 2' : ''}, and how many to order of each in order.csv. Converted for {PRESS.profile}.
+            {piece.dpi} dpi{backs ? ', its back as page 2' : ''}, and how many to order of each in order.csv. Converted for{' '}
+            {PRESS.described}.
           </span>
         </div>
       ) : (
@@ -116,7 +117,7 @@ export function PrintPanel({
           </button>
           <span className="lab-note">
             The press file: A4 sheets with {cmyk.contents}, butted with crop marks and bleed round each block. The set as it ships, with
-            print markings. Converted for {PRESS.profile}.
+            print markings. Converted for {PRESS.described}.
           </span>
         </div>
       )}

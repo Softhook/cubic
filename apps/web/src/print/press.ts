@@ -7,8 +7,15 @@ import { crc32 } from './zip';
  * the conversion to the press's CMYK. See docs/GRAPHICS.md §4.
  */
 
-/** The press the CMYK is made for: its registered printing condition (FOGRA39) and profile name. */
-export const PRESS = { condition: CMYK_TABLE.condition, profile: CMYK_TABLE.profile };
+/**
+ * The press the CMYK is made for: its registered printing condition (FOGRA39) and profile name, and how
+ * the two relate for notes and READMEs, so a printer doesn't read them as two different targets.
+ */
+export const PRESS = {
+  condition: CMYK_TABLE.condition,
+  profile: CMYK_TABLE.profile,
+  described: `${CMYK_TABLE.profile}, a profile for the ${CMYK_TABLE.condition} condition`,
+};
 
 const N = CMYK_TABLE.grid;
 const TABLE = Uint8Array.from(atob(CMYK_TABLE.data), (c) => c.charCodeAt(0));

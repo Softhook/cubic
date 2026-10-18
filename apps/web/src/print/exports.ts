@@ -131,7 +131,7 @@ export async function exportCmykFiles(
   }
   const readme =
     `Cubic ${piece.plural}, ${sizeNote(piece, true)}.\n` +
-    `One CMYK PDF per ${piece.id} (${PRESS.profile}), ${piece.dpi} dpi, no crop marks` +
+    `One CMYK PDF per ${piece.id}, converted for ${PRESS.described}, ${piece.dpi} dpi, no crop marks` +
     (faces.some((f) => f.back) ? ': page 1 the front, page 2 the back, for double-sided printing' : '') +
     `.\nHow many of each to order: order.csv. Upload with "Do not scale".\n`;
   files.push({ name: 'order.csv', blob: new Blob([order.join('\n') + '\n'], { type: 'text/csv' }) });
