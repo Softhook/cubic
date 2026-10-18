@@ -123,12 +123,12 @@ const scout = () => [
 
 const CLASSES: Record<number, () => string[]> = { 1: battlestation, 2: flagship, 3: destroyer, 4: frigate, 5: interceptor, 6: scout };
 
-/** A ship of class `value` (1–6) as a white outline centred on (cx, cy), `size` mm from nose to tail, lines `line` mm wide. */
-function starship(value: number, cx: number, cy: number, size: number, line = 0.18, color = '#fff'): string {
+/** A ship of class `value` (1–6) as an outline centred on (cx, cy), `size` mm from nose to tail, lines `line` mm wide, filled with `fill`. */
+function starship(value: number, cx: number, cy: number, size: number, line = 0.18, color = '#fff', fill = 'none'): string {
   const k = size / 2;
   const parts = CLASSES[value]().map((p) => (p.startsWith('<') ? p : `<path d="${p}"/>`));
   return (
-    `<g transform="translate(${n(cx)} ${n(cy)}) scale(${n(k)})" fill="none" stroke="${color}" stroke-width="${n(line / k)}" stroke-linejoin="round" stroke-linecap="round">` +
+    `<g transform="translate(${n(cx)} ${n(cy)}) scale(${n(k)})" fill="${fill}" stroke="${color}" stroke-width="${n(line / k)}" stroke-linejoin="round" stroke-linecap="round">` +
     parts.join('') +
     `</g>`
   );
@@ -171,37 +171,46 @@ const PIP_SPOTS: Record<number, Pt[]> = {
 };
 
 /**
- * A ship on its die face: a rounded square `size` mm across, the ship in the middle and the value's
- * pips around it in the accent colour. A centre pip is the ship's core, so it is drawn over the hull.
+ * A ship on its die face, as a hologram: a rounded square of dark glass with faint scan lines, lit from
+ * the top left, the ship projected over it in the accent colour (a tinted hull, a glowing outline, a
+ * soft beam behind) and the value's pips as lit orbs. A centre pip is the ship's core, so it is drawn
+ * over the hull. Everything scales with `size`, so the die looks the same at any size.
  */
-export function shipDie(id: string, value: number, cx: number, cy: number, size: number, hue: number, inverted = false): Fragment {
-  const r = size * 0.08;
-  // Inverted: a white face with a black edge, ship and pips, as printed on paper.
-  const pipFill = inverted ? '#000' : hsl(hue, 100, 70);
-  const glow = (px: number, py: number) =>
-    inverted ? '' : `<circle cx="${n(px)}" cy="${n(py)}" r="${n(r * 1.8)}" fill="url(#${id}-glow)"/>`;
+export function shipDie(id: string, value: number, cx: number, cy: number, size: number, hue: number): Fragment {
+  const s = size;
+  const r = s * 0.08;
+  const box = (inset = 0, dy = 0) =>
+    `x="${n(cx - s / 2 + inset)}" y="${n(cy - s / 2 + inset + dy)}" width="${n(s - 2 * inset)}" height="${n(s - 2 * inset)}" rx="${n(s * 0.16 - inset)}"`;
+  const scan = Array.from({ length: 9 }, (_, i) => `M${n(cx - s / 2)} ${n(cy - s / 2 + (i + 0.5) * (s / 9))}h${n(s)}`).join('');
+  // The Battlestation is round, so it is drawn smaller to sit inside the corners.
+  const at = (line: number, color: string, fill?: string) => starship(value, cx, cy, s * (value === 1 ? 0.64 : 0.78), line, color, fill);
   const pips = PIP_SPOTS[value]
     .map(([x, y]) => {
-      const px = cx + x * size;
-      const py = cy + y * size;
-      return `${glow(px, py)}<circle cx="${n(px)}" cy="${n(py)}" r="${n(r)}" fill="${pipFill}"/>`;
+      const p = `cx="${n(cx + x * s)}" cy="${n(cy + y * s)}"`;
+      return `<circle ${p} r="${n(r * 2)}" fill="url(#${id}-halo)"/><circle ${p} r="${n(r)}" fill="url(#${id}-orb)"/>`;
     })
     .join('');
-  // The Battlestation is round, so it is drawn smaller to sit inside the corners.
-  // Line and blur scale with the die, so it looks the same at any size (0.18 mm on the aid's 17 mm dice).
-  const ship = starship(value, cx, cy, size * (value === 1 ? 0.64 : 0.78), size * 0.0106, inverted ? '#000' : '#fff');
-  const box = `x="${n(cx - size / 2)}" y="${n(cy - size / 2)}" width="${n(size)}" height="${n(size)}" rx="${n(size * 0.16)}"`;
   return {
     defs:
-      // A slight blur, so the outline reads as a soft hologram rather than a hard line.
-      `<filter id="${id}-soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${n(size * 0.007)}"/></filter>` +
-      `<radialGradient id="${id}-glow"><stop offset="0" stop-color="${hsl(hue, 100, 65)}" stop-opacity=".6"/><stop offset="1" stop-color="${hsl(hue, 100, 65)}" stop-opacity="0"/></radialGradient>`,
+      `<linearGradient id="${id}-face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hsl(hue + 30, 45, 20)}"/><stop offset="1" stop-color="${hsl(228, 50, 7)}"/></linearGradient>` +
+      `<linearGradient id="${id}-rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${hsl(hue, 100, 80)}"/><stop offset=".5" stop-color="${hsl(hue, 80, 50)}" stop-opacity=".4"/><stop offset="1" stop-color="${hsl(hue, 90, 60)}" stop-opacity=".8"/></linearGradient>` +
+      `<radialGradient id="${id}-beam" cy=".62" r=".6"><stop offset="0" stop-color="${hsl(hue, 100, 60)}" stop-opacity=".45"/><stop offset="1" stop-color="${hsl(hue, 100, 60)}" stop-opacity="0"/></radialGradient>` +
+      `<linearGradient id="${id}-hull" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hsl(hue, 100, 75)}" stop-opacity=".55"/><stop offset="1" stop-color="${hsl(hue, 100, 55)}" stop-opacity=".08"/></linearGradient>` +
+      `<radialGradient id="${id}-orb" cx=".4" cy=".35"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="${hsl(hue, 100, 72)}"/><stop offset="1" stop-color="${hsl(hue, 100, 45)}"/></radialGradient>` +
+      `<radialGradient id="${id}-halo"><stop offset="0" stop-color="${hsl(hue, 100, 65)}" stop-opacity=".7"/><stop offset="1" stop-color="${hsl(hue, 100, 65)}" stop-opacity="0"/></radialGradient>` +
+      `<filter id="${id}-blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="${n(s * 0.025)}"/></filter>` +
+      `<clipPath id="${id}-clip"><rect ${box()}/></clipPath>`,
     body:
-      `<rect ${box} fill="${inverted ? '#fff' : hsl(228, 32, 14)}"/>` +
-      (inverted
-        ? `<rect ${box} fill="none" stroke="#000" stroke-width="${n(size * 0.02)}"/>`
-        : `<rect ${box} fill="none" stroke="${hsl(hue, 70, 60)}" stroke-width="${n(size * 0.012)}" stroke-opacity=".5"/>`) +
-      (inverted ? ship : `<g filter="url(#${id}-soft)" opacity=".82">${ship}</g>`) +
-      pips,
+      // A soft shadow under the die, then the glass, its scan lines and the projector's beam.
+      `<rect ${box(0, s * 0.04)} fill="#000" opacity=".5" filter="url(#${id}-blur)"/>` +
+      `<rect ${box()} fill="url(#${id}-face)"/>` +
+      `<g clip-path="url(#${id}-clip)"><path d="${scan}" stroke="${hsl(hue, 90, 70)}" stroke-width="${n(s * 0.006)}" opacity=".12"/>` +
+      `<circle cx="${n(cx)}" cy="${n(cy + s * 0.1)}" r="${n(s * 0.5)}" fill="url(#${id}-beam)"/></g>` +
+      // The ship: tinted hull, a blurred glow along the outline, and a crisp near-white line on top.
+      at(0, 'none', `url(#${id}-hull)`) +
+      `<g filter="url(#${id}-blur)" opacity=".7">${at(s * 0.05, hsl(hue, 100, 65))}</g>` +
+      at(s * 0.014, hsl(hue, 60, 92)) +
+      pips +
+      `<rect ${box(s * 0.01)} fill="none" stroke="url(#${id}-rim)" stroke-width="${n(s * 0.022)}"/>`,
   };
 }

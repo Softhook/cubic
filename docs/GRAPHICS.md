@@ -312,8 +312,9 @@ Lab (`#lab/aid`).
   limit (one move, one ability a turn) and cards.
 - **The fleet**: each ship on its die face (`shipDie` in
   [`kit/starships.ts`](../packages/art/src/kit/starships.ts)), with its power under it but no name:
-  starships as white outlines with no fill, the pips around them, and the centre pip of 1, 3 and 5
-  as the ship's core.
+  each die is a hologram, dark glass with faint scan lines and a lit rim, the starship projected in
+  the accent cyan (tinted hull, glowing outline), the pips as lit orbs, and the centre pip of 1, 3
+  and 5 as the ship's core. The manual draws its ships the same way, in the player's colour.
 
 ### Card art
 

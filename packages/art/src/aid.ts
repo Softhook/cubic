@@ -237,7 +237,7 @@ export function playerAidSvg(o: AidOptions = {}): string {
   const gap = (W - M - left - 6 * size) / 5;
   for (const [i, s] of SHIPS.entries()) {
     const cx = left + size / 2 + i * (size + gap);
-    const d = shipDie(`${id}-d${s.value}`, s.value, cx, fleetY + size / 2, size, HUE, true);
+    const d = shipDie(`${id}-d${s.value}`, s.value, cx, fleetY + size / 2, size, HUE);
     defs.push(d.defs);
     out.push(d.body);
     const ty = fleetY + size + 4.2;
