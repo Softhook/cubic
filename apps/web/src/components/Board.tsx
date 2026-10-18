@@ -413,7 +413,7 @@ function OddsBadge({ chance, cell, zoomed }: { chance: number; cell: number; zoo
     const badge = ref.current!;
     const ship = badge.parentElement!;
     // Not zoomed in, only the screen's edge can cut it off.
-    const root = zoomed ? ship.closest('.board-wrap') : null;
+    const root = zoomed ? ship.closest('.stage') : null;
     // How far the badge sticks out of the space (see .ship-odds): the ship must be this far inside.
     const { width, height } = badge.getBoundingClientRect();
     const up = Math.ceil(height * 0.3);

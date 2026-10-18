@@ -181,7 +181,9 @@ input { font: inherit; }
   grid-template-rows: minmax(0, 1fr) auto;
   grid-template-areas: 'stage sidebar' 'market sidebar';
 }
-.stage { grid-area: stage; position: relative; min-height: 0; padding: 6px; display: flex; }
+/* A zoomed map is clipped here, at the stage, so it fills the strip above it (--toast-lane) and the padding too,
+   rather than at the map's own box, which left a band without map under the topbar. `clip`: not a scroll container. */
+.stage { grid-area: stage; position: relative; min-height: 0; padding: 6px; display: flex; overflow: hidden; overflow: clip; }
 .sidebar {
   grid-area: sidebar;
   min-height: 0;
@@ -275,8 +277,6 @@ input { font: inherit; }
   touch-action: pan-x pan-y;
 }
 .board-wrap.zoomed { touch-action: none; cursor: grab; }
-/* Clipped while zoomed, and during a gesture (the first pinch starts from the whole map). */
-.board-wrap.zoomed, .board-wrap.gesture { overflow: hidden; }
 .board-wrap.zoomed:active { cursor: grabbing; }
 /* Always its own layer: a gesture moves and scales it on the compositor (useBoardZoom), and a pan that ends
    only moves it, without repainting the map. Promoted per gesture, the map was drawn again as each began and ended. */

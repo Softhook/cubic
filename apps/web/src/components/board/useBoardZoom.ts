@@ -64,7 +64,7 @@ function scrollsAround(el: HTMLElement): boolean {
  * (touch or mouse), the wheel (with Ctrl, a trackpad pinch, or any wheel when nothing around the board
  * scrolls) and `zoomBy` / `fit` / `centreOn` move it; the last three, and a wheel's notches, glide there. A
  * flung map carries on and slows down; pulled past an edge or a zoom limit, it gives and springs back. While a gesture is under way the board only gets a
- * CSS transform, and the wrap the class `gesture` (it clips); when it ends, the new size is committed as
+ * CSS transform, and the wrap the class `gesture`; when it ends, the new size is committed as
  * `cell`, so dice, text and artwork redraw crisp. A drag never ends in a click on the board. A map of
  * another size starts fitted.
  */
@@ -138,8 +138,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
   latest.current = { f, current, zoomed, commit, stopDemo };
   useLayoutEffect(() => stopDemo, [stopDemo]);
 
-  // The committed view has been drawn: drop the gesture's transform, and only now its clip, or the
-  // transformed board shows outside the wrap for a frame (over the top bar, zooming in from the whole map).
+  // The committed view has been drawn: drop the gesture's transform (the stage clips the map, see .stage).
   useLayoutEffect(() => {
     if (redraw.current) return redraw.current();
     wrap.current?.classList.remove('gesture');
