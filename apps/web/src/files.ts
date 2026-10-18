@@ -19,11 +19,16 @@ export const blobToDataUrl = (blob: Blob) =>
     r.readAsDataURL(blob);
   });
 
-/** Draws an SVG document to a `w` × `h` px canvas, over `background` when given (else transparent). */
-export async function drawSvg(svg: string, w: number, h: number, background?: string): Promise<HTMLCanvasElement> {
+async function loadSvg(svg: string): Promise<HTMLImageElement> {
   const img = new Image();
   img.src = dataUrl(svg);
   await img.decode();
+  return img;
+}
+
+/** Draws an SVG document to a `w` × `h` px canvas, over `background` when given (else transparent). */
+async function drawSvg(svg: string, w: number, h: number, background?: string): Promise<HTMLCanvasElement> {
+  const img = await loadSvg(svg);
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
@@ -36,8 +41,40 @@ export async function drawSvg(svg: string, w: number, h: number, background?: st
   return canvas;
 }
 
+/** The most pixels one canvas holds here: under iOS Safari's limit (16.7 M px, 4096²), which an A4 page at 600 dpi (35 M) is over. */
+const CANVAS_PIXELS = 16_000_000;
+
+/**
+ * Draws an SVG document at `w` × `h` px over an opaque `background`: its RGBA pixels in bands of rows, top
+ * to bottom. In one band when it fits a canvas (every card, tile and aid); a bigger page is drawn in bands
+ * with `overlap` px drawn above and below each and dropped, because Chromium and WebKit draw filters
+ * (displacement, blur) near a band's edge a little differently from the whole: with 200 px at 300 dpi
+ * the bands differ from the whole by 2/255 at most (Firefox: not at all).
+ */
+export async function* drawBands(svg: string, w: number, h: number, background: string, overlap = 0, canvasPixels = CANVAS_PIXELS) {
+  const img = await loadSvg(svg);
+  const pad = w * h <= canvasPixels ? 0 : overlap;
+  const rows = pad ? Math.max(1, Math.floor(canvasPixels / w) - 2 * pad) : h;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = Math.min(h, rows + 2 * pad);
+  const ctx = canvas.getContext('2d')!;
+  try {
+    for (let y = 0; y < h; y += rows) {
+      const top = Math.min(pad, y);
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, w, canvas.height);
+      ctx.drawImage(img, 0, top - y, w, h);
+      yield ctx.getImageData(0, top, w, Math.min(rows, h - y)).data;
+    }
+  } finally {
+    // Safari frees a canvas's memory only once it's sized to nothing.
+    canvas.width = canvas.height = 0;
+  }
+}
+
 /** A canvas encoded as `type` (browsers that can't encode it give PNG). */
-export const encode = (canvas: HTMLCanvasElement, type = 'image/png', quality?: number) =>
+const encode = (canvas: HTMLCanvasElement, type = 'image/png', quality?: number) =>
   new Promise<Blob>((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('drawing the SVG failed'))), type, quality),
   );

@@ -1,8 +1,9 @@
 /** Files for a press: the CMYK conversion follows its table, and the CMYK PDF is well formed with the boxes and intent PDF/X wants. */
+import { inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { CMYK_TABLE } from '../src/print/cmykTable';
 import { cmykPdf, deflate, fullPage } from '../src/print/pdf';
-import { tagPng, toCmyk } from '../src/print/press';
+import { encodePng, toCmyk } from '../src/print/press';
 import { crc32, zip } from '../src/print/zip';
 
 const table = Uint8Array.from(atob(CMYK_TABLE.data), (c) => c.charCodeAt(0));
@@ -40,7 +41,7 @@ describe('CMYK conversion', () => {
 });
 
 describe('CMYK PDF', () => {
-  const image = async (w: number, h: number) => ({ width: w, height: h, data: await deflate(new Uint8Array(w * h * 4).fill(100)) });
+  const image = async (w: number, h: number) => ({ width: w, height: h, data: await deflate([new Uint8Array(w * h * 4).fill(100)]) });
 
   it('has an xref pointing at every object, page boxes and the output intent', async () => {
     const pdf = cmykPdf({
@@ -94,22 +95,58 @@ describe('CMYK PDF', () => {
   });
 });
 
-describe('PNG tagging', () => {
-  it('adds an sRGB profile and the resolution before the image data', async () => {
-    // A 1 × 1 PNG: signature, IHDR, IDAT, IEND.
-    const png = Uint8Array.from(
-      atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='),
-      (c) => c.charCodeAt(0),
-    );
-    const out = new Uint8Array(await (await tagPng(new Blob([png]), 300)).arrayBuffer());
+describe('PNG', () => {
+  /** Undoes the PNG filters, so the encoder's pixels can be read back. */
+  function unfilter(data: Uint8Array, w: number, h: number) {
+    const n = w * 3;
+    const out = new Uint8Array(n * h);
+    for (let r = 0; r < h; r++) {
+      const type = data[r * (n + 1)];
+      for (let i = 0; i < n; i++) {
+        const a = i < 3 ? 0 : out[r * n + i - 3];
+        const b = r ? out[(r - 1) * n + i] : 0;
+        const c = r && i >= 3 ? out[(r - 1) * n + i - 3] : 0;
+        const p = a + b - c;
+        const pred =
+          type === 4
+            ? Math.abs(p - a) <= Math.abs(p - b) && Math.abs(p - a) <= Math.abs(p - c)
+              ? a
+              : Math.abs(p - b) <= Math.abs(p - c)
+                ? b
+                : c
+            : 0;
+        out[r * n + i] = data[r * (n + 1) + 1 + i] + pred;
+      }
+    }
+    return out;
+  }
+
+  it('writes RGB pixels from bands of rows, with an sRGB profile and the resolution, and nothing else', async () => {
+    const w = 5;
+    const h = 7;
+    const rgba = Uint8ClampedArray.from({ length: w * h * 4 }, (_, i) => (i % 4 === 3 ? 255 : (i * 37) % 256));
+    // Bands of 3, 3 and 1 rows, as drawBands gives them.
+    async function* bands() {
+      for (let y = 0; y < h; y += 3) yield rgba.slice(y * w * 4, Math.min(h, y + 3) * w * 4);
+    }
+    const out = new Uint8Array(await (await encodePng(bands(), w, h, 300)).arrayBuffer());
+    expect([...out.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const view = new DataView(out.buffer);
     const types: string[] = [];
+    const idat: Uint8Array[] = [];
     for (let at = 8; at < out.length;) {
-      const len = new DataView(out.buffer).getUint32(at);
-      types.push(new TextDecoder().decode(out.subarray(at + 4, at + 8)));
-      if (types.at(-1) === 'pHYs') expect(new DataView(out.buffer).getUint32(at + 8)).toBe(11811);
+      const len = view.getUint32(at);
+      const type = new TextDecoder().decode(out.subarray(at + 4, at + 8));
+      types.push(type);
+      expect(view.getUint32(at + 8 + len)).toBe(crc32(out.subarray(at + 4, at + 8 + len)));
+      if (type === 'IHDR') expect([view.getUint32(at + 8), view.getUint32(at + 12), out[at + 16], out[at + 17]]).toEqual([w, h, 8, 2]);
+      if (type === 'pHYs') expect(view.getUint32(at + 8)).toBe(11811);
+      if (type === 'IDAT') idat.push(out.subarray(at + 8, at + 8 + len));
       at += 12 + len;
     }
-    expect(types).toEqual(['IHDR', 'iCCP', 'pHYs', 'IDAT', 'IEND']);
+    expect([...new Set(types)]).toEqual(['IHDR', 'iCCP', 'pHYs', 'IDAT', 'IEND']);
+    const pixels = unfilter(inflateSync(Buffer.concat(idat)), w, h);
+    expect([...pixels]).toEqual([...rgba].filter((_, i) => i % 4 !== 3));
   });
 });
 

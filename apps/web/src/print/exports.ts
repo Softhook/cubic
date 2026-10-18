@@ -1,23 +1,25 @@
-import { download, drawSvg, encode } from '../files';
+import { download, drawBands } from '../files';
 import { cmykPdf, deflate, fullPage, type PdfImage } from './pdf';
 import { cmykName, fileName, pieceSize, setName, sheetName, sizeNote, type Format, type Piece, type Printable } from './pieces';
-import { PRESS, tagPng, toCmyk } from './press';
-import { PAPER, pressPages, printDocument, sheetsHtml, type Paper } from './sheets';
+import { PRESS, encodePng, toCmyk } from './press';
+import { A4, pressPages, printDocument, sheetsHtml } from './sheets';
 import { zip } from './zip';
 
 /** Print exports: one face as PNG, a whole set as PNGs, print sheets, and CMYK PDFs for a press (a file per card, or press sheets). */
 
 export type Progress = (message: string) => void;
 
-/** Draws an SVG document of `w` × `h` mm at a print resolution, opaque. */
-function drawForPrint(svg: string, w: number, h: number, dpi: number): Promise<HTMLCanvasElement> {
-  const px = (mm: number) => Math.round((mm / 25.4) * dpi);
-  return drawSvg(svg, px(w), px(h), '#fff');
-}
+const px = (mm: number, dpi: number) => Math.round((mm / 25.4) * dpi);
+
+/**
+ * Draws an SVG document of `w` × `h` mm at a print resolution, opaque. A page too big for one canvas (the
+ * A4 press test at 600 dpi, in iOS Safari) draws in bands overlapping by 17 mm, as far as the art's filters reach (files.ts `drawBands`).
+ */
+const drawForPrint = (svg: string, w: number, h: number, dpi: number) => drawBands(svg, px(w, dpi), px(h, dpi), '#fff', px(17, dpi));
 
 /** Rasterises an SVG document of `w` × `h` mm at a print resolution: an opaque PNG, tagged sRGB and with its dpi. */
 export async function svgToPng(svg: string, w: number, h: number, dpi: number): Promise<Blob> {
-  return tagPng(await encode(await drawForPrint(svg, w, h, dpi)), dpi);
+  return encodePng(drawForPrint(svg, w, h, dpi), px(w, dpi), px(h, dpi), dpi);
 }
 
 /** One face as a PNG at the format's dpi. */
@@ -52,7 +54,7 @@ export async function exportZip(
 export async function printSheets(
   piece: Piece,
   faces: { front: Printable; back?: Printable }[],
-  o: { paper: Paper; withBacks: boolean },
+  o: { withBacks: boolean },
   progress: Progress,
 ): Promise<void> {
   const unique = new Map<string, Printable>();
@@ -68,15 +70,19 @@ export async function printSheets(
   }
   progress('Opening print dialog…');
   const images = faces.map((f) => ({ front: urls.get(f.front.name)!, back: f.back && urls.get(f.back.name) }));
-  await printDocument(sheetsHtml(piece, images, o.paper, o.withBacks), () => urls.forEach((u) => URL.revokeObjectURL(u)));
+  await printDocument(sheetsHtml(piece, images, o.withBacks), () => urls.forEach((u) => URL.revokeObjectURL(u)));
 }
 
 /** A face drawn with its bleed at the format's dpi and converted to the press's CMYK, ready for a PDF page. */
 async function cmykImage(f: Format, item: Printable): Promise<PdfImage> {
   const { w, h } = pieceSize(f, true);
-  const canvas = await drawForPrint(item.svg(true), w, h, f.dpi);
-  const rgba = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
-  return { width: canvas.width, height: canvas.height, data: await deflate(toCmyk(rgba)) };
+  const bands = drawForPrint(item.svg(true), w, h, f.dpi);
+  const data = await deflate(
+    (async function* () {
+      for await (const rgba of bands) yield toCmyk(rgba);
+    })(),
+  );
+  return { width: px(w, f.dpi), height: px(h, f.dpi), data };
 }
 
 /** A CMYK PDF of these images, one per page with the format's bleed (pdf.ts). */
@@ -166,10 +172,10 @@ export async function exportCmykSheets(sheets: PressSheets, progress: Progress):
       }
       placed.push(index.get(key)!);
     }
-    pages.push(...pressPages(piece, placed, 'a4'));
+    pages.push(...pressPages(piece, placed));
   }
   progress('Writing PDF…');
-  const { w, h } = PAPER.a4;
+  const { w, h } = A4;
   const pdf = cmykPdf({
     title: `Cubic ${sheets.label}`,
     w,

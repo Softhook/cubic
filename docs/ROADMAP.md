@@ -96,7 +96,7 @@ The reason the existing fan cards look poor is that each was made by hand. We'll
 them **generated from data** with a consistent visual language. Plan for shared in-game and
 print rendering: [GRAPHICS.md](GRAPHICS.md).
 
-Done: `packages/art` (tokens, seeded RNG, mm units), procedural tiles, planets and starfields; the Art Lab (`#lab`) with card and tile labs; cards drawn from `cards.yaml` at poker size; the A6 player aid (`#lab/aid`); print exports (PNG/SVG/ZIP, with or without bleed) and A4/US Letter sheets with crop marks, saved as PDF from the print dialog; the in-app rulebook with diagrams. [GRAPHICS.md § Phases](GRAPHICS.md#5-phases) has the detailed list.
+Done: `packages/art` (tokens, seeded RNG, mm units), procedural tiles, planets and starfields; the Art Lab (`#lab`) with card and tile labs; cards drawn from `cards.yaml` at poker size; the A6 player aid (`#lab/aid`); print exports (PNG/SVG/ZIP, with or without bleed) and A4 sheets with crop marks, saved as PDF from the print dialog; the in-app rulebook with diagrams. [GRAPHICS.md § Phases](GRAPHICS.md#5-phases) has the detailed list.
 
 - [ ] **Art direction** — mood board, palette, typography, faction identities (4–5 factions, colours that work for colour-blind players).
 - [ ] **Iconography** — a proper icon set: ship types 1–6, actions, dominance, research, missile, cube, card categories.

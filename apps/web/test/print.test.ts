@@ -1,10 +1,9 @@
 /** Print files: every piece fits its sheets with room for crop marks, backs land behind their fronts, press sheets bleed only round each block, names follow one pattern. */
 import { describe, expect, it } from 'vitest';
 import { PIECES, fileName, pieceSize, setName, sheetName, type Piece } from '../src/print/pieces';
-import { PAPER, pressPages, sheetsHtml, type Paper } from '../src/print/sheets';
+import { A4, pressPages, sheetsHtml } from '../src/print/sheets';
 
 const pieces = Object.values(PIECES) as Piece[];
-const papers = Object.keys(PAPER) as Paper[];
 
 /** Each sheet's images as [src, left, top] in mm. */
 function sheets(html: string) {
@@ -19,19 +18,35 @@ function sheets(html: string) {
 }
 
 describe('print sheets', () => {
-  it.each(pieces.flatMap((p) => papers.map((paper) => [p.id, paper, p] as const)))(
-    'fit %s on %s with a margin for crop marks',
-    (_, paper, p) => {
-      const { w, h } = PAPER[paper];
-      expect((w - p.cols * p.w) / 2).toBeGreaterThan(5);
-      expect((h - p.rows * p.h) / 2).toBeGreaterThan(5);
-    },
-  );
+  it.each(pieces)('fit $id on A4 with a margin for crop marks', (p) => {
+    expect((A4.w - p.cols * p.w) / 2).toBeGreaterThan(5);
+    expect((A4.h - p.rows * p.h) / 2).toBeGreaterThan(5);
+  });
 
   it.each(pieces)('put a crop mark at both ends of every cut ($id)', (p) => {
-    const html = sheetsHtml(p, [{ front: 'a' }], 'a4');
+    const html = sheetsHtml(p, [{ front: 'a' }]);
     expect(html.match(/class="v"/g)).toHaveLength(2 * (p.cols + 1));
     expect(html.match(/class="h"/g)).toHaveLength(2 * (p.rows + 1));
+  });
+
+  it.each(pieces)('keep the crop marks 4 mm inside the paper, where home printers print ($id)', (p) => {
+    const html = sheetsHtml(p, [{ front: 'a' }]);
+    expect(html.match(/class="[vh]" style/g)).toHaveLength(2 * (p.cols + p.rows + 2));
+    for (const [, left, top, len] of html.matchAll(/class="v" style="left:([\d.-]+)mm;top:([\d.-]+)mm;height:([\d.-]+)mm"/g)) {
+      expect(Number(len)).toBeGreaterThan(2);
+      expect(Number(top)).toBeGreaterThanOrEqual(4 - 1e-9);
+      expect(Number(top) + Number(len)).toBeLessThanOrEqual(A4.h - 4 + 1e-9);
+      expect(Number(left)).toBeGreaterThan(0);
+    }
+    for (const [, top, left, len] of html.matchAll(/class="h" style="top:([\d.-]+)mm;left:([\d.-]+)mm;width:([\d.-]+)mm"/g)) {
+      expect(Number(len)).toBeGreaterThan(2);
+      expect(Number(left)).toBeGreaterThanOrEqual(4 - 1e-9);
+      expect(Number(left) + Number(len)).toBeLessThanOrEqual(A4.w - 4 + 1e-9);
+      expect(Number(top)).toBeGreaterThan(0);
+    }
+    expect([
+      ...html.matchAll(/class="[vh]" style="(?:left|top):[\d.-]+mm;(?:top|left):[\d.-]+mm;(?:height|width):[\d.-]+mm"/g),
+    ]).toHaveLength(2 * (p.cols + p.rows + 2));
   });
 
   it('fills pages in reading order, then starts a new page', () => {
@@ -40,7 +55,6 @@ describe('print sheets', () => {
       sheetsHtml(
         p,
         Array.from({ length: 10 }, (_, i) => ({ front: `f${i}` })),
-        'a4',
       ),
     );
     expect(pages.map((s) => s.length)).toEqual([9, 1]);
@@ -52,8 +66,8 @@ describe('print sheets', () => {
   it('mirrors the backs left to right, so each lands behind its front on a long-edge duplex', () => {
     const p = PIECES.card;
     const faces = Array.from({ length: 4 }, (_, i) => ({ front: `f${i}`, back: `b${i}` }));
-    const [fronts, backs] = sheets(sheetsHtml(p, faces, 'letter', true));
-    const width = PAPER.letter.w;
+    const [fronts, backs] = sheets(sheetsHtml(p, faces, true));
+    const width = A4.w;
     for (const [i, [, x, y]] of fronts.entries()) {
       const back = backs.find(([src]) => src === `b${i}`)!;
       expect(back[1] + p.w).toBeCloseTo(width - x);
@@ -62,24 +76,26 @@ describe('print sheets', () => {
   });
 
   it('draws the marks as borders, which print without "Background graphics"', () => {
-    expect(sheetsHtml(PIECES.tile, [{ front: 'a' }], 'a4')).not.toMatch(/background:#000/);
+    expect(sheetsHtml(PIECES.tile, [{ front: 'a' }])).not.toMatch(/background:#000/);
   });
 });
 
 describe('press sheets', () => {
   const { w, h, bleed: b } = PIECES.tile;
-  const pages = pressPages(PIECES.tile, [0, 1, 2, 3, 4], 'a4');
+  const pages = pressPages(PIECES.tile, [0, 1, 2, 3, 4]);
 
   it('fills each page of the grid and starts a new one when it is full', () => {
     expect(pages.map((p) => p.images.length)).toEqual([4, 1]);
   });
 
-  it('draws each face with its bleed, showing the bleed only where no piece is next to it', () => {
-    const [topLeft, , , bottomRight] = pages[0].images;
-    const x0 = (PAPER.a4.w - 2 * w) / 2;
-    const y0 = (PAPER.a4.h - 2 * h) / 2;
+  it('draws each face with its bleed, cut at its left and top where the piece before it is, so it covers that piece’s bleed', () => {
+    const [topLeft, topRight, , bottomRight] = pages[0].images;
+    const x0 = (A4.w - 2 * w) / 2;
+    const y0 = (A4.h - 2 * h) / 2;
     expect(topLeft.at).toEqual({ x: x0 - b, y: y0 - b, w: w + 2 * b, h: h + 2 * b });
-    expect(topLeft.clip).toEqual({ x: x0 - b, y: y0 - b, w: w + b, h: h + b });
+    // Its right and bottom bleed run under the pieces drawn after it: no seam between them.
+    expect(topLeft.clip).toEqual(topLeft.at);
+    expect(topRight.clip).toEqual({ x: x0 + w, y: y0 - b, w: w + b, h: h + 2 * b });
     expect(bottomRight.clip).toEqual({ x: x0 + w, y: y0 + h, w: w + b, h: h + b });
     // Alone on its page: bleed all round.
     expect(pages[1].images[0].clip).toEqual(pages[1].images[0].at);
@@ -87,9 +103,9 @@ describe('press sheets', () => {
 
   it.each([PIECES.tile, PIECES.aid])('keeps the crop marks on the paper and clear of the bleed: $id', (piece) => {
     const { w, h, cols, rows, bleed } = piece;
-    const x0 = (PAPER.a4.w - cols * w) / 2;
-    const y0 = (PAPER.a4.h - rows * h) / 2;
-    const [page] = pressPages(piece, [0], 'a4');
+    const x0 = (A4.w - cols * w) / 2;
+    const y0 = (A4.h - rows * h) / 2;
+    const [page] = pressPages(piece, [0]);
     for (const [x1, y1, x2, y2] of page.marks!) {
       for (const [x, y] of [
         [x1, y1],
@@ -97,8 +113,8 @@ describe('press sheets', () => {
       ]) {
         expect(x).toBeGreaterThanOrEqual(0);
         expect(y).toBeGreaterThanOrEqual(0);
-        expect(x).toBeLessThanOrEqual(PAPER.a4.w);
-        expect(y).toBeLessThanOrEqual(PAPER.a4.h);
+        expect(x).toBeLessThanOrEqual(A4.w);
+        expect(y).toBeLessThanOrEqual(A4.h);
         const inside = x > x0 - bleed && x < x0 + cols * w + bleed && y > y0 - bleed && y < y0 + rows * h + bleed;
         expect(inside).toBe(false);
       }

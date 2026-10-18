@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { download } from '../files';
-import { PAPER, type Paper } from '../print/sheets';
 import { Manual } from './Manual';
 import css from './rulebook.css?raw';
 
@@ -16,6 +15,13 @@ function gameColours() {
   const root = getComputedStyle(document.documentElement);
   return `:root{${GAME_VARS.map((v) => `${v}:${root.getPropertyValue(v).trim()}`).join(';')}}`;
 }
+
+type Paper = 'a4' | 'letter';
+
+const PAPER: Record<Paper, { w: number; h: number; name: string }> = {
+  a4: { w: 210, h: 297, name: 'A4' },
+  letter: { w: 215.9, h: 279.4, name: 'US Letter' },
+};
 
 /** Where "Back" goes: the Art Lab page that opened the manual (#rulebook?from=lab/cards), else the game. */
 function backLink() {

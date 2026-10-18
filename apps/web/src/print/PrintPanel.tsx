@@ -2,7 +2,6 @@ import { useState, type ReactNode } from 'react';
 import { exportCmykFiles, exportCmykSheets, exportPng, exportZip, printSheets, type PressSheets } from './exports';
 import { sizeNote, type Piece, type Printable } from './pieces';
 import { PRESS } from './press';
-import { PAPER, type Paper } from './sheets';
 import { useExport, type Run } from './useExport';
 
 interface Props {
@@ -28,8 +27,15 @@ interface Props {
   ready?: boolean;
   /** The fonts didn't load (offline): exports are off, so no print file falls back to system fonts. */
   fontsMissing?: boolean;
+  /** Why the press sheets aren't the faces as shown, when they aren't: they print the set as it ships. */
+  cmykDiffers?: string;
   /** More single-face exports, beside the standard one. */
   extra?: (run: Run, busy: boolean) => ReactNode;
+}
+
+/** Which colour space an export's files are in, as a tag on its button, so an RGB file is never taken for the press's CMYK. */
+export function Space({ of }: { of: 'rgb' | 'cmyk' }) {
+  return <span className={`space-tag ${of}`}>{of === 'rgb' ? 'RGB' : 'CMYK'}</span>;
 }
 
 /** The print exports for a piece, the same on every Art Lab page: this face, then the whole set. */
@@ -47,9 +53,9 @@ export function PrintPanel({
   backs,
   ready = true,
   fontsMissing,
+  cmykDiffers,
   extra,
 }: Props) {
-  const [paper, setPaper] = useState<Paper>('a4');
   const [allCopies, setAllCopies] = useState(true);
   const [withBacks, setWithBacks] = useState(false);
   const { run, progress, error } = useExport();
@@ -62,13 +68,14 @@ export function PrintPanel({
           <input type="checkbox" checked={bleed} onChange={(e) => onBleed(e.target.checked)} /> Bleed
         </label>
         <button className="btn" disabled={busy} onClick={() => run(() => exportPng(piece, item, bleed))}>
-          PNG {piece.dpi} dpi
+          <Space of="rgb" /> PNG {piece.dpi} dpi
         </button>
         {extra?.(run, busy)}
       </div>
       <p className="lab-note">
         {sizeNote(piece, bleed)}
-        {bleed ? ', as print services want it' : ''}. PNGs are opaque, tagged sRGB and carry their dpi.
+        {bleed ? ', as print services want it' : ''}. PNGs are RGB: opaque, tagged sRGB and carry their dpi. Bleed is for the PNGs; the CMYK
+        files always have it, the print sheets never.
       </p>
       {fontsMissing && <p className="lab-note">The fonts didn’t load (offline?), so exports are off: they would print in system fonts.</p>}
 
@@ -79,10 +86,10 @@ export function PrintPanel({
           disabled={busy}
           onClick={() => run((p) => exportZip(piece, set, { bleed, part: part?.toLowerCase(), notes }, p))}
         >
-          All {piece.plural} · ZIP
+          <Space of="rgb" /> All {piece.plural} · PNG ZIP
         </button>
         <span className="lab-note">
-          For print services that want RGB: {set.length === 1 ? 'one PNG' : `${set.length} PNGs`} at {piece.dpi} dpi
+          RGB, for print services that convert it themselves: {set.length === 1 ? 'one PNG' : `${set.length} PNGs`} at {piece.dpi} dpi
           {bleed ? ', with bleed' : ''}.
         </span>
       </div>
@@ -93,7 +100,7 @@ export function PrintPanel({
             disabled={busy}
             onClick={() => run((p) => exportCmykFiles(piece, sheets(true), { part: part?.toLowerCase(), notes }, p))}
           >
-            CMYK PDFs · {PRESS.condition} · ZIP
+            <Space of="cmyk" /> PDFs · {PRESS.condition} · ZIP
           </button>
           <span className="lab-note">
             For print services that want CMYK and a file per {piece.id}: one PDF each with {piece.bleed} mm bleed, no crop marks,{' '}
@@ -103,7 +110,7 @@ export function PrintPanel({
       ) : (
         <div className="lab-controls">
           <button className="btn btn-primary" disabled={busy} onClick={() => run((p) => exportCmykSheets(cmyk, p))}>
-            {cmyk.label} · CMYK PDF · {PRESS.condition}
+            <Space of="cmyk" /> {cmyk.label} · PDF · {PRESS.condition}
           </button>
           <span className="lab-note">
             The press file: A4 sheets with {cmyk.contents}, butted with crop marks and bleed round each block. The set as it ships, with
@@ -111,21 +118,15 @@ export function PrintPanel({
           </span>
         </div>
       )}
+      {cmyk !== 'files' && cmykDiffers && <p className="lab-warn">Not as shown: {cmykDiffers}. The CMYK file has the set as it ships.</p>}
       <div className="lab-controls">
         <button
           className="btn btn-primary"
           disabled={busy}
-          onClick={() => run((p) => printSheets(piece, sheets(allCopies), { paper, withBacks }, p))}
+          onClick={() => run((p) => printSheets(piece, sheets(allCopies), { withBacks }, p))}
         >
-          Print sheets · PDF
+          <Space of="rgb" /> Print sheets · A4
         </button>
-        <select value={paper} onChange={(e) => setPaper(e.target.value as Paper)} aria-label="Paper">
-          {Object.entries(PAPER).map(([id, p]) => (
-            <option key={id} value={id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
         {copies && (
           <label>
             <input type="checkbox" checked={allCopies} onChange={(e) => setAllCopies(e.target.checked)} /> All copies
@@ -138,8 +139,8 @@ export function PrintPanel({
         )}
       </div>
       <p className="lab-note">
-        {piece.cols * piece.rows} per page at trim size with crop marks; choose “Save as PDF” in the print dialog and print at 100 % (no fit
-        to page).
+        For a home printer, not a press: {piece.cols * piece.rows} per page at trim size with crop marks, through the browser’s print
+        dialog, so a “Save as PDF” is RGB. Print at 100 % (no fit to page).
         {backs && withBacks && ' Backs follow each page, mirrored for long-edge duplex.'}
       </p>
       {error && <p className="lab-error">Export failed: {error}</p>}

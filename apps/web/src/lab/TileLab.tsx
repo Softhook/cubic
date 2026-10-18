@@ -3,7 +3,7 @@ import { TILE_SET, dataUrl, editableTileSvg, tileSvg, type PlanetType, type Tile
 import { blobToDataUrl, download } from '../files';
 import { svgToPng } from '../print/exports';
 import { PIECES, fileName, pieceSize, type Printable } from '../print/pieces';
-import { PrintPanel } from '../print/PrintPanel';
+import { PrintPanel, Space } from '../print/PrintPanel';
 import { tileFontCss } from './cards';
 import { LabHeader } from './LabHeader';
 import { TILES_AND_AIDS } from './pressSheets';
@@ -119,14 +119,19 @@ export function TileLab() {
             cmyk={TILES_AND_AIDS}
             ready={fonts !== null}
             fontsMissing={fonts === ''}
+            cmykDiffers={
+              [Object.keys(overrides).length > 0 && 'seeds or types changed here', !markings && 'print markings off']
+                .filter(Boolean)
+                .join(', ') || undefined
+            }
             extra={(run, busy) => (
               <button
                 className="btn"
                 disabled={busy}
                 onClick={() => run(exportEditable)}
-                title="Art as a 600 dpi image, markings as editable vectors"
+                title="Art as a 600 dpi RGB image, markings as editable vectors"
               >
-                SVG for Illustrator
+                <Space of="rgb" /> SVG for Illustrator
               </button>
             )}
           />

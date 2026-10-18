@@ -3,28 +3,27 @@ import type { Piece } from './pieces';
 
 /** Sheets: pieces laid out on paper with crop marks, printed from the browser or as CMYK PDF pages for a press. */
 
-export type Paper = 'a4' | 'letter';
-
-export const PAPER: Record<Paper, { w: number; h: number; name: string }> = {
-  a4: { w: 210, h: 297, name: 'A4' },
-  letter: { w: 215.9, h: 279.4, name: 'US Letter' },
-};
+/** Every sheet is A4, mm. */
+export const A4 = { w: 210, h: 297 };
 
 type Line = [number, number, number, number];
 
+/** How close to the paper's edge a home printer's crop marks may go, mm: most home printers can't print the outer 3–4 mm. */
+const HOME_MARGIN = 4;
+
 /**
  * Where a sheet puts a piece: its grid centred on the paper, pieces butted so one cut serves two, and
- * crop marks on every cut, in the margin from `gap` mm outside the grid.
+ * crop marks on every cut, in the margin from `gap` mm outside the grid to `margin` mm from the edge (5 mm long at most).
  */
-function sheetLayout(piece: Piece, paper: Paper, gap: number) {
-  const size = PAPER[paper];
+function sheetLayout(piece: Piece, gap: number, margin: number) {
+  const size = A4;
   const { w, h, cols, rows } = piece;
   const x0 = (size.w - cols * w) / 2;
   const y0 = (size.h - rows * h) / 2;
   const x1 = x0 + cols * w;
   const y1 = y0 + rows * h;
-  const lenV = Math.min(5, y0 - gap - 0.5);
-  const lenH = Math.min(5, x0 - gap - 0.5);
+  const lenV = Math.min(5, y0 - gap - margin);
+  const lenH = Math.min(5, x0 - gap - margin);
   const marks: Line[] = [];
   for (let i = 0; i <= cols; i++) {
     const x = x0 + i * w;
@@ -51,8 +50,8 @@ function pagesOf<T>(piece: Piece, faces: T[]): { face: T; col: number; row: numb
  * With backs, each page of fronts is followed by its backs, columns mirrored so they land behind their
  * fronts when printed double-sided on the long edge.
  */
-export function sheetsHtml(piece: Piece, faces: { front: string; back?: string }[], paper: Paper, withBacks = false): string {
-  const { size, cell, marks } = sheetLayout(piece, paper, 1);
+export function sheetsHtml(piece: Piece, faces: { front: string; back?: string }[], withBacks = false): string {
+  const { size, cell, marks } = sheetLayout(piece, 1, HOME_MARGIN);
   // Less half the 0.2 mm line, so each mark is centred on its cut.
   const marksHtml = marks
     .map(([x1, y1, x2, y2]) =>
@@ -86,23 +85,23 @@ export function sheetsHtml(piece: Piece, faces: { front: string; back?: string }
 
 /**
  * Press sheets, as pdf.ts pages: the print sheets' layout, each face (an index into the PDF's images)
- * drawn with its bleed and clipped to its cell, except on sides with no piece next to it, so each block
- * of pieces has its bleed all round. Crop marks start clear of the bleed.
+ * drawn with its bleed, so each block of pieces has its bleed all round. Faces are drawn in reading
+ * order and each is clipped at its cell's left and top where a piece is there: it covers the bleed of the
+ * piece before it, which runs under it, so no seam can show between two pieces. Crop marks start clear of the bleed.
  */
-export function pressPages(piece: Piece, faces: number[], paper: Paper): PdfPage[] {
-  const { cell, marks } = sheetLayout(piece, paper, piece.bleed);
+export function pressPages(piece: Piece, faces: number[]): PdfPage[] {
+  const { cell, marks } = sheetLayout(piece, piece.bleed, 0.5);
   const b = piece.bleed;
   return pagesOf(piece, faces).map((cells) => {
     const has = (col: number, row: number) => cells.some((c) => c.col === col && c.row === row);
     const images = cells.map(({ face, col, row }) => {
       const c = cell(col, row);
-      const [left, right, top, bottom] = [has(col - 1, row), has(col + 1, row), has(col, row - 1), has(col, row + 1)].map((n) =>
-        n ? 0 : b,
-      );
+      const left = has(col - 1, row) ? 0 : b;
+      const top = has(col, row - 1) ? 0 : b;
       return {
         image: face,
         at: { x: c.x - b, y: c.y - b, w: c.w + 2 * b, h: c.h + 2 * b },
-        clip: { x: c.x - left, y: c.y - top, w: c.w + left + right, h: c.h + top + bottom },
+        clip: { x: c.x - left, y: c.y - top, w: c.w + left + b, h: c.h + top + b },
       };
     });
     return { images, marks };

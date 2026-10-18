@@ -3,6 +3,7 @@ import { PRESS_TEST, cardSvg, dataUrl, pressTestSvg, tileSpec, tileSvg } from '@
 import { DECKS, cardFontCss, measure, tileFontCss } from './cards';
 import { exportCmykPdf, exportPng } from '../print/exports';
 import type { Format, Printable } from '../print/pieces';
+import { Space } from '../print/PrintPanel';
 import { PRESS } from '../print/press';
 import { useExport } from '../print/useExport';
 import { LabHeader } from './LabHeader';
@@ -54,10 +55,10 @@ export function ProofLab() {
           </p>
           <div className="lab-controls">
             <button className="btn btn-primary" disabled={busy} onClick={() => run(() => exportCmykPdf(PAGE, page))}>
-              CMYK PDF · {PRESS.condition}
+              <Space of="cmyk" /> PDF · {PRESS.condition}
             </button>
             <button className="btn" disabled={busy} onClick={() => run(() => exportPng(PAGE, page, false))}>
-              PNG (RGB)
+              <Space of="rgb" /> PNG
             </button>
           </div>
           <p className="lab-note">A4, 210 × 297 mm, at {PAGE.dpi} dpi.</p>

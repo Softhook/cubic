@@ -45,10 +45,38 @@ export interface PdfOptions {
 /** A page that is one image, edge to edge. */
 export const fullPage = (image: number, w: number, h: number): PdfPage => ({ images: [{ image, at: { x: 0, y: 0, w, h } }] });
 
-/** Compresses bytes for a PDF `FlateDecode` stream (zlib format, which `deflate` gives). */
-export async function deflate(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
-  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate'));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
+/**
+ * Compresses bytes for a PDF `FlateDecode` stream or a PNG's image data (zlib format, which `deflate`
+ * gives), taking them in pieces so a big image never has to be held whole: the compressed pieces.
+ */
+export async function deflateChunks(
+  pieces: Iterable<Uint8Array<ArrayBuffer>> | AsyncIterable<Uint8Array<ArrayBuffer>>,
+): Promise<Uint8Array<ArrayBuffer>[]> {
+  const stream = new CompressionStream('deflate');
+  const writer = stream.writable.getWriter();
+  const reader = stream.readable.getReader();
+  const out: Uint8Array<ArrayBuffer>[] = [];
+  // Read while writing, or the stream's queue fills and the writes never finish.
+  const read = (async () => {
+    for (let r = await reader.read(); !r.done; r = await reader.read()) out.push(r.value as Uint8Array<ArrayBuffer>);
+  })();
+  try {
+    for await (const p of pieces) await writer.write(p);
+    await writer.close();
+  } catch (e) {
+    read.catch(() => undefined);
+    await writer.abort(e);
+    throw e;
+  }
+  await read;
+  return out;
+}
+
+/** The same, as one block of bytes. */
+export async function deflate(
+  pieces: Iterable<Uint8Array<ArrayBuffer>> | AsyncIterable<Uint8Array<ArrayBuffer>>,
+): Promise<Uint8Array<ArrayBuffer>> {
+  return new Uint8Array(await new Blob(await deflateChunks(pieces)).arrayBuffer());
 }
 
 const pt = (mm: number) => Math.round((mm / 25.4) * 72 * 1000) / 1000;

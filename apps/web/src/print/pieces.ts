@@ -24,7 +24,7 @@ export interface Piece extends Format {
   id: 'card' | 'tile' | 'aid';
   /** For file names: `cubic-cards-…`. */
   plural: string;
-  /** How many fit across and down a print sheet (A4 and US Letter both). */
+  /** How many fit across and down a print sheet (A4). */
   cols: number;
   rows: number;
 }

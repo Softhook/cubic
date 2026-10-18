@@ -1,8 +1,9 @@
 import { CMYK_TABLE } from './cmykTable';
+import { deflateChunks } from './pdf';
 import { crc32 } from './zip';
 
 /**
- * Getting print files ready for a press: RGB PNGs tagged with their colour space and resolution, and
+ * Getting print files ready for a press: RGB PNGs with their colour space and resolution, and
  * the conversion to the press's CMYK. See docs/GRAPHICS.md §4.
  */
 
@@ -66,14 +67,50 @@ function chunk(type: string, data: Uint8Array): Uint8Array<ArrayBuffer> {
   return out;
 }
 
+/** Each band of RGBA rows (opaque) as PNG scanlines: RGB, each row Paeth-filtered, which suits smooth art. */
+async function* scanlines(bands: AsyncIterable<Uint8ClampedArray>, w: number) {
+  const n = w * 3;
+  let prev = new Uint8Array(n);
+  let row = new Uint8Array(n);
+  for await (const rgba of bands) {
+    const rows = rgba.length / (w * 4);
+    const out = new Uint8Array(rows * (n + 1));
+    for (let r = 0; r < rows; r++) {
+      for (let x = 0, i = r * w * 4; x < n; x += 3, i += 4) {
+        row[x] = rgba[i];
+        row[x + 1] = rgba[i + 1];
+        row[x + 2] = rgba[i + 2];
+      }
+      const o = r * (n + 1);
+      out[o] = 4;
+      for (let i = 0; i < n; i++) {
+        const a = i < 3 ? 0 : row[i - 3];
+        const b = prev[i];
+        const c = i < 3 ? 0 : prev[i - 3];
+        const p = a + b - c;
+        const pa = Math.abs(p - a);
+        const pb = Math.abs(p - b);
+        const pc = Math.abs(p - c);
+        out[o + 1 + i] = row[i] - (pa <= pb && pa <= pc ? a : pb <= pc ? b : c);
+      }
+      [prev, row] = [row, prev];
+    }
+    yield out;
+  }
+}
+
 /**
- * Tags a PNG for print: an sRGB profile, so the printer's RIP converts the colours as we see them rather
- * than guessing, and the resolution, so the file opens at its physical size rather than at 72 dpi.
+ * A PNG for print from RGBA pixels (opaque) in bands of rows, top to bottom (files.ts `drawBands`): RGB,
+ * with an sRGB profile, so the printer's RIP converts the colours as we see them rather than guessing, and
+ * the resolution, so the file opens at its physical size rather than at 72 dpi. Written here rather than
+ * by the canvas, whose PNGs in Safari carry their own sRGB and EXIF chunks, which the profile would clash with.
  */
-export async function tagPng(png: Blob, dpi: number): Promise<Blob> {
-  const bytes = new Uint8Array(await png.arrayBuffer());
-  // The signature (8 bytes) and IHDR (25) come first; the new chunks must come before the image data.
-  const at = 33;
+export async function encodePng(bands: AsyncIterable<Uint8ClampedArray>, w: number, h: number, dpi: number): Promise<Blob> {
+  const ihdr = new Uint8Array(13);
+  new DataView(ihdr.buffer).setUint32(0, w);
+  new DataView(ihdr.buffer).setUint32(4, h);
+  ihdr[8] = 8; // bits per channel; colour type 2 (RGB) next, then compression, filter and interlace, all 0
+  ihdr[9] = 2;
   const icc = Uint8Array.from(atob(SRGB_ICC), (c) => c.charCodeAt(0));
   // Profile name, a zero byte, compression method 0 (zlib), then the compressed profile.
   const iccp = new Uint8Array([...new TextEncoder().encode('sRGB'), 0, 0, ...icc]);
@@ -82,5 +119,16 @@ export async function tagPng(png: Blob, dpi: number): Promise<Blob> {
   new DataView(phys.buffer).setUint32(0, ppm);
   new DataView(phys.buffer).setUint32(4, ppm);
   phys[8] = 1; // the unit is the metre
-  return new Blob([bytes.subarray(0, at), chunk('iCCP', iccp), chunk('pHYs', phys), bytes.subarray(at)], { type: 'image/png' });
+  const idat = await deflateChunks(scanlines(bands, w));
+  return new Blob(
+    [
+      new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      chunk('IHDR', ihdr),
+      chunk('iCCP', iccp),
+      chunk('pHYs', phys),
+      ...idat.map((d) => chunk('IDAT', d)),
+      chunk('IEND', new Uint8Array()),
+    ],
+    { type: 'image/png' },
+  );
 }
