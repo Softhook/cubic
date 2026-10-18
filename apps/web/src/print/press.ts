@@ -15,6 +15,8 @@ export const PRESS = {
   condition: CMYK_TABLE.condition,
   profile: CMYK_TABLE.profile,
   described: `${CMYK_TABLE.profile}, a profile for the ${CMYK_TABLE.condition} condition`,
+  /** For file names: `fogra39`. */
+  tag: CMYK_TABLE.condition.toLowerCase(),
 };
 
 const N = CMYK_TABLE.grid;

@@ -39,6 +39,20 @@ export function Space({ of }: { of: 'rgb' | 'cmyk' }) {
   return <span className={`space-tag ${of}`}>{of === 'rgb' ? 'RGB' : 'CMYK'}</span>;
 }
 
+/** An export's progress while it runs (useExport), or why it failed. */
+export function ExportStatus({ progress, error }: { progress: string | null; error: string | null }) {
+  return (
+    <>
+      {error && <p className="lab-error">Export failed: {error}</p>}
+      {progress && (
+        <p className="lab-progress">
+          <span className="spinner" /> {progress}
+        </p>
+      )}
+    </>
+  );
+}
+
 /** The print exports for a piece, the same on every Art Lab page: this face, then the whole set. */
 export function PrintPanel({
   piece,
@@ -153,12 +167,7 @@ export function PrintPanel({
         dialog, so a “Save as PDF” is RGB. Print at 100 % (no fit to page).
         {backs && withBacks && ' Backs follow each page, mirrored for long-edge duplex.'}
       </p>
-      {error && <p className="lab-error">Export failed: {error}</p>}
-      {progress && (
-        <p className="lab-progress">
-          <span className="spinner" /> {progress}
-        </p>
-      )}
+      <ExportStatus progress={progress} error={error} />
     </>
   );
 }

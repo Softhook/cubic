@@ -1,5 +1,5 @@
 import { download, drawBands } from '../files';
-import { cmykPdf, deflate, fullPage, type PdfImage } from './pdf';
+import { cmykPdf, deflate, fullPage, type PdfImage, type PdfOptions } from './pdf';
 import { cmykName, fileName, pieceSize, setName, sheetName, sizeNote, type Format, type Piece, type Printable } from './pieces';
 import { PRESS, encodePng, toCmyk } from './press';
 import { A4, pressPages, printDocument, sheetsHtml, type Paper } from './sheets';
@@ -8,6 +8,12 @@ import { zip } from './zip';
 /** Print exports: one face as PNG, a whole set as PNGs, print sheets, and CMYK PDFs for a press (a file per card, or press sheets). */
 
 export type Progress = (message: string) => void;
+
+/** A file in a ZIP. */
+type ZipFile = { name: string; blob: Blob };
+
+/** A text file for a ZIP: a README, an order list. */
+const textFile = (name: string, text: string, type = 'text/plain'): ZipFile => ({ name, blob: new Blob([text], { type }) });
 
 const px = (mm: number, dpi: number) => Math.round((mm / 25.4) * dpi);
 
@@ -36,7 +42,7 @@ export async function exportZip(
   progress: Progress,
 ): Promise<void> {
   const { w, h } = pieceSize(piece, o.bleed);
-  const files: { name: string; blob: Blob }[] = [];
+  const files: ZipFile[] = [];
   for (const [k, item] of items.entries()) {
     progress(`Rendering ${k + 1}/${items.length}`);
     files.push({ name: `${item.name}.png`, blob: await svgToPng(item.svg(o.bleed), w, h, piece.dpi) });
@@ -45,7 +51,7 @@ export async function exportZip(
     `Cubic ${piece.plural}, ${sizeNote(piece, o.bleed)}.\n` +
     `PNG at ${piece.dpi} dpi, one file per face. RGB, tagged sRGB: please convert with your press profile.\n` +
     (o.notes ?? '');
-  files.push({ name: 'README.txt', blob: new Blob([readme], { type: 'text/plain' }) });
+  files.push(textFile('README.txt', readme));
   progress('Packing…');
   download(setName(piece, { part: o.part, tag: o.bleed ? 'bleed' : undefined }), await zip(files));
 }
@@ -85,11 +91,14 @@ async function cmykImage(f: Format, item: Printable): Promise<PdfImage> {
   return { width: px(w, f.dpi), height: px(h, f.dpi), data };
 }
 
-/** A CMYK PDF of these images, one per page with the format's bleed (pdf.ts). */
+/** A CMYK PDF for the press (pdf.ts), its output intent the press's printing condition. */
+const pressPdf = (o: Omit<PdfOptions, 'condition' | 'conditionInfo'>) =>
+  cmykPdf({ ...o, condition: PRESS.condition, conditionInfo: PRESS.profile });
+
+/** A CMYK PDF of these images, one per page with the format's bleed. */
 function cmykFile(f: Format, title: string, images: PdfImage[]): Blob {
   const { w, h } = pieceSize(f, true);
-  const pages = images.map((_, k) => fullPage(k, w, h));
-  return cmykPdf({ title, w, h, bleed: f.bleed, condition: PRESS.condition, conditionInfo: PRESS.profile, images, pages });
+  return pressPdf({ title, w, h, bleed: f.bleed, images, pages: images.map((_, k) => fullPage(k, w, h)) });
 }
 
 /** One face as a CMYK PDF: the press test. */
@@ -116,7 +125,7 @@ export async function exportCmykFiles(
     else fronts.set(f.front.name, { face: f, copies: 1 });
   }
   const backs = new Map<string, PdfImage>();
-  const files: { name: string; blob: Blob }[] = [];
+  const files: ZipFile[] = [];
   const order = ['file,quantity,pages'];
   for (const [k, { face, copies }] of [...fronts.values()].entries()) {
     progress(`Converting ${k + 1}/${fronts.size}`);
@@ -134,10 +143,10 @@ export async function exportCmykFiles(
     `One CMYK PDF per ${piece.id}, converted for ${PRESS.described}, ${piece.dpi} dpi, no crop marks` +
     (faces.some((f) => f.back) ? ': page 1 the front, page 2 the back, for double-sided printing' : '') +
     `.\nHow many of each to order: order.csv. Upload with "Do not scale".\n`;
-  files.push({ name: 'order.csv', blob: new Blob([order.join('\n') + '\n'], { type: 'text/csv' }) });
-  files.push({ name: 'README.txt', blob: new Blob([readme], { type: 'text/plain' }) });
+  files.push(textFile('order.csv', order.join('\n') + '\n', 'text/csv'));
+  files.push(textFile('README.txt', readme));
   progress('Packing…');
-  download(setName(piece, { part: o.part, tag: PRESS.condition.toLowerCase() }), await zip(files));
+  download(setName(piece, { part: o.part, tag: PRESS.tag }), await zip(files));
 }
 
 /** Pieces that print together on one stock, as one CMYK PDF of A4 press sheets (`exportCmykSheets`). */
@@ -174,16 +183,5 @@ export async function exportCmykSheets(sheets: PressSheets, progress: Progress):
     pages.push(...pressPages(piece, placed));
   }
   progress('Writing PDF…');
-  const { w, h } = A4;
-  const pdf = cmykPdf({
-    title: `Cubic ${sheets.label}`,
-    w,
-    h,
-    bleed: 0,
-    condition: PRESS.condition,
-    conditionInfo: PRESS.profile,
-    images,
-    pages,
-  });
-  download(sheetName(sheets.name), pdf);
+  download(sheetName(sheets.name), pressPdf({ title: `Cubic ${sheets.label}`, ...A4, bleed: 0, images, pages }));
 }

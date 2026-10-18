@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { TILE_SET, dataUrl, editableTileSvg, tileSvg, type PlanetType, type TileSpec } from '@quantum/art';
 import { blobToDataUrl, download } from '../files';
 import { svgToPng } from '../print/exports';
 import { PIECES, fileName, pieceSize, type Printable } from '../print/pieces';
 import { PrintPanel, Space } from '../print/PrintPanel';
-import { tileFontCss } from './cards';
+import { tileFontCss, useFontCss } from './cards';
 import { LabHeader } from './LabHeader';
 import { TILES_AND_AIDS } from './pressSheets';
 
@@ -24,11 +24,7 @@ export function TileLab() {
   const [markings, setMarkings] = useState(true);
   const [bleed, setBleed] = useState(false);
   // The number and label fonts, embedded in the detail view and the print files (thumbnails use the system's).
-  const [fonts, setFonts] = useState<string | null>(null);
-
-  useEffect(() => {
-    void tileFontCss().then(setFonts);
-  }, []);
+  const fonts = useFontCss(tileFontCss);
 
   const specs = useMemo(() => TILE_SET.map((t) => ({ ...t, ...overrides[t.id] })), [overrides]);
   const thumbs = useMemo(() => specs.map((t) => ({ spec: t, url: dataUrl(tileSvg(t, { markings, rounded: true })) })), [specs, markings]);

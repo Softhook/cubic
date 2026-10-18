@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { playerAidSvg, type AidEdition } from '@quantum/art';
-import { cardFontCss, measure } from './cards';
+import { cardFontCss, measure, useFontCss } from './cards';
 import { PIECES, type Printable } from '../print/pieces';
 import { PrintPanel } from '../print/PrintPanel';
 import { LabHeader } from './LabHeader';
@@ -18,11 +18,7 @@ const PLAYERS = 4;
 export function AidLab() {
   const [edition, setEdition] = useState<AidEdition>('community');
   const [bleed, setBleed] = useState(true);
-  const [fonts, setFonts] = useState<string | null>(null);
-
-  useEffect(() => {
-    void cardFontCss().then(setFonts);
-  }, []);
+  const fonts = useFontCss(cardFontCss);
 
   const svgOf = useCallback(
     (o: { bleed?: boolean } = {}) => playerAidSvg({ ...o, edition, measure, fontCss: fonts ?? '' }),

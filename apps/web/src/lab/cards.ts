@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { FONTS, type CardDeck, type CardFace, type Measure } from '@quantum/art';
 import {
   EXPANSION,
@@ -165,3 +166,12 @@ export const cardFontCss = embeddedFonts('family=Inter:ital,wght@0,400;0,700;1,4
 
 /** The tile fonts: Inter ExtraBold for the planet number, JetBrains Mono for the flavour label. */
 export const tileFontCss = embeddedFonts('family=Inter:wght@800&family=JetBrains+Mono:wght@400;700', async () => {});
+
+/** Fonts from `cardFontCss` or `tileFontCss` for a lab page: null while loading, empty when they didn't load. */
+export function useFontCss(load: () => Promise<string>): string | null {
+  const [css, setCss] = useState<string | null>(null);
+  useEffect(() => {
+    void load().then(setCss);
+  }, [load]);
+  return css;
+}

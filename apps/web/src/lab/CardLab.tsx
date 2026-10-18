@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CARD_CATEGORIES, cardBackSvg, cardIllustration, cardSvg, deckInfo, type CardDeck, type CardFace } from '@quantum/art';
-import { DECKS, LINEAGE, cardFontCss, cardsOf, lineageNote, measure, type Deck, type Redesign } from './cards';
+import { DECKS, LINEAGE, cardFontCss, cardsOf, lineageNote, measure, useFontCss, type Deck, type Redesign } from './cards';
 import { PIECES, type Printable } from '../print/pieces';
 import { PrintPanel } from '../print/PrintPanel';
 import { LabHeader } from './LabHeader';
@@ -75,11 +75,7 @@ export function CardLab() {
   const [sort, setSort] = useState<Sort>('deck');
   const [selected, setSelected] = useState('skill:agile');
   const [bleed, setBleed] = useState(true);
-  const [fonts, setFonts] = useState<string | null>(null);
-
-  useEffect(() => {
-    void cardFontCss().then(setFonts);
-  }, []);
+  const fonts = useFontCss(cardFontCss);
 
   const decks = DECKS.filter((d) => edition === 'all' || d.edition === edition);
   const all = useMemo(() => DECKS.flatMap(itemsOf), []);

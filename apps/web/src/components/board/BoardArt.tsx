@@ -59,6 +59,12 @@ export const BoardArt = memo(function BoardArt({
   const mm = cell / TILE.cell;
   // Gap between neighbouring tiles, scaled with the cell so zooming doesn't change the look.
   const inset = cell * 0.015;
+  const tileBox = (t: { r: number; c: number }) => ({
+    x: t.c * cell + inset,
+    y: t.r * cell + inset,
+    width: cell * 3 - 2 * inset,
+    height: cell * 3 - 2 * inset,
+  });
   // The open gates, then any of a Warp Gate pair placed so far: faint until the pair is complete.
   const head = game.pending[0];
   const placing = head?.kind === 'warpGate' ? head.placed : [];
@@ -75,22 +81,9 @@ export const BoardArt = memo(function BoardArt({
         {tiles.map((t) => (
           <g key={`${t.r},${t.c}`}>
             {images[t.id] ? (
-              <image
-                href={images[t.id]}
-                x={t.c * cell + inset}
-                y={t.r * cell + inset}
-                width={cell * 3 - 2 * inset}
-                height={cell * 3 - 2 * inset}
-              />
+              <image href={images[t.id]} {...tileBox(t)} />
             ) : (
-              <rect
-                x={t.c * cell + inset}
-                y={t.r * cell + inset}
-                width={cell * 3 - 2 * inset}
-                height={cell * 3 - 2 * inset}
-                rx={(cell * 3 * TILE.corner) / TILE.size}
-                fill="#0b1124"
-              />
+              <rect {...tileBox(t)} rx={(cell * 3 * TILE.corner) / TILE.size} fill="#0b1124" />
             )}
           </g>
         ))}

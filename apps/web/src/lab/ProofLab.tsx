@@ -3,7 +3,7 @@ import { PRESS_TEST, cardSvg, dataUrl, pressTestSvg, tileSpec, tileSvg } from '@
 import { DECKS, cardFontCss, measure, tileFontCss } from './cards';
 import { exportCmykPdf, exportPng } from '../print/exports';
 import type { Format, Printable } from '../print/pieces';
-import { Space } from '../print/PrintPanel';
+import { ExportStatus, Space } from '../print/PrintPanel';
 import { PRESS } from '../print/press';
 import { useExport } from '../print/useExport';
 import { LabHeader } from './LabHeader';
@@ -63,12 +63,7 @@ export function ProofLab() {
           </div>
           <p className="lab-note">A4, 210 × 297 mm, at {PAGE.dpi} dpi.</p>
           {missing && <p className="lab-note">The fonts didn’t load (offline?), so the export is off.</p>}
-          {error && <p className="lab-error">Export failed: {error}</p>}
-          {progress && (
-            <p className="lab-progress">
-              <span className="spinner" /> {progress}
-            </p>
-          )}
+          <ExportStatus progress={progress} error={error} />
         </div>
       </div>
     </div>

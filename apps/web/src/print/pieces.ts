@@ -52,18 +52,20 @@ export function sizeNote(p: Format, bleed: boolean): string {
   return `${p.w} × ${p.h} mm` + (bleed ? `, with ${p.bleed} mm bleed ${b.w} × ${b.h} mm` : ' (trim, no bleed)');
 }
 
+/** A face's name in a file name: `skill/07-agile` → `skill-07-agile`. */
+const slug = (item: Printable) => item.name.replaceAll('/', '-');
+
 /** A single export's file name: `cubic-card-skill-07-agile-bleed-300dpi.png`, `cubic-tile-p7-01.svg`. */
 export function fileName(p: Format, item: Printable, o: { bleed: boolean; dpi?: number; ext: string }): string {
-  return `cubic-${p.id}-${item.name.replaceAll('/', '-')}${o.bleed ? '-bleed' : ''}${o.dpi ? `-${o.dpi}dpi` : ''}.${o.ext}`;
+  return `cubic-${p.id}-${slug(item)}${o.bleed ? '-bleed' : ''}${o.dpi ? `-${o.dpi}dpi` : ''}.${o.ext}`;
 }
 
 /** One face's CMYK PDF: `cubic-proof-a4-fogra39.pdf` (always with the bleed). */
-export const cmykName = (p: Format, item: Printable) =>
-  `cubic-${p.id}-${item.name.replaceAll('/', '-')}-${PRESS.condition.toLowerCase()}.pdf`;
+export const cmykName = (p: Format, item: Printable) => `cubic-${p.id}-${slug(item)}-${PRESS.tag}.pdf`;
 
 /** A whole set's ZIP: `cubic-cards-community-bleed.zip`, `cubic-cards-community-fogra39.zip`. */
 export const setName = (p: Piece, o: { part?: string; tag?: string }) =>
   `cubic-${p.plural}${o.part ? `-${o.part}` : ''}${o.tag ? `-${o.tag}` : ''}.zip`;
 
 /** Press sheets of pieces printed together: `cubic-tiles-aids-a4-fogra39.pdf`. */
-export const sheetName = (name: string) => `cubic-${name}-a4-${PRESS.condition.toLowerCase()}.pdf`;
+export const sheetName = (name: string) => `cubic-${name}-a4-${PRESS.tag}.pdf`;
