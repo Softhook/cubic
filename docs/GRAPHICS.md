@@ -298,7 +298,8 @@ Built: `playerAidSvg` in [`packages/art/src/aid.ts`](../packages/art/src/aid.ts)
 Lab (`#lab/aid`).
 
 - **Size**: A6 landscape, 148 × 105 mm, 3 mm bleed; print sheets put two on an A4 or US Letter page ("All copies" prints four).
-- **One board for every player**: one flat ground, no boxes, one accent (the game's cyan) on the
+- **One board for every player**: a dim starfield for ground (the tiles' deep space, one fixed sky,
+  veiled, faint stars kept off the text, bright stars only in the open), no boxes, one accent (the game's cyan) on the
   pips and ship details; the action chips are the cards' yellow hexagons with the bolt (`ACTION_HUE`).
   Hierarchy: the ship dice first, then the die pads, then the actions; rules are a line each.
 - **Readable**: no text under `MIN_TEXT` (2 mm, about 6 pt); a test checks every size.
@@ -311,8 +312,8 @@ Lab (`#lab/aid`).
   line of rules; then combat, missiles (Community; Classic shows defeat instead), the per-ship
   limit (one move, one ability a turn) and cards.
 - **The fleet**: each ship on its die face (`shipDie` in
-  [`kit/starships.ts`](../packages/art/src/kit/starships.ts)), with its power under it but no name:
-  each die is a hologram, dark glass with faint scan lines and a lit rim, the starship projected in
+  [`kit/starships.ts`](../packages/art/src/kit/starships.ts)), with its power under it as one short
+  phrase (the ability and what it does, on two lines, one size for all six). Each die is a hologram, dark glass with faint scan lines and a lit rim, the starship projected in
   the accent cyan (tinted hull, glowing outline), the pips as lit orbs, and the centre pip of 1, 3
   and 5 as the ship's core. The manual draws its ships the same way, in the player's colour.
 

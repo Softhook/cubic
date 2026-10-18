@@ -2,7 +2,9 @@ import { estimateWidth, type Measure } from './card';
 import { icon } from './icons';
 import { poly } from './kit/props';
 import { shipDie } from './kit/starships';
-import { dieCut, document, esc, hsl, n, type Fragment } from './svg';
+import { rng } from './rng';
+import { starfield } from './starfield';
+import { document, esc, hsl, n, type Fragment } from './svg';
 import { ACTION_HUE, CUBE_PAD, DOMINANCE, FONTS, INK, RESEARCH, TILE } from './tokens';
 
 /**
@@ -11,7 +13,7 @@ import { ACTION_HUE, CUBE_PAD, DOMINANCE, FONTS, INK, RESEARCH, TILE } from './t
  * the dominance and research dice (19 mm), and between them the three actions; along the bottom,
  * the six ships on their die faces with what each can do.
  *
- * Kept deliberately quiet: one flat ground, one accent colour (actions take the cards' yellow), no boxes.
+ * Kept deliberately quiet: a dim starfield for ground, one accent colour (actions take the cards' yellow), no boxes.
  * The ship dice are the largest thing on it, then the die pads, then the actions. No text is smaller than `MIN_TEXT`.
  */
 
@@ -22,7 +24,6 @@ export const AID = {
   bleed: 3,
   /** Outer margin: text and pads stay this far inside the trim. */
   safe: 6,
-  corner: 3,
 } as const;
 
 /** The smallest text on the aid, mm (2 mm ≈ 5.7 pt), so it reads at arm's length on the table. */
@@ -35,8 +36,6 @@ export interface AidOptions {
   edition?: AidEdition;
   /** Add the bleed around the trim. */
   bleed?: boolean;
-  /** Clip to die-cut corners (for previews). */
-  rounded?: boolean;
   /** Text widths with the embedded fonts; estimated when absent. */
   measure?: Measure;
   /** `@font-face` rules to embed. */
@@ -47,13 +46,14 @@ export interface AidOptions {
 // ---------------------------------------------------------------------------
 // What it says
 
-const SHIPS: { value: number; ability: string; text: string }[] = [
-  { value: 1, ability: 'Free Attack', text: 'Attack an adjacent enemy' },
-  { value: 2, ability: 'Carry & Move', text: 'Move with a ship aboard' },
-  { value: 3, ability: 'Swap', text: 'Trade places with any of your ships' },
-  { value: 4, ability: 'Change to 3 or 5', text: 'Turn the die, no roll' },
-  { value: 5, ability: 'Move Diagonally', text: 'Move and attack diagonally' },
-  { value: 6, ability: 'Free Reconfigure', text: 'Re-roll without an action' },
+/** What each ship can do: the ability's name and what it means in one phrase, broken where it reads best. */
+const SHIPS: { value: number; text: [string, string] }[] = [
+  { value: 1, text: ['Free attack on', 'a ship next to it'] },
+  { value: 2, text: ['Carry a ship', 'as it moves'] },
+  { value: 3, text: ['Swap with any', 'of your ships'] },
+  { value: 4, text: ['Turn to 3 or 5', 'without rolling'] },
+  { value: 5, text: ['Move and attack', 'diagonally'] },
+  { value: 6, text: ['Free re-roll,', 'no action'] },
 ];
 
 const actions = (edition: AidEdition): { name: string; cost: number; text: string }[] => [
@@ -106,15 +106,6 @@ function line(x: number, y: number, s: string, size: number, width: number, meas
   return text(x, y, s, Math.max(MIN_TEXT, Math.min(size, width / w)), o);
 }
 
-/** One line if it fits in `width` mm, else two lines of about equal length (no lone "a 5" or "free"). */
-function wrap(s: string, size: number, width: number, measure: Measure): string[] {
-  if (measure(s, size, 'body') <= width) return [s];
-  const words = s.split(' ');
-  const splits = words.slice(1).map((_, i) => [words.slice(0, i + 1).join(' '), words.slice(i + 1).join(' ')]);
-  const longer = (l: string[]) => Math.max(...l.map((t) => measure(t, size, 'body')));
-  return splits.reduce((best, l) => (longer(l) < longer(best) ? l : best));
-}
-
 // ---------------------------------------------------------------------------
 // The board
 
@@ -149,6 +140,17 @@ export function diePad(cx: number, cy: number, hue: number, kind: 'dominance' | 
 export const cubePad = (x: number, y: number) =>
   `<rect x="${n(x)}" y="${n(y)}" width="${CUBE_PAD.size}" height="${CUBE_PAD.size}" rx="${CUBE_PAD.corner}" fill="${PAD}" stroke="${hsl(224, 20, 52)}" stroke-width=".3"/>`;
 
+/** Where the text sits, [x0, y0, x1, y1] mm from the trim's top left: no faint stars there. */
+const TEXT: [number, number, number, number][] = [
+  [13, 5, 22, 100],
+  [21, 5, 51, 10],
+  [21, 36, 51, 61],
+  [53, 5, 114, 68],
+  [113, 5, 144, 10],
+  [113, 36, 144, 61],
+  [21, 90, 147, 100],
+];
+
 /** The most cubes any map gives a player. */
 const MAX_CUBES = 7;
 
@@ -163,10 +165,22 @@ export function playerAidSvg(o: AidOptions = {}): string {
   const out: string[] = [];
   const accent = hsl(HUE, 90, 66);
 
-  out.push(`<rect x="${-b}" y="${-b}" width="${W + 2 * b}" height="${H + 2 * b}" fill="${GROUND}"/>`);
-  defs.push(
-    `<radialGradient id="${id}-glow"><stop offset="0" stop-color="${hsl(ACTION_HUE, 100, 60)}" stop-opacity=".5"/><stop offset="1" stop-color="${hsl(ACTION_HUE, 100, 60)}" stop-opacity="0"/></radialGradient>`,
-  );
+  // The ground: the tiles' deep space, veiled so it stays behind the board. The same sky on every aid.
+  // Faint stars keep off the text, and only every other one is kept (the aid is bigger than a tile, so
+  // its stars come out bigger and denser); bright stars only in the open, under the two die columns.
+  const sky = starfield({
+    rng: rng('player-aid'),
+    id: `${id}-sky`,
+    area: { x: -b, y: -b, w: W + 2 * b, h: H + 2 * b },
+    frame: { x: 0, y: 0, w: W, h: H },
+    hues: [222, 272],
+    nebula: 0.6,
+    faintAllowed: (x, y) =>
+      (Math.round(x * 7 + y * 13) & 1) === 0 && !TEXT.some(([x0, y0, x1, y1]) => x > x0 && x < x1 && y > y0 && y < y1),
+    brightAllowed: (x, y) => y > 63 && y < 70 && ((x > 22 && x < 52) || (x > 114 && x < 142)),
+  });
+  defs.push(sky.defs);
+  out.push(sky.body, `<rect x="${-b}" y="${-b}" width="${W + 2 * b}" height="${H + 2 * b}" fill="${GROUND}" opacity=".3"/>`);
 
   // --- The cube rail: a pad per cube, spread over the full height, with the win condition alongside.
   // The pads are the planets' cube pads in the die pads' quiet fill; the text runs up the rail, like a spine.
@@ -197,14 +211,14 @@ export function playerAidSvg(o: AidOptions = {}): string {
             then: ['Place a cube on any', 'planet, reset to 1'],
           }
         : { gain: ['+1 per Research action'], six: 'At 6 · Breakthrough', then: ['Take a card at the', 'end of turn, reset to 1'] };
-    let y = M + 34.6;
+    let y = M + 35.4;
     for (const t of lines.gain) {
       out.push(line(cx, y, t, 2.3, colW, measure, { fill: WHITE, anchor: 'middle' }));
-      y += 3.1;
+      y += 3.3;
     }
-    y = M + 43.2;
+    y = M + 45.4;
     out.push(line(cx, y, lines.six, 2.4, colW, measure, { font: 'bold', fill: tone, anchor: 'middle' }));
-    lines.then.forEach((t, i) => out.push(line(cx, y + 3.3 + i * 3, t, 2.2, colW, measure, { fill: MUTED, anchor: 'middle' })));
+    lines.then.forEach((t, i) => out.push(line(cx, y + 3.5 + i * 3.2, t, 2.2, colW, measure, { fill: MUTED, anchor: 'middle' })));
   };
   side(left, 'dominance');
   side(W - M - colW, 'research');
@@ -218,35 +232,37 @@ export function playerAidSvg(o: AidOptions = {}): string {
   out.push(rule(M + 7.6));
   const textX = x0 + 7.8;
   actions(edition).forEach((a, i) => {
-    const y = M + 12.2 + i * 6.2;
+    const y = M + 12.6 + i * 6.8;
     for (let k = 0; k < a.cost; k++) out.push(hex(x0 + 1.6 + k * 3.6, y - 0.8, 1.6, `${id}-glow`));
     out.push(text(textX, y, a.name, 2.6, { font: 'bold', fill: WHITE }));
     out.push(line(textX, y + 2.9, a.text, 2.2, x0 + cw - textX, measure, { fill: MUTED }));
   });
-  out.push(rule(M + 42.6));
+  out.push(rule(M + 45.6));
   const ruleX = x0 + 13;
   rules(edition).forEach(([label, s], i) => {
-    const y = M + 46.4 + i * 3.1;
+    const y = M + 49.6 + i * 3.6;
     out.push(text(x0, y, label, 2.1, { font: 'bold', fill: WHITE, track: 0.08, upper: true }));
     out.push(line(ruleX, y, s, 2.2, x0 + cw - ruleX, measure, { fill: MUTED }));
   });
 
   // --- The fleet: six die faces, strongest to fastest, and what each can do.
-  const fleetY = 67.6;
+  // Anchored to the bottom: the last line of the ships' text sits on the bottom margin (less its descenders).
   const size = 17;
+  const fleetY = H - M - 0.6 - (size + 4.4 + 3.1);
   const gap = (W - M - left - 6 * size) / 5;
+  // One size for every ship's text: the largest at which every line fits its column.
+  const lines = SHIPS.flatMap((s) => s.text);
+  const shipText = Math.max(MIN_TEXT, Math.min(2.5, ...lines.map((t) => (size + gap - 0.8) / measure(t, 1, 'bold'))));
   for (const [i, s] of SHIPS.entries()) {
     const cx = left + size / 2 + i * (size + gap);
     const d = shipDie(`${id}-d${s.value}`, s.value, cx, fleetY + size / 2, size, HUE);
     defs.push(d.defs);
     out.push(d.body);
-    const ty = fleetY + size + 4.2;
-    out.push(line(cx, ty, s.ability, 2.6, size + gap - 0.8, measure, { font: 'bold', fill: accent, anchor: 'middle' }));
-    wrap(s.text, 2.1, size + gap - 0.8, measure).forEach((t, k) =>
-      out.push(text(cx, ty + 3.2 + k * 2.75, t, 2.1, { fill: MUTED, anchor: 'middle' })),
+    s.text.forEach((t, k) =>
+      out.push(text(cx, fleetY + size + 4.4 + k * 3.1, t, shipText, { font: 'bold', fill: accent, anchor: 'middle' })),
     );
   }
 
   const all: Fragment = { defs: (o.fontCss ? `<style>${o.fontCss}</style>` : '') + defs.join(''), body: out.join('') };
-  return document(o.rounded ? dieCut(all, id, W, H, AID.corner) : all, { x: -b, y: -b, w: W + 2 * b, h: H + 2 * b });
+  return document(all, { x: -b, y: -b, w: W + 2 * b, h: H + 2 * b });
 }

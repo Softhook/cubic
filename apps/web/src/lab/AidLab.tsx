@@ -25,11 +25,11 @@ export function AidLab() {
   }, []);
 
   const svgOf = useCallback(
-    (o: { bleed?: boolean; rounded?: boolean } = {}) => playerAidSvg({ ...o, edition, measure, fontCss: fonts ?? '' }),
+    (o: { bleed?: boolean } = {}) => playerAidSvg({ ...o, edition, measure, fontCss: fonts ?? '' }),
     [edition, fonts],
   );
   const detail = useMemo(
-    () => (fonts === null ? '' : URL.createObjectURL(new Blob([svgOf({ bleed, rounded: !bleed })], { type: 'image/svg+xml' }))),
+    () => (fonts === null ? '' : URL.createObjectURL(new Blob([svgOf({ bleed })], { type: 'image/svg+xml' }))),
     [bleed, fonts, svgOf],
   );
   useEffect(() => () => URL.revokeObjectURL(detail), [detail]);
