@@ -383,7 +383,7 @@ Every printed piece goes through one module, `apps/web/src/print/`, so cards and
 same way:
 
 - `pieces.ts` holds each piece's print spec (trim, bleed, sheet grid) and the file-name pattern:
-  `cubic-<piece>-<name>[-bleed][-<dpi>dpi].<ext>` for one face, `cubic-<pieces>[-<part>][-bleed|-fogra39].zip`
+  `cubic-<piece>-<name>[-bleed][-<dpi>dpi].<ext>` for one face, `cubic-<pieces>[-<part>][-bleed|-fogra39[-deep]].zip`
   for a set.
 - `PrintPanel.tsx` is the export panel on every lab page: this face as a PNG (plus page extras such
   as SVG for Illustrator), the whole set as a ZIP of PNGs with a README, the CMYK export for the press
@@ -396,6 +396,14 @@ same way:
   carry their dpi, so a RIP converts the colours as we see them and opens the file at its physical size.
   It writes the PNGs itself (`encodePng`) rather than take the canvas's, which in Safari carry their own
   sRGB and EXIF chunks that the profile would clash with. `toCmyk` converts to the press's CMYK through a table (`cmykTable.ts`, below).
+  **Deep black** (a tick box beside every CMYK export, remembered across lab pages, off by default): the
+  profile caps black ink at 94 %, so its darkest prints at L\* 11.7 and the space base at 13.7. With it ticked,
+  everything at the space base or darker (by its brightest channel, so dark colours above keep theirs)
+  prints as a full-black rich black, 90/70/35/100 at black to 80/65/42/100 at the base (L\* 9.0 to 9.5 by
+  the profile's measured data, so the dust stays a step apart), fading back to the profile's conversion
+  by twice the base's brightness; the nebulae and everything lighter are untouched. Within the 300 % ink
+  limit. It overrides only the profile's choice of ink mix, not the press condition, so the PDFs still
+  name FOGRA39, but the printer must print the CMYK as it is. Its files are tagged `-fogra39-deep`.
 - **CMYK PDFs** (`pdf.ts`): made to the PDF/X-1a rules (PDF 1.3, CMYK only, no fonts or
   transparency, TrimBox and BleedBox, an output intent naming the registered FOGRA39 condition; a
   registered condition needs no embedded profile, which would add 1.4 MB to every file); only a

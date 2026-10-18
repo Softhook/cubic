@@ -3,6 +3,7 @@ import { exportCmykFiles, exportCmykSheets, exportPng, exportZip, printSheets, t
 import { sizeNote, type Piece, type Printable } from './pieces';
 import { PRESS } from './press';
 import { PAPER, type Paper } from './sheets';
+import { remember, stored } from '../storage';
 import { useExport, type Run } from './useExport';
 
 interface Props {
@@ -39,6 +40,33 @@ export function Space({ of }: { of: 'rgb' | 'cmyk' }) {
   return <span className={`space-tag ${of}`}>{of === 'rgb' ? 'RGB' : 'CMYK'}</span>;
 }
 
+const DEEP_BLACK_KEY = 'quantum.lab.deepBlack';
+
+/** Whether the CMYK exports print the deep black (press.ts `toCmyk`): off by default, and remembered across lab pages. */
+export function useDeepBlack(): [boolean, (on: boolean) => void] {
+  const [deep, setDeep] = useState(() => stored(DEEP_BLACK_KEY) === '1');
+  return [
+    deep,
+    (on) => {
+      setDeep(on);
+      remember(DEEP_BLACK_KEY, on ? '1' : '0');
+    },
+  ];
+}
+
+/** The deep black's tick box, beside a CMYK export. */
+export function DeepBlack({ deep, onDeep }: { deep: boolean; onDeep: (on: boolean) => void }) {
+  return (
+    <label title="The darkest tones (the space background and below) as a 100 % K rich black, deeper than the profile's own black. Try it on a proof first.">
+      <input type="checkbox" checked={deep} onChange={(e) => onDeep(e.target.checked)} /> Deep black
+    </label>
+  );
+}
+
+/** The note under a CMYK export with the deep black on. */
+export const DEEP_NOTE =
+  'Deep black: the space background and anything darker print as a 100 % K rich black (about L* 9 against the profile’s 12–14), still within 300 % ink; the files are tagged “-deep”. Check it on a proof, and that the printer prints the CMYK as it is.';
+
 /** An export's progress while it runs (useExport), or why it failed. */
 export function ExportStatus({ progress, error }: { progress: string | null; error: string | null }) {
   return (
@@ -74,6 +102,7 @@ export function PrintPanel({
   const [allCopies, setAllCopies] = useState(true);
   const [withBacks, setWithBacks] = useState(false);
   const [paper, setPaper] = useState<Paper>('a4');
+  const [deep, setDeep] = useDeepBlack();
   const { run, progress, error } = useExport();
   const busy = progress !== null || !ready || !!fontsMissing;
 
@@ -114,10 +143,11 @@ export function PrintPanel({
           <button
             className="btn btn-primary"
             disabled={busy}
-            onClick={() => run((p) => exportCmykFiles(piece, sheets(true), { part: part?.toLowerCase() }, p))}
+            onClick={() => run((p) => exportCmykFiles(piece, sheets(true), { part: part?.toLowerCase(), deep }, p))}
           >
             <Space of="cmyk" /> PDFs · {PRESS.condition} · ZIP
           </button>
+          <DeepBlack deep={deep} onDeep={setDeep} />
           <span className="lab-note">
             For print services that want CMYK and a file per {piece.id}: one PDF each with {piece.bleed} mm bleed, no crop marks,{' '}
             {piece.dpi} dpi{backs ? ', its back as page 2' : ''}, and how many to order of each in order.csv. Converted for{' '}
@@ -126,15 +156,17 @@ export function PrintPanel({
         </div>
       ) : (
         <div className="lab-controls">
-          <button className="btn btn-primary" disabled={busy} onClick={() => run((p) => exportCmykSheets(cmyk, p))}>
+          <button className="btn btn-primary" disabled={busy} onClick={() => run((p) => exportCmykSheets(cmyk, deep, p))}>
             <Space of="cmyk" /> {cmyk.label} · PDF · {PRESS.condition}
           </button>
+          <DeepBlack deep={deep} onDeep={setDeep} />
           <span className="lab-note">
             The press file: A4 sheets with {cmyk.contents}, butted with crop marks and bleed round each block. The set as it ships, with
             print markings. Converted for {PRESS.described}.
           </span>
         </div>
       )}
+      {deep && <p className="lab-note">{DEEP_NOTE}</p>}
       {cmyk !== 'files' && cmykDiffers && <p className="lab-warn">Not as shown: {cmykDiffers}. The CMYK file has the set as it ships.</p>}
       <div className="lab-controls">
         <button

@@ -1,5 +1,5 @@
 import { AID, CARD, TILE } from '@quantum/art';
-import { PRESS } from './press';
+import { pressTag } from './press';
 
 /**
  * The printed pieces, and the one convention every print file follows: size, bleed, sheet layout and
@@ -60,12 +60,12 @@ export function fileName(p: Format, item: Printable, o: { bleed: boolean; dpi?: 
   return `cubic-${p.id}-${slug(item)}${o.bleed ? '-bleed' : ''}${o.dpi ? `-${o.dpi}dpi` : ''}.${o.ext}`;
 }
 
-/** One face's CMYK PDF: `cubic-proof-a4-fogra39.pdf` (always with the bleed). */
-export const cmykName = (p: Format, item: Printable) => `cubic-${p.id}-${slug(item)}-${PRESS.tag}.pdf`;
+/** One face's CMYK PDF: `cubic-proof-a4-fogra39.pdf`, `…-fogra39-deep.pdf` with the deep black (always with the bleed). */
+export const cmykName = (p: Format, item: Printable, deep: boolean) => `cubic-${p.id}-${slug(item)}-${pressTag(deep)}.pdf`;
 
 /** A whole set's ZIP: `cubic-cards-community-bleed.zip`, `cubic-cards-community-fogra39.zip`. */
 export const setName = (p: Piece, o: { part?: string; tag?: string }) =>
   `cubic-${p.plural}${o.part ? `-${o.part}` : ''}${o.tag ? `-${o.tag}` : ''}.zip`;
 
-/** Press sheets of pieces printed together: `cubic-tiles-aids-a4-fogra39.pdf`. */
-export const sheetName = (name: string) => `cubic-${name}-a4-${PRESS.tag}.pdf`;
+/** Press sheets of pieces printed together: `cubic-tiles-aids-a4-fogra39.pdf`, `…-fogra39-deep.pdf` with the deep black. */
+export const sheetName = (name: string, deep: boolean) => `cubic-${name}-a4-${pressTag(deep)}.pdf`;

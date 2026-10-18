@@ -1,3 +1,4 @@
+import { SPACE_BASE } from '@quantum/art';
 import { CMYK_TABLE } from './cmykTable';
 import { deflateChunks } from './pdf';
 import { crc32 } from './zip';
@@ -19,18 +20,44 @@ export const PRESS = {
   tag: CMYK_TABLE.condition.toLowerCase(),
 };
 
+/** The tag for a CMYK file's name: `fogra39`, or `fogra39-deep` with the deep black (`toCmyk`). */
+export const pressTag = (deep: boolean) => (deep ? `${PRESS.tag}-deep` : PRESS.tag);
+
 const N = CMYK_TABLE.grid;
 const TABLE = Uint8Array.from(atob(CMYK_TABLE.data), (c) => c.charCodeAt(0));
 /** For each 0–255 channel value, the grid point below it and how far it is towards the next (0–1). */
 const CELL = Array.from({ length: 256 }, (_, v) => Math.min(Math.floor((v / 255) * (N - 1)), N - 2));
 const FRAC = Float32Array.from({ length: 256 }, (_, v) => (v / 255) * (N - 1) - CELL[v]);
 
+/*
+ * The deep black, an option on the CMYK exports. The profile's own darkest ink caps black at 94 %, which
+ * its measured data prints at L* 11.7 (the space base at 13.7); with full black ink under a cool mix the
+ * same press prints L* 9. So from black to the space base, by the brightest channel (so dark colours
+ * above it keep theirs), the ink goes from RICH_BLACK to BASE_BLACK, a touch lighter so the dust stays
+ * apart from the base; from the base to twice it, it fades back to the profile's. Within the 300 % limit.
+ */
+const RICH_BLACK = [90, 70, 35, 100]; // L* 9.0
+const BASE_BLACK = [80, 65, 42, 100]; // L* 9.5
+/** The space base's brightest channel (23), from its HSL lightness and saturation. */
+const BASE_V = Math.round(255 * (SPACE_BASE[2] / 100) * (1 + SPACE_BASE[1] / 100));
+const FADE_V = 2 * BASE_V;
+/** For each brightest-channel value: how much of the profile's ink is kept (0–1), and the deep black's share of the ink, in bytes. */
+const KEEP = new Float32Array(256);
+const DEEP_INK = new Float32Array(256 * 4);
+for (let v = 0; v < 256; v++) {
+  const t = Math.min(1, Math.max(0, (v - BASE_V) / (FADE_V - BASE_V)));
+  KEEP[v] = t * t * (3 - 2 * t);
+  const a = Math.min(1, v / BASE_V);
+  for (let k = 0; k < 4; k++) DEEP_INK[v * 4 + k] = (1 - KEEP[v]) * 2.55 * (RICH_BLACK[k] + (BASE_BLACK[k] - RICH_BLACK[k]) * a);
+}
+
 /**
  * Converts RGBA pixels (opaque, sRGB) to CMYK bytes for the press, by trilinear interpolation in the
  * table from scripts/cmyk-table.ts (relative colorimetric with black point compensation, so the art's
- * darkest tones stay apart rather than all printing as the press's black).
+ * darkest tones stay apart rather than all printing as the press's black). `deep` prints the darkest
+ * tones, the space base and below, as a full-black rich black instead (above).
  */
-export function toCmyk(rgba: Uint8ClampedArray): Uint8Array<ArrayBuffer> {
+export function toCmyk(rgba: Uint8ClampedArray, deep = false): Uint8Array<ArrayBuffer> {
   const out = new Uint8Array(rgba.length);
   // Offsets of a cell's corners in the table, from its lowest corner: red slowest, then green, then blue.
   const sr = N * N * 4;
@@ -53,10 +80,13 @@ export function toCmyk(rgba: Uint8ClampedArray): Uint8Array<ArrayBuffer> {
     w[6] = fr * fg * (1 - fb);
     w[7] = fr * fg * fb;
     const o = CELL[r] * sr + CELL[g] * sg + CELL[b] * 4;
+    // Without the deep black, the brightest value: all the profile's ink, none of the deep black's.
+    const m = deep ? Math.max(r, g, b) : 255;
+    const keep = KEEP[m];
     for (let k = 0; k < 4; k++) {
       let v = 0;
       for (let c = 0; c < 8; c++) v += w[c] * TABLE[o + corners[c] + k];
-      out[i + k] = v + 0.5;
+      out[i + k] = v * keep + DEEP_INK[m * 4 + k] + 0.5;
     }
   }
   return out;

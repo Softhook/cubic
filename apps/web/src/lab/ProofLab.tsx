@@ -3,7 +3,7 @@ import { PRESS_TEST, cardSvg, dataUrl, pressTestSvg, tileSpec, tileSvg } from '@
 import { DECKS, cardFontCss, measure, tileFontCss } from './cards';
 import { exportCmykPdf, exportPng } from '../print/exports';
 import type { Format, Printable } from '../print/pieces';
-import { ExportStatus, Space } from '../print/PrintPanel';
+import { DEEP_NOTE, DeepBlack, ExportStatus, Space, useDeepBlack } from '../print/PrintPanel';
 import { PRESS } from '../print/press';
 import { useExport } from '../print/useExport';
 import { LabHeader } from './LabHeader';
@@ -22,6 +22,7 @@ const PAGE: Format = { id: 'proof', w: PRESS_TEST.w, h: PRESS_TEST.h, bleed: 0, 
 export function ProofLab() {
   const [fonts, setFonts] = useState<{ card: string; tile: string } | null>(null);
   const { run, progress, error } = useExport();
+  const [deep, setDeep] = useDeepBlack();
 
   useEffect(() => {
     void Promise.all([cardFontCss(), tileFontCss()]).then(([card, tile]) => setFonts({ card, tile }));
@@ -54,14 +55,16 @@ export function ProofLab() {
             nebula show, the text is clean and the colours tell apart.
           </p>
           <div className="lab-controls">
-            <button className="btn btn-primary" disabled={busy} onClick={() => run(() => exportCmykPdf(PAGE, page))}>
+            <button className="btn btn-primary" disabled={busy} onClick={() => run(() => exportCmykPdf(PAGE, page, deep))}>
               <Space of="cmyk" /> PDF · {PRESS.condition}
             </button>
             <button className="btn" disabled={busy} onClick={() => run(() => exportPng(PAGE, page, false))}>
               <Space of="rgb" /> PNG
             </button>
+            <DeepBlack deep={deep} onDeep={setDeep} />
           </div>
           <p className="lab-note">A4, 210 × 297 mm, at {PAGE.dpi} dpi.</p>
+          {deep && <p className="lab-note">{DEEP_NOTE} The PNG is unchanged: the deep black is in the CMYK only.</p>}
           {missing && <p className="lab-note">The fonts didn’t load (offline?), so the export is off.</p>}
           <ExportStatus progress={progress} error={error} />
         </div>

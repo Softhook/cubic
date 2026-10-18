@@ -134,7 +134,8 @@ describe('print file names', () => {
     expect(fileName(PIECES.tile, { name: 'p7-01', svg: () => '' }, { bleed: false, ext: 'svg' })).toBe('cubic-tile-p7-01.svg');
     expect(setName(PIECES.card, { part: 'community', tag: 'bleed' })).toBe('cubic-cards-community-bleed.zip');
     expect(setName(PIECES.tile, {})).toBe('cubic-tiles.zip');
-    expect(sheetName('tiles-aids')).toBe('cubic-tiles-aids-a4-fogra39.pdf');
+    expect(sheetName('tiles-aids', false)).toBe('cubic-tiles-aids-a4-fogra39.pdf');
+    expect(sheetName('tiles-aids', true)).toBe('cubic-tiles-aids-a4-fogra39-deep.pdf');
   });
 
   it('size pieces with their bleed on every side', () => {

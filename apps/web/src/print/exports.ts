@@ -1,7 +1,7 @@
 import { download, drawBands } from '../files';
 import { cmykPdf, deflate, fullPage, type PdfImage, type PdfOptions } from './pdf';
 import { cmykName, fileName, pieceSize, setName, sheetName, sizeNote, type Format, type Piece, type Printable } from './pieces';
-import { PRESS, encodePng, toCmyk } from './press';
+import { PRESS, encodePng, pressTag, toCmyk } from './press';
 import { A4, pressPages, printDocument, sheetsHtml, type Paper } from './sheets';
 import { zip } from './zip';
 
@@ -79,13 +79,13 @@ export async function printSheets(
   await printDocument(sheetsHtml(piece, images, o), () => urls.forEach((u) => URL.revokeObjectURL(u)));
 }
 
-/** A face drawn with its bleed at the format's dpi and converted to the press's CMYK, ready for a PDF page. */
-async function cmykImage(f: Format, item: Printable): Promise<PdfImage> {
+/** A face drawn with its bleed at the format's dpi and converted to the press's CMYK (with the deep black or not), ready for a PDF page. */
+async function cmykImage(f: Format, item: Printable, deep: boolean): Promise<PdfImage> {
   const { w, h } = pieceSize(f, true);
   const bands = drawForPrint(item.svg(true), w, h, f.dpi);
   const data = await deflate(
     (async function* () {
-      for await (const rgba of bands) yield toCmyk(rgba);
+      for await (const rgba of bands) yield toCmyk(rgba, deep);
     })(),
   );
   return { width: px(w, f.dpi), height: px(h, f.dpi), data };
@@ -102,8 +102,8 @@ function cmykFile(f: Format, title: string, images: PdfImage[]): Blob {
 }
 
 /** One face as a CMYK PDF: the press test. */
-export async function exportCmykPdf(f: Format, item: Printable): Promise<void> {
-  download(cmykName(f, item), cmykFile(f, `Cubic ${f.id} ${item.name}`, [await cmykImage(f, item)]));
+export async function exportCmykPdf(f: Format, item: Printable, deep: boolean): Promise<void> {
+  download(cmykName(f, item, deep), cmykFile(f, `Cubic ${f.id} ${item.name}`, [await cmykImage(f, item, deep)]));
 }
 
 /**
@@ -115,7 +115,7 @@ export async function exportCmykPdf(f: Format, item: Printable): Promise<void> {
 export async function exportCmykFiles(
   piece: Piece,
   faces: { front: Printable; back?: Printable }[],
-  o: { part?: string },
+  o: { part?: string; deep: boolean },
   progress: Progress,
 ): Promise<void> {
   const fronts = new Map<string, { face: (typeof faces)[number]; copies: number }>();
@@ -129,9 +129,9 @@ export async function exportCmykFiles(
   const order = ['file,quantity,pages'];
   for (const [k, { face, copies }] of [...fronts.values()].entries()) {
     progress(`Converting ${k + 1}/${fronts.size}`);
-    const images = [await cmykImage(piece, face.front)];
+    const images = [await cmykImage(piece, face.front, o.deep)];
     if (face.back) {
-      if (!backs.has(face.back.name)) backs.set(face.back.name, await cmykImage(piece, face.back));
+      if (!backs.has(face.back.name)) backs.set(face.back.name, await cmykImage(piece, face.back, o.deep));
       images.push(backs.get(face.back.name)!);
     }
     const name = `${face.front.name}.pdf`;
@@ -140,13 +140,13 @@ export async function exportCmykFiles(
   }
   const readme =
     `Cubic ${piece.plural}, ${sizeNote(piece, true)}.\n` +
-    `One CMYK PDF per ${piece.id}, converted for ${PRESS.described}, ${piece.dpi} dpi, no crop marks` +
+    `One CMYK PDF per ${piece.id}, converted for ${PRESS.described}${o.deep ? ' (the darkest tones as a 100 % K rich black, within 300 % total ink)' : ''}, ${piece.dpi} dpi, no crop marks` +
     (faces.some((f) => f.back) ? ': page 1 the front, page 2 the back, for double-sided printing' : '') +
     `.\nHow many of each to order: order.csv. Upload with "Do not scale".\n`;
   files.push(textFile('order.csv', order.join('\n') + '\n', 'text/csv'));
   files.push(textFile('README.txt', readme));
   progress('Packing…');
-  download(setName(piece, { part: o.part, tag: PRESS.tag }), await zip(files));
+  download(setName(piece, { part: o.part, tag: pressTag(o.deep) }), await zip(files));
 }
 
 /** Pieces that print together on one stock, as one CMYK PDF of A4 press sheets (`exportCmykSheets`). */
@@ -164,7 +164,7 @@ export interface PressSheets {
  * Press sheets as one CMYK PDF: each piece in its sheet grid (sheets.ts `pressPages`), butted with crop
  * marks, single-sided, a new page for each piece. Every copy is placed; each distinct face is converted once.
  */
-export async function exportCmykSheets(sheets: PressSheets, progress: Progress): Promise<void> {
+export async function exportCmykSheets(sheets: PressSheets, deep: boolean, progress: Progress): Promise<void> {
   const groups = await sheets.groups();
   const images: PdfImage[] = [];
   const index = new Map<string, number>();
@@ -176,12 +176,12 @@ export async function exportCmykSheets(sheets: PressSheets, progress: Progress):
       const key = `${piece.id}/${f.name}`;
       if (!index.has(key)) {
         progress(`Converting ${index.size + 1}/${total}`);
-        index.set(key, images.push(await cmykImage(piece, f)) - 1);
+        index.set(key, images.push(await cmykImage(piece, f, deep)) - 1);
       }
       placed.push(index.get(key)!);
     }
     pages.push(...pressPages(piece, placed));
   }
   progress('Writing PDF…');
-  download(sheetName(sheets.name), pressPdf({ title: `Cubic ${sheets.label}`, ...A4, bleed: 0, images, pages }));
+  download(sheetName(sheets.name, deep), pressPdf({ title: `Cubic ${sheets.label}`, ...A4, bleed: 0, images, pages }));
 }
