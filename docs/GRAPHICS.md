@@ -422,8 +422,8 @@ same way:
 - `sheets.ts` lays out print sheets: pieces at trim size in a grid (cards 3 × 3, tiles 2 × 2, aid
   1 × 2), butted so one cut serves two pieces, crop marks drawn as borders so they print without
   "Background graphics", optional backs ("Backs (duplex)", off by default) mirrored for long-edge
-  duplex, crop marks kept 4 mm in from the paper's edge, where home printers print. A4 only. The CMYK
-  press sheets use the same layout (`pressPages`).
+  duplex, crop marks kept 4 mm in from the paper's edge, where home printers print. A4 or US Letter. The
+  CMYK press sheets use the same layout (`pressPages`), always on A4.
 - Bleed: on for exports meant for print services; the sheets are at trim size for home printing.
 
 A new piece (player board, tokens) is a `PIECES` entry and a `Printable` per face.

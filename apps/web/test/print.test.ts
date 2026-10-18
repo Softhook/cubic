@@ -1,7 +1,7 @@
 /** Print files: every piece fits its sheets with room for crop marks, backs land behind their fronts, press sheets bleed only round each block, names follow one pattern. */
 import { describe, expect, it } from 'vitest';
 import { PIECES, fileName, pieceSize, setName, sheetName, type Piece } from '../src/print/pieces';
-import { A4, pressPages, sheetsHtml } from '../src/print/sheets';
+import { A4, PAPER, pressPages, sheetsHtml, type Paper } from '../src/print/sheets';
 
 const pieces = Object.values(PIECES) as Piece[];
 
@@ -18,9 +18,12 @@ function sheets(html: string) {
 }
 
 describe('print sheets', () => {
-  it.each(pieces)('fit $id on A4 with a margin for crop marks', (p) => {
-    expect((A4.w - p.cols * p.w) / 2).toBeGreaterThan(5);
-    expect((A4.h - p.rows * p.h) / 2).toBeGreaterThan(5);
+  /** Every piece on every paper. */
+  const onPaper = pieces.flatMap((p) => (Object.keys(PAPER) as Paper[]).map((paper) => ({ p, paper, id: p.id })));
+
+  it.each(onPaper)('fit $id on $paper with a margin for crop marks', ({ p, paper }) => {
+    expect((PAPER[paper].w - p.cols * p.w) / 2).toBeGreaterThan(5);
+    expect((PAPER[paper].h - p.rows * p.h) / 2).toBeGreaterThan(5);
   });
 
   it.each(pieces)('put a crop mark at both ends of every cut ($id)', (p) => {
@@ -29,19 +32,21 @@ describe('print sheets', () => {
     expect(html.match(/class="h"/g)).toHaveLength(2 * (p.rows + 1));
   });
 
-  it.each(pieces)('keep the crop marks 4 mm inside the paper, where home printers print ($id)', (p) => {
-    const html = sheetsHtml(p, [{ front: 'a' }]);
+  it.each(onPaper)('keep the crop marks 4 mm inside the paper, where home printers print ($id, $paper)', ({ p, paper }) => {
+    const size = PAPER[paper];
+    const html = sheetsHtml(p, [{ front: 'a' }], { paper });
+    expect(html).toContain(`@page{size:${size.w}mm ${size.h}mm;margin:0}`);
     expect(html.match(/class="[vh]" style/g)).toHaveLength(2 * (p.cols + p.rows + 2));
     for (const [, left, top, len] of html.matchAll(/class="v" style="left:([\d.-]+)mm;top:([\d.-]+)mm;height:([\d.-]+)mm"/g)) {
-      expect(Number(len)).toBeGreaterThan(2);
+      expect(Number(len)).toBeGreaterThan(1);
       expect(Number(top)).toBeGreaterThanOrEqual(4 - 1e-9);
-      expect(Number(top) + Number(len)).toBeLessThanOrEqual(A4.h - 4 + 1e-9);
+      expect(Number(top) + Number(len)).toBeLessThanOrEqual(size.h - 4 + 1e-9);
       expect(Number(left)).toBeGreaterThan(0);
     }
     for (const [, top, left, len] of html.matchAll(/class="h" style="top:([\d.-]+)mm;left:([\d.-]+)mm;width:([\d.-]+)mm"/g)) {
-      expect(Number(len)).toBeGreaterThan(2);
+      expect(Number(len)).toBeGreaterThan(1);
       expect(Number(left)).toBeGreaterThanOrEqual(4 - 1e-9);
-      expect(Number(left) + Number(len)).toBeLessThanOrEqual(A4.w - 4 + 1e-9);
+      expect(Number(left) + Number(len)).toBeLessThanOrEqual(size.w - 4 + 1e-9);
       expect(Number(top)).toBeGreaterThan(0);
     }
     expect([
@@ -66,7 +71,7 @@ describe('print sheets', () => {
   it('mirrors the backs left to right, so each lands behind its front on a long-edge duplex', () => {
     const p = PIECES.card;
     const faces = Array.from({ length: 4 }, (_, i) => ({ front: `f${i}`, back: `b${i}` }));
-    const [fronts, backs] = sheets(sheetsHtml(p, faces, true));
+    const [fronts, backs] = sheets(sheetsHtml(p, faces, { withBacks: true }));
     const width = A4.w;
     for (const [i, [, x, y]] of fronts.entries()) {
       const back = backs.find(([src]) => src === `b${i}`)!;

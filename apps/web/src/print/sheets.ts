@@ -3,8 +3,15 @@ import type { Piece } from './pieces';
 
 /** Sheets: pieces laid out on paper with crop marks, printed from the browser or as CMYK PDF pages for a press. */
 
-/** Every sheet is A4, mm. */
-export const A4 = { w: 210, h: 297 };
+export type Paper = 'a4' | 'letter';
+
+/** The papers print sheets come on, mm; press sheets are always A4. */
+export const PAPER: Record<Paper, { w: number; h: number; name: string }> = {
+  a4: { w: 210, h: 297, name: 'A4' },
+  letter: { w: 215.9, h: 279.4, name: 'US Letter' },
+};
+
+export const A4 = PAPER.a4;
 
 type Line = [number, number, number, number];
 
@@ -15,8 +22,7 @@ const HOME_MARGIN = 4;
  * Where a sheet puts a piece: its grid centred on the paper, pieces butted so one cut serves two, and
  * crop marks on every cut, in the margin from `gap` mm outside the grid to `margin` mm from the edge (5 mm long at most).
  */
-function sheetLayout(piece: Piece, gap: number, margin: number) {
-  const size = A4;
+function sheetLayout(piece: Piece, size: { w: number; h: number }, gap: number, margin: number) {
   const { w, h, cols, rows } = piece;
   const x0 = (size.w - cols * w) / 2;
   const y0 = (size.h - rows * h) / 2;
@@ -50,8 +56,12 @@ function pagesOf<T>(piece: Piece, faces: T[]): { face: T; col: number; row: numb
  * With backs, each page of fronts is followed by its backs, columns mirrored so they land behind their
  * fronts when printed double-sided on the long edge.
  */
-export function sheetsHtml(piece: Piece, faces: { front: string; back?: string }[], withBacks = false): string {
-  const { size, cell, marks } = sheetLayout(piece, 1, HOME_MARGIN);
+export function sheetsHtml(
+  piece: Piece,
+  faces: { front: string; back?: string }[],
+  o: { paper?: Paper; withBacks?: boolean } = {},
+): string {
+  const { size, cell, marks } = sheetLayout(piece, PAPER[o.paper ?? 'a4'], 1, HOME_MARGIN);
   // Less half the 0.2 mm line, so each mark is centred on its cut.
   const marksHtml = marks
     .map(([x1, y1, x2, y2]) =>
@@ -70,7 +80,8 @@ export function sheetsHtml(piece: Piece, faces: { front: string; back?: string }
   let html = '';
   for (const cells of pagesOf(piece, faces)) {
     html += page(cells.map((c) => ({ src: c.face.front, col: c.col, row: c.row })));
-    if (withBacks) html += page(cells.flatMap((c) => (c.face.back ? [{ src: c.face.back, col: piece.cols - 1 - c.col, row: c.row }] : [])));
+    if (o.withBacks)
+      html += page(cells.flatMap((c) => (c.face.back ? [{ src: c.face.back, col: piece.cols - 1 - c.col, row: c.row }] : [])));
   }
   return (
     `<!doctype html><html><head><meta charset="utf-8"><title>Cubic ${piece.plural}</title><style>` +
@@ -90,7 +101,7 @@ export function sheetsHtml(piece: Piece, faces: { front: string; back?: string }
  * piece before it, which runs under it, so no seam can show between two pieces. Crop marks start clear of the bleed.
  */
 export function pressPages(piece: Piece, faces: number[]): PdfPage[] {
-  const { cell, marks } = sheetLayout(piece, piece.bleed, 0.5);
+  const { cell, marks } = sheetLayout(piece, A4, piece.bleed, 0.5);
   const b = piece.bleed;
   return pagesOf(piece, faces).map((cells) => {
     const has = (col: number, row: number) => cells.some((c) => c.col === col && c.row === row);

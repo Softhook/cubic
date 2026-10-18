@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { exportCmykFiles, exportCmykSheets, exportPng, exportZip, printSheets, type PressSheets } from './exports';
 import { sizeNote, type Piece, type Printable } from './pieces';
 import { PRESS } from './press';
+import { PAPER, type Paper } from './sheets';
 import { useExport, type Run } from './useExport';
 
 interface Props {
@@ -14,7 +15,7 @@ interface Props {
   set: Printable[];
   /** Names which part of the set is shown, in the heading and the ZIP's name: "Community". */
   part?: string;
-  /** More lines for the ZIP's README. */
+  /** More lines for the PNG ZIP's README. */
   notes?: string;
   /** The faces to print on sheets, with all copies or one of each. */
   sheets: (copies: boolean) => { front: Printable; back?: Printable }[];
@@ -58,6 +59,7 @@ export function PrintPanel({
 }: Props) {
   const [allCopies, setAllCopies] = useState(true);
   const [withBacks, setWithBacks] = useState(false);
+  const [paper, setPaper] = useState<Paper>('a4');
   const { run, progress, error } = useExport();
   const busy = progress !== null || !ready || !!fontsMissing;
 
@@ -98,7 +100,7 @@ export function PrintPanel({
           <button
             className="btn btn-primary"
             disabled={busy}
-            onClick={() => run((p) => exportCmykFiles(piece, sheets(true), { part: part?.toLowerCase(), notes }, p))}
+            onClick={() => run((p) => exportCmykFiles(piece, sheets(true), { part: part?.toLowerCase() }, p))}
           >
             <Space of="cmyk" /> PDFs · {PRESS.condition} · ZIP
           </button>
@@ -123,10 +125,17 @@ export function PrintPanel({
         <button
           className="btn btn-primary"
           disabled={busy}
-          onClick={() => run((p) => printSheets(piece, sheets(allCopies), { withBacks }, p))}
+          onClick={() => run((p) => printSheets(piece, sheets(allCopies), { withBacks, paper }, p))}
         >
-          <Space of="rgb" /> Print sheets · A4
+          <Space of="rgb" /> Print sheets
         </button>
+        <select value={paper} onChange={(e) => setPaper(e.target.value as Paper)} aria-label="Paper">
+          {Object.entries(PAPER).map(([id, p]) => (
+            <option key={id} value={id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
         {copies && (
           <label>
             <input type="checkbox" checked={allCopies} onChange={(e) => setAllCopies(e.target.checked)} /> All copies

@@ -2,7 +2,7 @@ import { download, drawBands } from '../files';
 import { cmykPdf, deflate, fullPage, type PdfImage } from './pdf';
 import { cmykName, fileName, pieceSize, setName, sheetName, sizeNote, type Format, type Piece, type Printable } from './pieces';
 import { PRESS, encodePng, toCmyk } from './press';
-import { A4, pressPages, printDocument, sheetsHtml } from './sheets';
+import { A4, pressPages, printDocument, sheetsHtml, type Paper } from './sheets';
 import { zip } from './zip';
 
 /** Print exports: one face as PNG, a whole set as PNGs, print sheets, and CMYK PDFs for a press (a file per card, or press sheets). */
@@ -54,7 +54,7 @@ export async function exportZip(
 export async function printSheets(
   piece: Piece,
   faces: { front: Printable; back?: Printable }[],
-  o: { withBacks: boolean },
+  o: { withBacks: boolean; paper: Paper },
   progress: Progress,
 ): Promise<void> {
   const unique = new Map<string, Printable>();
@@ -70,7 +70,7 @@ export async function printSheets(
   }
   progress('Opening print dialog…');
   const images = faces.map((f) => ({ front: urls.get(f.front.name)!, back: f.back && urls.get(f.back.name) }));
-  await printDocument(sheetsHtml(piece, images, o.withBacks), () => urls.forEach((u) => URL.revokeObjectURL(u)));
+  await printDocument(sheetsHtml(piece, images, o), () => urls.forEach((u) => URL.revokeObjectURL(u)));
 }
 
 /** A face drawn with its bleed at the format's dpi and converted to the press's CMYK, ready for a PDF page. */
@@ -106,7 +106,7 @@ export async function exportCmykPdf(f: Format, item: Printable): Promise<void> {
 export async function exportCmykFiles(
   piece: Piece,
   faces: { front: Printable; back?: Printable }[],
-  o: { part?: string; notes?: string },
+  o: { part?: string },
   progress: Progress,
 ): Promise<void> {
   const fronts = new Map<string, { face: (typeof faces)[number]; copies: number }>();
@@ -133,8 +133,7 @@ export async function exportCmykFiles(
     `Cubic ${piece.plural}, ${sizeNote(piece, true)}.\n` +
     `One CMYK PDF per ${piece.id} (${PRESS.profile}), ${piece.dpi} dpi, no crop marks` +
     (faces.some((f) => f.back) ? ': page 1 the front, page 2 the back, for double-sided printing' : '') +
-    `.\nHow many of each to order: order.csv. Upload with "Do not scale".\n` +
-    (o.notes ?? '');
+    `.\nHow many of each to order: order.csv. Upload with "Do not scale".\n`;
   files.push({ name: 'order.csv', blob: new Blob([order.join('\n') + '\n'], { type: 'text/csv' }) });
   files.push({ name: 'README.txt', blob: new Blob([readme], { type: 'text/plain' }) });
   progress('Packing…');
