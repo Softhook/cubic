@@ -1,13 +1,11 @@
 import { download, drawSvg, encode } from '../files';
-import { CMYK_TABLE } from './cmykTable';
 import { cmykPdf, deflate, type PdfImage } from './pdf';
-import pressProfileUrl from './press.icc?url';
-import { cmykName, cmykSetName, fileName, pieceSize, setName, sizeNote, type Piece, type Printable } from './pieces';
-import { tagPng, toCmyk } from './press';
+import { cmykName, cmykSetName, fileName, pieceSize, setName, sizeNote, type Format, type Piece, type Printable } from './pieces';
+import { PRESS, tagPng, toCmyk } from './press';
 import { printDocument, sheetsHtml, type Paper } from './sheets';
 import { zip } from './zip';
 
-/** Print exports, the same for every piece: one face as PNG or SVG, a whole set as a ZIP, print sheets. */
+/** Print exports, the same for every piece: one face as PNG, a whole set as PNGs or CMYK PDFs, print sheets. */
 
 export type Progress = (message: string) => void;
 
@@ -22,14 +20,10 @@ export async function svgToPng(svg: string, w: number, h: number, dpi: number): 
   return tagPng(await encode(await drawForPrint(svg, w, h, dpi)), dpi);
 }
 
-export async function exportPng(piece: Piece, item: Printable, bleed: boolean, dpi: number): Promise<void> {
-  const { w, h } = pieceSize(piece, bleed);
-  download(fileName(piece, item, { bleed, dpi, ext: 'png' }), await svgToPng(item.svg(bleed), w, h, dpi));
-}
-
-/** The live SVG, filters and all: renders in browsers only. */
-export function exportSvg(piece: Piece, item: Printable, bleed: boolean): void {
-  download(fileName(piece, item, { bleed, ext: 'svg' }), new Blob([item.svg(bleed)], { type: 'image/svg+xml' }));
+/** One face as a PNG at the format's dpi. */
+export async function exportPng(f: Format, item: Printable, bleed: boolean): Promise<void> {
+  const { w, h } = pieceSize(f, bleed);
+  download(fileName(f, item, { bleed, dpi: f.dpi, ext: 'png' }), await svgToPng(item.svg(bleed), w, h, f.dpi));
 }
 
 /** A set as a ZIP: one PNG per face, named and foldered by the face's name, and a README. */
@@ -77,55 +71,29 @@ export async function printSheets(
   await printDocument(sheetsHtml(piece, images, o.paper, o.withBacks), () => urls.forEach((u) => URL.revokeObjectURL(u)));
 }
 
-/** A face drawn with its bleed at the piece's dpi and converted to the press's CMYK, ready for a PDF page. */
-async function cmykImage(piece: Piece, item: Printable): Promise<PdfImage> {
-  const { w, h } = pieceSize(piece, true);
-  const canvas = await drawForPrint(item.svg(true), w, h, piece.dpi);
+/** A face drawn with its bleed at the format's dpi and converted to the press's CMYK, ready for a PDF page. */
+async function cmykImage(f: Format, item: Printable): Promise<PdfImage> {
+  const { w, h } = pieceSize(f, true);
+  const canvas = await drawForPrint(item.svg(true), w, h, f.dpi);
   const rgba = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
   return { width: canvas.width, height: canvas.height, data: await deflate(toCmyk(rgba)) };
 }
 
-let pressProfile: Promise<Uint8Array<ArrayBuffer>> | null = null;
-
-/** The press profile the CMYK is made for (press.icc, from scripts/cmyk-table.ts), compressed for embedding. Fetched once. */
-function loadPressProfile(): Promise<Uint8Array<ArrayBuffer>> {
-  pressProfile ??= fetch(pressProfileUrl)
-    .then((r) => {
-      if (!r.ok) throw new Error(`press profile: ${r.status}`);
-      return r.arrayBuffer();
-    })
-    .then((b) => deflate(new Uint8Array(b)));
-  pressProfile.catch(() => (pressProfile = null));
-  return pressProfile;
-}
-
-/** A CMYK PDF of these images, one per page with the piece's bleed, its press profile embedded (pdf.ts). */
-async function piecePdf(piece: Piece, title: string, images: PdfImage[]): Promise<Blob> {
-  const { w, h } = pieceSize(piece, true);
+/** A CMYK PDF of these images, one per page with the format's bleed (pdf.ts). */
+function cmykFile(f: Format, title: string, images: PdfImage[]): Blob {
+  const { w, h } = pieceSize(f, true);
   const pages = images.map((_, k) => k);
-  const profile = await loadPressProfile();
-  return cmykPdf({
-    title,
-    w,
-    h,
-    bleed: piece.bleed,
-    condition: CMYK_TABLE.condition,
-    conditionInfo: CMYK_TABLE.profile,
-    profile,
-    images,
-    pages,
-  });
+  return cmykPdf({ title, w, h, bleed: f.bleed, condition: PRESS.condition, conditionInfo: PRESS.profile, images, pages });
 }
 
-/** One face as a CMYK PDF, with its back as page 2 when given. */
-export async function exportCmykPdf(piece: Piece, item: Printable, back?: Printable): Promise<void> {
-  const images = [await cmykImage(piece, item), ...(back ? [await cmykImage(piece, back)] : [])];
-  download(cmykName(piece, item), await piecePdf(piece, `Cubic ${piece.id} ${item.name}`, images));
+/** One face as a CMYK PDF: the press test. */
+export async function exportCmykPdf(f: Format, item: Printable): Promise<void> {
+  download(cmykName(f, item), cmykFile(f, `Cubic ${f.id} ${item.name}`, [await cmykImage(f, item)]));
 }
 
 /**
  * A set as CMYK PDFs for a print service that takes one file per piece (Doxzoo): a ZIP with a PDF per
- * front, its back as page 2 when `withBacks` (double-sided printing takes pages front, back), every page
+ * front, its back as page 2 when it has one (double-sided printing takes pages front, back), every page
  * with its bleed and no crop marks, converted for the press (press.ts `toCmyk`). How many of each to
  * order goes in `order.csv` (from `quantities`, by front name), not as repeated pages. Each back is drawn once.
  */
@@ -133,7 +101,7 @@ export async function exportCmykSet(
   piece: Piece,
   faces: { front: Printable; back?: Printable }[],
   quantities: Map<string, number>,
-  o: { withBacks: boolean; part?: string; notes?: string },
+  o: { part?: string; notes?: string },
   progress: Progress,
 ): Promise<void> {
   const backs = new Map<string, PdfImage>();
@@ -142,18 +110,18 @@ export async function exportCmykSet(
   for (const [k, f] of faces.entries()) {
     progress(`Converting ${k + 1}/${faces.length}`);
     const images = [await cmykImage(piece, f.front)];
-    if (o.withBacks && f.back) {
+    if (f.back) {
       if (!backs.has(f.back.name)) backs.set(f.back.name, await cmykImage(piece, f.back));
       images.push(backs.get(f.back.name)!);
     }
     const name = `${f.front.name}.pdf`;
-    files.push({ name, blob: await piecePdf(piece, `Cubic ${piece.id} ${f.front.name}`, images) });
+    files.push({ name, blob: cmykFile(piece, `Cubic ${piece.id} ${f.front.name}`, images) });
     order.push(`${name},${quantities.get(f.front.name) ?? 1},${images.length}`);
   }
   const readme =
     `Cubic ${piece.plural}, ${sizeNote(piece, true)}.\n` +
-    `One CMYK PDF per ${piece.id} (${CMYK_TABLE.profile}), ${piece.dpi} dpi, no crop marks` +
-    (o.withBacks ? ': page 1 the front, page 2 the back, for double-sided printing' : '') +
+    `One CMYK PDF per ${piece.id} (${PRESS.profile}), ${piece.dpi} dpi, no crop marks` +
+    (faces.some((f) => f.back) ? ': page 1 the front, page 2 the back, for double-sided printing' : '') +
     `.\nHow many of each to order: order.csv. Upload with "Do not scale".\n` +
     (o.notes ?? '');
   files.push({ name: 'order.csv', blob: new Blob([order.join('\n') + '\n'], { type: 'text/csv' }) });

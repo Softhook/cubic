@@ -2,8 +2,8 @@
  * Sets the press profile the Art Lab's CMYK PDFs are made for, and builds the table they convert with.
  *   npm run print:cmyk-table -- [--profile <press.icc>] [--srgb <sRGB.icc>] [--condition FOGRA39]
  *
- * The profile is copied to apps/web/src/print/press.icc, which every PDF embeds as its output intent,
- * and ImageMagick (LittleCMS) converts an 18 × 18 × 18 grid of sRGB colours with it, relative
+ * The profile is copied to scripts/press.icc (kept for rebuilding; the PDFs name its registered
+ * condition as their output intent rather than embed it), and ImageMagick (LittleCMS) converts an 18 × 18 × 18 grid of sRGB colours with it, relative
  * colorimetric with black point compensation, so the art's darkest tones stay apart instead of all
  * printing as the press's black. The result is apps/web/src/print/cmykTable.ts; the export
  * interpolates between grid points. Without --profile it rebuilds the table from the current press.icc.
@@ -15,7 +15,7 @@ import { arg } from './mobile-common';
 
 /** Grid points per channel: 18, so they fall on whole values (every 15), as the export interpolates. */
 const GRID = 18;
-const PRESS = 'apps/web/src/print/press.icc';
+const PRESS = 'scripts/press.icc';
 const profile = arg('--profile') ?? PRESS;
 const srgb = arg('--srgb') ?? '/System/Library/ColorSync/Profiles/sRGB Profile.icc';
 const condition = arg('--condition') ?? 'FOGRA39';

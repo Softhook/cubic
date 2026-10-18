@@ -346,14 +346,14 @@ A dev-only route in the web app, e.g. `/#/lab`:
 - A **grid view**: the same component with 24 seeds, to spot variety and pick favourites.
 - **Context view**: the planet on a tile, on a card and at in-game size side by side, to check it
   stays readable small and stays good large.
-- **Export buttons**: SVG (direct), PNG at chosen dpi (rasterise in the browser via canvas), and
+- **Export buttons**: PNG at the piece's dpi (rasterise in the browser via canvas), and
   "Pin": writes the chosen seed/parameters into `data/art.yaml` (copy-paste YAML at first; a dev
   server endpoint later).
 - **SVG for Illustrator**: the art is built from SVG filters (noise, displacement, colour ramps),
   which only browsers render; Illustrator drops them and also doesn't read `hsl()` colours. This export
   embeds the art as a 600 dpi PNG (layer `art`) with the markings on top as plain vectors (layer
   `markings`: hex colours, no `paint-order`), so it opens looking the same and the markings stay
-  editable. The plain SVG export is for browsers only.
+  editable.
 - **Print preview**: CMYK-ish soft-proof toggle (a rough simulation, see §4) and bleed/safe-zone
   overlay.
 
@@ -383,24 +383,26 @@ same way:
 - `pieces.ts` holds each piece's print spec (trim, bleed, sheet grid) and the file-name pattern:
   `cubic-<piece>-<name>[-bleed][-<dpi>dpi].<ext>` for one face, `cubic-<pieces>[-<part>][-bleed].zip`
   for a set.
-- `PrintPanel.tsx` is the export panel on every lab page: this face as PNG 300/600 dpi or SVG (plus
-  page extras such as SVG for Illustrator), the whole set as a ZIP of PNGs with a README, and print
-  sheets. Sets and sheets use the piece's `dpi`: 600 for cards and the aid (small text), 300 for tiles.
-  Exports refuse to run when the fonts didn't load, rather than print in system fonts.
+- `PrintPanel.tsx` is the export panel on every lab page: this face as a PNG (plus page extras such
+  as SVG for Illustrator), the whole set as a ZIP of PNGs with a README or as CMYK PDFs, and print
+  sheets. Everything uses the piece's `dpi`: 600 for cards and the aid (small text), 300 for tiles.
+  Exports refuse to run when the fonts didn't load, rather than print in system fonts. `useExport.ts`
+  runs an export with its progress and error; the press test page uses it too.
 - `press.ts` gets files ready for a press: PNGs are opaque, tagged sRGB (an embedded ICC profile) and
   carry their dpi, so a RIP converts the colours as we see them and opens the file at its physical size.
   `toCmyk` converts to the press's CMYK through a table (`cmykTable.ts`, below).
 - **CMYK PDFs** (`pdf.ts`, "CMYK PDFs · FOGRA39 · ZIP" in the panel): for a print service that wants
   CMYK and a file per piece (Doxzoo asks for PDF/X-1a, Coated FOGRA39, one PDF per card). A ZIP with a
-  PDF per front, named like the PNGs (`skill/07-agile.pdf`), with "Backs (duplex)" its back as page 2
+  PDF per front, named like the PNGs (`skill/07-agile.pdf`), its back as page 2 whenever it has one
   (double-sided printing takes pages front, back); every page with its bleed and no crop marks, a
   flattened CMYK image at the piece's `dpi`. How many of each to order is in `order.csv` (a card's
   copies), not repeated pages. Made to the PDF/X-1a rules (PDF 1.3, CMYK only, no fonts or transparency,
-  TrimBox and BleedBox, a FOGRA39 output intent with the press profile embedded); only a preflight such as
+  TrimBox and BleedBox, an output intent naming the registered FOGRA39 condition; a registered condition
+  needs no embedded profile, which would add 1.4 MB to every file); only a preflight such as
   Acrobat's can certify it. Upload with "Do not scale". The press test exports as a single CMYK PDF.
 - `sheets.ts` lays out print sheets: pieces at trim size in a grid (cards 3 × 3, tiles 2 × 2),
   butted so one cut serves two pieces, crop marks drawn as borders so they print without
-  "Background graphics", optional backs mirrored for long-edge duplex. A4 or US Letter; the
+  "Background graphics", optional backs ("Backs (duplex)", off by default) mirrored for long-edge duplex. A4 or US Letter; the
   rulebook offers the same papers.
 - Bleed: on for exports meant for print services; the sheets are at trim size for home printing.
 
@@ -458,9 +460,10 @@ Tile, planet and cube-pad sizes are in §2a.
     compensation. Expect dark pieces to print a deep navy-charcoal rather than the screen's near-black.
   - **The press profile and table.** The CMYK is made for ECI's ISO Coated v2 300 % (FOGRA39 with
     the ink capped at 300 %, safer for dark, full-bleed art on a digital press), in
-    `apps/web/src/print/press.icc` (from www.eci.org, unmodified; © Heidelberger Druckmaschinen, made
-    for the ECI, who distribute it free of charge; their package has no separate licence file). Every PDF
-    embeds it as its output intent, the use it's made for. `npm run print:cmyk-table -- --profile <file.icc>` swaps it (e.g. for the 330 %
+    `scripts/press.icc` (from www.eci.org, unmodified; © Heidelberger Druckmaschinen, made
+    for the ECI, who distribute it free of charge; their package has no separate licence file). It is
+    only used to build the table: the PDFs name its condition (FOGRA39) and profile in their output
+    intent rather than embed it, and the app doesn't ship it. `npm run print:cmyk-table -- --profile <file.icc>` swaps it (e.g. for the 330 %
     `ISOcoated_v2_eci.icc` if the printer wants it) and rebuilds `cmykTable.ts`: ImageMagick (LittleCMS)
     converts an 18³ grid of sRGB colours, and the export interpolates between grid points (ΔE ≈ 0.6 on
     average). The darkest areas print at about 290–300 % ink.
@@ -504,7 +507,7 @@ Each phase leaves the game working and better-looking.
 - [ ] Self-host fonts; generate the app's CSS colour variables from tokens.
 
 **Phase 2 — Print loop working end to end (ugly is fine)**
-- [x] Print loop in the Art Lab (§4): PNG 300/600 dpi, SVG and ZIP sets with or without bleed, A4/US
+- [x] Print loop in the Art Lab (§4): PNG at the piece's dpi, ZIP sets (PNG or CMYK PDF) with or without bleed, A4/US
       Letter sheets with crop marks and duplex backs, saved as PDF from the print dialog.
 - [ ] Headless print route + `scripts/print.ts` + `scripts/print.ts`; output current cards and tiles as `cards-pnp` and `tiles`
       PDFs with bleed and crop marks.

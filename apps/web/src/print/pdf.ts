@@ -1,9 +1,9 @@
 /**
  * A print PDF of CMYK images, one per page, made to the PDF/X-1a rules print services ask for: PDF 1.3,
  * CMYK only, no transparency or fonts (the faces are flattened images), each page's TrimBox and
- * BleedBox, and an output intent: the press's printing condition (FOGRA39) with its ICC profile embedded,
- * so a preflight and the printer's RIP know exactly what the CMYK means. Only a preflight (e.g.
- * Acrobat's) can certify it.
+ * BleedBox, and an output intent naming the press's registered printing condition (FOGRA39), so a
+ * preflight and the printer's RIP know exactly what the CMYK means. A registered condition needs no
+ * embedded profile, which keeps each PDF 1.4 MB smaller. Only a preflight (e.g. Acrobat's) can certify it.
  */
 
 /** One flattened CMYK image: `width` × `height` px, its C M Y K bytes zlib-compressed (`deflate`). */
@@ -19,11 +19,9 @@ export interface PdfOptions {
   w: number;
   h: number;
   bleed: number;
-  /** The printing condition the CMYK was made for: a registered identifier and its description. */
+  /** The printing condition the CMYK was made for: an identifier in the ICC registry and its description. */
   condition: string;
   conditionInfo: string;
-  /** The press's ICC profile, zlib-compressed (`deflate`), embedded as the output intent's profile. */
-  profile?: Uint8Array<ArrayBuffer>;
   images: PdfImage[];
   /** Each page, as an index into `images`, in print order (for duplex: front, back, front, back…). */
   pages: number[];
@@ -50,9 +48,9 @@ export function cmykPdf(o: PdfOptions): Blob {
     parts.push(bytes);
     at += bytes.length;
   };
-  /** Object numbers: 1 catalog, 2 page tree, 3 info, 4 output intent, 5 its profile, then the images, then a page and its content per page. */
-  const imageRef = (k: number) => 6 + k;
-  const pageRef = (k: number) => 6 + o.images.length + 2 * k;
+  /** Object numbers: 1 catalog, 2 page tree, 3 info, 4 output intent, then the images, then a page and its content per page. */
+  const imageRef = (k: number) => 5 + k;
+  const pageRef = (k: number) => 5 + o.images.length + 2 * k;
   const object = (num: number, body: string | (() => void)) => {
     offsets[num] = at;
     write(`${num} 0 obj\n`);
@@ -75,15 +73,8 @@ export function cmykPdf(o: PdfOptions): Blob {
   object(
     4,
     `<< /Type /OutputIntent /S /GTS_PDFX /OutputConditionIdentifier ${str(o.condition)} /OutputCondition ${str(o.conditionInfo)}` +
-      ` /Info ${str(o.conditionInfo)} /RegistryName (http://www.color.org)${o.profile ? ' /DestOutputProfile 5 0 R' : ''} >>`,
+      ` /Info ${str(o.conditionInfo)} /RegistryName (http://www.color.org) >>`,
   );
-  const profile = o.profile;
-  object(5, () => {
-    if (!profile) return write('null');
-    write(`<< /N 4 /Filter /FlateDecode /Length ${profile.length} >>\nstream\n`);
-    write(profile);
-    write('\nendstream');
-  });
   o.images.forEach((img, k) =>
     object(imageRef(k), () => {
       write(

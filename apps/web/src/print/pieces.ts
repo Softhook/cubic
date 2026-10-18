@@ -1,25 +1,32 @@
 import { AID, CARD, TILE } from '@quantum/art';
-import { CMYK_TABLE } from './cmykTable';
+import { PRESS } from './press';
 
 /**
  * The printed pieces, and the one convention every print file follows: size, bleed, sheet layout and
  * file names are the same whichever piece it is. See docs/GRAPHICS.md §4.
  */
 
-export interface Piece {
-  id: 'card' | 'tile' | 'aid' | 'proof';
-  /** For file names: `cubic-cards-…`. */
-  plural: string;
+/** What a single-face export needs: a name for files, the size and the resolution. */
+export interface Format {
+  /** For file names: `cubic-card-…`. */
+  id: string;
   /** Trim size, mm. */
   w: number;
   h: number;
   /** Extra art past the trim on every side, for print services, mm. */
   bleed: number;
+  /** Resolution of the PNGs, PDFs and print sheets: 600 for pieces with small text, so it prints crisp. */
+  dpi: number;
+}
+
+/** A piece printed as a set: in ZIPs and on sheets. */
+export interface Piece extends Format {
+  id: 'card' | 'tile' | 'aid';
+  /** For file names: `cubic-cards-…`. */
+  plural: string;
   /** How many fit across and down a print sheet (A4 and US Letter both). */
   cols: number;
   rows: number;
-  /** Resolution of the set's PNGs and the print sheets: 600 for pieces with small text, so it prints crisp. */
-  dpi: number;
 }
 
 export const PIECES = {
@@ -37,26 +44,26 @@ export interface Printable {
 }
 
 /** A piece's size with or without its bleed, mm. */
-export const pieceSize = (p: Piece, bleed: boolean) => ({ w: p.w + (bleed ? 2 * p.bleed : 0), h: p.h + (bleed ? 2 * p.bleed : 0) });
+export const pieceSize = (p: Format, bleed: boolean) => ({ w: p.w + (bleed ? 2 * p.bleed : 0), h: p.h + (bleed ? 2 * p.bleed : 0) });
 
 /** How a piece's size reads in notes and READMEs: "63.5 × 88.9 mm, with 3 mm bleed 69.5 × 94.9 mm". */
-export function sizeNote(p: Piece, bleed: boolean): string {
+export function sizeNote(p: Format, bleed: boolean): string {
   const b = pieceSize(p, true);
   return `${p.w} × ${p.h} mm` + (bleed ? `, with ${p.bleed} mm bleed ${b.w} × ${b.h} mm` : ' (trim, no bleed)');
 }
 
 /** A single export's file name: `cubic-card-skill-07-agile-bleed-300dpi.png`, `cubic-tile-p7-01.svg`. */
-export function fileName(p: Piece, item: Printable, o: { bleed: boolean; dpi?: number; ext: string }): string {
+export function fileName(p: Format, item: Printable, o: { bleed: boolean; dpi?: number; ext: string }): string {
   return `cubic-${p.id}-${item.name.replaceAll('/', '-')}${o.bleed ? '-bleed' : ''}${o.dpi ? `-${o.dpi}dpi` : ''}.${o.ext}`;
 }
 
 /** One face's CMYK PDF: `cubic-proof-a4-fogra39.pdf` (always with the bleed). */
-export const cmykName = (p: Piece, item: Printable) =>
-  `cubic-${p.id}-${item.name.replaceAll('/', '-')}-${CMYK_TABLE.condition.toLowerCase()}.pdf`;
+export const cmykName = (p: Format, item: Printable) =>
+  `cubic-${p.id}-${item.name.replaceAll('/', '-')}-${PRESS.condition.toLowerCase()}.pdf`;
 
 /** A set of CMYK PDFs, one per piece: `cubic-cards-community-fogra39.zip`. */
 export const cmykSetName = (p: Piece, o: { part?: string }) =>
-  `cubic-${p.plural}${o.part ? `-${o.part}` : ''}-${CMYK_TABLE.condition.toLowerCase()}.zip`;
+  `cubic-${p.plural}${o.part ? `-${o.part}` : ''}-${PRESS.condition.toLowerCase()}.zip`;
 
 /** A whole set's file name: `cubic-cards-community-bleed.zip`. */
 export const setName = (p: Piece, o: { bleed: boolean; part?: string }) =>

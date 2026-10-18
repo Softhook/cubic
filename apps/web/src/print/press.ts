@@ -6,6 +6,9 @@ import { crc32 } from './zip';
  * the conversion to the press's CMYK. See docs/GRAPHICS.md §4.
  */
 
+/** The press the CMYK is made for: its registered printing condition (FOGRA39) and profile name. */
+export const PRESS = { condition: CMYK_TABLE.condition, profile: CMYK_TABLE.profile };
+
 const N = CMYK_TABLE.grid;
 const TABLE = Uint8Array.from(atob(CMYK_TABLE.data), (c) => c.charCodeAt(0));
 /** For each 0–255 channel value, the grid point below it and how far it is towards the next (0–1). */

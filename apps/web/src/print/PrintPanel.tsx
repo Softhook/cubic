@@ -1,15 +1,13 @@
 import { useState, type ReactNode } from 'react';
-import { CMYK_TABLE } from './cmykTable';
-import { exportCmykPdf, exportCmykSet, exportPng, exportSvg, exportZip, printSheets, type Progress } from './exports';
+import { exportCmykSet, exportPng, exportZip, printSheets } from './exports';
 import { sizeNote, type Piece, type Printable } from './pieces';
+import { PRESS } from './press';
 import { PAPER, type Paper } from './sheets';
-
-/** Runs an export with progress messages; the panel is busy until it ends. */
-type Run = (task: (progress: Progress) => Promise<void>) => void;
+import { useExport, type Run } from './useExport';
 
 interface Props {
   piece: Piece;
-  /** The face in the detail view, for the single exports. */
+  /** The face in the detail view, for the single export. */
   item: Printable;
   bleed: boolean;
   onBleed: (bleed: boolean) => void;
@@ -21,14 +19,14 @@ interface Props {
   notes?: string;
   /** The faces to print on sheets, with all copies or one of each. */
   sheets: (copies: boolean) => { front: Printable; back?: Printable }[];
-  /** Offer the "All copies" and "Backs (duplex)" options. */
+  /** Offer the "All copies" and "Backs (duplex)" options on the print sheets. */
   copies?: boolean;
   backs?: boolean;
   /** False while the faces can't be drawn yet (fonts loading). */
   ready?: boolean;
   /** The fonts didn't load (offline): exports are off, so no print file falls back to system fonts. */
   fontsMissing?: boolean;
-  /** More single-face exports, beside the standard ones. */
+  /** More single-face exports, beside the standard one. */
   extra?: (run: Run, busy: boolean) => ReactNode;
 }
 
@@ -50,10 +48,8 @@ export function PrintPanel({
 }: Props) {
   const [paper, setPaper] = useState<Paper>('a4');
   const [allCopies, setAllCopies] = useState(true);
-  // On wherever there are backs: a print service needs them, and forgetting them prints blank backs.
-  const [withBacks, setWithBacks] = useState(!!backs);
-  const [progress, setProgress] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [withBacks, setWithBacks] = useState(false);
+  const { run, progress, error } = useExport();
   const busy = progress !== null || !ready || !!fontsMissing;
   /** How many of each face a full set prints, by front name: its copies. */
   const quantities = () => {
@@ -62,45 +58,16 @@ export function PrintPanel({
     return count;
   };
 
-  const run: Run = (task) => {
-    setError(null);
-    setProgress('Rendering…');
-    void task(setProgress)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
-      .finally(() => setProgress(null));
-  };
-  /** The face's back, when the set has one and backs are on. */
-  const backOf = (front: Printable) => (backs && withBacks ? sheets(false).find((f) => f.front.name === front.name)?.back : undefined);
-
   return (
     <>
       <div className="lab-controls">
         <label>
           <input type="checkbox" checked={bleed} onChange={(e) => onBleed(e.target.checked)} /> Bleed
         </label>
-        <button className="btn" disabled={busy} onClick={() => run(() => exportPng(piece, item, bleed, 300))}>
-          PNG 300 dpi
-        </button>
-        <button className="btn" disabled={busy} onClick={() => run(() => exportPng(piece, item, bleed, 600))}>
-          PNG 600 dpi
-        </button>
-        <button
-          className="btn"
-          disabled={busy}
-          onClick={() => run(() => exportCmykPdf(piece, item, backOf(item)))}
-          title={`CMYK for ${CMYK_TABLE.profile}, always with the bleed${backs ? '; its back as page 2 with Backs on' : ''}`}
-        >
-          CMYK PDF
+        <button className="btn" disabled={busy} onClick={() => run(() => exportPng(piece, item, bleed))}>
+          PNG {piece.dpi} dpi
         </button>
         {extra?.(run, busy)}
-        <button
-          className="btn btn-ghost"
-          disabled={!ready}
-          onClick={() => exportSvg(piece, item, bleed)}
-          title="Live SVG filters: renders in browsers only"
-        >
-          SVG (browser only)
-        </button>
       </div>
       <p className="lab-note">
         {sizeNote(piece, bleed)}
@@ -118,28 +85,20 @@ export function PrintPanel({
           All {piece.plural} · ZIP
         </button>
         <span className="lab-note">
-          {set.length} PNGs at {piece.dpi} dpi{bleed ? ', with bleed' : ''}.
+          For print services that want RGB: {set.length} PNGs at {piece.dpi} dpi{bleed ? ', with bleed' : ''}.
         </span>
       </div>
-      {backs && (
-        <div className="lab-controls">
-          <label>
-            <input type="checkbox" checked={withBacks} onChange={(e) => setWithBacks(e.target.checked)} /> Backs (duplex)
-          </label>
-        </div>
-      )}
       <div className="lab-controls">
         <button
           className="btn btn-primary"
           disabled={busy}
-          onClick={() => run((p) => exportCmykSet(piece, sheets(false), quantities(), { withBacks, part: part?.toLowerCase(), notes }, p))}
+          onClick={() => run((p) => exportCmykSet(piece, sheets(false), quantities(), { part: part?.toLowerCase(), notes }, p))}
         >
-          CMYK PDFs · {CMYK_TABLE.condition} · ZIP
+          CMYK PDFs · {PRESS.condition} · ZIP
         </button>
         <span className="lab-note">
           For print services that want CMYK and a file per {piece.id}: one PDF each with {piece.bleed} mm bleed, no crop marks, {piece.dpi}{' '}
-          dpi{backs && withBacks ? ', its back as page 2' : ''}, and how many to order of each in order.csv. Converted for{' '}
-          {CMYK_TABLE.profile}.
+          dpi{backs ? ', its back as page 2' : ''}, and how many to order of each in order.csv. Converted for {PRESS.profile}.
         </span>
       </div>
       <div className="lab-controls">
@@ -160,6 +119,11 @@ export function PrintPanel({
         {copies && (
           <label>
             <input type="checkbox" checked={allCopies} onChange={(e) => setAllCopies(e.target.checked)} /> All copies
+          </label>
+        )}
+        {backs && (
+          <label>
+            <input type="checkbox" checked={withBacks} onChange={(e) => setWithBacks(e.target.checked)} /> Backs (duplex)
           </label>
         )}
       </div>

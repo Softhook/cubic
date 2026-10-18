@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { PRESS_TEST, cardSvg, dataUrl, pressTestSvg, tileSpec, tileSvg } from '@quantum/art';
 import { DECKS, cardFontCss, measure, tileFontCss } from './cards';
-import { CMYK_TABLE } from '../print/cmykTable';
-import { exportCmykPdf, exportPng, type Progress } from '../print/exports';
-import type { Piece, Printable } from '../print/pieces';
+import { exportCmykPdf, exportPng } from '../print/exports';
+import type { Format, Printable } from '../print/pieces';
+import { PRESS } from '../print/press';
+import { useExport } from '../print/useExport';
 import { LabHeader } from './LabHeader';
 
 /** The tile and the dark card the test prints at 100 %: a dark tile, where the shadows matter most. */
 const TILE_ID = 'p10-02';
 const CARD = DECKS.find((d) => d.id === 'tactic')!.cards[0];
 
-/** The page as a print piece: A4, no bleed, never on sheets. */
-const PAGE: Piece = { id: 'proof', plural: 'proofs', w: PRESS_TEST.w, h: PRESS_TEST.h, bleed: 0, cols: 1, rows: 1, dpi: 600 };
+/** The page as a print format: A4, no bleed. */
+const PAGE: Format = { id: 'proof', w: PRESS_TEST.w, h: PRESS_TEST.h, bleed: 0, dpi: 600 };
 
 /**
  * Art Lab, press test page (#lab/proof): one A4 page to print on the real press and stock before a
@@ -19,8 +20,7 @@ const PAGE: Piece = { id: 'proof', plural: 'proofs', w: PRESS_TEST.w, h: PRESS_T
  */
 export function ProofLab() {
   const [fonts, setFonts] = useState<{ card: string; tile: string } | null>(null);
-  const [progress, setProgress] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { run, progress, error } = useExport();
 
   useEffect(() => {
     void Promise.all([cardFontCss(), tileFontCss()]).then(([card, tile]) => setFonts({ card, tile }));
@@ -35,13 +35,6 @@ export function ProofLab() {
   const missing = !!fonts && (!fonts.card || !fonts.tile);
 
   const page: Printable = { name: 'a4', svg: () => svg };
-  const run = (task: (progress: Progress) => Promise<void>) => {
-    setError(null);
-    setProgress('Rendering…');
-    void task(setProgress)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
-      .finally(() => setProgress(null));
-  };
   const busy = !svg || missing || progress !== null;
 
   return (
@@ -61,9 +54,9 @@ export function ProofLab() {
           </p>
           <div className="lab-controls">
             <button className="btn btn-primary" disabled={busy} onClick={() => run(() => exportCmykPdf(PAGE, page))}>
-              CMYK PDF · {CMYK_TABLE.condition}
+              CMYK PDF · {PRESS.condition}
             </button>
-            <button className="btn" disabled={busy} onClick={() => run(() => exportPng(PAGE, page, false, PAGE.dpi))}>
+            <button className="btn" disabled={busy} onClick={() => run(() => exportPng(PAGE, page, false))}>
               PNG (RGB)
             </button>
           </div>

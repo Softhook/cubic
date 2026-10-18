@@ -50,7 +50,6 @@ describe('CMYK PDF', () => {
       bleed: 3,
       condition: 'FOGRA39',
       conditionInfo: 'Coated FOGRA39',
-      profile: await deflate(new Uint8Array(128).fill(7)),
       images: [await image(4, 6), await image(4, 6)],
       pages: [0, 1, 0, 1],
     });
@@ -60,15 +59,15 @@ describe('CMYK PDF', () => {
     const xref = Number(/startxref\n(\d+)/.exec(text)![1]);
     expect(text.slice(xref, xref + 4)).toBe('xref');
     const entries = [...text.slice(xref).matchAll(/^(\d{10}) 00000 n $/gm)].map((m) => Number(m[1]));
-    expect(entries).toHaveLength(5 + 2 + 2 * 4);
+    expect(entries).toHaveLength(4 + 2 + 2 * 4);
     entries.forEach((offset, i) => expect(text.slice(offset, offset + 10)).toMatch(new RegExp(`^${i + 1} 0 obj`)));
     expect(text).toContain('/Count 4');
     expect(text.match(/\/Subtype \/Image/g)).toHaveLength(2);
     expect(text).toContain('/MediaBox [0 0 197.008 269.008]');
     expect(text).toContain('/TrimBox [8.504 8.504 188.504 260.504]');
     expect(text).toContain('/OutputConditionIdentifier (FOGRA39)');
-    expect(text).toContain('/DestOutputProfile 5 0 R');
-    expect(text).toMatch(/5 0 obj\n<< \/N 4 \/Filter \/FlateDecode/);
+    expect(text).toContain('/RegistryName (http://www.color.org)');
+    expect(text).not.toContain('/DestOutputProfile');
     expect(text).toContain('/GTS_PDFXVersion (PDF/X-1:2001)');
     expect(text).toContain('/Title (Test \\(cards\\))');
     expect(text).not.toMatch(/DeviceRGB|\/Font|\/SMask/);
