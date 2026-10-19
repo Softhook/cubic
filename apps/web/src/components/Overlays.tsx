@@ -2,7 +2,8 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { SHIP_NAMES, card, die, rulesOf, scrapyard, type Action, type ActionOf, type GameState } from '@quantum/engine';
 import { SHORT, useMediaQuery } from '../game/useMediaQuery';
 import type { Dispatch } from '../game/useGame';
-import { CardView } from './Card';
+import { CARD_CATEGORIES } from '@quantum/art';
+import { CardView, CategoryIcon, categoryStyle } from './Card';
 import { Dialog, Modal } from './Dialog';
 import { Die3D } from './Die3D';
 import { cubeCount } from './board/EffectBox';
@@ -72,11 +73,7 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
     case 'changeOfHeart':
       return (
         <Modal title="Change of Heart" subtitle="Search the Skill deck and take any skill." pc={game.players[head.player].color} wide>
-          <div className="card-choice wrap">
-            {[...new Set(game.market.skillDeck)].sort().map((id) => (
-              <CardView key={id} id={id} size="sm" onClick={() => dispatch({ type: 'changeOfHeart', skill: id })} />
-            ))}
-          </div>
+          <SkillsByCategory ids={[...new Set(game.market.skillDeck)]} onPick={(id) => dispatch({ type: 'changeOfHeart', skill: id })} />
         </Modal>
       );
     case 'dangerous': {
@@ -192,6 +189,39 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
     default:
       return null;
   }
+}
+
+/**
+ * A whole deck of skills to choose from (Change of Heart): grouped under their categories, A–Z within each, and
+ * every card's whole text shown, since this is where it's read and compared.
+ */
+function SkillsByCategory({ ids, onPick }: { ids: string[]; onPick: (id: string) => void }) {
+  const order = Object.keys(CARD_CATEGORIES);
+  const rank = (category: string) => (order.includes(category) ? order.indexOf(category) : order.length);
+  const groups = new Map<string, string[]>();
+  for (const id of [...ids].sort((a, b) => card(a).name.localeCompare(card(b).name))) {
+    const category = card(id).category;
+    groups.set(category, [...(groups.get(category) ?? []), id]);
+  }
+  return (
+    <div className="skill-groups">
+      {[...groups]
+        .sort(([a], [b]) => rank(a) - rank(b))
+        .map(([category, cards]) => (
+          <section key={category} className="skill-group" style={categoryStyle(category, false)}>
+            <h3>
+              <CategoryIcon category={category} />
+              {CARD_CATEGORIES[category]?.label ?? category}
+            </h3>
+            <div className="skill-group-cards">
+              {cards.map((id) => (
+                <CardView key={id} id={id} size="sm" onClick={() => onPick(id)} />
+              ))}
+            </div>
+          </section>
+        ))}
+    </div>
+  );
 }
 
 function SetupRoll({ game, dispatch, player, rerolled }: { game: GameState; dispatch: Dispatch; player: number; rerolled: boolean }) {

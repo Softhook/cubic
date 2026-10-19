@@ -46,7 +46,12 @@ const GAMES = [
  */
 const POPUPS: { name: string; play: string; scene: string; must: string; box?: string }[] = [
   { name: 'combat', play: 'community', scene: 'combat', must: '.combat-card h2, .combat-total, .combat-card button' },
-  { name: 'changeOfHeart', play: 'community', scene: 'changeOfHeart', must: '.modal h2, .modal .qcard:first-child' },
+  {
+    name: 'changeOfHeart',
+    play: 'community',
+    scene: 'changeOfHeart',
+    must: '.modal h2, .modal .skill-group:first-child .qcard:first-child',
+  },
   { name: 'over', play: 'basic', scene: 'over', must: '.modal h2, .modal button' },
   { name: 'pick', play: 'community', scene: 'takeCard', must: '.market .takeable', box: '.market' },
   { name: 'pickClassic', play: 'original', scene: 'takeCard', must: '.market .takeable', box: '.market' },

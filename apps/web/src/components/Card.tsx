@@ -107,11 +107,12 @@ export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, 
           <CategoryIcon category={def.category} size={size === 'sm' ? 11 : 13} />
           {kind === 'skill' ? (CARD_CATEGORIES[def.category]?.label ?? 'Skill') : kindLabel}
         </span>
-        {badge && <span className="qcard-badge">{badge}</span>}
       </div>
       <div className="qcard-name">{NAME_BREAKS[def.name] ?? def.name}</div>
       <div className="qcard-sub">{def.subtitle}</div>
       <div className="qcard-text">{def.text}</div>
+      {/* At the foot, so a badge never pushes the name down out of line with its neighbours'. */}
+      {badge && <span className="qcard-badge">{badge}</span>}
     </button>
   );
 }
