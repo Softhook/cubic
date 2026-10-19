@@ -261,22 +261,59 @@ function gas(c: Ctx): Surface {
   };
 
   if (style === 'vortex') {
-    // Seen from near a pole: rings of cloud around it, twisted into eddies, with a dark eye.
-    const px = cx + rng.range(-0.35, 0.35) * r;
-    const py = cy + rng.range(-0.35, 0.35) * r;
+    // Seen from near a pole: soft belts of uneven width and shade around it, foreshortened (the pole is
+    // tipped towards us, not facing us) and torn into eddies, with a hexagon round the pole as on Saturn,
+    // or a cluster of cyclones on it as on Jupiter.
+    const px = cx + rng.range(-0.3, 0.3) * r;
+    const py = cy + rng.range(-0.3, 0.3) * r;
+    const squash = rng.range(0.6, 0.85);
+    /** A point `d` from the pole at angle `a`, foreshortened. */
+    const around = (a: number, d: number) => ({ x: px + Math.cos(a) * d, y: py + Math.sin(a) * d * squash });
     const fill = `${id}-rings`;
+    // One stop per belt, so each blends into the next rather than meeting it at an edge.
+    let belts = '';
+    for (let at = 0, i = 0; at <= 1; at += rng.range(0.1, 0.22), i++) {
+      const grey = Math.round((i % 2 ? rng.range(0.55, 0.85) : rng.range(0.15, 0.45)) * 255);
+      belts += `<stop offset="${n(at)}" stop-color="rgb(${grey} ${grey} ${grey})"/>`;
+    }
     extraDefs +=
-      `<radialGradient id="${fill}" gradientUnits="userSpaceOnUse" cx="${n(px)}" cy="${n(py)}" r="${n(r * rng.range(0.16, 0.26))}" spreadMethod="repeat">` +
-      `<stop offset="0" stop-color="#222"/><stop offset=".5" stop-color="#ddd"/><stop offset="1" stop-color="#222"/></radialGradient>`;
-    extra += oval(px, py, r * 0.07, r * 0.07, pale ? hsl(hue + 20, 60, 40) : hsl(hue - 20, 70, 22), 0.8);
+      `<radialGradient id="${fill}" gradientUnits="userSpaceOnUse" cx="${n(px)}" cy="${n(py)}" r="${n(r * rng.range(1.4, 1.8))}" ` +
+      `gradientTransform="translate(${n(px)} ${n(py)}) scale(1 ${n(squash)}) translate(${n(-px)} ${n(-py)})">${belts}</radialGradient>`;
+    const dark = pale ? hsl(hue + 20, 55, 42) : hsl(hue - 20, 65, 26);
+    const light = pale ? hsl(hue, 35, 92) : hsl(hue + 8, 70, 74);
+    const spin = rng.range(0, Math.PI * 2);
+    if (rng.chance(0.5)) {
+      // The hexagon: a dark jet stream with straight sides, a little paler inside.
+      const size = r * rng.range(0.3, 0.42);
+      const corners = Array.from({ length: 6 }, (_, i) => around(spin + (i * Math.PI) / 3, size));
+      const points = corners.map((p) => `${n(p.x)},${n(p.y)}`).join(' ');
+      extraDefs += blur(`${id}-hex-blur`, 0.5 * s);
+      extra +=
+        `<polygon points="${points}" fill="${light}" fill-opacity=".22" stroke="${dark}" stroke-width="${n(0.07 * r)}" stroke-opacity=".6" stroke-linejoin="round" filter="url(#${id}-hex-blur)"/>` +
+        oval(px, py, r * 0.07, r * 0.07 * squash, dark, 0.7);
+    } else {
+      // The cyclones: one on the pole and a ring of them around it, each a dark swirl with a pale core.
+      const cyclone = (x: number, y: number, size: number) =>
+        oval(x, y, size, size * squash, dark, 0.5) +
+        oval(x - size * 0.2, y - size * 0.2 * squash, size * 0.5, size * 0.5 * squash, light, 0.45);
+      extra += cyclone(px, py, r * rng.range(0.06, 0.08));
+      const count = rng.int(5, 8);
+      const reach = r * rng.range(0.15, 0.2);
+      for (let i = 0; i < count; i++) {
+        const p = around(spin + (i / count) * Math.PI * 2 + rng.range(-0.15, 0.15), reach);
+        extra += cyclone(p.x, p.y, r * rng.range(0.035, 0.055));
+      }
+    }
     return {
       fill: `url(#${fill})`,
       filter:
         turbulence(f(0.1), 3, rng.noiseSeed(), 'grain') +
-        `<feComposite in="SourceGraphic" in2="grain" operator="arithmetic" k2=".55" k3=".6" k4="-.15" result="mix"/>` +
-        warp('mix', rng.range(0.04, 0.07), rng.range(7, 11)) +
-        // Each ring runs dark to light once (the belts' palette would stripe every ring several times).
-        colour(pale ? 1.3 : 1.6, byLight([0, 0.5, 1])),
+        `<feComposite in="SourceGraphic" in2="grain" operator="arithmetic" k2=".7" k3=".4" k4="-.1" result="mix"/>` +
+        // A broad wobble, then fine eddies along the belts' edges.
+        warp('mix', rng.range(0.025, 0.04), rng.range(6, 9)) +
+        warp('d', rng.range(0.12, 0.16), rng.range(2.5, 4)) +
+        // Each belt keeps its own shade (the belts' palette would stripe every belt several times).
+        colour(pale ? 1.25 : 1.5, byLight([0, 0.25, 0.5, 0.75, 1])),
       extra,
       extraDefs,
     };
@@ -565,12 +602,22 @@ function ocean(c: Ctx): Surface {
       : turbulence(sky === 'streaks' ? `${f(0.03)} ${f(0.2)}` : `${f(0.05)} ${f(0.12)}`, 4, rng.noiseSeed(), 'c') +
         `<feColorMatrix in="c" result="clouds" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 ${n(-(sky === 'heavy' ? rng.range(1.6, 1.85) : rng.range(1.9, 2.8)))}"/>` +
         `<feComposite in="clouds" in2="ground" operator="over"/>`;
+  // Sun glint: a specular highlight towards the light, on the water only (under the clouds). The
+  // sea/land edge is halfway between the last sea stop and the first land stop of the ramp.
+  const shore = (seaStops - 0.5) / (stops.length - 1);
+  const glint =
+    tint([0, 0, 100], -14, 14 * shore, 'height', 'water') +
+    `<feSpecularLighting in="water" surfaceScale="0" specularConstant="1.5" specularExponent="90" lighting-color="${hsl(45, 70, 94)}" result="spec">` +
+    `<fePointLight x="${n(cx - 0.36 * r)}" y="${n(cy - 0.4 * r)}" z="${n(0.35 * r)}"/></feSpecularLighting>` +
+    `<feComposite in="spec" in2="water" operator="in" result="glint"/>` +
+    `<feComposite in="glint" in2="land" operator="over" result="ground"/>`;
   return {
     filter:
       turbulence(f(freq), 6, rng.noiseSeed(), 't') +
       greyFromRed('t') +
-      stretch(rng.range(2, 2.8)) +
-      gradientMap(stops, '', 'ground') +
+      stretch(rng.range(2, 2.8), '', 'height') +
+      gradientMap(stops, 'height', 'land') +
+      glint +
       clouds,
     extra,
     extraDefs,
@@ -584,16 +631,50 @@ function surface(o: PlanetOptions, hue: number, rng: Rng): Surface {
   return SURFACES[o.type]({ o, hue, rng, s, f: (x) => n(x / s) });
 }
 
+/** A planet's air: its colour, how far past the disc it reaches (× radius), and how strong its parts are (0–1). */
+interface Air {
+  colour: Hsl;
+  reach: number;
+  /** The glow just past the lit edge. */
+  haze: number;
+  /** The bright line just inside the lit edge. */
+  rim: number;
+  /** The soft coloured glow all round the planet. */
+  glow: number;
+}
+
+/**
+ * Each kind of world has its own air: ocean worlds a blue sky whatever their colour; gas giants a thick,
+ * soft one in their own colour; lava worlds a wide smoky glow; ice and rock thin or none, so a sharp edge.
+ */
+function air(o: PlanetOptions, hue: number, rng: Rng): Air {
+  const rimLight = PLANET_FAMILY[o.number].rimLight;
+  switch (o.type) {
+    case 'ocean':
+      return { colour: [rng.range(196, 214), 85, 74], reach: rng.range(1.12, 1.17), haze: rng.range(0.8, 0.95), rim: 1, glow: 0.35 };
+    case 'gas':
+      return { colour: [hue, 90, rimLight], reach: rng.range(1.12, 1.2), haze: rng.range(0.6, 0.78), rim: 0.8, glow: 0.4 };
+    case 'lava':
+      return { colour: [hue + 16, 92, 56], reach: rng.range(1.16, 1.24), haze: rng.range(0.55, 0.7), rim: 0.55, glow: 0.55 };
+    case 'ice':
+      // Most icy moons have next to no air; some keep a thin haze.
+      return rng.chance(0.35)
+        ? { colour: [hue, 55, 86], reach: rng.range(1.07, 1.09), haze: 0.6, rim: 0.75, glow: 0.2 }
+        : { colour: [hue, 40, 90], reach: rng.range(1.035, 1.05), haze: 0.45, rim: 0.6, glow: 0.1 };
+    case 'rocky':
+      return { colour: [hue, 30, 80], reach: 1.03, haze: 0.3, rim: 0.45, glow: 0.08 };
+  }
+}
+
 /**
  * Film-style edge light: the atmosphere glows along the lit edge (inside the disc and just past it),
  * and a back light in a contrasting colour catches the opposite edge, lifting the planet off the sky.
- * Both colours come from the planet's family (tokens.ts).
+ * The back light comes from the planet's family (tokens.ts), the air from its kind.
  */
-function lightDefs(o: PlanetOptions, hue: number): string {
+function lightDefs(o: PlanetOptions, a: Air): string {
   const { id, cx, cy, r } = o;
-  const family = PLANET_FAMILY[o.number];
-  const rim = hsl(hue, 90, family.rimLight);
-  const back = hsl(...family.backLight);
+  const rim = hsl(...a.colour);
+  const back = hsl(...PLANET_FAMILY[o.number].backLight);
   const at = `gradientUnits="userSpaceOnUse" cx="${n(cx)}" cy="${n(cy)}"`;
   const box = { x: cx - r * 1.2, y: cy - r * 1.2, w: r * 2.4, h: r * 2.4 };
   // A square around the planet, shaded along the light's diagonal: white towards the light (`lit`) or away from it (`dark`).
@@ -601,8 +682,8 @@ function lightDefs(o: PlanetOptions, hue: number): string {
     `<linearGradient id="${id}-${name}g" x1="0" y1="0" x2="1" y2="1">${stops}</linearGradient>` +
     gradientMask(`${id}-${name}`, box, `${id}-${name}g`);
   return (
-    `<radialGradient id="${id}-litrim" ${at} r="${n(r)}"><stop offset=".72" stop-color="${rim}" stop-opacity="0"/><stop offset=".95" stop-color="${rim}"/><stop offset="1" stop-color="#fff"/></radialGradient>` +
-    `<radialGradient id="${id}-atmos" ${at} r="${n(r * 1.14)}"><stop offset="${n(1 / 1.14)}" stop-color="${rim}" stop-opacity=".85"/><stop offset="1" stop-color="${rim}" stop-opacity="0"/></radialGradient>` +
+    `<radialGradient id="${id}-litrim" ${at} r="${n(r)}"><stop offset=".72" stop-color="${rim}" stop-opacity="0"/><stop offset=".95" stop-color="${rim}" stop-opacity="${n(a.rim)}"/><stop offset="1" stop-color="#fff" stop-opacity="${n(a.rim)}"/></radialGradient>` +
+    `<radialGradient id="${id}-atmos" ${at} r="${n(r * a.reach)}"><stop offset="${n(1 / a.reach)}" stop-color="${rim}" stop-opacity="${n(a.haze)}"/><stop offset="1" stop-color="${rim}" stop-opacity="0"/></radialGradient>` +
     `<radialGradient id="${id}-back" ${at} r="${n(r * 1.05)}"><stop offset=".86" stop-color="${back}" stop-opacity="0"/><stop offset=".96" stop-color="${back}" stop-opacity=".6"/><stop offset="1" stop-color="${back}" stop-opacity="0"/></radialGradient>` +
     diagonal('lit', `<stop offset=".1" stop-color="#fff"/><stop offset=".5" stop-color="#000"/>`) +
     diagonal('dark', `<stop offset=".62" stop-color="#000"/><stop offset=".95" stop-color="#fff"/>`)
@@ -625,18 +706,21 @@ export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
   const rings = o.rings ?? look.chance(o.type === 'gas' ? 0.45 : 0.12);
   // The night side is a deep shade of the planet's own colour, not black, so pale worlds don't turn grey.
   const night = hsl(hue, 70, 5);
+  // Own stream, so the air doesn't move the tilt, rings or surface.
+  const a = air(o, hue, rng.fork('air'));
+  const glowHue = o.type === 'ocean' ? a.colour[0] : hue;
 
   let defs =
     `<clipPath id="${id}-disc"><circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}"/></clipPath>` +
     `<filter id="${id}-surface" ${region} color-interpolation-filters="sRGB">${surf.filter}</filter>` +
     surf.extraDefs +
     `<radialGradient id="${id}-halo"><stop offset=".55" stop-color="${SPACE_BASE_CSS}" stop-opacity=".8"/><stop offset="1" stop-color="${SPACE_BASE_CSS}" stop-opacity="0"/></radialGradient>` +
-    `<radialGradient id="${id}-glow"><stop offset=".78" stop-color="${hsl(hue, 80, 65)}" stop-opacity=".4"/><stop offset="1" stop-color="${hsl(hue, 80, 65)}" stop-opacity="0"/></radialGradient>` +
+    `<radialGradient id="${id}-glow"><stop offset=".78" stop-color="${hsl(glowHue, 80, 65)}" stop-opacity="${n(a.glow)}"/><stop offset="1" stop-color="${hsl(glowHue, 80, 65)}" stop-opacity="0"/></radialGradient>` +
     `<radialGradient id="${id}-hi" cx="${LIGHT.x}" cy="${LIGHT.y}" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".35" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>` +
     `<radialGradient id="${id}-rim"><stop offset=".8" stop-color="${hsl(hue, 80, 72)}" stop-opacity="0"/><stop offset="1" stop-color="${hsl(hue, 80, 72)}" stop-opacity=".4"/></radialGradient>` +
     // A hard terminator: the lit side stays bright, then falls quickly into the night side.
     `<radialGradient id="${id}-night" cx="${LIGHT.x}" cy="${LIGHT.y}" r="1"><stop offset=".22" stop-color="${night}" stop-opacity="0"/><stop offset=".36" stop-color="${night}" stop-opacity=".15"/><stop offset=".5" stop-color="${night}" stop-opacity=".87"/><stop offset=".62" stop-color="${night}" stop-opacity=".98"/></radialGradient>` +
-    lightDefs(o, hue);
+    lightDefs(o, a);
 
   let back = '';
   let front = '';
@@ -672,7 +756,7 @@ export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
     disc(`url(#${id}-night)`) +
     disc(`url(#${id}-litrim)`, 1, ` mask="url(#${id}-lit)"`) +
     `</g>` +
-    disc(`url(#${id}-atmos)`, 1.14, ` mask="url(#${id}-lit)"`) +
+    disc(`url(#${id}-atmos)`, a.reach, ` mask="url(#${id}-lit)"`) +
     disc(`url(#${id}-back)`, 1.05, ` mask="url(#${id}-dark)"`) +
     front;
   return { defs, body, rings };
