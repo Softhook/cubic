@@ -13,6 +13,12 @@
 #         addon (the add-on pack), bga (maps Board Game Arena added),
 #         ce (the CE print booklet's 5-player maps, pages 14–15).
 #
+# grid (optional): hex. The tiles are 7-hex flowers (the planet and the six spaces around it), so all
+#   six spaces of a tile are its planet's orbit. A hex layout is read as rows of tiles where each odd
+#   row (the 2nd, 4th…) sits half a tile to the right, between the tiles of the rows above and below:
+#   a tile touches the two tiles beside it and two in each neighbouring row (docs/HEX.md). Hex maps
+#   don't wrap.
+#
 # wrap (optional): horizontal | vertical | both. The booklet marks these edges with arrows.
 #   A ship leaving one edge comes back at the opposite edge of the same row or column, as if
 #   the board were a cylinder (or a torus for both). The join is on the full grid, so a row or
@@ -66,6 +72,51 @@ maps:
       - "8* 9  8*"
       - "8  10 8"
       - "9* 8  9*"
+
+  # Hex: the basic maps on hex tiles (docs/HEX.md). A 3×3 square map becomes a 3×3 rhombus of
+  # flowers standing on a point (rows 1-2-3-2-1), and the 3-player map a triangle with the 10 in its
+  # middle, each start touching one 7 and one 8. Same cubes and planets per player as the square maps.
+
+  - id: alpha-hex
+    name: Alpha Sector (hex)
+    players: 2
+    group: hex
+    grid: hex
+    cubes: 5
+    stats: { slack: 0, shared: 1, planets: 7 }
+    layout:
+      - ".  7*"
+      - "7  7"
+      - "7  8  7"
+      - "7  7"
+      - ".  7*"
+
+  - id: beta-hex
+    name: Beta Sector (hex)
+    players: 3
+    group: hex
+    grid: hex
+    cubes: 5
+    stats: { slack: 4, shared: 4, planets: 10 }
+    layout:
+      - "8* 7  8  8*"
+      - "8  10 7"
+      - ".  7  8"
+      - ".  8*"
+
+  - id: gamma-hex
+    name: Gamma Sector (hex)
+    players: 4
+    group: hex
+    grid: hex
+    cubes: 5
+    stats: { slack: 4, shared: 5, planets: 9 }
+    layout:
+      - ".  9*"
+      - "9  8"
+      - "8* 10 8*"
+      - "8  9"
+      - ".  9*"
 
   # 2 players
 

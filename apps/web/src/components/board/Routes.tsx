@@ -1,18 +1,38 @@
 import type { CSSProperties } from 'react';
-import { key, type Cell } from '@quantum/engine';
+import { drawing, key, type Board, type Cell } from '@quantum/engine';
 import type { Route } from '../../game/controller';
 
-/** Next to each other on the map as drawn: not across a joined edge or through a Warp Gate. */
-const touching = (a: Cell, b: Cell) => Math.abs(a.r - b.r) <= 1 && Math.abs(a.c - b.c) <= 1;
+/**
+ * Next to each other on the map as drawn (diagonally too: an Interceptor's step): not across a joined
+ * edge or through a Warp Gate. A square's diagonal is √2 spaces away, a hex's √3.
+ */
+const touching = (board: Board, a: Cell, b: Cell) => {
+  const { at } = drawing(board);
+  const [p, q] = [at(a), at(b)];
+  return Math.hypot(p.r - q.r, p.c - q.c) < 1.8;
+};
 
 /**
  * The ways ships would fly (Controller.routes), as lines from space to space in the mover's `color`: the main one solid,
  * alternatives dashed under it. An attack ends in an arrow halfway into its target's space. A line
  * breaks where the way jumps, across a joined edge or a Warp Gate. A tap on a way takes it (`onPick` its `from`).
  */
-export function Routes({ routes, cell, color, onPick }: { routes: Route[]; cell: number; color: string; onPick: (from: Cell) => void }) {
+export function Routes({
+  board,
+  routes,
+  cell,
+  color,
+  onPick,
+}: {
+  board: Board;
+  routes: Route[];
+  cell: number;
+  color: string;
+  onPick: (from: Cell) => void;
+}) {
   if (!routes.length) return null;
-  const centre = (p: Cell) => [(p.c + 0.5) * cell, (p.r + 0.5) * cell];
+  const { at } = drawing(board);
+  const centre = (p: Cell) => [(at(p).c + 0.5) * cell, (at(p).r + 0.5) * cell];
   return (
     <svg className="routes" style={{ '--pc': color } as CSSProperties} aria-hidden>
       {[...routes]
@@ -20,13 +40,13 @@ export function Routes({ routes, cell, color, onPick }: { routes: Route[]; cell:
         .map((route) => {
           const parts: number[][][] = [];
           route.cells.forEach((p, i) => {
-            if (i === 0 || !touching(route.cells[i - 1], p)) parts.push([]);
+            if (i === 0 || !touching(board, route.cells[i - 1], p)) parts.push([]);
             parts[parts.length - 1].push(centre(p));
           });
           if (!parts.length) return null;
           const [x0, y0] = centre(route.from);
           let arrow = '';
-          if (touching(route.from, route.strike)) {
+          if (touching(board, route.from, route.strike)) {
             const [x1, y1] = centre(route.strike);
             const [x, y] = [(x0 + x1) / 2, (y0 + y1) / 2];
             parts[parts.length - 1].push([x, y]);

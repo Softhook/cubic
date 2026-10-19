@@ -22,7 +22,7 @@ function shotsOf(before: GameState, game: GameState): MapEffect[] {
  */
 export function Shots({ game, cell }: { game: GameState; cell: number }) {
   return useStepEffects(game, SHOT_EFFECT_MS, shotsOf).map((e) => (
-    <EffectBox key={e.id} e={e} cell={cell} className="cfx cfx-shot">
+    <EffectBox board={game.board} key={e.id} e={e} cell={cell} className="cfx cfx-shot">
       <span className="shot-flash" />
       <span className="shot-path">
         <i className="shot-trail" />

@@ -27,6 +27,7 @@ import {
   shipsByIndex,
   shipsOnBoard,
   spaces,
+  stepNeighbours,
   surrounding,
   tryApply,
   type Action,
@@ -87,8 +88,14 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
       else
         out.push(
           { type: 'attack', die: d.id, target: o.id },
-          // Next to the target, or on a Warp Gate: an attack through the gate goes in from the other end.
-          ...[...surrounding(s.board, cellOf(o)!), ...s.gates].map((from) => ({ type: 'attack' as const, die: d.id, target: o.id, from })),
+          // Next to the target or diagonal to it (a hex's diagonals don't touch it), or on a Warp Gate:
+          // an attack through the gate goes in from the other end.
+          ...[...surrounding(s.board, cellOf(o)!), ...stepNeighbours(s, cellOf(o)!, true), ...s.gates].map((from) => ({
+            type: 'attack' as const,
+            die: d.id,
+            target: o.id,
+            from,
+          })),
           { type: 'freeAttack', die: d.id, target: o.id },
           { type: 'tactical', die: d.id, target: o.id },
         );
@@ -110,11 +117,12 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
   return out;
 }
 
-function playChecked(mode: GameMode, players: number, seed: number) {
+function playChecked(mode: GameMode, players: number, seed: number, mapId?: string) {
   playAiGame({
     mode,
     players,
     seed,
+    mapId,
     aiSeed: seed * 31,
     before: (s, step) => {
       const where = `step ${step}`;
@@ -173,6 +181,15 @@ describe('legal actions agree with the engine', () => {
         ]
       : [[3, 22]])
       it(`${mode}, ${players} players, seed ${seed}`, () => playChecked(mode, players, seed), DEEP ? 600_000 : 60_000);
+  // Hex tiles (docs/HEX.md): another geometry under the same rules.
+  for (const [players, mapId] of DEEP
+    ? ([
+        [2, 'alpha-hex'],
+        [3, 'beta-hex'],
+        [4, 'gamma-hex'],
+      ] as const)
+    : ([[3, 'beta-hex']] as const))
+    it(`basic on ${mapId}, seed 22`, () => playChecked('basic', players, 22, mapId), DEEP ? 600_000 : 60_000);
 });
 
 describe('invariant checker', () => {

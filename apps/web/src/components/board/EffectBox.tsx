@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import type { Cell } from '@quantum/engine';
+import { drawing, type Board, type Cell } from '@quantum/engine';
 
 /** How many of `owner`'s cubes a planet holds. */
 export const cubeCount = (cubes: readonly number[], owner: number) => cubes.filter((x) => x === owner).length;
@@ -13,19 +13,34 @@ export interface MapEffect {
 }
 
 /**
- * One effect's box: a space's size, on `at`, with its colour as `--pc`. One that goes somewhere also
+ * One effect's box: a space's size, on `at` (a board space, drawn where `board` draws it), with its colour as `--pc`. One that goes somewhere also
  * gets `--len` and `--angle`, for a part that reaches from the middle of `at` to the middle of `to`.
  */
-export function EffectBox({ e, cell, className, children }: { e: MapEffect; cell: number; className: string; children: ReactNode }) {
+export function EffectBox({
+  e,
+  board,
+  cell,
+  className,
+  children,
+}: {
+  e: MapEffect;
+  board: Board;
+  cell: number;
+  className: string;
+  children: ReactNode;
+}) {
+  const { at } = drawing(board);
+  const from = at(e.at);
   const style: Record<string, string | number> = {
-    transform: `translate(${e.at.c * cell}px, ${e.at.r * cell}px)`,
+    transform: `translate(${from.c * cell}px, ${from.r * cell}px)`,
     width: cell,
     height: cell,
     '--pc': e.color,
   };
   if (e.to) {
-    const dx = e.to.c - e.at.c;
-    const dy = e.to.r - e.at.r;
+    const to = at(e.to);
+    const dx = to.c - from.c;
+    const dy = to.r - from.r;
     style['--len'] = `${Math.hypot(dx, dy) * cell}px`;
     style['--angle'] = `${Math.atan2(dy, dx)}rad`;
   }

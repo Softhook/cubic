@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { buildBoard, type Board, type MapDef } from '@quantum/engine';
+import { buildBoard, defaultMap, type Board, type MapDef } from '@quantum/engine';
 import { PLANET_DIAMETER, SPACE_BASE_CSS, TILE, TILE_SET, tileHasRings, tileSpec } from '@quantum/art';
 import { decodedTileImage } from '../../art/tileImages';
 import { tileArt, type TileArt } from '../../art/boardTiles';
@@ -361,7 +361,9 @@ function Plane({ map, fleet, still }: { map: MapDef; fleet: number; still: boole
   );
 }
 
-export function LobbyBackdrop({ map }: { map: MapDef }) {
+export function LobbyBackdrop({ map: chosen }: { map: MapDef }) {
+  // The fleets here move on squares: a hex map shows the square basic map for as many players behind it.
+  const map = chosen.grid === 'hex' ? (defaultMap(chosen.players) ?? chosen) : chosen;
   const still = useMediaQuery(REDUCED_MOTION);
   const fleet = useMediaQuery(PHONE) ? PHONE_FLEET : FLEET;
   return (

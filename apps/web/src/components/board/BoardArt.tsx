@@ -1,11 +1,12 @@
 import { memo, useEffect, useState, type CSSProperties } from 'react';
-import type { Board, GameState } from '@quantum/engine';
+import { drawing, type Board, type GameState } from '@quantum/engine';
 import { PLANET_DIAMETER, SPACE_BASE_CSS, TILE } from '@quantum/art';
 import { decodedTileImage } from '../../art/tileImages';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { GATE_COLOR } from '../../theme';
 import { wrapMarks, type WrapMark } from './geometry';
 import { PlanetMarkings } from './PlanetMarkings';
+import { HexTiles } from './HexTiles';
 
 /** Which way each board edge faces, for the wrap chevrons. */
 const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number }> = {
@@ -23,17 +24,19 @@ function tileArtOf(board: Board): TileArt[] {
   return tiles;
 }
 
-/** Tile artwork by physical tile id, filled in as each image is ready (a plain tile shows meanwhile). */
+/** Tile artwork by physical tile id, filled in as each image is ready (a plain tile shows meanwhile). A hex map draws its own (HexTiles). */
 function useTileImages(game: GameState) {
   const tiles = tileArtOf(game.board);
   const [images, setImages] = useState<Record<string, string>>({});
+  const hex = !!game.board.hex;
   useEffect(() => {
+    if (hex) return;
     let live = true;
     for (const t of tiles) decodedTileImage(t.id).then((url) => live && setImages((m) => (m[t.id] === url ? m : { ...m, [t.id]: url })));
     return () => {
       live = false;
     };
-  }, [tiles]);
+  }, [tiles, hex]);
   return { tiles, images };
 }
 
@@ -51,10 +54,13 @@ export const BoardArt = memo(function BoardArt({
   /** A planet whose new cube drops in late, and when (a relocated cube, see staging). */
   lateCube?: { planet: number; ms: number };
 }) {
-  const { rows, cols, cells, planets } = game.board;
+  const { cells, planets, hex } = game.board;
   const { tiles, images } = useTileImages(game);
+  const { rows, cols, at } = drawing(game.board);
   const W = cols * cell;
   const H = rows * cell;
+  /** The middle of a space, in pixels. */
+  const mid = (p: { r: number; c: number }) => ({ x: (at(p).c + 0.5) * cell, y: (at(p).r + 0.5) * cell });
   // Print millimetres to screen pixels: the tile art and everything drawn over it use the printed geometry.
   const mm = cell / TILE.cell;
   // Gap between neighbouring tiles, scaled with the cell so zooming doesn't change the look.
@@ -78,33 +84,37 @@ export const BoardArt = memo(function BoardArt({
           </filter>
         </defs>
 
-        {tiles.map((t) => (
-          <g key={`${t.r},${t.c}`}>
-            {images[t.id] ? (
-              <image href={images[t.id]} {...tileBox(t)} />
-            ) : (
-              <rect {...tileBox(t)} rx={(cell * 3 * TILE.corner) / TILE.size} fill={SPACE_BASE_CSS} />
-            )}
-          </g>
-        ))}
+        {hex && <HexTiles board={game.board} tiles={tiles} cell={cell} />}
+
+        {!hex &&
+          tiles.map((t) => (
+            <g key={`${t.r},${t.c}`}>
+              {images[t.id] ? (
+                <image href={images[t.id]} {...tileBox(t)} />
+              ) : (
+                <rect {...tileBox(t)} rx={(cell * 3 * TILE.corner) / TILE.size} fill={SPACE_BASE_CSS} />
+              )}
+            </g>
+          ))}
 
         {/* The space pads are part of the tile art; until a tile's image is ready, plain ones stand in. */}
-        {tiles
-          .filter((t) => !images[t.id])
-          .flatMap((t) => [0, 1, 2].flatMap((dr) => [0, 1, 2].map((dc) => ({ r: t.r + dr, c: t.c + dc }))))
-          .filter(({ r, c }) => cells[r]?.[c]?.kind === 'space')
-          .map(({ r, c }) => (
-            <rect
-              key={`s${r},${c}`}
-              x={(c + 0.5) * cell - (TILE.pad / 2) * mm}
-              y={(r + 0.5) * cell - (TILE.pad / 2) * mm}
-              width={TILE.pad * mm}
-              height={TILE.pad * mm}
-              rx={4 * mm}
-              fill="rgba(255,255,255,.03)"
-              stroke="rgba(160,190,255,.2)"
-            />
-          ))}
+        {!hex &&
+          tiles
+            .filter((t) => !images[t.id])
+            .flatMap((t) => [0, 1, 2].flatMap((dr) => [0, 1, 2].map((dc) => ({ r: t.r + dr, c: t.c + dc }))))
+            .filter(({ r, c }) => cells[r]?.[c]?.kind === 'space')
+            .map(({ r, c }) => (
+              <rect
+                key={`s${r},${c}`}
+                x={(c + 0.5) * cell - (TILE.pad / 2) * mm}
+                y={(r + 0.5) * cell - (TILE.pad / 2) * mm}
+                width={TILE.pad * mm}
+                height={TILE.pad * mm}
+                rx={4 * mm}
+                fill="rgba(255,255,255,.03)"
+                stroke="rgba(160,190,255,.2)"
+              />
+            ))}
 
         {/* Chevrons on edges that join the opposite edge, pointing off the board. */}
         {wrapMarks(game.board).map((m) => {
@@ -131,14 +141,13 @@ export const BoardArt = memo(function BoardArt({
         })}
 
         {gates.map((g, i) => (
-          <g key={i} transform={`translate(${(g.c + 0.5) * cell} ${(g.r + 0.5) * cell})`} opacity={g.open ? 1 : 0.5}>
+          <g key={i} transform={`translate(${mid(g).x} ${mid(g).y})`} opacity={g.open ? 1 : 0.5}>
             <circle r={cell * 0.4} fill="none" stroke={GATE_COLOR} strokeWidth={cell * 0.05} filter="url(#glow)" />
           </g>
         ))}
 
         {planets.map((p) => {
-          const cx = (p.c + 0.5) * cell;
-          const cy = (p.r + 0.5) * cell;
+          const { x: cx, y: cy } = mid(p);
           // The planet itself is part of the tile art; this layer adds the live number and cubes, placed
           // and sized as on the printed tile.
           const R = (PLANET_DIAMETER[p.number] / 2) * mm;
@@ -174,7 +183,7 @@ export const BoardArt = memo(function BoardArt({
         <svg
           key={i}
           className="gate-spin"
-          style={{ left: g.c * cell, top: g.r * cell, opacity: g.open ? 1 : 0.5 }}
+          style={{ left: at(g).c * cell, top: at(g).r * cell, opacity: g.open ? 1 : 0.5 }}
           width={cell}
           height={cell}
           viewBox={`0 0 ${cell} ${cell}`}

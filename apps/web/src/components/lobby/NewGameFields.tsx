@@ -25,25 +25,47 @@ const MAP_GROUPS: { id: string; name: string }[] = [
   { id: 'addon', name: 'Add-on pack' },
   { id: 'bga', name: 'Board Game Arena' },
   { id: 'ce', name: 'Community Edition' },
+  { id: 'hex', name: 'Hex tiles' },
 ];
 
+/** A tile of the preview: its number, a start's ring, or nothing for a gap. */
+function MiniTile({ token, style }: { token: string; style?: CSSProperties }) {
+  const n = token.replace('*', '');
+  if (token === '.') return <span className="mini-tile gap" style={style} />;
+  return (
+    <span className={`mini-tile n${n} ${token.endsWith('*') ? 'start' : ''}`} style={style}>
+      {n === '0' ? '' : n}
+    </span>
+  );
+}
+
+/**
+ * A hex map's preview: hexes for tiles, each odd row half a tile to the right (data/maps.yaml), so they
+ * touch as on the map. The map itself is turned a little (its tiles' rows aren't level), the preview isn't.
+ */
+function HexMiniMap({ map }: { map: MapDef }) {
+  const cols = Math.max(...map.layout.map((r, i) => r.length + (i % 2) / 2));
+  const size = Math.min(26, Math.floor(150 / Math.max(cols, map.layout.length * 0.75)));
+  const step = size * 0.75;
+  return (
+    <div
+      className="mini-map hex"
+      style={{ width: cols * size, height: (map.layout.length - 1) * step + size, '--tile': `${size}px` } as CSSProperties}
+    >
+      {map.layout.flatMap((row, r) =>
+        row.map((t, c) => <MiniTile key={`${r},${c}`} token={t} style={{ left: (c + (r % 2) / 2) * size, top: r * step }} />),
+      )}
+    </div>
+  );
+}
+
 function MiniMap({ map }: { map: MapDef }) {
+  if (map.grid === 'hex') return <HexMiniMap map={map} />;
   const cols = Math.max(...map.layout.map((r) => r.length));
   const size = Math.min(26, Math.floor(150 / Math.max(cols, map.layout.length)));
   return (
     <div className="mini-map" style={{ gridTemplateColumns: `repeat(${cols}, ${size}px)`, '--tile': `${size}px` } as CSSProperties}>
-      {map.layout.flatMap((row, r) =>
-        Array.from({ length: cols }, (_, c) => {
-          const t = row[c] ?? '.';
-          const n = t.replace('*', '');
-          if (t === '.') return <span key={`${r},${c}`} className="mini-tile gap" />;
-          return (
-            <span key={`${r},${c}`} className={`mini-tile n${n} ${t.endsWith('*') ? 'start' : ''}`}>
-              {n === '0' ? '' : n}
-            </span>
-          );
-        }),
-      )}
+      {map.layout.flatMap((row, r) => Array.from({ length: cols }, (_, c) => <MiniTile key={`${r},${c}`} token={row[c] ?? '.'} />))}
     </div>
   );
 }

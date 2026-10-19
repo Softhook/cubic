@@ -169,7 +169,7 @@ const PARTS: Record<CardEffect['kind'], ReactNode> = {
  */
 export function CardEffects({ game, cell }: { game: GameState; cell: number }) {
   return useStepEffects(game, CARD_EFFECT_MS, cardEffectsOf).map((e) => (
-    <EffectBox key={`${e.kind}:${e.id}`} e={e} cell={cell} className={`cfx cfx-${e.kind}`}>
+    <EffectBox board={game.board} key={`${e.kind}:${e.id}`} e={e} cell={cell} className={`cfx cfx-${e.kind}`}>
       {PARTS[e.kind]}
     </EffectBox>
   ));

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { GameState } from '@quantum/engine';
+import { drawing, type GameState } from '@quantum/engine';
 import { COARSE, reducedMotion } from '../../game/useMediaQuery';
 import { useEffectEvent } from '../../game/useEffectEvent';
 import { shotOf } from '../../game/strike';
@@ -62,7 +62,8 @@ export function useZoomIntro(game: GameState, ctl: Controller, zoom: BoardZoom, 
     if (done.current || !introduce || !zoom.canZoom) return;
     done.current = true;
     const glowing = game.board.planets.find((p) => ctl.highlights.planets.has(p.id));
-    const spot = glowing ?? { r: (game.board.rows - 1) / 2, c: (game.board.cols - 1) / 2 };
+    const { rows, cols, at } = drawing(game.board);
+    const spot = glowing ? at(glowing) : { r: (rows - 1) / 2, c: (cols - 1) / 2 };
     setTip(matchMedia(COARSE).matches ? 'Pinch to zoom the map' : 'Scroll or press + to zoom the map');
     if (!reducedMotion()) zoom.demo(spot.r, spot.c);
   });
@@ -93,7 +94,10 @@ export function useFollowMoves(game: GameState, ctl: Controller, spots: ShipSpot
     if (before.scene !== scene) {
       const head = game.pending[0];
       const skipped = before.scene?.startsWith('live:') && scene?.startsWith('live:');
-      if (skipped && head?.kind === 'combat') zoom.reveal(head.at.r, head.at.c);
+      if (skipped && head?.kind === 'combat') {
+        const at = drawing(game.board).at(head.at);
+        zoom.reveal(at.r, at.c);
+      }
       return;
     }
     let moved: { r: number; c: number } | undefined;
@@ -102,11 +106,14 @@ export function useFollowMoves(game: GameState, ctl: Controller, spots: ShipSpot
       const was = before.spots.get(d.id);
       if (now && !ctl.mine(d.owner) && (!was || was.r !== now.r || was.c !== now.c)) moved = now;
     }
+    // Spots are where ships are drawn; a shot's or card's target is a board space, drawn where `drawn` puts it.
+    const { at: drawn } = drawing(game.board);
     const shot = shotOf(before.game, game);
-    if (!moved && shot && !ctl.mine(shot.attacker.player)) moved = shot.at;
+    if (!moved && shot && !ctl.mine(shot.attacker.player)) moved = drawn(shot.at);
     // Another player's card striking the map (Show of Force's target, a relocated cube): its card beams there.
     const card = moved ? undefined : castOf(before.game, game);
-    if (card?.player !== undefined && !ctl.mine(card.player)) moved = cardEffectsOf(before.game, game)[0]?.at;
+    const target = card?.player !== undefined && !ctl.mine(card.player) ? cardEffectsOf(before.game, game)[0]?.at : undefined;
+    if (target) moved = drawn(target);
     if (moved) zoom.reveal(Math.round(moved.r), Math.round(moved.c));
   });
   // Only a new game state can move a ship.
@@ -121,9 +128,10 @@ const ARROWS: Record<Side, string> = { left: 'm15 6-6 6 6 6', right: 'm9 6 6 6-6
  * can pick), with how many; a tap brings the nearest into view.
  */
 export function OffscreenHints({ game, ctl, spots, zoom }: { game: GameState; ctl: Controller; spots: ShipSpots; zoom: BoardZoom }) {
+  const { at } = drawing(game.board);
   const targets = [
-    ...[...ctl.highlights.cells.values()].map((h) => h.cell),
-    ...game.board.planets.filter((p) => ctl.highlights.planets.has(p.id)),
+    ...[...ctl.highlights.cells.values()].map((h) => at(h.cell)),
+    ...game.board.planets.filter((p) => ctl.highlights.planets.has(p.id)).map(at),
     ...[...ctl.highlights.dice.keys()].flatMap((id) => spots.get(id) ?? []),
   ];
   // What's on screen, in spaces.

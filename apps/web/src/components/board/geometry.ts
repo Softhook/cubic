@@ -1,6 +1,6 @@
-import { cellOf, delta, onBoard, type Board, type GameState } from '@quantum/engine';
+import { cellOf, delta, drawing, onBoard, type Board, type GameState } from '@quantum/engine';
 
-/** Where each ship on the map is drawn, by id, in cell units. */
+/** Where each ship on the map is drawn, by id, in cell units from the map's top left (engine drawing). */
 export type ShipSpots = Map<string, { r: number; c: number }>;
 
 /** Where each ship on the map is drawn, in cell units (an attacker sits part-way into its target, unless it shot from where it is). */
@@ -8,6 +8,7 @@ export function shipSpots(game: GameState): ShipSpots {
   const head = game.pending[0];
   const combat = head?.kind === 'combat' ? head : null;
   const spots = new Map<string, { r: number; c: number }>();
+  const { at: drawn } = drawing(game.board);
   for (const d of game.dice) {
     const at = cellOf(d);
     if (!at) continue;
@@ -17,7 +18,7 @@ export function shipSpots(game: GameState): ShipSpots {
       r += d.r * 0.42;
       c += d.c * 0.42;
     }
-    spots.set(d.id, { r, c });
+    spots.set(d.id, drawn({ r, c }));
   }
   return spots;
 }

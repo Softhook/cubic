@@ -43,7 +43,8 @@ export const RULESETS: Record<GameMode, RuleSet> = {
     researchLimit: 6,
     startingMissiles: 0,
     reconfigure: 'different',
-    mapGroups: OFFICIAL_MAPS,
+    // The basic maps on hex tiles too (docs/HEX.md).
+    mapGroups: [...OFFICIAL_MAPS, 'hex'],
     ships: CLASSIC_SHIPS,
   },
   original: {

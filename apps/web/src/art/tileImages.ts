@@ -26,15 +26,22 @@ async function load(id: string, svg: string): Promise<string> {
   return URL.createObjectURL(blob);
 }
 
+/**
+ * How a tile is drawn for the map: `square` as printed, with its space pads and their hatching (the board
+ * draws the number and cubes live); `art` only the painting, starfield and planet, which a hex map cuts
+ * its 7-hex tiles from and draws its own spaces on.
+ */
+export type TileLook = 'square' | 'art';
+
 /** The image URL for a tile (`p7-01`…), drawing and storing it the first time. */
-function tileImage(id: string): Promise<string> {
-  let image = images.get(id);
+function tileImage(id: string, look: TileLook = 'square'): Promise<string> {
+  const name = look === 'square' ? id : `${id}:${look}`;
+  let image = images.get(name);
   if (!image) {
-    // The space pads and their hatching come with the art, as printed; the board draws the number and cubes live.
-    const svg = tileSvg(tileSpec(id), { rounded: true, markings: 'spaces' });
+    const svg = look === 'square' ? tileSvg(tileSpec(id), { rounded: true, markings: 'spaces' }) : tileSvg(tileSpec(id), { only: 'art' });
     // If drawing or storage fails, fall back to the SVG itself (slower to show, same look).
-    image = load(id, svg).catch(() => dataUrl(svg));
-    images.set(id, image);
+    image = load(name, svg).catch(() => dataUrl(svg));
+    images.set(name, image);
   }
   return image;
 }
@@ -43,16 +50,17 @@ function tileImage(id: string): Promise<string> {
  * A tile's image URL once the image is decoded at full size, for the map. Drawn as large as it gets
  * (zoomed in), the browser would otherwise decode each tile then, on the first zoom, and drop frames.
  */
-export function decodedTileImage(id: string): Promise<string> {
-  let image = decoded.get(id);
+export function decodedTileImage(id: string, look: TileLook = 'square'): Promise<string> {
+  const name = look === 'square' ? id : `${id}:${look}`;
+  let image = decoded.get(name);
   if (!image) {
-    image = tileImage(id).then(async (url) => {
+    image = tileImage(id, look).then(async (url) => {
       const img = new Image();
       img.src = url;
       await img.decode().catch(() => {});
       return url;
     });
-    decoded.set(id, image);
+    decoded.set(name, image);
   }
   return image;
 }

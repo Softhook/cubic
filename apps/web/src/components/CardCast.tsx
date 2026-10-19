@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { effectOf, same, type Cell, type GameState, type LogEntry, type PlayerId } from '@quantum/engine';
+import { drawing, effectOf, same, type Cell, type GameState, type LogEntry, type PlayerId } from '@quantum/engine';
 import { castOf, landing } from '../game/cast';
 import { reducedMotion } from '../game/useMediaQuery';
 import { lastLogId, useTransient } from '../game/useTransient';
@@ -66,9 +66,10 @@ function cellTarget(game: GameState, c: Cell): Target {
       const board = document.querySelector('.board')?.getBoundingClientRect();
       const view = document.querySelector('.board-wrap')?.getBoundingClientRect();
       if (!board || !view || !board.width) return undefined;
-      const size = board.width / game.board.cols;
-      const x = board.left + (c.c + 0.5) * size;
-      const y = board.top + (c.r + 0.5) * size;
+      const { cols, at } = drawing(game.board);
+      const size = board.width / cols;
+      const x = board.left + (at(c).c + 0.5) * size;
+      const y = board.top + (at(c).r + 0.5) * size;
       const inside = x > view.left && x < view.right && y > view.top && y < view.bottom;
       return inside ? { x, y, size } : clampTo(view, x, y, size);
     },

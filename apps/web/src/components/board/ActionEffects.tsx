@@ -39,7 +39,7 @@ function effectsOf(before: GameState, game: GameState): Effect[] {
 /** Over the ships, under explosions. Remounted for a jump to another position (`key`), so that shows none. */
 export function ActionEffects({ game, cell }: { game: GameState; cell: number }) {
   return useStepEffects(game, EFFECT_MS, effectsOf).map((e) => (
-    <EffectBox key={e.id} e={e} cell={cell} className={`fx fx-${e.kind}`}>
+    <EffectBox board={game.board} key={e.id} e={e} cell={cell} className={`fx fx-${e.kind}`}>
       <span />
       {/* Each effect but the trail is two parts (a flash and a ring, a shockwave and a glow). */}
       {e.kind !== 'trail' && <span />}

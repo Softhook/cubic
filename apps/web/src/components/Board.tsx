@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-import { SHIP_NAMES, die, key, moveOptions, same, shipOf, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, cellAtPoint, die, drawing, key, moveOptions, same, shipOf, type Cell, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { ActionEffects } from './board/ActionEffects';
@@ -43,9 +43,12 @@ export function Board({
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
-  const { rows, cols, planets } = game.board;
+  const { planets } = game.board;
+  const { rows, cols, at } = drawing(game.board);
   const zoom = useBoardZoom(wrap, boardRef, rows, cols);
   const { cell } = zoom;
+  /** A space's box on the map, in pixels. */
+  const box = (p: Cell) => ({ left: at(p).c * cell, top: at(p).r * cell, width: cell, height: cell });
   const spots = shipSpots(game);
   const staging = useStaging(game, scene);
   const tip = useZoomIntro(game, ctl, zoom, !!introduce);
@@ -74,7 +77,8 @@ export function Board({
   const onBoardClick = (e: MouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    ctl.onCell({ r: Math.floor((e.clientY - rect.top) / cell), c: Math.floor((e.clientX - rect.left) / cell) });
+    const p = cellAtPoint(game.board, (e.clientY - rect.top) / cell, (e.clientX - rect.left) / cell);
+    if (p) ctl.onCell(p);
   };
 
   return (
@@ -90,7 +94,7 @@ export function Board({
           {ctl.highlights.zones.length > 0 && (
             <div className="zones" aria-hidden>
               {ctl.highlights.zones.map((c) => (
-                <span key={key(c)} style={{ left: c.c * cell, top: c.r * cell, width: cell, height: cell }} />
+                <span key={key(c)} style={box(c)} />
               ))}
             </div>
           )}
@@ -103,7 +107,7 @@ export function Board({
                 className={`hl hl-${tone}${route?.cells.length ? ' routed' : ''}`}
                 data-r={c.r}
                 data-c={c.c}
-                style={{ left: c.c * cell, top: c.r * cell, width: cell, height: cell }}
+                style={box(c)}
                 onClick={() => ctl.onCell(c)}
                 aria-label={`${tone} ${c.r},${c.c}${odds === undefined ? '' : `, ${percent(odds)} chance to win`}`}
               >
@@ -114,6 +118,7 @@ export function Board({
           })}
 
           <Routes
+            board={game.board}
             routes={ctl.routes}
             cell={cell}
             color={ctl.sel.kind === 'attackFrom' ? game.players[die(game, ctl.sel.die).owner].color : ''}
@@ -129,7 +134,7 @@ export function Board({
                 className={`planet-hit ${hl ? `planet-${hl.tone}` : ''}`}
                 data-r={p.r}
                 data-c={p.c}
-                style={{ left: p.c * cell, top: p.r * cell, width: cell, height: cell }}
+                style={box(p)}
                 onClick={() => ctl.onPlanet(p.id) === false && show({ planet: p.id })}
                 title={`${planetLabel(game, p.id)} · ${free} of ${p.capacity} cube location${p.capacity > 1 ? 's' : ''} free`}
               >
@@ -191,11 +196,12 @@ function Reach({ game, id, cell, spots }: { game: GameState; id: string; cell: n
   const { moves, attacks } = moveOptions(game, id);
   const threatened = [...attacks.keys()].flatMap((t) => (spots.get(t) ? [{ id: t, at: spots.get(t)! }] : []));
   const style = { '--pc': game.players[d.owner].color } as CSSProperties;
+  const { at } = drawing(game.board);
   return (
     <>
       <div className="reach" style={style}>
         {[...moves.values()].map(({ cell: c }) => (
-          <span key={key(c)} style={{ left: c.c * cell, top: c.r * cell, width: cell, height: cell }}>
+          <span key={key(c)} style={{ left: at(c).c * cell, top: at(c).r * cell, width: cell, height: cell }}>
             <span />
           </span>
         ))}
@@ -343,7 +349,8 @@ function BoardInfo({
   onClose: () => void;
 }) {
   const anchor = useAnchorName();
-  const spot = 'ship' in what ? spots.get(what.ship) : game.board.planets.find((p) => p.id === what.planet);
+  const planet = 'planet' in what ? game.board.planets.find((p) => p.id === what.planet) : undefined;
+  const spot = 'ship' in what ? spots.get(what.ship) : planet && drawing(game.board).at(planet);
   if (!spot) return null; // the ship left the map
   return (
     <>

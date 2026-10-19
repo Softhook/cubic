@@ -87,6 +87,113 @@
     ]
   },
   {
+    "id": "alpha-hex",
+    "name": "Alpha Sector (hex)",
+    "players": 2,
+    "group": "hex",
+    "cubes": 5,
+    "stats": {
+      "slack": 0,
+      "shared": 1,
+      "planets": 7
+    },
+    "grid": "hex",
+    "layout": [
+      [
+        ".",
+        "7*"
+      ],
+      [
+        "7",
+        "7"
+      ],
+      [
+        "7",
+        "8",
+        "7"
+      ],
+      [
+        "7",
+        "7"
+      ],
+      [
+        ".",
+        "7*"
+      ]
+    ]
+  },
+  {
+    "id": "beta-hex",
+    "name": "Beta Sector (hex)",
+    "players": 3,
+    "group": "hex",
+    "cubes": 5,
+    "stats": {
+      "slack": 4,
+      "shared": 4,
+      "planets": 10
+    },
+    "grid": "hex",
+    "layout": [
+      [
+        "8*",
+        "7",
+        "8",
+        "8*"
+      ],
+      [
+        "8",
+        "10",
+        "7"
+      ],
+      [
+        ".",
+        "7",
+        "8"
+      ],
+      [
+        ".",
+        "8*"
+      ]
+    ]
+  },
+  {
+    "id": "gamma-hex",
+    "name": "Gamma Sector (hex)",
+    "players": 4,
+    "group": "hex",
+    "cubes": 5,
+    "stats": {
+      "slack": 4,
+      "shared": 5,
+      "planets": 9
+    },
+    "grid": "hex",
+    "layout": [
+      [
+        ".",
+        "9*"
+      ],
+      [
+        "9",
+        "8"
+      ],
+      [
+        "8*",
+        "10",
+        "8*"
+      ],
+      [
+        "8",
+        "9"
+      ],
+      [
+        ".",
+        "9*"
+      ]
+    ]
+  },
+  {
     "id": "tactics",
     "name": "Tactics",
     "players": 2,

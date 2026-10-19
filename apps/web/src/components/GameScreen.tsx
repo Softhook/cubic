@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { actor, rulesOf, type GameState, type PlayerId } from '@quantum/engine';
+import { actor, drawing, rulesOf, type GameState, type PlayerId } from '@quantum/engine';
 import { useController } from '../game/controller';
 import { useUndoShortcut } from '../game/useGame';
 import { conquerOptions } from '../game/legal';
@@ -106,7 +106,7 @@ export function Game({
 
       <main className={`layout ${sheet ? 'sheet-layout' : ''}`}>
         {/* First in both layouts, so turning the phone keeps the board (and its zoom). */}
-        <div className="stage" style={{ '--map-ratio': game.board.rows / game.board.cols } as CSSProperties}>
+        <div className="stage" style={{ '--map-ratio': drawing(game.board).rows / drawing(game.board).cols } as CSSProperties}>
           {/* Choosing a starting planet is the first moment the map is yours to look at: show it zooms then. */}
           <Board
             game={returning ?? game}

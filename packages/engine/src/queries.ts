@@ -3,6 +3,7 @@ import {
   cellAt,
   diagonals,
   delta,
+  distance,
   grid,
   type Grid,
   key,
@@ -551,8 +552,10 @@ export function nomadicTargets(state: GameState, dieId: string): Cell[] {
   if (!at) return [];
   const home = state.board.planets.find((p) => orbitals(state.board, p).some((q) => same(q, at)));
   if (!home) return [];
-  // Planets sit at the centre of their 3×3 tile, so planets on neighbouring tiles are 3 spaces away.
+  // Planets sit at the centre of their tile, so planets on neighbouring tiles are 3 spaces away: in
+  // a straight line on squares, and any way on hexes (the next flowers are 3 hexes away, the rest farther).
   const near = state.board.planets.filter((p) => {
+    if (state.board.hex) return distance(home, p, state.board) === 3;
     const d = delta(home, p, state.board);
     return (d.r === 0 && Math.abs(d.c) === 3) || (d.c === 0 && Math.abs(d.r) === 3);
   });

@@ -1,7 +1,8 @@
-import type { Board } from '@quantum/engine';
+import { adjacent, type Board } from '@quantum/engine';
 import { assignTiles, tileFlavour, tileSpec } from '@quantum/art';
 
 export interface TileArt {
+  /** The tile's top-left space; on a hex map, its middle hex (the planet's). */
   r: number;
   c: number;
   /** The physical tile whose artwork (starfield and planet) goes here. */
@@ -23,6 +24,15 @@ function tileIds(board: Board) {
       tiles.set(x.tile, { r, c, number: 0 });
     }),
   );
+  // A hex tile's middle: the hex whose six neighbours are all on its tile.
+  if (board.hex)
+    board.cells.forEach((row, r) =>
+      row.forEach((x, c) => {
+        const around = adjacent(board, { r, c });
+        if (x.kind !== 'off' && around.length === 6 && around.every((q) => board.cells[q.r][q.c].tile === x.tile))
+          Object.assign(tiles.get(x.tile)!, { r, c });
+      }),
+    );
   for (const p of board.planets) tiles.get(board.cells[p.r][p.c].tile)!.number = p.number;
   const ids = assignTiles([...tiles].map(([index, t]) => ({ index, number: t.number })));
   return { tiles, ids };

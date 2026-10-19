@@ -21,7 +21,8 @@ browser, installs to a phone or tablet home screen and plays offline.
 - **Every card**: all 35 CE Skills, 9 Tactics and Expansion, and all 37 Original Command and
   Gambit cards.
 - **84 maps for 2–5 players**: 3 basic, 37 advanced from the print booklet, 6 from the 2014
-  add-on pack, 24 from Board Game Arena and the CE booklet's 14 five-player maps.
+  add-on pack, 24 from Board Game Arena and the CE booklet's 14 five-player maps. The Basic game also
+  plays on **hex tiles**, with hex versions of the 3 basic maps ([HEX.md](docs/HEX.md)).
 - **AI opponents in five levels**, Cadet to Fleet Admiral, picked per seat and run in a Web
   Worker ([AI.md](docs/AI.md)).
 - **Hot-seat or online with friends**, live or one move at a time over days, with no server: the
@@ -97,6 +98,7 @@ More tools, all headless:
 | [MOBILE.md](docs/MOBILE.md) | Phone and tablet support: plan, progress and device checks |
 | [GRAPHICS.md](docs/GRAPHICS.md) | The art package, Art Lab and print pipeline |
 | [PROTOTYPING.md](docs/PROTOTYPING.md) | Ideas for a fourth rule set of our own |
+| [HEX.md](docs/HEX.md) | The Basic game on hex tiles: how the rules read on hexes, the maps, the code |
 | [ROADMAP.md](docs/ROADMAP.md) | Milestones, what's done and the backlog |
 | [VISUAL-IDEAS.md](docs/VISUAL-IDEAS.md) | Ideas for making the game look better and appeal to new players: card art in play, battles, game over, lobby |
 | [card-benchmark.md](docs/card-benchmark.md) | Card balance from AI self-play: each Community skill's value against no skill, and card pick and win rates |

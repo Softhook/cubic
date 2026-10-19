@@ -16,9 +16,45 @@ const DIAG: Cell[] = [
 /** The 8 directions to a surrounding space: orthogonal first, then diagonal. */
 export const AROUND: readonly Cell[] = [...ORTHO, ...DIAG];
 
+/*
+ * Hex boards (MapDef.grid 'hex'): flat-topped hexes in axial coordinates, `c` the column (q) and `r`
+ * the axial row, so the six neighbours are the steps below. A hex's "diagonals" are the six hexes two
+ * away between two neighbours, as a square's are the four corners between two neighbours: a diagonal
+ * step covers two spaces of distance in one step, as on squares (docs/HEX.md).
+ */
+const HEX_SIDES: Cell[] = [
+  { r: -1, c: 0 },
+  { r: 1, c: 0 },
+  { r: 0, c: -1 },
+  { r: 0, c: 1 },
+  { r: -1, c: 1 },
+  { r: 1, c: -1 },
+];
+const HEX_DIAG: Cell[] = [
+  { r: -2, c: 1 },
+  { r: 2, c: -1 },
+  { r: -1, c: -1 },
+  { r: 1, c: 1 },
+  { r: -1, c: 2 },
+  { r: 1, c: -2 },
+];
+
+/** The steps to a board's neighbouring spaces (sides) and its diagonals. */
+const steps = (board: Board) => (board.hex ? { sides: HEX_SIDES, diag: HEX_DIAG } : { sides: ORTHO, diag: DIAG });
+
+/*
+ * A hex map's tiles are 7-hex flowers: the planet and the six spaces around it. Flowers tile the plane
+ * on a lattice of their own, turned about 11° from the hexes; a layout row runs along TILE_ROW, and odd
+ * rows sit half a tile to the right, between the tiles of the rows above and below.
+ */
+const TILE_ROW: Cell = { r: -1, c: 3 };
+const TILE_DOWN_RIGHT: Cell = { r: 2, c: 1 };
+const TILE_DOWN_LEFT: Cell = { r: 3, c: -2 };
+
 export const CAPACITY: Record<number, number> = { 7: 1, 8: 2, 9: 3, 10: 4 };
 
 export function buildBoard(map: MapDef): Board {
+  if (map.grid === 'hex') return buildHexBoard(map);
   const tileRows = map.layout.length;
   const tileCols = Math.max(...map.layout.map((r) => r.length));
   const rows = tileRows * 3;
@@ -54,6 +90,113 @@ export function buildBoard(map: MapDef): Board {
   return board;
 }
 
+/** The planet of each hex tile in a layout (axial, before shifting onto the board), with its token. */
+function hexTiles(map: MapDef): { r: number; c: number; token: string; tile: number }[] {
+  const tileCols = Math.max(...map.layout.map((r) => r.length));
+  const out: { r: number; c: number; token: string; tile: number }[] = [];
+  map.layout.forEach((row, tr) => {
+    const pairs = Math.floor(tr / 2);
+    const odd = tr % 2;
+    row.forEach((token, tc) => {
+      if (token === '.') return;
+      out.push({
+        r: tc * TILE_ROW.r + pairs * (TILE_DOWN_RIGHT.r + TILE_DOWN_LEFT.r) + odd * TILE_DOWN_RIGHT.r,
+        c: tc * TILE_ROW.c + pairs * (TILE_DOWN_RIGHT.c + TILE_DOWN_LEFT.c) + odd * TILE_DOWN_RIGHT.c,
+        token,
+        tile: tr * tileCols + tc,
+      });
+    });
+  });
+  return out;
+}
+
+function buildHexBoard(map: MapDef): Board {
+  const tiles = hexTiles(map);
+  const flower = [{ r: 0, c: 0 }, ...HEX_SIDES];
+  const all = tiles.flatMap((t) => flower.map((d) => ({ r: t.r + d.r, c: t.c + d.c })));
+  const r0 = Math.min(...all.map((p) => p.r));
+  const c0 = Math.min(...all.map((p) => p.c));
+  const rows = Math.max(...all.map((p) => p.r)) - r0 + 1;
+  const cols = Math.max(...all.map((p) => p.c)) - c0 + 1;
+  const cells: BoardCell[][] = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ kind: 'off' as const, tile: -1 })));
+  const planets: Planet[] = [];
+  for (const t of tiles) {
+    const start = t.token.endsWith('*');
+    const number = Number(t.token.replace('*', ''));
+    const r = t.r - r0;
+    const c = t.c - c0;
+    for (const d of flower) if (cells[r + d.r][c + d.c].kind !== 'off') throw new Error(`${map.id}: hex tiles overlap`);
+    for (const d of HEX_SIDES) {
+      const cell: BoardCell = { kind: 'space', tile: t.tile };
+      if (number === 0) cell.void = true;
+      cells[r + d.r][c + d.c] = cell;
+    }
+    if (number > 0) {
+      const id = planets.length;
+      planets.push({ id, number, capacity: CAPACITY[number] ?? 1, cubes: [], start, r, c });
+      cells[r][c] = { kind: 'planet', tile: t.tile, planet: id };
+    } else cells[r][c] = { kind: 'space', tile: t.tile, void: true };
+  }
+  return { mapId: map.id, mapName: map.name, rows, cols, cells, planets, hex: true };
+}
+
+/** How far a flat-topped hex's centre is from the next column's, in hex heights (√3 / 2). */
+const HEX_COLUMN = Math.sqrt(3) / 2;
+
+/** Where a board is drawn: each space's place and the whole board's size, in spaces (cell units). */
+export interface Drawing {
+  rows: number;
+  cols: number;
+  /** A space's top-left corner, in spaces from the board's; its box is one space square. */
+  at: (p: Cell) => Cell;
+}
+
+const DRAWINGS = new WeakMap<BoardCell[][], Drawing>();
+
+/**
+ * How a board is drawn. Square boards are drawn as stored. A hex board's flat-topped hexes are one
+ * space tall (flat side to flat side), with columns HEX_COLUMN apart, each half a hex lower than the
+ * one before; `at` gives the top left of the square box centred on the hex. Fractional positions
+ * (a ship part-way into its target) work too.
+ */
+export function drawing(board: Board): Drawing {
+  let d = DRAWINGS.get(board.cells);
+  if (d) return d;
+  if (!board.hex) d = { rows: board.rows, cols: board.cols, at: (p) => p };
+  else {
+    const raw = (p: Cell) => ({ r: p.r + p.c / 2, c: p.c * HEX_COLUMN });
+    const on: Cell[] = [];
+    board.cells.forEach((row, r) => row.forEach((x, c) => x.kind !== 'off' && on.push(raw({ r, c }))));
+    const top = Math.min(...on.map((p) => p.r));
+    const left = Math.min(...on.map((p) => p.c));
+    d = {
+      rows: Math.max(...on.map((p) => p.r)) - top + 1,
+      cols: Math.max(...on.map((p) => p.c)) - left + 1,
+      at: (p) => {
+        const q = raw(p);
+        return { r: q.r - top, c: q.c - left };
+      },
+    };
+  }
+  DRAWINGS.set(board.cells, d);
+  return d;
+}
+
+/** The space drawn at a point of the drawing (in spaces from its top left), if any: the nearest on-board one within half a space. */
+export function cellAtPoint(board: Board, y: number, x: number): Cell | undefined {
+  if (!board.hex) return { r: Math.floor(y), c: Math.floor(x) };
+  const { at } = drawing(board);
+  let best: Cell | undefined;
+  let near = 0.75;
+  for (const p of grid(board).cells) {
+    if (!onBoard(board, p)) continue;
+    const q = at(p);
+    const d = Math.hypot(q.r + 0.5 - y, q.c + 0.5 - x);
+    if (d < near) [best, near] = [p, d];
+  }
+  return best;
+}
+
 export const key = (p: Cell) => `${p.r},${p.c}`;
 export const same = (a: Cell, b: Cell) => a.r === b.r && a.c === b.c;
 
@@ -74,9 +217,10 @@ export function delta(a: Cell, b: Cell, board: Board): Cell {
   return { r: short(b.r - a.r, board.rows, board.wrap?.rows), c: short(b.c - a.c, board.cols, board.wrap?.cols) };
 }
 
-/** Orthogonal (Manhattan) distance between two cells, across joined edges on a wrapping map. */
+/** Steps between two cells: orthogonal (Manhattan) distance, across joined edges on a wrapping map; hexes apart on a hex board. */
 export function distance(a: Cell, b: Cell, board: Board): number {
   const d = delta(a, b, board);
+  if (board.hex) return (Math.abs(d.r) + Math.abs(d.c) + Math.abs(d.r + d.c)) / 2;
   return Math.abs(d.r) + Math.abs(d.c);
 }
 
@@ -102,7 +246,10 @@ export interface Grid {
   cells: readonly Cell[];
   /** Whether a ship may stand on the cell. */
   space: readonly boolean[];
-  /** Neighbour indexes, orthogonal and all eight, on the board. */
+  /**
+   * Neighbour indexes on the board: `ortho` the spaces next to it (4 orthogonal, or a hex's 6 sides),
+   * `around` those and the diagonals (8 around a square, 12 for a hex).
+   */
   ortho: readonly (readonly number[])[];
   around: readonly (readonly number[])[];
   orthoCells: readonly (readonly Cell[])[];
@@ -125,8 +272,9 @@ export function grid(board: Board): Grid {
           .map((q) => cells[q.r * cols + q.c]),
       ),
     );
-  const orthoCells = near(ORTHO);
-  const aroundCells = near(AROUND);
+  const { sides, diag } = steps(board);
+  const orthoCells = near(sides);
+  const aroundCells = near([...sides, ...diag]);
   const index = (list: readonly Cell[]) => Object.freeze(list.map((q) => q.r * cols + q.c));
   g = {
     cols,
@@ -150,13 +298,15 @@ export function cellIndex(board: Board, p: Cell | undefined): number {
 }
 
 function neighbours(board: Board, p: Cell, around: boolean): readonly Cell[] {
-  if (p.r < 0 || p.c < 0 || p.r >= board.rows || p.c >= board.cols)
-    return offsets(board, p, around ? AROUND : ORTHO).filter((q) => onBoard(board, q));
+  if (p.r < 0 || p.c < 0 || p.r >= board.rows || p.c >= board.cols) {
+    const { sides, diag } = steps(board);
+    return offsets(board, p, around ? [...sides, ...diag] : sides).filter((q) => onBoard(board, q));
+  }
   const g = grid(board);
   return (around ? g.aroundCells : g.orthoCells)[p.r * board.cols + p.c];
 }
 
-/** The 4 orthogonal spaces next to p that are on the board. */
+/** The spaces next to p that are on the board: the 4 orthogonal ones, or a hex's 6. */
 export function adjacent(board: Board, p: Cell): readonly Cell[] {
   return neighbours(board, p, false);
 }
@@ -166,9 +316,9 @@ export function linked(state: GameState, p: Cell): Cell[] {
   return [...adjacent(state.board, p), ...gatePartner(state, p)];
 }
 
-/** The 8 surrounding spaces of p that are on the board. */
+/** The spaces touching p that are on the board: the 8 around a square, a hex's 6 sides. */
 export function surrounding(board: Board, p: Cell): readonly Cell[] {
-  return neighbours(board, p, true);
+  return neighbours(board, p, !board.hex);
 }
 
 /** Movement neighbours, including diagonals for interceptors and Warp Gate links. */
@@ -186,6 +336,7 @@ function gatePartner(state: GameState, p: Cell): Cell[] {
 
 export function isDiagonalStep(a: Cell, b: Cell, board: Board): boolean {
   const d = delta(a, b, board);
+  if (board.hex) return HEX_DIAG.some((x) => x.r === d.r && x.c === d.c);
   return Math.abs(d.r) === 1 && Math.abs(d.c) === 1;
 }
 
@@ -194,7 +345,7 @@ export function orbitals(board: Board, planet: Planet): readonly Cell[] {
 }
 
 export function diagonals(board: Board, planet: Planet): Cell[] {
-  return offsets(board, planet, DIAG).filter((q) => onBoard(board, q));
+  return offsets(board, planet, steps(board).diag).filter((q) => onBoard(board, q));
 }
 
 export function planetFreeSlots(planet: Planet): number {
