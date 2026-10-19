@@ -7,7 +7,14 @@
 #   7 | 8 | 9 | 10   planet tile; number = conquer target and cube locations (7→1, 8→2, 9→3, 10→4)
 #   0                void tile: no planet; +1 research per own ship on it at start of turn
 #   .                no tile (empty gap, not part of the board)
-#   suffix *         starting planet
+#   suffix n ne e se s sw w nw
+#                    the planet sits off the middle of its tile, on that space (north is up as drawn)
+#   suffix *         starting planet, after any direction: 8*, 7ne*
+#
+# An off-centre planet's orbit is still the spaces next to it, so it reaches onto the tiles it faces,
+# loses spaces off the map's edge, and may overlap another planet's: a ship there counts for both. A
+# square tile's planet may sit on any of the 8 spaces around the middle; a hex tile's on any of its 6
+# outer hexes (n ne se s sw nw). Each starting planet needs 3 orbital spaces no other start shares.
 #
 # Groups: basic (the box's basic maps), advanced (the 2013 rulebook's advanced maps),
 #         addon (the add-on pack), bga (maps Board Game Arena added),

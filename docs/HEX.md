@@ -16,7 +16,8 @@ plane with no gaps, and the planets of touching tiles are 3 spaces apart, as on 
 | Spaces that are no planet's orbit | the 4 corners | none |
 | Tiles a tile touches | up to 4 (and 4 at a corner) | up to 6 |
 
-Every space on a hex map is in some planet's orbit, and each space orbits one planet only.
+Every space on a hex map is in some planet's orbit, and each space orbits one planet only, while the
+planets sit in the middle of their tiles (see *Off-centre planets*).
 
 ## How the rules read on hexes
 
@@ -98,6 +99,33 @@ planet, without the square pads) is cut to the flower, with a well etched for ea
   hex game (all three with `DEEP=1`). `npm run hex:check` plays a first move in Chrome on the square
   Alpha Sector and each hex map, tapping where the space is drawn.
 
+## Off-centre planets
+
+The engine can place a tile's planet off its middle, on one of the spaces around it, on squares and
+hexes alike: a layout token takes a compass direction, `7ne` or `8s*` ([`data/maps.yaml`](../data/maps.yaml)).
+No map does yet, and the tile art still draws every planet in the middle.
+
+| | Square tile | Hex tile |
+|---|---|---|
+| Where the planet may sit | any of the 8 spaces around the middle, corners too | any of the 6 outer hexes |
+| Its orbit on its own tile | 3 spaces, the middle among them; from a corner, the 2 edge spaces beside it, not the middle | 3 hexes, the middle among them |
+| Its orbit on other tiles | 1 space of the tile it faces (from a corner, 1 each of two tiles) | 3 hexes: 2 of one tile, 1 of another |
+| Spaces of its tile in no orbit | 5 (6 from a corner) | 3 |
+
+The orbit is still the spaces next to the planet, so the rules read the same:
+
+- **Edges.** Facing the map's edge or a gap, a planet loses those orbital spaces: 3 left, or 2 in a corner of the map.
+- **Overlaps.** Two planets' orbits may share a space. A ship there counts towards conquering both.
+  Moving or deploying there names both planets.
+- **Neighbours.** Two planets may be next to each other; neither orbits the other's space.
+- **Starts.** Each starting planet needs room for the 3 starting ships in orbital spaces no other start
+  shares; `buildBoard` refuses a map otherwise.
+- **Nomadic** reaches the planets of the tiles touching the tile of any planet the ship orbits, found by
+  the tiles' middle spaces (`tilesTouch`), however far the planets themselves are.
+
+[`offset.test.ts`](../packages/engine/test/offset.test.ts) pins these on two test maps, and the legal-move
+cross-check plays games on them.
+
 ## Not yet
 
 - Cards (Classic, Community, Prototyping): most work unchanged, but Ingenious and Hostile ("conquer from
@@ -106,3 +134,4 @@ planet, without the square pads) is cut to the flower, with a well etched for ea
 - Hex versions of the advanced, add-on and BGA maps; wrapping maps.
 - Printed hex tiles in the Art Lab.
 - Turning a tall map on its side to fit a wide screen.
+- Off-centre planets in the tile art (squares and hexes) and in the lobby's previews, and maps that use them.

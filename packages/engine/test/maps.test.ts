@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAPS, adjacent, buildBoard, createGame, distance, isDiagonalStep, mapStats, stepNeighbours } from '../src';
+import { MAPS, adjacent, buildBoard, createGame, distance, isDiagonalStep, mapStats, parseToken, stepNeighbours } from '../src';
 
 describe('maps', () => {
   for (const map of MAPS)
@@ -7,6 +7,13 @@ describe('maps', () => {
       expect(mapStats(map)).toEqual(map.stats);
       expect(map.layout.flat().filter((t) => t.endsWith('*')).length).toBeGreaterThanOrEqual(map.players);
     });
+
+  // The tile art (tile.ts, HexTiles) still paints every planet in the middle of its tile, where a ship
+  // could stand on an off-centre map (docs/HEX.md). Lift this once the art follows the planet.
+  it('keep their planets in the middle of their tiles until the art can draw them elsewhere', () => {
+    const offCentre = MAPS.flatMap((m) => m.layout.flat().flatMap((t) => (t !== '.' && parseToken(t).dir ? [`${m.id}: ${t}`] : [])));
+    expect(offCentre).toEqual([]);
+  });
 });
 
 describe('wrapping maps', () => {

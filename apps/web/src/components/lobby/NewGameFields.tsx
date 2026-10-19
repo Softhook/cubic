@@ -2,7 +2,7 @@
 
 import { type CSSProperties, type ReactNode } from 'react';
 import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
-import { type GameMode, type MapDef, type PlayerConfig } from '@quantum/engine';
+import { parseToken, type GameMode, type MapDef, type PlayerConfig } from '@quantum/engine';
 import { Segmented } from '../Segmented';
 import { remember } from '../../storage';
 import { pick } from '../../random';
@@ -30,11 +30,11 @@ const MAP_GROUPS: { id: string; name: string }[] = [
 
 /** A tile of the preview: its number, a start's ring, or nothing for a gap. */
 function MiniTile({ token, style }: { token: string; style?: CSSProperties }) {
-  const n = token.replace('*', '');
   if (token === '.') return <span className="mini-tile gap" style={style} />;
+  const { number: n, start } = parseToken(token);
   return (
-    <span className={`mini-tile n${n} ${token.endsWith('*') ? 'start' : ''}`} style={style}>
-      {n === '0' ? '' : n}
+    <span className={`mini-tile n${n} ${start ? 'start' : ''}`} style={style}>
+      {n === 0 ? '' : n}
     </span>
   );
 }

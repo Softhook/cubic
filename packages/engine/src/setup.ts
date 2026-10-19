@@ -1,5 +1,5 @@
 /** Game creation and the setup decisions: fleet roll, starting skill, starting planet and ships. */
-import { buildBoard, same } from './board';
+import { buildBoard, same, STARTING_SHIPS } from './board';
 import { IMPLEMENTED_EFFECTS } from './effects';
 import { aShip, emptyTurn, fail, headOf, log, note, logTo, name, placeCube, roll, type Handlers } from './core';
 import { defaultMap, effectOf, MAPS, type CardDef, type GameMode } from './data';
@@ -87,17 +87,17 @@ export function createGame(opts: NewGameOptions): GameState {
     }
   }
 
-  // 7 dice per player: 3 starting ships, 2 expansion ships in reserve (2 more are trackers).
+  // 7 dice per player: STARTING_SHIPS (3) starting ships, 2 expansion ships in reserve (2 more are trackers).
   for (const p of state.players) {
     for (let i = 0; i < 5; i++) {
       const d: Die = {
         id: `p${p.id}d${i}`,
         owner: p.id,
         value: 1,
-        loc: i < 3 ? { zone: 'scrapyard' } : { zone: 'reserve' },
+        loc: i < STARTING_SHIPS ? { zone: 'scrapyard' } : { zone: 'reserve' },
         rolls: 0,
       };
-      if (i < 3) roll(state, d);
+      if (i < STARTING_SHIPS) roll(state, d);
       state.dice.push(d);
     }
     state.pending.push({ kind: 'setupRoll', player: p.id, rerolled: false });

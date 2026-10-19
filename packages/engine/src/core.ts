@@ -2,7 +2,7 @@
  * Shared building blocks for the rule modules: errors, the log, dice, actions and the
  * dominance / research / cube bookkeeping that many rules touch.
  */
-import { diagonals, orbitals, same } from './board';
+import { diagonals, orbitedPlanets, same } from './board';
 import { card, cardWithEffect, SHIP_NAMES } from './data';
 import type { SkillEffect } from './effects';
 import { die } from './lookups';
@@ -21,7 +21,6 @@ import {
   type LogEvent,
   type OncePerTurn,
   type Pending,
-  type Planet,
   type PlayerId,
   type PlayerStats,
   type TurnState,
@@ -70,9 +69,17 @@ export function note(s: GameState, text: string, player: PlayerId, planets?: num
  * named as `planet N` so the UI can show its name. `after` goes at the end, before the full stop.
  */
 export function logTo(s: GameState, player: PlayerId, text: string, to: Cell, after = '') {
-  const by = (cells: (p: Planet) => readonly Cell[]) => s.board.planets.find((p) => cells(p).some((q) => same(q, to)));
-  const planet = by((p) => orbitals(s.board, p)) ?? by((p) => diagonals(s.board, p));
-  if (planet) note(s, `${text} next to planet ${planet.number}${after}.`, player, [planet.id]);
+  // Every planet it orbits, where orbits overlap; else every one it's diagonal to.
+  const orbited = orbitedPlanets(s.board, to);
+  const planets = orbited.length ? orbited : s.board.planets.filter((p) => diagonals(s.board, p).some((q) => same(q, to)));
+  const names = planets.map((p) => `planet ${p.number}`).join(' and ');
+  if (planets.length)
+    note(
+      s,
+      `${text} next to ${names}${after}.`,
+      player,
+      planets.map((p) => p.id),
+    );
   else note(s, `${text} into deep space${after}.`, player);
 }
 

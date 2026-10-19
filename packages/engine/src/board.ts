@@ -78,8 +78,66 @@ const TILE_DOWN_LEFT: Cell = { r: 3, c: -2 };
 
 export const CAPACITY: Record<number, number> = { 7: 1, 8: 2, 9: 3, 10: 4 };
 
+/*
+ * Where a tile's planet sits, as a step from the tile's middle space: a layout token's direction
+ * (data/maps.yaml), none for the middle. A square tile's planet may sit on any of the 8 spaces around
+ * the middle, corners too; a hex tile's on any of its 6 outer hexes. North is up as the map is drawn.
+ */
+const named = (names: readonly string[], steps: readonly Cell[]): Record<string, Cell> =>
+  Object.fromEntries(names.map((n, i) => [n, steps[i]]));
+const SQUARE_OFFSETS = named(['n', 's', 'w', 'e', 'nw', 'ne', 'sw', 'se'], [...ORTHO, ...DIAG]);
+const HEX_OFFSETS = named(['n', 's', 'nw', 'se', 'ne', 'sw'], HEX_SIDES);
+const MIDDLE: Cell = { r: 0, c: 0 };
+
+/** A layout token (data/maps.yaml), other than a gap: the planet's number (0 for void), whether it's a start, and where on the tile it sits. */
+export interface TileToken {
+  number: number;
+  start: boolean;
+  /** The planet's compass direction from the tile's middle space; absent when it sits in the middle. */
+  dir?: string;
+}
+
+/** Reads a layout token such as `8`, `9*`, `7ne` or `8s*`; throws on anything else. */
+export function parseToken(token: string): TileToken {
+  const m = /^(\d+)([nsew]{1,2})?(\*)?$/.exec(token);
+  const number = Number(m?.[1]);
+  if (!m || !(number === 0 || number in CAPACITY) || (m[2] && !(m[2] in SQUARE_OFFSETS))) throw new Error(`Bad tile token "${token}"`);
+  if (number === 0 && (m[2] || m[3])) throw new Error(`A void tile has no planet to place or start on: "${token}"`);
+  return m[2] ? { number, start: !!m[3], dir: m[2] } : { number, start: !!m[3] };
+}
+
+/** The step from a tile's middle space to its planet. */
+function planetOffset(t: TileToken, hex: boolean, mapId: string): Cell {
+  if (!t.dir) return MIDDLE;
+  const d = (hex ? HEX_OFFSETS : SQUARE_OFFSETS)[t.dir];
+  if (!d) throw new Error(`${mapId}: a hex tile's planet can't sit "${t.dir}" (n, ne, se, s, sw or nw)`);
+  return d;
+}
+
+/** Ships each player places around their starting planet at setup (setup.ts). */
+export const STARTING_SHIPS = 3;
+
+/**
+ * Checks what an off-centre planet could break: each starting planet needs room for the starting
+ * ships, in orbital spaces no other start shares. Orbits that overlap are otherwise fine.
+ */
+function checkStarts(board: Board) {
+  const starts = board.planets.filter((p) => p.start);
+  for (const p of starts) {
+    const others = starts.filter((q) => q !== p).flatMap((q) => orbitals(board, q));
+    const own = orbitals(board, p).filter((x) => !others.some((y) => same(x, y)));
+    if (own.length < STARTING_SHIPS)
+      throw new Error(`${board.mapId}: starting planet ${p.number} has ${own.length} orbital spaces of its own, needs ${STARTING_SHIPS}`);
+  }
+}
+
 export function buildBoard(map: MapDef): Board {
-  if (map.grid === 'hex') return buildHexBoard(map);
+  const board = map.grid === 'hex' ? buildHexBoard(map) : buildSquareBoard(map);
+  checkStarts(board);
+  return board;
+}
+
+function buildSquareBoard(map: MapDef): Board {
   const tileRows = map.layout.length;
   const tileCols = Math.max(...map.layout.map((r) => r.length));
   const rows = tileRows * 3;
@@ -91,8 +149,8 @@ export function buildBoard(map: MapDef): Board {
     row.forEach((token, tc) => {
       if (token === '.') return;
       const tile = tr * tileCols + tc;
-      const start = token.endsWith('*');
-      const number = Number(token.replace('*', ''));
+      const t = parseToken(token);
+      const { number, start } = t;
       for (let dr = 0; dr < 3; dr++) {
         for (let dc = 0; dc < 3; dc++) {
           const cell: BoardCell = { kind: 'space', tile };
@@ -101,10 +159,11 @@ export function buildBoard(map: MapDef): Board {
         }
       }
       if (number > 0) {
-        const r = tr * 3 + 1;
-        const c = tc * 3 + 1;
+        const d = planetOffset(t, false, map.id);
+        const r = tr * 3 + 1 + d.r;
+        const c = tc * 3 + 1 + d.c;
         const id = planets.length;
-        planets.push({ id, number, capacity: CAPACITY[number] ?? 1, cubes: [], start, r, c });
+        planets.push({ id, number, capacity: CAPACITY[number], cubes: [], start, r, c });
         cells[r][c] = { kind: 'planet', tile, planet: id };
       }
     });
@@ -146,21 +205,22 @@ function buildHexBoard(map: MapDef): Board {
   const cells: BoardCell[][] = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ kind: 'off' as const, tile: -1 })));
   const planets: Planet[] = [];
   for (const t of tiles) {
-    const start = t.token.endsWith('*');
-    const number = Number(t.token.replace('*', ''));
+    const token = parseToken(t.token);
+    const { number, start } = token;
     const r = t.r - r0;
     const c = t.c - c0;
     for (const d of flower) if (cells[r + d.r][c + d.c].kind !== 'off') throw new Error(`${map.id}: hex tiles overlap`);
-    for (const d of HEX_SIDES) {
+    for (const d of flower) {
       const cell: BoardCell = { kind: 'space', tile: t.tile };
       if (number === 0) cell.void = true;
       cells[r + d.r][c + d.c] = cell;
     }
     if (number > 0) {
+      const d = planetOffset(token, true, map.id);
       const id = planets.length;
-      planets.push({ id, number, capacity: CAPACITY[number] ?? 1, cubes: [], start, r, c });
-      cells[r][c] = { kind: 'planet', tile: t.tile, planet: id };
-    } else cells[r][c] = { kind: 'space', tile: t.tile, void: true };
+      planets.push({ id, number, capacity: CAPACITY[number], cubes: [], start, r: r + d.r, c: c + d.c });
+      cells[r + d.r][c + d.c] = { kind: 'planet', tile: t.tile, planet: id };
+    }
   }
   return { mapId: map.id, mapName: map.name, rows, cols, cells, planets, hex: true };
 }
@@ -367,27 +427,58 @@ export function isDiagonalStep(a: Cell, b: Cell, board: Board): boolean {
   return geometry(board).diagonals.some((x) => same(x, d));
 }
 
+const isSpace = (board: Board, p: Cell) => cellAt(board, p)?.kind === 'space';
+
+const ORBITS = new WeakMap<BoardCell[][], (readonly Cell[])[]>();
+
+/**
+ * A planet's orbital positions: the spaces next to it. An off-centre planet's orbit reaches onto
+ * neighbouring tiles, or loses the spaces off the map's edge; orbits may overlap, so a space can orbit
+ * several planets, and a planet next to another doesn't orbit it. Cached by `cells`, like grid().
+ */
 export function orbitals(board: Board, planet: Planet): readonly Cell[] {
-  return adjacent(board, planet);
+  let orbits = ORBITS.get(board.cells);
+  if (!orbits) ORBITS.set(board.cells, (orbits = []));
+  return (orbits[planet.id] ??= Object.freeze(adjacent(board, planet).filter((q) => isSpace(board, q))));
+}
+
+/** The planets a space orbits: none, one, or several where orbits overlap. */
+export function orbitedPlanets(board: Board, p: Cell): Planet[] {
+  return board.planets.filter((planet) => orbitals(board, planet).some((q) => same(q, p)));
 }
 
 export function diagonals(board: Board, planet: Planet): Cell[] {
-  return offsets(board, planet, geometry(board).diagonals).filter((q) => onBoard(board, q));
+  return offsets(board, planet, geometry(board).diagonals).filter((q) => isSpace(board, q));
 }
 
+const CENTRES = new WeakMap<BoardCell[][], ReadonlyMap<number, Cell>>();
+
 /**
- * Each tile's middle space (its planet's, or a void tile's middle), by tile index (`BoardCell.tile`): the
- * one space whose neighbours all lie on its own tile.
+ * Each tile's middle space, by tile index (`BoardCell.tile`): the one space whose neighbours all lie on
+ * its own tile. The planet's, unless it sits off-centre. Cached by `cells`, like grid().
  */
-export function tileCentres(board: Board): Map<number, Cell> {
-  const out = new Map<number, Cell>();
+export function tileCentres(board: Board): ReadonlyMap<number, Cell> {
+  let out = CENTRES.get(board.cells);
+  if (out) return out;
+  const centres = new Map<number, Cell>();
   const { sides } = geometry(board);
   board.cells.forEach((row, r) =>
     row.forEach((x, c) => {
-      if (x.kind !== 'off' && sides.every((d) => cellAt(board, { r: r + d.r, c: c + d.c })?.tile === x.tile)) out.set(x.tile, { r, c });
+      if (x.kind !== 'off' && sides.every((d) => cellAt(board, { r: r + d.r, c: c + d.c })?.tile === x.tile)) centres.set(x.tile, { r, c });
     }),
   );
+  CENTRES.set(board.cells, (out = centres));
   return out;
+}
+
+/**
+ * Whether two tiles touch along a side: the 4 orthogonal neighbours of a square tile (not the
+ * diagonal ones), or the 6 around a hex flower. Their middle spaces are then 3 apart.
+ */
+export function tilesTouch(board: Board, a: number, b: number): boolean {
+  const centres = tileCentres(board);
+  const [p, q] = [centres.get(a), centres.get(b)];
+  return !!p && !!q && distance(p, q, board) === 3;
 }
 
 export function planetFreeSlots(planet: Planet): number {

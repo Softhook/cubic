@@ -1,4 +1,4 @@
-import { CAPACITY } from './board';
+import { CAPACITY, parseToken } from './board';
 import type { MapDef } from './data';
 
 export interface MapStats {
@@ -25,8 +25,10 @@ export interface MapStats {
 export function mapStats(map: MapDef): MapStats {
   const planets = map.layout
     .flat()
-    .filter((t) => t !== '.' && t !== '0')
-    .map((t) => ({ cap: CAPACITY[Number(t.replace('*', ''))], start: t.endsWith('*') }));
+    .filter((t) => t !== '.')
+    .map(parseToken)
+    .filter((t) => t.number > 0)
+    .map((t) => ({ cap: CAPACITY[t.number], start: t.start }));
   const owner = planets.map(() => -1);
   planets
     .map((p, i) => (p.start ? i : -1))

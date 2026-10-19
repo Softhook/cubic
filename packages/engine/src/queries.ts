@@ -2,17 +2,18 @@
 import {
   cellAt,
   diagonals,
-  distance,
   grid,
   type Grid,
   key,
   linked,
   orbitals,
+  orbitedPlanets,
   planetFreeSlots,
   same,
   spaces,
   stepNeighbours,
   surrounding,
+  tilesTouch,
 } from './board';
 import { card, effectOf } from './data';
 import { cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
@@ -544,18 +545,22 @@ export function tacticalOptions(state: GameState, dieId: string): TacticalOption
 
 /**
  * Nomadic (Original): empty orbital positions of the planets on the tiles next to the planet the
- * ship orbits. "Next to" means the 4 orthogonally adjacent tiles (designer, BGG thread 1182319).
+ * ship orbits (any of them, where orbits overlap). "Next to" means the 4 orthogonally adjacent tiles
+ * (designer, BGG thread 1182319), or a hex flower's 6. A planet the ship already orbits isn't a
+ * neighbour, even on a touching tile. Its orbit's spaces count only where a neighbour's orbit overlaps
+ * it, as they are then a neighbour's orbital positions too.
  */
 export function nomadicTargets(state: GameState, dieId: string): Cell[] {
   const at = cellOf(die(state, dieId));
   if (!at) return [];
-  const home = state.board.planets.find((p) => orbitals(state.board, p).some((q) => same(q, at)));
-  if (!home) return [];
-  // Planets sit at the centre of their tile, so planets on neighbouring tiles are 3 steps away and the
-  // rest farther. On squares planets are a multiple of 3 apart each way, so 3 steps is a straight line
-  // (a diagonal tile is 6); on hexes the six touching flowers are 3 hexes away.
-  const near = state.board.planets.filter((p) => distance(home, p, state.board) === 3);
-  return near.flatMap((p) => orbitals(state.board, p).filter((q) => isEmptySpace(state, q)));
+  const { board } = state;
+  const tileOf = (p: Planet) => cellAt(board, p)!.tile;
+  const homes = orbitedPlanets(board, at);
+  if (!homes.length) return [];
+  const near = board.planets.filter((p) => !homes.includes(p) && homes.some((h) => tilesTouch(board, tileOf(h), tileOf(p))));
+  const out = new Map<string, Cell>();
+  for (const p of near) for (const q of orbitals(board, p)) if (isEmptySpace(state, q)) out.set(key(q), q);
+  return [...out.values()];
 }
 
 // ---------------------------------------------------------------------------

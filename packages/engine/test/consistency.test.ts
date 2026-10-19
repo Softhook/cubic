@@ -36,6 +36,9 @@ import {
 } from '../src';
 import { bruteForceDecision, keyOf } from './decisions';
 import { playAiGame, quickStart } from './helpers';
+import { registerOffsetMaps } from './offsetMaps';
+
+registerOffsetMaps();
 
 const DEEP = !!process.env.DEEP;
 
@@ -190,6 +193,14 @@ describe('legal actions agree with the engine', () => {
       ] as const)
     : ([[3, 'beta-hex']] as const))
     it(`basic on ${mapId}, seed 22`, () => playChecked('basic', players, 22, mapId), DEEP ? 600_000 : 60_000);
+  // Planets off the middle of their tiles: orbits that overlap, cross tiles and lose spaces at the edge.
+  // Original has Nomadic and Ingenious, which read orbits and tiles their own way.
+  for (const [mode, mapId] of [
+    ['basic', 'offset-square'],
+    ['original', 'offset-square'],
+    ['basic', 'offset-hex'],
+  ] as const)
+    it(`${mode} on ${mapId}, seed 22`, () => playChecked(mode, 2, 22, mapId), DEEP ? 600_000 : 60_000);
 });
 
 describe('invariant checker', () => {

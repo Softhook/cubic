@@ -14,6 +14,7 @@ import {
 import { CUBE_PAD } from '../src/tokens';
 import { boxGap } from '../src/tile';
 import maps from '../../engine/src/data/maps.json';
+import { parseToken } from '../../engine/src/board';
 import cards from '../../engine/src/data/cards.json';
 import { cardBackSvg, cardSvg, type CardDeck } from '../src/card';
 import { ICONS } from '../src/icons';
@@ -96,7 +97,7 @@ describe('tile set', () => {
       const tiles = map.layout
         .flat()
         .filter((x) => x !== '.')
-        .map((x, index) => ({ index, number: Number(x.replace('*', '')) }));
+        .map((x, index) => ({ index, number: parseToken(x).number }));
       for (const id of assignTiles(tiles).values()) expect(ids, `${map.id}: ${id}`).toContain(id);
     }
   });
