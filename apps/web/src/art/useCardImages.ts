@@ -1,31 +1,28 @@
 import { useEffect, useState } from 'react';
-import { cardBackImage, cardImage, cardImageNow } from './cardImages';
-
-const DRAW = { front: cardImage, back: cardBackImage };
-const NOW = { front: cardImageNow, back: () => undefined };
+import { cardBacks, cardFronts, type Drawn } from './cardImages';
 
 /**
  * A card image drawn on demand (cardImages.ts): at once if it's drawn already, else undefined till it is. A failed
  * drawing leaves it undefined, so the caller's placeholder stays.
  */
-function useDrawn(side: 'front' | 'back', id: string): string | undefined {
-  const [src, setSrc] = useState(() => NOW[side](id));
+function useDrawn(images: Drawn<string>, id: string): string | undefined {
+  const [src, setSrc] = useState(() => images.now(id));
   useEffect(() => {
     let live = true;
-    setSrc(NOW[side](id));
-    DRAW[side](id).then(
+    setSrc(images.now(id));
+    images.get(id).then(
       (url) => live && setSrc(url),
       () => {},
     );
     return () => {
       live = false;
     };
-  }, [side, id]);
+  }, [images, id]);
   return src;
 }
 
 /** Card `id`'s printed front. */
-export const useCardImage = (id: string) => useDrawn('front', id);
+export const useCardImage = (id: string) => useDrawn(cardFronts, id);
 
 /** The printed back of the deck card `id` belongs to. */
-export const useCardBack = (id: string) => useDrawn('back', id);
+export const useCardBack = (id: string) => useDrawn(cardBacks, id);

@@ -101,8 +101,9 @@ export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, 
   // One-shot cards name their deck too, where it isn't their category already (Expansion).
   const kindLabel = kind === 'skill' ? undefined : original ? 'Gambit' : kind === 'expansion' ? 'Expansion' : 'Tactic';
   const clickable = !!onClick && !disabled;
+  const name = NAME_BREAKS[def.name] ?? def.name;
   const text = useRef<HTMLDivElement>(null);
-  const cut = useClipped(text);
+  const cut = useClipped(text, def.text);
   return (
     <button
       type="button"
@@ -114,7 +115,7 @@ export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, 
       data-card={id}
       data-index={index}
     >
-      {art && <ArtBand id={id}>{NAME_BREAKS[def.name] ?? def.name}</ArtBand>}
+      {art && <ArtBand id={id}>{name}</ArtBand>}
       <div className="qcard-top">
         <span className="qcard-cat">
           <CategoryIcon category={def.category} size={size === 'sm' ? 11 : 13} />
@@ -122,7 +123,7 @@ export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, 
         </span>
         {kindLabel && kindLabel !== category && <span className="qcard-kind">{kindLabel}</span>}
       </div>
-      <div className="qcard-name">{NAME_BREAKS[def.name] ?? def.name}</div>
+      <div className="qcard-name">{name}</div>
       <div className="qcard-sub">{def.subtitle}</div>
       <div className={`qcard-text ${cut ? 'cut' : ''}`} ref={text}>
         {def.text}
@@ -147,23 +148,38 @@ function ArtBand({ id, children }: { id: string; children: ReactNode }) {
 }
 
 /**
- * Whether `el`'s text is cut short (it holds more than it shows), kept up to date as it resizes and when fonts
- * arrive (a late font rewraps the text without resizing its box).
+ * Every card's text box, and what to do when it resizes: one observer and one font listener for all of them, not
+ * one each (a game shows dozens of cards).
  */
-function useClipped(el: RefObject<HTMLElement>) {
+const watched = new Map<Element, () => void>();
+let observer: ResizeObserver | undefined;
+const recheckAll = () => watched.forEach((check) => check());
+
+function watch(el: Element, check: () => void) {
+  if (!observer) {
+    observer = new ResizeObserver((entries) => entries.forEach((e) => watched.get(e.target)?.()));
+    document.fonts.addEventListener('loadingdone', recheckAll);
+  }
+  watched.set(el, check);
+  observer.observe(el);
+  return () => {
+    watched.delete(el);
+    observer?.unobserve(el);
+  };
+}
+
+/**
+ * Whether `el`'s text is cut short (it holds more than it shows), kept up to date as it resizes, when its `text`
+ * changes, and when fonts arrive (a late font rewraps the text without resizing its box).
+ */
+function useClipped(el: RefObject<HTMLElement>, text: string) {
   const [clipped, setClipped] = useState(false);
   useLayoutEffect(() => {
     const box = el.current;
     if (!box) return;
     const check = () => setClipped(box.scrollHeight > box.clientHeight + 1);
     check();
-    const ro = new ResizeObserver(check);
-    ro.observe(box);
-    document.fonts.addEventListener('loadingdone', check);
-    return () => {
-      ro.disconnect();
-      document.fonts.removeEventListener('loadingdone', check);
-    };
-  }, [el]);
+    return watch(box, check);
+  }, [el, text]);
   return clipped;
 }

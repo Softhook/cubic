@@ -2014,7 +2014,6 @@ input { font: inherit; }
   .market .market-row { display: flex; flex: none; flex-direction: column; align-items: stretch; gap: 6px; max-width: none; }
   .market-row + .market-row, .market-expansion { margin-top: 4px; }
   .market .deck { flex-direction: row; justify-content: flex-start; align-items: baseline; gap: 8px; width: auto; height: auto; min-height: 22px; padding: 0 2px; margin: 0; }
-  .market .deck-stack { display: none; }
   .market .deck-count { position: static; min-width: 0; padding: 0; background: none; box-shadow: none; font-size: 12px; font-weight: 500; color: var(--muted); text-align: left; }
   .market .deck-count::after { content: ' left \203A'; }
   .market .qcard-sm {
@@ -2025,10 +2024,6 @@ input { font: inherit; }
   .market .qcard-top { grid-area: top; justify-content: flex-end; gap: 6px; }
   .market .qcard-sm .qcard-name { display: block; grid-area: name; min-height: 0; margin: 0 10px 0 0; font-size: 13px; overflow-wrap: normal; }
   .market .qcard-badge { grid-area: badge; align-self: center; margin: 0 0 0 6px; }
-  .market .qcard-art { display: none; }
-  .market .qcard.has-art::before { display: block; }
-  .market .qcard.has-art .qcard-top { display: flex; }
-  .market .qcard.has-art .qcard-name { display: block; }
   .market .qcard-sm .qcard-text, .market .qcard-sm.long .qcard-text { grid-area: text; margin: 0; font-size: 11.5px; line-height: 1.35; overflow: visible; }
   .market .market-expansion > .qcard, .market .deck { margin-left: 0; }
   /* While you pick, the cards you can't take (e.g. Patient's skills) step back, so the ones you can stand out. */

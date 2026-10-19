@@ -88,7 +88,7 @@ export function Market({
     return (
       <div className={`market-row market-${deck}`} style={{ '--cards': rowCards.length } as CSSProperties}>
         <button type="button" className={`deck deck-${deck}`} title={deckTitle(deck)} onClick={() => setViewing(deck)}>
-          <DeckBack cardId={(deck === 'skill' ? cardRules.skills : cardRules.tactics)[0].id} />
+          {!list && <DeckBack cardId={(deck === 'skill' ? cardRules.skills : cardRules.tactics)[0].id} />}
           <span className="deck-label">{decks[deck].name}</span>
           <span className="deck-count">{decks[deck].cards.length}</span>
         </button>
@@ -100,7 +100,7 @@ export function Market({
             className={`market-card ${canTake(deck, index) ? 'takeable' : ''}`}
             badge={badge}
             index={index}
-            art
+            art={!list}
             onClick={() => clickCard(deck, index, id)}
           />
         ))}
@@ -218,7 +218,7 @@ export function Market({
             id={EXPANSION.id}
             size="sm"
             badge={`×${m.expansions}`}
-            art
+            art={!list}
             onClick={canExpand ? () => dispatch({ type: 'takeCard', deck: 'expansion', index: 0 }) : () => setViewingCard(EXPANSION.id)}
             className={`market-card ${m.expansions ? '' : 'empty'} ${canExpand ? 'takeable' : ''}`}
           />
