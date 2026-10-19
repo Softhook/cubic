@@ -1,10 +1,11 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { buildBoard, defaultMap, type Board, type MapDef } from '@quantum/engine';
+import { buildBoard, drawing, type Board, type MapDef } from '@quantum/engine';
 import { PLANET_DIAMETER, SPACE_BASE_CSS, TILE, TILE_SET, tileHasRings, tileSpec } from '@quantum/art';
-import { decodedTileImage } from '../../art/tileImages';
+import { decodedTileImage, type TileLook } from '../../art/tileImages';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { PIPS } from '../Die3D';
 import { Boom, EXPLOSION_MS } from '../board/Explosions';
+import { hexCorners, hexFlower, hexSeams, placement } from '../board/geometry';
 import { PIP } from '../../theme';
 import { PHONE, REDUCED_MOTION, useMediaQuery } from '../../game/useMediaQuery';
 import { pick } from '../../random';
@@ -42,7 +43,14 @@ interface Blast extends Spot {
 }
 
 /** The plane's cell size in pixels: the whole map fits in about the screen's longer side, re-measured on resize. */
-const cellSize = (board: Board) => Math.min(1.05 * Math.max(innerWidth, innerHeight), 1250) / Math.max(board.cols, board.rows);
+const cellSize = (board: Board) => {
+  const { rows, cols } = drawing(board);
+  return Math.min(1.05 * Math.max(innerWidth, innerHeight), 1250) / Math.max(cols, rows);
+};
+/** How a map's tiles are drawn: square tiles as printed, hex ones cut from the painting (as in the game, HexTiles). */
+const lookOf = (board: Board): TileLook => (board.hex ? 'art' : 'square');
+/** A tile's artwork, in cells: a square tile less a 2% inset each side, a hex tile's painting whole. */
+const artSize = (board: Board) => (board.hex ? 3 : 2.96);
 function useCell(board: Board): number {
   const [cell, setCell] = useState(() => cellSize(board));
   useEffect(() => {
@@ -55,12 +63,12 @@ function useCell(board: Board): number {
 }
 
 /** Each tile's artwork, as a decoded image and its URL, filled in as each is ready. */
-function useTileImages(tiles: TileArt[]) {
+function useTileImages(tiles: TileArt[], look: TileLook) {
   const [images, setImages] = useState<Record<string, HTMLImageElement>>({});
   useEffect(() => {
     let live = true;
     for (const t of tiles)
-      decodedTileImage(t.id).then((url) => {
+      decodedTileImage(t.id, look).then((url) => {
         const img = new Image();
         img.src = url;
         img.decode().then(
@@ -71,7 +79,7 @@ function useTileImages(tiles: TileArt[]) {
     return () => {
       live = false;
     };
-  }, [tiles]);
+  }, [tiles, look]);
   return images;
 }
 
@@ -116,39 +124,20 @@ function MapCanvas({
   images: Record<string, HTMLImageElement>;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
-  const W = board.cols * cell;
-  const H = board.rows * cell;
+  const { rows, cols } = drawing(board);
+  const W = cols * cell;
+  const H = rows * cell;
   const k = Math.min(devicePixelRatio || 1, CANVAS_SCALE, CANVAS_MAX / Math.max(W, H));
   useEffect(() => {
     const ctx = canvas.current?.getContext('2d');
     if (!ctx) return;
     ctx.setTransform(k, 0, 0, k, 0, 0);
     ctx.clearRect(0, 0, W, H);
-    const inset = cell * 0.02;
-    const size = cell * 3 - 2 * inset;
-    const radius = (cell * 3 * TILE.corner) / TILE.size;
-    for (const t of tiles) {
-      // Each tile's art is centred on its middle space.
-      const x = (t.c - 1) * cell + inset;
-      const y = (t.r - 1) * cell + inset;
-      ctx.beginPath();
-      // Square corners where canvas can't round them (Safari before 16).
-      if (ctx.roundRect) ctx.roundRect(x, y, size, size, radius);
-      else ctx.rect(x, y, size, size);
-      const img = images[t.id];
-      if (img) {
-        ctx.save();
-        ctx.clip();
-        ctx.drawImage(img, x, y, size, size);
-        ctx.restore();
-      } else {
-        ctx.fillStyle = SPACE_BASE_CSS;
-        ctx.fill();
-      }
-    }
+    const { mid } = placement(board, cell);
+    if (board.hex) drawHexTiles(ctx, board, cell, tiles, images);
+    else drawSquareTiles(ctx, cell, tiles, images);
     for (const p of board.planets) {
-      const x = (p.c + 0.5) * cell;
-      const y = (p.r + 0.5) * cell;
+      const { x, y } = mid(p);
       const radius = (planetSize(p.number) / 2) * cell;
       const shadow = ctx.createRadialGradient(x, y, 0, x, y, radius * 1.35);
       shadow.addColorStop(0, 'rgba(5,8,19,.95)');
@@ -160,6 +149,77 @@ function MapCanvas({
   }, [board, tiles, images, cell, W, H, k]);
 
   return <canvas ref={canvas} className="backdrop-map" width={Math.round(W * k)} height={Math.round(H * k)} />;
+}
+
+/** Square tiles as printed, rounded, each centred on its middle space. */
+function drawSquareTiles(ctx: CanvasRenderingContext2D, cell: number, tiles: TileArt[], images: Record<string, HTMLImageElement>) {
+  const inset = cell * 0.02;
+  const size = cell * 3 - 2 * inset;
+  const radius = (cell * 3 * TILE.corner) / TILE.size;
+  for (const t of tiles) {
+    // Each tile's art is centred on its middle space.
+    const x = (t.c - 1) * cell + inset;
+    const y = (t.r - 1) * cell + inset;
+    ctx.beginPath();
+    // Square corners where canvas can't round them (Safari before 16).
+    if (ctx.roundRect) ctx.roundRect(x, y, size, size, radius);
+    else ctx.rect(x, y, size, size);
+    const img = images[t.id];
+    if (img) {
+      ctx.save();
+      ctx.clip();
+      ctx.drawImage(img, x, y, size, size);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = SPACE_BASE_CSS;
+      ctx.fill();
+    }
+  }
+}
+
+/** Hex tiles: each 7-hex flower cut from its tile's painting, with a dark seam where tiles meet and a well for each space. */
+function drawHexTiles(
+  ctx: CanvasRenderingContext2D,
+  board: Board,
+  cell: number,
+  tiles: TileArt[],
+  images: Record<string, HTMLImageElement>,
+) {
+  const { mid } = placement(board, cell);
+  const hex = (p: { r: number; c: number }, scale: number) => {
+    const { x, y } = mid(p);
+    hexCorners(x, y, cell * scale).forEach(([cx, cy], i) => (i ? ctx.lineTo(cx, cy) : ctx.moveTo(cx, cy)));
+    ctx.closePath();
+  };
+  const size = cell * artSize(board);
+  for (const t of tiles) {
+    ctx.beginPath();
+    // A touch larger, so no hairline shows between a tile's own hexes.
+    for (const p of hexFlower(board, t)) hex(p, 1.01);
+    const img = images[t.id];
+    if (img) {
+      const { x, y } = mid(t);
+      ctx.save();
+      ctx.clip();
+      ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = SPACE_BASE_CSS;
+      ctx.fill();
+    }
+  }
+  ctx.beginPath();
+  for (const [[x0, y0], [x1, y1]] of hexSeams(board, cell, tiles)) {
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+  }
+  ctx.strokeStyle = 'rgba(0,0,0,.55)';
+  ctx.lineWidth = Math.max(1, cell * 0.03);
+  ctx.stroke();
+  ctx.beginPath();
+  for (const t of tiles) for (const p of hexFlower(board, t)) if (board.cells[p.r][p.c].kind === 'space') hex(p, 0.8);
+  ctx.fillStyle = 'rgba(0,0,0,.18)';
+  ctx.fill();
 }
 
 /** The faces around a die showing `top`, as on a real die: opposite faces add up to 7. */
@@ -232,6 +292,7 @@ function faceCamera(el: HTMLElement | null) {
  * top left), standing up off the board and turned against the map's turn so it always faces the camera.
  */
 function Planets({ board, tiles, images }: { board: Board; tiles: TileArt[]; images: Record<string, HTMLImageElement> }) {
+  const { at } = drawing(board);
   return board.planets.map((p) => {
     // A planet sits in the middle of its tile.
     const tile = tiles.find((t) => t.r === p.r && t.c === p.c);
@@ -242,7 +303,15 @@ function Planets({ board, tiles, images }: { board: Board; tiles: TileArt[]; ima
           key={p.id}
           ref={faceCamera}
           className="backdrop-planet"
-          style={{ '--r': p.r, '--c': p.c, '--size': planetSize(p.number), backgroundImage: `url(${img.src})` } as CSSProperties}
+          style={
+            {
+              '--r': at(p).r,
+              '--c': at(p).c,
+              '--size': planetSize(p.number),
+              '--art': artSize(board),
+              backgroundImage: `url(${img.src})`,
+            } as CSSProperties
+          }
         />
       )
     );
@@ -252,10 +321,11 @@ function Planets({ board, tiles, images }: { board: Board; tiles: TileArt[]; ima
 function Plane({ map, fleet, still }: { map: MapDef; fleet: number; still: boolean }) {
   const board = useMemo(() => buildBoard(map), [map]);
   const tiles = useMemo(() => ringlessTiles(board), [board]);
-  const images = useTileImages(tiles);
-  const spaces = useMemo(() => openSpaces(board), [board]);
-  const open = useMemo(() => new Set(spaces.map(at)), [spaces]);
+  const images = useTileImages(tiles, lookOf(board));
+  const open = useMemo(() => new Set(openSpaces(board).map(at)), [board]);
   const cell = useCell(board);
+  // Ships and blasts keep board spaces; they're drawn where the map draws them (hexes sit between rows).
+  const drawn = drawing(board);
   const [ships, setShips] = useState(() => launch(board, map.players, fleet));
   const [blasts, setBlasts] = useState<Blast[]>([]);
   // The ships as last set, for the timers; and the ships moving or in a battle, which sit out moves until done.
@@ -282,7 +352,7 @@ function Plane({ map, fleet, still }: { map: MapDef; fleet: number; still: boole
     const respawn = (id: number) => {
       const ship = current.current.find((s) => s.id === id)!;
       const occupied = taken(current.current);
-      const free = around(spaces, ship.home).filter((s) => !occupied.has(at(s)));
+      const free = around(board, open, ship.home).filter((s) => !occupied.has(at(s)));
       if (!free.length) return later(STEP_MS, () => respawn(id));
       patch(id, { ...pick(free), value: roll(), rolls: ship.rolls + 1, down: false });
       busy.current.delete(id);
@@ -320,7 +390,7 @@ function Plane({ map, fleet, still }: { map: MapDef; fleet: number; still: boole
 
     const timer = setInterval(() => {
       if (document.hidden) return;
-      const { ships: next, travel: move } = step(current.current, open, busy.current);
+      const { ships: next, travel: move } = step(board, current.current, open, busy.current);
       commit(next);
       if (move) travel(move);
     }, STEP_MS);
@@ -328,12 +398,12 @@ function Plane({ map, fleet, still }: { map: MapDef; fleet: number; still: boole
       clearInterval(timer);
       timers.forEach(clearTimeout);
     };
-  }, [spaces, open, still]);
+  }, [board, open, still]);
 
   return (
     <div
       className="backdrop-plane"
-      style={{ '--cols': board.cols, '--rows': board.rows, '--cell': `${cell}px`, '--glide': `${SPACE_MS}ms` } as CSSProperties}
+      style={{ '--cols': drawn.cols, '--rows': drawn.rows, '--cell': `${cell}px`, '--glide': `${SPACE_MS}ms` } as CSSProperties}
     >
       <MapCanvas board={board} cell={cell} tiles={tiles} images={images} />
       {/* Each explosion twice: its shock waves across the board, and its flash and sparks upright at die height. */}
@@ -341,11 +411,20 @@ function Plane({ map, fleet, still }: { map: MapDef; fleet: number; still: boole
         <Boom
           key={b.key}
           color={b.color}
-          style={{ transform: `translate(${b.c * cell}px, ${b.r * cell}px) translateZ(1px)`, width: cell, height: cell }}
+          style={{
+            transform: `translate(${drawn.at(b).c * cell}px, ${drawn.at(b).r * cell}px) translateZ(1px)`,
+            width: cell,
+            height: cell,
+          }}
         />
       ))}
       {blasts.map((b) => (
-        <span key={b.key} ref={faceCamera} className="backdrop-blast" style={{ '--r': b.r, '--c': b.c } as CSSProperties}>
+        <span
+          key={b.key}
+          ref={faceCamera}
+          className="backdrop-blast"
+          style={{ '--r': drawn.at(b).r, '--c': drawn.at(b).c } as CSSProperties}
+        >
           <Boom color={b.color} style={{ width: '100%', height: '100%' }} />
         </span>
       ))}
@@ -353,7 +432,11 @@ function Plane({ map, fleet, still }: { map: MapDef; fleet: number; still: boole
       {ships
         .filter((s) => !s.down)
         .map((s) => (
-          <span key={s.id} className="backdrop-die" style={{ '--r': s.r, '--c': s.c, '--pc': s.color, '--ease': s.ease } as CSSProperties}>
+          <span
+            key={s.id}
+            className="backdrop-die"
+            style={{ '--r': drawn.at(s).r, '--c': drawn.at(s).c, '--pc': s.color, '--ease': s.ease } as CSSProperties}
+          >
             {/* Keyed by roll: a re-rolled (or returning) die drops and tumbles in afresh. */}
             <Cube key={s.rolls} value={s.value} color={s.color} turn={s.id + s.rolls} delay={s.rolls ? 0 : s.id * 0.08} />
           </span>
@@ -362,9 +445,7 @@ function Plane({ map, fleet, still }: { map: MapDef; fleet: number; still: boole
   );
 }
 
-export function LobbyBackdrop({ map: chosen }: { map: MapDef }) {
-  // The fleets here move on squares: a hex map shows the square basic map for as many players behind it.
-  const map = chosen.grid === 'hex' ? (defaultMap(chosen.players) ?? chosen) : chosen;
+export function LobbyBackdrop({ map }: { map: MapDef }) {
   const still = useMediaQuery(REDUCED_MOTION);
   const fleet = useMediaQuery(PHONE) ? PHONE_FLEET : FLEET;
   return (

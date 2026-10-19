@@ -3,7 +3,7 @@ import { drawing, type Board, type GameState } from '@quantum/engine';
 import { PLANET_DIAMETER, TILE } from '@quantum/art';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { GATE_COLOR } from '../../theme';
-import { wrapMarks, type WrapMark } from './geometry';
+import { placement, wrapMarks, type WrapMark } from './geometry';
 import { PlanetMarkings } from './PlanetMarkings';
 import { HexTiles } from './HexTiles';
 import { SquareTiles } from './SquareTiles';
@@ -40,11 +40,10 @@ export const BoardArt = memo(function BoardArt({
 }) {
   const { planets, hex } = game.board;
   const tiles = tileArtOf(game.board);
-  const { rows, cols, at } = drawing(game.board);
+  const { rows, cols } = drawing(game.board);
   const W = cols * cell;
   const H = rows * cell;
-  /** The middle of a space, in pixels. */
-  const mid = (p: { r: number; c: number }) => ({ x: (at(p).c + 0.5) * cell, y: (at(p).r + 0.5) * cell });
+  const { box, mid } = placement(game.board, cell);
   // Print millimetres to screen pixels: the tile art and everything drawn over it use the printed geometry.
   const mm = cell / TILE.cell;
   // The open gates, then any of a Warp Gate pair placed so far: faint until the pair is complete.
@@ -65,8 +64,8 @@ export const BoardArt = memo(function BoardArt({
         {/* Chevrons on edges that join the opposite edge, pointing off the board. */}
         {wrapMarks(game.board).map((m) => {
           const { angle, r, c } = WRAP_SIDE[m.side];
-          const x = (m.c + 0.5 + c * 0.42) * cell;
-          const y = (m.r + 0.5 + r * 0.42) * cell;
+          const x = mid(m).x + c * 0.42 * cell;
+          const y = mid(m).y + r * 0.42 * cell;
           const s = cell * 0.09;
           return (
             <path
@@ -129,7 +128,7 @@ export const BoardArt = memo(function BoardArt({
         <svg
           key={i}
           className="gate-spin"
-          style={{ left: at(g).c * cell, top: at(g).r * cell, opacity: g.open ? 1 : 0.5 }}
+          style={{ left: box(g).left, top: box(g).top, opacity: g.open ? 1 : 0.5 }}
           width={cell}
           height={cell}
           viewBox={`0 0 ${cell} ${cell}`}

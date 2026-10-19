@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { drawing, key, type Board, type Cell } from '@quantum/engine';
 import type { Route } from '../../game/controller';
+import { placement } from './geometry';
 
 /**
  * Next to each other on the map as drawn (diagonally too: an Interceptor's step): not across a joined
@@ -31,8 +32,11 @@ export function Routes({
   onPick: (from: Cell) => void;
 }) {
   if (!routes.length) return null;
-  const { at } = drawing(board);
-  const centre = (p: Cell) => [(at(p).c + 0.5) * cell, (at(p).r + 0.5) * cell];
+  const { mid } = placement(board, cell);
+  const centre = (p: Cell) => {
+    const { x, y } = mid(p);
+    return [x, y];
+  };
   return (
     <svg className="routes" style={{ '--pc': color } as CSSProperties} aria-hidden>
       {[...routes]

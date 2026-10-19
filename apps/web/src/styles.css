@@ -1537,8 +1537,8 @@ input { font: inherit; }
   position: absolute;
   left: calc((var(--c) + .5) * var(--cell) - var(--d) / 2); top: calc((var(--r) + .5) * var(--cell) - var(--d) / 2);
   width: var(--d); height: var(--d); border-radius: 50%;
-  /* The tile as the canvas draws it (its width less a 2% inset each side), centred on the planet. */
-  background: center / calc(var(--cell) * 2.96) no-repeat;
+  /* The tile as the canvas draws it (--art cells wide: a square tile less a 2% inset each side), centred on the planet. */
+  background: center / calc(var(--cell) * var(--art)) no-repeat;
   box-shadow: 0 0 calc(var(--cell) * .14) rgba(143, 211, 255, .4);
   transform: var(--up) rotateZ(0deg) rotateX(-54deg);
   animation: backdrop-in 1.4s ease-out both, backdrop-face 360s linear infinite;

@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-import { SHIP_NAMES, cellAtPoint, die, drawing, key, moveOptions, same, shipOf, type Cell, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, cellAtPoint, die, drawing, key, moveOptions, same, shipOf, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { ActionEffects } from './board/ActionEffects';
@@ -7,7 +7,7 @@ import { CardEffects } from './board/CardEffects';
 import { Explosions } from './board/Explosions';
 import { Routes } from './board/Routes';
 import { Shots } from './board/Shots';
-import { shipSpots, type ShipSpots } from './board/geometry';
+import { placement, shipSpots, spotBox, type ShipSpots } from './board/geometry';
 import { useStaging, type Staging } from './board/staging';
 import { useBoardZoom } from './board/useBoardZoom';
 import { OffscreenHints, ZoomControls, useFollowMoves, useZoomIntro } from './board/ZoomUi';
@@ -44,11 +44,10 @@ export function Board({
   const wrap = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const { planets } = game.board;
-  const { rows, cols, at } = drawing(game.board);
+  const { rows, cols } = drawing(game.board);
   const zoom = useBoardZoom(wrap, boardRef, rows, cols);
   const { cell } = zoom;
-  /** A space's box on the map, in pixels. */
-  const box = (p: Cell) => ({ left: at(p).c * cell, top: at(p).r * cell, width: cell, height: cell });
+  const { box } = placement(game.board, cell);
   const spots = shipSpots(game);
   const staging = useStaging(game, scene);
   const tip = useZoomIntro(game, ctl, zoom, !!introduce);
@@ -196,19 +195,19 @@ function Reach({ game, id, cell, spots }: { game: GameState; id: string; cell: n
   const { moves, attacks } = moveOptions(game, id);
   const threatened = [...attacks.keys()].flatMap((t) => (spots.get(t) ? [{ id: t, at: spots.get(t)! }] : []));
   const style = { '--pc': game.players[d.owner].color } as CSSProperties;
-  const { at } = drawing(game.board);
+  const { box } = placement(game.board, cell);
   return (
     <>
       <div className="reach" style={style}>
         {[...moves.values()].map(({ cell: c }) => (
-          <span key={key(c)} style={{ left: at(c).c * cell, top: at(c).r * cell, width: cell, height: cell }}>
+          <span key={key(c)} style={box(c)}>
             <span />
           </span>
         ))}
       </div>
       <div className="reach reach-attack" style={style}>
         {threatened.map(({ id: t, at }) => (
-          <span key={t} style={{ left: at.c * cell, top: at.r * cell, width: cell, height: cell }}>
+          <span key={t} style={spotBox(at, cell)}>
             <span />
           </span>
         ))}
@@ -354,10 +353,7 @@ function BoardInfo({
   if (!spot) return null; // the ship left the map
   return (
     <>
-      <div
-        className="info-anchor"
-        style={{ left: spot.c * cell, top: spot.r * cell, width: cell, height: cell, '--anchor': anchor } as CSSProperties}
-      />
+      <div className="info-anchor" style={{ ...spotBox(spot, cell), '--anchor': anchor } as CSSProperties} />
       <InfoPop anchor={anchor} onClose={onClose}>
         {'ship' in what ? <ShipInfo game={game} id={what.ship} /> : <PlanetInfo game={game} id={what.planet} />}
       </InfoPop>

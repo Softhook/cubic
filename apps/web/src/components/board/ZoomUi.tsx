@@ -85,7 +85,7 @@ export function useFollowMoves(game: GameState, ctl: Controller, spots: ShipSpot
   const seen = useRef<{ map: string; scene?: string; spots: ShipSpots; game: GameState } | null>(null);
   const follow = useEffectEvent(() => {
     const before = seen.current;
-    const map = `${game.board.rows}x${game.board.cols}`;
+    const map = game.board.mapId;
     seen.current = { map, scene, spots, game };
     if (before?.map !== map) return;
     // A jump to another position (see Board's `scene`) moves no ship, but skipping ahead online

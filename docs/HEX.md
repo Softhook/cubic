@@ -87,11 +87,12 @@ planet, without the square pads) is cut to the flower, with a well etched for ea
   `tileCentres` and `grid()`'s neighbour lists all read it, and the rest of the engine and the AI ask
   those, so the rules needed no change. `drawing(board)` says where each space is drawn, and
   `cellAtPoint` which space a tap lands on.
-- **Web.** Everything on the map is placed with `drawing(board).at`. `BoardArt` draws the tiles with
+- **Web.** Everything on the map is placed with `drawing(board).at`, in pixels through `placement` in
+  [`geometry.ts`](../apps/web/src/components/board/geometry.ts) (a space's `box` and `mid`). `BoardArt` draws the tiles with
   [`SquareTiles.tsx`](../apps/web/src/components/board/SquareTiles.tsx) or
   [`HexTiles.tsx`](../apps/web/src/components/board/HexTiles.tsx), each centred on its tile's middle
-  space. The lobby previews hex maps as hexes; its turning backdrop shows the square map for as many
-  players.
+  space. The lobby previews hex maps as hexes, and its turning backdrop draws them as the game does, with
+  its fleets moving hex to hex.
 - **Tests.** [`hex.test.ts`](../packages/engine/test/hex.test.ts) pins each rule above, and the
   legal-move cross-check in [`consistency.test.ts`](../packages/engine/test/consistency.test.ts) plays a
   hex game (all three with `DEEP=1`). `npm run hex:check` plays a first move in Chrome on the square

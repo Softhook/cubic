@@ -34,9 +34,12 @@ async function load(id: string, svg: string): Promise<string> {
  */
 export type TileLook = 'square' | 'art';
 
+/** What a tile's image is stored and cached as: the square look under the tile's id, so stored images still match. */
+const imageName = (id: string, look: TileLook) => (look === 'square' ? id : `${id}:${look}`);
+
 /** The image URL for a tile (`p7-01`…), drawing and storing it the first time. */
 function tileImage(id: string, look: TileLook = 'square'): Promise<string> {
-  const name = look === 'square' ? id : `${id}:${look}`;
+  const name = imageName(id, look);
   let image = images.get(name);
   if (!image) {
     const svg = look === 'square' ? tileSvg(tileSpec(id), { rounded: true, markings: 'spaces' }) : tileSvg(tileSpec(id), { only: 'art' });
@@ -52,7 +55,7 @@ function tileImage(id: string, look: TileLook = 'square'): Promise<string> {
  * (zoomed in), the browser would otherwise decode each tile then, on the first zoom, and drop frames.
  */
 export function decodedTileImage(id: string, look: TileLook = 'square'): Promise<string> {
-  const name = look === 'square' ? id : `${id}:${look}`;
+  const name = imageName(id, look);
   let image = decoded.get(name);
   if (!image) {
     image = tileImage(id, look).then(async (url) => {

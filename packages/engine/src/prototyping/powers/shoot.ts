@@ -10,7 +10,7 @@ export function shootTargets(s: GameState, d: Die): Die[] {
   const start = cellOf(d);
   if (!start) return [];
   const out: Die[] = [];
-  // Along each line from the ship (the four orthogonal ones): a shot flies as far as the first thing in its
+  // Along each line from the ship (one per side of its space: the four orthogonal ones on squares): a shot flies as far as the first thing in its
   // way (a ship, a planet or the board's edge; it flies over the void).
   for (const dir of geometry(s.board).sides) {
     let at = start;
