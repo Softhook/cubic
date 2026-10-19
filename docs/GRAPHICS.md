@@ -145,7 +145,7 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
 
 **Star backgrounds per tile.** Each of the 30 tiles gets its own seeded starfield and nebula, so a
 map never looks like a repeated pattern. Nebula colours are random but kept between blue and pink-purple
-(`NEBULA_HUES`, 215–330°) so the set looks consistent (blue clouds are lifted, since blue looks darker), and kept **behind the planet**, so the sky stays in the background and the planet's colour is what tells tiles apart. (The
+(`NEBULA_HUES`, 215–330°) so the set looks consistent (blue clouds are lifted, since blue looks darker), with pale bright cores where each cloud is densest for depth on most tiles (about 40% stay quiet, without them), and kept **behind the planet**, so the sky stays in the background and the planet's colour is what tells tiles apart. (The
 Void tiles keep a stronger magenta nebula around their centrepiece.) Because tiles are rearranged for every map, backgrounds
 can't line up across edges; instead every tile follows the same edge rules so any two tiles sit
 together cleanly:

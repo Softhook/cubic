@@ -105,8 +105,11 @@ function edgeFade(id: string, area: Box, frame: Box, inset: number, softness: nu
   );
 }
 
+/** How often a sky is quiet: no bright cores in its clouds. */
+const QUIET_CHANCE = 0.4;
+
 /**
- * A deep-space background: base colour, two nebula colours and dark dust (faded out towards the
+ * A deep-space background: base colour, two nebula colours (most with bright cores), and dark dust (faded out towards the
  * edges, so tiles sit together cleanly), a field of faint stars and a few bright ones.
  */
 export function starfield(o: StarfieldOptions): Fragment {
@@ -129,34 +132,45 @@ export function starfield(o: StarfieldOptions): Fragment {
   const lift = (h: number) => 18 * blueness(h);
   const boost = (h: number) => 1 + 0.35 * blueness(h);
 
+  const n1: CloudOptions = {
+    id: `${id}-n1`,
+    area,
+    freq: f(neb.range(0.016, 0.026)),
+    octaves: 5,
+    seed: neb.noiseSeed(),
+    colour: [h1, 70, 46 + lift(h1)],
+    strength: Math.min(1, strength * 0.8 * boost(h1)),
+    cut: neb.range(0.4, 0.47),
+    soft: 0.3,
+    warp: 14 * scale,
+    warpSeed: neb.noiseSeed(),
+    filaments: 0.35,
+  };
+  const n2: CloudOptions = {
+    id: `${id}-n2`,
+    area,
+    freq: f(neb.range(0.026, 0.04)),
+    octaves: 4,
+    seed: neb.noiseSeed(),
+    colour: [h2, 75, 58 + lift(h2)],
+    strength: Math.min(1, strength * 0.5 * boost(h2)),
+    cut: neb.range(0.48, 0.54),
+    soft: 0.22,
+    warp: 10 * scale,
+    warpSeed: neb.noiseSeed(),
+  };
+  // Bright cores: the same two clouds again, pale and only where each is densest, for depth. Some
+  // tiles stay quiet, without them. (Own stream, so the choice doesn't move the clouds or stars.)
+  const cores = o.rng.fork('cores').chance(QUIET_CHANCE)
+    ? []
+    : [
+        cloud({ ...n1, id: `${id}-core1`, colour: [h1, 55, 84], strength: 0.6, cut: n1.cut + 0.2, soft: 0.14, filaments: 0.5 }),
+        cloud({ ...n2, id: `${id}-core2`, colour: [h2, 60, 86], strength: 0.45, cut: n2.cut + 0.16, soft: 0.1 }),
+      ];
   const layers = [
-    cloud({
-      id: `${id}-n1`,
-      area,
-      freq: f(neb.range(0.016, 0.026)),
-      octaves: 5,
-      seed: neb.noiseSeed(),
-      colour: [h1, 70, 46 + lift(h1)],
-      strength: Math.min(1, strength * 0.8 * boost(h1)),
-      cut: neb.range(0.4, 0.47),
-      soft: 0.3,
-      warp: 14 * scale,
-      warpSeed: neb.noiseSeed(),
-      filaments: 0.35,
-    }),
-    cloud({
-      id: `${id}-n2`,
-      area,
-      freq: f(neb.range(0.026, 0.04)),
-      octaves: 4,
-      seed: neb.noiseSeed(),
-      colour: [h2, 75, 58 + lift(h2)],
-      strength: Math.min(1, strength * 0.5 * boost(h2)),
-      cut: neb.range(0.48, 0.54),
-      soft: 0.22,
-      warp: 10 * scale,
-      warpSeed: neb.noiseSeed(),
-    }),
+    cloud(n1),
+    cloud(n2),
+    ...cores,
     cloud({
       id: `${id}-dust`,
       area,

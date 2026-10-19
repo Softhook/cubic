@@ -49,6 +49,10 @@ doesn't say what happened, and the players have no faces.
   ([planet.ts](../packages/art/src/planet.ts), [tile.ts](../packages/art/src/tile.ts)). Kept as they
   were: the nebula colours (a corner key light was tried and dropped), the molten 10s, the planet number and the starfield. Not tried yet: ring shadows, and
   animation on the board (drifting clouds, a turning disc).
+- **Starfield, round two** (picked 19 October 2026 from five ideas with three candidates each): bright
+  cores in the nebulae, with about 40% of tiles left quiet ([starfield.ts](../packages/art/src/starfield.ts)). Kept as they were: the edge fade (a
+  seamless shared sky layer was tried), the nebula colours, the cloud shapes (veils, bubbles, streamers) and the
+  stars (diffraction spikes, clusters, galaxies).
 
 ---
 
