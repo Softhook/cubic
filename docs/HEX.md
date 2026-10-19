@@ -49,10 +49,11 @@ a tile to the right.
 |---|---|---|---|
 | Alpha Sector (hex), 2 players | A 3×3 rhombus on its point (rows 1-2-3-2-1) | eight 7s, an 8 in the middle | the two far points, 4 tiles apart |
 | Beta Sector (hex), 3 players | A triangle of 10 tiles around a 10 | the 7s and 8s alternate around the 10 | the corners (8s), each touching one 7 and one 8 |
-| Gamma Sector (hex), 4 players | The rhombus, with a 10 in the middle | 9s and 8s, mirrored | the points (9s) and the sides (8s), each touching one 9 and one 8 |
+| Gamma Sector (hex), 4 players | The rhombus, with a 10 in the middle | 9s and 8s, mirrored | the points (9s), touching a 9 and an 8; the sides (8s), touching a 9, an 8 and the 10 |
 
 The square maps' corners are all alike; a rhombus has two sharp points and two blunt sides, so Gamma
-starts two players at each, with bigger home planets on the remoter points. Beta, a 3-player map, can be
+starts two players at each, with bigger home planets on the remoter points. The seats aren't alike yet:
+the sides also touch the 10 and are 4 hexes from both points, while the points are 8 from each other. Beta, a 3-player map, can be
 fully symmetric on hexes.
 
 ## First AI results
@@ -81,15 +82,20 @@ planet, without the square pads) is cut to the flower, with a well etched for ea
 ## Code
 
 - **Engine.** [`board.ts`](../packages/engine/src/board.ts) builds hex boards (`Board.hex`) in axial
-  coordinates and answers every geometry question for both shapes: `adjacent`, `surrounding`,
-  `distance`, `diagonals`, `isDiagonalStep` and `grid()`'s neighbour lists. The rest of the engine and
-  the AI ask those, so the rules needed no change. `drawing(board)` says where each space is drawn.
-- **Web.** Everything on the map is placed with `drawing(board).at`;
-  [`HexTiles.tsx`](../apps/web/src/components/board/HexTiles.tsx) draws the tiles. The lobby previews
-  hex maps as hexes; its turning backdrop shows the square map for as many players.
+  coordinates. `geometry(board)` is the one place the two shapes differ: each one's sides, diagonals,
+  touching spaces and step count. `adjacent`, `surrounding`, `distance`, `diagonals`, `isDiagonalStep`,
+  `tileCentres` and `grid()`'s neighbour lists all read it, and the rest of the engine and the AI ask
+  those, so the rules needed no change. `drawing(board)` says where each space is drawn, and
+  `cellAtPoint` which space a tap lands on.
+- **Web.** Everything on the map is placed with `drawing(board).at`. `BoardArt` draws the tiles with
+  [`SquareTiles.tsx`](../apps/web/src/components/board/SquareTiles.tsx) or
+  [`HexTiles.tsx`](../apps/web/src/components/board/HexTiles.tsx), each centred on its tile's middle
+  space. The lobby previews hex maps as hexes; its turning backdrop shows the square map for as many
+  players.
 - **Tests.** [`hex.test.ts`](../packages/engine/test/hex.test.ts) pins each rule above, and the
   legal-move cross-check in [`consistency.test.ts`](../packages/engine/test/consistency.test.ts) plays a
-  hex game (all three with `DEEP=1`).
+  hex game (all three with `DEEP=1`). `npm run hex:check` plays a first move in Chrome on the square
+  Alpha Sector and each hex map, tapping where the space is drawn.
 
 ## Not yet
 

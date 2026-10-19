@@ -1,12 +1,12 @@
-import { memo, useEffect, useState, type CSSProperties } from 'react';
+import { memo, type CSSProperties } from 'react';
 import { drawing, type Board, type GameState } from '@quantum/engine';
-import { PLANET_DIAMETER, SPACE_BASE_CSS, TILE } from '@quantum/art';
-import { decodedTileImage } from '../../art/tileImages';
+import { PLANET_DIAMETER, TILE } from '@quantum/art';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { GATE_COLOR } from '../../theme';
 import { wrapMarks, type WrapMark } from './geometry';
 import { PlanetMarkings } from './PlanetMarkings';
 import { HexTiles } from './HexTiles';
+import { SquareTiles } from './SquareTiles';
 
 /** Which way each board edge faces, for the wrap chevrons. */
 const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number }> = {
@@ -24,22 +24,6 @@ function tileArtOf(board: Board): TileArt[] {
   return tiles;
 }
 
-/** Tile artwork by physical tile id, filled in as each image is ready (a plain tile shows meanwhile). A hex map draws its own (HexTiles). */
-function useTileImages(game: GameState) {
-  const tiles = tileArtOf(game.board);
-  const [images, setImages] = useState<Record<string, string>>({});
-  const hex = !!game.board.hex;
-  useEffect(() => {
-    if (hex) return;
-    let live = true;
-    for (const t of tiles) decodedTileImage(t.id).then((url) => live && setImages((m) => (m[t.id] === url ? m : { ...m, [t.id]: url })));
-    return () => {
-      live = false;
-    };
-  }, [tiles, hex]);
-  return { tiles, images };
-}
-
 /**
  * The map drawn in SVG: tile art, spaces, warp gates, and each planet's number and cube slots. Memoised:
  * a pan moves the board, not what's drawn on it.
@@ -54,8 +38,8 @@ export const BoardArt = memo(function BoardArt({
   /** A planet whose new cube drops in late, and when (a relocated cube, see staging). */
   lateCube?: { planet: number; ms: number };
 }) {
-  const { cells, planets, hex } = game.board;
-  const { tiles, images } = useTileImages(game);
+  const { planets, hex } = game.board;
+  const tiles = tileArtOf(game.board);
   const { rows, cols, at } = drawing(game.board);
   const W = cols * cell;
   const H = rows * cell;
@@ -63,14 +47,6 @@ export const BoardArt = memo(function BoardArt({
   const mid = (p: { r: number; c: number }) => ({ x: (at(p).c + 0.5) * cell, y: (at(p).r + 0.5) * cell });
   // Print millimetres to screen pixels: the tile art and everything drawn over it use the printed geometry.
   const mm = cell / TILE.cell;
-  // Gap between neighbouring tiles, scaled with the cell so zooming doesn't change the look.
-  const inset = cell * 0.015;
-  const tileBox = (t: { r: number; c: number }) => ({
-    x: t.c * cell + inset,
-    y: t.r * cell + inset,
-    width: cell * 3 - 2 * inset,
-    height: cell * 3 - 2 * inset,
-  });
   // The open gates, then any of a Warp Gate pair placed so far: faint until the pair is complete.
   const head = game.pending[0];
   const placing = head?.kind === 'warpGate' ? head.placed : [];
@@ -84,37 +60,7 @@ export const BoardArt = memo(function BoardArt({
           </filter>
         </defs>
 
-        {hex && <HexTiles board={game.board} tiles={tiles} cell={cell} />}
-
-        {!hex &&
-          tiles.map((t) => (
-            <g key={`${t.r},${t.c}`}>
-              {images[t.id] ? (
-                <image href={images[t.id]} {...tileBox(t)} />
-              ) : (
-                <rect {...tileBox(t)} rx={(cell * 3 * TILE.corner) / TILE.size} fill={SPACE_BASE_CSS} />
-              )}
-            </g>
-          ))}
-
-        {/* The space pads are part of the tile art; until a tile's image is ready, plain ones stand in. */}
-        {!hex &&
-          tiles
-            .filter((t) => !images[t.id])
-            .flatMap((t) => [0, 1, 2].flatMap((dr) => [0, 1, 2].map((dc) => ({ r: t.r + dr, c: t.c + dc }))))
-            .filter(({ r, c }) => cells[r]?.[c]?.kind === 'space')
-            .map(({ r, c }) => (
-              <rect
-                key={`s${r},${c}`}
-                x={(c + 0.5) * cell - (TILE.pad / 2) * mm}
-                y={(r + 0.5) * cell - (TILE.pad / 2) * mm}
-                width={TILE.pad * mm}
-                height={TILE.pad * mm}
-                rx={4 * mm}
-                fill="rgba(255,255,255,.03)"
-                stroke="rgba(160,190,255,.2)"
-              />
-            ))}
+        {hex ? <HexTiles board={game.board} tiles={tiles} cell={cell} /> : <SquareTiles board={game.board} tiles={tiles} cell={cell} />}
 
         {/* Chevrons on edges that join the opposite edge, pointing off the board. */}
         {wrapMarks(game.board).map((m) => {

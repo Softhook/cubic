@@ -13,9 +13,6 @@ const DIAG: Cell[] = [
   { r: 1, c: -1 },
   { r: 1, c: 1 },
 ];
-/** The 8 directions to a surrounding space: orthogonal first, then diagonal. */
-export const AROUND: readonly Cell[] = [...ORTHO, ...DIAG];
-
 /*
  * Hex boards (MapDef.grid 'hex'): flat-topped hexes in axial coordinates, `c` the column (q) and `r`
  * the axial row, so the six neighbours are the steps below. A hex's "diagonals" are the six hexes two
@@ -39,8 +36,36 @@ const HEX_DIAG: Cell[] = [
   { r: 1, c: -2 },
 ];
 
-/** The steps to a board's neighbouring spaces (sides) and its diagonals. */
-const steps = (board: Board) => (board.hex ? { sides: HEX_SIDES, diag: HEX_DIAG } : { sides: ORTHO, diag: DIAG });
+/**
+ * What is next to what on a board, as steps from a space: everything that differs between square and hex
+ * boards goes through this, so the rules and the AI read the same on both (docs/HEX.md).
+ */
+export interface Geometry {
+  /** The spaces next to one (adjacent: moving, attacking, orbiting): 4 orthogonal, or a hex's 6 sides. */
+  sides: readonly Cell[];
+  /** The Interceptor's diagonals, two spaces of distance in one step: a square's 4 corners, or the 6 hexes between two sides. */
+  diagonals: readonly Cell[];
+  /** The spaces touching one (the Flagship's carry): a square's 8 with the corners, a hex's 6 sides. */
+  touching: readonly Cell[];
+  /** Steps along a delta: rows + columns, or hexes. */
+  steps: (d: Cell) => number;
+}
+
+const SQUARE: Geometry = {
+  sides: ORTHO,
+  diagonals: DIAG,
+  touching: [...ORTHO, ...DIAG],
+  steps: (d) => Math.abs(d.r) + Math.abs(d.c),
+};
+
+const HEX: Geometry = {
+  sides: HEX_SIDES,
+  diagonals: HEX_DIAG,
+  touching: HEX_SIDES,
+  steps: (d) => (Math.abs(d.r) + Math.abs(d.c) + Math.abs(d.r + d.c)) / 2,
+};
+
+export const geometry = (board: Board): Geometry => (board.hex ? HEX : SQUARE);
 
 /*
  * A hex map's tiles are 7-hex flowers: the planet and the six spaces around it. Flowers tile the plane
@@ -219,9 +244,7 @@ export function delta(a: Cell, b: Cell, board: Board): Cell {
 
 /** Steps between two cells: orthogonal (Manhattan) distance, across joined edges on a wrapping map; hexes apart on a hex board. */
 export function distance(a: Cell, b: Cell, board: Board): number {
-  const d = delta(a, b, board);
-  if (board.hex) return (Math.abs(d.r) + Math.abs(d.c) + Math.abs(d.r + d.c)) / 2;
-  return Math.abs(d.r) + Math.abs(d.c);
+  return geometry(board).steps(delta(a, b, board));
 }
 
 export function onBoard(board: Board, p: Cell): boolean {
@@ -247,13 +270,15 @@ export interface Grid {
   /** Whether a ship may stand on the cell. */
   space: readonly boolean[];
   /**
-   * Neighbour indexes on the board: `ortho` the spaces next to it (4 orthogonal, or a hex's 6 sides),
-   * `around` those and the diagonals (8 around a square, 12 for a hex).
+   * Neighbour indexes on the board (see Geometry): `ortho` the spaces next to it (4 orthogonal, or a hex's
+   * 6 sides), `around` those and the diagonals, an Interceptor's steps (8 around a square, 12 for a hex).
    */
   ortho: readonly (readonly number[])[];
   around: readonly (readonly number[])[];
   orthoCells: readonly (readonly Cell[])[];
   aroundCells: readonly (readonly Cell[])[];
+  /** The spaces touching each one: `aroundCells` on a square board, `orthoCells` on a hex one. */
+  touchingCells: readonly (readonly Cell[])[];
 }
 
 const GRIDS = new WeakMap<BoardCell[][], Grid>();
@@ -272,9 +297,9 @@ export function grid(board: Board): Grid {
           .map((q) => cells[q.r * cols + q.c]),
       ),
     );
-  const { sides, diag } = steps(board);
+  const { sides, diagonals, touching } = geometry(board);
   const orthoCells = near(sides);
-  const aroundCells = near([...sides, ...diag]);
+  const aroundCells = near([...sides, ...diagonals]);
   const index = (list: readonly Cell[]) => Object.freeze(list.map((q) => q.r * cols + q.c));
   g = {
     cols,
@@ -285,6 +310,7 @@ export function grid(board: Board): Grid {
     around: aroundCells.map(index),
     orthoCells,
     aroundCells,
+    touchingCells: touching === sides ? orthoCells : near(touching),
   };
   GRIDS.set(board.cells, g);
   return g;
@@ -297,18 +323,20 @@ export function cellIndex(board: Board, p: Cell | undefined): number {
   return inside ? r! * board.cols + c! : -1;
 }
 
-function neighbours(board: Board, p: Cell, around: boolean): readonly Cell[] {
+/** The neighbours of p on the board: next to it, also diagonal (an Interceptor's steps), or touching it. */
+function neighbours(board: Board, p: Cell, kind: 'sides' | 'diagonal' | 'touching'): readonly Cell[] {
   if (p.r < 0 || p.c < 0 || p.r >= board.rows || p.c >= board.cols) {
-    const { sides, diag } = steps(board);
-    return offsets(board, p, around ? [...sides, ...diag] : sides).filter((q) => onBoard(board, q));
+    const { sides, diagonals, touching } = geometry(board);
+    const deltas = kind === 'sides' ? sides : kind === 'diagonal' ? [...sides, ...diagonals] : touching;
+    return offsets(board, p, deltas).filter((q) => onBoard(board, q));
   }
   const g = grid(board);
-  return (around ? g.aroundCells : g.orthoCells)[p.r * board.cols + p.c];
+  return (kind === 'sides' ? g.orthoCells : kind === 'diagonal' ? g.aroundCells : g.touchingCells)[p.r * board.cols + p.c];
 }
 
 /** The spaces next to p that are on the board: the 4 orthogonal ones, or a hex's 6. */
 export function adjacent(board: Board, p: Cell): readonly Cell[] {
-  return neighbours(board, p, false);
+  return neighbours(board, p, 'sides');
 }
 
 /** The orthogonal neighbours of p plus its Warp Gate partner: the two gate spaces count as adjacent (RULE-SUGGESTIONS #30). */
@@ -318,12 +346,12 @@ export function linked(state: GameState, p: Cell): Cell[] {
 
 /** The spaces touching p that are on the board: the 8 around a square, a hex's 6 sides. */
 export function surrounding(board: Board, p: Cell): readonly Cell[] {
-  return neighbours(board, p, !board.hex);
+  return neighbours(board, p, 'touching');
 }
 
 /** Movement neighbours, including diagonals for interceptors and Warp Gate links. */
 export function stepNeighbours(state: GameState, p: Cell, diagonal: boolean): readonly Cell[] {
-  const result = neighbours(state.board, p, diagonal);
+  const result = neighbours(state.board, p, diagonal ? 'diagonal' : 'sides');
   return state.gates.length === 2 ? [...result, ...gatePartner(state, p)] : result;
 }
 
@@ -336,8 +364,7 @@ function gatePartner(state: GameState, p: Cell): Cell[] {
 
 export function isDiagonalStep(a: Cell, b: Cell, board: Board): boolean {
   const d = delta(a, b, board);
-  if (board.hex) return HEX_DIAG.some((x) => x.r === d.r && x.c === d.c);
-  return Math.abs(d.r) === 1 && Math.abs(d.c) === 1;
+  return geometry(board).diagonals.some((x) => same(x, d));
 }
 
 export function orbitals(board: Board, planet: Planet): readonly Cell[] {
@@ -345,7 +372,22 @@ export function orbitals(board: Board, planet: Planet): readonly Cell[] {
 }
 
 export function diagonals(board: Board, planet: Planet): Cell[] {
-  return offsets(board, planet, steps(board).diag).filter((q) => onBoard(board, q));
+  return offsets(board, planet, geometry(board).diagonals).filter((q) => onBoard(board, q));
+}
+
+/**
+ * Each tile's middle space (its planet's, or a void tile's middle), by tile index (`BoardCell.tile`): the
+ * one space whose neighbours all lie on its own tile.
+ */
+export function tileCentres(board: Board): Map<number, Cell> {
+  const out = new Map<number, Cell>();
+  const { sides } = geometry(board);
+  board.cells.forEach((row, r) =>
+    row.forEach((x, c) => {
+      if (x.kind !== 'off' && sides.every((d) => cellAt(board, { r: r + d.r, c: c + d.c })?.tile === x.tile)) out.set(x.tile, { r, c });
+    }),
+  );
+  return out;
 }
 
 export function planetFreeSlots(planet: Planet): number {

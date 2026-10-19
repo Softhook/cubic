@@ -19,6 +19,12 @@ import { ErrorToast, PlayedCard, Toasts } from './Toasts';
 import { FullscreenButton } from './FullscreenButton';
 import { MusicButton, SoundButton } from './SoundButton';
 
+/** The map's height over its width, as drawn. */
+const mapRatio = (game: GameState) => {
+  const { rows, cols } = drawing(game.board);
+  return rows / cols;
+};
+
 /**
  * The game screen, for a game on this device or online. `side` goes at the top of the sidebar,
  * `overlay` over everything; online, leaving doesn't end the game. `onLobby` (the title) goes back to
@@ -106,7 +112,7 @@ export function Game({
 
       <main className={`layout ${sheet ? 'sheet-layout' : ''}`}>
         {/* First in both layouts, so turning the phone keeps the board (and its zoom). */}
-        <div className="stage" style={{ '--map-ratio': drawing(game.board).rows / drawing(game.board).cols } as CSSProperties}>
+        <div className="stage" style={{ '--map-ratio': mapRatio(game) } as CSSProperties}>
           {/* Choosing a starting planet is the first moment the map is yours to look at: show it zooms then. */}
           <Board
             game={returning ?? game}

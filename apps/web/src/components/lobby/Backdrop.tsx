@@ -128,8 +128,9 @@ function MapCanvas({
     const size = cell * 3 - 2 * inset;
     const radius = (cell * 3 * TILE.corner) / TILE.size;
     for (const t of tiles) {
-      const x = t.c * cell + inset;
-      const y = t.r * cell + inset;
+      // Each tile's art is centred on its middle space.
+      const x = (t.c - 1) * cell + inset;
+      const y = (t.r - 1) * cell + inset;
       ctx.beginPath();
       // Square corners where canvas can't round them (Safari before 16).
       if (ctx.roundRect) ctx.roundRect(x, y, size, size, radius);
@@ -233,7 +234,7 @@ function faceCamera(el: HTMLElement | null) {
 function Planets({ board, tiles, images }: { board: Board; tiles: TileArt[]; images: Record<string, HTMLImageElement> }) {
   return board.planets.map((p) => {
     // A planet sits in the middle of its tile.
-    const tile = tiles.find((t) => t.r === p.r - 1 && t.c === p.c - 1);
+    const tile = tiles.find((t) => t.r === p.r && t.c === p.c);
     const img = tile && images[tile.id];
     return (
       img && (

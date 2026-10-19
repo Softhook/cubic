@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { TILE_SET, dataUrl, hash, tileSpec, tileSvg } from '@quantum/art';
 import { rasterise } from '../files';
 import { idle, storeImage, storedImage } from './imageStore';
@@ -71,4 +72,18 @@ export async function warmTileImages(): Promise<void> {
     await idle();
     await tileImage(t.id);
   }
+}
+
+/** Tile artwork for the map by physical tile id, filled in as each image is ready (`decodedTileImage`). */
+export function useTileImages(tiles: readonly { id: string }[], look: TileLook = 'square'): Record<string, string> {
+  const [images, setImages] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let live = true;
+    for (const t of tiles)
+      decodedTileImage(t.id, look).then((url) => live && setImages((m) => (m[t.id] === url ? m : { ...m, [t.id]: url })));
+    return () => {
+      live = false;
+    };
+  }, [tiles, look]);
+  return images;
 }

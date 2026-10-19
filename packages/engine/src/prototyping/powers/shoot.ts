@@ -2,18 +2,17 @@
  * Shoot: attack an enemy in a straight line, without moving. Like a move or a normal attack it is the
  * ship's one action of the turn (and costs one action); the shooter never advances.
  */
-import { AROUND, canMoveDie, cellOf, die, dieAt, isEmptySpace, markMoved, offsets, onBoard, spend, startCombat } from '../../prototype';
+import { canMoveDie, cellOf, die, dieAt, geometry, isEmptySpace, markMoved, offsets, onBoard, spend, startCombat } from '../../prototype';
 import type { Die, GameState, PrototypePower } from '../../prototype';
-
-/** The four orthogonal directions: a shot flies as far as the first thing in its way (a ship, a planet or the board's edge; it flies over the void). */
-const LINES = AROUND.slice(0, 4);
 
 /** Enemy ships in range from where it stands, whatever the cost. */
 export function shootTargets(s: GameState, d: Die): Die[] {
   const start = cellOf(d);
   if (!start) return [];
   const out: Die[] = [];
-  for (const dir of LINES) {
+  // Along each line from the ship (the four orthogonal ones): a shot flies as far as the first thing in its
+  // way (a ship, a planet or the board's edge; it flies over the void).
+  for (const dir of geometry(s.board).sides) {
     let at = start;
     // The step count only matters on a board that wraps, where a line comes back round to the shooter.
     for (let k = 0; k < s.board.rows + s.board.cols; k++) {

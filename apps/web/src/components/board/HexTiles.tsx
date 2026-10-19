@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
 import { drawing, type Board, type Cell } from '@quantum/engine';
 import { SPACE_BASE_CSS, TILE, WELL } from '@quantum/art';
-import { decodedTileImage } from '../../art/tileImages';
+import { useTileImages } from '../../art/tileImages';
 import type { TileArt } from '../../art/boardTiles';
 
 /** A flat-topped hex one space tall has corners this far from its centre (1 / √3 spaces). */
@@ -24,27 +23,14 @@ const SIDE_STEPS: Cell[] = [
 const points = (list: number[][]) => list.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
 const line = (list: number[][]) => `M${list.map(([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join(' L')}`;
 
-/** The art of each hex tile once its image is ready (a plain tile shows meanwhile). */
-function useArt(tiles: TileArt[]) {
-  const [images, setImages] = useState<Record<string, string>>({});
-  useEffect(() => {
-    let live = true;
-    for (const t of tiles)
-      decodedTileImage(t.id, 'art').then((url) => live && setImages((m) => (m[t.id] === url ? m : { ...m, [t.id]: url })));
-    return () => {
-      live = false;
-    };
-  }, [tiles]);
-  return images;
-}
-
 /**
  * A hex map's tiles in SVG: each 7-hex flower cut from its tile's painting (centred on the planet, as
  * printed), a dark seam where tiles meet, and a well etched for each space, as the square tiles have.
  * `tiles` are the tiles' planets (or a void tile's middle hex).
  */
 export function HexTiles({ board, tiles, cell }: { board: Board; tiles: TileArt[]; cell: number }) {
-  const images = useArt(tiles);
+  // Only the painting: the flower is cut from it and draws its own spaces (a plain tile shows until it is ready).
+  const images = useTileImages(tiles, 'art');
   const { at } = drawing(board);
   const mm = cell / TILE.cell;
   const centre = (p: Cell) => [(at(p).c + 0.5) * cell, (at(p).r + 0.5) * cell];

@@ -13,12 +13,15 @@ import {
   conquerCheck,
   distance,
   drawing,
+  geometry,
   grid,
   isDiagonalStep,
   mapStats,
   moveOptions,
   orbitals,
   spaces,
+  surrounding,
+  tileCentres,
   type Cell,
   type GameState,
 } from '../src';
@@ -62,6 +65,23 @@ describe('hex maps', () => {
     }
     const b = BASE.board;
     expect(b.planets.filter((p) => distance(p, CENTRE, b) === 3)).toHaveLength(6);
+  });
+
+  it('finds each tile’s middle: its planet', () => {
+    for (const m of [...HEX_MAPS, MAPS.find((x) => x.id === 'alpha-sector')!]) {
+      const b = buildBoard(m);
+      const centres = tileCentres(b);
+      expect(centres.size).toBe(new Set(b.cells.flat().flatMap((x) => (x.kind === 'off' ? [] : [x.tile]))).size);
+      for (const p of b.planets) expect(centres.get(b.cells[p.r][p.c].tile)).toEqual({ r: p.r, c: p.c });
+    }
+  });
+
+  it('touches the 8 spaces around a square but only a hex’s 6 sides', () => {
+    const square = buildBoard(MAPS.find((x) => x.id === 'alpha-sector')!);
+    expect(surrounding(square, { r: 4, c: 4 })).toHaveLength(8);
+    expect(geometry(square).touching).toHaveLength(8);
+    const p = orbitals(BASE.board, CENTRE)[0];
+    expect(surrounding(BASE.board, p)).toEqual(adjacent(BASE.board, p));
   });
 
   it('measures distance in hexes', () => {
