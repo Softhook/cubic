@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
-import { useCardImage } from './CardViewer';
 import { CARD_CATEGORIES, ICONS, cardPalette, missile } from '@quantum/art';
 import { card, cardKind, effectOf, isOriginalCard } from '@quantum/engine';
+import { useCardImage } from '../art/useCardImages';
 
 /** A card category's icon (the same drawing as on the printed cards). */
 export function CategoryIcon({ category, size = 14 }: { category: string; size?: number }) {
@@ -90,11 +90,9 @@ export interface CardViewProps {
   index?: number;
   /** A band of the printed card's illustration across the top (the market's cards). */
   art?: boolean;
-  /** Shows the whole card: offered as "more" when its text is cut short. */
-  onMore?: () => void;
 }
 
-export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, className = '', index, art, onMore }: CardViewProps) {
+export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, className = '', index, art }: CardViewProps) {
   const def = card(id);
   const original = isOriginalCard(id);
   // The original Expansion is a Gambit card but looks like the CE Expansion card.
@@ -104,7 +102,7 @@ export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, 
   const kindLabel = kind === 'skill' ? undefined : original ? 'Gambit' : kind === 'expansion' ? 'Expansion' : 'Tactic';
   const clickable = !!onClick && !disabled;
   const text = useRef<HTMLDivElement>(null);
-  const clipped = useClipped(text, !!onMore);
+  const cut = useClipped(text);
   return (
     <button
       type="button"
@@ -126,27 +124,11 @@ export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, 
       </div>
       <div className="qcard-name">{NAME_BREAKS[def.name] ?? def.name}</div>
       <div className="qcard-sub">{def.subtitle}</div>
-      <div className={`qcard-text ${onMore && !clipped ? 'whole' : ''}`} ref={text}>
+      <div className={`qcard-text ${cut ? 'cut' : ''}`} ref={text}>
         {def.text}
       </div>
       {/* At the foot, so a badge never pushes the name down out of line with its neighbours'. */}
-      {(badge || clipped) && (
-        <div className="qcard-foot">
-          {clipped && (
-            // Inside the card's button, so not a button itself: a tap here shows the card instead of taking it.
-            <span
-              className="qcard-more"
-              onClick={(e) => {
-                e.stopPropagation();
-                onMore!();
-              }}
-            >
-              more ›
-            </span>
-          )}
-          {badge && <span className="qcard-badge">{badge}</span>}
-        </div>
-      )}
+      {badge && <span className="qcard-badge">{badge}</span>}
     </button>
   );
 }
@@ -164,17 +146,24 @@ function ArtBand({ id, children }: { id: string; children: ReactNode }) {
   );
 }
 
-/** Whether `el`'s text is cut short (it holds more than it shows), kept up to date as it resizes. */
-function useClipped(el: RefObject<HTMLElement>, watch: boolean) {
+/**
+ * Whether `el`'s text is cut short (it holds more than it shows), kept up to date as it resizes and when fonts
+ * arrive (a late font rewraps the text without resizing its box).
+ */
+function useClipped(el: RefObject<HTMLElement>) {
   const [clipped, setClipped] = useState(false);
   useLayoutEffect(() => {
     const box = el.current;
-    if (!watch || !box) return;
+    if (!box) return;
     const check = () => setClipped(box.scrollHeight > box.clientHeight + 1);
     check();
     const ro = new ResizeObserver(check);
     ro.observe(box);
-    return () => ro.disconnect();
-  }, [el, watch]);
-  return watch && clipped;
+    document.fonts.addEventListener('loadingdone', check);
+    return () => {
+      ro.disconnect();
+      document.fonts.removeEventListener('loadingdone', check);
+    };
+  }, [el]);
+  return clipped;
 }

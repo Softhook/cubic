@@ -1,8 +1,8 @@
 import { useEffect, useState, type CSSProperties } from 'react';
+import { CARD_CATEGORIES } from '@quantum/art';
 import { SHIP_NAMES, card, die, rulesOf, scrapyard, type Action, type ActionOf, type GameState } from '@quantum/engine';
 import { SHORT, useMediaQuery } from '../game/useMediaQuery';
 import type { Dispatch } from '../game/useGame';
-import { CARD_CATEGORIES } from '@quantum/art';
 import { CardView, CategoryIcon, categoryStyle } from './Card';
 import { Dialog, Modal } from './Dialog';
 import { Die3D } from './Die3D';

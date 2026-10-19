@@ -81,15 +81,20 @@ export const cardImageNow = (id: string) => ready.get(id);
 
 const backs = new Map<CardDeck, Promise<string>>();
 
-/** The image URL for a deck's card back (the market's deck piles), drawn once a visit. */
-export function cardBackImage(deck: CardDeck): Promise<string> {
+/**
+ * The image URL for the back of the deck card `id` belongs to, without its lettering (for the market's deck piles,
+ * too narrow for it). Drawn once a visit: it's small and quick, so it isn't kept.
+ */
+export function cardBackImage(id: string): Promise<string> {
+  const deck = faceOf(id).deck;
   let image = backs.get(deck);
   if (!image) {
-    image = (async () => {
-      const svg = cardBackSvg(deck, { plain: true });
-      // A pile shows the back at its full height (about 200 px), cropped to its middle: 2× that.
-      return rasterise(svg, 286, 400, 'image/webp', 0.9).then(URL.createObjectURL, () => dataUrl(svg));
-    })();
+    const svg = cardBackSvg(deck, { plain: true });
+    // A pile shows the back at its full height (about 200 px), cropped to its middle: 2× that.
+    image = rasterise(svg, 286, 400, 'image/webp', 0.9).then(
+      (blob) => URL.createObjectURL(blob),
+      () => dataUrl(svg),
+    );
     backs.set(deck, image);
   }
   return image;

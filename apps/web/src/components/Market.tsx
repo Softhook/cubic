@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
-import type { CardDeck } from '@quantum/art';
 import { EXPANSION, card, cardKind, rulesOf, type DeckKind, type GameState } from '@quantum/engine';
 import type { Legal } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
@@ -9,7 +8,8 @@ import { remember, stored } from '../storage';
 import { CardView, categoryStyle } from './Card';
 import { CardFlights } from './CardFlight';
 import { CardViewer } from './CardViewer';
-import { cardBackImage, warmCardImages } from '../art/cardImages';
+import { warmCardImages } from '../art/cardImages';
+import { useCardBack } from '../art/useCardImages';
 import { Dialog } from './Dialog';
 
 /**
@@ -64,7 +64,6 @@ export function Market({
     skill: { name: cardRules.terms.skillDeck, cards: m.skillDeck },
     tactic: { name: cardRules.terms.tacticDeck, cards: m.tacticDeck },
   };
-  const backOf = (deck: DeckKind): CardDeck => (rulesOf(game).id === 'original' ? (deck === 'skill' ? 'command' : 'gambit') : deck);
   const deckTitle = (deck: DeckKind) => `${cardsLeft(decks[deck].cards.length)} in the ${decks[deck].name} deck — click to view them`;
 
   const peekAt = (deck: DeckKind, cards: string[], index: number) =>
@@ -89,7 +88,7 @@ export function Market({
     return (
       <div className={`market-row market-${deck}`} style={{ '--cards': rowCards.length } as CSSProperties}>
         <button type="button" className={`deck deck-${deck}`} title={deckTitle(deck)} onClick={() => setViewing(deck)}>
-          <DeckBack deck={backOf(deck)} />
+          <DeckBack cardId={(deck === 'skill' ? cardRules.skills : cardRules.tactics)[0].id} />
           <span className="deck-label">{decks[deck].name}</span>
           <span className="deck-count">{decks[deck].cards.length}</span>
         </button>
@@ -103,7 +102,6 @@ export function Market({
             index={index}
             art
             onClick={() => clickCard(deck, index, id)}
-            onMore={() => setViewingCard(id)}
           />
         ))}
       </div>
@@ -221,7 +219,6 @@ export function Market({
             size="sm"
             badge={`×${m.expansions}`}
             art
-            onMore={() => setViewingCard(EXPANSION.id)}
             onClick={canExpand ? () => dispatch({ type: 'takeCard', deck: 'expansion', index: 0 }) : () => setViewingCard(EXPANSION.id)}
             className={`market-card ${m.expansions ? '' : 'empty'} ${canExpand ? 'takeable' : ''}`}
           />
@@ -292,16 +289,9 @@ export function Market({
   );
 }
 
-/** A deck pile: its printed card back, once drawn (till then, the pile's plain colour). */
-function DeckBack({ deck }: { deck: CardDeck }) {
-  const [src, setSrc] = useState<string>();
-  useEffect(() => {
-    let live = true;
-    void cardBackImage(deck).then((url) => live && setSrc(url));
-    return () => {
-      live = false;
-    };
-  }, [deck]);
+/** A deck pile: the printed back of `cardId`'s deck, once drawn (till then, the pile's plain colour). */
+function DeckBack({ cardId }: { cardId: string }) {
+  const src = useCardBack(cardId);
   return <div className="deck-stack" style={src ? { backgroundImage: `url("${src}")` } : undefined} />;
 }
 

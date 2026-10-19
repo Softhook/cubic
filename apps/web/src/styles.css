@@ -1055,11 +1055,7 @@ input { font: inherit; }
 .qcard-cat { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--cat-ink, var(--cat)); }
 /* A one-shot card's deck (Tactic, Gambit) beside its category, where there's room: not in the market, whose rows are labelled. */
 .qcard-kind { font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; opacity: .6; white-space: nowrap; }
-/* The foot: "more" when the text is cut short (it shows the whole card), and the badge (Peek, ×3). */
-.qcard-foot { flex: none; display: flex; align-items: center; gap: 6px; margin-top: 4px; }
-.qcard-badge { flex: none; margin-left: auto; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--cat); color: #fff; }
-.qcard-more { padding: 2px 6px 2px 0; white-space: nowrap; font-size: 10px; font-weight: 700; color: var(--cat-ink, var(--cat)); cursor: zoom-in; }
-@media (hover: hover) { .qcard-more:hover { text-decoration: underline; } }
+.qcard-badge { flex: none; align-self: flex-end; margin-top: 4px; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--cat); color: #fff; }
 /* The art band: the middle of the printed card's illustration, edge to edge, its category's colour under it
    (instead of the stripe on top). The name sits on the art, in place of the category label and the name line,
    so the rules text below has their room; its tag is no bigger than the name, to hide as little art as it can. */
@@ -1080,10 +1076,8 @@ input { font: inherit; }
 .qcard-name { font-family: var(--display); font-weight: 700; font-size: 14px; letter-spacing: .03em; margin-top: 6px; line-height: 1.15; }
 .qcard-sub { font-size: 10.5px; font-weight: 600; opacity: .6; margin-top: 2px; }
 .qcard-text { font-size: 11px; line-height: 1.38; margin-top: 7px; flex: 1 1 auto; min-height: 0; overflow: hidden; }
-/* Text that would overflow the card is clipped and fades out over the last line; the full text is in the tooltip and card viewer. */
-.qcard-text { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 1.3em), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 1.3em), transparent); }
-/* A card that checks (the market's, which offers "more") fades only when its text is in fact cut short. */
-.qcard-text.whole { -webkit-mask-image: none; mask-image: none; }
+/* Text cut short by the card fades out over its last line; the full text is in the tooltip and card viewer. */
+.qcard-text.cut { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 1.3em), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 1.3em), transparent); }
 .qcard-sm { width: 114px; height: 160px; padding: 8px 9px; }
 .qcard-sm .qcard-name { font-size: 12.5px; }
 .qcard-sm .qcard-text { font-size: 10px; margin-top: 5px; }
@@ -1138,8 +1132,6 @@ input { font: inherit; }
 .market .qcard-sm .qcard-text { font-size: max(11px, min(12px, 11cqi)); line-height: 1.35; }
 .market .qcard-sm.long .qcard-text { font-size: max(10.5px, min(11.5px, 10.5cqi)); }
 .market .qcard-cat { min-width: 0; overflow: hidden; white-space: nowrap; }
-/* A narrow card: the category tightens up rather than being cut short. */
-@container (max-width: 124px) { .market .qcard-cat { letter-spacing: .03em; gap: 3px; } }
 /* A row stops growing when its cards do (--card-max), so on a wide screen the decks stay together instead of
    spreading across it with gaps between them. */
 .market { --card-max: 134px; }
@@ -1165,7 +1157,7 @@ input { font: inherit; }
   .market .qcard-art-name { font-size: max(11px, min(14.5px, 10.5cqi)); }
   .market .qcard-sm .qcard-text { font-size: max(11px, min(13.5px, 11cqi)); }
   .market .qcard-sm.long .qcard-text { font-size: max(10.5px, min(12.5px, 10.5cqi)); }
-  .market .qcard-cat, .market .qcard-badge { font-size: 11px; }
+  .market .qcard-badge { font-size: 11px; }
 }
 @media (hover: hover) { .market-card.clickable:not(.takeable):hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0,0,0,.45), 0 0 0 1px var(--cat); } }
 .market-refresh { align-self: center; max-width: 140px; font-size: 12px; white-space: normal; border-color: var(--line-2); color: var(--text); }
@@ -1302,7 +1294,7 @@ input { font: inherit; }
 .skill-group .qcard-sm { width: auto; height: auto; min-height: 96px; }
 .skill-group .qcard-top, .skill-group .qcard-sub { display: none; }
 .skill-group .qcard-name { margin-top: 2px; }
-.skill-group .qcard-text, .skill-group .qcard-sm.long .qcard-text { font-size: 10.5px; line-height: 1.35; overflow: visible; -webkit-mask-image: none; mask-image: none; }
+.skill-group .qcard-text, .skill-group .qcard-sm.long .qcard-text { font-size: 10.5px; line-height: 1.35; overflow: visible; }
 .card-art { position: relative; width: 180px; max-width: 100%; aspect-ratio: 63.5 / 88.9; flex: none; }
 .card-art-lg { width: 300px; }
 .card-art img, .card-art-ph { display: block; width: 100%; height: 100%; border-radius: 4.7%/3.4%; box-shadow: 0 12px 28px rgba(0,0,0,.5); }
@@ -2033,12 +2025,11 @@ input { font: inherit; }
   .market .qcard-top { grid-area: top; justify-content: flex-end; gap: 6px; }
   .market .qcard-sm .qcard-name { display: block; grid-area: name; min-height: 0; margin: 0 10px 0 0; font-size: 13px; overflow-wrap: normal; }
   .market .qcard-badge { grid-area: badge; align-self: center; margin: 0 0 0 6px; }
-  .market .qcard-foot, .market .qcard-art { display: none; }
-  .market .qcard-foot:has(.qcard-badge) { display: contents; }
+  .market .qcard-art { display: none; }
   .market .qcard.has-art::before { display: block; }
   .market .qcard.has-art .qcard-top { display: flex; }
   .market .qcard.has-art .qcard-name { display: block; }
-  .market .qcard-sm .qcard-text, .market .qcard-sm.long .qcard-text { grid-area: text; margin: 0; font-size: 11.5px; line-height: 1.35; overflow: visible; -webkit-mask-image: none; mask-image: none; }
+  .market .qcard-sm .qcard-text, .market .qcard-sm.long .qcard-text { grid-area: text; margin: 0; font-size: 11.5px; line-height: 1.35; overflow: visible; }
   .market .market-expansion > .qcard, .market .deck { margin-left: 0; }
   /* While you pick, the cards you can't take (e.g. Patient's skills) step back, so the ones you can stand out. */
   .market.picking .market-card:not(.takeable) { opacity: .45; }
