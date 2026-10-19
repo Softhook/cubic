@@ -116,12 +116,7 @@ export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, 
       data-card={id}
       data-index={index}
     >
-      {art && (
-        <ArtBand id={id}>
-          <CategoryIcon category={def.category} size={12} />
-          {NAME_BREAKS[def.name] ?? def.name}
-        </ArtBand>
-      )}
+      {art && <ArtBand id={id}>{NAME_BREAKS[def.name] ?? def.name}</ArtBand>}
       <div className="qcard-top">
         <span className="qcard-cat">
           <CategoryIcon category={def.category} size={size === 'sm' ? 11 : 13} />
