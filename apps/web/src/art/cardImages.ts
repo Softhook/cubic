@@ -1,4 +1,4 @@
-import { CARD, cardSvg, dataUrl, hash } from '@quantum/art';
+import { CARD, cardBackSvg, cardSvg, dataUrl, hash, type CardDeck } from '@quantum/art';
 import { rasterise } from '../files';
 import { cardFontCss, cardFontsReady, faceOf, measure } from '../lab/cards';
 import { idle, storeImage, storedImage } from './imageStore';
@@ -78,6 +78,22 @@ export function cardImage(id: string): Promise<string> {
 
 /** The image URL for a card that has already been drawn, if any: lets a reopened pop-up show at once. */
 export const cardImageNow = (id: string) => ready.get(id);
+
+const backs = new Map<CardDeck, Promise<string>>();
+
+/** The image URL for a deck's card back (the market's deck piles), drawn once a visit. */
+export function cardBackImage(deck: CardDeck): Promise<string> {
+  let image = backs.get(deck);
+  if (!image) {
+    image = (async () => {
+      const svg = cardBackSvg(deck, { plain: true });
+      // A pile shows the back at its full height (about 200 px), cropped to its middle: 2× that.
+      return rasterise(svg, 286, 400, 'image/webp', 0.9).then(URL.createObjectURL, () => dataUrl(svg));
+    })();
+    backs.set(deck, image);
+  }
+  return image;
+}
 
 /** The cards still to prepare in the background, first first. */
 let toWarm: string[] = [];

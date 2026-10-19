@@ -278,8 +278,8 @@ export function cardSvg(face: CardFace, o: CardOptions = {}): string {
   return finish(join(base, art(face, id, cat.hue, rng(hash(`card:${face.id}`))), front), area, id, o.rounded);
 }
 
-/** The back of a deck's cards. */
-export function cardBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure'> = {}): string {
+/** The back of a deck's cards; `plain` leaves out the lettering (the game's narrow deck piles). */
+export function cardBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure'> & { plain?: boolean } = {}): string {
   const id = o.idPrefix ?? `back-${deck}`;
   const info = DECK_INFO[deck];
   const { w: W, h: H } = CARD;
@@ -312,7 +312,7 @@ export function cardBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure'> = {}
     defs: fontStyle(o) + sky.defs + halo.defs + clipRect(`${id}-win`, win, info.light ? 2.6 : 0),
     body:
       rect(area, `fill="${p.paper}"`) +
-      `<g clip-path="url(#${id}-win)">${sky.body}${halo.body}${orbits}${die(cx, cy, 11, 6, hue)}${title}${sub}</g>` +
+      `<g clip-path="url(#${id}-win)">${sky.body}${halo.body}${orbits}${die(cx, cy, 11, 6, hue)}${o.plain ? '' : title + sub}</g>` +
       border,
   };
   return finish(all, area, id, o.rounded);

@@ -1,4 +1,5 @@
-import type { CSSProperties } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { useCardImage } from './CardViewer';
 import { CARD_CATEGORIES, ICONS, cardPalette, missile } from '@quantum/art';
 import { card, cardKind, effectOf, isOriginalCard } from '@quantum/engine';
 
@@ -62,9 +63,14 @@ export function MissileIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-/** Sets `--cat` to a category's accent colour, as printed on a light (permanent) or dark (one-shot) card. */
-export const categoryStyle = (category: string, light: boolean) =>
-  ({ '--cat': cardPalette(light, CARD_CATEGORIES[category]?.hue ?? CARD_CATEGORIES.action.hue).accent }) as CSSProperties;
+/**
+ * Sets `--cat` to a category's accent colour, as printed on a light (permanent) or dark (one-shot) card, and
+ * `--cat-ink` to its text colour on that card (on a light card, darker than the accent, to be readable).
+ */
+export const categoryStyle = (category: string, light: boolean) => {
+  const p = cardPalette(light, CARD_CATEGORIES[category]?.hue ?? CARD_CATEGORIES.action.hue);
+  return { '--cat': p.accent, '--cat-ink': light ? p.accentInk : p.accent } as CSSProperties;
+};
 
 /**
  * Soft hyphens for names too long for a narrow market card (browsers' automatic hyphenation skips them).
@@ -82,19 +88,27 @@ export interface CardViewProps {
   className?: string;
   /** Its place in a row of cards (the market's), told apart from other copies of it there. */
   index?: number;
+  /** A band of the printed card's illustration across the top (the market's cards). */
+  art?: boolean;
+  /** Shows the whole card: offered as "more" when its text is cut short. */
+  onMore?: () => void;
 }
 
-export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, className = '', index }: CardViewProps) {
+export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, className = '', index, art, onMore }: CardViewProps) {
   const def = card(id);
   const original = isOriginalCard(id);
   // The original Expansion is a Gambit card but looks like the CE Expansion card.
   const kind = effectOf(id) === 'expansion' ? 'expansion' : cardKind(id);
-  const kindLabel = kind === 'expansion' ? (original ? 'Gambit' : 'Expansion') : original ? 'Gambit' : 'Tactic';
+  const category = CARD_CATEGORIES[def.category]?.label ?? def.category;
+  // One-shot cards name their deck too, where it isn't their category already (Expansion).
+  const kindLabel = kind === 'skill' ? undefined : original ? 'Gambit' : kind === 'expansion' ? 'Expansion' : 'Tactic';
   const clickable = !!onClick && !disabled;
+  const text = useRef<HTMLDivElement>(null);
+  const clipped = useClipped(text, !!onMore);
   return (
     <button
       type="button"
-      className={`qcard qcard-${kind} qcard-${size} ${def.text.length > 110 ? 'long' : ''} ${clickable ? 'clickable' : ''} ${inactive ? 'inactive' : ''} ${className}`}
+      className={`qcard qcard-${kind} qcard-${size} ${art ? 'has-art' : ''} ${def.text.length > 110 ? 'long' : ''} ${clickable ? 'clickable' : ''} ${inactive ? 'inactive' : ''} ${className}`}
       style={categoryStyle(def.category, kind === 'skill')}
       onClick={clickable ? onClick : undefined}
       disabled={!clickable}
@@ -102,17 +116,70 @@ export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, 
       data-card={id}
       data-index={index}
     >
+      {art && (
+        <ArtBand id={id}>
+          <CategoryIcon category={def.category} size={12} />
+          {NAME_BREAKS[def.name] ?? def.name}
+        </ArtBand>
+      )}
       <div className="qcard-top">
         <span className="qcard-cat">
           <CategoryIcon category={def.category} size={size === 'sm' ? 11 : 13} />
-          {kind === 'skill' ? (CARD_CATEGORIES[def.category]?.label ?? 'Skill') : kindLabel}
+          {category}
         </span>
+        {kindLabel && kindLabel !== category && <span className="qcard-kind">{kindLabel}</span>}
       </div>
       <div className="qcard-name">{NAME_BREAKS[def.name] ?? def.name}</div>
       <div className="qcard-sub">{def.subtitle}</div>
-      <div className="qcard-text">{def.text}</div>
+      <div className={`qcard-text ${onMore && !clipped ? 'whole' : ''}`} ref={text}>
+        {def.text}
+      </div>
       {/* At the foot, so a badge never pushes the name down out of line with its neighbours'. */}
-      {badge && <span className="qcard-badge">{badge}</span>}
+      {(badge || clipped) && (
+        <div className="qcard-foot">
+          {clipped && (
+            // Inside the card's button, so not a button itself: a tap here shows the card instead of taking it.
+            <span
+              className="qcard-more"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMore!();
+              }}
+            >
+              more ›
+            </span>
+          )}
+          {badge && <span className="qcard-badge">{badge}</span>}
+        </div>
+      )}
     </button>
   );
+}
+
+/**
+ * The middle of the printed card's illustration, once drawn (a plain band of the card's colour till then), with
+ * the card's name on it in place of its category, so the rules text below gets the name's room.
+ */
+function ArtBand({ id, children }: { id: string; children: ReactNode }) {
+  const src = useCardImage(id);
+  return (
+    <div className="qcard-art" style={src ? { backgroundImage: `url("${src}")` } : undefined}>
+      <span className="qcard-art-name">{children}</span>
+    </div>
+  );
+}
+
+/** Whether `el`'s text is cut short (it holds more than it shows), kept up to date as it resizes. */
+function useClipped(el: RefObject<HTMLElement>, watch: boolean) {
+  const [clipped, setClipped] = useState(false);
+  useLayoutEffect(() => {
+    const box = el.current;
+    if (!watch || !box) return;
+    const check = () => setClipped(box.scrollHeight > box.clientHeight + 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [el, watch]);
+  return watch && clipped;
 }

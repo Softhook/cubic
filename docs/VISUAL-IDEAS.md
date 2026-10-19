@@ -38,6 +38,11 @@ doesn't say what happened, and the players have no faces.
   map's real tiles on a turning plane, with fleets drifting and fighting; a title intro with its
   own opening sound. Its planets stand up as 3D spheres.
 - **Music** ([ambience.ts](../apps/web/src/ambience.ts)): a generative drone with its own toggle.
+- **Card art in the market** (19 October 2026, idea 1 below): each market card has a band of its printed
+  illustration across the top with its name and category icon on it, and the deck piles show the printed card back
+  ([Card.tsx](../apps/web/src/components/Card.tsx), [Market.tsx](../apps/web/src/components/Market.tsx)).
+  Cards whose text is cut short offer "more", which shows the whole card. Not done yet: thumbnails on the
+  skill chips in the player list.
 - **Tile art, round one** (picked 17 October 2026 from seven ideas with three candidates each):
   film-style planet lighting (hard terminator, edge-lit atmosphere, back light), spaces and cube slots as etched wells, and a black hole, the old rift and a supernova on the
   three Void tiles
@@ -50,6 +55,8 @@ doesn't say what happened, and the players have no faces.
 ## The biggest gains
 
 ### 1. Card art in the market
+
+**Done** (see above). What follows is the original idea.
 
 **Today.** Every card has a full illustrated scene ([card.ts](../packages/art/src/card.ts), scenes
 in [`scenes/`](../packages/art/src/scenes)), and the art now shows in play when a card flies or

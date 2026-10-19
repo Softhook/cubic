@@ -961,6 +961,7 @@ input { font: inherit; }
   transition: opacity .3s, filter .3s;
 }
 @media (hover: hover) { .skill-chip:hover { background: #fff; } }
+.skill-chip > svg { color: var(--cat-ink, var(--cat)); }
 .skill-chip.pending { opacity: .5; outline: 1px dashed rgba(255,255,255,.5); }
 .skill-chip.disabled-chip { opacity: .4; text-decoration: line-through; filter: grayscale(1); }
 .skill-chip.stored-tactic { border: 1px dashed var(--cat); }
@@ -1051,14 +1052,39 @@ input { font: inherit; }
 .qcard-expansion { background: linear-gradient(180deg, #0f3b3a, #082222); color: #dffcf4; border-color: rgba(94,240,176,.35); }
 /* --cat, the category's accent, is set per card from @quantum/art (categoryStyle in Card.tsx). */
 .qcard-top { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
-.qcard-cat { display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--cat); }
-.qcard-skill .qcard-cat { filter: brightness(.8); }
-.qcard-badge { flex: none; align-self: flex-end; margin-top: 4px; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--cat); color: #fff; }
+.qcard-cat { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--cat-ink, var(--cat)); }
+/* A one-shot card's deck (Tactic, Gambit) beside its category, where there's room: not in the market, whose rows are labelled. */
+.qcard-kind { font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; opacity: .6; white-space: nowrap; }
+/* The foot: "more" when the text is cut short (it shows the whole card), and the badge (Peek, ×3). */
+.qcard-foot { flex: none; display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.qcard-badge { flex: none; margin-left: auto; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--cat); color: #fff; }
+.qcard-more { padding: 2px 6px 2px 0; white-space: nowrap; font-size: 10px; font-weight: 700; color: var(--cat-ink, var(--cat)); cursor: zoom-in; }
+@media (hover: hover) { .qcard-more:hover { text-decoration: underline; } }
+/* The art band: the middle of the printed card's illustration, edge to edge, its category's colour under it
+   (instead of the stripe on top). The name sits on the art with its category's icon, in place of the category
+   label and the name line, so the rules text below has their room. */
+.qcard-art {
+  position: relative; flex: none; margin: -9px -10px 6px; aspect-ratio: 100 / 38; max-height: 50px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cat) 30%, #0b1020), #0b1020) center 14% / 100% auto no-repeat;
+  border-bottom: 2px solid var(--cat);
+}
+.qcard-sm .qcard-art { margin: -8px -9px 5px; }
+.qcard.has-art::before { display: none; }
+.qcard-art-name {
+  position: absolute; top: 5px; left: 5px; max-width: calc(100% - 10px);
+  display: inline-flex; align-items: flex-start; gap: 4px; padding: 3px 7px 3px 5px; border-radius: 7px;
+  background: rgba(5,8,20,.8); color: #fff; overflow-wrap: anywhere;
+  font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: .03em; line-height: 1.15;
+}
+.qcard-art-name > svg { flex: none; margin-top: .05em; color: var(--cat); }
+.qcard.has-art .qcard-top, .qcard.has-art .qcard-name { display: none; }
 .qcard-name { font-family: var(--display); font-weight: 700; font-size: 14px; letter-spacing: .03em; margin-top: 6px; line-height: 1.15; }
 .qcard-sub { font-size: 10.5px; font-weight: 600; opacity: .6; margin-top: 2px; }
 .qcard-text { font-size: 11px; line-height: 1.38; margin-top: 7px; flex: 1 1 auto; min-height: 0; overflow: hidden; }
 /* Text that would overflow the card is clipped and fades out over the last line; the full text is in the tooltip and card viewer. */
 .qcard-text { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 1.3em), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 1.3em), transparent); }
+/* A card that checks (the market's, which offers "more") fades only when its text is in fact cut short. */
+.qcard-text.whole { -webkit-mask-image: none; mask-image: none; }
 .qcard-sm { width: 114px; height: 160px; padding: 8px 9px; }
 .qcard-sm .qcard-name { font-size: 12.5px; }
 .qcard-sm .qcard-text { font-size: 10px; margin-top: 5px; }
@@ -1072,7 +1098,7 @@ input { font: inherit; }
 .qcard-lg .qcard-text { font-size: 13.5px; margin-top: 14px; }
 .qcard:disabled { cursor: default; }
 .qcard.clickable { cursor: pointer; }
-@media (hover: hover) { .qcard.clickable:hover { transform: translateY(-8px) rotate(-.5deg); box-shadow: 0 16px 30px rgba(0,0,0,.5), 0 0 0 2px var(--cat), 0 0 26px color-mix(in srgb, var(--cat) 50%, transparent); } }
+@media (hover: hover) { .qcard.clickable:hover { transform: translateY(-4px); box-shadow: 0 16px 30px rgba(0,0,0,.5), 0 0 0 2px var(--cat), 0 0 26px color-mix(in srgb, var(--cat) 50%, transparent); } }
 .qcard.inactive { opacity: .55; }
 .flip-in { animation: flip .55s cubic-bezier(.2,.8,.3,1) both; }
 @keyframes flip { from { transform: perspective(600px) rotateY(90deg); opacity: 0; } }
@@ -1105,15 +1131,13 @@ input { font: inherit; }
 .market-card.empty { opacity: .3; }
 /* 134px fits the longest names, e.g. Reorganisation, on one line; narrower cards scale their type down to a
    readable floor, and a name that still doesn't fit breaks at its soft hyphen (NAME_BREAKS in Card.tsx). */
+.market .qcard-sm, .market .deck { height: 184px; }
+.market .qcard-kind { display: none; }
 .market .qcard-sm { flex: 1 1 0; width: auto; min-width: var(--card-min); max-width: var(--card-max); container-type: inline-size; }
-/* The name has room for two lines and sits at the bottom of it, so every card's rules text starts at the same
-   height and a row reads straight across (Change of Heart beside Momentum). */
-.market .qcard-sm .qcard-name {
-  display: flex; flex-direction: column; justify-content: flex-end; min-height: calc(2 * 1.15em);
-  font-size: max(10.5px, min(12.5px, 11cqi)); overflow-wrap: anywhere;
-}
-.market .qcard-sm .qcard-text { font-size: max(9px, min(10px, 8.6cqi)); }
-.market .qcard-sm.long .qcard-text { font-size: max(8.8px, min(9.2px, 7.9cqi)); }
+/* Every card's rules text starts under its art band, so a row reads straight across. */
+.market .qcard-art-name { font-size: max(11px, min(13px, 10.5cqi)); }
+.market .qcard-sm .qcard-text { font-size: max(11px, min(12px, 11cqi)); line-height: 1.35; }
+.market .qcard-sm.long .qcard-text { font-size: max(10.5px, min(11.5px, 10.5cqi)); }
 .market .qcard-cat { min-width: 0; overflow: hidden; white-space: nowrap; }
 /* A narrow card: the category tightens up rather than being cut short. */
 @container (max-width: 124px) { .market .qcard-cat { letter-spacing: .03em; gap: 3px; } }
@@ -1121,25 +1145,31 @@ input { font: inherit; }
    spreading across it with gaps between them. */
 .market { --card-max: 134px; }
 .market-row { max-width: calc(var(--fixed) + var(--cards, 3) * (var(--card-max) + 8px)); }
+/* Smaller laptops: narrower cards, so their text needs more lines; at their narrowest, a little smaller. */
+@media (max-width: 1365px) { .market .deck, .market .qcard-sm { height: 196px; } }
+@media (max-width: 1240px) {
+  .market .qcard-sm .qcard-text { font-size: max(10.5px, min(12px, 11cqi)); }
+  .market .qcard-sm.long .qcard-text { font-size: max(10px, min(11.5px, 10.5cqi)); }
+}
 /* Tablets (a finger, and the open market's row of cards rather than a phone's list): taller cards, so their text
-   can be 10px or more without being cut short sooner. */
+   can be 11px or more without being cut short sooner. */
 @media (pointer: coarse) and (min-width: 700px) {
-  .market .deck, .market .qcard-sm { height: 184px; }
-  .market .qcard-sm .qcard-text { font-size: max(10px, min(11px, 8.6cqi)); }
-  .market .qcard-sm.long .qcard-text { font-size: max(9.8px, min(10.5px, 7.9cqi)); }
-  .market .qcard-sm .qcard-name { font-size: max(11.5px, min(13px, 11cqi)); }
+  .market .deck, .market .qcard-sm { height: 200px; }
+  .market .qcard-sm .qcard-text { font-size: max(11.5px, min(13px, 11cqi)); }
+  .market .qcard-sm.long .qcard-text { font-size: max(11px, min(11.5px, 10.5cqi)); }
+  .market .qcard-art-name { font-size: max(12px, min(14px, 10.5cqi)); }
   .market .qcard-cat, .market .qcard-badge { font-size: 11px; }
 }
 @media (min-width: 1600px) and (min-height: 900px) {
   .market { --card-max: 168px; }
-  .market .deck, .market .qcard-sm { height: 192px; }
-  .market .qcard-sm .qcard-name { font-size: max(10.5px, min(14.5px, 11cqi)); }
-  .market .qcard-sm .qcard-text { font-size: max(9px, min(11.5px, 8.6cqi)); }
-  .market .qcard-sm.long .qcard-text { font-size: max(8.8px, min(10.5px, 7.9cqi)); }
+  .market .deck, .market .qcard-sm { height: 208px; }
+  .market .qcard-art-name { font-size: max(11px, min(14.5px, 10.5cqi)); }
+  .market .qcard-sm .qcard-text { font-size: max(11px, min(13.5px, 11cqi)); }
+  .market .qcard-sm.long .qcard-text { font-size: max(10.5px, min(12.5px, 10.5cqi)); }
   .market .qcard-cat, .market .qcard-badge { font-size: 11px; }
 }
 @media (hover: hover) { .market-card.clickable:not(.takeable):hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0,0,0,.45), 0 0 0 1px var(--cat); } }
-.market-refresh { align-self: center; max-width: 140px; font-size: 12px; white-space: normal; }
+.market-refresh { align-self: center; max-width: 140px; font-size: 12px; white-space: normal; border-color: var(--line-2); color: var(--text); }
 .market .qcard-sub { display: none; } /* the name and rules text are what matter when choosing */
 .market-toggle {
   align-self: stretch; flex: none;
@@ -1187,7 +1217,9 @@ input { font: inherit; }
 .market-chip.takeable { box-shadow: 0 0 0 1px var(--accent); }
 .deck { position: relative; flex: none; width: 50px; height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; padding-bottom: 8px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
 .deck-stack {
-  position: absolute; inset: 0 0 40px;
+  position: absolute; inset: 0 0 24px;
+  /* The back at the pile's height, cropped to its middle: the die and its orbits. */
+  background-size: cover; background-position: center;
   border-radius: 10px;
   box-shadow: 3px 3px 0 -1px rgba(255,255,255,.12), 6px 6px 0 -2px rgba(255,255,255,.07);
   transition: transform .15s, box-shadow .15s;
@@ -1195,10 +1227,14 @@ input { font: inherit; }
 @media (hover: hover) { .deck:hover .deck-stack { transform: translateY(-3px); box-shadow: 3px 3px 0 -1px rgba(255,255,255,.18), 6px 6px 0 -2px rgba(255,255,255,.1), 0 0 0 2px var(--accent); } }
 .deck:focus-visible .deck-stack { transform: translateY(-3px); box-shadow: 3px 3px 0 -1px rgba(255,255,255,.18), 6px 6px 0 -2px rgba(255,255,255,.1), 0 0 0 2px var(--accent); }
 .deck:focus-visible { outline: none; }
-.deck-skill .deck-stack { background: repeating-linear-gradient(45deg, #d7deef 0 6px, #c7d0e6 6px 12px); }
-.deck-tactic .deck-stack { background: repeating-linear-gradient(45deg, #2a1d47 0 6px, #1d1433 6px 12px); border: 1px solid rgba(185,140,255,.3); }
-.deck-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
-.deck-count { font-weight: 700; font-size: 13px; }
+.deck-skill .deck-stack { background-image: repeating-linear-gradient(45deg, #d7deef 0 6px, #c7d0e6 6px 12px); }
+.deck-tactic .deck-stack { background-image: repeating-linear-gradient(45deg, #2a1d47 0 6px, #1d1433 6px 12px); border: 1px solid rgba(185,140,255,.3); }
+.deck-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+/* The count, on the pile's top corner. */
+.deck-count {
+  position: absolute; top: -6px; right: -6px; min-width: 24px; padding: 1px 6px; border-radius: 999px;
+  background: #0b1020; box-shadow: 0 0 0 1px var(--line-2); font-weight: 700; font-size: 12px; text-align: center;
+}
 
 /* Beside the sidebar (wider than the column layouts below), the market and the sidebar reach the screen's bottom
    edge and keep their content above the home indicator (an iPad on its side), rather than leaving a bare strip
@@ -1988,7 +2024,7 @@ input { font: inherit; }
   .market-row + .market-row, .market-expansion { margin-top: 4px; }
   .market .deck { flex-direction: row; justify-content: flex-start; align-items: baseline; gap: 8px; width: auto; height: auto; min-height: 22px; padding: 0 2px; margin: 0; }
   .market .deck-stack { display: none; }
-  .market .deck-count { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .market .deck-count { position: static; min-width: 0; padding: 0; background: none; box-shadow: none; font-size: 12px; font-weight: 500; color: var(--muted); text-align: left; }
   .market .deck-count::after { content: ' left \203A'; }
   .market .qcard-sm {
     display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'name top badge' 'text text text'; gap: 3px 0; align-items: baseline;
@@ -1998,6 +2034,11 @@ input { font: inherit; }
   .market .qcard-top { grid-area: top; justify-content: flex-end; gap: 6px; }
   .market .qcard-sm .qcard-name { display: block; grid-area: name; min-height: 0; margin: 0 10px 0 0; font-size: 13px; overflow-wrap: normal; }
   .market .qcard-badge { grid-area: badge; align-self: center; margin: 0 0 0 6px; }
+  .market .qcard-foot, .market .qcard-art { display: none; }
+  .market .qcard-foot:has(.qcard-badge) { display: contents; }
+  .market .qcard.has-art::before { display: block; }
+  .market .qcard.has-art .qcard-top { display: flex; }
+  .market .qcard.has-art .qcard-name { display: block; }
   .market .qcard-sm .qcard-text, .market .qcard-sm.long .qcard-text { grid-area: text; margin: 0; font-size: 11.5px; line-height: 1.35; overflow: visible; -webkit-mask-image: none; mask-image: none; }
   .market .market-expansion > .qcard, .market .deck { margin-left: 0; }
   /* While you pick, the cards you can't take (e.g. Patient's skills) step back, so the ones you can stand out. */

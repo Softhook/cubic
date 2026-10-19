@@ -3,16 +3,23 @@ import { card } from '@quantum/engine';
 import { cardImage, cardImageNow } from '../art/cardImages';
 import { Dialog } from './Dialog';
 
-/** A card as printed, with its illustration. */
-export function CardArt({ id, size, badge }: { id: string; size: 'md' | 'lg'; badge?: string }) {
+/** A card's printed front as an image URL: at once if it's drawn already, else once it is (undefined till then). */
+export function useCardImage(id: string): string | undefined {
   const [src, setSrc] = useState(() => cardImageNow(id));
   useEffect(() => {
     let live = true;
+    setSrc(cardImageNow(id));
     void cardImage(id).then((url) => live && setSrc(url));
     return () => {
       live = false;
     };
   }, [id]);
+  return src;
+}
+
+/** A card as printed, with its illustration. */
+export function CardArt({ id, size, badge }: { id: string; size: 'md' | 'lg'; badge?: string }) {
+  const src = useCardImage(id);
   const def = card(id);
   return (
     <div className={`card-art card-art-${size}`}>
