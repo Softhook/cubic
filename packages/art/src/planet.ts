@@ -73,6 +73,8 @@ interface Surface {
   /** Extra marks drawn on the surface, inside the clip. */
   extra: string;
   extraDefs: string;
+  /** Paint for the surface's square, for a filter that starts from it (`SourceGraphic`) rather than from noise. */
+  fill?: string;
 }
 
 /** Shared by every surface: scale, ids and the seeded noise. */
@@ -208,16 +210,12 @@ function gas(c: Ctx): Surface {
   const pale = o.number === 9;
   const stops = pale ? iceGiant(c) : GIANTS[rng.pick(Object.keys(GIANTS))](hue, rng.range(62, 74));
   if (rng.chance(0.5)) stops.reverse();
-  // How the bands flow: calm and smooth, the usual, many fine belts, or churning.
+  // The pattern: belts in one of several flows, or no belts at all (seen from a pole, marbled, cells).
   const style = rng.pick(
-    pale ? (['smooth', 'smooth', 'banded', 'banded', 'fine'] as const) : (['smooth', 'banded', 'banded', 'fine', 'turbulent'] as const),
+    pale
+      ? (['smooth', 'smooth', 'banded', 'banded', 'fine', 'wavy', 'vortex', 'marbled'] as const)
+      : (['smooth', 'banded', 'banded', 'fine', 'turbulent', 'wavy', 'zoned', 'vortex', 'vortex', 'marbled', 'marbled', 'cells'] as const),
   );
-  const flow = {
-    smooth: { band: [0.08, 0.16], warp: [1.5, 3], swirl: 0.06, contrast: 1.4 },
-    banded: { band: [0.18, 0.4], warp: [2.5, 5.5], swirl: 0.09, contrast: pale ? 2 : 2.6 },
-    fine: { band: [0.45, 0.7], warp: [1.5, 3.5], swirl: 0.11, contrast: 2.2 },
-    turbulent: { band: [0.2, 0.34], warp: [7, 11], swirl: 0.13, contrast: 2.8 },
-  }[style];
   let extra = '';
   let extraDefs = blur(`${id}-storm-blur`, 0.35 * s);
   const oval = (x: number, y: number, rx: number, ry: number, fill: string, op: number) =>
@@ -251,17 +249,60 @@ function gas(c: Ctx): Surface {
       extra += oval(p.x, p.y, r * rng.range(0.12, 0.28), r * 0.02, '#fff', 0.65);
     }
   }
-  return {
-    filter:
-      turbulence(`${f(0.012)} ${f(rng.range(flow.band[0], flow.band[1]))}`, 3, rng.noiseSeed(), 'bands') +
-      turbulence(f(flow.swirl), 2, rng.noiseSeed(), 'swirl') +
-      `<feDisplacementMap in="bands" in2="swirl" scale="${n(rng.range(flow.warp[0], flow.warp[1]) * s)}" xChannelSelector="R" yChannelSelector="G" result="d"/>` +
-      greyFromRed('d') +
-      stretch(flow.contrast) +
-      gradientMap(stops),
-    extra,
-    extraDefs,
+  const warp = (input: string, swirl: number, scale: number) =>
+    turbulence(f(swirl), 2, rng.noiseSeed(), 'swirl') +
+    `<feDisplacementMap in="${input}" in2="swirl" scale="${n(scale * s)}" xChannelSelector="R" yChannelSelector="G" result="d"/>`;
+  const colour = (contrast: number, ramp = stops) => greyFromRed('d') + stretch(contrast) + gradientMap(ramp);
+
+  /** The palette's colours at these fractions of the way from darkest to lightest. */
+  const byLight = (at: number[]) => {
+    const sorted = [...stops].sort((x, y) => x[2] - y[2]);
+    return at.map((k) => sorted[Math.round(k * (sorted.length - 1))]);
   };
+
+  if (style === 'vortex') {
+    // Seen from near a pole: rings of cloud around it, twisted into eddies, with a dark eye.
+    const px = cx + rng.range(-0.35, 0.35) * r;
+    const py = cy + rng.range(-0.35, 0.35) * r;
+    const fill = `${id}-rings`;
+    extraDefs +=
+      `<radialGradient id="${fill}" gradientUnits="userSpaceOnUse" cx="${n(px)}" cy="${n(py)}" r="${n(r * rng.range(0.16, 0.26))}" spreadMethod="repeat">` +
+      `<stop offset="0" stop-color="#222"/><stop offset=".5" stop-color="#ddd"/><stop offset="1" stop-color="#222"/></radialGradient>`;
+    extra += oval(px, py, r * 0.07, r * 0.07, pale ? hsl(hue + 20, 60, 40) : hsl(hue - 20, 70, 22), 0.8);
+    return {
+      fill: `url(#${fill})`,
+      filter:
+        turbulence(f(0.1), 3, rng.noiseSeed(), 'grain') +
+        `<feComposite in="SourceGraphic" in2="grain" operator="arithmetic" k2=".55" k3=".6" k4="-.15" result="mix"/>` +
+        warp('mix', rng.range(0.04, 0.07), rng.range(7, 11)) +
+        // Each ring runs dark to light once (the belts' palette would stripe every ring several times).
+        colour(pale ? 1.3 : 1.6, byLight([0, 0.5, 1])),
+      extra,
+      extraDefs,
+    };
+  }
+
+  // Every other pattern starts from noise: [x, y] frequency, how hard and how finely it is swirled, and contrast.
+  const flow = {
+    smooth: { freq: [0.012, rng.range(0.08, 0.16)], swirl: 0.06, warp: rng.range(1.5, 3), contrast: 1.4 },
+    banded: { freq: [0.012, rng.range(0.18, 0.4)], swirl: 0.09, warp: rng.range(2.5, 5.5), contrast: pale ? 2 : 2.6 },
+    fine: { freq: [0.012, rng.range(0.45, 0.7)], swirl: 0.11, warp: rng.range(1.5, 3.5), contrast: 2.2 },
+    turbulent: { freq: [0.012, rng.range(0.2, 0.34)], swirl: 0.13, warp: rng.range(7, 11), contrast: 2.8 },
+    // Belts bent into big slow waves.
+    wavy: { freq: [0.01, rng.range(0.2, 0.32)], swirl: 0.035, warp: rng.range(9, 14), contrast: 2.4 },
+    // A few broad zones with crisp edges (stepped colours, below).
+    zoned: { freq: [0.008, rng.range(0.1, 0.16)], swirl: 0.08, warp: rng.range(1, 2.5), contrast: 1.8 },
+    // No belts: the whole face churned into swirls.
+    marbled: { freq: [rng.range(0.03, 0.06), rng.range(0.04, 0.08)], swirl: rng.range(0.05, 0.09), warp: rng.range(10, 16), contrast: 2.4 },
+    // Mottled convection cells, as on a brown dwarf.
+    cells: { freq: [rng.range(0.12, 0.18), rng.range(0.12, 0.18)], swirl: 0.1, warp: rng.range(2, 4), contrast: 2.6 },
+  }[style];
+  const filter =
+    turbulence(`${f(flow.freq[0])} ${f(flow.freq[1])}`, 3, rng.noiseSeed(), 'bands') +
+    warp('bands', flow.swirl, flow.warp) +
+    // Zones hold each colour, then turn quickly to the next.
+    colour(flow.contrast, style === 'zoned' ? stops.flatMap((c) => [c, c, c]) : stops);
+  return { filter, extra, extraDefs };
 }
 
 function rocky(c: Ctx): Surface {
@@ -579,7 +620,8 @@ export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
   const hue = planetHue(o, look);
   const region = `filterUnits="userSpaceOnUse" x="${n(cx - r)}" y="${n(cy - r)}" width="${n(2 * r)}" height="${n(2 * r)}"`;
   const surf = surface(o, hue, rng.fork('surface'));
-  const tilt = look.range(-28, 28);
+  // Gas giants are sometimes tipped steeply, so their belts run every way, not only across.
+  const tilt = look.range(-28, 28) + (o.type === 'gas' && look.chance(0.35) ? look.pick([-1, 1]) * look.range(30, 55) : 0);
   const rings = o.rings ?? look.chance(o.type === 'gas' ? 0.45 : 0.12);
   // The night side is a deep shade of the planet's own colour, not black, so pale worlds don't turn grey.
   const night = hsl(hue, 70, 5);
@@ -620,8 +662,11 @@ export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
     disc(`url(#${id}-glow)`, 1.2) +
     back +
     `<g clip-path="url(#${id}-disc)">` +
-    `<rect x="${n(cx - r)}" y="${n(cy - r)}" width="${n(2 * r)}" height="${n(2 * r)}" filter="url(#${id}-surface)"${o.type === 'gas' ? ` transform="rotate(${n(tilt)} ${n(cx)} ${n(cy)})"` : ''}/>` +
+    // A gas giant's belts, storms and polar hood turn with its tilt.
+    `<g${o.type === 'gas' ? ` transform="rotate(${n(tilt)} ${n(cx)} ${n(cy)})"` : ''}>` +
+    `<rect x="${n(cx - r)}" y="${n(cy - r)}" width="${n(2 * r)}" height="${n(2 * r)}"${surf.fill ? ` fill="${surf.fill}"` : ''} filter="url(#${id}-surface)"/>` +
     surf.extra +
+    `</g>` +
     disc(`url(#${id}-rim)`) +
     disc(`url(#${id}-hi)`) +
     disc(`url(#${id}-night)`) +

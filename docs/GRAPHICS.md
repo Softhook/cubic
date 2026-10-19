@@ -111,7 +111,7 @@ in hue *and* lightness (`PLANET_FAMILY` in tokens):
 | Number | World | Colours |
 |---|---|---|
 | 7 | Earth-like: blue sea (sometimes turquoise shallows) and green land (temperate, jungle, tundra, swamp or steppe) laid out as continents, islands, one supercontinent or land with lakes; clear, scattered, streaky or heavy cloud; sometimes polar caps | green and blue |
-| 8 | Banded gas giants (Jupiter-gold, Saturn-cream, amber, rust, copper, striped or khaki), with smooth, banded, fine or turbulent belts; often a great storm, a string of small white storms, or rings | gold and amber |
+| 8 | Gas giants (Jupiter-gold, Saturn-cream, amber, rust, copper, striped or khaki): belts that are smooth, banded, fine, turbulent, wavy or in crisp zones, or no belts at all: seen from a pole (cloud rings around a dark eye), marbled swirls or convection cells. About one in three is tipped steeply, so its belts, storms and rings run at a slant. Often a great storm, a string of small white storms, or rings | gold and amber |
 | 9 | Ice: white, frost, turquoise or blue ice, cracked, criss-crossed with long lines, striped, broken into floes or cratered; pale cyan, turquoise or blue ice giants, smooth or banded, with polar hoods and cloud streaks | pale, tinted cyan to blue (lightest) |
 | 10 | Molten lava worlds: black basalt, dark red or ash crust; red, orange or yellow magma as thin cracks, wide rivers, fine veins or lakes; sometimes glowing vents | black and red (darkest) |
 
