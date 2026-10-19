@@ -2,7 +2,7 @@ import { GROUND, cubePad, diePad } from './aid';
 import { CARD, cardPalette } from './card';
 import { document, esc, hsl, hslToRgb, n } from './svg';
 import { hatch, well } from './tile';
-import { CARD_CATEGORIES, CUBE_PAD, DOMINANCE, FONTS, INK, LABEL_TEXT, SPACE_BASE, TILE, WELL } from './tokens';
+import { CARD_CATEGORIES, CUBE_PAD, DOMINANCE, FONTS, INK, LABEL_TEXT, SPACE_BASE, SPACE_BASE_CSS, TILE, WELL } from './tokens';
 
 /**
  * The press test: one A4 page to print on the real press and stock before a run, to check what the
@@ -115,11 +115,11 @@ export function pressTestSvg(o: PressTestOptions = {}): string {
   body += heading(y, 'Wells on the tile base, pads on the player aid ground');
   const strip = y + 1.5;
   const h = 34;
-  body += rect(M, strip, WIDTH, h, hsl(...SPACE_BASE));
+  body += rect(M, strip, WIDTH, h, SPACE_BASE_CSS);
   const cy = strip + 15;
   const label = (x: number, s: string, fill = MUTED_DARK) => text(x, strip + h - 2, s, 1.8, fill, 'text-anchor="middle"');
   body += well(M + 16, cy, TILE.pad, 4, WELL.space) + label(M + 16, 'space');
-  body += well(M + 44, cy, TILE.pad, 4, { ...WELL.space, fill: 0.24 }) + hatch(M + 44, cy) + label(M + 44, 'conquer space');
+  body += well(M + 44, cy, TILE.pad, 4, WELL.conquer) + hatch(M + 44, cy) + label(M + 44, 'conquer space');
   body += well(M + 68, cy, CUBE_PAD.size, CUBE_PAD.corner, WELL.cube) + label(M + 68, 'cube pad');
   // The aid's own pads, on its ground.
   const aidX = M + 84;

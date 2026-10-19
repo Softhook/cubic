@@ -38,7 +38,7 @@ const FRAC = Float32Array.from({ length: 256 }, (_, v) => (v / 255) * (N - 1) - 
  */
 const RICH_BLACK = [90, 70, 35, 100]; // L* 9.0
 const BASE_BLACK = [80, 65, 42, 100]; // L* 9.5
-/** The space base's brightest channel (23), from its HSL lightness and saturation. */
+/** The space base's brightest channel (0–255), from its HSL lightness and saturation. */
 const BASE_V = Math.round(255 * (SPACE_BASE[2] / 100) * (1 + SPACE_BASE[1] / 100));
 const FADE_V = 2 * BASE_V;
 /** For each brightest-channel value: how much of the profile's ink is kept (0–1), and the deep black's share of the ink, in bytes. */

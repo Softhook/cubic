@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { buildBoard, type Board, type MapDef } from '@quantum/engine';
-import { PLANET_DIAMETER, TILE, TILE_SET, tileHasRings, tileSpec } from '@quantum/art';
+import { PLANET_DIAMETER, SPACE_BASE_CSS, TILE, TILE_SET, tileHasRings, tileSpec } from '@quantum/art';
 import { decodedTileImage } from '../../art/tileImages';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { PIPS } from '../Die3D';
@@ -141,7 +141,7 @@ function MapCanvas({
         ctx.drawImage(img, x, y, size, size);
         ctx.restore();
       } else {
-        ctx.fillStyle = '#0b1124';
+        ctx.fillStyle = SPACE_BASE_CSS;
         ctx.fill();
       }
     }

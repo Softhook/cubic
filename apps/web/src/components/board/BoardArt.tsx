@@ -1,6 +1,6 @@
 import { memo, useEffect, useState, type CSSProperties } from 'react';
 import type { Board, GameState } from '@quantum/engine';
-import { PLANET_DIAMETER, TILE } from '@quantum/art';
+import { PLANET_DIAMETER, SPACE_BASE_CSS, TILE } from '@quantum/art';
 import { decodedTileImage } from '../../art/tileImages';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { GATE_COLOR } from '../../theme';
@@ -83,7 +83,7 @@ export const BoardArt = memo(function BoardArt({
             {images[t.id] ? (
               <image href={images[t.id]} {...tileBox(t)} />
             ) : (
-              <rect {...tileBox(t)} rx={(cell * 3 * TILE.corner) / TILE.size} fill="#0b1124" />
+              <rect {...tileBox(t)} rx={(cell * 3 * TILE.corner) / TILE.size} fill={SPACE_BASE_CSS} />
             )}
           </g>
         ))}

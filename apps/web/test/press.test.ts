@@ -1,6 +1,7 @@
 /** Files for a press: the CMYK conversion follows its table, and the CMYK PDF is well formed with the boxes and intent PDF/X wants. */
 import { inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
+import { SPACE_BASE, hslToRgb } from '@quantum/art';
 import { CMYK_TABLE } from '../src/print/cmykTable';
 import { cmykPdf, deflate, fullPage } from '../src/print/pdf';
 import { encodePng, toCmyk } from '../src/print/press';
@@ -41,31 +42,34 @@ describe('CMYK conversion', () => {
 });
 
 describe('CMYK deep black', () => {
+  const base = hslToRgb(...SPACE_BASE).map((v) => Math.round(v * 255));
+  /** The base's brightest channel: the deep black fades out from it to twice it. */
+  const top = Math.max(...base);
   const deep = (...rgb: number[]) => [...toCmyk(Uint8ClampedArray.from([...rgb, 255]), true)];
   const pct = (cmyk: number[]) => cmyk.map((v) => Math.round(v / 2.55));
   const total = (cmyk: number[]) => cmyk.reduce((a, b) => a + b, 0) / 2.55;
 
   it('prints black and the space base with full black ink, black the deeper', () => {
     expect(pct(deep(0, 0, 0))).toEqual([90, 70, 35, 100]);
-    expect(pct(deep(7, 11, 23))).toEqual([80, 65, 42, 100]);
+    expect(pct(deep(...base))).toEqual([80, 65, 42, 100]);
     expect(pct(deep(5, 6, 11))[3]).toBe(100);
   });
 
   it('fades back to the profile above the base, within the press limit throughout', () => {
-    for (let v = 0; v <= 60; v++) {
+    for (let v = 0; v <= 2 * top + 10; v++) {
       expect(total(deep(v, v, v))).toBeLessThanOrEqual(300.5);
       expect(total(deep(v / 2, v * 0.7, v))).toBeLessThanOrEqual(300.5);
     }
     const k = (v: number) => deep(v / 3, v / 2, v)[3];
-    expect(k(30)).toBeGreaterThan(k(40));
-    expect(k(40)).toBeGreaterThan(k(46));
+    expect(k(top * 1.15)).toBeGreaterThan(k(top * 1.5));
+    expect(k(top * 1.5)).toBeGreaterThan(k(top * 1.85));
   });
 
   it('leaves everything lighter than twice the base as the profile has it', () => {
     for (const rgb of [
       [42, 55, 77],
       [84, 21, 61],
-      [60, 5, 5],
+      [2 * top + 10, 5, 5],
       [255, 255, 255],
       [99, 152, 227],
     ])

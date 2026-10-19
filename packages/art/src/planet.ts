@@ -1,5 +1,5 @@
 import type { Rng } from './rng';
-import { PLANET_FAMILY, SPACE_BASE, type PlanetType } from './tokens';
+import { PLANET_FAMILY, SPACE_BASE_CSS, type PlanetType } from './tokens';
 import { gradientMap, gradientMask, greyFromRed, hsl, n, ridges, stretch, tint, turbulence, type Fragment, type Hsl } from './svg';
 
 export interface PlanetOptions {
@@ -581,7 +581,6 @@ export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
   const surf = surface(o, hue, rng.fork('surface'));
   const tilt = look.range(-28, 28);
   const rings = o.rings ?? look.chance(o.type === 'gas' ? 0.45 : 0.12);
-  const [bh, bs, bl] = SPACE_BASE;
   // The night side is a deep shade of the planet's own colour, not black, so pale worlds don't turn grey.
   const night = hsl(hue, 70, 5);
 
@@ -589,7 +588,7 @@ export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
     `<clipPath id="${id}-disc"><circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}"/></clipPath>` +
     `<filter id="${id}-surface" ${region} color-interpolation-filters="sRGB">${surf.filter}</filter>` +
     surf.extraDefs +
-    `<radialGradient id="${id}-halo"><stop offset=".55" stop-color="${hsl(bh, bs, bl)}" stop-opacity=".8"/><stop offset="1" stop-color="${hsl(bh, bs, bl)}" stop-opacity="0"/></radialGradient>` +
+    `<radialGradient id="${id}-halo"><stop offset=".55" stop-color="${SPACE_BASE_CSS}" stop-opacity=".8"/><stop offset="1" stop-color="${SPACE_BASE_CSS}" stop-opacity="0"/></radialGradient>` +
     `<radialGradient id="${id}-glow"><stop offset=".78" stop-color="${hsl(hue, 80, 65)}" stop-opacity=".4"/><stop offset="1" stop-color="${hsl(hue, 80, 65)}" stop-opacity="0"/></radialGradient>` +
     `<radialGradient id="${id}-hi" cx="${LIGHT.x}" cy="${LIGHT.y}" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".35" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>` +
     `<radialGradient id="${id}-rim"><stop offset=".8" stop-color="${hsl(hue, 80, 72)}" stop-opacity="0"/><stop offset="1" stop-color="${hsl(hue, 80, 72)}" stop-opacity=".4"/></radialGradient>` +

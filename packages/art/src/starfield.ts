@@ -1,5 +1,5 @@
 import type { Rng } from './rng';
-import { NEBULA_HUES, SPACE_BASE } from './tokens';
+import { NEBULA_HUES, SPACE_BASE, SPACE_BASE_CSS } from './tokens';
 import { hsl, hslToRgb, n, type Fragment } from './svg';
 
 export interface Box {
@@ -115,8 +115,8 @@ export function starfield(o: StarfieldOptions): Fragment {
   const neb = o.rng.fork('nebula');
   const stars = o.rng.fork('stars');
   const bright = o.rng.fork('bright');
-  // Visible but behind the planet: the planet carries the colour.
-  const strength = o.nebula ?? neb.range(0.34, 0.5);
+  // Vivid but behind the planet: the planet carries the colour.
+  const strength = o.nebula ?? neb.range(0.51, 0.75);
   const jitter = neb.range(-6, 6);
   const [lo, hi] = NEBULA_HUES;
   const h1 = o.hues ? o.hues[0] + jitter : neb.range(lo, hi);
@@ -210,11 +210,10 @@ export function starfield(o: StarfieldOptions): Fragment {
     brightMarks += `<circle cx="${n(x)}" cy="${n(y)}" r="${n(0.35 * scale)}" fill="#fff"/>`;
   }
 
-  const [bh, bs, bl] = SPACE_BASE;
   return {
     defs: layers.map((l) => l.defs).join('') + edgeFade(`${id}-fade`, area, frame, 9 * scale, 6 * scale) + glowDefs,
     body:
-      `<rect x="${n(area.x)}" y="${n(area.y)}" width="${n(area.w)}" height="${n(area.h)}" fill="${hsl(bh, bs, bl)}"/>` +
+      `<rect x="${n(area.x)}" y="${n(area.y)}" width="${n(area.w)}" height="${n(area.h)}" fill="${SPACE_BASE_CSS}"/>` +
       `<g mask="url(#${id}-fade)">${layers.map((l) => l.body).join('')}</g>` +
       starMarks +
       brightMarks,

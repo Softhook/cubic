@@ -1,4 +1,4 @@
-import type { Hsl } from './svg';
+import { hsl, type Hsl } from './svg';
 
 /** Physical sizes (mm) and colours shared by the game and print. See docs/GRAPHICS.md §2a. */
 
@@ -33,17 +33,27 @@ export interface WellStyle {
   litWidth: number;
 }
 
+const SPACE_WELL: WellStyle = { fill: 0.055, shade: 0.55, shadeWidth: 0.7, lit: 0.16, litWidth: 0.35 };
+
 /**
- * The wells printed for the spaces and the cube pads (tile.ts `well`). The cube wells are gentler, so
- * the planet's surface shows through; the game draws its empty cube slots with the same function.
+ * The wells printed for the spaces and the cube pads (tile.ts `well`). The space wells are barely
+ * filled, so the nebula shows through, and carried by their edges; the four beside a planet (where
+ * dice conquer it) are a shade darker. The cube wells are gentler, so the planet's surface shows
+ * through; the game draws its empty cube slots with the same function.
  */
-export const WELL: Record<'space' | 'cube', WellStyle> = {
-  space: { fill: 0.22, shade: 0.55, shadeWidth: 0.7, lit: 0.16, litWidth: 0.35 },
+export const WELL: Record<'space' | 'conquer' | 'cube', WellStyle> = {
+  space: SPACE_WELL,
+  conquer: { ...SPACE_WELL, fill: 0.06 },
   cube: { fill: 0.24, shade: 0.3, shadeWidth: 0.45, lit: 0.09, litWidth: 0.25 },
 };
 
-/** The shared base colour every tile's background fades to at its edge, so any two tiles sit together. */
-export const SPACE_BASE: [number, number, number] = [228, 52, 6];
+/**
+ * The shared base colour every tile's background fades to at its edge, so any two tiles sit together;
+ * also the game's background behind them.
+ */
+export const SPACE_BASE: [number, number, number] = [228, 52, 9];
+/** SPACE_BASE as a CSS colour. */
+export const SPACE_BASE_CSS = hsl(...SPACE_BASE);
 
 export type PlanetType = 'gas' | 'rocky' | 'ice' | 'lava' | 'ocean';
 

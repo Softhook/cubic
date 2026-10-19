@@ -1,5 +1,5 @@
 export { hash, rng, type Rng } from './rng';
-export { dataUrl, document, type Fragment } from './svg';
+export { dataUrl, document, hslToRgb, type Fragment } from './svg';
 export {
   CARD_CATEGORIES,
   COMBAT_DICE,
@@ -13,6 +13,7 @@ export {
   PLANET_DIAMETER,
   PLANET_FAMILY,
   SPACE_BASE,
+  SPACE_BASE_CSS,
   TILE,
   type PlanetType,
 } from './tokens';

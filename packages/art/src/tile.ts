@@ -167,9 +167,6 @@ export function well(cx: number, cy: number, size: number, rx: number, style: We
   );
 }
 
-/** The four spaces beside a planet are a shade darker than the rest. */
-const CONQUER_WELL: WellStyle = { ...WELL.space, fill: 0.24 };
-
 /**
  * Print markings: each space a well etched into the tile, the four beside a planet (where dice go to
  * conquer it) faintly hatched, and wells for the cubes on the planet. Plain SVG only
@@ -182,7 +179,7 @@ function markings(spec: TileSpec, spacesOnly = false): Fragment {
       if (spec.number > 0 && x === MID && y === MID) return;
       const p = TILE.pad;
       const conquer = spec.number > 0 && (x === MID) !== (y === MID);
-      body += well(x, y, p, 4, conquer ? CONQUER_WELL : WELL.space);
+      body += well(x, y, p, 4, conquer ? WELL.conquer : WELL.space);
       // The four spaces beside a planet are where dice go to conquer it: very faint diagonal hatching marks them.
       if (conquer) body += hatch(x, y);
       // Ships on the Void gain Research: a faint flask on each space.
