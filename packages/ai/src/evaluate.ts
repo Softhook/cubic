@@ -91,7 +91,7 @@ function nextMover(s: GameState, me: PlayerId): PlayerId {
   const t = s.turn;
   if (t.phase === 'actions' && t.player !== me) return t.player;
   if (s.players[t.player].bonusTurns.length) return t.player;
-  return (t.player + 1) % s.players.length;
+  return t.resume ?? (t.player + 1) % s.players.length;
 }
 
 function context(s: GameState, mover: PlayerId): Ctx {
@@ -125,7 +125,7 @@ function context(s: GameState, mover: PlayerId): Ctx {
 
 /** Value lost by dropping from `to + 1` to `to` dominance. */
 function dominanceStep(to: number): number {
-  return to < 1 ? 0 : DOMINANCE[to + 1] - DOMINANCE[to];
+  return to < 1 || to >= 5 ? 0 : DOMINANCE[to + 1] - DOMINANCE[to];
 }
 
 /** Value gained by rising one step from `from` dominance; 5 → 6 is Infamy. */

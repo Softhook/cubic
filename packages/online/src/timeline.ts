@@ -143,8 +143,8 @@ export class Timeline {
       this.dirty = true;
     } else if (b.t === 'claim') {
       this.claims.push(post);
-      // A claim changes the past only if it wins a seat.
-      if (this.r && this.owners().get(b.seat) !== this.r.seats[b.seat]?.owner) this.dirty = true;
+      // A claim changes the past if it wins an open seat or renames its owner's earliest claim.
+      if (this.r?.seats[b.seat]?.open) this.dirty = true;
     } else if (b.t === 'pass') {
       let m = this.passes.get(b.stage);
       if (!m) this.passes.set(b.stage, (m = new Map()));
@@ -152,7 +152,10 @@ export class Timeline {
       if (old && byTime(post, old) >= 0) return true;
       m.set(b.seat, post);
       if (this.r && !this.dirty) {
-        if (this.r.combat?.stage === b.stage) this.extend();
+        if (this.r.combat?.stage === b.stage) {
+          if (this.chain.at(-1)?.body.t === 'ask') this.dirty = true;
+          else this.extend();
+        }
         // The game moved on from this stage (a missile or re-roll) before this pass arrived. If the
         // pass completed the stage, the battle was decided there and what followed was too late:
         // replaying from the start finds out (passes are rare this late, so it costs little).
@@ -231,7 +234,8 @@ export class Timeline {
     const names = new Map<PlayerId, string>();
     for (const c of [...this.claims].sort(byTime)) {
       const b = c.body as Extract<Body, { t: 'claim' }>;
-      if (owners.get(b.seat) === c.author && !names.has(b.seat)) names.set(b.seat, cleanName(b.name, this.r.seats[b.seat].name));
+      if (this.r.seats[b.seat]?.open && owners.get(b.seat) === c.author && !names.has(b.seat))
+        names.set(b.seat, cleanName(b.name, this.r.seats[b.seat].name));
     }
     for (const s of this.r.seats) {
       s.owner = owners.get(s.id);
@@ -281,8 +285,12 @@ export class Timeline {
     const prev = r.steps.at(-1)!.state;
     let next: GameState | null = null;
     if (b.t === 'act') {
-      // Having passed this stage of a battle, a seat has nothing more to say in it.
-      if (r.combat && r.combat.passed.includes(b.seat)) return false;
+      // While a battle waits for passes, only a missile or re-roll is for the battle itself; any
+      // post-combat move is chained to this same tip and waits until the last pass arrives.
+      if (r.combat) {
+        if (b.action.type !== 'missile' && b.action.type !== 'reroll') return false;
+        if (r.combat.passed.includes(b.seat)) return false;
+      }
       // The poster's browser checked the move against this same position before sending it, so
       // the engine refusing it here means the two browsers don't agree on the rules.
       // Except a missile or re-roll: it races the last pass, and arriving after the battle was
@@ -363,9 +371,18 @@ export function actBody(r: Replay, seat: PlayerId, action: Action): Body | null 
 function start(g: Post): Replay | null {
   const b = g.body;
   if (b.t !== 'create' || b.protocol !== PROTOCOL) return null;
-  const n = b.config?.players?.length;
+  const players = b.config?.players;
+  if (!Array.isArray(players) || !players.every((p) => p && typeof p === 'object' && typeof p.ai === 'boolean')) return null;
+  const n = players.length;
   const seatOk = (s: unknown) => Number.isInteger(s) && (s as number) >= 0 && (s as number) < n;
-  if (!seatOk(b.creator) || !Array.isArray(b.open) || !b.open.every(seatOk) || b.open.includes(b.creator)) return null;
+  if (
+    !seatOk(b.creator) ||
+    !Array.isArray(b.open) ||
+    !b.open.every(seatOk) ||
+    new Set(b.open).size !== b.open.length ||
+    b.open.includes(b.creator)
+  )
+    return null;
   const mode = String(b.config.mode) === 'cubic' ? 'prototyping' : b.config.mode;
   const config = { ...b.config, mode };
   let state: GameState;

@@ -10,6 +10,7 @@ export function useExport(): { run: Run; progress: string | null; error: string 
   const [error, setError] = useState<string | null>(null);
   // An export keeps running when the page closes; it then finishes without updating it.
   const mounted = useRef(true);
+  const busy = useRef(false);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -17,11 +18,19 @@ export function useExport(): { run: Run; progress: string | null; error: string 
     };
   }, []);
   const run: Run = (task) => {
+    if (busy.current) return;
+    busy.current = true;
     setError(null);
     setProgress('Rendering…');
-    void task((m) => mounted.current && setProgress(m))
-      .catch((e: unknown) => mounted.current && setError(e instanceof Error ? e.message : String(e)))
-      .finally(() => mounted.current && setProgress(null));
+    // Yield a macrotask so the browser paints "Rendering…" before synchronous SVG / CMYK work begins.
+    setTimeout(() => {
+      void task((m) => mounted.current && setProgress(m))
+        .catch((e: unknown) => mounted.current && setError(e instanceof Error ? e.message : String(e)))
+        .finally(() => {
+          busy.current = false;
+          if (mounted.current) setProgress(null);
+        });
+    }, 0);
   };
   return { run, progress, error };
 }

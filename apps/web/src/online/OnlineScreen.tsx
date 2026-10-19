@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { unclaimedSeats, type AskMode, type Replay } from '@quantum/online';
 import { Dialog, Modal } from '../components/Dialog';
 import { Game } from '../components/GameScreen';
@@ -143,6 +143,8 @@ const ASK_LABELS: Record<AskMode, string> = {
 /** Online extras at the top of the sidebar: connection, invite link, and which battles to be asked about. */
 function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJoin?: () => void }) {
   const [copied, setCopied] = useState(false);
+  const copyTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(copyTimer.current), []);
   /** The link shown to copy by hand, where it couldn't be shared or copied. */
   const [shown, setShown] = useState<string | null>(null);
   const r = g.replay!;
@@ -154,7 +156,8 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
       if (navigator.share && matchMedia(COARSE).matches) await navigator.share({ title: 'Join my game of Cubic', url });
       else await navigator.clipboard.writeText(url);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
+      window.clearTimeout(copyTimer.current);
+      copyTimer.current = window.setTimeout(() => setCopied(false), 2000);
     } catch (e) {
       // Closing the share sheet without sharing isn't a failure.
       if (!(e instanceof DOMException && e.name === 'AbortError')) setShown(url);

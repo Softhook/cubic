@@ -50,8 +50,18 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
   const cells = spaces(s.board);
   const mine = s.dice.filter((d) => d.owner === me);
   const onBoard = s.dice.filter((d) => d.loc.zone === 'board');
-  const out: Action[] = [{ type: 'endTurn' }, { type: 'research' }, { type: 'composed' }, { type: 'ambitious' }, { type: 'tyrannical' }];
-  for (const p of s.board.planets) out.push({ type: 'conquer', planet: p.id });
+  const out: Action[] = [
+    { type: 'endTurn' },
+    { type: 'research' },
+    { type: 'composed' },
+    { type: 'ambitious' },
+    { type: 'tyrannical' },
+    { type: 'scrappy' },
+  ];
+  for (const p of s.board.planets) {
+    out.push({ type: 'conquer', planet: p.id });
+    for (const pl of s.players) if (pl.id !== me) out.push({ type: 'conquer', planet: p.id, replace: pl.id });
+  }
   for (const card of s.players[me].storedTactics ?? []) out.push({ type: 'playStoredTactic', card });
   for (const d of mine) {
     out.push(
@@ -68,6 +78,7 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
         { type: 'move', die: d.id, to },
         { type: 'deploy', die: d.id, to },
         { type: 'tactical', die: d.id, to },
+        { type: 'nomadic', die: d.id, to },
         { type: 'power', die: d.id, to },
       );
     for (const o of onBoard) {
@@ -89,11 +100,10 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
       for (const p of mine) {
         if (p.id === d.id || p.loc.zone !== 'board') continue;
         for (const to of near)
-          for (const drop of near)
-            if (Math.abs(drop.r - to.r) <= 1 && Math.abs(drop.c - to.c) <= 1) {
-              out.push({ type: 'carry', die: d.id, passenger: p.id, to, drop });
-              out.push({ type: 'tactical', die: d.id, passenger: p.id, to, drop });
-            }
+          for (const drop of surrounding(s.board, to)) {
+            out.push({ type: 'carry', die: d.id, passenger: p.id, to, drop });
+            out.push({ type: 'tactical', die: d.id, passenger: p.id, to, drop });
+          }
       }
     }
   }

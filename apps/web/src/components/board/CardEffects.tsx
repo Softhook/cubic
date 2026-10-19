@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { cellOf, effectOf, same, type Cell, type GameState } from '@quantum/engine';
 import { lastLogId, useStepEffects } from '../../game/useTransient';
 import { GATE_COLOR } from '../../theme';
-import { EffectBox, cubeCount, type MapEffect } from './EffectBox';
+import { EffectBox, type MapEffect } from './EffectBox';
 
 /**
  * A card's mark on the map, over the plain action effects (ActionEffects): Show of Force striking a ship,
@@ -75,14 +75,13 @@ export function cardEffectsOf(before: GameState, game: GameState): CardEffect[] 
   }
 
   if (head?.kind === 'relocation') {
-    // The player's cube left one planet and landed on another.
+    // Another player's cube left one planet and landed on another.
     const old = new Map(before.board.planets.map((pl) => [pl.id, pl.cubes]));
-    const gained = (pl: (typeof game.board.planets)[number]) =>
-      cubeCount(pl.cubes, head.player) - cubeCount(old.get(pl.id) ?? [], head.player);
-    const src = game.board.planets.find((pl) => gained(pl) < 0);
-    const dst = game.board.planets.find((pl) => gained(pl) > 0);
+    const delta = (pl: (typeof game.board.planets)[number]) => pl.cubes.length - (old.get(pl.id)?.length ?? 0);
+    const src = game.board.planets.find((pl) => delta(pl) < 0);
+    const dst = game.board.planets.find((pl) => delta(pl) > 0);
     if (src && dst) {
-      const color = colorOf(head.player);
+      const color = colorOf(dst.cubes.at(-1) ?? head.player);
       out.push({ kind: 'implode', id: `relocation:${step}`, at: src, color });
       out.push({ kind: 'beam', id: `relocation:${step}`, at: src, to: dst, color, replaces: `planet:${dst.id}` });
     }

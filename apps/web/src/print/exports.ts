@@ -17,6 +17,9 @@ const textFile = (name: string, text: string, type = 'text/plain'): ZipFile => (
 
 const px = (mm: number, dpi: number) => Math.round((mm / 25.4) * dpi);
 
+/** Lets the browser paint a new progress message before main-thread-bound work runs. */
+const paint = () => new Promise<void>((r) => setTimeout(r, 0));
+
 /**
  * Draws an SVG document of `w` × `h` mm at a print resolution, opaque. A page too big for one canvas (the
  * A4 press test at 600 dpi, in iOS Safari) draws in bands overlapping by 17 mm, as far as the art's filters reach (files.ts `drawBands`).
@@ -50,6 +53,7 @@ export async function exportZip(
   const files: ZipFile[] = [];
   for (const [k, item] of items.entries()) {
     progress(`Rendering ${k + 1}/${items.length}`);
+    await paint();
     files.push({ name: `${item.name}.png`, blob: await svgToPng(item.svg(o.bleed), w, h, piece.dpi) });
   }
   const readme =
@@ -58,6 +62,7 @@ export async function exportZip(
     (o.notes ?? '');
   files.push(textFile('README.txt', readme));
   progress('Packing…');
+  await paint();
   download(setName(piece, { part: o.part, tag: o.bleed ? 'bleed' : undefined }), await zip(files));
 }
 
@@ -79,9 +84,11 @@ export async function printSheets(
   try {
     for (const [name, item] of unique) {
       progress(`Rendering ${urls.size + 1}/${unique.size}`);
+      await paint();
       urls.set(name, URL.createObjectURL(await svgToPng(item.svg(false), w, h, piece.dpi)));
     }
     progress('Opening print dialog…');
+    await paint();
     const images = faces.map((f) => ({ front: urls.get(f.front.name)!, back: f.back && urls.get(f.back.name) }));
     await printDocument(sheetsHtml(piece, images, o), revokeAll);
   } catch (e) {
@@ -113,8 +120,17 @@ function cmykFile(f: Format, title: string, images: PdfImage[]): Blob {
 }
 
 /** One face as a CMYK PDF: the press test. */
-export async function exportCmykPdf(f: Format, item: Printable, deep: boolean): Promise<void> {
-  download(cmykName(f, item, deep), cmykFile(f, `Cubic ${f.id} ${item.name}`, [await cmykImage(f, item, deep)]));
+export async function exportCmykPdf(f: Format, item: Printable, deep: boolean, progress?: Progress): Promise<void> {
+  if (progress) {
+    progress('Converting…');
+    await paint();
+  }
+  const image = await cmykImage(f, item, deep);
+  if (progress) {
+    progress('Writing PDF…');
+    await paint();
+  }
+  download(cmykName(f, item, deep), cmykFile(f, `Cubic ${f.id} ${item.name}`, [image]));
 }
 
 /**
@@ -135,14 +151,21 @@ export async function exportCmykFiles(
     if (seen) seen.copies++;
     else fronts.set(f.front.name, { face: f, copies: 1 });
   }
+  const total = fronts.size + new Set(faces.flatMap((f) => (f.back ? [f.back.name] : []))).size;
+  let step = 0;
   const backs = new Map<string, PdfImage>();
   const files: ZipFile[] = [];
   const order = ['file,quantity,pages'];
-  for (const [k, { face, copies }] of [...fronts.values()].entries()) {
-    progress(`Converting ${k + 1}/${fronts.size}`);
+  for (const { face, copies } of fronts.values()) {
+    progress(`Converting ${++step}/${total}`);
+    await paint();
     const images = [await cmykImage(piece, face.front, o.deep)];
     if (face.back) {
-      if (!backs.has(face.back.name)) backs.set(face.back.name, await cmykImage(piece, face.back, o.deep));
+      if (!backs.has(face.back.name)) {
+        progress(`Converting ${++step}/${total}`);
+        await paint();
+        backs.set(face.back.name, await cmykImage(piece, face.back, o.deep));
+      }
       images.push(backs.get(face.back.name)!);
     }
     const name = `${face.front.name}.pdf`;
@@ -157,6 +180,7 @@ export async function exportCmykFiles(
   files.push(textFile('order.csv', order.join('\n') + '\n', 'text/csv'));
   files.push(textFile('README.txt', readme));
   progress('Packing…');
+  await paint();
   download(setName(piece, { part: o.part, tag: pressTag(o.deep) }), await zip(files));
 }
 
@@ -187,6 +211,7 @@ export async function exportCmykSheets(sheets: PressSheets, deep: boolean, progr
       const key = `${piece.id}/${f.name}`;
       if (!index.has(key)) {
         progress(`Converting ${index.size + 1}/${total}`);
+        await paint();
         index.set(key, images.push(await cmykImage(piece, f, deep)) - 1);
       }
       placed.push(index.get(key)!);
@@ -194,5 +219,6 @@ export async function exportCmykSheets(sheets: PressSheets, deep: boolean, progr
     pages.push(...pressPages(piece, placed));
   }
   progress('Writing PDF…');
+  await paint();
   download(sheetName(sheets.name, deep), pressPdf({ title: `Cubic ${sheets.label}`, ...A4, bleed: 0, images, pages }));
 }

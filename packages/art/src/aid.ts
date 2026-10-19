@@ -159,8 +159,9 @@ export function playerAidSvg(o: AidOptions = {}): string {
   const edition = o.edition ?? 'community';
   const measure = o.measure ?? estimateWidth;
   const id = o.idPrefix ?? `aid-${edition}`;
-  const { w: W, h: H, safe: M } = AID;
-  const b = o.bleed ? AID.bleed : 0;
+  const { w: W, h: H, safe: M, bleed: B } = AID;
+  const b = o.bleed ? B : 0;
+  const full = { x: -B, y: -B, w: W + 2 * B, h: H + 2 * B };
   const defs: string[] = [];
   const out: string[] = [];
   const accent = hsl(HUE, 90, 66);
@@ -171,7 +172,7 @@ export function playerAidSvg(o: AidOptions = {}): string {
   const sky = starfield({
     rng: rng('player-aid'),
     id: `${id}-sky`,
-    area: { x: -b, y: -b, w: W + 2 * b, h: H + 2 * b },
+    area: full,
     frame: { x: 0, y: 0, w: W, h: H },
     hues: [222, 272],
     nebula: 0.6,
@@ -183,7 +184,7 @@ export function playerAidSvg(o: AidOptions = {}): string {
     sky.defs,
     `<radialGradient id="${id}-glow"><stop offset="0" stop-color="${hsl(ACTION_HUE, 100, 60)}" stop-opacity=".5"/><stop offset="1" stop-color="${hsl(ACTION_HUE, 100, 60)}" stop-opacity="0"/></radialGradient>`,
   );
-  out.push(sky.body, `<rect x="${-b}" y="${-b}" width="${W + 2 * b}" height="${H + 2 * b}" fill="${GROUND}" opacity=".3"/>`);
+  out.push(sky.body, `<rect x="${full.x}" y="${full.y}" width="${full.w}" height="${full.h}" fill="${GROUND}" opacity=".3"/>`);
 
   // --- The cube rail: a pad per cube, spread over the full height, with the win condition alongside.
   // The pads are the planets' cube pads in the die pads' quiet fill; the text runs up the rail, like a spine.

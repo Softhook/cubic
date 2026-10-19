@@ -82,25 +82,27 @@ function Battle({
       : undefined;
   // A battle nobody here can change stays up until OK (or a click beside it), so the player can
   // see how it went: online, it moves on once decided; here, OK resolves it. Battles no human here
-  // fights in move on by themselves: online by playback, here by the AI driver (`timed`).
-  const resolve = close(() => dispatch({ type: 'resolveCombat' }));
+  // fight in move on by themselves: online by playback, here by the AI driver (`timed`).
+  const rawResolve = () => dispatch({ type: 'resolveCombat' });
+  const resolve = close(rawResolve);
   const timed = !online && !humanFights(game, combat);
-  const ok = online
+  const rawOk = online
     ? !online.mustAnswer && !waitingNames
-      ? close(online.dismiss)
+      ? online.dismiss
       : undefined
     : autoResolve && !timed
-      ? resolve
+      ? rawResolve
       : undefined;
+  const ok = close(rawOk);
   const ready = revealed && aiResponder === null;
   // Enter or Escape is OK too; not held down (it would carry on into the next choice), nor on a
-  // focused button (Enter presses that already).
+  // focused button (Enter presses that already). No click follows a key, so none is swallowed.
   useShortcut(
     (e) =>
-      ready && !!ok && !e.repeat && (e.key === 'Enter' || e.key === 'Escape') && (e.target as HTMLElement | null)?.tagName !== 'BUTTON',
+      ready && !!rawOk && !e.repeat && (e.key === 'Enter' || e.key === 'Escape') && (e.target as HTMLElement | null)?.tagName !== 'BUTTON',
     (e) => {
       e.preventDefault();
-      ok?.();
+      rawOk?.();
     },
   );
   const leader = out.attackerWins ? A : D;

@@ -38,12 +38,7 @@ export async function zip(files: { name: string; blob: Blob }[]): Promise<Blob> 
     local.setUint16(26, name.length, true);
     const dir = header(46, 0x02014b50);
     dir.setUint16(4, 20, true);
-    dir.setUint16(6, 20, true);
-    dir.setUint16(14, ((2026 - 1980) << 9) | (1 << 5) | 1, true);
-    dir.setUint32(16, crc, true);
-    dir.setUint32(20, data.length, true);
-    dir.setUint32(24, data.length, true);
-    dir.setUint16(28, name.length, true);
+    new Uint8Array(dir.buffer, 6, 26).set(new Uint8Array(local.buffer, 4, 26));
     dir.setUint32(42, offset, true);
     parts.push(local.buffer, name, f.blob);
     central.push(new Uint8Array(dir.buffer), name);

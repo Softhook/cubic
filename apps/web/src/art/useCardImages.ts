@@ -9,13 +9,18 @@ function useDrawn(images: Drawn<string>, id: string): string | undefined {
   const [src, setSrc] = useState(() => images.now(id));
   useEffect(() => {
     let live = true;
-    setSrc(images.now(id));
-    images.get(id).then(
-      (url) => live && setSrc(url),
-      () => {},
-    );
+    const load = () => {
+      setSrc(images.now(id));
+      images.get(id).then(
+        (url) => live && setSrc(url),
+        () => {},
+      );
+    };
+    load();
+    const off = images.subscribe(id, load);
     return () => {
       live = false;
+      off();
     };
   }, [images, id]);
   return src;

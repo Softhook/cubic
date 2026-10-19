@@ -114,7 +114,8 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
       if (sel.kind === 'carryDest' && id === sel.die) {
         // Out-and-back transport: the flagship ends where it started.
         const here = cellOf(getDie(game, id));
-        if (here && highlights.cells.has(key(here))) return select({ kind: 'carryDrop', die: sel.die, passenger: sel.passenger, to: here });
+        if (here && highlights.cells.has(key(here)))
+          return select({ kind: 'carryDrop', die: sel.die, passenger: sel.passenger, to: here, tactical: sel.tactical });
       }
       const d = getDie(game, id);
       if (actionPhase && d.owner === game.turn.player) {

@@ -69,9 +69,12 @@ describe('tile art', () => {
     }
   });
 
-  it('includes the bleed only when asked', () => {
-    expect(tileSvg(tileSpec('p8-01'))).toContain('viewBox="0 0 96 96"');
-    expect(tileSvg(tileSpec('p8-01'), { bleed: true })).toContain('viewBox="-3 -3 102 102"');
+  it('includes the bleed only when asked, without shifting any stars or artwork', () => {
+    const trim = tileSvg(tileSpec('p8-01'));
+    const bled = tileSvg(tileSpec('p8-01'), { bleed: true });
+    expect(trim).toContain('viewBox="0 0 96 96"');
+    expect(bled).toContain('viewBox="-3 -3 102 102"');
+    expect(trim.slice(trim.indexOf('>') + 1)).toBe(bled.slice(bled.indexOf('>') + 1));
   });
 });
 
@@ -197,9 +200,11 @@ describe('card art', () => {
 describe('player aid', () => {
   it('renders both editions without bad numbers or broken references', () => {
     for (const edition of ['community', 'classic'] as const) {
+      const trim = playerAidSvg({ edition });
       const svg = playerAidSvg({ edition, bleed: true });
       checkSvg(svg, edition);
       expect(svg).toContain(`viewBox="-3 -3 154 111"`);
+      expect(trim.slice(trim.indexOf('>') + 1)).toBe(svg.slice(svg.indexOf('>') + 1));
     }
   });
 

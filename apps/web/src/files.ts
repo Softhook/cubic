@@ -59,7 +59,7 @@ export async function* drawBands(svg: string, w: number, h: number, background: 
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = Math.min(h, rows + 2 * pad);
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
   try {
     for (let y = 0; y < h; y += rows) {
       const top = Math.min(pad, y);

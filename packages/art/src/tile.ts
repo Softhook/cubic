@@ -438,6 +438,7 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
   const b = o.bleed ? TILE.bleed : 0;
   const frame: Box = { x: 0, y: 0, w: TILE.size, h: TILE.size };
   const area: Box = { x: -b, y: -b, w: TILE.size + 2 * b, h: TILE.size + 2 * b };
+  const full: Box = { x: -TILE.bleed, y: -TILE.bleed, w: TILE.size + 2 * TILE.bleed, h: TILE.size + 2 * TILE.bleed };
   const art = rng(spec.seed);
   const isVoid = spec.number === 0;
 
@@ -447,7 +448,7 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
     starfield({
       rng: art.fork('sky'),
       id: `${id}-sky`,
-      area,
+      area: full,
       frame,
       brightAllowed: inGutter,
       ...(isVoid ? {} : { faintAllowed: (x: number, y: number) => !inLabel(x, y) }),

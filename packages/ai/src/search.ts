@@ -259,7 +259,7 @@ export class Search {
         const v = outs.reduce((sum, o) => sum + o.p * this.score(quickSettle(o.state), who), 0);
         if (v > top) {
           top = v;
-          pick = outs[0].state;
+          pick = outs.reduce((best, o) => (o.p > best.p ? o : best)).state;
         }
       }
       if (!pick) break;
@@ -323,9 +323,12 @@ function quickSettle(state: GameState): GameState {
 function unveilPlacements(s: GameState): Action[] {
   // Built directly: legalActions would build and test every placement to take the first.
   const head = s.pending[0] as Extract<Pending, { kind: 'unveil' }>;
+  const targets = deployTargets(s, head.player);
+  if (!targets.length) return [{ type: 'unveilDone' }];
   const die = scrapyard(s, head.player).find((d) => !head.reorganize || head.rerolled.includes(d.id));
-  const [to] = die ? deployTargets(s, head.player) : [];
-  return [die && to ? { type: 'unveilDeploy', die: die.id, to } : { type: 'unveilDone' }];
+  if (die) return [{ type: 'unveilDeploy', die: die.id, to: targets[0] }];
+  const unrerolled = head.reorganize ? scrapyard(s, head.player).find((d) => !head.rerolled.includes(d.id)) : undefined;
+  return [unrerolled ? { type: 'unveilReroll', die: unrerolled.id } : { type: 'unveilDone' }];
 }
 
 function seed(random: () => number): number {
@@ -343,6 +346,11 @@ function hideUnknowns(state: GameState, random: () => number): GameState {
   return s;
 }
 
+const sortedEntries = <T>(rec: Record<string, T>) =>
+  Object.keys(rec)
+    .sort()
+    .map((k) => [k, rec[k]]);
+
 /**
  * Identifies a position, for the transposition table and the evaluation cache. The turn and the
  * players go in whole, less what never changes during a game, so a field added to either can't be
@@ -351,9 +359,10 @@ function hideUnknowns(state: GameState, random: () => number): GameState {
  */
 function signature(s: GameState): string {
   const m = s.market;
+  const { moved, abilityUsed, seen, ...turn } = s.turn;
   return JSON.stringify([
     s.dice.map((d) => [d.value, d.loc.zone === 'board' ? d.loc.r * 100 + d.loc.c : d.loc.zone]),
-    s.turn,
+    [turn, sortedEntries(moved), sortedEntries(abilityUsed), sortedEntries(seen)],
     s.players.map(({ id: _id, name: _name, color: _color, ai: _ai, aiLevel: _aiLevel, stats: _stats, ...changing }) => changing),
     [m.skillRow, m.tacticRow, m.skillDeck.length, m.tacticDeck.length, m.skillDiscard.length, m.tacticDiscard.length, m.expansions],
     s.board.planets.map((p) => p.cubes),

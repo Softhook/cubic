@@ -110,7 +110,7 @@ async function playOpening() {
   if (!ac || !(ac.state === 'running' || navigator.userActivation?.hasBeenActive)) return letGo();
   // The audio may only just be starting (a phone takes a moment): the opening's times only run once it has.
   await Promise.race([ac.resume().catch(() => undefined), wait(500)]);
-  if (ac.state !== 'running') return letGo();
+  if (ac.state !== 'running' || !isOn('music') || document.visibilityState !== 'visible') return letGo();
   const { start, land } = opening(ac);
   // The drone is built once the chord has bloomed, not with the opening: on a phone, building and playing
   // both at once makes the opening stutter.

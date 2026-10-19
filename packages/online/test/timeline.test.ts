@@ -402,6 +402,7 @@ describe('online timeline', () => {
       }),
     );
     t.add(create('alice', [seat('A'), seat('B')], []));
+    t.add(create('alice', [seat('A'), seat('B'), seat('C')], [1, 1]));
     expect(t.replay()).toBeNull();
   });
 });

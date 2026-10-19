@@ -1,6 +1,6 @@
 import { CARD, cardBackSvg, cardSvg, dataUrl, hash, type CardDeck } from '@quantum/art';
 import { rasterise } from '../files';
-import { cardFontCss, cardFontsReady, faceOf, measure } from '../lab/cards';
+import { cardFontCss, cardFontsReady, faceOf, measure } from './cards';
 import { idle, storeImage, storedImage } from './imageStore';
 
 /**
@@ -18,11 +18,14 @@ const HEIGHT = Math.round((WIDTH * CARD.h) / CARD.w);
 export interface Drawn<K> {
   get(key: K): Promise<string>;
   now(key: K): string | undefined;
+  subscribe(key: K, cb: () => void): () => void;
 }
 
 function drawnOnce<K>(draw: (key: K) => Promise<string>) {
   const pending = new Map<K, Promise<string>>();
   const done = new Map<K, string>();
+  const subs = new Map<K, Set<() => void>>();
+  const notify = (key: K) => subs.get(key)?.forEach((cb) => cb());
   return {
     get(key: K) {
       let image = pending.get(key);
@@ -30,8 +33,11 @@ function drawnOnce<K>(draw: (key: K) => Promise<string>) {
         image = draw(key).then(
           (url) => {
             const old = done.get(key);
-            if (old && old !== url && old.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(old), 1000);
             done.set(key, url);
+            if (old && old !== url) {
+              notify(key);
+              if (old.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(old), 1000);
+            }
             return url;
           },
           (e) => {
@@ -45,8 +51,20 @@ function drawnOnce<K>(draw: (key: K) => Promise<string>) {
     },
     now: (key: K) => done.get(key),
     has: (key: K) => pending.has(key),
+    subscribe(key: K, cb: () => void) {
+      let set = subs.get(key);
+      if (!set) subs.set(key, (set = new Set()));
+      set.add(cb);
+      return () => {
+        set.delete(cb);
+        if (!set.size) subs.delete(key);
+      };
+    },
     /** Draws `key` again when next asked for (the old image stays shown till then). */
-    forget: (key: K) => void pending.delete(key),
+    forget(key: K) {
+      pending.delete(key);
+      notify(key);
+    },
   };
 }
 
@@ -127,6 +145,7 @@ export const cardFronts: Drawn<string> = fronts;
 export const cardBacks: Drawn<string> = {
   get: (id) => backs.get(faceOf(id).deck),
   now: (id) => backs.now(faceOf(id).deck),
+  subscribe: (id, cb) => backs.subscribe(faceOf(id).deck, cb),
 };
 
 /** The cards still to prepare in the background, first first. */

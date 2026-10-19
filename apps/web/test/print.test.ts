@@ -80,8 +80,11 @@ describe('print sheets', () => {
     }
   });
 
-  it('draws the marks as borders, which print without "Background graphics"', () => {
-    expect(sheetsHtml(PIECES.tile, [{ front: 'a' }])).not.toMatch(/background:#000/);
+  it('draws the marks as borders, which print without "Background graphics", and avoids a trailing blank page', () => {
+    const html = sheetsHtml(PIECES.tile, [{ front: 'a' }], { withBacks: true });
+    expect(html).not.toMatch(/background:#000/);
+    expect(html).toContain('.sheet:last-child{break-after:auto}');
+    expect(sheets(html)).toHaveLength(1);
   });
 });
 

@@ -1,4 +1,4 @@
-import { SPACE_BASE } from '@quantum/art';
+import { SPACE_BASE, hslToRgb } from '@quantum/art';
 import { CMYK_TABLE } from './cmykTable';
 import { deflateChunks } from './pdf';
 import { crc32 } from './zip';
@@ -25,8 +25,13 @@ export const pressTag = (deep: boolean) => (deep ? `${PRESS.tag}-deep` : PRESS.t
 
 const N = CMYK_TABLE.grid;
 const TABLE = Uint8Array.from(atob(CMYK_TABLE.data), (c) => c.charCodeAt(0));
-/** For each 0–255 channel value, the grid point below it and how far it is towards the next (0–1). */
+const SR = N * N * 4;
+const SG = N * 4;
+/** For each 0–255 channel value, the grid point below it, its byte offset along that axis, and how far it is towards the next (0–1). */
 const CELL = Array.from({ length: 256 }, (_, v) => Math.min(Math.floor((v / 255) * (N - 1)), N - 2));
+const CELL_R = Int32Array.from(CELL, (c) => c * SR);
+const CELL_G = Int32Array.from(CELL, (c) => c * SG);
+const CELL_B = Int32Array.from(CELL, (c) => c * 4);
 const FRAC = Float32Array.from({ length: 256 }, (_, v) => (v / 255) * (N - 1) - CELL[v]);
 
 /*
@@ -38,8 +43,8 @@ const FRAC = Float32Array.from({ length: 256 }, (_, v) => (v / 255) * (N - 1) - 
  */
 const RICH_BLACK = [90, 70, 35, 100]; // L* 9.0
 const BASE_BLACK = [80, 65, 42, 100]; // L* 9.5
-/** The space base's brightest channel (0–255), from its HSL lightness and saturation. */
-const BASE_V = Math.round(255 * (SPACE_BASE[2] / 100) * (1 + SPACE_BASE[1] / 100));
+/** The space base's brightest channel (0–255). */
+const BASE_V = Math.max(...hslToRgb(...SPACE_BASE).map((v) => Math.round(v * 255)));
 const FADE_V = 2 * BASE_V;
 /** For each brightest-channel value: how much of the profile's ink is kept (0–1), and the deep black's share of the ink, in bytes. */
 const KEEP = new Float32Array(256);
@@ -59,35 +64,71 @@ for (let v = 0; v < 256; v++) {
  */
 export function toCmyk(rgba: Uint8ClampedArray, deep = false): Uint8Array<ArrayBuffer> {
   const out = new Uint8Array(rgba.length);
-  // Offsets of a cell's corners in the table, from its lowest corner: red slowest, then green, then blue.
-  const sr = N * N * 4;
-  const sg = N * 4;
-  const corners = [0, 4, sg, sg + 4, sr, sr + 4, sr + sg, sr + sg + 4];
-  const w = new Float32Array(8);
+  const c001 = 4;
+  const c010 = SG;
+  const c011 = SG + 4;
+  const c100 = SR;
+  const c101 = SR + 4;
+  const c110 = SR + SG;
+  const c111 = SR + SG + 4;
+  let prevRgb = -1;
+  let p0 = 0;
+  let p1 = 0;
+  let p2 = 0;
+  let p3 = 0;
   for (let i = 0; i < rgba.length; i += 4) {
     const r = rgba[i];
     const g = rgba[i + 1];
     const b = rgba[i + 2];
+    const rgb = (r << 16) | (g << 8) | b;
+    if (rgb === prevRgb) {
+      out[i] = p0;
+      out[i + 1] = p1;
+      out[i + 2] = p2;
+      out[i + 3] = p3;
+      continue;
+    }
+    prevRgb = rgb;
     const fr = FRAC[r];
     const fg = FRAC[g];
     const fb = FRAC[b];
-    w[0] = (1 - fr) * (1 - fg) * (1 - fb);
-    w[1] = (1 - fr) * (1 - fg) * fb;
-    w[2] = (1 - fr) * fg * (1 - fb);
-    w[3] = (1 - fr) * fg * fb;
-    w[4] = fr * (1 - fg) * (1 - fb);
-    w[5] = fr * (1 - fg) * fb;
-    w[6] = fr * fg * (1 - fb);
-    w[7] = fr * fg * fb;
-    const o = CELL[r] * sr + CELL[g] * sg + CELL[b] * 4;
+    const r0 = 1 - fr;
+    const g0 = 1 - fg;
+    const b0 = 1 - fb;
+    const r0g0 = r0 * g0;
+    const r0g1 = r0 * fg;
+    const r1g0 = fr * g0;
+    const r1g1 = fr * fg;
+    const w0 = r0g0 * b0;
+    const w1 = r0g0 * fb;
+    const w2 = r0g1 * b0;
+    const w3 = r0g1 * fb;
+    const w4 = r1g0 * b0;
+    const w5 = r1g0 * fb;
+    const w6 = r1g1 * b0;
+    const w7 = r1g1 * fb;
+    const o = CELL_R[r] + CELL_G[g] + CELL_B[b];
     // Without the deep black, the brightest value: all the profile's ink, none of the deep black's.
-    const m = deep ? Math.max(r, g, b) : 255;
+    const m = deep ? (r > g ? (r > b ? r : b) : g > b ? g : b) : 255;
     const keep = KEEP[m];
+    const dm = m * 4;
     for (let k = 0; k < 4; k++) {
-      let v = 0;
-      for (let c = 0; c < 8; c++) v += w[c] * TABLE[o + corners[c] + k];
-      out[i + k] = v * keep + DEEP_INK[m * 4 + k] + 0.5;
+      const ok = o + k;
+      const v =
+        w0 * TABLE[ok] +
+        w1 * TABLE[ok + c001] +
+        w2 * TABLE[ok + c010] +
+        w3 * TABLE[ok + c011] +
+        w4 * TABLE[ok + c100] +
+        w5 * TABLE[ok + c101] +
+        w6 * TABLE[ok + c110] +
+        w7 * TABLE[ok + c111];
+      out[i + k] = v * keep + DEEP_INK[dm + k] + 0.5;
     }
+    p0 = out[i];
+    p1 = out[i + 1];
+    p2 = out[i + 2];
+    p3 = out[i + 3];
   }
   return out;
 }
@@ -105,6 +146,14 @@ function chunk(type: string, data: Uint8Array): Uint8Array<ArrayBuffer> {
   view.setUint32(8 + data.length, crc32(out.subarray(4, 8 + data.length)));
   return out;
 }
+
+const PNG_SIG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+// Profile name, a zero byte, compression method 0 (zlib), then the compressed profile.
+const ICCP_CHUNK = chunk(
+  'iCCP',
+  new Uint8Array([...new TextEncoder().encode('sRGB'), 0, 0, ...Uint8Array.from(atob(SRGB_ICC), (c) => c.charCodeAt(0))]),
+);
+const IEND_CHUNK = chunk('IEND', new Uint8Array());
 
 /** Each band of RGBA rows (opaque) as PNG scanlines: RGB, each row Paeth-filtered, which suits smooth art. */
 async function* scanlines(bands: AsyncIterable<Uint8ClampedArray>, w: number) {
@@ -150,24 +199,13 @@ export async function encodePng(bands: AsyncIterable<Uint8ClampedArray>, w: numb
   new DataView(ihdr.buffer).setUint32(4, h);
   ihdr[8] = 8; // bits per channel; colour type 2 (RGB) next, then compression, filter and interlace, all 0
   ihdr[9] = 2;
-  const icc = Uint8Array.from(atob(SRGB_ICC), (c) => c.charCodeAt(0));
-  // Profile name, a zero byte, compression method 0 (zlib), then the compressed profile.
-  const iccp = new Uint8Array([...new TextEncoder().encode('sRGB'), 0, 0, ...icc]);
   const phys = new Uint8Array(9);
   const ppm = Math.round(dpi / 0.0254);
   new DataView(phys.buffer).setUint32(0, ppm);
   new DataView(phys.buffer).setUint32(4, ppm);
   phys[8] = 1; // the unit is the metre
   const idat = await deflateChunks(scanlines(bands, w));
-  return new Blob(
-    [
-      new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-      chunk('IHDR', ihdr),
-      chunk('iCCP', iccp),
-      chunk('pHYs', phys),
-      ...idat.map((d) => chunk('IDAT', d)),
-      chunk('IEND', new Uint8Array()),
-    ],
-    { type: 'image/png' },
-  );
+  return new Blob([PNG_SIG, chunk('IHDR', ihdr), ICCP_CHUNK, chunk('pHYs', phys), ...idat.map((d) => chunk('IDAT', d)), IEND_CHUNK], {
+    type: 'image/png',
+  });
 }

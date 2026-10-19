@@ -80,13 +80,14 @@ export function sheetsHtml(
   let html = '';
   for (const cells of pagesOf(piece, faces)) {
     html += page(cells.map((c) => ({ src: c.face.front, col: c.col, row: c.row })));
-    if (o.withBacks)
+    if (o.withBacks && cells.some((c) => c.face.back))
       html += page(cells.flatMap((c) => (c.face.back ? [{ src: c.face.back, col: piece.cols - 1 - c.col, row: c.row }] : [])));
   }
   return (
     `<!doctype html><html><head><meta charset="utf-8"><title>Cubic ${piece.plural}</title><style>` +
     `@page{size:${size.w}mm ${size.h}mm;margin:0}html,body{margin:0}` +
     `.sheet{position:relative;width:${size.w}mm;height:${size.h}mm;overflow:hidden;break-after:page}` +
+    `.sheet:last-child{break-after:auto}` +
     `.sheet img{position:absolute;width:${piece.w}mm;height:${piece.h}mm}.sheet i{position:absolute;width:0;height:0}` +
     // Borders, not backgrounds: browsers drop background colours when printing unless "Background graphics" is on.
     `.sheet i.v{border-left:.2mm solid #000}.sheet i.h{border-top:.2mm solid #000}` +
@@ -119,21 +120,42 @@ export function pressPages(piece: Piece, faces: number[]): PdfPage[] {
   });
 }
 
+let finishPrint: (() => void) | null = null;
+
 /** Prints an HTML document from a hidden frame, once its images have loaded. */
 export async function printDocument(html: string, cleanup: () => void): Promise<void> {
+  finishPrint?.();
   const frame = document.createElement('iframe');
   frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
   document.body.appendChild(frame);
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    if (finishPrint === finish) finishPrint = null;
+    frame.remove();
+    cleanup();
+  };
+  // print() blocks until the dialog closes in most browsers; afterprint and a fallback timer cover those where it doesn't.
+  // Safari may fire afterprint before its preview has read the images, so the frame stays a while after it.
+  let timer = setTimeout(finish, 60_000);
+  const afterPrint = () => {
+    clearTimeout(timer);
+    timer = setTimeout(finish, 5_000);
+  };
+  finishPrint = finish;
   const doc = frame.contentDocument!;
   doc.open();
   doc.write(html);
   doc.close();
   await Promise.all([...doc.images].map((img) => img.decode().catch(() => undefined)));
-  frame.contentWindow!.focus();
-  frame.contentWindow!.print();
-  // print() blocks until the dialog closes in most browsers; keep the frame a while for those where it doesn't.
-  setTimeout(() => {
-    frame.remove();
-    cleanup();
-  }, 60_000);
+  const win = frame.contentWindow;
+  if (!win) {
+    finish();
+    return;
+  }
+  win.addEventListener('afterprint', afterPrint, { once: true });
+  win.focus();
+  win.print();
 }

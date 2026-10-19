@@ -310,7 +310,7 @@ export function movePath(state: GameState, dieId: string, to: Cell, diagonal = f
   const near = diagonal ? g.around : g.ortho;
   const from = start.r * g.cols + start.c;
   const path = [to.r * g.cols + to.c];
-  if (steps[path[0]] < 0) return [];
+  if (steps[path[0]] < 0 || passing[path[0]]) return [];
   // Back from `to`, over spaces one step nearer the start (or as near, passed through for free), the
   // straight one first; back up from a dead end, which only a free pass can lead into.
   const back = (cur: number, next: number): boolean => {

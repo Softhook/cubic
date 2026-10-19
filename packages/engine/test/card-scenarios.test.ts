@@ -385,6 +385,20 @@ describe('triggered and choice skills', () => {
     expect(s.turn.scrappy).toBeUndefined();
   });
 
+  it("Scrappy waits out another player's choice, unless it changes the ship", () => {
+    let s = arrange(quickStart(2, 706, 'original'), { p0d0: [2, 2, 3], p1d0: [5, 5, 4] });
+    s.turn.player = 0;
+    s.players[0].skills = [{ id: 'o-scrappy', active: true }];
+    s = apply(s, { type: 'reconfigure', die: 'p0d0' });
+    const choice = (die: string) => {
+      const t = structuredClone(s);
+      t.pending.unshift({ kind: 'clever', player: 1, die, source: 'clever' });
+      return apply(t, { type: 'clever', value: t.dice.find((d) => d.id === die)!.value === 6 ? 5 : 6 });
+    };
+    expect(choice('p1d0').turn.scrappy).toMatchObject({ die: 'p0d0' });
+    expect(choice('p0d0').turn.scrappy).toBeUndefined();
+  });
+
   cardCase(['ruthless'], 'Ruthless', () => {
     let s = duel('community', 707, { me: ['ruthless'], foe: ['agile'] }, true);
     expect(s.pending[0]).toMatchObject({ kind: 'ruthless', player: 0, victim: 1 });

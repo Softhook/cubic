@@ -53,7 +53,7 @@ export function ProofLab() {
             nebula show, the text is clean and the colours tell apart.
           </p>
           <div className="lab-controls">
-            <button className="btn btn-primary" disabled={busy} onClick={() => run(() => exportCmykPdf(PAGE, page, deep))}>
+            <button className="btn btn-primary" disabled={busy} onClick={() => run((p) => exportCmykPdf(PAGE, page, deep, p))}>
               <Space of="cmyk" /> PDF · {PRESS.condition}
             </button>
             <button className="btn" disabled={busy} onClick={() => run(() => exportPng(PAGE, page, false))}>

@@ -154,7 +154,12 @@ export function cmykPdf(o: PdfOptions): Blob {
       content +=
         `\n0 0 0 1 K ${pt(0.2)} w\n` +
         page.marks.map(([x1, y1, x2, y2]) => `${pt(x1)} ${pt(o.h - y1)} m ${pt(x2)} ${pt(o.h - y2)} l S`).join('\n');
-    object(pageRef(k) + 1, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+    const stream = enc.encode(content);
+    object(pageRef(k) + 1, () => {
+      write(`<< /Length ${stream.length} >>\nstream\n`);
+      write(stream);
+      write('\nendstream');
+    });
   });
 
   const count = pageRef(o.pages.length);

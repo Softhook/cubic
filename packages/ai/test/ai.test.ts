@@ -86,4 +86,12 @@ describe('full games', () => {
     });
     expect(state.phase).toBe('over');
   });
+
+  it('scores positions cleanly when a player is stuck at dominance 6', () => {
+    const s = scenario({ p0d0: [0, 4, 3], p1d0: [1, 5, 2] });
+    s.players[0].dominance = 6;
+    s.players[1].dominance = 6;
+    const a = chooseAction(s, { level: 3, random: seededRandom(1) });
+    expect(a).not.toBeNull();
+  });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameState, LogEvent, PlayerId } from '@quantum/engine';
 import { sfx } from '../sound';
 import { logText } from './logText';
@@ -35,6 +35,15 @@ const TOAST_MS = 4200;
 /** Toasts for notable log entries. `announce(prev, next, mine)` reacts to the entries `next` adds, as heard by whom the screen plays for. */
 export function useToasts() {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const timers = useRef(new Set<number>());
+
+  useEffect(() => {
+    const active = timers.current;
+    return () => {
+      active.forEach((t) => window.clearTimeout(t));
+      active.clear();
+    };
+  }, []);
 
   const announce = useCallback((prev: GameState, next: GameState, mine: (p: PlayerId) => boolean) => {
     const fresh = next.log.filter((e) => e.id > (prev.log.at(-1)?.id ?? 0));
@@ -45,7 +54,13 @@ export function useToasts() {
     });
     if (!shown.length) return;
     setToasts((t) => [...t, ...shown].slice(-MAX_TOASTS));
-    for (const s of shown) window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== s.id)), TOAST_MS);
+    for (const s of shown) {
+      const id = window.setTimeout(() => {
+        timers.current.delete(id);
+        setToasts((t) => t.filter((x) => x.id !== s.id));
+      }, TOAST_MS);
+      timers.current.add(id);
+    }
   }, []);
 
   return { toasts, announce };
