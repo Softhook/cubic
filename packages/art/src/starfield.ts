@@ -1,6 +1,6 @@
 import type { Rng } from './rng';
 import { NEBULA_HUES, SPACE_BASE, SPACE_BASE_CSS } from './tokens';
-import { hsl, hslToRgb, n, type Fragment } from './svg';
+import { hsl, n, tint, turbulence, type Fragment } from './svg';
 
 export interface Box {
   x: number;
@@ -68,27 +68,25 @@ interface CloudOptions {
 /** A nebula layer: fractal noise, swirled by a second noise, turned into a cloud of one colour. */
 function cloud(o: CloudOptions): Fragment {
   const { id, area } = o;
-  const [r, g, b] = hslToRgb(...o.colour);
   // alpha = k·(noise − cut): clear below `cut`, reaching `strength` at cut + soft.
   const k = o.strength / o.soft;
   const base = Number(o.freq.split(' ')[0]);
   let filaments = '';
   if (o.filaments) {
-    const [fr, fg, fb] = hslToRgb(o.colour[0], o.colour[1], Math.min(90, o.colour[2] + 30));
     filaments =
-      `<feTurbulence type="turbulence" baseFrequency="${n(base * 3)}" numOctaves="3" seed="${o.warpSeed + 7}" result="ridge"/>` +
+      turbulence(n(base * 3), 3, o.warpSeed + 7, 'ridge', 'turbulence') +
       `<feDisplacementMap in="ridge" in2="warp" scale="${n(o.warp)}" xChannelSelector="R" yChannelSelector="G" result="ridgeW"/>` +
-      `<feColorMatrix in="ridgeW" type="matrix" values="0 0 0 0 ${n(fr)} 0 0 0 0 ${n(fg)} 0 0 0 0 ${n(fb)} ${n(-o.filaments * 9)} 0 0 0 ${n(o.filaments)}" result="lines"/>` +
+      tint([o.colour[0], o.colour[1], Math.min(90, o.colour[2] + 30)], -o.filaments * 9, o.filaments, 'ridgeW', 'lines') +
       `<feComposite in="lines" in2="cloud" operator="in" result="fil"/>` +
       `<feMerge><feMergeNode in="cloud"/><feMergeNode in="fil"/></feMerge>`;
   }
   return {
     defs:
       `<filter id="${id}" filterUnits="userSpaceOnUse" x="${n(area.x)}" y="${n(area.y)}" width="${n(area.w)}" height="${n(area.h)}" color-interpolation-filters="sRGB">` +
-      `<feTurbulence type="fractalNoise" baseFrequency="${n(base * 1.7)}" numOctaves="2" seed="${o.warpSeed}" result="warp"/>` +
-      `<feTurbulence type="fractalNoise" baseFrequency="${o.freq}" numOctaves="${o.octaves}" seed="${o.seed}" result="noise"/>` +
+      turbulence(n(base * 1.7), 2, o.warpSeed, 'warp') +
+      turbulence(o.freq, o.octaves, o.seed, 'noise') +
       `<feDisplacementMap in="noise" in2="warp" scale="${n(o.warp)}" xChannelSelector="R" yChannelSelector="G" result="swirled"/>` +
-      `<feColorMatrix in="swirled" type="matrix" values="0 0 0 0 ${n(r)} 0 0 0 0 ${n(g)} 0 0 0 0 ${n(b)} ${n(k)} 0 0 0 ${n(-k * o.cut)}" result="cloud"/>` +
+      tint(o.colour, k, -k * o.cut, 'swirled', 'cloud') +
       filaments +
       `</filter>`,
     body: `<rect x="${n(area.x)}" y="${n(area.y)}" width="${n(area.w)}" height="${n(area.h)}" filter="url(#${id})"/>`,

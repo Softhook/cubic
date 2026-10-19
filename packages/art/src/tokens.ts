@@ -60,8 +60,6 @@ export type PlanetType = 'gas' | 'rocky' | 'ice' | 'lava' | 'ocean';
 export interface PlanetFamily {
   /** Signature hue: atmosphere, glow and the number's outline. Each planet varies it a little. */
   hue: number;
-  /** Lightness of the atmosphere along the lit edge (in the signature hue). */
-  rimLight: number;
   /** The back light on the far edge: a contrasting colour, cool behind the warm worlds and warm behind the cool ones. */
   backLight: Hsl;
   /** Planet types this number comes in; a full set cycles through them. */
@@ -80,10 +78,10 @@ const COOL_BACK_LIGHT: Hsl = [196, 90, 70];
  * the base hues: planets vary around them and sometimes take an off-type colour (planet.ts).
  */
 export const PLANET_FAMILY: Record<number, PlanetFamily> = {
-  7: { hue: 150, rimLight: 78, backLight: WARM_BACK_LIGHT, types: ['ocean'] },
-  8: { hue: 38, rimLight: 78, backLight: COOL_BACK_LIGHT, types: ['gas'] },
-  9: { hue: 195, rimLight: 78, backLight: WARM_BACK_LIGHT, types: ['ice', 'gas'] },
-  10: { hue: 6, rimLight: 60, backLight: COOL_BACK_LIGHT, types: ['lava'] },
+  7: { hue: 150, backLight: WARM_BACK_LIGHT, types: ['ocean'] },
+  8: { hue: 38, backLight: COOL_BACK_LIGHT, types: ['gas'] },
+  9: { hue: 195, backLight: WARM_BACK_LIGHT, types: ['ice', 'gas'] },
+  10: { hue: 6, backLight: COOL_BACK_LIGHT, types: ['lava'] },
 };
 
 /** Nebula hues stay between blue and pink-purple, so every tile's sky belongs to one set. */

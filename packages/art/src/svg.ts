@@ -96,11 +96,12 @@ export const gradientMask = (id: string, box: { x: number; y: number; w: number;
 };
 
 /** Wraps fragments in a standalone SVG document with a viewBox in mm. */
-export function document(f: Fragment, view: { x: number; y: number; w: number; h: number }, physical = true): string {
+export function document(f: Fragment, view: { x: number; y: number; w: number; h: number }, physical = true, fontCss?: string): string {
   const size = physical ? ` width="${n(view.w)}mm" height="${n(view.h)}mm"` : '';
+  const style = fontCss ? `<style>${fontCss}</style>` : '';
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n(view.x)} ${n(view.y)} ${n(view.w)} ${n(view.h)}"${size}>` +
-    `<defs>${f.defs}</defs>${f.body}</svg>`
+    `<defs>${style}${f.defs}</defs>${f.body}</svg>`
   );
 }
 

@@ -26,16 +26,16 @@ export const SET_COUNTS: Record<number, number> = { 7: 8, 8: 8, 9: 6, 10: 5, 0: 
 
 /** The look of one tile, from its id. Ids past the set's count (a map larger than the set) still work. */
 export function tileSpec(id: string): TileSpec {
-  if (id === 'void' || id.startsWith('void-')) {
+  if (id === 'void' || /^void-[1-9]\d*$/.test(id)) {
     const index = id === 'void' ? 0 : Number(id.slice(5)) - 1;
     return { id, number: 0, seed: hash(id), heart: VOID_HEARTS[index % VOID_HEARTS.length] ?? 'blackHole' };
   }
-  const m = /^p(\d+)-(\d+)$/.exec(id);
-  if (!m) throw new Error(`Unknown tile id: ${id}`);
-  const number = Number(m[1]);
+  const m = /^p(\d+)-([1-9]\d*|0[1-9]\d*)$/.exec(id);
+  const number = m ? Number(m[1]) : 0;
+  const family = PLANET_FAMILY[number];
+  if (!m || !family) throw new Error(`Unknown tile id: ${id}`);
   const index = Number(m[2]) - 1;
-  const types = PLANET_FAMILY[number].types;
-  return { id, number, seed: hash(id), type: types[index % types.length] };
+  return { id, number, seed: hash(id), type: family.types[index % family.types.length] };
 }
 
 const tileId = (number: number, i: number) =>

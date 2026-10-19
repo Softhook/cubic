@@ -153,7 +153,7 @@ export function pressTestSvg(o: PressTestOptions = {}): string {
       body += text(x + 3, ty, `${s} mm · ${(s / 0.3528).toFixed(1)} pt  Move up to the ship’s value`, s, ink);
     }
     ty += 4;
-    body += text(x + 3, ty, '1.8 mm muted · 07/35 · CE', 1.8, muted, 'font-weight="600" letter-spacing=".15"');
+    body += text(x + 3, ty, '1.5 mm muted · 7/35 C', 1.5, muted, 'font-weight="600" letter-spacing=".1"');
     ty += 3.4;
     body += text(x + 3, ty, '2.1 mm bold · Conquer · Research', 2.1, ink, 'font-weight="700"');
     ty += 3.6;
@@ -190,5 +190,5 @@ export function pressTestSvg(o: PressTestOptions = {}): string {
     body += text(x + (tw - 1) / 2, lineY + lh - 2, l === 95 ? '95 card' : String(l), 1.8, MUTED_LIGHT, 'text-anchor="middle"');
   });
 
-  return document({ defs: o.fontCss ? `<style>${o.fontCss}</style>` : '', body }, { x: 0, y: 0, w: PRESS_TEST.w, h: PRESS_TEST.h });
+  return document({ defs: '', body }, { x: 0, y: 0, w: PRESS_TEST.w, h: PRESS_TEST.h }, true, o.fontCss);
 }

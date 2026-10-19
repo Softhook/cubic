@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
-import { EXPANSION, card, cardKind, rulesOf, type DeckKind, type GameState } from '@quantum/engine';
+import { EXPANSION, card, cardKind, effectOf, rulesOf, type DeckKind, type GameState } from '@quantum/engine';
 import type { Legal } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
 import { FOLD_MARKET, useMediaQuery } from '../game/useMediaQuery';
@@ -162,7 +162,7 @@ export function Market({
       </button>
       {cards.map((id, index) => {
         const def = card(id);
-        const kind = cardKind(id);
+        const kind = effectOf(id) === 'expansion' ? 'expansion' : cardKind(id);
         return (
           <button
             type="button"
@@ -265,8 +265,9 @@ export function Market({
           <div className="market-strip-group market-strip-expansion">
             <button
               type="button"
-              className="market-chip market-chip-expansion"
+              className={`market-chip market-chip-expansion ${canExpand ? 'takeable' : ''}`}
               title={`${m.expansions} Expansion cards left`}
+              data-card={EXPANSION.id}
               onClick={() => setViewingCard(EXPANSION.id)}
             >
               {EXPANSION.name} ×{m.expansions}
@@ -360,6 +361,7 @@ function useWarmCards(game: GameState) {
   const ids = [
     ...m.skillRow,
     ...m.tacticRow,
+    ...(rulesOf(game).cards?.expansionPile ? [EXPANSION.id] : []),
     ...game.players.flatMap((p) => [...p.skills.map((s) => s.id), ...(p.storedTactics ?? [])]),
     ...m.skillDeck,
     ...m.tacticDeck,

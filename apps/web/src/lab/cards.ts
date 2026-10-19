@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FONTS, type CardDeck, type CardFace, type Measure } from '@quantum/art';
 import {
   EXPANSION,
@@ -114,7 +114,9 @@ let fontsReady: Promise<void> | null = null;
 export function cardFontsReady(): Promise<void> {
   fontsReady ??= Promise.all(Object.values(FAMILIES).map(([w, f]) => document.fonts.load(`${w} 10px ${f}`))).then(
     () => {},
-    () => {},
+    () => {
+      fontsReady = null;
+    },
   );
   return fontsReady;
 }
@@ -122,8 +124,7 @@ export function cardFontsReady(): Promise<void> {
 /**
  * Fonts as `@font-face` rules with the font files inlined, from a Google Fonts query. An SVG drawn as
  * an image can't reach the page's fonts, so exports carry their own. Empty when offline: the art then
- * falls back to system fonts (print exports refuse to run), and the first call after the browser is
- * back online tries again.
+ * falls back to system fonts (print exports refuse to run), and a later call tries again.
  */
 function embeddedFonts(query: string, ready: () => Promise<void>): () => Promise<string> {
   let css: Promise<string> | null = null;
@@ -131,16 +132,22 @@ function embeddedFonts(query: string, ready: () => Promise<void>): () => Promise
     css ??= (async () => {
       try {
         await ready();
-        const sheet = await (await fetch(`https://fonts.googleapis.com/css2?${query}&display=block`)).text();
+        const res = await fetch(`https://fonts.googleapis.com/css2?${query}&display=block`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const sheet = await res.text();
         // Latin only: the text needs nothing else, and each subset is another file.
         const blocks = [...sheet.matchAll(/\/\* latin \*\/\s*(@font-face\s*\{[^}]*\})/g)].map((m) => m[1]);
+        if (!blocks.length) throw new Error('no latin @font-face rules');
         const files = new Map<string, Promise<string>>();
         const inline = (url: string) => {
           if (!files.has(url))
             files.set(
               url,
               fetch(url)
-                .then((r) => r.blob())
+                .then((r) => {
+                  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                  return r.blob();
+                })
                 .then(blobToDataUrl),
             );
           return files.get(url)!;
@@ -153,7 +160,7 @@ function embeddedFonts(query: string, ready: () => Promise<void>): () => Promise
         );
         return out.join('');
       } catch {
-        addEventListener('online', () => (css = null), { once: true });
+        css = null;
         return '';
       }
     })();
@@ -174,4 +181,11 @@ export function useFontCss(load: () => Promise<string>): string | null {
     void load().then(setCss);
   }, [load]);
   return css;
+}
+
+/** A blob URL for an SVG document (cheaper than a data URL when it carries embedded fonts), revoked when replaced. */
+export function useSvgUrl(svg: string): string {
+  const url = useMemo(() => (svg ? URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })) : ''), [svg]);
+  useEffect(() => () => (url ? URL.revokeObjectURL(url) : undefined), [url]);
+  return url;
 }

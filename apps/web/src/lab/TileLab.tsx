@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react';
 import { TILE_SET, dataUrl, editableTileSvg, tileSvg, type PlanetType, type TileSpec } from '@quantum/art';
 import { blobToDataUrl, download } from '../files';
 import { svgToPng } from '../print/exports';
-import { PIECES, fileName, pieceSize, type Printable } from '../print/pieces';
+import { PIECES, fileName, pieceSize } from '../print/pieces';
 import { PrintPanel, Space } from '../print/PrintPanel';
-import { tileFontCss, useFontCss } from './cards';
+import { tileFontCss, useFontCss, useSvgUrl } from './cards';
 import { LabHeader } from './LabHeader';
-import { TILES_AND_AIDS } from './pressSheets';
+import { TILES_AND_AIDS, printableTile } from './pressSheets';
 
 /**
  * Art Lab, tiles page (#lab): every tile of the physical set, with controls to explore seeds and
@@ -30,10 +30,11 @@ export function TileLab() {
   const thumbs = useMemo(() => specs.map((t) => ({ spec: t, url: dataUrl(tileSvg(t, { markings, rounded: true })) })), [specs, markings]);
   const spec = specs.find((t) => t.id === selected)!;
   const svg = useMemo(() => tileSvg(spec, { markings, bleed, fontCss: fonts ?? '' }), [spec, markings, bleed, fonts]);
+  const detail = useSvgUrl(svg);
   const set = (o: Override) => setOverrides((all) => ({ ...all, [spec.id]: { ...all[spec.id], ...o } }));
 
   // Prints the set as shown: seeds and types being explored, and the markings setting, included.
-  const printable = (t: TileSpec): Printable => ({ name: t.id, svg: (b) => tileSvg(t, { markings, bleed: b, fontCss: fonts ?? '' }) });
+  const printable = (t: TileSpec) => printableTile(t, fonts ?? '', markings);
   const item = printable(spec);
 
   /** Illustrator can't render SVG filters, so the art goes in as a 600 dpi bitmap with vector markings on top. */
@@ -64,7 +65,7 @@ export function TileLab() {
           ))}
         </div>
         <aside className="lab-detail">
-          <img src={dataUrl(svg)} alt={spec.id} />
+          <img src={detail} alt={spec.id} />
           <div className="lab-controls">
             <label>
               Seed

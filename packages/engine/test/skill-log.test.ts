@@ -68,4 +68,15 @@ describe('skills firing by themselves', () => {
     const usual = game(['curious']);
     expect(fresh(usual, apply(usual, { type: 'research' })).some((e) => e.card)).toBe(false);
   });
+
+  it('Tyrannical logs its own entry even when the dominance it gives reaches Infamy', () => {
+    const s = originalGame({ me: ['o-tyrannical'] });
+    const me = s.turn.player;
+    s.players[me].research = 2;
+    s.players[me].dominance = 5;
+    const after = apply(s, { type: 'tyrannical' });
+    const entries = fresh(s, after);
+    expect(entries.find((e) => e.event === 'infamy')?.card).toBeUndefined();
+    expect(entries.find((e) => e.card === 'o-tyrannical')).toBeDefined();
+  });
 });

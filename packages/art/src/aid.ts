@@ -4,13 +4,13 @@ import { poly } from './kit/props';
 import { shipDie } from './kit/starships';
 import { rng } from './rng';
 import { starfield } from './starfield';
-import { document, esc, hsl, n, type Fragment } from './svg';
+import { document, esc, hsl, n } from './svg';
 import { ACTION_HUE, CUBE_PAD, DOMINANCE, FONTS, INK, RESEARCH, TILE } from './tokens';
 
 /**
  * The player aid: an A6 board, landscape, the same for every player. Down the left edge, a rail of
  * seven cube pads holds the player's cubes, with the win condition beside it; then the two pads for
- * the dominance and research dice (19 mm), and between them the three actions; along the bottom,
+ * the dominance and research dice (19 mm), and between them the five actions; along the bottom,
  * the six ships on their die faces with what each can do.
  *
  * Kept deliberately quiet: a dim starfield for ground, one accent colour (actions take the cards' yellow), no boxes.
@@ -46,7 +46,7 @@ export interface AidOptions {
 // ---------------------------------------------------------------------------
 // What it says
 
-/** What each ship can do: the ability's name and what it means in one phrase, broken where it reads best. */
+/** What each ship can do, in one short two-line phrase. */
 const SHIPS: { value: number; text: [string, string] }[] = [
   { value: 1, text: ['Free attack on', 'a ship next to it'] },
   { value: 2, text: ['Carry a ship', 'as it moves'] },
@@ -179,7 +179,10 @@ export function playerAidSvg(o: AidOptions = {}): string {
       (Math.round(x * 7 + y * 13) & 1) === 0 && !TEXT.some(([x0, y0, x1, y1]) => x > x0 && x < x1 && y > y0 && y < y1),
     brightAllowed: (x, y) => y > 63 && y < 70 && ((x > 22 && x < 52) || (x > 114 && x < 142)),
   });
-  defs.push(sky.defs);
+  defs.push(
+    sky.defs,
+    `<radialGradient id="${id}-glow"><stop offset="0" stop-color="${hsl(ACTION_HUE, 100, 60)}" stop-opacity=".5"/><stop offset="1" stop-color="${hsl(ACTION_HUE, 100, 60)}" stop-opacity="0"/></radialGradient>`,
+  );
   out.push(sky.body, `<rect x="${-b}" y="${-b}" width="${W + 2 * b}" height="${H + 2 * b}" fill="${GROUND}" opacity=".3"/>`);
 
   // --- The cube rail: a pad per cube, spread over the full height, with the win condition alongside.
@@ -263,6 +266,5 @@ export function playerAidSvg(o: AidOptions = {}): string {
     );
   }
 
-  const all: Fragment = { defs: (o.fontCss ? `<style>${o.fontCss}</style>` : '') + defs.join(''), body: out.join('') };
-  return document(all, { x: -b, y: -b, w: W + 2 * b, h: H + 2 * b });
+  return document({ defs: defs.join(''), body: out.join('') }, { x: -b, y: -b, w: W + 2 * b, h: H + 2 * b }, true, o.fontCss);
 }

@@ -1,4 +1,4 @@
-import { effectOf, type Cell, type Die, type GameState, type LogEntry, type LogEvent, type PlayerId } from '@quantum/engine';
+import { cellOf, effectOf, same, type Cell, type GameState, type LogEntry, type LogEvent, type PlayerId } from '@quantum/engine';
 import { stagingOf } from '../components/board/staging';
 import { sfx } from '../sound';
 import { destroyedOf, shotOf, strikeOf } from './strike';
@@ -41,9 +41,6 @@ const TACTIC_SOUNDS: Record<string, Sound> = {
   expansion: 'launch',
 };
 
-const onBoard = (d: Die) => (d.loc.zone === 'board' ? d.loc : null);
-const sameCell = (a: Cell, b: Cell) => a.r === b.r && a.c === b.c;
-
 /**
  * What the step from `prev` to `next` sounds like. `fresh`: the log entries it added. `mine`: whom this screen
  * plays for, so a player who lost hears a lament rather than the winner's fanfare.
@@ -58,10 +55,12 @@ export function soundsFor(
   const then = new Set<Sound>();
 
   // Cards played resolve first; their effects (ships, missiles) follow a beat later.
-  // A played Tactic is the last on the discards, unless the same step shuffled them back into the deck.
-  const played = fresh.filter((e) => e.event === 'cardPlayed').length;
-  const ids = played ? next.market.tacticDiscard.slice(-played) : [];
-  for (let i = 0; i < played; i++) first.add((ids[i] && TACTIC_SOUNDS[effectOf(ids[i])]) || 'card');
+  const played = fresh.filter((e) => e.event === 'cardPlayed');
+  const ids = played.length ? next.market.tacticDiscard.slice(-played.length) : [];
+  played.forEach((e, i) => {
+    const id = e.card ?? ids[i];
+    first.add((id && TACTIC_SOUNDS[effectOf(id)]) || 'card');
+  });
   for (const e of fresh) {
     const s = e.event && EVENT_SOUNDS[e.event];
     if (s) first.add(s === 'win' && lost(next, mine) ? 'lose' : s);
@@ -88,17 +87,17 @@ export function soundsFor(
   for (const d of next.dice) {
     const p = before.get(d.id);
     if (!p) continue;
-    const from = onBoard(p);
-    const to = onBoard(d);
+    const from = cellOf(p);
+    const to = cellOf(d);
     const brought = late.get(d.id);
     if (to && brought !== undefined) lands = Math.max(lands ?? 0, brought);
-    else if (from && to && !sameCell(from, to)) moved.push({ from, to });
+    else if (from && to && !same(from, to)) moved.push({ from, to });
     else if (!from && to) effects.add('warpIn');
     // One that left the map was destroyed (counted above) or recalled.
     else if (from && !to) continue;
     else if (d.value !== p.value && d.rolls === p.rolls) effects.add('retune');
   }
-  const swapped = moved.some((a) => moved.some((b) => a !== b && sameCell(a.from, b.to) && sameCell(a.to, b.from)));
+  const swapped = moved.some((a) => moved.some((b) => a !== b && same(a.from, b.to) && same(a.to, b.from)));
   if (swapped) effects.add('swap');
   else if (moved.length) effects.add('fly');
   if (destroyed) effects.add('explode');
@@ -113,9 +112,12 @@ export function soundsFor(
   if (rose('research') && !first.has('breakthrough')) effects.add('research');
   if (rose('dominance') && !destroyed && !first.has('infamy')) effects.add('dominance');
 
-  // Once-per-turn skills used this step.
+  // Once-per-turn skills used this step, or a skill disabled by Ruthless.
   const sameTurn = prev.turn.number === next.turn.number && prev.turn.player === next.turn.player;
-  if (sameTurn && next.turn.oncePerTurn.length > prev.turn.oncePerTurn.length) effects.add('skill');
+  const disabledSkill = next.players.some((pl, i) =>
+    pl.skills.some((s) => s.disabledUntil !== undefined && prev.players[i].skills.find((x) => x.id === s.id)?.disabledUntil === undefined),
+  );
+  if ((sameTurn && next.turn.oncePerTurn.length > prev.turn.oncePerTurn.length) || disabledSkill) effects.add('skill');
 
   return { first: [...first], then: [...then], destroyed, lands };
 }

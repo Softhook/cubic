@@ -12,6 +12,7 @@ import {
   tileSvg,
 } from '../src';
 import { CUBE_PAD } from '../src/tokens';
+import { boxGap } from '../src/tile';
 import maps from '../../engine/src/data/maps.json';
 import cards from '../../engine/src/data/cards.json';
 import { cardBackSvg, cardSvg, type CardDeck } from '../src/card';
@@ -23,10 +24,23 @@ import { MIN_TEXT, playerAidSvg } from '../src/aid';
 import { shipDie } from '../src/kit/starships';
 import { PRESS_TEST, pressTestSvg } from '../src/proof';
 
-/** Gap between a box (centre, half-width, half-height) and a square (centre, half-size). */
-const boxGap = (cx: number, cy: number, hw: number, hh: number, x: number, y: number, h: number) =>
-  Math.hypot(Math.max(0, Math.abs(cx - x) - hw - h), Math.max(0, Math.abs(cy - y) - hh - h));
 const DIE = 19;
+
+/** Checks that an SVG has no bad numbers, duplicate attributes, duplicate ids or broken `url(#…)` references. */
+function checkSvg(svg: string, label = '') {
+  expect(svg, label).not.toMatch(/NaN|undefined|Infinity/);
+  expect(svg.startsWith('<svg'), label).toBe(true);
+  for (const [tag] of svg.matchAll(/<[a-z][^>]*>/g)) {
+    const names = [...tag.matchAll(/\s([\w:-]+)=/g)].map((m) => m[1]);
+    expect(new Set(names).size, `${label}: ${tag.slice(0, 80)}`).toBe(names.length);
+  }
+  const ids = [...svg.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+  const idSet = new Set(ids);
+  expect(idSet.size, `${label}: duplicate id`).toBe(ids.length);
+  for (const [, ref] of svg.matchAll(/url\(#([^)]+)\)/g)) {
+    expect(idSet.has(ref), `${label}: missing #${ref}`).toBe(true);
+  }
+}
 
 describe('tile art', () => {
   it('is the same every time for the same tile', () => {
@@ -38,11 +52,10 @@ describe('tile art', () => {
     expect(tileSvg(tileSpec('p7-01'))).not.toBe(tileSvg(tileSpec('p7-02')));
   });
 
-  it('renders every tile in the set without bad numbers', () => {
+  it('renders every tile in the set without bad numbers or broken references', () => {
     for (const t of TILE_SET) {
       for (const svg of [tileSvg(t, { markings: true, bleed: true }), tileSvg(t, { rounded: true })]) {
-        expect(svg).not.toMatch(/NaN|undefined|Infinity/);
-        expect(svg.startsWith('<svg')).toBe(true);
+        checkSvg(svg, t.id);
       }
     }
   });
@@ -66,6 +79,12 @@ describe('tile set', () => {
   it('has unique ids and the counts the set needs', () => {
     expect(new Set(TILE_SET.map((t) => t.id)).size).toBe(TILE_SET.length);
     expect(TILE_SET.length).toBe(Object.values(SET_COUNTS).reduce((a, b) => a + b, 0));
+  });
+
+  it('rejects unknown or malformed tile ids', () => {
+    for (const bad of ['p6-01', 'p11-01', 'p7-00', 'void-0', 'void-abc', 'foo']) {
+      expect(() => tileSpec(bad), bad).toThrow(/Unknown tile id/);
+    }
   });
 
   it('covers every map without running out of tiles', () => {
@@ -131,14 +150,13 @@ describe('card art', () => {
   ];
   const faces = decks.flatMap(([deck, list]) => list.map((c, i) => ({ ...c, deck, copies: c.count, index: i + 1, deckSize: list.length })));
 
-  it('renders every card and back without bad numbers', () => {
+  it('renders every card and back without bad numbers or broken references', () => {
     for (const f of faces) {
       for (const svg of [cardSvg(f, { bleed: true }), cardSvg(f, { rounded: true })]) {
-        expect(svg, f.id).not.toMatch(/NaN|undefined|Infinity/);
-        expect(svg.startsWith('<svg')).toBe(true);
+        checkSvg(svg, f.id);
       }
     }
-    for (const [deck] of decks) expect(cardBackSvg(deck, { bleed: true })).not.toMatch(/NaN|undefined|Infinity/);
+    for (const [deck] of decks) checkSvg(cardBackSvg(deck, { bleed: true }), `back-${deck}`);
   });
 
   it('is the same every time for the same card, and differs between cards', () => {
@@ -177,10 +195,10 @@ describe('card art', () => {
 });
 
 describe('player aid', () => {
-  it('renders both editions without bad numbers', () => {
+  it('renders both editions without bad numbers or broken references', () => {
     for (const edition of ['community', 'classic'] as const) {
       const svg = playerAidSvg({ edition, bleed: true });
-      expect(svg).not.toMatch(/NaN|undefined|Infinity/);
+      checkSvg(svg, edition);
       expect(svg).toContain(`viewBox="-3 -3 154 111"`);
     }
   });
@@ -224,14 +242,9 @@ describe('player aid', () => {
 describe('press test', () => {
   it('renders an A4 page with every category, the ramps and the pieces it is given', () => {
     const svg = pressTestSvg({ tile: 'data:image/svg+xml,a', card: 'data:image/svg+xml,b' });
-    expect(svg).not.toMatch(/NaN|undefined|Infinity/);
+    checkSvg(svg, 'press-test');
     expect(svg).toContain(`viewBox="0 0 ${PRESS_TEST.w} ${PRESS_TEST.h}"`);
     for (const c of Object.values(CARD_CATEGORIES)) expect(svg).toContain(`>${c.label}<`);
     expect(svg.match(/<image /g)).toHaveLength(2);
-    // A repeated attribute makes the SVG unreadable as an image.
-    for (const [tag] of svg.matchAll(/<[a-z][^>]*>/g)) {
-      const names = [...tag.matchAll(/\s([\w:-]+)=/g)].map((m) => m[1]);
-      expect(new Set(names).size, tag.slice(0, 80)).toBe(names.length);
-    }
   });
 });

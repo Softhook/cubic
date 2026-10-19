@@ -120,6 +120,7 @@ export function Game({
           <PlayedCard
             game={live}
             mine={view.mine}
+            jumps={view.jumps}
             review={review ? live.log.filter((e) => review.move.has(e.id)) : undefined}
             hold={!review && head?.kind === 'combat'}
           />

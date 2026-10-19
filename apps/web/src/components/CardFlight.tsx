@@ -1,6 +1,6 @@
 import { Component, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import type { GameState } from '@quantum/engine';
+import { EXPANSION, type GameState } from '@quantum/engine';
 import { reducedMotion } from '../game/useMediaQuery';
 import { lastLogId, useTransient } from '../game/useTransient';
 import { leftRow } from '../game/marketRow';
@@ -62,9 +62,13 @@ function leaving(was: GameState, game: GameState) {
     ...leftRow(tacticRow, game.market.tacticRow).map((i) => ({ card: tacticRow[i], index: i })),
   ];
   return game.log.flatMap((e) => {
-    if (e.id <= before || (e.event !== 'cardTaken' && e.event !== 'cardPlayed') || e.player === undefined) return [];
+    if (e.id <= before || e.player === undefined) return [];
+    if (e.event === 'expansion' && was.market.expansions > game.market.expansions) {
+      return [{ id: e.id, card: EXPANSION.id, player: e.player, index: undefined as number | undefined }];
+    }
+    if ((e.event !== 'cardTaken' && e.event !== 'cardPlayed') || !e.card) return [];
     const k = gone.findIndex((g) => g.card === e.card);
-    return k < 0 ? [] : [{ ...e, index: gone.splice(k, 1)[0].index }];
+    return k < 0 ? [] : [{ id: e.id, card: e.card, player: e.player, index: gone.splice(k, 1)[0].index }];
   });
 }
 
@@ -84,8 +88,8 @@ class Departures extends Component<DeparturesProps> {
     const { game, scene } = this.props;
     if (prev.game === game || prev.scene !== scene || reducedMotion()) return null;
     const out = leaving(prev.game, game).flatMap((e) => {
-      const from = marketSpot(e.card!, e.index);
-      return from ? [{ key: `${e.id}`, card: e.card!, player: e.player!, from }] : [];
+      const from = marketSpot(e.card, e.index);
+      return from ? [{ key: `${e.id}`, card: e.card, player: e.player, from }] : [];
     });
     return out.length ? out : null;
   }

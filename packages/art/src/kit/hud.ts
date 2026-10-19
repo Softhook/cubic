@@ -164,7 +164,7 @@ export function miniCard(
     state === 'glow'
       ? `<rect x="${n(x - 0.8)}" y="${n(y - 0.8)}" width="${n(w + 1.6)}" height="${n(h + 1.6)}" rx="${n(w * 0.12)}" fill="none" stroke="${hsl(hue, 100, 80)}" stroke-width=".35"/>`
       : '';
-  const g = glow(`${id}-g`, cx, cy, w * 1.1, h * 0.85, hue, state === 'glow' ? 0.5 : 0, 60);
+  const g = state === 'glow' ? glow(`${id}-g`, cx, cy, w * 1.1, h * 0.85, hue, 0.5, 60) : f('');
   // Laid out like a real card face: art to the top and side edges, an accent line under it, the
   // category emblem straddling art and panel, then the name and rules as lines.
   const r = w * 0.08;
@@ -188,7 +188,7 @@ export function miniCard(
       `<linearGradient id="${id}-art" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="${hsl(hue + 30, 60, 16)}"/><stop offset=".7" stop-color="${hsl(hue, 70, 34)}"/><stop offset="1" stop-color="${hsl(hue, 60, 22)}"/></linearGradient>` +
       `<clipPath id="${id}-face"><rect ${frame} rx="${n(r)}"/></clipPath>`,
     body:
-      (state === 'glow' ? g.body : '') +
+      g.body +
       `<g${tr}>${halo}` +
       `<g clip-path="url(#${id}-face)">` +
       `<rect ${frame} fill="${paper}"/>` +

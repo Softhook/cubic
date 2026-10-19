@@ -14,7 +14,7 @@ at physical size. Nothing is drawn twice, so the printed game and the online gam
 | Element | How it's drawn | Printed? |
 |---|---|---|
 | Map tiles, void, planets | `tileSvg` / `planet` / `starfield` in [`packages/art`](../packages/art), in mm and seeded. The game draws each tile once to an image and keeps it in IndexedDB ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)) | Yes, from the Art Lab (`#lab`) |
-| Cards | `cardSvg` / `cardBackSvg` ([`card.ts`](../packages/art/src/card.ts)): poker size, SVG text, one illustration per card. The game's card pop-ups show the same drawing as an image ([`cardImages.ts`](../apps/web/src/art/cardImages.ts)); market cards are HTML with the same colours and icons | Yes, from `#lab/cards` |
+| Cards | `cardSvg` / `cardBackSvg` ([`card.ts`](../packages/art/src/card.ts)): poker size, SVG text, one illustration per card. The game's card pop-ups show the same drawing as an image ([`cardImages.ts`](../apps/web/src/art/cardImages.ts)); market cards are HTML with a band of the illustration, the same colours and icons, and the printed backs on the decks | Yes, from `#lab/cards` |
 | Player aid | `playerAidSvg` ([`aid.ts`](../packages/art/src/aid.ts)), A6 | Yes, from `#lab/aid` |
 | Warp gates, spaces, planet numbers and cube slots | SVG in [`board/BoardArt.tsx`](../apps/web/src/components/board/BoardArt.tsx), in screen pixels | Gates no (a token in the physical game); numbers and cube slots are in the printed tiles |
 | Dice / ships | CSS 3D cube ([`Die3D.tsx`](../apps/web/src/components/Die3D.tsx)) | No, and doesn't need to be (physical dice) |
@@ -180,7 +180,7 @@ Designed for **19 mm dice**. All numbers live in tokens so they can change after
 | Die | 19 mm | Chosen dice |
 | Cell (space) | **32 mm** | Die + 6.5 mm each side: 13 mm between neighbouring dice, enough for fingers; ≈ 1.7× die |
 | Space pad | 24 mm rounded square, centred, drawn as a well etched into the tile (shaded top and left inner edges, lit bottom and right) | Shows where a die sits; 2.5 mm clear around the die |
-| Attack hatching | Very faint diagonal hatching (3 mm apart) in the four spaces beside the planet | Where dice go to conquer it; hidden once a die sits there |
+| Attack outline | Faint dashed corner brackets around the four spaces beside the planet | Where dice go to conquer it |
 | Tile (trim) | **96 × 96 mm** (3 × 3 cells) | |
 | Bleed | 3 mm → 102 × 102 mm artwork | |
 | Corner radius | 2 mm | Kind to die-cutting; the small gap where four tiles meet doesn't matter |
@@ -209,7 +209,7 @@ made-up name, catalogue number, class and orbit, and a few measurements to suit 
 (`planetFlavour()`), with a thin leader line to the planet. It stays inside the strip between the
 space pads above and below, and no stars are drawn under it. On the 10, whose planet reaches into
 that strip, the label moves left to clear it. It is seeded like the art, so each tile
-always gets the same text. On the Illustrator export it is its own vector layer, `label`.
+always gets the same text. On the Illustrator export it is baked into the 600 dpi `art` layer while the planet number and cube pads stay editable vectors in `markings`.
 
 ```
   NAME ·                 NAME ·              NAME ·              NAME ·
@@ -540,7 +540,7 @@ Each phase leaves the game working and better-looking.
 **Phase 2 — Print loop working end to end (ugly is fine)**
 - [x] Print loop in the Art Lab (§4): PNG at the piece's dpi, ZIP sets (PNG or CMYK PDF) with or without bleed, A4
       sheets with crop marks and duplex backs, saved as PDF from the print dialog.
-- [ ] Headless print route + `scripts/print.ts` + `scripts/print.ts`; output current cards and tiles as `cards-pnp` and `tiles`
+- [ ] Headless print route + `scripts/print.ts`; output current cards and tiles as `cards-pnp` and `tiles`
       PDFs with bleed and crop marks.
 - [x] Cards drawn once, in mm, for both the game's pop-ups and print (`cardSvg`), with illustrations
       and backs.
@@ -556,7 +556,7 @@ Each phase leaves the game working and better-looking.
 **Phase 4 — The new look**
 - [ ] Art direction: mood board, palette (tested for colour-blind players and for CMYK), type.
 - [ ] Icon set (ships 1–6 first).
-- [x] First pass: seeded starfield with warped-noise nebula, filaments and dust; five planet types (gas, rocky, ice, lava, ocean), each planet number its own kind of world from noise with sphere shading, atmosphere and rings; Void rift.
+- [x] First pass: seeded starfield with warped-noise nebula, filaments and dust; four planet types (ocean, gas, ice, lava), each planet number its own kind of world from noise with sphere shading, atmosphere and rings; Void black hole, rift and supernova.
 - [ ] Iterate on the look in the lab; card frames and backs.
 - [x] The game maps each planet to a tile id (`assignTiles`), so a tile looks the same on every map.
 - [ ] Pin the chosen seeds for all 30 tiles in `art.yaml` (the lab shows each spec to copy).

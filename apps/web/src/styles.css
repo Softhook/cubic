@@ -253,8 +253,8 @@ input { font: inherit; }
   backface-visibility: hidden;
 }
 /* Three planes crossing at the cube's centre: through the corner gaps the die looks solid, not hollow (the page
-   behind showed through, black on the dark map). They reach only the middle of each edge, so the corners stay round,
-   and are rounded like the faces: seen face on, a square plane's corners showed past the front face's (Safari). */
+   behind showed through, black on the dark map). Rounded like the faces: seen face on, a square plane's corners
+   showed past the front face's (Safari). */
 .die3d-core { position: absolute; inset: 0; border-radius: 16%; background: color-mix(in srgb, var(--die-color) 70%, black); }
 /* A die at rest (Die3D): its front face alone, flat, at the size the cube's perspective draws it (7 / 6.5), with no
    3D transform, which would make it a layer of its own. */
@@ -939,7 +939,6 @@ input { font: inherit; }
 .player-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .missile-icon { display: inline-block; vertical-align: -0.2em; flex: none; }
 .stat { font-size: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.05); }
-.stat.muted { color: var(--muted); }
 .stat.gold { color: var(--gold); background: rgba(255,200,87,.1); }
 .stat.bad { color: var(--bad); background: rgba(255,93,115,.1); }
 .scrapyard { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -1194,7 +1193,6 @@ input { font: inherit; }
 @keyframes togglepulse { 50% { opacity: 1; } }
 .market-strip-group { display: flex; align-items: center; gap: 5px; flex: none; }
 .market-strip-deck { border: 0; background: none; color: var(--muted); font: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; cursor: pointer; padding: 0 2px; white-space: nowrap; }
-.market-strip-deck b { color: var(--text); font-size: 12px; letter-spacing: 0; }
 @media (hover: hover) { .market-strip-deck:hover { color: var(--text); } }
 .market-chip {
   --cat: #7aa2ff;
@@ -2193,9 +2191,9 @@ body:has(.sheet-layout) { overflow: hidden; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   /* No move effects at all (they aren't made then, either). */
-  .fx, .track-pulse, .card-flight, .cast-beam, .played-card-cast { display: none; }
+  .fx, .cfx, .explosion, .track-pulse, .track-drop, .panel-fx, .card-flight, .cast-beam, .played-card-cast { display: none; }
 }
 
 /* ------------------------------------------------------------------ crash screen (ErrorBoundary) */

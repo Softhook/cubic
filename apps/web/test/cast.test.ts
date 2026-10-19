@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { apply, type GameState, type LogEntry } from '@quantum/engine';
 import { arrange, quickStart } from '../../../packages/engine/test/helpers';
-import { castOf, repeatsLastTurn } from '../src/game/cast';
+import { castOf, landing, repeatsLastTurn } from '../src/game/cast';
 
 /** Player `me` has taken a card after conquering and will take the first Tactic: `card`. */
 function taking(card: string, skills: string[] = []): GameState {
@@ -31,12 +31,26 @@ describe('castOf', () => {
     expect(castOf(s, after)?.card).toBe('show-of-force');
   });
 
-  it('is nothing for a card taken', () => {
+  it('is nothing for a card taken, or for placing a CE Expansion ship after an earlier Tactic', () => {
     const s = quickStart(2, 42, 'community');
     s.pending.unshift({ kind: 'takeCard', player: s.turn.player, count: 1 });
     s.market.skillRow[0] = 'agile';
     const after = apply(s, { type: 'takeCard', deck: 'skill', index: 0 });
     expect(castOf(s, after)).toBeUndefined();
+
+    // Play a Tactic first, then take an Expansion from the CE pile and place its ship.
+    let g = taking('aggression');
+    g.pending[0] = { kind: 'takeCard', player: g.turn.player, count: 2 };
+    g = apply(g, { type: 'takeCard', deck: 'tactic', index: 0 });
+    g = apply(g, { type: 'takeCard', deck: 'expansion', index: 0 });
+    const placed = apply(g, { type: 'placeExpansion', to: null });
+    expect(castOf(g, placed)).toBeUndefined();
+  });
+
+  it('still counts a Tactic as landing while Clever or Calculating is resolved first', () => {
+    const s = apply(taking('unveil-the-fleet', ['calculating']), { type: 'takeCard', deck: 'tactic', index: 0 });
+    expect(s.pending[0]?.kind).toBe('clever');
+    expect(landing(s)).toBe(true);
   });
 });
 

@@ -1,5 +1,5 @@
 import { rng } from './rng';
-import { planet } from './planet';
+import { planet, planetRings } from './planet';
 import { starfield, type Box } from './starfield';
 import {
   CUBE_PAD,
@@ -86,7 +86,7 @@ export function cubePadCentres(capacity: number, cx: number, cy: number): { x: n
 }
 
 /** Gap between a box (centre, half-width, half-height) and a square (centre, half-size); 0 if they overlap. */
-function boxGap(cx: number, cy: number, hw: number, hh: number, x: number, y: number, h: number): number {
+export function boxGap(cx: number, cy: number, hw: number, hh: number, x: number, y: number, h: number): number {
   return Math.hypot(Math.max(0, Math.abs(cx - x) - hw - h), Math.max(0, Math.abs(cy - y) - hh - h));
 }
 
@@ -201,10 +201,11 @@ function markings(spec: TileSpec, spacesOnly = false): Fragment {
   return { defs: '', body };
 }
 
+const planetType = (spec: TileSpec): PlanetType => spec.type ?? PLANET_FAMILY[spec.number].types[0];
+
 /** The made-up name and survey data printed beside a tile's planet. */
 export function tileFlavour(spec: TileSpec): PlanetFlavour {
-  const type: PlanetType = spec.type ?? PLANET_FAMILY[spec.number].types[0];
-  return planetFlavour(rng(spec.seed).fork('name'), type, spec.number);
+  return planetFlavour(rng(spec.seed).fork('name'), planetType(spec), spec.number);
 }
 
 /**
@@ -287,8 +288,7 @@ function blackHole(id: string): Fragment {
     body:
       `<g transform="translate(${MID} ${MID}) rotate(${n(tilt)})">` +
       `<circle r="44" fill="url(#${id}-halo)"/>` +
-      discG +
-      `<g clip-path="url(#${id}-far-half)">${soft(lens)}</g>` +
+      `<g clip-path="url(#${id}-far-half)">${discG}${soft(lens)}</g>` +
       `<g clip-path="url(#${id}-near-half)" opacity=".55"><g filter="url(#${id}-near)">${lens}</g></g>` +
       `<circle r="${shadow}" fill="#000"/>` +
       `<circle r="${n(shadow + 0.35)}" fill="none" stroke="${ramp[0]}" stroke-width=".45" filter="url(#${id}-near)"/>` +
@@ -393,7 +393,7 @@ const VOID_HEARTS: Record<VoidHeart, (id: string) => Fragment> = { blackHole, ri
 function moons(r: number, id: string, number: number, type: PlanetType, rand: ReturnType<typeof rng>): Fragment {
   const hue = PLANET_FAMILY[number].hue;
   // Moons borrow their planet's colouring: mossy and teal by the oceans, white by the ice, tan by the
-  // gas giants, and charred with glowing cracks by the lava worlds.
+  // gas giants, and charred with a glowing vent by the lava worlds.
   const pal =
     type === 'lava'
       ? { h: 8, s: 40, l: 38 }
@@ -456,47 +456,37 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
   ];
   if (isVoid) parts.push(VOID_HEARTS[spec.heart ?? 'blackHole'](id));
   else {
+    const r = PLANET_DIAMETER[spec.number] / 2;
+    const type = planetType(spec);
     parts.push(
       planet({
         rng: art.fork('planet'),
         id: `${id}-planet`,
         cx: MID,
         cy: MID,
-        r: PLANET_DIAMETER[spec.number] / 2,
+        r,
         number: spec.number,
-        type: spec.type ?? PLANET_FAMILY[spec.number].types[0],
+        type,
         rings: spec.rings,
       }),
-      moons(
-        PLANET_DIAMETER[spec.number] / 2,
-        `${id}-planet`,
-        spec.number,
-        spec.type ?? PLANET_FAMILY[spec.number].types[0],
-        art.fork('moons'),
-      ),
+      moons(r, `${id}-planet`, spec.number, type, art.fork('moons')),
     );
   }
   if (!isVoid && o.only !== 'art') parts.push(label(spec));
   if (o.markings && o.only !== 'art') parts.push(marks());
 
-  if (o.fontCss) parts.push({ defs: `<style>${o.fontCss}</style>`, body: '' });
-
   const all = join(...parts);
-  return document(o.rounded ? dieCut(all, id, TILE.size, TILE.size, TILE.corner) : all, area);
+  return document(o.rounded ? dieCut(all, id, TILE.size, TILE.size, TILE.corner) : all, area, true, o.fontCss);
 }
 
 /** Whether a tile's planet has rings (picked from its seed, when its spec doesn't say). */
 export function tileHasRings(spec: TileSpec): boolean {
   if (spec.rings !== undefined || spec.number === 0) return !!spec.rings;
-  return planet({
+  return planetRings({
     rng: rng(spec.seed).fork('planet'),
-    id: spec.id,
-    cx: MID,
-    cy: MID,
-    r: PLANET_DIAMETER[spec.number] / 2,
     number: spec.number,
-    type: spec.type ?? PLANET_FAMILY[spec.number].types[0],
-  }).rings;
+    type: planetType(spec),
+  });
 }
 
 /**

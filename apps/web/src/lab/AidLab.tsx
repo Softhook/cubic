@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { playerAidSvg, type AidEdition } from '@quantum/art';
-import { cardFontCss, measure, useFontCss } from './cards';
-import { PIECES, type Printable } from '../print/pieces';
+import { useState } from 'react';
+import { type AidEdition } from '@quantum/art';
+import { cardFontCss, useFontCss, useSvgUrl } from './cards';
+import { PIECES } from '../print/pieces';
 import { PrintPanel } from '../print/PrintPanel';
 import { LabHeader } from './LabHeader';
-import { TILES_AND_AIDS } from './pressSheets';
+import { TILES_AND_AIDS, printableAid } from './pressSheets';
 import { Segmented } from '../components/Segmented';
 
 /** How many boards "All copies" prints: one per player, for the largest player count. */
@@ -20,17 +20,8 @@ export function AidLab() {
   const [bleed, setBleed] = useState(true);
   const fonts = useFontCss(cardFontCss);
 
-  const svgOf = useCallback(
-    (o: { bleed?: boolean } = {}) => playerAidSvg({ ...o, edition, measure, fontCss: fonts ?? '' }),
-    [edition, fonts],
-  );
-  const detail = useMemo(
-    () => (fonts === null ? '' : URL.createObjectURL(new Blob([svgOf({ bleed })], { type: 'image/svg+xml' }))),
-    [bleed, fonts, svgOf],
-  );
-  useEffect(() => () => URL.revokeObjectURL(detail), [detail]);
-
-  const board: Printable = { name: edition, svg: (b) => svgOf({ bleed: b }) };
+  const board = printableAid(edition, fonts ?? '');
+  const detail = useSvgUrl(fonts === null ? '' : board.svg(bleed));
   const part = edition === 'community' ? 'Community' : 'Classic';
 
   return (

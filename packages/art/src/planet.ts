@@ -43,21 +43,20 @@ const SEA_HUE = 208;
  * Off-type colours some planets take instead of their family hue (absolute hues). Each number keeps
  * its lightness (the ice the palest, the lava the darkest), so numbers still tell apart.
  */
-const EXOTIC_HUES: Record<'giant' | 'iceGiant' | PlanetType, number[]> = {
+const EXOTIC_HUES: Record<'giant' | 'iceGiant' | Exclude<PlanetType, 'gas'>, number[]> = {
   giant: [352, 16, 70, 165, 280],
   iceGiant: [160, 176, 228, 262],
   ice: [160, 228, 268, 330],
   lava: [110, 190, 285, 328, 46],
   rocky: [20, 40, 200],
   ocean: [176, 196],
-  gas: [],
 };
 
 /** How often a planet takes an off-type colour. */
 const EXOTIC_CHANCE = 0.3;
 
 /** The planet's main hue: its family's, shifted a fair way, or now and then an off-type colour. */
-function planetHue(o: PlanetOptions, rng: Rng): number {
+function planetHue(o: Pick<PlanetOptions, 'number' | 'type'>, rng: Rng): number {
   const base = PLANET_FAMILY[o.number].hue;
   const kind = o.type === 'gas' ? (o.number === 9 ? 'iceGiant' : 'giant') : o.type;
   if (rng.chance(EXOTIC_CHANCE)) return rng.pick(EXOTIC_HUES[kind]) + rng.range(-10, 10);
@@ -217,10 +216,14 @@ function gas(c: Ctx): Surface {
       : (['smooth', 'banded', 'banded', 'fine', 'turbulent', 'wavy', 'zoned', 'vortex', 'vortex', 'marbled', 'marbled', 'cells'] as const),
   );
   let extra = '';
-  let extraDefs = blur(`${id}-storm-blur`, 0.35 * s);
-  const oval = (x: number, y: number, rx: number, ry: number, fill: string, op: number) =>
-    `<ellipse cx="${n(x)}" cy="${n(y)}" rx="${n(rx)}" ry="${n(ry)}" fill="${fill}" opacity="${op}" filter="url(#${id}-storm-blur)"/>`;
-  if (rng.chance(pale ? 0.4 : 0.6)) {
+  let extraDefs = '';
+  let hasOval = false;
+  const oval = (x: number, y: number, rx: number, ry: number, fill: string, op: number) => {
+    hasOval = true;
+    return `<ellipse cx="${n(x)}" cy="${n(y)}" rx="${n(rx)}" ry="${n(ry)}" fill="${fill}" opacity="${op}" filter="url(#${id}-storm-blur)"/>`;
+  };
+  const belted = style !== 'vortex' && style !== 'marbled' && style !== 'cells';
+  if (style !== 'vortex' && rng.chance(pale ? 0.4 : 0.6)) {
     // A great storm: a soft oval in a band, sometimes large.
     const sx = cx + rng.range(-0.4, 0.35) * r;
     const sy = cy + rng.range(-0.1, 0.45) * r;
@@ -229,7 +232,7 @@ function gas(c: Ctx): Surface {
       oval(sx, sy, r * 0.2 * k, r * 0.09 * k, pale ? hsl(hue + 20, 65, 38) : hsl(hue - 22, 70, 32), 0.75) +
       oval(sx, sy, r * 0.13 * k, r * 0.05 * k, pale ? hsl(hue, 40, 94) : hsl(hue - 18, 75, 62), 0.7);
   }
-  if (rng.chance(0.35)) {
+  if (belted && rng.chance(0.35)) {
     // A string of small white storms along one band.
     const y = cy + rng.range(-0.5, 0.5) * r;
     const count = rng.int(3, 6);
@@ -237,12 +240,12 @@ function gas(c: Ctx): Surface {
     for (let i = 0; i < count; i++)
       extra += oval(x0 + i * r * rng.range(0.14, 0.2), y + rng.range(-0.03, 0.03) * r, r * 0.05, r * 0.03, '#fff', 0.7);
   }
-  if (pale && rng.chance(0.45)) {
+  if (pale && style !== 'vortex' && rng.chance(0.45)) {
     // A bright polar hood.
     extraDefs += blur(`${id}-hood-blur`, 1.6 * s);
     extra += `<ellipse cx="${n(cx)}" cy="${n(cy - r)}" rx="${n(r * 0.9)}" ry="${n(r * rng.range(0.3, 0.45))}" fill="${hsl(hue, 40, 95)}" opacity=".55" filter="url(#${id}-hood-blur)"/>`;
   }
-  if (pale && rng.chance(0.4)) {
+  if (pale && style !== 'vortex' && rng.chance(0.4)) {
     // Thin bright cloud streaks.
     for (let i = rng.int(2, 4); i > 0; i--) {
       const p = spot(c, 0.7);
@@ -315,7 +318,7 @@ function gas(c: Ctx): Surface {
         // Each belt keeps its own shade (the belts' palette would stripe every belt several times).
         colour(pale ? 1.25 : 1.5, byLight([0, 0.25, 0.5, 0.75, 1])),
       extra,
-      extraDefs,
+      extraDefs: (hasOval ? blur(`${id}-storm-blur`, 0.35 * s) : '') + extraDefs,
     };
   }
 
@@ -339,7 +342,7 @@ function gas(c: Ctx): Surface {
     warp('bands', flow.swirl, flow.warp) +
     // Zones hold each colour, then turn quickly to the next.
     colour(flow.contrast, style === 'zoned' ? stops.flatMap((c) => [c, c, c]) : stops);
-  return { filter, extra, extraDefs };
+  return { filter, extra, extraDefs: (hasOval ? blur(`${id}-storm-blur`, 0.35 * s) : '') + extraDefs };
 }
 
 function rocky(c: Ctx): Surface {
@@ -600,7 +603,7 @@ function ocean(c: Ctx): Surface {
     sky === 'clear'
       ? ''
       : turbulence(sky === 'streaks' ? `${f(0.03)} ${f(0.2)}` : `${f(0.05)} ${f(0.12)}`, 4, rng.noiseSeed(), 'c') +
-        `<feColorMatrix in="c" result="clouds" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 ${n(-(sky === 'heavy' ? rng.range(1.6, 1.85) : rng.range(1.9, 2.8)))}"/>` +
+        tint([0, 0, 100], 4, -(sky === 'heavy' ? rng.range(1.6, 1.85) : rng.range(1.9, 2.8)), 'c', 'clouds') +
         `<feComposite in="clouds" in2="ground" operator="over"/>`;
   // Sun glint: a specular highlight towards the light, on the water only (under the clouds). The
   // sea/land edge is halfway between the last sea stop and the first land stop of the ramp.
@@ -648,12 +651,11 @@ interface Air {
  * soft one in their own colour; lava worlds a wide smoky glow; ice and rock thin or none, so a sharp edge.
  */
 function air(o: PlanetOptions, hue: number, rng: Rng): Air {
-  const rimLight = PLANET_FAMILY[o.number].rimLight;
   switch (o.type) {
     case 'ocean':
       return { colour: [rng.range(196, 214), 85, 74], reach: rng.range(1.12, 1.17), haze: rng.range(0.8, 0.95), rim: 1, glow: 0.35 };
     case 'gas':
-      return { colour: [hue, 90, rimLight], reach: rng.range(1.12, 1.2), haze: rng.range(0.6, 0.78), rim: 0.8, glow: 0.4 };
+      return { colour: [hue, 90, 78], reach: rng.range(1.12, 1.2), haze: rng.range(0.6, 0.78), rim: 0.8, glow: 0.4 };
     case 'lava':
       return { colour: [hue + 16, 92, 56], reach: rng.range(1.16, 1.24), haze: rng.range(0.55, 0.7), rim: 0.55, glow: 0.55 };
     case 'ice':
@@ -690,6 +692,18 @@ function lightDefs(o: PlanetOptions, a: Air): string {
   );
 }
 
+function planetLook(o: Pick<PlanetOptions, 'rng' | 'number' | 'type' | 'rings'>) {
+  const look = o.rng.fork('look');
+  const hue = planetHue(o, look);
+  // Gas giants are sometimes tipped steeply, so their belts run every way, not only across.
+  const tilt = look.range(-28, 28) + (o.type === 'gas' && look.chance(0.35) ? look.pick([-1, 1]) * look.range(30, 55) : 0);
+  const rings = o.rings ?? look.chance(o.type === 'gas' ? 0.45 : 0.12);
+  return { look, hue, tilt, rings };
+}
+
+/** Whether a planet has rings (without building its SVG). */
+export const planetRings = (o: Pick<PlanetOptions, 'rng' | 'number' | 'type' | 'rings'>): boolean => planetLook(o).rings;
+
 /**
  * A planet centred on (cx, cy): a noise surface shaded as a sphere lit from the top left with a hard
  * terminator, an edge-lit atmosphere and a back light, a dark halo so it stands out from any
@@ -697,13 +711,11 @@ function lightDefs(o: PlanetOptions, a: Air): string {
  */
 export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
   const { id, cx, cy, r, rng } = o;
-  const look = rng.fork('look');
-  const hue = planetHue(o, look);
-  const region = `filterUnits="userSpaceOnUse" x="${n(cx - r)}" y="${n(cy - r)}" width="${n(2 * r)}" height="${n(2 * r)}"`;
+  const { look, hue, tilt, rings } = planetLook(o);
+  // Gas giants displace their noise up to 8·s mm, so pad the filter box to keep it from sampling past the edge.
+  const sr = o.type === 'gas' ? r * 1.5 : r;
+  const region = `filterUnits="userSpaceOnUse" x="${n(cx - sr)}" y="${n(cy - sr)}" width="${n(2 * sr)}" height="${n(2 * sr)}"`;
   const surf = surface(o, hue, rng.fork('surface'));
-  // Gas giants are sometimes tipped steeply, so their belts run every way, not only across.
-  const tilt = look.range(-28, 28) + (o.type === 'gas' && look.chance(0.35) ? look.pick([-1, 1]) * look.range(30, 55) : 0);
-  const rings = o.rings ?? look.chance(o.type === 'gas' ? 0.45 : 0.12);
   // The night side is a deep shade of the planet's own colour, not black, so pale worlds don't turn grey.
   const night = hsl(hue, 70, 5);
   // Own stream, so the air doesn't move the tilt, rings or surface.
@@ -733,10 +745,14 @@ export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
       const k = 1 - i * look.range(0.07, 0.12);
       ellipses += `<ellipse rx="${n(rx * k)}" ry="${n(ry * k)}" fill="none" stroke="${hsl(hue + look.range(-20, 30), 30, look.range(60, 82))}" stroke-width="${n(look.range(0.4, 1.4) * (r / 17))}" stroke-opacity="${n(look.range(0.3, 0.65))}"/>`;
     }
-    defs += `<clipPath id="${id}-front"><rect x="${n(-rx - 2)}" y="0" width="${n(2 * rx + 4)}" height="${n(ry + 2)}"/></clipPath>`;
+    const rw = n(2 * rx + 4);
+    const rh = n(ry + 2);
+    defs +=
+      `<clipPath id="${id}-back-ring"><rect x="${n(-rx - 2)}" y="${n(-(ry + 2))}" width="${rw}" height="${rh}"/></clipPath>` +
+      `<clipPath id="${id}-front-ring"><rect x="${n(-rx - 2)}" y="0" width="${rw}" height="${rh}"/></clipPath>`;
     const at = `translate(${n(cx)} ${n(cy)}) rotate(${n(tilt)})`;
-    back = `<g transform="${at}">${ellipses}</g>`;
-    front = `<g transform="${at}"><g clip-path="url(#${id}-front)">${ellipses}</g></g>`;
+    back = `<g transform="${at}"><g clip-path="url(#${id}-back-ring)">${ellipses}</g></g>`;
+    front = `<g transform="${at}"><g clip-path="url(#${id}-front-ring)">${ellipses}</g></g>`;
   }
 
   /** A circle on the planet, `k` times its radius. */
@@ -748,7 +764,7 @@ export function planet(o: PlanetOptions): Fragment & { rings: boolean } {
     `<g clip-path="url(#${id}-disc)">` +
     // A gas giant's belts, storms and polar hood turn with its tilt.
     `<g${o.type === 'gas' ? ` transform="rotate(${n(tilt)} ${n(cx)} ${n(cy)})"` : ''}>` +
-    `<rect x="${n(cx - r)}" y="${n(cy - r)}" width="${n(2 * r)}" height="${n(2 * r)}"${surf.fill ? ` fill="${surf.fill}"` : ''} filter="url(#${id}-surface)"/>` +
+    `<rect x="${n(cx - sr)}" y="${n(cy - sr)}" width="${n(2 * sr)}" height="${n(2 * sr)}"${surf.fill ? ` fill="${surf.fill}"` : ''} filter="url(#${id}-surface)"/>` +
     surf.extra +
     `</g>` +
     disc(`url(#${id}-rim)`) +

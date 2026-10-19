@@ -6,13 +6,13 @@ updated on 16 October 2026 after the first round of polish landed. The backlog l
 [ROADMAP.md](ROADMAP.md), and the art pipeline in [GRAPHICS.md](GRAPHICS.md).
 
 The game now *moves* well: every action has its effect, cards fly and cast, shots cross the map,
-the lobby has a live backdrop, and there is music. What's still missing is **information and
-identity at the moments that matter**: the market still hides the card art, the game over
-doesn't say what happened, and the players have no faces.
+the market shows the card art and deck backs, the game over shows the match stats, the lobby has a
+live backdrop, and there is music. What's still missing is **drama in battles and identity**:
+battles still resolve in a static card, and the players have no faces.
 
-**Top three now:** [1. Card art in the market](#1-card-art-in-the-market),
-[2. A game over that tells the story](#2-a-game-over-that-tells-the-story),
-[3. Battles as a show](#3-battles-as-a-show).
+**Top three now:** [2. A game over that tells the story](#2-a-game-over-that-tells-the-story)
+(headline & timeline), [3. Battles as a show](#3-battles-as-a-show),
+[4. Ambient life on the board](#4-ambient-life-on-the-board).
 
 ---
 
@@ -41,7 +41,7 @@ doesn't say what happened, and the players have no faces.
 - **Card art in the market** (19 October 2026, idea 1 below): each market card has a band of its printed
   illustration across the top with its name and category icon on it, and the deck piles show the printed card back
   ([Card.tsx](../apps/web/src/components/Card.tsx), [Market.tsx](../apps/web/src/components/Market.tsx)).
-  Cards whose text is cut short offer "more", which shows the whole card. Not done yet: thumbnails on the
+  Cards whose text is cut short fade out over their last line; clicking any card shows the whole printed card. Not done yet: thumbnails on the
   skill chips in the player list.
 - **Tile art, round one** (picked 17 October 2026 from seven ideas with three candidates each):
   film-style planet lighting (hard terminator, edge-lit atmosphere, back light), spaces and cube slots as etched wells, and a black hole, the old rift and a supernova on the

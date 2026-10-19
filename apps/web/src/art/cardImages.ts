@@ -27,7 +27,18 @@ function drawnOnce<K>(draw: (key: K) => Promise<string>) {
     get(key: K) {
       let image = pending.get(key);
       if (!image) {
-        image = draw(key).then((url) => (done.set(key, url), url));
+        image = draw(key).then(
+          (url) => {
+            const old = done.get(key);
+            if (old && old !== url && old.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(old), 1000);
+            done.set(key, url);
+            return url;
+          },
+          (e) => {
+            pending.delete(key);
+            throw e;
+          },
+        );
         pending.set(key, image);
       }
       return image;
@@ -84,11 +95,12 @@ const fronts = drawnOnce(async (id: string) => {
   const face = faceOf(id);
   // The layout is measured with the page's fonts; the key leaves out the embedded font files.
   await cardFontsReady();
-  const key = hash(cardSvg(face, { rounded: true, measure }));
-  const { url, kept } = await drawKept(id, key, WIDTH, HEIGHT, async () => {
+  const bare = cardSvg(face, { rounded: true, measure });
+  const { url, kept } = await drawKept(id, hash(bare), WIDTH, HEIGHT, async () => {
     const fontCss = await cardFontCss();
     // Without its fonts (offline) a card falls back to system lettering: shown, but not kept.
-    return { svg: cardSvg(face, { rounded: true, measure, fontCss }), keep: !!fontCss };
+    const svg = fontCss ? bare.replace('<defs>', `<defs><style>${fontCss}</style>`) : bare;
+    return { svg, keep: !!fontCss };
   });
   // Drawn without its fonts: drawn again when next asked for, once back online.
   if (!kept) addEventListener('online', () => fronts.forget(id), { once: true });

@@ -70,9 +70,9 @@ export function openGameLog(secret: string) {
   const receive = (e: NostrEvent, trusted = false) => {
     if (events.has(e.id)) return false;
     const p = decodeEvent(keys, e, trusted);
-    if (!p) return false;
+    if (!p || !timeline.add(p)) return false;
     events.set(e.id, e);
-    return timeline.add(p);
+    return true;
   };
   const load = (): number | undefined => {
     const saved = loadLog(keys.tag);

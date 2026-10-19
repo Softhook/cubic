@@ -1,4 +1,4 @@
-import { hash, rng, type Rng } from './rng';
+import { rng, type Rng } from './rng';
 import { starfield, type Box } from './starfield';
 import { dieCut, document, esc, hsl, join, n, type Fragment } from './svg';
 import { CARD_CATEGORIES, FONTS, INK, PLAYER_HUES } from './tokens';
@@ -111,11 +111,9 @@ const clipRect = (id: string, b: Box, r = 0) => `<clipPath id="${id}">${rect(b, 
 /** The page area: trim size, plus the bleed when asked. */
 const pageArea = (bleed?: boolean, b = bleed ? CARD.bleed : 0): Box => ({ x: -b, y: -b, w: CARD.w + 2 * b, h: CARD.h + 2 * b });
 
-const fontStyle = (o: { fontCss?: string }) => (o.fontCss ? `<style>${o.fontCss}</style>` : '');
-
 /** The card as a document, with die-cut corners when `rounded`. */
-function finish(all: Fragment, area: Box, id: string, rounded?: boolean): string {
-  return document(rounded ? dieCut(all, id, CARD.w, CARD.h, CARD.corner) : all, area);
+function finish(all: Fragment, area: Box, id: string, rounded?: boolean, fontCss?: string): string {
+  return document(rounded ? dieCut(all, id, CARD.w, CARD.h, CARD.corner) : all, area, true, fontCss);
 }
 
 // ---------------------------------------------------------------------------
@@ -273,9 +271,9 @@ export function cardSvg(face: CardFace, o: CardOptions = {}): string {
   const cat = categoryOf(face);
   const p = cardPalette(DECK_INFO[face.deck].light, cat.hue);
   const area = pageArea(o.bleed);
-  const base: Fragment = { defs: fontStyle(o), body: rect(area, `fill="${p.paper}"`) };
+  const base: Fragment = { defs: '', body: rect(area, `fill="${p.paper}"`) };
   const front: Fragment = { defs: '', body: hud(face, cat.label) + textPanel(face, cat.name, area, p, o.measure ?? estimateWidth) };
-  return finish(join(base, art(face, id, cat.hue, rng(hash(`card:${face.id}`))), front), area, id, o.rounded);
+  return finish(join(base, art(face, id, cat.hue, rng(`card:${face.id}`)), front), area, id, o.rounded, o.fontCss);
 }
 
 /** The back of a deck's cards; `plain` leaves out the lettering (the game's narrow deck piles). */
@@ -286,7 +284,7 @@ export function cardBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure'> & { 
   const area = pageArea(o.bleed);
   const hue = info.backHue;
   const p = cardPalette(info.light, hue);
-  const r = rng(hash(`back:${deck}`));
+  const r = rng(`back:${deck}`);
   const inset = 4;
   const win: Box = info.light ? { x: inset, y: inset, w: W - 2 * inset, h: H - 2 * inset } : pageArea(true);
   const sky = starfield({
@@ -309,11 +307,11 @@ export function cardBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure'> & { 
     ? rect(win, `rx="2.6" fill="none" stroke="${p.accent}" stroke-width=".4"`)
     : `<rect x="3" y="3" width="${n(W - 6)}" height="${n(H - 6)}" rx="1.6" fill="none" stroke="${hsl(hue, 80, 70)}" stroke-width=".3" opacity=".5"/>`;
   const all: Fragment = {
-    defs: fontStyle(o) + sky.defs + halo.defs + clipRect(`${id}-win`, win, info.light ? 2.6 : 0),
+    defs: sky.defs + halo.defs + clipRect(`${id}-win`, win, info.light ? 2.6 : 0),
     body:
       rect(area, `fill="${p.paper}"`) +
       `<g clip-path="url(#${id}-win)">${sky.body}${halo.body}${orbits}${die(cx, cy, 11, 6, hue)}${o.plain ? '' : title + sub}</g>` +
       border,
   };
-  return finish(all, area, id, o.rounded);
+  return finish(all, area, id, o.rounded, o.fontCss);
 }

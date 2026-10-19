@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CARD_CATEGORIES, cardBackSvg, cardIllustration, cardSvg, deckInfo, type CardDeck, type CardFace } from '@quantum/art';
-import { DECKS, LINEAGE, cardFontCss, cardsOf, lineageNote, measure, useFontCss, type Deck, type Redesign } from './cards';
+import { DECKS, LINEAGE, cardFontCss, cardsOf, lineageNote, measure, useFontCss, useSvgUrl, type Deck, type Redesign } from './cards';
 import { PIECES, type Printable } from '../print/pieces';
 import { PrintPanel } from '../print/PrintPanel';
 import { LabHeader } from './LabHeader';
@@ -8,9 +8,9 @@ import { Segmented } from '../components/Segmented';
 
 /**
  * Art Lab, cards page (#lab/cards): every advance card at poker size (63.5 × 88.9 mm) with its
- * deck's back, and exports for print: single cards, a ZIP of the whole set, and print sheets.
- * Cards show by lineage (Community redesigns beside the 2013 card they redesign, then each
- * edition's own designs); the print set is chosen by edition.
+ * deck's back, and exports for print: single cards, a ZIP of the whole set, CMYK PDFs for a press,
+ * and print sheets. Cards show by lineage (Community redesigns beside the 2013 card they redesign,
+ * then each edition's own designs); the print set is chosen by edition.
  */
 
 type Edition = Deck['edition'];
@@ -94,11 +94,7 @@ export function CardLab() {
   }, [all, fonts, svgOf]);
   useEffect(() => () => thumbs.forEach((u) => URL.revokeObjectURL(u)), [thumbs]);
 
-  const detail = useMemo(
-    () => (fonts === null ? '' : URL.createObjectURL(new Blob([svgOf(item, { bleed })], { type: 'image/svg+xml' }))),
-    [item, bleed, fonts, svgOf],
-  );
-  useEffect(() => () => URL.revokeObjectURL(detail), [detail]);
+  const detail = useSvgUrl(fonts === null ? '' : svgOf(item, { bleed }));
 
   const fileName = (i: Item) => (i.face ? `${String(i.face.index).padStart(2, '0')}-${i.face.id}` : 'back');
   const printable = (i: Item): Printable => ({ name: `${i.deck}/${fileName(i)}`, svg: (b) => svgOf(i, { bleed: b }) });

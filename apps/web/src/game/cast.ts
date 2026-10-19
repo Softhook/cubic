@@ -15,6 +15,7 @@ export function castOf(before: GameState, game: GameState): LogEntry | undefined
   if (head && LANDING.has(head.kind) && 'player' in head) {
     for (let i = before.log.length - 1; i >= 0; i--) {
       const e = before.log[i];
+      if (e.turn || e.event === 'expansion') break;
       if (e.event !== 'cardPlayed') continue;
       if (e.player === head.player) return e;
       break;
@@ -25,7 +26,7 @@ export function castOf(before: GameState, game: GameState): LogEntry | undefined
 }
 
 /** Whether the game waits for a Tactic to land (its target, its gates…): until then the card has done nothing. */
-export const landing = (s: GameState) => LANDING.has(s.pending[0]?.kind ?? '');
+export const landing = (s: GameState) => s.pending.some((p) => LANDING.has(p.kind));
 
 /** Whether the AI is about to settle a Tactic it has just played: it waits a little, so the card is read first. */
 export const landingNext = (s: GameState) => landing(s) && s.log.at(-1)?.event === 'cardPlayed';

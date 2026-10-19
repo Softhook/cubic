@@ -51,6 +51,7 @@ export function Board({
   const tip = useZoomIntro(game, ctl, zoom, !!introduce);
   useFollowMoves(game, ctl, spots, zoom, scene);
   const [inspect, setInspect] = useState<Inspect | null>(null);
+  if (inspect && 'ship' in inspect && !spots.has(inspect.ship)) setInspect(null);
   // The info closes itself on a tap elsewhere; a tap on the same thing again closes it too.
   const show = (what: Inspect) => setInspect((cur) => (cur && inspectKey(cur) === inspectKey(what) ? null : what));
   // Another player's ship shows how far it can move: while a finger is on it, or while a mouse click's info is open.

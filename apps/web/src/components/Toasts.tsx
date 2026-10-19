@@ -56,22 +56,26 @@ const shownFor = (e: LogEntry) => (e.event === 'cardTaken' ? TAKEN_MS : PLAYED_M
 export function PlayedCard({
   game,
   mine,
+  jumps,
   review,
   hold,
 }: {
   game: GameState;
   mine: (p: PlayerId) => boolean;
+  jumps?: number;
   review?: readonly LogEntry[];
   hold?: boolean;
 }) {
   // The last log entry already seen: only plays made while the screen is open are shown.
   const seen = useRef(game.log.at(-1)?.id ?? 0);
+  const jumped = useRef(jumps);
   const [queue, setQueue] = useState<LogEntry[]>([]);
   useEffect(() => {
     const last = game.log.at(-1)?.id ?? 0;
-    // An undo takes entries back; their ids are used again.
-    if (last <= seen.current) {
+    // An undo takes entries back; a playback jump skips over them.
+    if (last <= seen.current || jumped.current !== jumps) {
       seen.current = last;
+      jumped.current = jumps;
       return;
     }
     const fresh = game.log.filter((e) => e.id > seen.current);
@@ -79,12 +83,12 @@ export function PlayedCard({
     // A start-of-turn bonus is news only the first turn it comes (Arrogant, every turn its player leads).
     const played = fresh.filter((e) => e.card && e.player !== undefined && !mine(e.player) && !repeatsLastTurn(game.log, e));
     if (played.length) setQueue((q) => [...q, ...played]);
-  }, [game, mine]);
+  }, [game, mine, jumps]);
 
   const reviewed = review?.find((e) => e.card && e.player !== undefined);
   const shown = review ? reviewed : hold ? undefined : queue[0];
   const art = useRef<HTMLDivElement>(null);
-  const { beams, flash, spent } = useCardCasts(game, mine, review ? undefined : shown, art);
+  const { beams, flash, spent } = useCardCasts(game, mine, review ? undefined : shown, art, jumps);
   useEffect(() => {
     if (!shown || review) return;
     const t = window.setTimeout(() => setQueue((q) => q.slice(1)), shownFor(shown));

@@ -53,8 +53,9 @@ const CANVAS_PIXELS = 16_000_000;
  */
 export async function* drawBands(svg: string, w: number, h: number, background: string, overlap = 0, canvasPixels = CANVAS_PIXELS) {
   const img = await loadSvg(svg);
-  const pad = w * h <= canvasPixels ? 0 : overlap;
-  const rows = pad ? Math.max(1, Math.floor(canvasPixels / w) - 2 * pad) : h;
+  const single = w * h <= canvasPixels;
+  const pad = single ? 0 : overlap;
+  const rows = single ? h : Math.max(1, Math.floor(canvasPixels / w) - 2 * pad);
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = Math.min(h, rows + 2 * pad);
@@ -81,5 +82,10 @@ const encode = (canvas: HTMLCanvasElement, type = 'image/png', quality?: number)
 
 /** Draws an SVG document to a `w` × `h` px bitmap, encoded as `type`. */
 export async function rasterise(svg: string, w: number, h: number, type = 'image/png', quality?: number): Promise<Blob> {
-  return encode(await drawSvg(svg, w, h), type, quality);
+  const canvas = await drawSvg(svg, w, h);
+  try {
+    return await encode(canvas, type, quality);
+  } finally {
+    canvas.width = canvas.height = 0;
+  }
 }

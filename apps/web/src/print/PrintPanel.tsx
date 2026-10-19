@@ -65,7 +65,7 @@ export function DeepBlack({ deep, onDeep }: { deep: boolean; onDeep: (on: boolea
 
 /** The note under a CMYK export with the deep black on. */
 export const DEEP_NOTE =
-  'Deep black: the space background and anything darker print as a 100 % K rich black (about L* 9 against the profile’s 12–14), still within 300 % ink; the files are tagged “-deep”. Check it on a proof, and that the printer prints the CMYK as it is.';
+  'Deep black: the space background and anything darker print as a 100 % K rich black (about L* 11.7 against the profile’s 13.7), still within 300 % ink; the files are tagged “-deep”. Check it on a proof, and that the printer prints the CMYK as it is.';
 
 /** An export's progress while it runs (useExport), or why it failed. */
 export function ExportStatus({ progress, error }: { progress: string | null; error: string | null }) {

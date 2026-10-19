@@ -10,7 +10,7 @@ How the code is organised, and where to make the common changes.
 | [`packages/ai`](../packages/ai) | AI players in five levels ([AI.md](AI.md)). Chooses among `legalActions(state)`; never sees the real RNG or deck order. | engine |
 | [`packages/art`](../packages/art) | Artwork as SVG text: tiles, planets, starfields ([GRAPHICS.md](GRAPHICS.md)). Plain functions, seeded, in mm; shared by the game and print. | — |
 | [`packages/online`](../packages/online) | Online play without a server ([MULTIPLAYER.md](MULTIPLAYER.md)): a game as a log of signed, encrypted posts; `Timeline` replays it with the engine so every browser computes the same game. No network code. | engine |
-| [`apps/web`](../apps/web) | React UI. Renders a state, sends actions. Holds no rules of its own: buttons and highlights come from `legalActions` ([`game/legal.ts`](../apps/web/src/game/legal.ts)). The Art Lab is at `#lab` (tiles), `#lab/cards` and `#lab/aid` (player aid); the player manual at `#rulebook` (the same `Manual` component as the in-game How to play dialog). | engine, ai, art, online |
+| [`apps/web`](../apps/web) | React UI. Renders a state, sends actions. Holds no rules of its own: buttons and highlights come from `legalActions` ([`game/legal.ts`](../apps/web/src/game/legal.ts)). The Art Lab is at `#lab` (tiles), `#lab/cards`, `#lab/aid` (player aid) and `#lab/proof` (press test); the player manual at `#rulebook` (the same `Manual` component as the in-game How to play dialog). | engine, ai, art, online |
 | [`data/`](../data) | Cards and maps as YAML, compiled to JSON by `npm run data`. | — |
 
 ## Engine modules
@@ -60,9 +60,11 @@ In [`apps/web/src/game`](../apps/web/src/game):
 | `useGame.ts` | The game being played: state, `dispatch`, undo (and Ctrl/Cmd+Z), engine-error reporting |
 | `useAiDriver.ts` | Moves for the AI players, with delays so humans can follow; AI responses in combat |
 | `aiClient.ts`, `aiWorker.ts` | Runs the AI in a Web Worker, falling back to the main thread |
-| `toasts.ts` | The toast and sound for each logged event |
+| `toasts.ts`, `sounds.ts` | The toast and sound for each step, derived from what changed and the new log entries |
+| `strike.ts`, `cast.ts`, `useTransient.ts` | Ships destroyed by a step, which card a step is the doing of, and transient step effects |
+| `review.ts`, `past.ts` | Looking back at earlier positions from the log |
 | `controller.ts` | The human's selection (`Sel`) and what a click on a die, space or planet does |
-| `highlights.ts` | `highlightsFor()`: what lights up on the board, derived from the legal actions |
+| `highlights.ts`, `routes.ts` | `highlightsFor()` and flight paths on the board, derived from the legal actions |
 | `hints.ts` | The one-line hint for the current decision or selection |
 | `legal.ts` | The legal actions indexed by type, for buttons and highlights |
 | `view.ts` | `GameView`: a game as the screen sees it, local (`useGame`) or online (`useOnlineGame`) |

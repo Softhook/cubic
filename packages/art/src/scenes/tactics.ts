@@ -1,4 +1,5 @@
 import { hsl, n } from '../svg';
+import { CARD_CATEGORIES } from '../tokens';
 import {
   arrowPath,
   at,
@@ -80,15 +81,16 @@ export const TACTIC_SCENES: Record<string, Illustration> = {
     draw: ({ id, r, hue, box }) => {
       const [cx, cy] = at(box, 0.5, 1.3);
       const out = [];
-      const hues = [192, 352, 138, 268, 42, 218, 24];
-      for (let i = 0; i < 7; i++) {
+      const cats = ['movement', 'combat', 'conquer', 'research', 'action', 'ship', 'card'] as const;
+      for (let i = 0; i < cats.length; i++) {
         const a = (i - 3) * 13;
         const t = (a * Math.PI) / 180;
         const lift = i === 4 ? 6 : 0;
+        const icon = cats[i];
         out.push(
-          miniCard(`${id}-c${i}`, cx + Math.sin(t) * (34 + lift), cy - Math.cos(t) * (34 + lift), 9, hues[i], {
+          miniCard(`${id}-c${i}`, cx + Math.sin(t) * (34 + lift), cy - Math.cos(t) * (34 + lift), 9, CARD_CATEGORIES[icon].hue, {
             rot: a,
-            icon: ['movement', 'combat', 'conquer', 'research', 'action', 'ship', 'card'][i],
+            icon,
             state: i === 4 ? 'glow' : 'normal',
           }),
         );

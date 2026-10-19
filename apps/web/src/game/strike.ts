@@ -1,5 +1,6 @@
 import type { CombatPending, Die, GameState } from '@quantum/engine';
 import { ARC, LANCE, SHOT } from '../beats';
+import { lastLogId } from './useTransient';
 
 /**
  * When a card's blow lands, in ms (beats.ts): Show of Force's lance reaches the ship (.cfx-lance),
@@ -13,13 +14,16 @@ export const strikeOf = (before: GameState) => STRIKE_MS[before.pending[0]?.kind
 
 /**
  * The ships the step from `before` to `game` destroys, in `before`'s order: from the map to the scrapyard.
- * Reorganization takes the ships it re-rolls there too, a recall rather than a loss (its roll is the dice's
- * own clatter). One list for all three, so each ship's boom, blast and wait line up: heard (sounds), seen
- * (Explosions) and kept on the map until then (staging).
+ * Unveil the Fleet, Reorganization and Resourceful take the player's own ships there too — recalled or
+ * scrapped rather than blown up (CardEffects draws their cloak or fold). One list for all three, so each
+ * ship's boom, blast and wait line up: heard (sounds), seen (Explosions) and kept on the map until then
+ * (staging).
  */
 export function destroyedOf(before: GameState, game: GameState): Die[] {
   const head = before.pending[0];
   if (head?.kind === 'unveil' && head.reorganize) return [];
+  const last = lastLogId(before);
+  if (game.log.some((e) => e.id > last && (e.card === 'unveil-the-fleet' || e.card === 'resourceful'))) return [];
   return before.dice.filter((d) => d.loc.zone === 'board' && game.dice.find((x) => x.id === d.id)?.loc.zone === 'scrapyard');
 }
 

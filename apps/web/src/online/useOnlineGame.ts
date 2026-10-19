@@ -176,7 +176,7 @@ function usePostLog(secret: string) {
   // what's newer. It starts as the loaded one, which holds for the loaded events and so for any set
   // they grow into, whatever other tabs save meanwhile.
   const syncedAt = useRef<number | undefined>(undefined);
-  const save = useThrottled(() => saveEvents(keys.tag, [...events.values()], syncedAt.current), 400);
+  const save = useThrottled(() => saveEvents(keys.tag, [...events.values()], syncedAt.current), 400, keys.tag);
 
   useEffect(() => {
     let l: RelayLink | null = null;
@@ -373,10 +373,9 @@ function useVisible(onShow: () => void) {
   return visible;
 }
 
-/** `fn` at most once per `ms`; anything still waiting runs when the page or the game closes. */
-function useThrottled(fn: () => void, ms: number) {
+/** `fn` at most once per `ms`; anything still waiting runs when the page or the game (`key`) closes. */
+function useThrottled(fn: () => void, ms: number, key?: string) {
   const latest = useRef(fn);
-  latest.current = fn;
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => {
     const flush = () => {
@@ -390,7 +389,10 @@ function useThrottled(fn: () => void, ms: number) {
       window.removeEventListener('pagehide', flush);
       flush();
     };
-  }, []);
+  }, [key]);
+  useEffect(() => {
+    latest.current = fn;
+  });
   return useCallback(() => {
     if (timer.current !== undefined) return;
     timer.current = window.setTimeout(() => {

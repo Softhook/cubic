@@ -147,6 +147,12 @@ describe('online games in storage', () => {
       expect(openGameLog(game).load()).toBeUndefined();
       store.setItem(`quantum.online.events.${tag}`, JSON.stringify({ events: [event, 42], syncedAt: 1234 }));
       expect(openGameLog(game).load()).toBeUndefined();
+      // Valid encryption, malformed post body: rejected from both timeline and events.
+      const { event: bad } = encodePost(gameKeys(game), generateSecretKey(), { t: 'nope' } as never, null);
+      saveEvents(tag, [event, bad], 1234);
+      const log = openGameLog(game);
+      expect(log.load()).toBeUndefined();
+      expect(log.events.has(bad.id)).toBe(false);
     });
 
     it('reads the older saves, a bare array of events, as never synced', () => {

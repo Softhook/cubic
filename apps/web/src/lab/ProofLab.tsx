@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { PRESS_TEST, cardSvg, dataUrl, pressTestSvg, tileSpec, tileSvg } from '@quantum/art';
-import { DECKS, cardFontCss, measure, tileFontCss } from './cards';
+import { DECKS, cardFontCss, measure, tileFontCss, useFontCss, useSvgUrl } from './cards';
 import { exportCmykPdf, exportPng } from '../print/exports';
 import type { Format, Printable } from '../print/pieces';
 import { DEEP_NOTE, DeepBlack, ExportStatus, Space, useDeepBlack } from '../print/PrintPanel';
@@ -20,21 +20,19 @@ const PAGE: Format = { id: 'proof', w: PRESS_TEST.w, h: PRESS_TEST.h, bleed: 0, 
  * run (proof.ts): as the CMYK PDF a print service gets, or as an RGB PNG for one that converts itself.
  */
 export function ProofLab() {
-  const [fonts, setFonts] = useState<{ card: string; tile: string } | null>(null);
+  const cardFont = useFontCss(cardFontCss);
+  const tileFont = useFontCss(tileFontCss);
   const { run, progress, error } = useExport();
   const [deep, setDeep] = useDeepBlack();
 
-  useEffect(() => {
-    void Promise.all([cardFontCss(), tileFontCss()]).then(([card, tile]) => setFonts({ card, tile }));
-  }, []);
-
   const svg = useMemo(() => {
-    if (!fonts) return '';
-    const tile = dataUrl(tileSvg(tileSpec(TILE_ID), { markings: true, fontCss: fonts.tile }));
-    const card = dataUrl(cardSvg(CARD, { measure, fontCss: fonts.card }));
-    return pressTestSvg({ tile, card, fontCss: fonts.card + fonts.tile });
-  }, [fonts]);
-  const missing = !!fonts && (!fonts.card || !fonts.tile);
+    if (cardFont === null || tileFont === null) return '';
+    const tile = dataUrl(tileSvg(tileSpec(TILE_ID), { markings: true, fontCss: tileFont }));
+    const card = dataUrl(cardSvg(CARD, { measure, fontCss: cardFont }));
+    return pressTestSvg({ tile, card, fontCss: cardFont + tileFont });
+  }, [cardFont, tileFont]);
+  const detail = useSvgUrl(svg);
+  const missing = cardFont === '' || tileFont === '';
 
   const page: Printable = { name: 'a4', svg: () => svg };
   const busy = !svg || missing || progress !== null;
@@ -43,8 +41,8 @@ export function ProofLab() {
     <div className="lab">
       <LabHeader page="proof" />
       <div className="lab-aid-page">
-        {svg ? (
-          <img className="lab-aid" style={{ aspectRatio: '210 / 297' }} src={dataUrl(svg)} alt="Press test" />
+        {detail ? (
+          <img className="lab-aid" style={{ aspectRatio: '210 / 297' }} src={detail} alt="Press test" />
         ) : (
           <span className="lab-aid lab-aid-ph" style={{ aspectRatio: '210 / 297' }} />
         )}

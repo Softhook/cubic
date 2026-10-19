@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { same, type Cell, type GameState, type LogEntry, type PlayerId } from '@quantum/engine';
+import { effectOf, same, type Cell, type GameState, type LogEntry, type PlayerId } from '@quantum/engine';
 import { castOf, landing } from '../game/cast';
 import { reducedMotion } from '../game/useMediaQuery';
 import { lastLogId, useTransient } from '../game/useTransient';
@@ -120,23 +120,34 @@ function gainTargets(game: GameState, e: LogEntry): Target[] {
  * What the step from `before` to `game` marks: the spaces of its map effects (CardEffects) and new Warp
  * Gates, and the spots of its panel effects, less what skills firing by themselves in it gave (they cast
  * for themselves). With none, the card's player's row (Momentum's extra turn), unless the card is yet to
- * land (Show of Force before its target is chosen).
+ * land (Show of Force before its target is chosen) or has just finished landing (unveilDone).
  */
 function stepTargets(before: GameState, game: GameState, player: number): Target[] {
+  const last = lastLogId(before);
   const cells = cardEffectsOf(before, game).flatMap((e) => (e.to ? [e.at, e.to] : [e.at]));
   cells.push(...game.gates.filter((g) => !before.gates.some((x) => same(x, g))));
   const out = cells.map((c) => cellTarget(game, c));
   // What the step's skill bonuses account for, by player and track.
   const claimed = new Map<string, number>();
   for (const e of game.log)
-    if (e.id > lastLogId(before) && e.gains)
+    if (e.id > last && e.gains)
       for (const [k, n] of Object.entries(e.gains)) claimed.set(`${e.player}:${k}`, (claimed.get(`${e.player}:${k}`) ?? 0) + (n ?? 0));
   for (const e of panelEffectsOf(before, game)) {
-    // A change the bonuses fully account for isn't the card's (Plundering's research after Show of Force).
-    if ('from' in e && e.to - e.from <= (claimed.get(`${e.player}:${e.spot}`) ?? 0)) continue;
+    // Another player's research changing when the turn moves on is their start-of-turn gain (Brilliant, Void), not the card's.
+    if (e.spot === 'research' && e.player !== player) continue;
+    // A gain the bonuses fully account for isn't the card's (Plundering's research after Show of Force).
+    if ('from' in e && e.to > e.from && e.to - e.from <= (claimed.get(`${e.player}:${e.spot}`) ?? 0)) continue;
     out.push(panelTarget(e.player, e.spot === 'skills' ? undefined : e.spot));
   }
-  if (!out.length && !landing(game)) out.push(panelTarget(player));
+  // Sabotage played at the end of a turn: the next player's penalty is already taken from their new turn's actions.
+  if (
+    game.turn.number !== before.turn.number &&
+    game.turn.player !== player &&
+    game.log.some((e) => e.id > last && e.card && effectOf(e.card) === 'sabotage')
+  ) {
+    out.push(actionsTarget(game, game.turn.player));
+  }
+  if (!out.length && !landing(before) && !landing(game)) out.push(panelTarget(player));
   return out;
 }
 
@@ -209,11 +220,13 @@ export function useCardCasts(
   mine: (p: PlayerId) => boolean,
   shown: LogEntry | undefined,
   art: RefObject<HTMLElement | null>,
+  jumps?: number,
 ) {
   const [beams, show] = useTransient<Beam>(BEAM_MS);
   // The card that last cast, how many times, and whether at the map.
   const [casts, setCasts] = useState<{ id: number; n: number; map: boolean }>();
   const prev = useRef(game);
+  const jumped = useRef(jumps);
   // A step whose card is about to come up: cast once it has.
   const waiting = useRef<{ id: number; before: GameState; game: GameState; at: number }>();
   const current = useRef(shown);
@@ -235,12 +248,16 @@ export function useCardCasts(
   useEffect(() => {
     const before = prev.current;
     prev.current = game;
+    if (jumped.current !== jumps) {
+      jumped.current = jumps;
+      return;
+    }
     if (lastLogId(game) <= lastLogId(before) || reducedMotion()) return;
     const e = castOf(before, game);
     if (!e || e.player === undefined || e.gains || mine(e.player)) return;
     if (current.current?.id === e.id) castRef.current(e, stepTargets(before, game, e.player), `${lastLogId(game)}`);
     else if (e.id > lastLogId(before)) waiting.current = { id: e.id, before, game, at: performance.now() };
-  }, [game, mine]);
+  }, [game, mine, jumps]);
 
   const shownId = shown?.id;
   useEffect(() => {
