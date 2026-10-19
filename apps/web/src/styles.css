@@ -1057,8 +1057,9 @@ input { font: inherit; }
 .qcard-kind { font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; opacity: .6; white-space: nowrap; }
 .qcard-badge { flex: none; align-self: flex-end; margin-top: 4px; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--cat); color: #fff; }
 /* The art band: the middle of the printed card's illustration, edge to edge, its category's colour under it
-   (instead of the stripe on top). The name sits on the art, in place of the category label and the name line,
-   so the rules text below has their room; its tag is no bigger than the name, to hide as little art as it can. */
+   (instead of the stripe on top). The name sits on the art with its category's icon, in place of the category
+   label and the name line, so the rules text below has their room; its tag is no bigger than they are, to hide
+   as little art as it can. */
 .qcard-art {
   position: relative; flex: none; margin: -9px -10px 6px; aspect-ratio: 100 / 38; max-height: 50px;
   background: linear-gradient(180deg, color-mix(in srgb, var(--cat) 30%, #0b1020), #0b1020) center 14% / 100% auto no-repeat;
@@ -1068,10 +1069,11 @@ input { font: inherit; }
 .qcard.has-art::before { display: none; }
 .qcard-art-name {
   position: absolute; top: 5px; left: 5px; max-width: calc(100% - 10px);
-  padding: 2px 5px; border-radius: 5px;
+  display: inline-flex; align-items: flex-start; gap: 3px; padding: 2px 5px 2px 4px; border-radius: 5px;
   background: rgba(5,8,20,.8); color: #fff; overflow-wrap: anywhere;
   font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: .03em; line-height: 1.15;
 }
+.qcard-art-name > svg { flex: none; width: 1em; height: 1em; margin-top: .07em; color: var(--cat); }
 .qcard.has-art .qcard-top, .qcard.has-art .qcard-name { display: none; }
 .qcard-name { font-family: var(--display); font-weight: 700; font-size: 14px; letter-spacing: .03em; margin-top: 6px; line-height: 1.15; }
 .qcard-sub { font-size: 10.5px; font-weight: 600; opacity: .6; margin-top: 2px; }
