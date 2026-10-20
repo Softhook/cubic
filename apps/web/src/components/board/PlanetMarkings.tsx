@@ -25,6 +25,7 @@ export function PlanetNumber({ n, x, y, size, className }: { n: number; x: numbe
 /**
  * A planet's live markings over its tile art, placed and sized as on the printed tile: its number and
  * cube spaces. `cubes[i]` is the colour of the cube in space i. Used by the board and the manual alike.
+ * `corner` moves the number from the printed bottom right to another corner (layers.ts `numberCorner`).
  */
 export function PlanetMarkings({
   cx,
@@ -35,6 +36,7 @@ export function PlanetMarkings({
   cubes,
   numberClass,
   cubeClass,
+  corner = { x: 1, y: 1 },
 }: {
   cx: number;
   cy: number;
@@ -45,6 +47,7 @@ export function PlanetMarkings({
   cubes: readonly (string | undefined)[];
   numberClass?: string;
   cubeClass?: string;
+  corner?: { x: 1 | -1; y: 1 | -1 };
 }) {
   const at = numberPlacement(n);
   const slot = CUBE_PAD.size * mm;
@@ -53,7 +56,13 @@ export function PlanetMarkings({
   const wells = pads.flatMap((q, i) => (cubes[i] ? [] : [well(q.x, q.y, CUBE_PAD.size, CUBE_PAD.corner, WELL.cube)])).join('');
   return (
     <>
-      <PlanetNumber n={n} x={cx + at.x * mm} y={cy + (at.y + at.size * 0.4) * mm} size={at.size * mm} className={numberClass} />
+      <PlanetNumber
+        n={n}
+        x={cx + corner.x * at.x * mm}
+        y={cy + (corner.y * at.y + at.size * 0.4) * mm}
+        size={at.size * mm}
+        className={numberClass}
+      />
       {wells && <g transform={`translate(${cx} ${cy}) scale(${mm})`} dangerouslySetInnerHTML={{ __html: wells }} />}
       {pads.map((q, i) => {
         const colour = cubes[i];

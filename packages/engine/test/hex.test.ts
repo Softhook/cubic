@@ -27,7 +27,8 @@ import {
 } from '../src';
 import { playAiGame, quickStart } from './helpers';
 
-const HEX_MAPS = MAPS.filter((m) => m.grid === 'hex');
+// The basic maps on hex tiles; the drift maps (offset.test.ts) put their planets off the middle.
+const HEX_MAPS = MAPS.filter((m) => m.group === 'hex');
 const BASE = quickStart(2, 1, 'basic', 'alpha-hex');
 /** Alpha Sector (hex)'s middle planet, the 8: every other tile is next to it but the two starts. */
 const CENTRE = BASE.board.planets.find((p) => p.number === 8)!;

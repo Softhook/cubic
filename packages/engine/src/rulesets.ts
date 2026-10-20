@@ -43,8 +43,8 @@ export const RULESETS: Record<GameMode, RuleSet> = {
     researchLimit: 6,
     startingMissiles: 0,
     reconfigure: 'different',
-    // The basic maps on hex tiles too (docs/HEX.md).
-    mapGroups: [...OFFICIAL_MAPS, 'hex'],
+    // The basic maps on hex tiles too, and maps with planets off their tiles' middles (docs/HEX.md).
+    mapGroups: [...OFFICIAL_MAPS, 'hex', 'drift'],
     ships: CLASSIC_SHIPS,
   },
   original: {

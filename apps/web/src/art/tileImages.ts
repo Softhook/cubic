@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { TILE_SET, dataUrl, hash, tileSpec, tileSvg } from '@quantum/art';
+import { TILE_SET, bodySvg, dataUrl, hash, skySvg, tileSpec } from '@quantum/art';
 import { rasterise } from '../files';
 import { idle, storeImage, storedImage } from './imageStore';
 
 /**
  * Tile artwork as ready-drawn images. Drawing a tile's SVG (its noise filters) takes ~45 ms, so each
- * tile is drawn once to a bitmap and kept in IndexedDB (imageStore); later games and window resizes
- * reuse it. The stored image carries a hash of the SVG, so changing the artwork redraws it automatically.
+ * layer of a tile is drawn once to a bitmap and kept in IndexedDB (imageStore); later games and window
+ * resizes reuse it. The stored image carries a hash of the SVG, so changing the artwork redraws it.
  */
 
 /** Pixel size of a stored tile: the largest on-screen tile (3 × 92 px cells) at 2× device pixels. */
@@ -28,21 +28,21 @@ async function load(id: string, svg: string): Promise<string> {
 }
 
 /**
- * How a tile is drawn for the map: `square` as printed, with its space pads and their hatching (the board
- * draws the number and cubes live); `art` only the painting, starfield and planet, which a hex map cuts
- * its 7-hex tiles from and draws its own spaces on.
+ * The layers of a tile the map is drawn from (MapTiles): its sky for square or hex spaces, and its body, the
+ * planet and moons or a Void tile's heart, which the map places wherever the planet sits. The spaces,
+ * labels and markings are drawn live over them.
  */
-export type TileLook = 'square' | 'art';
+export type TileLayer = 'sky-square' | 'sky-hex' | 'body';
 
-/** What a tile's image is stored and cached as: the square look under the tile's id, so stored images still match. */
-const imageName = (id: string, look: TileLook) => (look === 'square' ? id : `${id}:${look}`);
+const layerSvg = (id: string, layer: TileLayer) =>
+  layer === 'body' ? bodySvg(tileSpec(id)) : skySvg(tileSpec(id), layer === 'sky-hex' ? 'hex' : 'square');
 
-/** The image URL for a tile (`p7-01`…), drawing and storing it the first time. */
-function tileImage(id: string, look: TileLook = 'square'): Promise<string> {
-  const name = imageName(id, look);
+/** The image URL for a layer of a tile (`p7-01`…), drawing and storing it the first time. */
+function tileImage(id: string, layer: TileLayer): Promise<string> {
+  const name = `${id}:${layer}`;
   let image = images.get(name);
   if (!image) {
-    const svg = look === 'square' ? tileSvg(tileSpec(id), { rounded: true, markings: 'spaces' }) : tileSvg(tileSpec(id), { only: 'art' });
+    const svg = layerSvg(id, layer);
     // If drawing or storage fails, fall back to the SVG itself (slower to show, same look).
     image = load(name, svg).catch(() => dataUrl(svg));
     images.set(name, image);
@@ -54,11 +54,11 @@ function tileImage(id: string, look: TileLook = 'square'): Promise<string> {
  * A tile's image URL once the image is decoded at full size, for the map. Drawn as large as it gets
  * (zoomed in), the browser would otherwise decode each tile then, on the first zoom, and drop frames.
  */
-export function decodedTileImage(id: string, look: TileLook = 'square'): Promise<string> {
-  const name = imageName(id, look);
+export function decodedTileImage(id: string, layer: TileLayer): Promise<string> {
+  const name = `${id}:${layer}`;
   let image = decoded.get(name);
   if (!image) {
-    image = tileImage(id, look).then(async (url) => {
+    image = tileImage(id, layer).then(async (url) => {
       const img = new Image();
       img.src = url;
       await img.decode().catch(() => {});
@@ -69,24 +69,28 @@ export function decodedTileImage(id: string, look: TileLook = 'square'): Promise
   return image;
 }
 
-/** Prepares every tile in the set in the background (one per idle moment), so the first game starts at once. */
+/**
+ * Prepares every tile in the set in the background (one layer per idle moment), so the first game starts
+ * at once: the bodies and the square skies (most maps are square).
+ */
 export async function warmTileImages(): Promise<void> {
-  for (const t of TILE_SET) {
-    await idle();
-    await tileImage(t.id);
-  }
+  for (const t of TILE_SET)
+    for (const layer of ['body', 'sky-square'] as const) {
+      await idle();
+      await tileImage(t.id, layer);
+    }
 }
 
-/** Tile artwork for the map by physical tile id, filled in as each image is ready (`decodedTileImage`). */
-export function useTileImages(tiles: readonly { id: string }[], look: TileLook = 'square'): Record<string, string> {
+/** A layer of each tile of the map by physical tile id, filled in as each image is ready (`decodedTileImage`). */
+export function useTileImages(tiles: readonly { id: string }[], layer: TileLayer): Record<string, string> {
   const [images, setImages] = useState<Record<string, string>>({});
   useEffect(() => {
     let live = true;
     for (const t of tiles)
-      decodedTileImage(t.id, look).then((url) => live && setImages((m) => (m[t.id] === url ? m : { ...m, [t.id]: url })));
+      decodedTileImage(t.id, layer).then((url) => live && setImages((m) => (m[t.id] === url ? m : { ...m, [t.id]: url })));
     return () => {
       live = false;
     };
-  }, [tiles, look]);
+  }, [tiles, layer]);
   return images;
 }

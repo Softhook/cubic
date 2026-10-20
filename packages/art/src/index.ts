@@ -21,15 +21,20 @@ export { ICONS, icon } from './icons';
 export { starfield, type StarfieldOptions } from './starfield';
 export { planet, type PlanetOptions } from './planet';
 export {
+  HEX_WELL,
+  bodySvg,
   cubePadCentres,
   editableTileSvg,
   numberPlacement,
+  skySvg,
   tileFlavour,
   tileHasRings,
+  tileLabel,
   tileSvg,
   well,
   type NumberPlacement,
   type TileOptions,
+  type TileShape,
 } from './tile';
 export { SET_COUNTS, TILE_SET, assignTiles, tileSpec, type TileSpec } from './tileset';
 export {

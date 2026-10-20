@@ -1,6 +1,8 @@
 /**
- * Plays a first move, in Chrome, on the square Alpha Sector and each hex map (docs/HEX.md): starts a Basic
- * game, picks one of your ships, taps a space it can move to on the map and checks the ship went there.
+ * Plays a first move, in Chrome, on the square Alpha Sector, each hex map and each map with off-centre
+ * planets (docs/HEX.md): starts a Basic game, picks one of your ships, taps a space it can move to on the
+ * map and checks the ship went there. Checks too that the map draws a well for each space, cross-hatched
+ * where the engine has two orbits overlap.
  * Exits with 1 when a map doesn't draw, a tap misses or the page logs an error.
  *
  *   npm run hex:check                        # starts its own dev server
@@ -9,7 +11,7 @@
  * Screenshots go to test-results/hex/.
  */
 import { mkdirSync } from 'node:fs';
-import { cellOf, MAPS, type GameState } from '../packages/engine/src';
+import { cellOf, MAPS, orbitedPlanets, spaces, type GameState } from '../packages/engine/src';
 import { devServer, finish, launchChrome, playUrl } from './mobile-common';
 
 const OUT = 'test-results/hex';
@@ -23,7 +25,7 @@ const problem = (what: string) => {
   console.log(`  ✗ ${what}`);
 };
 
-for (const map of [MAPS.find((m) => m.id === 'alpha-sector')!, ...MAPS.filter((m) => m.grid === 'hex')]) {
+for (const map of [MAPS.find((m) => m.id === 'alpha-sector')!, ...MAPS.filter((m) => m.grid === 'hex' || m.group === 'drift')]) {
   console.log(`${map.name}`);
   const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
   page.on('pageerror', (e) => problem(`page error: ${e.message}`));
@@ -35,6 +37,14 @@ for (const map of [MAPS.find((m) => m.id === 'alpha-sector')!, ...MAPS.filter((m
   const before = await state();
   if (before.board.mapId !== map.id) problem(`playing ${before.board.mapId}`);
   await page.screenshot({ path: `${OUT}/${map.id}.png` });
+
+  // The spaces as drawn (MapTiles), against the engine's.
+  const board = before.board;
+  const shared = spaces(board).filter((p) => orbitedPlanets(board, p).length > 1).length;
+  const drawn = await page.locator('.board-svg .well').count();
+  const drawnShared = await page.locator('.board-svg .well[data-role^="shared"]').count();
+  if (drawn !== spaces(board).length) problem(`${drawn} wells drawn for ${spaces(board).length} spaces`);
+  if (drawnShared !== shared) problem(`${drawnShared} shared wells drawn, the engine has ${shared}`);
 
   // One of your ships, then the first space it can move to, tapped where it is drawn.
   const ship = page.locator('.ship.own').first();

@@ -31,7 +31,7 @@ export const hexCorners = (x: number, y: number, size: number) =>
     y + HEX_CORNER * size * Math.sin((Math.PI / 3) * i),
   ]);
 
-/** A hex tile's hexes: its middle (`t`, the planet's) and the six around it. */
+/** A hex tile's hexes: its middle (`t`) and the six around it. */
 export const hexFlower = (board: Board, t: Cell) => [t, ...adjacent(board, t)];
 
 /**

@@ -37,6 +37,12 @@ export interface TileOptions {
   fontCss?: string;
 }
 
+/** The shape of a map's spaces: a tile of 3 × 3 squares, or a 7-hex flower. */
+export type TileShape = 'square' | 'hex';
+
+/** A hex space's well, as a part of its hex (a square's pad is 24 of its 32 mm). */
+export const HEX_WELL = 0.8;
+
 const CELL_CENTRES = [0, 1, 2].map((i) => (i + 0.5) * TILE.cell);
 const MID = TILE.size / 2;
 
@@ -49,13 +55,30 @@ const CORNER = TILE.cell / 2;
 /** The flavour label's area, with a little margin: right aligned at the top-left corner, 8 mm tall. */
 const inLabel = (x: number, y: number) => x < MID - CORNER - 1 && x > 4 && Math.abs(y - (MID - CORNER)) < 4.2;
 
-/** Bright stars go in the gutters between spaces, away from the planet, its number and its label. */
+/**
+ * The middles of a hex tile's seven spaces (mm): flat-topped hexes one space tall, the middle one at the
+ * tile's middle, as the game draws them (engine `drawing`).
+ */
+const HEX_CENTRES = [
+  { x: 0, y: 0 },
+  { x: 0, y: -1 },
+  { x: 0, y: 1 },
+  ...[-1, 1].flatMap((sx) => [-0.5, 0.5].map((y) => ({ x: (sx * Math.sqrt(3)) / 2, y }))),
+].map((p) => ({ x: MID + p.x * TILE.cell, y: MID + p.y * TILE.cell }));
+
+/** Whether a point is in the gutters between a tile's spaces, clear of every square pad or hex well. */
+function betweenSpaces(shape: TileShape, x: number, y: number): boolean {
+  if (shape === 'hex') return HEX_CENTRES.every((c) => Math.hypot(x - c.x, y - c.y) > (HEX_WELL * TILE.cell) / 2 + 1);
+  const near = Math.min(...CELL_CENTRES.flatMap((cx) => CELL_CENTRES.map((cy) => Math.max(Math.abs(x - cx), Math.abs(y - cy)))));
+  return near > TILE.pad / 2 - 2;
+}
+
+/** On a printed tile, bright stars go in the gutters between spaces, away from the planet, its number and its label. */
 function inGutter(x: number, y: number): boolean {
   if (Math.hypot(x - MID, y - MID) < 24) return false;
   if (Math.abs(x - (MID + CORNER)) < 11 && Math.abs(y - (MID + CORNER)) < 9) return false;
   if (x < MID - CORNER + 3 && Math.abs(y - (MID - CORNER)) < 6) return false;
-  const near = Math.min(...CELL_CENTRES.flatMap((cx) => CELL_CENTRES.map((cy) => Math.max(Math.abs(x - cx), Math.abs(y - cy)))));
-  return near > TILE.pad / 2 - 2;
+  return betweenSpaces('square', x, y);
 }
 
 /** Where the cube pads go on a planet: a cluster centred on it. Coordinates are pad centres. */
@@ -189,14 +212,14 @@ function markings(spec: TileSpec, spacesOnly = false): Fragment {
   );
   if (spec.number > 0 && !spacesOnly) {
     for (const p of cubePadCentres(spec.number - 6, MID, MID)) body += well(p.x, p.y, CUBE_PAD.size, CUBE_PAD.corner, WELL.cube);
-    const at = numberPlacement(spec.number);
+    const num = numberPlacement(spec.number);
     const hue = PLANET_FAMILY[spec.number].hue;
     // White with a dark outline reads on any planet surface and on the space around it. The outline
     // is a second copy underneath; the baseline sits 0.4 em below the centre so the digits are centred.
     const text = (paint: string) =>
-      `<text x="${n(MID + at.x)}" y="${n(MID + at.y + at.size * 0.4)}" ${paint} font-family="${FONTS.body}" font-weight="800" font-size="${n(at.size)}" letter-spacing="${n(-0.03 * at.size)}" text-anchor="middle">${spec.number}</text>`;
+      `<text x="${n(MID + num.x)}" y="${n(MID + num.y + num.size * 0.4)}" ${paint} font-family="${FONTS.body}" font-weight="800" font-size="${n(num.size)}" letter-spacing="${n(-0.03 * num.size)}" text-anchor="middle">${spec.number}</text>`;
     body +=
-      text(`fill="none" stroke="${hex(hue, 50, 7)}" stroke-width="${n(at.size * 0.13)}" stroke-linejoin="round"`) + text(`fill="#fff"`);
+      text(`fill="none" stroke="${hex(hue, 50, 7)}" stroke-width="${n(num.size * 0.13)}" stroke-linejoin="round"`) + text(`fill="#fff"`);
   }
   return { defs: '', body };
 }
@@ -210,7 +233,8 @@ export function tileFlavour(spec: TileSpec): PlanetFlavour {
 
 /**
  * The planet's flavour label: a made-up name, catalogue number and survey data in tiny type, right
- * aligned where the spaces meet at the planet's top left, with a thin leader line to the planet.
+ * aligned where the spaces meet at the planet's top left, with a thin leader line to the planet. In tile
+ * millimetres with the planet in the middle; the game moves it with its planet (`tileLabel`).
  */
 function label(spec: TileSpec): Fragment {
   const fl = tileFlavour(spec);
@@ -432,52 +456,85 @@ function moons(r: number, id: string, number: number, type: PlanetType, rand: Re
   return { defs, body };
 }
 
-/** One map tile (trim 96 × 96 mm) as a standalone SVG document. */
+/** One map tile (trim 96 × 96 mm) as a standalone SVG document: its sky, planet (or Void heart), label and markings. */
 export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
   const id = o.idPrefix ?? spec.id;
   const b = o.bleed ? TILE.bleed : 0;
-  const frame: Box = { x: 0, y: 0, w: TILE.size, h: TILE.size };
   const area: Box = { x: -b, y: -b, w: TILE.size + 2 * b, h: TILE.size + 2 * b };
   const full: Box = { x: -TILE.bleed, y: -TILE.bleed, w: TILE.size + 2 * TILE.bleed, h: TILE.size + 2 * TILE.bleed };
-  const art = rng(spec.seed);
   const isVoid = spec.number === 0;
 
   const marks = () => markings(spec, o.markings === 'spaces');
   if (o.only === 'markings') return document(marks(), area);
   const parts: Fragment[] = [
-    starfield({
-      rng: art.fork('sky'),
-      id: `${id}-sky`,
-      area: full,
-      frame,
-      brightAllowed: inGutter,
-      ...(isVoid ? {} : { faintAllowed: (x: number, y: number) => !inLabel(x, y) }),
-      ...(isVoid ? { hues: VOID_NEBULA_HUES, nebula: 1 } : {}),
-    }),
+    skyArt(spec, id, full, inGutter, isVoid ? undefined : (x: number, y: number) => !inLabel(x, y)),
+    bodyArt(spec, id),
   ];
-  if (isVoid) parts.push(VOID_HEARTS[spec.heart ?? 'blackHole'](id));
-  else {
-    const r = PLANET_DIAMETER[spec.number] / 2;
-    const type = planetType(spec);
-    parts.push(
-      planet({
-        rng: art.fork('planet'),
-        id: `${id}-planet`,
-        cx: MID,
-        cy: MID,
-        r,
-        number: spec.number,
-        type,
-        rings: spec.rings,
-      }),
-      moons(r, `${id}-planet`, spec.number, type, art.fork('moons')),
-    );
-  }
   if (!isVoid && o.only !== 'art') parts.push(label(spec));
   if (o.markings && o.only !== 'art') parts.push(marks());
 
   const all = join(...parts);
   return document(o.rounded ? dieCut(all, id, TILE.size, TILE.size, TILE.corner) : all, area, true, o.fontCss);
+}
+
+/** The trim of a tile (mm). */
+const TRIM: Box = { x: 0, y: 0, w: TILE.size, h: TILE.size };
+
+/** A tile's starfield and nebula over `area`, faded to the shared base colour at the trim's edge. */
+function skyArt(
+  spec: TileSpec,
+  id: string,
+  area: Box,
+  brightAllowed: (x: number, y: number) => boolean,
+  faintAllowed?: (x: number, y: number) => boolean,
+): Fragment {
+  return starfield({
+    rng: rng(spec.seed).fork('sky'),
+    id: `${id}-sky`,
+    area,
+    frame: TRIM,
+    brightAllowed,
+    ...(faintAllowed ? { faintAllowed } : {}),
+    ...(spec.number === 0 ? { hues: VOID_NEBULA_HUES, nebula: 1 } : {}),
+  });
+}
+
+/** A tile's body, centred on it: its planet and moons, or a Void tile's heart. */
+function bodyArt(spec: TileSpec, id: string): Fragment {
+  if (spec.number === 0) return VOID_HEARTS[spec.heart ?? 'blackHole'](id);
+  const art = rng(spec.seed);
+  const r = PLANET_DIAMETER[spec.number] / 2;
+  const type = planetType(spec);
+  return join(
+    planet({ rng: art.fork('planet'), id: `${id}-planet`, cx: MID, cy: MID, r, number: spec.number, type, rings: spec.rings }),
+    moons(r, `${id}-planet`, spec.number, type, art.fork('moons')),
+  );
+}
+
+/**
+ * A map's layers (the game draws a map in layers, so a planet can sit anywhere): a tile's sky alone, trim
+ * 96 × 96 mm, with no planet or markings. Bright stars keep to the gutters between the spaces of a
+ * `shape` tile.
+ */
+export function skySvg(spec: TileSpec, shape: TileShape): string {
+  return document(
+    skyArt(spec, spec.id, TRIM, (x, y) => betweenSpaces(shape, x, y)),
+    TRIM,
+    true,
+  );
+}
+
+/**
+ * A tile's body alone, its planet and moons or a Void tile's heart, centred on a clear ground the size of
+ * a tile (96 × 96 mm): the game places it where the planet sits, cut off at its tile's edge.
+ */
+export function bodySvg(spec: TileSpec): string {
+  return document(bodyArt(spec, spec.id), TRIM, true);
+}
+
+/** A planet's flavour label as SVG, in millimetres from the planet's centre (the game draws it beside the planet). */
+export function tileLabel(spec: TileSpec): string {
+  return `<g transform="translate(${-MID} ${-MID})">${label(spec).body}</g>`;
 }
 
 /** Whether a tile's planet has rings (picked from its seed, when its spec doesn't say). */

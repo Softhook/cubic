@@ -6,6 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MAPS,
+  RULESETS,
   adjacent,
   apply,
   buildBoard,
@@ -18,6 +19,7 @@ import {
   orbitals,
   orbitedPlanets,
   parseToken,
+  spaces,
   tileCentres,
   tilesTouch,
   type Board,
@@ -284,4 +286,42 @@ describe('playing with off-centre planets', () => {
         const { state } = playAiGame({ mode, players: 2, seed: 5, aiSeed: 7, mapId });
         expect(state.winner).not.toBeNull();
       }, 60_000);
+});
+
+describe('the drift maps', () => {
+  const drift = MAPS.filter((m) => m.group === 'drift');
+
+  it('are a square and a hex map, in Basic mode', () => {
+    expect(drift.map((m) => [m.id, m.grid ?? 'square'])).toEqual([
+      ['binary-reach', 'square'],
+      ['twin-drift', 'hex'],
+    ]);
+    expect(RULESETS.basic.mapGroups).toContain('drift');
+  });
+
+  for (const m of drift) {
+    const b = buildBoard(m);
+
+    it(`${m.name} is the same turned half a turn: each planet matches one across the middle`, () => {
+      const { at, rows, cols } = drawing(b);
+      for (const p of b.planets) {
+        const q = at(p);
+        const twin = b.planets.find((x) => {
+          const y = at(x);
+          return Math.abs(q.r + y.r - (rows - 1)) < 1e-9 && Math.abs(q.c + y.c - (cols - 1)) < 1e-9;
+        });
+        expect(twin, `planet ${p.number} at ${p.r},${p.c}`).toBeDefined();
+        expect([twin!.number, twin!.start, orbitals(b, twin!).length]).toEqual([p.number, p.start, orbitals(b, p).length]);
+      }
+    });
+
+    it(`${m.name} has orbits that overlap`, () => {
+      expect(spaces(b).filter((q) => orbitedPlanets(b, q).length > 1).length).toBeGreaterThanOrEqual(4);
+    });
+
+    it(`AI plays a basic game on ${m.name} to the end`, () => {
+      const { state } = playAiGame({ mode: 'basic', players: 2, seed: 5, aiSeed: 7, mapId: m.id, levels: [2, 2] });
+      expect(state.winner).not.toBeNull();
+    }, 60_000);
+  }
 });

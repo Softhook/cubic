@@ -26,6 +26,7 @@ const MAP_GROUPS: { id: string; name: string }[] = [
   { id: 'bga', name: 'Board Game Arena' },
   { id: 'ce', name: 'Community Edition' },
   { id: 'hex', name: 'Hex tiles' },
+  { id: 'drift', name: 'Off-centre planets' },
 ];
 
 /** A tile of the preview: its number, a start's ring, or nothing for a gap. */

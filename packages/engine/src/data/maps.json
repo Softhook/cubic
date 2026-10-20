@@ -194,6 +194,81 @@
     ]
   },
   {
+    "id": "binary-reach",
+    "name": "Binary Reach",
+    "players": 2,
+    "group": "drift",
+    "cubes": 6,
+    "stats": {
+      "slack": 6,
+      "shared": 2,
+      "planets": 10
+    },
+    "layout": [
+      [
+        "8se*",
+        "7",
+        "7sw",
+        "."
+      ],
+      [
+        "7sw",
+        "10s",
+        "10n",
+        "7ne"
+      ],
+      [
+        ".",
+        "7ne",
+        "7",
+        "8nw*"
+      ]
+    ]
+  },
+  {
+    "id": "twin-drift",
+    "name": "Twin Drift (hex)",
+    "players": 2,
+    "group": "drift",
+    "cubes": 6,
+    "stats": {
+      "slack": 6,
+      "shared": 2,
+      "planets": 10
+    },
+    "grid": "hex",
+    "layout": [
+      [
+        "7se",
+        "8*",
+        ".",
+        "."
+      ],
+      [
+        "9s",
+        "0",
+        "7n"
+      ],
+      [
+        ".",
+        "8se",
+        "8nw",
+        "."
+      ],
+      [
+        "7s",
+        "0",
+        "9n"
+      ],
+      [
+        ".",
+        ".",
+        "8*",
+        "7nw"
+      ]
+    ]
+  },
+  {
     "id": "tactics",
     "name": "Tactics",
     "players": 2,

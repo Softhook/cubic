@@ -77,8 +77,9 @@ Twenty games are too few to read anything into the seat wins.
 ## Drawing
 
 Hexes are flat-topped, one space tall, with columns √3/2 of a space apart. The flower lattice is turned
-about 11° from the hexes, so a map's rows of tiles lean a little. Each tile's painting (starfield and
-planet, without the square pads) is cut to the flower, with a well etched for each space.
+about 11° from the hexes, so a map's rows of tiles lean a little. The map is drawn in the same layers as a
+square one ([GRAPHICS.md](GRAPHICS.md), *Tiles*): each tile's sky cut to its flower, its planet, the
+seams, then a well etched for each space, hatched where it is in an orbit.
 
 ## Code
 
@@ -89,21 +90,20 @@ planet, without the square pads) is cut to the flower, with a well etched for ea
   those, so the rules needed no change. `drawing(board)` says where each space is drawn, and
   `cellAtPoint` which space a tap lands on.
 - **Web.** Everything on the map is placed with `drawing(board).at`, in pixels through `placement` in
-  [`geometry.ts`](../apps/web/src/components/board/geometry.ts) (a space's `box` and `mid`). `BoardArt` draws the tiles with
-  [`SquareTiles.tsx`](../apps/web/src/components/board/SquareTiles.tsx) or
-  [`HexTiles.tsx`](../apps/web/src/components/board/HexTiles.tsx), each centred on its tile's middle
-  space. The lobby previews hex maps as hexes, and its turning backdrop draws them as the game does, with
+  [`geometry.ts`](../apps/web/src/components/board/geometry.ts) (a space's `box` and `mid`). `BoardArt` draws the tiles of both shapes with
+  [`MapTiles.tsx`](../apps/web/src/components/board/MapTiles.tsx), in layers worked out from the board. The lobby previews hex maps as hexes, and its turning backdrop draws them as the game does, with
   its fleets moving hex to hex.
 - **Tests.** [`hex.test.ts`](../packages/engine/test/hex.test.ts) pins each rule above, and the
   legal-move cross-check in [`consistency.test.ts`](../packages/engine/test/consistency.test.ts) plays a
   hex game (all three with `DEEP=1`). `npm run hex:check` plays a first move in Chrome on the square
-  Alpha Sector and each hex map, tapping where the space is drawn.
+  Alpha Sector, each hex map and each drift map, tapping where the space is drawn, and checks the map
+  draws a well for each space, cross-hatched where the engine has orbits overlap.
 
 ## Off-centre planets
 
 The engine can place a tile's planet off its middle, on one of the spaces around it, on squares and
 hexes alike: a layout token takes a compass direction, `7ne` or `8s*` ([`data/maps.yaml`](../data/maps.yaml)).
-No map does yet, and the tile art still draws every planet in the middle.
+The **Off-centre planets** group in the lobby (Basic rules) has two maps that do (see *Drift maps*).
 
 | | Square tile | Hex tile |
 |---|---|---|
@@ -126,6 +126,36 @@ The orbit is still the spaces next to the planet, so the rules read the same:
 [`offset.test.ts`](../packages/engine/test/offset.test.ts) pins these on two test maps, and the legal-move
 cross-check plays games on them.
 
+**Drawing.** The map is drawn in layers ([GRAPHICS.md](GRAPHICS.md), *Tiles*), so an off-centre planet
+needs nothing of its own: its body is placed on its space and cut off at its tile's edge, the spaces are
+drawn over it, and their marks come from the board, not the tile. An orbit reaching onto the next tile is
+hatched there, a space in two orbits is cross-hatched, and a Void space in an orbit keeps its flask too.
+The number moves to another corner when a neighbour is in the way, and the flavour label shows only where
+the spaces up and left of the planet are its own tile's. The lobby's backdrop stands each planet up whole
+as a sphere.
+
+### Drift maps
+
+Two 2-player maps, each the same turned half a turn about its middle, so the seats match while the
+planets look scattered. 6 cubes each, slack 6.
+
+| Map | Layout | What the offsets do |
+|---|---|---|
+| Binary Reach (square), 3 × 4 tiles with two gaps | `8se* 7 7sw .` / `7sw 10s 10n 7ne` / `. 7ne 7 8nw*` | Each 10 leans towards a 7 on the next tile and shares 2 orbital spaces with it. The outer 7s sit against the map's edge with 2 orbital spaces. |
+| Twin Drift (hex), 12 tiles | `7se 8* . .` / `9s 0 7n` / `. 8se 8nw .` / `7s 0 9n` / `. . 8* 7nw` | Each start shares 2 orbital hexes with the 7 beside it, and the two 8s in the middle lean together and share 2 more. Two 7s drift to the edge (3 orbital hexes); two Voids sit between. |
+
+100 games per map, level 2 AI (Captain) in both seats, 20 October 2026, averages per game:
+
+| Map | Rounds | Attacks | Conquers | Wins by seat |
+|---|--:|--:|--:|---|
+| Alpha Sector | 10.8 | 12.8 | 6.4 | 43/57 |
+| Binary Reach | 14.6 | 19.3 | 7.8 | 58/42 |
+| Twin Drift (hex) | 13.6 | 20.3 | 7.7 | 56/44 |
+
+The seat splits are within chance at 100 games, as Alpha Sector's own is. With 7 cubes the games ran
+about 20 rounds, and one stalled: each player's last free cube location was on the other's home planet,
+and neither AI went for it.
+
 ## Not yet
 
 - Cards (Classic, Community, Prototyping): most work unchanged, but Ingenious and Hostile ("conquer from
@@ -134,4 +164,9 @@ cross-check plays games on them.
 - Hex versions of the advanced, add-on and BGA maps; wrapping maps.
 - Printed hex tiles in the Art Lab.
 - Turning a tall map on its side to fit a wide screen.
-- Off-centre planets in the tile art (squares and hexes) and in the lobby's previews, and maps that use them.
+- Off-centre planets in the lobby's small map previews (they show each tile's number only), and in the
+  Art Lab's printed tiles.
+- The AI scores each planet on its own, so a ship in a shared orbit counts towards both, and it doesn't
+  see that moving it off one planet's orbit leaves the other's too.
+- A ruling on a Void space in a planet's orbit (Twin Drift's two middle 8s have one each): a ship there
+  gains Research and counts towards the conquest, which no rule says it should or shouldn't.

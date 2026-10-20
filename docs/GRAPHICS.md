@@ -13,7 +13,7 @@ at physical size. Nothing is drawn twice, so the printed game and the online gam
 
 | Element | How it's drawn | Printed? |
 |---|---|---|
-| Map tiles, void, planets | `tileSvg` / `planet` / `starfield` in [`packages/art`](../packages/art), in mm and seeded. The game draws each tile once to an image and keeps it in IndexedDB ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)) | Yes, from the Art Lab (`#lab`) |
+| Map tiles, void, planets | `tileSvg` / `planet` / `starfield` in [`packages/art`](../packages/art), in mm and seeded. The game draws a map in layers (see *Tiles*): each tile's sky and body (`skySvg`, `bodySvg`) drawn once to images kept in IndexedDB ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)), the spaces and labels live ([`MapTiles.tsx`](../apps/web/src/components/board/MapTiles.tsx)) | Yes, from the Art Lab (`#lab`) |
 | Cards | `cardSvg` / `cardBackSvg` ([`card.ts`](../packages/art/src/card.ts)): poker size, SVG text, one illustration per card. The game's card pop-ups show the same drawing as an image ([`cardImages.ts`](../apps/web/src/art/cardImages.ts)); market cards are HTML with a band of the illustration, the same colours and icons, and the printed backs on the decks | Yes, from `#lab/cards` |
 | Player aid | `playerAidSvg` ([`aid.ts`](../packages/art/src/aid.ts)), A6 | Yes, from `#lab/aid` |
 | Warp gates, spaces, planet numbers and cube slots | SVG in [`board/BoardArt.tsx`](../apps/web/src/components/board/BoardArt.tsx), in screen pixels | Gates no (a token in the physical game); numbers and cube slots are in the printed tiles |
@@ -130,18 +130,29 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
 - `Tile` = star background + 3×3 space grid + planet in the centre (or none for an empty tile).
 - `VoidTile` = its own look (distorted, darker, violet), as the current gradient suggests.
 - Print adds a tile back and corners matched to the die-cut.
-- On screen, the whole map renders as tiles in a single SVG, as today, with the interactive HTML
-  layer above. The tile art itself is the same as print (planet up to 1.44 cells), so the screen
-  and the table look alike. **Screen and print stay in sync:** the tile images include the space wells
-  and the conquer outlines (`markings: 'spaces'`), drawn by the same code as print, and the live layer draws
-  the number and the cube slots from the printed geometry (`numberPlacement`, `cubePadCentres`,
-  `CUBE_PAD`, `WELL`, `well`) scaled from millimetres to the cell size.
-- **Loading.** Drawing a tile's noise filters takes ~45 ms (~1.1 s for a 25-tile map), so the game
-  draws each tile once to a 576 px image and keeps it in the browser's IndexedDB
-  ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)). Tiles are drawn in the background while
-  the lobby is open; later games and window resizes reuse the stored images (all 30 shown ~0.3 s after
-  Launch). Each stored image carries a hash of its SVG, so changing the artwork redraws only what
-  changed.
+- On screen, the whole map renders in a single SVG, with the interactive HTML layer above, drawn in
+  layers ([`MapTiles.tsx`](../apps/web/src/components/board/MapTiles.tsx)) so a planet can sit anywhere
+  on its tile (docs/HEX.md, *Off-centre planets*), on square and hex maps alike:
+  1. **Sky:** each tile's starfield and nebula (`skySvg`), bright stars in the gutters between that
+     shape's spaces, cut to the tile's outline (rounded squares a little apart, or 7-hex flowers).
+  2. **Body:** the planet and moons, or a Void's heart (`bodySvg`), placed on the planet's space and cut
+     off at its own tile's edge. Then the dark seams between hex tiles.
+  3. **Spaces:** a well per space, as printed (`well`, `WELL`), from the board rather than the tile:
+     hatched where it orbits a planet, cross-hatched where two orbits overlap, a faint flask on a Void's
+     ([`layers.ts`](../apps/web/src/components/board/layers.ts) `spaceRoles`).
+  4. **Labels:** a planet's flavour label beside it where there's room (`tileLabel`, `labelFits`).
+  5. **Live:** the number, in the printed bottom right unless another planet or the map's edge is in the
+     way (`numberCorner`), and the cube slots, from the printed geometry (`numberPlacement`,
+     `cubePadCentres`, `CUBE_PAD`). Then gates, ships and highlights.
+
+  A printed tile (`tileSvg`) is the same layers in one piece, with the planet in the middle, so the
+  screen and the table look alike.
+- **Loading.** Drawing a tile's noise filters takes ~45 ms, so the game draws each tile's sky (one per
+  shape) and body once to 576 px images and keeps them in the browser's IndexedDB
+  ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)), whatever the map and wherever its planet sits.
+  Bodies and square skies are drawn in the background while the lobby is open; later games and window
+  resizes reuse the stored images. Each stored image carries a hash of its SVG, so changing the artwork
+  redraws only what changed.
 
 **Star backgrounds per tile.** Each of the 30 tiles gets its own seeded starfield and nebula, so a
 map never looks like a repeated pattern. Nebula colours are random but kept between blue and pink-purple

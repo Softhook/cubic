@@ -22,7 +22,8 @@ browser, installs to a phone or tablet home screen and plays offline.
   Gambit cards.
 - **84 maps for 2–5 players**: 3 basic, 37 advanced from the print booklet, 6 from the 2014
   add-on pack, 24 from Board Game Arena and the CE booklet's 14 five-player maps. The Basic game also
-  plays on **hex tiles**, with hex versions of the 3 basic maps ([HEX.md](docs/HEX.md)).
+  plays on **hex tiles**, with hex versions of the 3 basic maps, and on two maps with **planets off the
+  middle of their tiles** ([HEX.md](docs/HEX.md)).
 - **AI opponents in five levels**, Cadet to Fleet Admiral, picked per seat and run in a Web
   Worker ([AI.md](docs/AI.md)).
 - **Hot-seat or online with friends**, live or one move at a time over days, with no server: the

@@ -5,8 +5,8 @@ import { tileArt, type TileArt } from '../../art/boardTiles';
 import { GATE_COLOR } from '../../theme';
 import { placement, wrapMarks, type WrapMark } from './geometry';
 import { PlanetMarkings } from './PlanetMarkings';
-import { HexTiles } from './HexTiles';
-import { SquareTiles } from './SquareTiles';
+import { MapTiles } from './MapTiles';
+import { numberCorner } from './layers';
 
 /** Which way each board edge faces, for the wrap chevrons. */
 const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number }> = {
@@ -38,7 +38,7 @@ export const BoardArt = memo(function BoardArt({
   /** A planet whose new cube drops in late, and when (a relocated cube, see staging). */
   lateCube?: { planet: number; ms: number };
 }) {
-  const { planets, hex } = game.board;
+  const { planets } = game.board;
   const tiles = tileArtOf(game.board);
   const { rows, cols } = drawing(game.board);
   const W = cols * cell;
@@ -59,7 +59,7 @@ export const BoardArt = memo(function BoardArt({
           </filter>
         </defs>
 
-        {hex ? <HexTiles board={game.board} tiles={tiles} cell={cell} /> : <SquareTiles board={game.board} tiles={tiles} cell={cell} />}
+        <MapTiles board={game.board} tiles={tiles} cell={cell} />
 
         {/* Chevrons on edges that join the opposite edge, pointing off the board. */}
         {wrapMarks(game.board).map((m) => {
@@ -93,7 +93,7 @@ export const BoardArt = memo(function BoardArt({
 
         {planets.map((p) => {
           const { x: cx, y: cy } = mid(p);
-          // The planet itself is part of the tile art; this layer adds the live number and cubes, placed
+          // The planet itself is the tile's art (MapTiles); this layer adds the live number and cubes, placed
           // and sized as on the printed tile.
           const R = (PLANET_DIAMETER[p.number] / 2) * mm;
           return (
@@ -116,6 +116,7 @@ export const BoardArt = memo(function BoardArt({
                 n={p.number}
                 capacity={p.capacity}
                 cubes={p.cubes.map((o) => game.players[o].color)}
+                corner={numberCorner(game.board, p)}
                 numberClass="planet-num"
                 cubeClass="cube"
               />
