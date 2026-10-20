@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-import { SHIP_NAMES, cellAtPoint, die, drawing, key, moveOptions, same, shipOf, type Cell, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, cellAtPoint, die, drawing, key, moveOptions, same, shipOf, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { ActionEffects } from './board/ActionEffects';
@@ -7,7 +7,8 @@ import { CardEffects } from './board/CardEffects';
 import { Explosions } from './board/Explosions';
 import { Routes } from './board/Routes';
 import { Shots } from './board/Shots';
-import { hexCorners, placement, shipSpots, spotBox, type ShipSpots } from './board/geometry';
+import { Zones } from './board/Zones';
+import { placement, shipSpots, spotBox, type ShipSpots } from './board/geometry';
 import { useStaging, type Staging } from './board/staging';
 import { useBoardZoom } from './board/useBoardZoom';
 import { OffscreenHints, ZoomControls, useFollowMoves, useZoomIntro } from './board/ZoomUi';
@@ -90,7 +91,7 @@ export function Board({
         <BoardArt game={game} cell={cell} lateCube={staging.cube} />
 
         <div className="board-layer" onClick={onBoardClick}>
-          {ctl.highlights.zones.length > 0 && <Zones game={game} cells={ctl.highlights.zones} cell={cell} />}
+          {ctl.highlights.zones.length > 0 && <Zones board={game.board} cells={ctl.highlights.zones} cell={cell} />}
           {[...ctl.highlights.cells.values()].map(({ cell: c, tone }) => {
             const route = ctl.routes.find((r) => same(r.from, c));
             const odds = route?.odds;
@@ -171,32 +172,6 @@ export function Board({
         </div>
       )}
     </div>
-  );
-}
-
-/** Enemy zones of control (highlights.zones): a hatched tint on each space, square or hex like the map's spaces. */
-function Zones({ game, cells, cell }: { game: GameState; cells: Cell[]; cell: number }) {
-  const { box, mid } = placement(game.board, cell);
-  if (!game.board.hex)
-    return (
-      <div className="zones" aria-hidden>
-        {cells.map((c) => (
-          <span key={key(c)} style={box(c)} />
-        ))}
-      </div>
-    );
-  return (
-    <svg className="zones" aria-hidden width="100%" height="100%">
-      <defs>
-        <pattern id="zone-hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <rect width="4" height="9" />
-        </pattern>
-      </defs>
-      {cells.map((c) => {
-        const { x, y } = mid(c);
-        return <polygon key={key(c)} points={hexCorners(x, y, cell).join(' ')} />;
-      })}
-    </svg>
   );
 }
 
