@@ -142,6 +142,10 @@ export function numberPlacement(number: number): NumberPlacement {
 /** The research flask on each Void space (mm). */
 const VOID_ICON = 8;
 
+/** The faint research flask on a Void space centred on (x, y): ships there gain Research. */
+export const voidFlask = (x: number, y: number) =>
+  `<g stroke-opacity=".15">${icon('research', x, y, VOID_ICON, HATCH.ink, (0.3 * 24) / VOID_ICON)}</g>`;
+
 /**
  * The edges of a well: a rounded square of side `size` with its top left at (x, y), sunk into the
  * tile. Light comes from the top left, so the top and left inner edges are in shade and the bottom and
@@ -156,8 +160,11 @@ function wellEdges(x: number, y: number, size: number, rx: number): { shade: str
   };
 }
 
-/** Gap between hatch lines and their inset from the pad's edge, inside its rounded corners (mm). */
-const HATCH = { gap: 3, inset: 1.5 };
+/**
+ * The conquer spaces' hatching: the lines' gap along a pad's side and their inset from its edge, inside
+ * its rounded corners (mm), and their colour.
+ */
+export const HATCH = { gap: 3, inset: 1.5, ink: hex(222, 80, 82) };
 
 /**
  * Diagonal hatching across the pad centred on (cx, cy): plain line segments, clipped by hand to a
@@ -170,7 +177,7 @@ export function hatch(cx: number, cy: number): string {
   for (let c = -2 * h + HATCH.gap; c < 2 * h - 0.01; c += HATCH.gap) {
     const u1 = Math.max(-h, c - h);
     const u2 = Math.min(h, c + h);
-    out += `<line x1="${n(cx + u1)}" y1="${n(cy + c - u1)}" x2="${n(cx + u2)}" y2="${n(cy + c - u2)}" stroke="${hex(222, 80, 82)}" stroke-opacity=".14" stroke-width=".25"/>`;
+    out += `<line x1="${n(cx + u1)}" y1="${n(cy + c - u1)}" x2="${n(cx + u2)}" y2="${n(cy + c - u2)}" stroke="${HATCH.ink}" stroke-opacity=".14" stroke-width=".25"/>`;
   }
   return out;
 }
@@ -206,8 +213,7 @@ function markings(spec: TileSpec, spacesOnly = false): Fragment {
       // The four spaces beside a planet are where dice go to conquer it: very faint diagonal hatching marks them.
       if (conquer) body += hatch(x, y);
       // Ships on the Void gain Research: a faint flask on each space.
-      if (spec.number === 0)
-        body += `<g stroke-opacity=".15">${icon('research', x, y, VOID_ICON, hex(222, 80, 82), (0.3 * 24) / VOID_ICON)}</g>`;
+      if (spec.number === 0) body += voidFlask(x, y);
     }),
   );
   if (spec.number > 0 && !spacesOnly) {

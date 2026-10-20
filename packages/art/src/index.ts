@@ -21,6 +21,7 @@ export { ICONS, icon } from './icons';
 export { starfield, type StarfieldOptions } from './starfield';
 export { planet, type PlanetOptions } from './planet';
 export {
+  HATCH,
   HEX_WELL,
   bodySvg,
   cubePadCentres,
@@ -31,6 +32,7 @@ export {
   tileHasRings,
   tileLabel,
   tileSvg,
+  voidFlask,
   well,
   type NumberPlacement,
   type TileOptions,

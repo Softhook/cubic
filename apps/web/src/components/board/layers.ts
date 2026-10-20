@@ -54,10 +54,13 @@ export function numberCorner(board: Board, planet: Planet): { x: 1 | -1; y: 1 | 
 
 /**
  * Whether a planet's flavour label fits beside it, as printed: on a square map, where the spaces up and
- * to the left of it meet, so both those spaces must be on its own tile, and no other planet near.
+ * to the left of it meet, so both those spaces must be on its own tile, with no other planet near and
+ * the planet's number not moved there (`numberCorner`).
  */
 export function labelFits(board: Board, planet: Planet): boolean {
   if (board.hex) return false;
+  const corner = numberCorner(board, planet);
+  if (corner.x === -1 && corner.y === -1) return false;
   const tile = cellAt(board, planet)!.tile;
   const beside = [
     { r: planet.r - 1, c: planet.c - 1 },

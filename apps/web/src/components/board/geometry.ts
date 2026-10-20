@@ -21,6 +21,9 @@ export function placement(board: Board, cell: number) {
   };
 }
 
+/** The gap each side of a square tile, in spaces: tiles stand a little apart, as on the table. */
+export const SQUARE_TILE_GAP = 0.015;
+
 /** A flat-topped hex one space tall has corners this far from its centre (1 / √3 spaces), and sides as long. */
 const HEX_CORNER = 1 / Math.sqrt(3);
 

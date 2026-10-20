@@ -1,30 +1,34 @@
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 import { cellAt, type Board } from '@quantum/engine';
-import { HEX_WELL, SPACE_BASE_CSS, TILE, WELL, icon, tileLabel, tileSpec, well } from '@quantum/art';
+import { HATCH, HEX_WELL, SPACE_BASE_CSS, TILE, WELL, tileLabel, tileSpec, voidFlask, well } from '@quantum/art';
 import { useTileImages } from '../../art/tileImages';
 import type { TileArt } from '../../art/boardTiles';
-import { hexCorners, hexFlower, hexSeams, placement } from './geometry';
+import { SQUARE_TILE_GAP, hexCorners, hexFlower, hexSeams, placement } from './geometry';
 import { labelFits, spaceRoles } from './layers';
 
 const points = (list: number[][]) => list.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
 const line = (list: number[][]) => `M${list.map(([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join(' L')}`;
 
-/** The hatching's colour, and the lines' gap across them (mm): as printed (tile.ts `hatch`). */
-const HATCH_INK = 'hsl(222 80% 82%)';
-const HATCH_GAP = 3 / Math.SQRT2;
-/** How far the hatching keeps inside a space's well (mm). */
-const HATCH_INSET = 1.5;
+/** The hatch lines' gap across them (mm): print's (tile.ts `hatch`) is along a pad's side, at 45°. */
+const HATCH_GAP = HATCH.gap / Math.SQRT2;
+
+/** One hatch pattern: faint diagonal lines, or crossed ones for `cross`. In millimetres. */
+const pattern = (id: string, opacity: number, width: number, cross = false) => {
+  const [g, h] = [HATCH_GAP, HATCH_GAP / 2];
+  const stroke = `stroke="${HATCH.ink}" stroke-opacity="${opacity}" stroke-width="${width}"`;
+  return (
+    `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${g}" height="${g}" patternTransform="rotate(45)">` +
+    `<line x1="${h}" y1="0" x2="${h}" y2="${g}" ${stroke}/>` +
+    (cross ? `<line x1="0" y1="${h}" x2="${g}" y2="${h}" ${stroke}/>` : '') +
+    '</pattern>'
+  );
+};
 
 /**
  * Hatching for the spaces in a planet's orbit, as printed: faint diagonal lines. A space in two orbits
- * (orbits that overlap) is cross-hatched, a little stronger, as it counts for both planets. In millimetres.
+ * (orbits that overlap) is cross-hatched, a little stronger, as it counts for both planets.
  */
-const PATTERNS =
-  `<pattern id="map-orbit" patternUnits="userSpaceOnUse" width="${HATCH_GAP}" height="${HATCH_GAP}" patternTransform="rotate(45)">` +
-  `<line x1="${HATCH_GAP / 2}" y1="0" x2="${HATCH_GAP / 2}" y2="${HATCH_GAP}" stroke="${HATCH_INK}" stroke-opacity=".14" stroke-width=".25"/></pattern>` +
-  `<pattern id="map-shared" patternUnits="userSpaceOnUse" width="${HATCH_GAP}" height="${HATCH_GAP}" patternTransform="rotate(45)">` +
-  `<line x1="${HATCH_GAP / 2}" y1="0" x2="${HATCH_GAP / 2}" y2="${HATCH_GAP}" stroke="${HATCH_INK}" stroke-opacity=".24" stroke-width=".3"/>` +
-  `<line x1="0" y1="${HATCH_GAP / 2}" x2="${HATCH_GAP}" y2="${HATCH_GAP / 2}" stroke="${HATCH_INK}" stroke-opacity=".24" stroke-width=".3"/></pattern>`;
+const PATTERNS = `<defs>${pattern('map-orbit', 0.14, 0.25)}${pattern('map-shared', 0.24, 0.3, true)}</defs>`;
 
 /**
  * The spaces as wells etched into the map, in millimetres: hatched where they orbit a planet, cross-hatched
@@ -48,13 +52,13 @@ function wells(board: Board): string {
         `<polygon points="${points(w)}" fill="#000" fill-opacity="${style.fill}"/>` +
         `<path d="${line([w[3], w[4], w[5], w[0]])}" fill="none" stroke="#000" stroke-opacity="${style.shade}" stroke-width="${style.shadeWidth}"/>` +
         `<path d="${line([w[0], w[1], w[2], w[3]])}" fill="none" stroke="#fff" stroke-opacity="${style.lit}" stroke-width="${style.litWidth}"/>`;
-      if (orbits) out += `<polygon points="${points(hexCorners(x, y, size - 2 * HATCH_INSET))}" fill="url(#${fill})"/>`;
+      if (orbits) out += `<polygon points="${points(hexCorners(x, y, size - 2 * HATCH.inset))}" fill="url(#${fill})"/>`;
     } else {
       out += well(x, y, TILE.pad, 4, style);
-      const h = TILE.pad / 2 - HATCH_INSET;
+      const h = TILE.pad / 2 - HATCH.inset;
       if (orbits) out += `<rect x="${x - h}" y="${y - h}" width="${2 * h}" height="${2 * h}" fill="url(#${fill})"/>`;
     }
-    if (isVoid) out += `<g stroke-opacity=".15">${icon('research', x, y, 8, HATCH_INK, 0.9)}</g>`;
+    if (isVoid) out += voidFlask(x, y);
     out += '</g>';
   }
   return out;
@@ -63,14 +67,25 @@ function wells(board: Board): string {
 /** The planets' flavour labels beside them, as printed, where there's room (layers.ts `labelFits`), in millimetres. */
 function labels(board: Board, tiles: readonly TileArt[]): string {
   const { mid } = placement(board, TILE.cell);
+  const ids = new Map(tiles.map((t) => [t.tile, t.id]));
   return board.planets
     .filter((p) => labelFits(board, p))
     .map((p) => {
-      const tile = tiles.find((t) => t.tile === cellAt(board, p)!.tile)!;
       const { x, y } = mid(p);
-      return `<g transform="translate(${x} ${y})">${tileLabel(tileSpec(tile.id))}</g>`;
+      return `<g transform="translate(${x} ${y})">${tileLabel(tileSpec(ids.get(cellAt(board, p)!.tile)!))}</g>`;
     })
     .join('');
+}
+
+/**
+ * The spaces and labels of a map, in millimetres, by map: they follow from where its planets are, not from
+ * the cubes on them, so a move (a new board) doesn't redraw them.
+ */
+const marksByMap = new Map<string, string>();
+function marksOf(board: Board, tiles: readonly TileArt[]): string {
+  let marks = marksByMap.get(board.mapId);
+  if (marks === undefined) marksByMap.set(board.mapId, (marks = PATTERNS + wells(board) + labels(board, tiles)));
+  return marks;
 }
 
 /**
@@ -81,7 +96,6 @@ function labels(board: Board, tiles: readonly TileArt[]): string {
 export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: Board; tiles: TileArt[]; cell: number }) {
   const skies = useTileImages(tiles, board.hex ? 'sky-hex' : 'sky-square');
   const bodies = useTileImages(tiles, 'body');
-  const marks = useMemo(() => ({ wells: wells(board), labels: labels(board, tiles) }), [board, tiles]);
   const { mid } = placement(board, cell);
   const mm = cell / TILE.cell;
   // A tile's artwork is a whole printed tile, 3 spaces wide, centred on what it draws.
@@ -89,7 +103,7 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
   const art = (url: string | undefined, at: { x: number; y: number }) =>
     url && <image href={url} x={at.x - size / 2} y={at.y - size / 2} width={size} height={size} />;
   // Square tiles stand a little apart, with the printed rounded corners; hex tiles meet at a seam.
-  const inset = cell * 0.015;
+  const inset = cell * SQUARE_TILE_GAP;
   const outline = (t: TileArt) => {
     if (board.hex)
       return hexFlower(board, t).map((p) => {
@@ -117,7 +131,6 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
           </clipPath>
         ))}
       </defs>
-      <g dangerouslySetInnerHTML={{ __html: `<defs>${PATTERNS}</defs>` }} transform={`scale(${mm})`} />
       {tiles.map((t) => (
         <g key={t.tile} clipPath={`url(#map-tile-${t.tile})`}>
           <rect x={mid(t).x - size / 2} y={mid(t).y - size / 2} width={size} height={size} fill={SPACE_BASE_CSS} />
@@ -135,7 +148,7 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
           strokeLinecap="round"
         />
       )}
-      <g transform={`scale(${mm})`} dangerouslySetInnerHTML={{ __html: marks.wells + marks.labels }} />
+      <g transform={`scale(${mm})`} dangerouslySetInnerHTML={{ __html: marksOf(board, tiles) }} />
     </>
   );
 });

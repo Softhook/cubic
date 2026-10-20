@@ -5,7 +5,7 @@ import { decodedTileImage, type TileLayer } from '../../art/tileImages';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { PIPS } from '../Die3D';
 import { Boom, EXPLOSION_MS } from '../board/Explosions';
-import { hexCorners, hexFlower, hexSeams, placement } from '../board/geometry';
+import { SQUARE_TILE_GAP, hexCorners, hexFlower, hexSeams, placement } from '../board/geometry';
 import { PIP } from '../../theme';
 import { PHONE, REDUCED_MOTION, useMediaQuery } from '../../game/useMediaQuery';
 import { pick } from '../../random';
@@ -183,7 +183,7 @@ function drawTiles(
     ctx.beginPath();
     // A touch larger, so no hairline shows between a hex tile's own hexes.
     if (board.hex) for (const p of hexFlower(board, t)) hex(p, 1.01);
-    else square(t, size * 0.96, (size * TILE.corner) / TILE.size);
+    else square(t, size - 2 * SQUARE_TILE_GAP * cell, (size * TILE.corner) / TILE.size);
     ctx.save();
     ctx.clip();
     ctx.fillStyle = SPACE_BASE_CSS;

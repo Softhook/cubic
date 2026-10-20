@@ -141,19 +141,27 @@ planets look scattered. 6 cubes each, slack 6.
 
 | Map | Layout | What the offsets do |
 |---|---|---|
-| Binary Reach (square), 3 × 4 tiles with two gaps | `8se* 7 7sw .` / `7sw 10s 10n 7ne` / `. 7ne 7 8nw*` | Each 10 leans towards a 7 on the next tile and shares 2 orbital spaces with it. The outer 7s sit against the map's edge with 2 orbital spaces. |
-| Twin Drift (hex), 12 tiles | `7se 8* . .` / `9s 0 7n` / `. 8se 8nw .` / `7s 0 9n` / `. . 8* 7nw` | Each start shares 2 orbital hexes with the 7 beside it, and the two 8s in the middle lean together and share 2 more. Two 7s drift to the edge (3 orbital hexes); two Voids sit between. |
+| Binary Reach (square), 3 × 4 tiles with two gaps | `8se* 10 7sw .` / `7sw 7s 7n 7ne` / `. 7ne 10 8nw*` | Each middle 7 leans towards a 7 on the next tile and shares 2 orbital spaces with it. The outer 7s sit against the map's edge with 2 orbital spaces. |
+| Twin Drift (hex), 12 tiles | `7se 8* . .` / `9 0 7n` / `. 8se 8nw .` / `7s 0 9` / `. . 8* 7nw` | Each start shares 2 orbital hexes with the 7 beside it, the two 8s in the middle lean together and share 2 more, and each 9 shares 2 with the 7 and the 8 beside it. Two 7s drift to the edge (3 orbital hexes); two Voids sit between. |
 
-100 games per map, level 2 AI (Captain) in both seats, 20 October 2026, averages per game:
+Only 7s and 8s go off the middle of their tiles. An off-centre planet sits on its tile's edge space, half a
+space from the edge, and a 9 or 10 is wider than that (0.6 and 0.72 spaces from its middle to its rim), so
+the tile's edge would cut it off. [`mapLayers.test.ts`](../apps/web/test/mapLayers.test.ts) holds every map
+to this.
+
+100 games per map, level 2 AI (Captain) in both seats, the same seeds on each map, 20 October 2026,
+averages per game:
 
 | Map | Rounds | Attacks | Conquers | Wins by seat |
 |---|--:|--:|--:|---|
-| Alpha Sector | 10.8 | 12.8 | 6.4 | 43/57 |
-| Binary Reach | 14.6 | 19.3 | 7.8 | 58/42 |
-| Twin Drift (hex) | 13.6 | 20.3 | 7.7 | 56/44 |
+| Alpha Sector | 10.1 | 12.3 | 6.2 | 62/38 |
+| Binary Reach | 14.5 | 17.7 | 7.7 | 52/48 |
+| Twin Drift (hex) | 12.7 | 18.0 | 7.9 | 53/47 |
 
-The seat splits are within chance at 100 games, as Alpha Sector's own is. With 7 cubes the games ran
-about 20 rounds, and one stalled: each player's last free cube location was on the other's home planet,
+The drift maps' seat splits are within chance at 100 games. Alpha Sector's 62/38 is at the edge of it,
+and an earlier run with other seeds gave 43/57, so it says more about 100 games than about the seats.
+With 7 cubes (on the first layouts, which had the 10s and 9s off-centre) the games ran about 20 rounds,
+and one stalled: each player's last free cube location was on the other's home planet,
 and neither AI went for it.
 
 ## Not yet
