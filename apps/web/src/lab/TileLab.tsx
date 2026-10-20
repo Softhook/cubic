@@ -1,19 +1,29 @@
 import { useMemo, useState } from 'react';
-import { TILE_SET, TILE_SPOTS, dataUrl, editableTileSvg, tileSvg, type PlanetType, type TileShape, type TileSpec } from '@quantum/art';
+import {
+  OFF_CENTRE,
+  TILE_SET,
+  TILE_SPOTS,
+  dataUrl,
+  editableTileSvg,
+  tileSvg,
+  type PlanetType,
+  type TileShape,
+  type TileSpec,
+} from '@quantum/art';
 import { blobToDataUrl, download } from '../files';
 import { svgToPng } from '../print/exports';
-import { PIECES, fileName, pieceSize } from '../print/pieces';
+import { fileName, pieceSize } from '../print/pieces';
 import { PrintPanel, Space } from '../print/PrintPanel';
 import { tileFontCss, useFontCss, useSvgUrl } from './cards';
 import { LabHeader } from './LabHeader';
-import { TILES_AND_AIDS, printableTile } from './pressSheets';
+import { TILE_PRINT, printableTile } from './pressSheets';
 
 /**
  * Art Lab, tiles page (#lab): every tile of the physical set, with controls to explore seeds and
  * planet types and to export print files: single tiles, the whole set, print sheets, and the CMYK press
- * sheets the tiles share with the player aids. See docs/GRAPHICS.md §3–4. The set can be viewed as hex
- * tiles too, and with its planets moved off the middle, as maps place them (docs/HEX.md); the print files
- * stay the square set as printed.
+ * sheets the tiles share with the player aids. See docs/GRAPHICS.md §3–4. The set can be shown and
+ * exported as hex tiles too (die-cut along the flower), and with its planets moved off the middle, as maps
+ * place them (docs/HEX.md).
  */
 
 const TYPES: PlanetType[] = ['gas', 'rocky', 'ice', 'lava', 'ocean'];
@@ -45,16 +55,17 @@ export function TileLab() {
   const detail = useSvgUrl(svg);
   const set = (o: Override) => setOverrides((all) => ({ ...all, [spec.id]: { ...all[spec.id], ...o } }));
 
-  // Prints the set as shown: seeds and types being explored, and the markings setting, included.
-  const printable = (t: TileSpec) => printableTile(t, fonts ?? '', markings);
+  // Prints the set as shown: seeds and types being explored, the markings setting, the shape and planet spot included.
+  const printable = (t: TileSpec) => printableTile(t, fonts ?? '', markings, { shape, planetAt });
+  const { piece, cmyk } = TILE_PRINT[shape];
   const item = printable(spec);
 
   /** Illustrator can't render SVG filters, so the art goes in as a 600 dpi bitmap with vector markings on top. */
   const exportEditable = async () => {
-    const { w, h } = pieceSize(PIECES.tile, bleed);
-    const art = await blobToDataUrl(await svgToPng(tileSvg(spec, { only: 'art', bleed }), w, h, 600));
-    const name = fileName(PIECES.tile, item, { bleed, ext: 'svg' }).replace(/\.svg$/, '-illustrator.svg');
-    download(name, new Blob([editableTileSvg(spec, art, { bleed, markings })], { type: 'image/svg+xml' }));
+    const { w, h } = pieceSize(piece, bleed);
+    const art = await blobToDataUrl(await svgToPng(tileSvg(spec, { only: 'art', bleed, shape, planetAt }), w, h, 600));
+    const name = fileName(piece, item, { bleed, ext: 'svg' }).replace(/\.svg$/, '-illustrator.svg');
+    download(name, new Blob([editableTileSvg(spec, art, { bleed, markings, shape, planetAt })], { type: 'image/svg+xml' }));
   };
 
   return (
@@ -139,28 +150,36 @@ export function TileLab() {
               </button>
             )}
           </div>
-          {(shape !== 'square' || planetAt) && (
+          {shape === 'hex' && (
             <p className="lab-note">
-              Shown {shape === 'hex' ? 'as a hex tile' : 'as a square tile'}
-              {planetAt ? ` with its planet ${planetAt} of the middle` : ''}. The print files below are the square set as printed.
-              {planetAt && spec.number > 8 ? ' Only 7s and 8s sit off the middle on a map: a 9 or 10 spills over the edge.' : ''}
+              A hex tile is cut along its flower: the exports carry the cut line (cut.svg, a CutContour spot colour).
+            </p>
+          )}
+          {planetAt && spec.number > 0 && !OFF_CENTRE[shape].includes(spec.number) && (
+            <p className="lab-warn">
+              A map puts only {OFF_CENTRE[shape].map((k) => `${k}s`).join(' and ')} off the middle of a {shape} tile: this one spills over
+              its edge.
             </p>
           )}
           <p className="lab-note">Changes here are for exploring; to keep one, copy its settings:</p>
           <pre className="lab-spec">{JSON.stringify(spec)}</pre>
           <PrintPanel
-            piece={PIECES.tile}
+            piece={piece}
             item={item}
             bleed={bleed}
             onBleed={setBleed}
             set={specs.map(printable)}
             notes={markings ? '' : 'Without print markings.\n'}
             sheets={() => specs.map((t) => ({ front: printable(t) }))}
-            cmyk={TILES_AND_AIDS}
+            cmyk={cmyk}
             ready={fonts !== null}
             fontsMissing={fonts === ''}
             cmykDiffers={
-              [Object.keys(overrides).length > 0 && 'seeds or types changed here', !markings && 'print markings off']
+              [
+                Object.keys(overrides).length > 0 && 'seeds or types changed here',
+                !markings && 'print markings off',
+                planetAt && 'planets moved off the middle',
+              ]
                 .filter(Boolean)
                 .join(', ') || undefined
             }

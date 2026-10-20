@@ -166,6 +166,20 @@ describe('tiles off the square', () => {
     expect(hatched(outer)).toBeLessThan(hatched(svg));
   });
 
+  it('knock a hex tile out past its flower: at the cut, or past it by the bleed', () => {
+    const clip = (o: Parameters<typeof tileSvg>[1]) => /<clipPath id="[^"]*-flower"><path d="M([\d.]+) /.exec(tileSvg(seven, o))?.[1];
+    // The first hex's right corner: 1/√3 of a space right of its middle, and 3 mm further (over cos 30°) with the bleed.
+    expect(Number(clip({ shape: 'hex', rounded: true }))).toBeCloseTo(48 + 32 / Math.sqrt(3), 1);
+    expect(Number(clip({ shape: 'hex', bleed: true }))).toBeCloseTo(48 + (32 + 6) / Math.sqrt(3), 1);
+    expect(Number(clip({ shape: 'hex' }))).toBeCloseTo(48 + 32 / Math.sqrt(3), 1);
+    expect(clip({})).toBeUndefined();
+  });
+
+  it('give the Illustrator file a cut layer on hex tiles only', () => {
+    expect(editableTileSvg(seven, 'x', { shape: 'hex', planetAt: 'ne', markings: true })).toContain('<g id="cut">');
+    expect(editableTileSvg(seven, 'x', { markings: true })).not.toContain('<g id="cut">');
+  });
+
   it('put the number in the corner nearest the middle, and the label only where it has room', () => {
     expect(numberCorner({ x: 0, y: 0 })).toEqual({ x: 1, y: 1 });
     expect(numberCorner(TILE_SPOTS.square.n)).toEqual({ x: 1, y: 1 });

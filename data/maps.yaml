@@ -129,7 +129,8 @@ maps:
   # Drift: maps whose planets sit off the middle of their tiles (docs/HEX.md, Off-centre planets), so
   # orbits cross tiles, shrink at the edge and overlap. Each is the same turned half a turn about its
   # middle, so the two seats match while the planets look scattered. Basic rules only, as for hex.
-  # Only 7s and 8s go off the middle: a 9 or 10 there would spill over the tile's edge.
+  # Only 7s and 8s go off the middle of a square tile, and only 7s off a hex tile: anything bigger
+  # spills over the tile's edge (art OFF_CENTRE).
 
   - id: binary-reach
     name: Binary Reach
@@ -152,12 +153,12 @@ maps:
     grid: hex
     cubes: 6
     stats: { slack: 6, shared: 2, planets: 10 }
-    # Each start shares two orbital spaces with a 7 beside it; the two 8s in the middle lean together
-    # and share two more. Two 7s drift to the map's edge (3 orbital spaces), and two Voids sit between.
+    # Each start shares two orbital spaces with a 7 beside it, and the 9s share two more. Two 7s
+    # drift to the map's edge (3 orbital spaces), and two Voids sit between.
     layout:
       - "7se 8*   .    ."
       - "9   0    7n"
-      - ".   8se  8nw  ."
+      - ".   8    8    ."
       - "7s  0    9"
       - ".   .    8*   7nw"
 

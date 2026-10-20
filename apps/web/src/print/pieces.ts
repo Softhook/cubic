@@ -1,4 +1,5 @@
-import { AID, CARD, TILE } from '@quantum/art';
+import { AID, CARD, HEX_TILE_CUT, TILE, hexTileShape } from '@quantum/art';
+import type { Line, Polygon } from './pdf';
 import { pressTag } from './press';
 
 /**
@@ -17,11 +18,31 @@ export interface Format {
   bleed: number;
   /** Resolution of the PNGs, PDFs and print sheets: 600 for pieces with small text, so it prints crisp. */
   dpi: number;
+  /** Where it is die-cut, when not at the trim (`Die`). */
+  die?: Die;
 }
+
+/**
+ * How a face die-cut other than at its trim is cut (a hex tile's flower): the trim is then the box round
+ * it, which the crop marks still frame. Its art is knocked out past the cut but for the bleed, so the press
+ * sheets print only its `shape` with the bleed, and the files for the press carry its cut `line`.
+ */
+export interface Die {
+  /** The cut line, in trim millimetres. */
+  line: readonly Line[];
+  /** The cut's shape grown by `grow` mm, as polygons that join into it, in trim millimetres. */
+  shape: (grow: number) => Polygon[];
+}
+
+/** A die moved by (x, y) mm: onto a sheet, or in past a face's bleed. */
+export const dieAt = (die: Die, x: number, y: number): Die => ({
+  line: die.line.map(([x1, y1, x2, y2]): Line => [x + x1, y + y1, x + x2, y + y2]),
+  shape: (grow) => die.shape(grow).map((poly) => poly.map(([px, py]) => [x + px, y + py] as const)),
+});
 
 /** A piece printed as a set: in ZIPs and on sheets. */
 export interface Piece extends Format {
-  id: 'card' | 'tile' | 'aid';
+  id: 'card' | 'tile' | 'hex-tile' | 'aid';
   /** For file names: `cubic-cards-…`. */
   plural: string;
   /** How many fit across and down a print sheet (A4). */
@@ -32,6 +53,20 @@ export interface Piece extends Format {
 export const PIECES = {
   card: { id: 'card', plural: 'cards', w: CARD.w, h: CARD.h, bleed: CARD.bleed, cols: 3, rows: 3, dpi: 600 },
   tile: { id: 'tile', plural: 'tiles', w: TILE.size, h: TILE.size, bleed: TILE.bleed, cols: 2, rows: 2, dpi: 300 },
+  hexTile: {
+    id: 'hex-tile',
+    plural: 'hex-tiles',
+    w: TILE.size,
+    h: TILE.size,
+    bleed: TILE.bleed,
+    cols: 2,
+    rows: 2,
+    dpi: 300,
+    die: {
+      line: HEX_TILE_CUT,
+      shape: (grow: number) => hexTileShape(grow).map((hex) => hex.map((p) => [p.x, p.y] as const)),
+    },
+  },
   aid: { id: 'aid', plural: 'aids', w: AID.w, h: AID.h, bleed: AID.bleed, cols: 1, rows: 2, dpi: 600 },
 } as const satisfies Record<string, Piece>;
 

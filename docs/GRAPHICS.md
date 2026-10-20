@@ -408,7 +408,15 @@ same way:
 
 - `pieces.ts` holds each piece's print spec (trim, bleed, sheet grid) and the file-name pattern:
   `cubic-<piece>-<name>[-bleed][-<dpi>dpi].<ext>` for one face, `cubic-<pieces>[-<part>][-bleed|-fogra39[-deep]].zip`
-  for a set.
+  for a set. A piece die-cut other than at its trim has a `cut` line: the **hex tile** (`hex-tile`, 96 ×
+  96 mm trim round its flower, `HEX_TILE_CUT`, 18 sides). Its art is **knocked out** past the flower:
+  at the cut at trim size, so the home print sheets show the shape to cut along with scissors, and past
+  it by the bleed in files with bleed (`hexTileShape`), so a die cut that wanders still has art under
+  it. The press sheets clip each tile to that shape (`outline`), so no neighbour's knocked-out corner
+  covers its bleed. Every export for a press carries the cut line too: `cut.svg` in the PNG ZIP (the
+  size of each PNG), a `CutContour` spot colour in the CMYK PDFs (overprinting, so it takes nothing out
+  of the art; a print service cuts along it and doesn't print it), and a `cut` layer in the Illustrator
+  SVG. The crop marks still frame each tile's box.
 - `PrintPanel.tsx` is the export panel on every lab page: this face as a PNG (plus page extras such
   as SVG for Illustrator), the whole set as a ZIP of PNGs with a README, the CMYK export for the press
   (below), and print sheets. Everything uses the piece's `dpi`: 600 for cards and the aid (small text),
@@ -449,6 +457,12 @@ same way:
     each cut at its left and top where a piece is there, so it covers the bleed of the piece before it
     and no seam can show between two. Crop marks start clear of the bleed. Single-sided, the set as it
     ships (not seeds being explored), with print markings.
+  - **Hex tiles: press sheets** ("CMYK Hex tiles · PDF", on the tile page with Shape: Hex):
+    `cubic-hex-tiles-a4-fogra39.pdf`, the 30 tiles as hex tiles with their planets in the middle, laid
+    out as the square tiles are, with each flower's cut line.
+
+  The tile page exports as shown otherwise (shape, planet spot, seeds and markings): a tile with its
+  planet off the middle is named for its spot, `p7-01-ne`.
 
   The press test exports as a single CMYK PDF.
 - `sheets.ts` lays out print sheets: pieces at trim size in a grid (cards 3 × 3, tiles 2 × 2, aid
@@ -479,7 +493,7 @@ Because the print route is a normal page, it can be opened in a browser to check
 |---|---|---|
 | `cards-pod` | One PDF page (or PNG) per card face and back, with 3 mm bleed, no marks | 69.5 × 94.9 mm |
 | `cards-pnp` | Print-and-play sheets, 3×3 cards, crop marks, duplex backs mirrored | A4 |
-| `tiles` | Tiles and player aids on A4 press sheets, butted, crop marks (built as the CMYK PDF) | A4 |
+| `tiles` | Tiles and player aids on A4 press sheets, butted, crop marks (built as the CMYK PDF); hex tiles likewise, with their cut line | A4 |
 | `tiles-pnp` | Tiles 2 × 2 per page with crop marks | A4 |
 | `player-board` | Player board / reference sheet (the A6 player aid is built, §2 Player aid) | A4 or A5 |
 | `proof` | Contact sheet of everything at reduced size, for review | A4 |

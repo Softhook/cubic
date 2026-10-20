@@ -21,11 +21,22 @@ export interface Rect {
   h: number;
 }
 
+/** A line from x1 y1 to x2 y2, mm from the top left. */
+export type Line = readonly [number, number, number, number];
+
+/** A polygon's corners [x, y], mm from the top left: polygons going the same way round join into one shape. */
+export type Polygon = readonly (readonly [number, number])[];
+
 export interface PdfPage {
-  /** Images drawn into `at`, an index into the PDF's `images` (one image can appear many times); only `clip` of it shows, when given. */
-  images: { image: number; at: Rect; clip?: Rect }[];
-  /** Crop marks, 0.2 mm in black: lines from x1 y1 to x2 y2, mm from the top left. */
-  marks?: [number, number, number, number][];
+  /**
+   * Images drawn into `at`, an index into the PDF's `images` (one image can appear many times); only `clip`
+   * of it shows, when given: a rectangle, or polygons that join into a shape.
+   */
+  images: { image: number; at: Rect; clip?: Rect | Polygon[] }[];
+  /** Crop marks, 0.2 mm in black. */
+  marks?: readonly Line[];
+  /** Die-cut lines, in the `CutContour` spot colour print services cut along and don't print, overprinting so they knock nothing out. */
+  cuts?: readonly Line[];
 }
 
 export interface PdfOptions {
@@ -78,6 +89,14 @@ export async function deflate(
 ): Promise<Uint8Array<ArrayBuffer>> {
   return new Uint8Array(await new Blob(await deflateChunks(pieces)).arrayBuffer());
 }
+
+/**
+ * A page's resources for its cut lines: the `CutContour` spot colour (shown as magenta where it's
+ * previewed) and overprinting, so the line takes nothing out of the art under it.
+ */
+const CUT_RESOURCES =
+  ' /ColorSpace << /Cut [/Separation /CutContour /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [0 1 0 0] /N 1 >>] >>' +
+  ' /ExtGState << /Cut << /Type /ExtGState /OP true /op true /OPM 1 >> >>';
 
 const pt = (mm: number) => Math.round((mm / 25.4) * 72 * 1000) / 1000;
 /** A PDF text string: brackets and backslashes escaped, ASCII only. */
@@ -137,23 +156,29 @@ export function cmykPdf(o: PdfOptions): Blob {
   // PDF space is in points from the bottom left: a rectangle's bottom edge, and the rectangle as `re` takes it.
   const bottom = (r: Rect) => pt(o.h - r.y - r.h);
   const box = (r: Rect) => `${pt(r.x)} ${bottom(r)} ${pt(r.w)} ${pt(r.h)}`;
+  // A clip as a path: a rectangle, or polygons the nonzero rule joins.
+  const clipPath = (clip: Rect | Polygon[]) =>
+    Array.isArray(clip)
+      ? clip.map((poly) => poly.map(([x, y], i) => `${pt(x)} ${pt(o.h - y)} ${i ? 'l' : 'm'}`).join(' ') + ' h').join(' ')
+      : `${box(clip)} re`;
+  const lines = (list: readonly Line[]) =>
+    list.map(([x1, y1, x2, y2]) => `${pt(x1)} ${pt(o.h - y1)} m ${pt(x2)} ${pt(o.h - y2)} l S`).join('\n');
   o.pages.forEach((page, k) => {
     const used = [...new Set(page.images.map((i) => i.image))];
     object(
       pageRef(k),
       `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /BleedBox [0 0 ${W} ${H}] /TrimBox [${b} ${b} ${pt(o.w - o.bleed)} ${pt(o.h - o.bleed)}]` +
-        ` /Resources << /XObject << ${used.map((i) => `/Im${i} ${imageRef(i)} 0 R`).join(' ')} >> >> /Contents ${pageRef(k) + 1} 0 R >>`,
+        ` /Resources << /XObject << ${used.map((i) => `/Im${i} ${imageRef(i)} 0 R`).join(' ')} >>${page.cuts?.length ? CUT_RESOURCES : ''} >>` +
+        ` /Contents ${pageRef(k) + 1} 0 R >>`,
     );
     let content = page.images
       .map(
         ({ image, at, clip }) =>
-          `q ${clip ? `${box(clip)} re W n ` : ''}${pt(at.w)} 0 0 ${pt(at.h)} ${pt(at.x)} ${bottom(at)} cm /Im${image} Do Q`,
+          `q ${clip ? `${clipPath(clip)} W n ` : ''}${pt(at.w)} 0 0 ${pt(at.h)} ${pt(at.x)} ${bottom(at)} cm /Im${image} Do Q`,
       )
       .join('\n');
-    if (page.marks?.length)
-      content +=
-        `\n0 0 0 1 K ${pt(0.2)} w\n` +
-        page.marks.map(([x1, y1, x2, y2]) => `${pt(x1)} ${pt(o.h - y1)} m ${pt(x2)} ${pt(o.h - y2)} l S`).join('\n');
+    if (page.marks?.length) content += `\n0 0 0 1 K ${pt(0.2)} w\n` + lines(page.marks);
+    if (page.cuts?.length) content += `\nq /Cut gs /Cut CS 1 SCN ${pt(0.25)} w\n${lines(page.cuts)}\nQ`;
     const stream = enc.encode(content);
     object(pageRef(k) + 1, () => {
       write(`<< /Length ${stream.length} >>\nstream\n`);

@@ -1,10 +1,19 @@
 /** What the map's live layers mark, worked out from the board (MapTiles): space roles, number corners, labels. */
 import { describe, expect, it } from 'vitest';
-import { MAPS, buildBoard, tileCentres } from '@quantum/engine';
-import { PLANET_DIAMETER, TILE } from '@quantum/art';
+import { MAPS, buildBoard, tileCentres, type MapDef } from '@quantum/engine';
+import { OFF_CENTRE } from '@quantum/art';
 import { labelFits, numberCorner, spaceRoles } from '../src/components/board/layers';
 
 const board = (id: string) => buildBoard(MAPS.find((m) => m.id === id)!);
+const testMap = (layout: string[][]): MapDef => ({
+  id: 't',
+  name: 't',
+  players: 2,
+  group: 't',
+  cubes: 4,
+  stats: { slack: 0, shared: null, planets: 0 },
+  layout,
+});
 
 describe('space roles', () => {
   it('on a square map with planets in the middle: the 4 beside each planet orbit it, the corners nothing', () => {
@@ -18,11 +27,15 @@ describe('space roles', () => {
     expect(spaceRoles(board('alpha-hex')).every((s) => s.orbits === 1)).toBe(true);
   });
 
-  it('marks the spaces where off-centre planets share an orbit, and orbits reaching onto a Void', () => {
+  it('marks the spaces where off-centre planets share an orbit', () => {
     expect(spaceRoles(board('binary-reach')).filter((s) => s.orbits > 1)).toHaveLength(4);
-    const drift = spaceRoles(board('twin-drift'));
-    expect(drift.filter((s) => s.orbits > 1)).toHaveLength(8);
-    expect(drift.filter((s) => s.void && s.orbits > 0)).toHaveLength(2);
+    expect(spaceRoles(board('twin-drift')).filter((s) => s.orbits > 1)).toHaveLength(6);
+  });
+
+  it('marks an orbit reaching onto a Void, which keeps its flask', () => {
+    // A 7 leaning onto the Void next to it: one of the Void's spaces orbits it.
+    const b = buildBoard(testMap([['7e*', '0', '7*']]));
+    expect(spaceRoles(b).filter((s) => s.void && s.orbits > 0)).toHaveLength(1);
   });
 });
 
@@ -55,15 +68,7 @@ describe('planet numbers', () => {
   });
 
   it('stay on their own tile where two planets lean together', () => {
-    const b = buildBoard({
-      id: 't',
-      name: 't',
-      players: 2,
-      group: 't',
-      cubes: 4,
-      stats: { slack: 0, shared: null, planets: 2 },
-      layout: [['8e*', '8w*']],
-    });
+    const b = buildBoard(testMap([['8e*', '8w*']]));
     expect(b.planets.map((p) => numberCorner(b, p).x)).toEqual([-1, 1]);
   });
 });
@@ -111,14 +116,13 @@ describe('flavour labels', () => {
 });
 
 describe('map design', () => {
-  // An off-centre planet sits on its tile's edge space, half a space from the edge (squares and hexes
-  // alike): a 9 or 10 there would be cut off by the tile's edge.
-  it('puts only planets that fit inside half a space (7s and 8s) off the middle of their tiles', () => {
+  // An off-centre planet sits on its tile's edge space: only the planets that fit there (art OFF_CENTRE).
+  it('puts only 7s and 8s off the middle of a square tile, and only 7s off a hex tile', () => {
     const spill = MAPS.flatMap((m) => {
       const b = buildBoard(m);
       const middles = new Set([...tileCentres(b).values()].map((t) => `${t.r},${t.c}`));
       return b.planets
-        .filter((p) => !middles.has(`${p.r},${p.c}`) && PLANET_DIAMETER[p.number] / 2 > TILE.cell / 2)
+        .filter((p) => !middles.has(`${p.r},${p.c}`) && !OFF_CENTRE[b.hex ? 'hex' : 'square'].includes(p.number))
         .map((p) => `${m.id}: ${p.number} at ${p.r},${p.c}`);
     });
     expect(spill).toEqual([]);

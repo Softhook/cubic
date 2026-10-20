@@ -111,6 +111,58 @@ describe('CMYK PDF', () => {
     expect(text).not.toMatch(/DeviceRGB|\/Font|\/SMask/);
   });
 
+  it('clips an image to polygons that join into a shape', async () => {
+    const pdf = cmykPdf({
+      title: 'Shape',
+      w: 210,
+      h: 297,
+      bleed: 0,
+      condition: 'FOGRA39',
+      conditionInfo: 'Coated FOGRA39',
+      images: [await image(2, 2)],
+      pages: [
+        {
+          images: [
+            {
+              image: 0,
+              at: { x: 0, y: 0, w: 10, h: 10 },
+              clip: [
+                [
+                  [0, 0],
+                  [10, 0],
+                  [0, 10],
+                ],
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const text = new TextDecoder('latin1').decode(await pdf.arrayBuffer());
+    expect(text).toContain('q 0 841.89 m 28.346 841.89 l 0 813.543 l h W n ');
+  });
+
+  it('draws die-cut lines in a CutContour spot colour that overprints, only on pages that have them', async () => {
+    const pdf = cmykPdf({
+      title: 'Hex',
+      w: 210,
+      h: 297,
+      bleed: 0,
+      condition: 'FOGRA39',
+      conditionInfo: 'Coated FOGRA39',
+      images: [await image(2, 2)],
+      pages: [
+        { images: [{ image: 0, at: { x: 0, y: 0, w: 10, h: 10 } }], cuts: [[0, 0, 10, 0]] },
+        { images: [{ image: 0, at: { x: 0, y: 0, w: 10, h: 10 } }] },
+      ],
+    });
+    const text = new TextDecoder('latin1').decode(await pdf.arrayBuffer());
+    expect(text.match(/\/Separation \/CutContour \/DeviceCMYK/g)).toHaveLength(1);
+    expect(text).toContain('/OP true');
+    expect(text).toContain('q /Cut gs /Cut CS 1 SCN 0.709 w\n0 841.89 m 28.346 841.89 l S\nQ');
+    expect(text).not.toMatch(/DeviceRGB/);
+  });
+
   it('places clipped images and crop marks on a sheet, from the top left', async () => {
     const pdf = cmykPdf({
       title: 'Sheet',

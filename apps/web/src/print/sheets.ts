@@ -1,5 +1,5 @@
-import type { PdfPage, Rect } from './pdf';
-import type { Piece } from './pieces';
+import type { Line, PdfPage, Rect } from './pdf';
+import { dieAt, type Piece } from './pieces';
 
 /** Sheets: pieces laid out on paper with crop marks, printed from the browser or as CMYK PDF pages for a press. */
 
@@ -12,8 +12,6 @@ export const PAPER: Record<Paper, { w: number; h: number; name: string }> = {
 };
 
 export const A4 = PAPER.a4;
-
-type Line = [number, number, number, number];
 
 /** How close to the paper's edge a home printer's crop marks may go, mm: most home printers can't print the outer 3–4 mm. */
 const HOME_MARGIN = 4;
@@ -52,7 +50,8 @@ function pagesOf<T>(piece: Piece, faces: T[]): { face: T; col: number; row: numb
 }
 
 /**
- * Print sheets for home printing: faces (image URLs) at trim size, crop marks 1 mm outside the grid.
+ * Print sheets for home printing: faces (image URLs) at trim size, crop marks 1 mm outside the grid. A
+ * piece die-cut other than at its trim (a hex tile) is knocked out past its cut, so the paper shows where to cut.
  * With backs, each page of fronts is followed by its backs, columns mirrored so they land behind their
  * fronts when printed double-sided on the long edge.
  */
@@ -100,23 +99,30 @@ export function sheetsHtml(
  * drawn with its bleed, so each block of pieces has its bleed all round. Faces are drawn in reading
  * order and each is clipped at its cell's left and top where a piece is there: it covers the bleed of the
  * piece before it, which runs under it, so no seam can show between two pieces. Crop marks start clear of the bleed.
+ * A piece die-cut other than at its trim (a hex tile, pieces.ts `Die`) shows only its shape with its bleed,
+ * so no neighbour's knocked-out corner covers its bleed, and has its cut line on the page (pdf.ts `cuts`).
  */
 export function pressPages(piece: Piece, faces: number[]): PdfPage[] {
   const { cell, marks } = sheetLayout(piece, A4, piece.bleed, 0.5);
   const b = piece.bleed;
   return pagesOf(piece, faces).map((cells) => {
     const has = (col: number, row: number) => cells.some((c) => c.col === col && c.row === row);
-    const images = cells.map(({ face, col, row }) => {
+    const dies = cells.map(({ col, row }) => {
+      const c = cell(col, row);
+      return piece.die && dieAt(piece.die, c.x, c.y);
+    });
+    const images = cells.map(({ face, col, row }, k) => {
       const c = cell(col, row);
       const left = has(col - 1, row) ? 0 : b;
       const top = has(col, row - 1) ? 0 : b;
       return {
         image: face,
         at: { x: c.x - b, y: c.y - b, w: c.w + 2 * b, h: c.h + 2 * b },
-        clip: { x: c.x - left, y: c.y - top, w: c.w + left + b, h: c.h + top + b },
+        clip: dies[k]?.shape(b) ?? { x: c.x - left, y: c.y - top, w: c.w + left + b, h: c.h + top + b },
       };
     });
-    return { images, marks };
+    const cuts: Line[] = dies.flatMap((d) => d?.line ?? []);
+    return { images, marks, ...(cuts.length ? { cuts } : {}) };
   });
 }
 

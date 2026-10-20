@@ -133,7 +133,8 @@ hatched there, a space in two orbits is cross-hatched, and a Void space in an or
 The number goes in the planet's corner nearest its tile's middle, as its printed tile has it, so it never
 meets the map's edge or a neighbour; on hexes, at the vertex three hexes share. The flavour label shows
 only where the spaces up and left of the planet are its own tile's and the number isn't there. The Art
-Lab shows every tile as a hex tile and with its planet on any space. The lobby's backdrop stands each planet up whole
+Lab shows and exports every tile as a hex tile, die-cut along its flower ([GRAPHICS.md](GRAPHICS.md) §3), and
+with its planet on any space. The lobby's backdrop stands each planet up whole
 as a sphere.
 
 ### Drift maps
@@ -144,12 +145,13 @@ planets look scattered. 6 cubes each, slack 6.
 | Map | Layout | What the offsets do |
 |---|---|---|
 | Binary Reach (square), 3 × 4 tiles with two gaps | `8se* 10 7sw .` / `7sw 7s 7n 7ne` / `. 7ne 10 8nw*` | Each middle 7 leans towards a 7 on the next tile and shares 2 orbital spaces with it. The outer 7s sit against the map's edge with 2 orbital spaces. |
-| Twin Drift (hex), 12 tiles | `7se 8* . .` / `9 0 7n` / `. 8se 8nw .` / `7s 0 9` / `. . 8* 7nw` | Each start shares 2 orbital hexes with the 7 beside it, the two 8s in the middle lean together and share 2 more, and each 9 shares 2 with the 7 and the 8 beside it. Two 7s drift to the edge (3 orbital hexes); two Voids sit between. |
+| Twin Drift (hex), 12 tiles | `7se 8* . .` / `9 0 7n` / `. 8 8 .` / `7s 0 9` / `. . 8* 7nw` | Each start shares 2 orbital hexes with the 7 beside it, and the 9s share 2 more. Two 7s drift to the edge (3 orbital hexes); two Voids sit between. |
 
-Only 7s and 8s go off the middle of their tiles. An off-centre planet sits on its tile's edge space, half a
-space from the edge, and a 9 or 10 is wider than that (0.6 and 0.72 spaces from its middle to its rim), so
-the tile's edge would cut it off. [`mapLayers.test.ts`](../apps/web/test/mapLayers.test.ts) holds every map
-to this.
+Only 7s and 8s go off the middle of a square tile, and only 7s off a hex tile (`OFF_CENTRE` in
+[`tile.ts`](../packages/art/src/tile.ts)). An off-centre planet sits on its tile's edge space, half a space
+from the edge: a 9 or 10 is wider than that (0.6 and 0.72 spaces from its middle to its rim), and an 8
+fills an outer hex right to its sides. [`mapLayers.test.ts`](../apps/web/test/mapLayers.test.ts) holds every
+map to this.
 
 100 games per map, level 2 AI (Captain) in both seats, the same seeds on each map, 20 October 2026,
 averages per game:
@@ -158,7 +160,7 @@ averages per game:
 |---|--:|--:|--:|---|
 | Alpha Sector | 10.1 | 12.3 | 6.2 | 62/38 |
 | Binary Reach | 14.5 | 17.7 | 7.7 | 52/48 |
-| Twin Drift (hex) | 12.7 | 18.0 | 7.9 | 53/47 |
+| Twin Drift (hex) | 13.9 | 21.5 | 8.0 | 45/55 |
 
 The drift maps' seat splits are within chance at 100 games. Alpha Sector's 62/38 is at the edge of it,
 and an earlier run with other seeds gave 43/57, so it says more about 100 games than about the seats.
@@ -172,11 +174,10 @@ and neither AI went for it.
   the corners") need a ruling, as hex tiles have no corners; Prototyping's Shoot and zones of control
   assume squares.
 - Hex versions of the advanced, add-on and BGA maps; wrapping maps.
-- Print files for hex tiles and for off-centre planets: the Art Lab shows them, but exports the square set
-  as printed.
 - Turning a tall map on its side to fit a wide screen.
+- Packing hex tiles closer on a sheet: they print in the square tiles' 2 × 2 grid, though flowers nest.
 - Off-centre planets in the lobby's small map previews (they show each tile's number only).
 - The AI scores each planet on its own, so a ship in a shared orbit counts towards both, and it doesn't
   see that moving it off one planet's orbit leaves the other's too.
-- A ruling on a Void space in a planet's orbit (Twin Drift's two middle 8s have one each): a ship there
-  gains Research and counts towards the conquest, which no rule says it should or shouldn't.
+- A ruling on a Void space in a planet's orbit, before a map puts one there: a ship there would gain
+  Research and count towards the conquest, which no rule says it should or shouldn't.

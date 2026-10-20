@@ -35,7 +35,10 @@ export interface TileOptions {
   only?: 'art' | 'markings';
   /** `@font-face` rules to embed, so print files set the number and label in their own fonts, not the system's. */
   fontCss?: string;
-  /** The tile's spaces: 3 × 3 squares (the default), or a 7-hex flower, cut to its outline when `rounded`. */
+  /**
+   * The tile's spaces: 3 × 3 squares (the default), or a 7-hex flower, its art knocked out past the flower
+   * (at its outline when `rounded`, otherwise past it by the bleed, if any).
+   */
   shape?: TileShape;
   /** Where the planet sits, as a map's layout token says it (`TILE_SPOTS`): the middle when absent. */
   planetAt?: string;
@@ -46,6 +49,13 @@ export type TileShape = 'square' | 'hex';
 
 /** A hex space's well, as a part of its hex (a square's pad is 24 of its 32 mm). */
 export const HEX_WELL = 0.8;
+
+/**
+ * The planets a map may put off the middle of a tile, by the tile's shape: an off-centre planet sits on
+ * an edge space, half a space from the tile's edge. A 9 or 10 is wider than that (0.6 and 0.72 spaces to
+ * its rim) and an 8 fills an outer hex to its sides, so a hex tile takes only 7s there.
+ */
+export const OFF_CENTRE: Record<TileShape, readonly number[]> = { square: [7, 8], hex: [7] };
 
 /** A point on a tile in spaces from its middle, x right and y down. */
 export interface Spot {
@@ -592,14 +602,41 @@ export function tileLabelFits(shape: TileShape, at: Spot): boolean {
 const moved = (f: Fragment, dx: number, dy: number): Fragment =>
   dx || dy ? { defs: f.defs, body: `<g transform="translate(${n(dx)} ${n(dy)})">${f.body}</g>` } : f;
 
-/** A hex tile's outline, its 7 hexes as one path (mm): they join into the flower. */
-const flowerPath = () =>
-  HEX_CENTRES.map(
-    (c) =>
-      `M${hexCorners(c.x, c.y, TILE.cell)
-        .map((p) => `${n(p.x)} ${n(p.y)}`)
-        .join(' L')}Z`,
-  ).join('');
+/**
+ * A hex tile's shape in trim millimetres: its 7 hexes, each grown by `grow` mm (its bleed past the cut),
+ * which together make the flower, as polygons going the same way round (so filled or clipped they join).
+ */
+export const hexTileShape = (grow = 0): Spot[][] => HEX_CENTRES.map((c) => hexCorners(c.x, c.y, TILE.cell + 2 * grow));
+
+/** A straight piece of a line, [x1, y1, x2, y2] in millimetres. */
+export type Segment = readonly [number, number, number, number];
+
+/** The outline of polygons that join into one shape: the sides no two of them share. */
+function outlineOf(polygons: Spot[][]): Segment[] {
+  const sides = polygons.flatMap((poly) =>
+    poly.map((a, i): Segment => [a.x, a.y, poly[(i + 1) % poly.length].x, poly[(i + 1) % poly.length].y]),
+  );
+  const middle = ([x1, y1, x2, y2]: Segment) => `${((x1 + x2) / 2).toFixed(3)},${((y1 + y2) / 2).toFixed(3)}`;
+  const count = new Map<string, number>();
+  for (const side of sides) count.set(middle(side), (count.get(middle(side)) ?? 0) + 1);
+  return sides.filter((side) => count.get(middle(side)) === 1);
+}
+
+/** A hex tile's die-cut line, in trim millimetres: the flower's outline, 18 sides. */
+export const HEX_TILE_CUT: readonly Segment[] = outlineOf(hexTileShape());
+
+/**
+ * A die-cut line as an SVG path, moved by (dx, dy) mm: for a print service's cut layer, named for the
+ * `CutContour` spot colour it cuts along and drawn in the magenta that colour previews as.
+ */
+export const dieLine = (line: readonly Segment[], dx = 0, dy = 0) =>
+  `<path id="CutContour" d="${line.map(([x1, y1, x2, y2]) => `M${n(x1 + dx)} ${n(y1 + dy)}L${n(x2 + dx)} ${n(y2 + dy)}`).join('')}" fill="none" stroke="#ec008c" stroke-width=".25"/>`;
+
+/** A hex tile's shape (`hexTileShape`) as one SVG path. */
+const flowerPath = (grow: number) =>
+  hexTileShape(grow)
+    .map((hex) => `M${hex.map((p) => `${n(p.x)} ${n(p.y)}`).join(' L')}Z`)
+    .join('');
 
 /**
  * One map tile (trim 96 × 96 mm) as a standalone SVG document: its sky, planet (or Void heart), label and
@@ -611,33 +648,30 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
   const b = o.bleed ? TILE.bleed : 0;
   const area: Box = { x: -b, y: -b, w: TILE.size + 2 * b, h: TILE.size + 2 * b };
   const full: Box = { x: -TILE.bleed, y: -TILE.bleed, w: TILE.size + 2 * TILE.bleed, h: TILE.size + 2 * TILE.bleed };
-  const isVoid = spec.number === 0;
-  const shape = o.shape ?? 'square';
-  const at = planetSpot(shape, o.planetAt);
-  const p = { x: MID + at.x * TILE.cell, y: MID + at.y * TILE.cell };
-  const labelled = !isVoid && tileLabelFits(shape, at);
+  const t = tileLayout(spec, o);
 
-  const marks = () => markings(spec, o.markings === 'spaces', shape, at);
-  if (o.only === 'markings') return document(marks(), area);
+  if (o.only === 'markings') return document(t.marks(), area);
   const parts: Fragment[] = [
     skyArt(
       spec,
       id,
       full,
       // A Void keeps the planet's strips clear too, as printed.
-      (x, y) => inGutter(shape, p, numberCorner(at, shape), tileLabelFits(shape, at), x, y),
-      labelled ? (x: number, y: number) => !inLabel(p, x, y) : undefined,
+      (x, y) => inGutter(t.shape, t.p, numberCorner(t.at, t.shape), tileLabelFits(t.shape, t.at), x, y),
+      t.labelled ? (x: number, y: number) => !inLabel(t.p, x, y) : undefined,
     ),
-    moved(bodyArt(spec, id), p.x - MID, p.y - MID),
+    t.shift(bodyArt(spec, id)),
   ];
-  if (labelled && o.only !== 'art') parts.push(moved(label(spec), p.x - MID, p.y - MID));
-  if (o.markings && o.only !== 'art') parts.push(marks());
+  if (t.labelled && o.only !== 'art') parts.push(t.shift(label(spec)));
+  if (o.markings && o.only !== 'art') parts.push(t.marks());
 
   const all = join(...parts);
-  if (shape === 'hex' && o.rounded)
+  // A hex tile's art is knocked out past its flower, so the paper shows its shape: at the cut on screen
+  // (`rounded`), and with its bleed past the cut in print files.
+  if (t.shape === 'hex')
     return document(
       {
-        defs: all.defs + `<clipPath id="${id}-flower"><path d="${flowerPath()}"/></clipPath>`,
+        defs: all.defs + `<clipPath id="${id}-flower"><path d="${flowerPath(o.rounded ? 0 : b)}"/></clipPath>`,
         body: `<g clip-path="url(#${id}-flower)">${all.body}</g>`,
       },
       area,
@@ -645,6 +679,25 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
       o.fontCss,
     );
   return document(o.rounded ? dieCut(all, id, TILE.size, TILE.size, TILE.corner) : all, area, true, o.fontCss);
+}
+
+/**
+ * How a tile is laid out for its shape and where its planet sits (`TileOptions`): the planet's spot and
+ * its middle in mm, whether it has its label, moving a fragment drawn round the tile's middle onto the
+ * planet, and the markings.
+ */
+function tileLayout(spec: TileSpec, o: Pick<TileOptions, 'shape' | 'planetAt' | 'markings'>) {
+  const shape = o.shape ?? 'square';
+  const at = planetSpot(shape, o.planetAt);
+  const p = { x: MID + at.x * TILE.cell, y: MID + at.y * TILE.cell };
+  return {
+    shape,
+    at,
+    p,
+    labelled: spec.number > 0 && tileLabelFits(shape, at),
+    shift: (f: Fragment) => moved(f, p.x - MID, p.y - MID),
+    marks: () => markings(spec, o.markings === 'spaces', shape, at),
+  };
 }
 
 /** The trim of a tile (mm). */
@@ -722,19 +775,27 @@ export function tileHasRings(spec: TileSpec): boolean {
  * bitmap (pass a PNG data URL of `tileSvg(spec, { only: 'art', bleed })`), with the markings on top as
  * vectors. Each sits in its own named group, which Illustrator opens as layers.
  */
-export function editableTileSvg(spec: TileSpec, artPng: string, o: Pick<TileOptions, 'bleed' | 'markings'> = {}): string {
+export function editableTileSvg(
+  spec: TileSpec,
+  artPng: string,
+  o: Pick<TileOptions, 'bleed' | 'markings' | 'shape' | 'planetAt'> = {},
+): string {
   const b = o.bleed ? TILE.bleed : 0;
   const w = TILE.size + 2 * b;
   const area: Box = { x: -b, y: -b, w, h: w };
-  const marks = o.markings ? markings(spec, o.markings === 'spaces') : { defs: '', body: '' };
-  const flavour = spec.number > 0 ? label(spec).body : '';
+  const t = tileLayout(spec, o);
+  const marks = o.markings ? t.marks() : { defs: '', body: '' };
+  const flavour = t.labelled ? t.shift(label(spec)).body : '';
+  // A hex tile's die-cut line on a layer of its own, for the print service (a square tile is cut at the trim).
+  const cut = t.shape === 'hex' ? `<g id="cut">${dieLine(HEX_TILE_CUT)}</g>` : '';
   return document(
     {
       defs: marks.defs,
       body:
         `<g id="art"><image x="${n(-b)}" y="${n(-b)}" width="${n(w)}" height="${n(w)}" preserveAspectRatio="none" href="${artPng}" xlink:href="${artPng}"/></g>` +
         `<g id="label">${flavour}</g>` +
-        `<g id="markings">${marks.body}</g>`,
+        `<g id="markings">${marks.body}</g>` +
+        cut,
     },
     area,
   ).replace('<svg ', '<svg xmlns:xlink="http://www.w3.org/1999/xlink" ');

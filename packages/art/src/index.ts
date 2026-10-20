@@ -22,11 +22,15 @@ export { starfield, type StarfieldOptions } from './starfield';
 export { planet, type PlanetOptions } from './planet';
 export {
   HATCH,
+  HEX_TILE_CUT,
   HEX_WELL,
+  OFF_CENTRE,
   TILE_SPOTS,
   bodySvg,
   cubePadCentres,
+  dieLine,
   editableTileSvg,
+  hexTileShape,
   hexWell,
   numberCorner,
   numberPlacement,
@@ -40,6 +44,7 @@ export {
   well,
   type Corner,
   type NumberPlacement,
+  type Segment,
   type Spot,
   type TileOptions,
   type TileShape,
