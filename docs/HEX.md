@@ -130,8 +130,10 @@ cross-check plays games on them.
 needs nothing of its own: its body is placed on its space and cut off at its tile's edge, the spaces are
 drawn over it, and their marks come from the board, not the tile. An orbit reaching onto the next tile is
 hatched there, a space in two orbits is cross-hatched, and a Void space in an orbit keeps its flask too.
-The number moves to another corner when a neighbour is in the way, and the flavour label shows only where
-the spaces up and left of the planet are its own tile's. The lobby's backdrop stands each planet up whole
+The number goes in the planet's corner nearest its tile's middle, as its printed tile has it, so it never
+meets the map's edge or a neighbour; on hexes, at the vertex three hexes share. The flavour label shows
+only where the spaces up and left of the planet are its own tile's and the number isn't there. The Art
+Lab shows every tile as a hex tile and with its planet on any space. The lobby's backdrop stands each planet up whole
 as a sphere.
 
 ### Drift maps
@@ -170,10 +172,10 @@ and neither AI went for it.
   the corners") need a ruling, as hex tiles have no corners; Prototyping's Shoot and zones of control
   assume squares.
 - Hex versions of the advanced, add-on and BGA maps; wrapping maps.
-- Printed hex tiles in the Art Lab.
+- Print files for hex tiles and for off-centre planets: the Art Lab shows them, but exports the square set
+  as printed.
 - Turning a tall map on its side to fit a wide screen.
-- Off-centre planets in the lobby's small map previews (they show each tile's number only), and in the
-  Art Lab's printed tiles.
+- Off-centre planets in the lobby's small map previews (they show each tile's number only).
 - The AI scores each planet on its own, so a ship in a shared orbit counts towards both, and it doesn't
   see that moving it off one planet's orbit leaves the other's too.
 - A ruling on a Void space in a planet's orbit (Twin Drift's two middle 8s have one each): a ship there

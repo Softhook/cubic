@@ -117,6 +117,7 @@ export const BoardArt = memo(function BoardArt({
                 capacity={p.capacity}
                 cubes={p.cubes.map((o) => game.players[o].color)}
                 corner={numberCorner(game.board, p)}
+                shape={game.board.hex ? 'hex' : 'square'}
                 numberClass="planet-num"
                 cubeClass="cube"
               />

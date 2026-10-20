@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { TILE_SET, dataUrl, editableTileSvg, tileSvg, type PlanetType, type TileSpec } from '@quantum/art';
+import { TILE_SET, TILE_SPOTS, dataUrl, editableTileSvg, tileSvg, type PlanetType, type TileShape, type TileSpec } from '@quantum/art';
 import { blobToDataUrl, download } from '../files';
 import { svgToPng } from '../print/exports';
 import { PIECES, fileName, pieceSize } from '../print/pieces';
@@ -11,7 +11,9 @@ import { TILES_AND_AIDS, printableTile } from './pressSheets';
 /**
  * Art Lab, tiles page (#lab): every tile of the physical set, with controls to explore seeds and
  * planet types and to export print files: single tiles, the whole set, print sheets, and the CMYK press
- * sheets the tiles share with the player aids. See docs/GRAPHICS.md §3–4.
+ * sheets the tiles share with the player aids. See docs/GRAPHICS.md §3–4. The set can be viewed as hex
+ * tiles too, and with its planets moved off the middle, as maps place them (docs/HEX.md); the print files
+ * stay the square set as printed.
  */
 
 const TYPES: PlanetType[] = ['gas', 'rocky', 'ice', 'lava', 'ocean'];
@@ -23,13 +25,23 @@ export function TileLab() {
   const [selected, setSelected] = useState(TILE_SET[0].id);
   const [markings, setMarkings] = useState(true);
   const [bleed, setBleed] = useState(false);
+  const [shape, setShape] = useState<TileShape>('square');
+  // Where the planets sit, as a map's layout token says (`7ne`): '' for the middle.
+  const [planetAt, setPlanetAt] = useState('');
   // The number and label fonts, embedded in the detail view and the print files (thumbnails use the system's).
   const fonts = useFontCss(tileFontCss);
 
   const specs = useMemo(() => TILE_SET.map((t) => ({ ...t, ...overrides[t.id] })), [overrides]);
-  const thumbs = useMemo(() => specs.map((t) => ({ spec: t, url: dataUrl(tileSvg(t, { markings, rounded: true })) })), [specs, markings]);
+  const thumbs = useMemo(
+    () => specs.map((t) => ({ spec: t, url: dataUrl(tileSvg(t, { markings, rounded: true, shape, planetAt })) })),
+    [specs, markings, shape, planetAt],
+  );
   const spec = specs.find((t) => t.id === selected)!;
-  const svg = useMemo(() => tileSvg(spec, { markings, bleed, fontCss: fonts ?? '' }), [spec, markings, bleed, fonts]);
+  // A hex tile is shown cut to its flower; a square one as printed, with its bleed.
+  const svg = useMemo(
+    () => tileSvg(spec, { markings, bleed, fontCss: fonts ?? '', shape, planetAt, rounded: shape === 'hex' }),
+    [spec, markings, bleed, fonts, shape, planetAt],
+  );
   const detail = useSvgUrl(svg);
   const set = (o: Override) => setOverrides((all) => ({ ...all, [spec.id]: { ...all[spec.id], ...o } }));
 
@@ -50,6 +62,30 @@ export function TileLab() {
       <LabHeader page="tiles">
         <label>
           <input type="checkbox" checked={markings} onChange={(e) => setMarkings(e.target.checked)} /> Print markings
+        </label>
+        <label>
+          Shape
+          <select
+            value={shape}
+            onChange={(e) => {
+              const next = e.target.value as TileShape;
+              setShape(next);
+              if (!(planetAt in TILE_SPOTS[next])) setPlanetAt('');
+            }}
+          >
+            <option value="square">Square</option>
+            <option value="hex">Hex</option>
+          </select>
+        </label>
+        <label title="Where each planet sits on its tile, as a map's layout token says (7ne)">
+          Planet
+          <select value={planetAt} onChange={(e) => setPlanetAt(e.target.value)}>
+            {Object.keys(TILE_SPOTS[shape]).map((d) => (
+              <option key={d} value={d}>
+                {d || 'middle'}
+              </option>
+            ))}
+          </select>
         </label>
       </LabHeader>
       <div className="lab-body">
@@ -103,6 +139,13 @@ export function TileLab() {
               </button>
             )}
           </div>
+          {(shape !== 'square' || planetAt) && (
+            <p className="lab-note">
+              Shown {shape === 'hex' ? 'as a hex tile' : 'as a square tile'}
+              {planetAt ? ` with its planet ${planetAt} of the middle` : ''}. The print files below are the square set as printed.
+              {planetAt && spec.number > 8 ? ' Only 7s and 8s sit off the middle on a map: a 9 or 10 spills over the edge.' : ''}
+            </p>
+          )}
           <p className="lab-note">Changes here are for exploring; to keep one, copy its settings:</p>
           <pre className="lab-spec">{JSON.stringify(spec)}</pre>
           <PrintPanel

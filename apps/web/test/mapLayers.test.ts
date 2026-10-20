@@ -27,13 +27,34 @@ describe('space roles', () => {
 });
 
 describe('planet numbers', () => {
-  it('go in the printed bottom right where nothing is in the way', () => {
-    const b = board('alpha-sector');
-    for (const p of b.planets) expect(numberCorner(b, p)).toEqual({ x: 1, y: 1 });
+  it('go in the printed bottom right on a planet in the middle of its tile', () => {
+    for (const id of ['alpha-sector', 'alpha-hex']) {
+      const b = board(id);
+      for (const p of b.planets) expect(numberCorner(b, p)).toEqual({ x: 1, y: 1 });
+    }
   });
 
-  it('move to another corner when a planet next door is in the way', () => {
-    // Two 8s leaning together across the seam between their tiles.
+  it("go in the planet's corner nearest its tile's middle, as the printed tile has it", () => {
+    const b = board('binary-reach');
+    const at = (r: number, c: number) =>
+      numberCorner(
+        b,
+        b.planets.find((p) => p.r === r && p.c === c)!,
+      );
+    expect(at(2, 2)).toEqual({ x: -1, y: -1 }); // 8se*: top left
+    expect(at(3, 11)).toEqual({ x: -1, y: 1 }); // 7ne, on the map's right edge: bottom left
+    expect(at(5, 4)).toEqual({ x: 1, y: -1 }); // 7s: top right
+    const h = board('twin-drift');
+    // 7se: up and left, towards the flower's middle.
+    expect(
+      numberCorner(
+        h,
+        h.planets.find((p) => p.number === 7 && p.r === 2 && p.c === 2)!,
+      ),
+    ).toEqual({ x: -1, y: -1 });
+  });
+
+  it('stay on their own tile where two planets lean together', () => {
     const b = buildBoard({
       id: 't',
       name: 't',
@@ -43,18 +64,7 @@ describe('planet numbers', () => {
       stats: { slack: 0, shared: null, planets: 2 },
       layout: [['8e*', '8w*']],
     });
-    expect(numberCorner(b, b.planets[0])).not.toEqual({ x: 1, y: 1 });
-  });
-
-  it("move to another corner when the map's edge is in the way", () => {
-    const b = board('binary-reach');
-    // The 7 on the right edge sits in its tile's top right.
-    expect(
-      numberCorner(
-        b,
-        b.planets.find((p) => p.r === 3 && p.c === 11)!,
-      ),
-    ).toEqual({ x: -1, y: 1 });
+    expect(b.planets.map((p) => numberCorner(b, p).x)).toEqual([-1, 1]);
   });
 });
 
@@ -66,13 +76,24 @@ describe('flavour labels', () => {
 
   it("fit beside an off-centre planet whose spaces up and left are its own tile's", () => {
     const b = board('binary-reach');
-    // The start in the top left sits in its tile's bottom right corner.
+    // The middle 7 at the bottom of its tile, its number in the top right.
+    expect(
+      labelFits(
+        b,
+        b.planets.find((p) => p.r === 5 && p.c === 4)!,
+      ),
+    ).toBe(true);
+  });
+
+  it('give way to the number in the top left', () => {
+    const b = board('binary-reach');
+    // The start in the top left sits in its tile's bottom right corner, its number up and left.
     expect(
       labelFits(
         b,
         b.planets.find((p) => p.r === 2 && p.c === 2)!,
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("don't fit where the spaces up and left of the planet are off its tile, nor on hexes", () => {

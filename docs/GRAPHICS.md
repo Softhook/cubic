@@ -141,12 +141,12 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
      hatched where it orbits a planet, cross-hatched where two orbits overlap, a faint flask on a Void's
      ([`layers.ts`](../apps/web/src/components/board/layers.ts) `spaceRoles`).
   4. **Labels:** a planet's flavour label beside it where there's room (`tileLabel`, `labelFits`).
-  5. **Live:** the number, in the printed bottom right unless another planet or the map's edge is in the
-     way (`numberCorner`), and the cube slots, from the printed geometry (`numberPlacement`,
-     `cubePadCentres`, `CUBE_PAD`). Then gates, ships and highlights.
+  5. **Live:** the number, in the corner its printed tile has it (`numberCorner`, see *Cube pads and
+     number*), and the cube slots, from the printed geometry (`numberPlacement`, `cubePadCentres`,
+     `CUBE_PAD`). Then gates, ships and highlights.
 
-  A printed tile (`tileSvg`) is the same layers in one piece, with the planet in the middle, so the
-  screen and the table look alike.
+  A printed tile (`tileSvg`) is the same layers in one piece, so the screen and the table look alike.
+  The Art Lab shows the set as hex tiles too, and with each planet on any space (`shape`, `planetAt`).
 - **Loading.** Drawing a tile's noise filters takes ~45 ms, so the game draws each tile's sky (one per
   shape) and body once to 576 px images and keeps them in the browser's IndexedDB
   ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)), whatever the map and wherever its planet sits.
@@ -213,12 +213,22 @@ planet. The number is centred on the **corner where the four spaces meet at the 
 right** (16 mm right and down from the centre), white with a dark outline so it reads on any surface.
 Dice never reach that corner, so it is the one place a big numeral is always visible. The 10's four
 pads reach into it, so its number moves 1.2 mm further out along the same diagonal
-(`numberPlacement()`; a test keeps every number on the diagonal).
+(`numberPlacement()`; a test keeps every number on the diagonal). On a hex tile the number goes where
+three hexes meet instead, the vertex a third of a space right of the planet's centre and half a space
+down, moved out the same way when the pads reach it.
+
+A planet off the middle of its tile (docs/HEX.md, *Off-centre planets*) takes its number to the corner
+nearest the tile's middle (`numberCorner`): the bottom left for a planet on the right edge, the top left
+for one in the bottom right corner, and so on; where two corners are as near, the bottom right. The
+number then always stays on its own tile, away from the tile's edge and from any planet on the next
+tile, wherever the tile lies on a map, so the printed tile and the screen agree.
 
 **Flavour label.** The opposite corner, at the planet's top left, holds a tiny star-atlas label: a
 made-up name, catalogue number, class and orbit, and a few measurements to suit the kind of world
 (`planetFlavour()`), with a thin leader line to the planet. It stays inside the strip between the
-space pads above and below, and no stars are drawn under it. On the 10, whose planet reaches into
+space pads above and below, and no stars are drawn under it. A planet off the middle keeps its label
+only where that strip is on its tile and its number isn't there (`tileLabelFits`); hex tiles have no
+such strip, so no label. On the 10, whose planet reaches into
 that strip, the label moves left to clear it. It is seeded like the art, so each tile
 always gets the same text. On the Illustrator export it is baked into the 600 dpi `art` layer while the planet number and cube pads stay editable vectors in `markings`.
 

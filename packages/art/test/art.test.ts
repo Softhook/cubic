@@ -3,9 +3,11 @@ import {
   PLANET_DIAMETER,
   SET_COUNTS,
   TILE_SET,
+  TILE_SPOTS,
   TILE,
   assignTiles,
   editableTileSvg,
+  numberCorner,
   numberPlacement,
   cubePadCentres,
   tileSpec,
@@ -140,6 +142,48 @@ describe('planet number', () => {
         expect(boxGap(at.x, at.y, at.halfW, at.halfH, dx * TILE.cell, dy * TILE.cell, DIE / 2), `planet ${num} die`).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe('tiles off the square', () => {
+  const seven = TILE_SET.find((t) => t.number === 7)!;
+  const wells = (svg: string) => (svg.match(/<polygon /g) ?? []).length;
+  const hatched = (svg: string) => (svg.match(/stroke-opacity=".14"/g) ?? []).length;
+
+  it('name the same planet spots as the engine reads from a layout token', () => {
+    expect(Object.keys(TILE_SPOTS.square).sort()).toEqual(['', 'e', 'n', 'ne', 'nw', 's', 'se', 'sw', 'w']);
+    expect(Object.keys(TILE_SPOTS.hex).sort()).toEqual(['', 'n', 'ne', 'nw', 's', 'se', 'sw']);
+    for (const [dir, p] of Object.entries(TILE_SPOTS.hex)) expect(Math.hypot(p.x, p.y)).toBeCloseTo(dir ? 1 : 0);
+  });
+
+  it('draw a hex tile as six hex wells round its planet, all hatched, cut to the flower', () => {
+    const svg = tileSvg(seven, { shape: 'hex', markings: true, rounded: true });
+    expect(wells(svg)).toBe(6);
+    expect(svg).toContain(`${seven.id}-flower`);
+    const outer = tileSvg(seven, { shape: 'hex', markings: true, planetAt: 'n' });
+    // On an outer hex, only 3 of its orbit's hexes are on the tile (the middle and the two beside it) to hatch.
+    expect(wells(outer)).toBe(6);
+    expect(hatched(outer)).toBeLessThan(hatched(svg));
+  });
+
+  it('put the number in the corner nearest the middle, and the label only where it has room', () => {
+    expect(numberCorner({ x: 0, y: 0 })).toEqual({ x: 1, y: 1 });
+    expect(numberCorner(TILE_SPOTS.square.n)).toEqual({ x: 1, y: 1 });
+    expect(numberCorner(TILE_SPOTS.square.e)).toEqual({ x: -1, y: 1 });
+    expect(numberCorner(TILE_SPOTS.square.se)).toEqual({ x: -1, y: -1 });
+    expect(numberCorner(TILE_SPOTS.hex.sw, 'hex')).toEqual({ x: 1, y: -1 });
+    expect(numberCorner(TILE_SPOTS.hex.n, 'hex')).toEqual({ x: 1, y: 1 });
+    // On hexes it sits at the vertex three hexes share, a third of a space right and half a space down.
+    for (const k of [7, 8, 9, 10]) {
+      const hex = numberPlacement(k, 'hex');
+      expect(hex.y / hex.x).toBeCloseTo(Math.sqrt(3));
+      expect(hex.y).toBeGreaterThanOrEqual(TILE.cell / 2);
+    }
+    const named = (o: Parameters<typeof tileSvg>[1]) => tileSvg(seven, { markings: true, ...o }).includes('font-weight="700"');
+    expect(named({})).toBe(true);
+    expect(named({ planetAt: 's' })).toBe(true);
+    expect(named({ planetAt: 'w' })).toBe(false);
+    expect(named({ shape: 'hex' })).toBe(false);
   });
 });
 

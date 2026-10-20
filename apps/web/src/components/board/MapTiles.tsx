@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { cellAt, type Board } from '@quantum/engine';
-import { HATCH, HEX_WELL, SPACE_BASE_CSS, TILE, WELL, tileLabel, tileSpec, voidFlask, well } from '@quantum/art';
+import { HATCH, HEX_WELL, SPACE_BASE_CSS, TILE, WELL, hexWell, tileLabel, tileSpec, voidFlask, well } from '@quantum/art';
 import { useTileImages } from '../../art/tileImages';
 import type { TileArt } from '../../art/boardTiles';
 import { SQUARE_TILE_GAP, hexCorners, hexFlower, hexSeams, placement } from './geometry';
@@ -46,12 +46,7 @@ function wells(board: Board): string {
     out += `<g class="well" data-r="${p.r}" data-c="${p.c}" data-role="${role}${isVoid ? ' void' : ''}">`;
     if (board.hex) {
       const size = TILE.cell * HEX_WELL;
-      const w = hexCorners(x, y, size);
-      // Etched in: shaded along its top sides, lit along its bottom ones (corners 3 to 0 are the top, as y is down).
-      out +=
-        `<polygon points="${points(w)}" fill="#000" fill-opacity="${style.fill}"/>` +
-        `<path d="${line([w[3], w[4], w[5], w[0]])}" fill="none" stroke="#000" stroke-opacity="${style.shade}" stroke-width="${style.shadeWidth}"/>` +
-        `<path d="${line([w[0], w[1], w[2], w[3]])}" fill="none" stroke="#fff" stroke-opacity="${style.lit}" stroke-width="${style.litWidth}"/>`;
+      out += hexWell(x, y, size, style);
       if (orbits) out += `<polygon points="${points(hexCorners(x, y, size - 2 * HATCH.inset))}" fill="url(#${fill})"/>`;
     } else {
       out += well(x, y, TILE.pad, 4, style);
