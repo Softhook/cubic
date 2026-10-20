@@ -128,7 +128,7 @@ maps:
 
   # Drift: maps whose planets sit off the middle of their tiles (docs/HEX.md, Off-centre planets), so
   # orbits cross tiles, shrink at the edge and overlap. Each is the same turned half a turn about its
-  # middle, so the two seats match while the planets look scattered. Basic rules only, as for hex.
+  # middle, so the two seats match while the planets look scattered. Prototyping only, as for hex.
   # Only 7s and 8s go off the middle of a square tile, and only 7s off a hex tile: anything bigger
   # spills over the tile's edge (art OFF_CENTRE).
 

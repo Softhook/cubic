@@ -1,8 +1,16 @@
 /** Shared test helpers: players, a finished setup, and seeded AI-vs-AI games. */
 import { chooseAction, chooseCombatResponse, type AiLevel } from '../../ai/src';
-import { actor, apply, createGame, legalActions, type Action, type GameMode, type GameState } from '../src';
+import { RULESETS, actor, apply, createGame, legalActions, type Action, type GameMode, type GameState } from '../src';
 
 export const players = (n: number) => Array.from({ length: n }, (_, i) => ({ name: `P${i}`, color: '#fff', ai: true }));
+
+/**
+ * Lets `mode` play the map `groups` too, for the test file that asks, as if the lobby offered them: the
+ * rules don't depend on the map, so e.g. Basic's plain rules can pin down the hex geometry.
+ */
+export function allowMapGroups(mode: GameMode, ...groups: string[]) {
+  RULESETS[mode].mapGroups = [...RULESETS[mode].mapGroups, ...groups];
+}
 
 /** Finishes setup, taking the first legal choice for every setup decision. */
 export function finishSetup(s: GameState): GameState {

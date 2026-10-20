@@ -184,7 +184,7 @@ describe('legal actions agree with the engine', () => {
         ]
       : [[3, 22]])
       it(`${mode}, ${players} players, seed ${seed}`, () => playChecked(mode, players, seed), DEEP ? 600_000 : 60_000);
-  // Hex tiles (docs/HEX.md): another geometry under the same rules.
+  // Hex tiles (docs/HEX.md): another geometry, under the rules the lobby offers it with.
   for (const [players, mapId] of DEEP
     ? ([
         [2, 'alpha-hex'],
@@ -192,7 +192,7 @@ describe('legal actions agree with the engine', () => {
         [4, 'gamma-hex'],
       ] as const)
     : ([[3, 'beta-hex']] as const))
-    it(`basic on ${mapId}, seed 22`, () => playChecked('basic', players, 22, mapId), DEEP ? 600_000 : 60_000);
+    it(`prototyping on ${mapId}, seed 22`, () => playChecked('prototyping', players, 22, mapId), DEEP ? 600_000 : 60_000);
   // Planets off the middle of their tiles: orbits that overlap, cross tiles and lose spaces at the edge.
   // Original has Nomadic and Ingenious, which read orbits and tiles their own way.
   for (const [mode, mapId] of [

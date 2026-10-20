@@ -14,6 +14,13 @@ import { CLASSIC_SHIPS, type RuleSet, type ShipTable } from '../prototype';
 import { picket } from './powers/picket';
 import { shoot } from './powers/shoot';
 
+/**
+ * Whether Prototyping plays with Community's cards (Skills, Tactics, research). Flip it to try the mode
+ * without them, and refresh the golden games after (`npx vitest run golden -u`). On hexes, Ingenious and
+ * Hostile ("conquer from the corners") still need a ruling (docs/HEX.md).
+ */
+export const PROTOTYPING_CARDS = true;
+
 /** The most a ship's die value counts for movement; skill bonuses add to it (ruling 2026-10-08). */
 const MAX_MOVEMENT = 3;
 
@@ -31,15 +38,19 @@ const PROTOTYPING_SHIPS: ShipTable = Object.fromEntries(
   Object.entries(SHIPS).map(([v, ship]) => [v, { ...ship, hooks: { ...ship.hooks, ...picket.hooks } }]),
 );
 
-/** Prototyping is built on `base` (Community Edition, see rulesets.ts): its cards, missiles and maps are kept. */
+/**
+ * Prototyping is built on `base` (Community Edition, see rulesets.ts): its missiles and maps are kept, with the hex
+ * and off-centre (drift) maps added, and its cards as PROTOTYPING_CARDS says.
+ */
 export function prototypingMode(base: RuleSet): RuleSet {
   return {
     ...base,
     id: 'prototyping',
     name: 'Prototyping',
     title: 'Prototyping',
-    summary:
-      'Community Edition with moves capped at 3, zones of control (a ship moving orthogonally next to an enemy ship stops there), a ranged Interceptor and over-conquest, displacing an opponent cube.',
+    summary: `Community Edition${PROTOTYPING_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a ship moving orthogonally next to an enemy ship stops there), a ranged Interceptor and over-conquest, displacing an opponent cube.`,
+    cards: PROTOTYPING_CARDS ? base.cards : null,
+    mapGroups: [...base.mapGroups, 'hex', 'drift'],
     ships: PROTOTYPING_SHIPS,
     maxMovement: MAX_MOVEMENT,
     overConquest: true,

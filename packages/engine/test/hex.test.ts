@@ -1,10 +1,12 @@
 /**
- * Hex maps (docs/HEX.md): Basic rules on 7-hex tiles. The rules are the square game's; what changes is
- * which spaces are next to each other, how far apart they are, and what a diagonal is.
+ * Hex maps (docs/HEX.md) on 7-hex tiles. The rules are the square game's; what changes is which spaces
+ * are next to each other, how far apart they are, and what a diagonal is. The lobby offers them with the
+ * Prototyping rules; the geometry is pinned down here with Basic's plain ones.
  */
 import { describe, expect, it } from 'vitest';
 import {
   MAPS,
+  RULESETS,
   adjacent,
   apply,
   buildBoard,
@@ -25,10 +27,11 @@ import {
   type Cell,
   type GameState,
 } from '../src';
-import { playAiGame, quickStart } from './helpers';
+import { allowMapGroups, playAiGame, quickStart } from './helpers';
 
 // The basic maps on hex tiles; the drift maps (offset.test.ts) put their planets off the middle.
 const HEX_MAPS = MAPS.filter((m) => m.group === 'hex');
+allowMapGroups('basic', 'hex');
 const BASE = quickStart(2, 1, 'basic', 'alpha-hex');
 /** Alpha Sector (hex)'s middle planet, the 8: every other tile is next to it but the two starts. */
 const CENTRE = BASE.board.planets.find((p) => p.number === 8)!;
@@ -48,8 +51,9 @@ function scenario(dice: Record<string, [Cell, number]>): GameState {
 }
 
 describe('hex maps', () => {
-  it('are the basic maps for 2, 3 and 4 players, in Basic mode', () => {
+  it('are the basic maps for 2, 3 and 4 players, in Prototyping', () => {
     expect(HEX_MAPS.map((m) => m.players)).toEqual([2, 3, 4]);
+    expect(RULESETS.prototyping.mapGroups).toContain('hex');
     for (const m of HEX_MAPS) expect(mapStats(m)).toEqual(m.stats);
   });
 
@@ -157,7 +161,7 @@ describe('hex maps', () => {
   for (const m of HEX_MAPS)
     it(`plays out with AI players on ${m.name}`, () => {
       const { state } = playAiGame({
-        mode: 'basic',
+        mode: 'prototyping',
         players: m.players,
         seed: 3,
         aiSeed: 7,

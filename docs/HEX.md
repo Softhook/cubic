@@ -1,8 +1,9 @@
 # Hex Tiles
 
-The Basic game played on hexagonal tiles instead of 3×3 squares. The rules are unchanged; what changes
+The game played on hexagonal tiles instead of 3×3 squares. The rules are unchanged; what changes
 is which spaces are next to each other, how far apart they are, and what counts as a diagonal. Pick a
-map from the **Hex tiles** group in the lobby with the **Basic** rules.
+map from the **Hex tiles** group in the lobby with the **Prototyping** rules (only those, while hexes are
+being tried out; the tests pin the geometry down with Basic's).
 
 ## The tiles
 
@@ -103,7 +104,7 @@ seams, then a well etched for each space, hatched where it is in an orbit.
 
 The engine can place a tile's planet off its middle, on one of the spaces around it, on squares and
 hexes alike: a layout token takes a compass direction, `7ne` or `8s*` ([`data/maps.yaml`](../data/maps.yaml)).
-The **Off-centre planets** group in the lobby (Basic rules) has two maps that do (see *Drift maps*).
+The **Off-centre planets** group in the lobby (Prototyping rules) has two maps that do (see *Drift maps*).
 
 | | Square tile | Hex tile |
 |---|---|---|

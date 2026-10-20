@@ -1,6 +1,6 @@
 /**
  * Plays a first move, in Chrome, on the square Alpha Sector, each hex map and each map with off-centre
- * planets (docs/HEX.md): starts a Basic game, picks one of your ships, taps a space it can move to on the
+ * planets (docs/HEX.md): starts a Prototyping game, picks one of your ships, taps a space it can move to on the
  * map and checks the ship went there. Checks too that the map draws a well for each space, cross-hatched
  * where the engine has two orbits overlap.
  * Exits with 1 when a map doesn't draw, a tap misses or the page logs an error.
@@ -30,7 +30,7 @@ for (const map of [MAPS.find((m) => m.id === 'alpha-sector')!, ...MAPS.filter((m
   const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
   page.on('pageerror', (e) => problem(`page error: ${e.message}`));
   page.on('console', (m) => m.type() === 'error' && problem(`console: ${m.text()}`));
-  await page.goto(playUrl(server.base, { play: 'basic', players: map.players, map: map.id, seed: 5, scene: 'turn' }));
+  await page.goto(playUrl(server.base, { play: 'prototyping', players: map.players, map: map.id, seed: 5, scene: 'turn' }));
   await page.locator('.board').waitFor();
   await page.waitForTimeout(1500);
   const state = () => page.evaluate(() => window.__quantum.state()) as Promise<GameState>;

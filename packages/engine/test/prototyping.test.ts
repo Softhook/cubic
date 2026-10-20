@@ -35,6 +35,7 @@ import {
   type GameState,
 } from '../src';
 import { beginPlay } from '../src/turn';
+import { PROTOTYPING_CARDS } from '../src/prototyping';
 import { picket } from '../src/prototyping/powers/picket';
 import { shoot as shootPower, shootTargets } from '../src/prototyping/powers/shoot';
 import { quickStart } from './helpers';
@@ -78,7 +79,8 @@ describe('Prototyping mode', () => {
     const prototyping = rulesOf(BASE.prototyping);
     const community = rulesOf(BASE.community);
     expect(prototyping.name).toBe('Prototyping');
-    expect(prototyping.cards).toBe(community.cards);
+    expect(prototyping.cards).toBe(PROTOTYPING_CARDS ? community.cards : null);
+    expect(prototyping.mapGroups).toEqual([...community.mapGroups, 'hex', 'drift']);
     expect(prototyping.startingMissiles).toBe(1);
     expect(prototyping.maxMovement).toBe(3);
     expect(prototyping.overConquest).toBe(true);
@@ -170,9 +172,12 @@ describe('Prototyping mode', () => {
     const rules = RULESETS.prototyping;
     const oldActions = rules.actionsPerTurn;
     const oldResearchLimit = rules.researchLimit;
+    const oldCards = rules.cards;
     try {
       rules.actionsPerTurn = 2;
       rules.researchLimit = 4;
+      // Research needs cards, which Prototyping may be playing without (PROTOTYPING_CARDS): lend it Community's.
+      rules.cards = RULESETS.community.cards;
 
       const started = scenario({});
       beginPlay(started);
@@ -188,6 +193,7 @@ describe('Prototyping mode', () => {
     } finally {
       rules.actionsPerTurn = oldActions;
       rules.researchLimit = oldResearchLimit;
+      rules.cards = oldCards;
     }
   });
 });
@@ -491,7 +497,7 @@ describe('over-conquest', () => {
 
   it('needs a sum of 12 and displaces a chosen opponent cube', () => {
     const base = scenario({}, 'prototyping');
-    const planet = base.board.planets[0];
+    const planet = base.board.planets.find((q) => q.cubes.length === 0)!;
     const target = 12;
     const spots = orbitals(base.board, planet);
     const values: number[] = [];
@@ -499,7 +505,7 @@ describe('over-conquest', () => {
     const placed: Record<string, [number, number, number]> = {};
     values.forEach((v, i) => (placed[`p0d${i}`] = [spots[i].r, spots[i].c, v]));
     const s = scenario(placed, 'prototyping');
-    const p = s.board.planets[0];
+    const p = s.board.planets[planet.id];
     while (planetFreeSlots(p) > 0) p.cubes.push(1);
     const check = conquerCheck(s, 0, p.id);
     expect(check.target).toBe(target);
@@ -508,8 +514,8 @@ describe('over-conquest', () => {
     const before = s.players[1].cubesLeft;
     const after = apply(s, { type: 'conquer', planet: p.id, replace: 1 });
     expect(after.players[1].cubesLeft).toBe(before + 1);
-    expect(after.board.planets[0].cubes.filter((c) => c === 0)).toHaveLength(1);
-    expect(after.board.planets[0].cubes.filter((c) => c === 1)).toHaveLength(p.cubes.length - 1);
+    expect(after.board.planets[planet.id].cubes.filter((c) => c === 0)).toHaveLength(1);
+    expect(after.board.planets[planet.id].cubes.filter((c) => c === 1)).toHaveLength(p.cubes.length - 1);
   });
   it('is also offered on a planet with room, next to a plain conquest', () => {
     const base = scenario({}, 'prototyping');
