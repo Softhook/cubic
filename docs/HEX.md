@@ -31,6 +31,8 @@ planets sit in the middle of their tiles (see *Off-centre planets*).
 | 2 Flagship: carry a nearby ship and drop it next to you | the 8 surrounding spaces | the 6 touching hexes |
 | 5 Interceptor: move and attack diagonally | the 4 corner spaces, touching only at a corner | the 6 hexes two away that sit between two neighbours |
 | Warp Gates, Nomadic (not in Basic) | unchanged | unchanged (Nomadic's neighbouring tiles are the planets 3 hexes away) |
+| Prototyping's zones of control (Picket) | the 4 orthogonal spaces | the 6 hexes sharing a side |
+| Prototyping's 5 Interceptor: Shoot along a clear straight line | 4 lines, up, down, left, right | 6 lines, one out of each side |
 
 **The Interceptor's diagonal.** A square's diagonal step covers two spaces of distance in one step and
 slips between two neighbours. The hex diagonal does the same: it is two hexes away, between the two
@@ -172,8 +174,7 @@ and neither AI went for it.
 ## Not yet
 
 - Cards (Classic, Community, Prototyping): most work unchanged, but Ingenious and Hostile ("conquer from
-  the corners") need a ruling, as hex tiles have no corners; Prototyping's Shoot and zones of control
-  assume squares.
+  the corners") need a ruling, as hex tiles have no corners.
 - Hex versions of the advanced, add-on and BGA maps; wrapping maps.
 - Turning a tall map on its side to fit a wide screen.
 - Packing hex tiles closer on a sheet: they print in the square tiles' 2 × 2 grid, though flowers nest.

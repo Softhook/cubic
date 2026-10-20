@@ -5,13 +5,14 @@
  * folder and the engine meet only at RULESETS and the prototype kit.
  *
  * Scenarios run on Alpha Sector, the basic map for 2 players (9×9; planets at rows/cols 1, 4, 7,
- * every other cell a space).
+ * every other cell a space), and on Alpha Sector (hex) for zones and Shoot along a hex's 6 sides.
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import {
+  adjacent,
   apply,
   CLASSIC_SHIPS,
   orbitals,
@@ -40,15 +41,17 @@ import { picket } from '../src/prototyping/powers/picket';
 import { shoot as shootPower, shootTargets } from '../src/prototyping/powers/shoot';
 import { quickStart } from './helpers';
 
-const BASE: Record<'prototyping' | 'community', GameState> = {
+/** `hex`: Prototyping on Alpha Sector (hex), with axial cells (docs/HEX.md): a space's sides are a row or column away, or (-1, +1) and (+1, -1). */
+const BASE: Record<'prototyping' | 'community' | 'hex', GameState> = {
   prototyping: quickStart(2, 1, 'prototyping'),
   community: quickStart(2, 1, 'community'),
+  hex: quickStart(2, 1, 'prototyping', 'alpha-hex'),
 };
 
 /** Player 0 to act with 3 fresh actions, only the listed ships on the map, and the given skills. */
 function scenario(
   dice: Record<string, [number, number, number]>,
-  mode: 'prototyping' | 'community' = 'prototyping',
+  mode: keyof typeof BASE = 'prototyping',
   skills: string[] = [],
 ): GameState {
   const s = structuredClone(BASE[mode]);
@@ -272,6 +275,21 @@ describe('zones of control (Picket on every ship)', () => {
     expect(reachable(s)).not.toContain('2,2'); // 3 steps only through the gate and (3,2)
   });
 
+  it('covers a hex’s 6 sides on a hex map, but not its diagonals', () => {
+    const s = scenario({ p1d0: [4, 5, 6] }, 'hex');
+    const g = grid(s.board);
+    const zone = [...picket.hooks.stopsEnemies!(s, at(s, 'p1d0'), 4 * g.cols + 5)].map((i) => g.cells[i]);
+    expect(zone).toEqual(adjacent(s.board, { r: 4, c: 5 }));
+    expect(zone).toHaveLength(6);
+    // (5,3) is a hex diagonal of the enemy at (4,5); (5,4), a side a square would call diagonal, stops it, so
+    // (5,5) and the spaces past (4,4) are out of reach.
+    const moves = reachable(scenario({ p0d0: [5, 3, 2], p1d0: [4, 5, 6] }, 'hex'));
+    expect(moves).toEqual(expect.arrayContaining(['5,4', '4,4']));
+    expect(moves).not.toContain('5,5');
+    expect(moves).not.toContain('3,4');
+    expect(reachable(scenario({ p0d0: [5, 3, 2] }, 'hex'))).toEqual(expect.arrayContaining(['5,5', '3,4']));
+  });
+
   it('agrees with a plain reference search on random positions', () => {
     const g = grid(BASE.prototyping.board);
     const spaces = [...Array(g.size).keys()].filter((i) => g.space[i]);
@@ -466,6 +484,17 @@ describe('Shoot (5 Interceptor)', () => {
     expect(shots(scenario({ p0d0: [0, 0, 5], p1d0: [0, 3, 3], p1d1: [0, 6, 2] }))).toEqual(['p1d0']); // only the first
     expect(shots(scenario({ p0d0: [1, 0, 5], p1d0: [1, 2, 3] }))).toEqual([]); // a planet in between
     expect(shots(scenario({ p0d0: [0, 0, 5], p0d1: [0, 2, 3] }))).toEqual([]);
+  });
+
+  it('shoots along a hex’s 6 sides on a hex map, not its diagonals', () => {
+    const ids = (s: GameState) =>
+      shootTargets(s, at(s, 'p0d0'))
+        .map((d) => d.id)
+        .sort();
+    // From (7,3): along +c to (7,6), along (+1,-1) to (9,1) and down to (10,3); (6,3)'s line meets a planet.
+    expect(ids(scenario({ p0d0: [7, 3, 5], p1d0: [7, 6, 3], p1d1: [9, 1, 2], p1d2: [10, 3, 1] }, 'hex'))).toEqual(['p1d0', 'p1d1', 'p1d2']);
+    // (8,4) and (5,4) are hex diagonals, two hexes away between two sides.
+    expect(ids(scenario({ p0d0: [7, 3, 5], p1d0: [8, 4, 3], p1d1: [5, 4, 2] }, 'hex'))).toEqual([]);
   });
 
   it('flies over the void', () => {

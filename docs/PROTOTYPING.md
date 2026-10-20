@@ -23,8 +23,8 @@ As of 2026-10-12, Prototyping is **Community Edition**, with only these changes:
 | **Current** | Community's **cards** (Skills, Tactics, research). `PROTOTYPING_CARDS` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) turns them off. |
 | **Current** | Plays the **hex** and **off-centre planet** maps (Twin Drift, Binary Reach) too, as well as Community's. |
 | **Current** | A ship's die value contributes at most **3** movement; skill bonuses apply after that cap. |
-| **Current** | **Zones of control:** every ship pickets the 4 orthogonally adjacent spaces (not diagonals) as a mode rule, not a ship power. Diagonals were dropped (2026-10-12) because most ships can't attack diagonally from where they stop. An enemy ship that moves into one must stop there (it may still attack from there; one that starts its move there may leave). Friendly ships are never stopped, and a player with the **Devious** skill ignores zones (ruling 2026-10-12; the card text is unchanged). |
-| **Current** | The **5 Interceptor** replaces its diagonal Manoeuvre ability with **Shoot**: spend one action to attack the first enemy in a clear orthogonal line without advancing. Shooting is that ship's action for the turn. |
+| **Current** | **Zones of control:** every ship pickets the 4 orthogonally adjacent spaces (the 6 sides on hex maps; not diagonals) as a mode rule, not a ship power. Diagonals were dropped (2026-10-12) because most ships can't attack diagonally from where they stop. An enemy ship that moves into one must stop there (it may still attack from there; one that starts its move there may leave). Friendly ships are never stopped, and a player with the **Devious** skill ignores zones (ruling 2026-10-12; the card text is unchanged). |
+| **Current** | The **5 Interceptor** replaces its diagonal Manoeuvre ability with **Shoot**: spend one action to attack the first enemy in a clear orthogonal line (one out of each of a hex's 6 sides on hex maps) without advancing. Shooting is that ship's action for the turn. |
 | **Current** | **Over-conquest:** a player may replace an opponent's cube by meeting an orbit sum of exactly **12**, including on a planet that still has an empty cube location. |
 | **Unchanged** | Ships 1–3 retain their Community abilities. The **4 Frigate** retains Modify and the **6 Scout** retains Free Reconfigure. |
 
@@ -582,7 +582,7 @@ Modify and the 6's Free Reconfigure are still active. Picket applies to every sh
 
 ### Rulings established during implementation
 
-- **Shoot** attacks the first ship in any orthogonal line (up, down, left, right), at any distance, as
+- **Shoot** attacks the first ship in any orthogonal line (up, down, left, right; on hexes, out of any of the 6 sides), at any distance, as
   long as the line is clear: ships (friendly or enemy), planets and the board's edge block it; the void
   does not. (It was first range 1–2, diagonals included, then a free shot alongside the move, then a shot with a separate move.)
   Shooting costs one action and is the ship's one action of the turn, like a move or an attack: a ship

@@ -31,8 +31,8 @@ const SHIPS: ShipTable = {
 };
 
 /**
- * Zone of control, a mode rule rather than a power: every ship pickets the 4 spaces next to it (not
- * diagonally), so an enemy ship moving in must stop there. Its rules text stays its own power's.
+ * Zone of control, a mode rule rather than a power: every ship pickets the spaces next to it (4 on
+ * squares, 6 on hexes; not diagonally), so an enemy ship moving in must stop there. Its rules text stays its own power's.
  */
 const PROTOTYPING_SHIPS: ShipTable = Object.fromEntries(
   Object.entries(SHIPS).map(([v, ship]) => [v, { ...ship, hooks: { ...ship.hooks, ...picket.hooks } }]),
@@ -48,7 +48,7 @@ export function prototypingMode(base: RuleSet): RuleSet {
     id: 'prototyping',
     name: 'Prototyping',
     title: 'Prototyping',
-    summary: `Community Edition${PROTOTYPING_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a ship moving orthogonally next to an enemy ship stops there), a ranged Interceptor and over-conquest, displacing an opponent cube.`,
+    summary: `Community Edition${PROTOTYPING_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a ship moving next to an enemy ship, not diagonally, stops there), a ranged Interceptor and over-conquest, displacing an opponent cube.`,
     cards: PROTOTYPING_CARDS ? base.cards : null,
     mapGroups: [...base.mapGroups, 'hex', 'drift'],
     ships: PROTOTYPING_SHIPS,
