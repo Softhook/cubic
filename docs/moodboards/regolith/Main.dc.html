@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Regolith direction</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&amp;family=Barlow+Condensed:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#F2B233}a:hover{color:#ffd27a}
+</style>
+</helmet>
+<div style="width: 1200px; height: 820px; background: #141416; color: #D8D2C6; font-family: 'Barlow Condensed', sans-serif; position: relative; overflow: hidden">
+  <div style="position: relative; width: 1200px; height: 340px">
+    <svg width="1200" height="340" viewBox="0 0 1200 340" aria-hidden="true" style="display: block">
+      <defs>
+        <linearGradient id="jupBands" x1="0" y1="0" x2="0.15" y2="1">
+          <stop offset="0" stop-color="#c9a37c"/>
+          <stop offset="0.12" stop-color="#e6cfaa"/>
+          <stop offset="0.2" stop-color="#b47e55"/>
+          <stop offset="0.27" stop-color="#ead7b6"/>
+          <stop offset="0.36" stop-color="#a96d46"/>
+          <stop offset="0.42" stop-color="#d9b88f"/>
+          <stop offset="0.5" stop-color="#e9d6b4"/>
+          <stop offset="0.58" stop-color="#b9845a"/>
+          <stop offset="0.66" stop-color="#dfc49d"/>
+          <stop offset="0.8" stop-color="#ad7550"/>
+          <stop offset="1" stop-color="#d6b48c"/>
+        </linearGradient>
+        <radialGradient id="jupShade" cx="0.25" cy="0.35" r="0.85">
+          <stop offset="0.45" stop-color="#000" stop-opacity="0"/>
+          <stop offset="0.8" stop-color="#05060a" stop-opacity="0.75"/>
+          <stop offset="1" stop-color="#05060a" stop-opacity="0.95"/>
+        </radialGradient>
+        <radialGradient id="sunGlare" cx="0" cy="0.55" r="0.6">
+          <stop offset="0" stop-color="#fff2d6" stop-opacity="0.35"/>
+          <stop offset="1" stop-color="#fff2d6" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="grain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9 0.25" numOctaves="3" seed="4" result="n"/>
+          <feDiffuseLighting in="n" surfaceScale="2" lighting-color="#d8cfbf" result="l">
+            <feDistantLight azimuth="200" elevation="30"/>
+          </feDiffuseLighting>
+          <feColorMatrix in="l" type="saturate" values="0.2"/>
+        </filter>
+        <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="6"/>
+        </filter>
+        <clipPath id="groundClip">
+          <path d="M0,262 C80,256 140,250 210,262 C260,270 300,276 360,281 C460,288 560,268 650,272 C760,276 860,262 980,270 C1080,276 1150,268 1200,270 L1200,340 L0,340 Z"/>
+        </clipPath>
+        <g id="mechSide">
+          <path d="M-30,-80 L26,-80 L36,-64 L30,-50 L-24,-50 L-34,-64 Z"/>
+          <rect x="-42" y="-94" width="16" height="22" rx="2"/>
+          <rect x="18" y="-68" width="14" height="14" rx="2"/>
+          <rect x="24" y="-64" width="46" height="6" rx="2"/>
+          <rect x="-12" y="-54" width="24" height="12"/>
+          <path d="M-6,-44 L-22,-22 L-10,-6" fill="none" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M8,-44 L-4,-24 L10,-6" fill="none" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M-24,0 L2,0 L-2,-8 L-20,-8 Z"/>
+          <path d="M-2,0 L24,0 L20,-8 L4,-8 Z"/>
+          <path d="M-20,-80 L-25,-106" fill="none" stroke-width="2"/>
+        </g>
+      </defs>
+      <rect width="1200" height="340" fill="#07080a"/>
+      <g fill="#e9ecf2">
+        <circle cx="40" cy="30" r="1"/><circle cx="118" cy="74" r="0.8"/><circle cx="190" cy="22" r="1.3"/><circle cx="262" cy="118" r="0.7"/>
+        <circle cx="330" cy="48" r="1"/><circle cx="402" cy="160" r="0.8"/><circle cx="455" cy="26" r="1.5"/><circle cx="520" cy="96" r="0.7"/>
+        <circle cx="584" cy="40" r="1"/><circle cx="640" cy="140" r="0.9"/><circle cx="700" cy="18" r="0.8"/><circle cx="78" cy="160" r="0.9"/>
+        <circle cx="160" cy="200" r="0.7"/><circle cx="300" cy="210" r="0.6"/><circle cx="560" cy="200" r="0.8"/><circle cx="740" cy="84" r="1.1"/>
+        <circle cx="1170" cy="24" r="0.9"/><circle cx="1120" cy="60" r="0.6"/><circle cx="20" cy="110" r="0.6"/><circle cx="480" cy="230" r="0.7"/>
+      </g>
+      <g>
+        <circle cx="930" cy="262" r="220" fill="url(#jupBands)"/>
+        <ellipse cx="860" cy="205" rx="30" ry="14" fill="#b65a3a" opacity="0.8"/>
+        <ellipse cx="860" cy="205" rx="20" ry="8" fill="#cf7a52" opacity="0.8"/>
+        <circle cx="930" cy="262" r="220" fill="url(#jupShade)"/>
+        <circle cx="800" cy="120" r="9" fill="#1b1a19" opacity="0.6"/>
+      </g>
+      <rect width="1200" height="340" fill="url(#sunGlare)"/>
+      <path d="M0,250 C70,236 120,228 170,240 C220,250 250,232 300,236 C360,240 420,252 500,248 C580,244 640,226 720,232 C800,238 860,252 960,246 C1050,240 1120,252 1200,250 L1200,340 L0,340 Z" fill="#22201d"/>
+      <path d="M0,250 C70,236 120,228 170,240 C220,250 250,232 300,236 C360,240 420,252 500,248 C580,244 640,226 720,232 C800,238 860,252 960,246 C1050,240 1120,252 1200,250" fill="none" stroke="#6a6156" stroke-width="1.2"/>
+      <path d="M0,262 C80,256 140,250 210,262 C260,270 300,276 360,281 C460,288 560,268 650,272 C760,276 860,262 980,270 C1080,276 1150,268 1200,270 L1200,340 L0,340 Z" fill="#3b3631"/>
+      <g clip-path="url(#groundClip)">
+        <rect x="0" y="240" width="1200" height="100" filter="url(#grain)" opacity="0.45" style="mix-blend-mode: multiply"/>
+        <ellipse cx="560" cy="312" rx="120" ry="12" fill="#1d1b19"/>
+        <ellipse cx="562" cy="309" rx="116" ry="9" fill="#2a2724"/>
+        <path d="M444,312 A120,12 0 0,0 676,312" fill="none" stroke="#8c8478" stroke-width="2"/>
+        <ellipse cx="900" cy="300" rx="60" ry="6" fill="#1d1b19"/>
+        <path d="M842,300 A60,6 0 0,0 958,300" fill="none" stroke="#8c8478" stroke-width="1.5"/>
+        <ellipse cx="120" cy="326" rx="70" ry="7" fill="#1d1b19"/>
+        <path d="M52,326 A70,7 0 0,0 188,326" fill="none" stroke="#8c8478" stroke-width="1.5"/>
+        <ellipse cx="330" cy="281" rx="90" ry="3.5" fill="#000" opacity="0.5"/>
+        <ellipse cx="236" cy="279" rx="70" ry="3" fill="#000" opacity="0.45"/>
+      </g>
+      <ellipse cx="190" cy="270" rx="46" ry="12" fill="#b9ae9c" opacity="0.25" filter="url(#soft)"/>
+      <use href="#mechSide" fill="#f0c48a" stroke="#f0c48a" transform="translate(238.4,277.8) scale(0.95)"/>
+      <use href="#mechSide" fill="#0b0b0c" stroke="#0b0b0c" transform="translate(240,279) scale(0.95)"/>
+      <path d="M14,-76 L28,-76 L32,-68 L16,-68 Z" fill="#3CB8CE" transform="translate(240,279) scale(0.95)"/>
+      <use href="#mechSide" fill="#f0c48a" stroke="#f0c48a" transform="translate(328.6,281) scale(0.66)"/>
+      <use href="#mechSide" fill="#0b0b0c" stroke="#0b0b0c" transform="translate(330,282) scale(0.66)"/>
+      <path d="M14,-76 L28,-76 L32,-68 L16,-68 Z" fill="#3CB8CE" transform="translate(330,282) scale(0.66)"/>
+      <linearGradient id="fadeBottom" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#141416" stop-opacity="0"/>
+        <stop offset="1" stop-color="#141416" stop-opacity="1"/>
+      </linearGradient>
+      <rect x="0" y="290" width="1200" height="50" fill="url(#fadeBottom)"/>
+    </svg>
+    <div style="position: absolute; left: 40px; top: 36px; display: flex; flex-direction: column; gap: 4px">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.12em; color: #F2B233">CUBIC · RESKIN STUDY · MOOD BOARD</div>
+      <h1 style="margin: 0; font-family: 'Saira Stencil One', sans-serif; font-weight: 400; font-size: 104px; line-height: 1; color: #EDE7DB; letter-spacing: 0.02em">REGOLITH</h1>
+      <p style="margin: 0; font-size: 24px; color: #CFC8BC; max-width: 560px">Close-quarters mech war on the hex tiles we already have, set on an icy moon under Jupiter.</p>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; padding: 28px 40px 40px 40px; box-sizing: border-box">
+    <div style="display: flex; flex-direction: column; gap: 18px">
+      <h2 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 13px; letter-spacing: 0.14em; color: #8C8478">DIRECTION</h2>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-weight: 700; font-size: 21px; color: #EDE7DB; letter-spacing: 0.03em">SURVEY, NOT PAINTING</div>
+        <div style="font-size: 17px; line-height: 1.3">Maps read like orbital survey photos: shaded relief drawn by code, different on every tile.</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-weight: 700; font-size: 21px; color: #EDE7DB; letter-spacing: 0.03em">LOW SUN, LONG SHADOWS</div>
+        <div style="font-size: 17px; line-height: 1.3">One light from the upper left, as on the planets today. Craters, rocks and mechs all throw long shadows to the lower right.</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-weight: 700; font-size: 21px; color: #EDE7DB; letter-spacing: 0.03em">HAZARD STENCIL</div>
+        <div style="font-size: 17px; line-height: 1.3">Numbers and titles in stencil type. Control zones in amber hazard marking.</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-weight: 700; font-size: 21px; color: #EDE7DB; letter-spacing: 0.03em">JUPITER IN THE SKY</div>
+        <div style="font-size: 17px; line-height: 1.3">Card art looks up from the ground: a banded giant fills the sky, the only warm light in a grey world.</div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 13px; letter-spacing: 0.14em; color: #8C8478">PALETTE</h2>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+        <div style="display: flex; flex-direction: column; gap: 4px"><div style="height: 64px; background: #1E1C1A; border: 1px solid #3a3733"></div><div style="font-size: 15px; color: #EDE7DB">Basalt</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A69E91">#1E1C1A</div></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><div style="height: 64px; background: #4A4540"></div><div style="font-size: 15px; color: #EDE7DB">Regolith</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A69E91">#4A4540</div></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><div style="height: 64px; background: #8C8478"></div><div style="font-size: 15px; color: #EDE7DB">Dust</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A69E91">#8C8478</div></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><div style="height: 64px; background: #E4E7E3"></div><div style="font-size: 15px; color: #EDE7DB">Ejecta ice</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A69E91">#E4E7E3</div></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><div style="height: 64px; background: #F2B233"></div><div style="font-size: 15px; color: #EDE7DB">Hazard</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A69E91">#F2B233</div></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><div style="height: 64px; background: #D9A066"></div><div style="font-size: 15px; color: #EDE7DB">Jupiter</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A69E91">#D9A066</div></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><div style="height: 64px; background: #3CB8CE"></div><div style="font-size: 15px; color: #EDE7DB">Compact</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A69E91">#3CB8CE</div></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><div style="height: 64px; background: #D8622A"></div><div style="font-size: 15px; color: #EDE7DB">Union</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A69E91">#D8622A</div></div>
+      </div>
+      <div style="font-size: 16px; line-height: 1.3; color: #B8B1A5">A grey, desaturated ground, so the side colours and the amber are the only saturated things on the table. Compact and Union are stand-ins for player colours.</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 13px; letter-spacing: 0.14em; color: #8C8478">TYPE</h2>
+      <div style="display: flex; flex-direction: column; gap: 2px; padding-bottom: 12px; border-bottom: 1px solid #2c2b29">
+        <div style="font-family: 'Saira Stencil One', sans-serif; font-size: 46px; line-height: 1.05; color: #EDE7DB">05 KESTREL</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A69E91">SAIRA STENCIL ONE · titles, die values, objective numbers</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px; padding-bottom: 12px; border-bottom: 1px solid #2c2b29">
+        <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 20px; line-height: 1.25; color: #EDE7DB">Attacking down from a ridge, roll two dice and keep the better.</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A69E91">BARLOW CONDENSED · rules text, fits narrow cards</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 15px; color: #EDE7DB">GRID K-07 · ELEV 2 · REGOLITH</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A69E91">JETBRAINS MONO · map labels, as in the star atlas today</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
