@@ -16,8 +16,8 @@ import { shoot } from './powers/shoot';
 
 /**
  * Whether Prototyping plays with Community's cards (Skills, Tactics, research). Flip it to try the mode
- * without them, and refresh the golden games after (`npx vitest run golden -u`). On hexes, Ingenious and
- * Hostile ("conquer from the corners") still need a ruling (docs/HEX.md).
+ * without them, and refresh the golden games after (`npx vitest run golden -u`). On hexes, Ingenious ("conquer
+ * from the corners") is left out of the deck (effects.ts `dealt`).
  */
 export const PROTOTYPING_CARDS = true;
 

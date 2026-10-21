@@ -46,20 +46,26 @@ for (const map of [MAPS.find((m) => m.id === 'alpha-sector')!, ...MAPS.filter((m
   if (drawn !== spaces(board).length) problem(`${drawn} wells drawn for ${spaces(board).length} spaces`);
   if (drawnShared !== shared) problem(`${drawnShared} shared wells drawn, the engine has ${shared}`);
 
-  // One of your ships, then the first space it can move to, tapped where it is drawn.
+  // One of your ships, then a space it can move to, tapped where it is drawn. On a hex map the tap goes near the
+  // hex's top right side, in the corner of its square box that the hex up and right of it reaches over: a space
+  // whose neighbour there is highlighted too, if there is one, so a tap on the wrong one would show.
   const ship = page.locator('.ship.own').first();
   await ship.click();
-  const target = page.locator('.hl').first();
-  if (!(await target.count())) {
+  const spots = await page
+    .locator('.hl')
+    .evaluateAll((els) => els.map((e) => ({ r: Number(e.getAttribute('data-r')), c: Number(e.getAttribute('data-c')) })));
+  if (!spots.length) {
     problem('no space to move to');
     await page.close();
     continue;
   }
-  const r = Number(await target.getAttribute('data-r'));
-  const c = Number(await target.getAttribute('data-c'));
-  const box = (await target.boundingBox())!;
+  const hex = !!board.hex;
+  const { r, c } = (hex && spots.find((p) => spots.some((q) => q.r === p.r - 1 && q.c === p.c + 1))) || spots[0];
+  const box = (await page.locator(`.hl[data-r="${r}"][data-c="${c}"]`).boundingBox())!;
   await page.screenshot({ path: `${OUT}/${map.id}-reach.png` });
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  // About as far from the hex's side as from the edges of the next hex's box (0.075 spaces), so rounding can't tip it.
+  const [dx, dy] = hex ? [0.44, -0.08] : [0, 0];
+  await page.mouse.click(box.x + box.width * (0.5 + dx), box.y + box.height * (0.5 + dy));
   await page.waitForTimeout(800);
   const after = await state();
   const arrived = after.dice.some((d) => d.owner === 0 && cellOf(d)?.r === r && cellOf(d)?.c === c);

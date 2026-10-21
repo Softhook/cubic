@@ -3,7 +3,7 @@
 The game played on hexagonal tiles instead of 3×3 squares. The rules are unchanged; what changes
 is which spaces are next to each other, how far apart they are, and what counts as a diagonal. Pick a
 map from the **Hex tiles** group in the lobby with the **Prototyping** rules (only those, while hexes are
-being tried out; the tests pin the geometry down with Basic's).
+being tried out; the tests pin the geometry down with Basic's). One card is left out on hexes: see *Cards*.
 
 ## The tiles
 
@@ -29,7 +29,7 @@ planets sit in the middle of their tiles (see *Off-centre planets*).
 | Distance | rows + columns | hexes |
 | Conquer | your ships in the planet's 4 orbital positions add up exactly to its number | the same, with 6 orbital positions |
 | 2 Flagship: carry a nearby ship and drop it next to you | the 8 surrounding spaces | the 6 touching hexes |
-| 5 Interceptor: move and attack diagonally | the 4 corner spaces, touching only at a corner | the 6 hexes two away that sit between two neighbours |
+| 5 Interceptor: move and attack diagonally (Basic, Classic, Community) | the 4 corner spaces, touching only at a corner | the 6 hexes two away that sit between two neighbours |
 | Warp Gates, Nomadic (not in Basic) | unchanged | unchanged (Nomadic's neighbouring tiles are the planets 3 hexes away) |
 | Prototyping's zones of control (Picket) | the 4 orthogonal spaces | the 6 hexes sharing a side |
 | Prototyping's 5 Interceptor: Shoot along a clear straight line | 4 lines, up, down, left, right | 6 lines, one out of each side |
@@ -38,10 +38,17 @@ planets sit in the middle of their tiles (see *Off-centre planets*).
 slips between two neighbours. The hex diagonal does the same: it is two hexes away, between the two
 hexes that touch both, and the Interceptor may take it even when both are occupied. So the 5 keeps
 the same edge it has on squares: it is never boxed in, and it attacks from one step farther away.
+Prototyping, the only rules the lobby offers hexes with, gives the 5 Shoot instead, so in play today the
+hex diagonal is only pinned down by the tests.
 
 **Conquering.** Six orbital positions mean up to six of your ships can count towards a planet's
 number, and an opponent needs more ships to block it. With 3 to 5 ships per player, a conquest still
 needs most of your fleet in orbit.
+
+**Cards.** Most cards read the same on hexes. Ingenious (both editions: "conquer from the corners") counts
+ships diagonal to a planet, and hex tiles have no corners: the hex diagonals are other planets' orbits,
+so it would add six more spaces to every orbit. It is left out of the decks on a hex map (ruling 20 October
+2026, `dealt` in [`effects.ts`](../packages/engine/src/effects.ts)).
 
 ## The maps
 
@@ -53,16 +60,21 @@ a tile to the right.
 |---|---|---|---|
 | Alpha Sector (hex), 2 players | A 3×3 rhombus on its point (rows 1-2-3-2-1) | eight 7s, an 8 in the middle | the two far points, 4 tiles apart |
 | Beta Sector (hex), 3 players | A triangle of 10 tiles around a 10 | the 7s and 8s alternate around the 10 | the corners (8s), each touching one 7 and one 8 |
-| Gamma Sector (hex), 4 players | The rhombus, with a 10 in the middle | 9s and 8s, mirrored | the points (9s), touching a 9 and an 8; the sides (8s), touching a 9, an 8 and the 10 |
+| Gamma Sector (hex), 4 players | The rhombus, with a 10 in the middle | 9s and 8s, the same after a half turn | the points (9s), touching a 9 and an 8; the sides (8s), touching a 9, an 8 and the 10 |
 
 The square maps' corners are all alike; a rhombus has two sharp points and two blunt sides, so Gamma
 starts two players at each, with bigger home planets on the remoter points. The seats aren't alike yet:
-the sides also touch the 10 and are 4 hexes from both points, while the points are 8 from each other. Beta, a 3-player map, can be
-fully symmetric on hexes.
+the sides also touch the 10, and each side's planet is 6 hexes from all three other starts, while a point's
+is 6 from the sides and 10 from the other point. Beta, a 3-player map, is the same after a third of a turn,
+so its seats match.
+
+No hex map can be the same in a mirror: the flowers' lattice is turned about 11° from the hexes (see
+*Drawing*), and a mirror turns it the other way. A map's seats can only match by turning it.
 
 ## First AI results
 
-20 games per map, level 2 AI (Captain) in every seat, 19 October 2026: averages per game.
+20 games per map, level 2 AI (Captain) in every seat, averages per game. With the Basic rules,
+19 October 2026:
 
 | Map | Rounds | Attacks | Conquers | Wins by seat |
 |---|--:|--:|--:|---|
@@ -76,6 +88,19 @@ fully symmetric on hexes.
 On hexes ships meet more often: more neighbours, and every space is some planet's orbit. Games run a
 little longer, and Gamma's much longer (+29%), with conquests harder to finish among more fighting.
 Twenty games are too few to read anything into the seat wins.
+
+With the Prototyping rules, as the lobby offers hexes (moves capped at 3, zones of control, Shoot, Community
+cards without Ingenious on hexes), the same seeds, 20 October 2026:
+
+| Map | Rounds | Attacks | Conquers | Wins by seat |
+|---|--:|--:|--:|---|
+| Alpha Sector | 7.3 | 5.8 | 5.1 | 7/13 |
+| Alpha Sector (hex) | 7.0 | 7.8 | 5.7 | 6/14 |
+| Beta Sector (hex) | 9.4 | 23.7 | 7.3 | 9/3/8 |
+| Gamma Sector (hex) | 9.5 | 37.4 | 6.5 | 5/5/3/7 |
+
+Zones of control halve the fighting on hexes as on squares, and Gamma (hex) no longer runs long: about as
+many rounds as Beta. No game stalled.
 
 ## Drawing
 
@@ -96,15 +121,18 @@ square pad leaves 2.5 mm round it. The wells stay hexes, so a die can turn to fa
   touching spaces and step count. `adjacent`, `surrounding`, `distance`, `diagonals`, `isDiagonalStep`,
   `tileCentres` and `grid()`'s neighbour lists all read it, and the rest of the engine and the AI ask
   those, so the rules needed no change. `drawing(board)` says where each space is drawn, and
-  `cellAtPoint` which space a tap lands on.
+  `cellAtPoint` which space a tap lands on. A hex map can't wrap: `buildBoard` refuses one that does.
 - **Web.** Everything on the map is placed with `drawing(board).at`, in pixels through `placement` in
   [`geometry.ts`](../apps/web/src/components/board/geometry.ts) (a space's `box` and `mid`). `BoardArt` draws the tiles of both shapes with
-  [`MapTiles.tsx`](../apps/web/src/components/board/MapTiles.tsx), in layers worked out from the board. The lobby previews hex maps as hexes, and its turning backdrop draws them as the game does, with
-  its fleets moving hex to hex.
+  [`MapTiles.tsx`](../apps/web/src/components/board/MapTiles.tsx), in layers worked out from the board. A highlighted space and a ship take taps on
+  their hex only (`.board.hex` in styles.css), not on the corners of their square box, which lie in the next
+  hexes. The lobby previews a hex map with a hex for each tile, placed and turned as the game draws them,
+  and its turning backdrop draws them as the game does, with its fleets moving hex to hex.
 - **Tests.** [`hex.test.ts`](../packages/engine/test/hex.test.ts) pins each rule above, and the
   legal-move cross-check in [`consistency.test.ts`](../packages/engine/test/consistency.test.ts) plays a
   hex game (all three with `DEEP=1`). `npm run hex:check` plays a first move in Chrome on the square
-  Alpha Sector, each hex map and each drift map, tapping where the space is drawn, and checks the map
+  Alpha Sector, each hex map and each drift map, tapping where the space is drawn (on a hex, near its top
+  right side, where the next hex's square box reaches over), and checks the map
   draws a well for each space, cross-hatched where the engine has orbits overlap.
 
 ## Off-centre planets
@@ -178,8 +206,7 @@ and neither AI went for it.
 
 ## Not yet
 
-- Cards (Classic, Community, Prototyping): most work unchanged, but Ingenious and Hostile ("conquer from
-  the corners") need a ruling, as hex tiles have no corners.
+- A hex form of Ingenious, if it's worth having back (see *Cards*).
 - Hex versions of the advanced, add-on and BGA maps; wrapping maps.
 - Turning a tall map on its side to fit a wide screen.
 - Packing hex tiles closer on a sheet: they print in the square tiles' 2 × 2 grid, though flowers nest.

@@ -11,8 +11,11 @@ import {
   apply,
   buildBoard,
   carryPassengers,
+  checkInvariants,
   cellAtPoint,
   conquerCheck,
+  createGame,
+  effectOf,
   distance,
   drawing,
   geometry,
@@ -27,7 +30,7 @@ import {
   type Cell,
   type GameState,
 } from '../src';
-import { allowMapGroups, playAiGame, quickStart } from './helpers';
+import { allowMapGroups, playAiGame, players, quickStart } from './helpers';
 
 // The basic maps on hex tiles; the drift maps (offset.test.ts) put their planets off the middle.
 const HEX_MAPS = MAPS.filter((m) => m.group === 'hex');
@@ -114,6 +117,20 @@ describe('hex maps', () => {
     }
   });
 
+  it('draws every hex whole, its side corners too, inside the drawing', () => {
+    for (const m of HEX_MAPS) {
+      const b = buildBoard(m);
+      const { at, cols } = drawing(b);
+      const xs = spaces(b).flatMap((p) => [at(p).c + 0.5 - 1 / Math.sqrt(3), at(p).c + 0.5 + 1 / Math.sqrt(3)]);
+      expect(Math.min(...xs)).toBeCloseTo(0);
+      expect(Math.max(...xs)).toBeCloseTo(cols);
+    }
+  });
+
+  it('refuses a hex map that wraps', () => {
+    expect(() => buildBoard({ ...HEX_MAPS[0], wrap: 'both' })).toThrow(/can't wrap/);
+  });
+
   it('moves a ship across hexes, up to its number', () => {
     const from = orbitals(BASE.board, CENTRE)[0];
     const s = scenario({ p0d0: [from, 1] });
@@ -156,6 +173,18 @@ describe('hex maps', () => {
     )!;
     expect(carryPassengers(scenario({ p0d0: [from, 2], p0d1: [side, 3] }), 'p0d0').map((d) => d.id)).toEqual(['p0d1']);
     expect(carryPassengers(scenario({ p0d0: [from, 2], p0d1: [diagonal, 3] }), 'p0d0')).toEqual([]);
+  });
+
+  it('leaves Ingenious (conquer from the corners) out of the deck, as hex tiles have no corners', () => {
+    const cards = (mapId: string) => {
+      const s = createGame({ players: players(2), seed: 1, mode: 'prototyping', mapId });
+      expect(checkInvariants(s)).toEqual([]);
+      const { skillDeck, skillRow } = s.market;
+      const drafts = s.pending.flatMap((x) => (x.kind === 'skillDraft' ? x.options : []));
+      return [...skillDeck, ...skillRow, ...drafts].map(effectOf);
+    };
+    expect(cards('alpha-hex')).not.toContain('ingenious');
+    expect(cards('alpha-sector')).toContain('ingenious');
   });
 
   for (const m of HEX_MAPS)

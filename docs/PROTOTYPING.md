@@ -21,7 +21,7 @@ As of 2026-10-12, Prototyping is **Community Edition**, with only these changes:
 | Status | Rule |
 |---|---|
 | **Current** | Community's **cards** (Skills, Tactics, research). `PROTOTYPING_CARDS` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) turns them off. |
-| **Current** | Plays the **hex** and **off-centre planet** maps (Twin Drift, Binary Reach) too, as well as Community's. |
+| **Current** | Plays the **hex** and **off-centre planet** maps (Twin Drift, Binary Reach) too, as well as Community's. On a hex map **Ingenious** ("conquer from the corners") is left out of the deck, as hex tiles have no corners (ruling 2026-10-20, [HEX.md](HEX.md) *Cards*). |
 | **Current** | A ship's die value contributes at most **3** movement; skill bonuses apply after that cap. |
 | **Current** | **Zones of control:** every ship pickets the 4 orthogonally adjacent spaces (the 6 sides on hex maps; not diagonals) as a mode rule, not a ship power. Diagonals were dropped (2026-10-12) because most ships can't attack diagonally from where they stop. An enemy ship that moves into one must stop there (it may still attack from there; one that starts its move there may leave). Friendly ships are never stopped, and a player with the **Devious** skill ignores zones (ruling 2026-10-12; the card text is unchanged). |
 | **Current** | The **5 Interceptor** replaces its diagonal Manoeuvre ability with **Shoot**: spend one action to attack the first enemy in a clear orthogonal line (one out of each of a hex's 6 sides on hex maps) without advancing. Shooting is that ship's action for the turn. |

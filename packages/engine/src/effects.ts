@@ -85,3 +85,12 @@ export type TacticEffect = (typeof TACTIC_EFFECT_IDS)[number];
 
 /** Card effects the engine implements. Only cards with these effects are shuffled into the decks. */
 export const IMPLEMENTED_EFFECTS: ReadonlySet<string> = new Set<string>([...SKILL_EFFECTS, ...TACTIC_EFFECT_IDS]);
+
+/**
+ * Card effects left out of the decks on a hex map: Ingenious (both editions) counts the spaces diagonal to a planet,
+ * and hex tiles have no corners (ruling 2026-10-20, docs/HEX.md).
+ */
+const SQUARE_ONLY_EFFECTS: ReadonlySet<string> = new Set<SkillEffect>(['ingenious']);
+
+/** Whether cards with an effect are shuffled into the decks (setup.ts), on a square map or a hex one. */
+export const dealt = (effect: string, hex = false) => IMPLEMENTED_EFFECTS.has(effect) && !(hex && SQUARE_ONLY_EFFECTS.has(effect));

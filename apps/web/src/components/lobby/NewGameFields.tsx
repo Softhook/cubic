@@ -1,8 +1,8 @@
 // The parts of the lobby's new-game form.
 
-import { type CSSProperties, type ReactNode } from 'react';
+import { type CSSProperties, type ReactNode, useMemo } from 'react';
 import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
-import { parseToken, type GameMode, type MapDef, type PlayerConfig } from '@quantum/engine';
+import { buildBoard, drawing, parseToken, tileCentres, type GameMode, type MapDef, type PlayerConfig } from '@quantum/engine';
 import { Segmented } from '../Segmented';
 import { remember } from '../../storage';
 import { pick } from '../../random';
@@ -40,22 +40,52 @@ function MiniTile({ token, style }: { token: string; style?: CSSProperties }) {
   );
 }
 
-/**
- * A hex map's preview: hexes for tiles, each odd row half a tile to the right (data/maps.yaml), so they
- * touch as on the map. The map itself is turned a little (its tiles' rows aren't level), the preview isn't.
+/*
+ * A hex map's tiles stand on a lattice of their own, turned from the hexes (engine board.ts): each tile's
+ * neighbours are √7 spaces away, the first of them TILE_TURN below level, so a tile previews as a hex that
+ * size, its sides facing its neighbours, a little smaller to leave a gap.
  */
+const TILE_SPAN = Math.sqrt(7);
+const TILE_TURN = Math.atan2(1, 3 * Math.sqrt(3));
+const TILE_CORNER = TILE_SPAN / Math.sqrt(3);
+const TILE_CLIP = `polygon(${Array.from({ length: 6 }, (_, i) => {
+  const a = TILE_TURN + Math.PI / 6 + (Math.PI / 3) * i;
+  return `${(50 + 46 * Math.cos(a)).toFixed(1)}% ${(50 + 46 * Math.sin(a)).toFixed(1)}%`;
+}).join(', ')})`;
+
+/** A hex map's preview: a hex for each tile, placed and turned as the map draws them (engine `drawing`). */
 function HexMiniMap({ map }: { map: MapDef }) {
-  const cols = Math.max(...map.layout.map((r, i) => r.length + (i % 2) / 2));
-  const size = Math.min(26, Math.floor(150 / Math.max(cols, map.layout.length * 0.75)));
-  const step = size * 0.75;
+  const board = useMemo(() => buildBoard(map), [map]);
+  const { at } = drawing(board);
+  const centres = tileCentres(board);
+  const tileCols = Math.max(...map.layout.map((r) => r.length));
+  const tiles = map.layout.flatMap((row, r) =>
+    row.flatMap((token, c) => {
+      const p = centres.get(r * tileCols + c);
+      return p ? [{ key: `${r},${c}`, token, x: at(p).c + 0.5, y: at(p).r + 0.5 }] : [];
+    }),
+  );
+  const [xs, ys] = [tiles.map((t) => t.x), tiles.map((t) => t.y)];
+  const [left, top] = [Math.min(...xs) - TILE_CORNER, Math.min(...ys) - TILE_CORNER];
+  const [w, h] = [Math.max(...xs) + TILE_CORNER - left, Math.max(...ys) + TILE_CORNER - top];
+  // Pixels per space: a tile at most 26 px across, as a square map's, and the map within 150.
+  const px = Math.min(26 / TILE_SPAN, 150 / w, 150 / h);
+  const size = 2 * TILE_CORNER * px;
   return (
-    <div
-      className="mini-map hex"
-      style={{ width: cols * size, height: (map.layout.length - 1) * step + size, '--tile': `${size}px` } as CSSProperties}
-    >
-      {map.layout.flatMap((row, r) =>
-        row.map((t, c) => <MiniTile key={`${r},${c}`} token={t} style={{ left: (c + (r % 2) / 2) * size, top: r * step }} />),
-      )}
+    <div className="mini-map hex" style={{ width: w * px, height: h * px } as CSSProperties}>
+      {tiles.map((t) => (
+        <MiniTile
+          key={t.key}
+          token={t.token}
+          style={{
+            left: (t.x - left - TILE_CORNER) * px,
+            top: (t.y - top - TILE_CORNER) * px,
+            width: size,
+            height: size,
+            clipPath: TILE_CLIP,
+          }}
+        />
+      ))}
     </div>
   );
 }

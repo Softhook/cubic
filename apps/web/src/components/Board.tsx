@@ -85,7 +85,7 @@ export function Board({
     <div className={`board-wrap ${zoom.zoomed ? 'zoomed' : ''}`} ref={wrap}>
       <div
         ref={boardRef}
-        className="board"
+        className={`board${game.board.hex ? ' hex' : ''}`}
         style={{ left: zoom.x, top: zoom.y, width: cols * cell, height: rows * cell, '--cell': `${cell}px` } as CSSProperties}
       >
         <BoardArt game={game} cell={cell} lateCube={staging.cube} />

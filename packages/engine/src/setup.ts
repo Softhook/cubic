@@ -1,6 +1,6 @@
 /** Game creation and the setup decisions: fleet roll, starting skill, starting planet and ships. */
 import { buildBoard, same, STARTING_SHIPS } from './board';
-import { IMPLEMENTED_EFFECTS } from './effects';
+import { dealt } from './effects';
 import { aShip, emptyTurn, fail, headOf, log, note, logTo, name, placeCube, roll, type Handlers } from './core';
 import { defaultMap, effectOf, MAPS, type CardDef, type GameMode } from './data';
 import { boardLoc, die, scrapyard } from './lookups';
@@ -73,11 +73,11 @@ export function createGame(opts: NewGameOptions): GameState {
 
   const m = state.market;
   if (rules.cards) {
-    // Only cards whose effect is implemented are shuffled in, so every card drawn works.
+    // Only cards whose effect is implemented are shuffled in, so every card drawn works; on a hex map, none about corners.
     const deck = (defs: CardDef[]) =>
       shuffle(
         state,
-        defs.filter((c) => IMPLEMENTED_EFFECTS.has(effectOf(c.id))).flatMap((c) => Array.from({ length: c.count }, () => c.id)),
+        defs.filter((c) => dealt(effectOf(c.id), state.board.hex)).flatMap((c) => Array.from({ length: c.count }, () => c.id)),
       );
     m.skillDeck = deck(rules.cards.skills);
     m.tacticDeck = deck(rules.cards.tactics);

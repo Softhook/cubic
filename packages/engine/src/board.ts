@@ -195,6 +195,8 @@ function hexTiles(map: MapDef): { r: number; c: number; token: string; tile: num
 }
 
 function buildHexBoard(map: MapDef): Board {
+  // Joined edges are worked out on the stored rows and columns, which on a hex board aren't the map's.
+  if (map.wrap) throw new Error(`${map.id}: a hex map can't wrap`);
   const tiles = hexTiles(map);
   const flower = [{ r: 0, c: 0 }, ...HEX_SIDES];
   const all = tiles.flatMap((t) => flower.map((d) => ({ r: t.r + d.r, c: t.c + d.c })));
@@ -227,6 +229,8 @@ function buildHexBoard(map: MapDef): Board {
 
 /** How far a flat-topped hex's centre is from the next column's, in hex heights (√3 / 2). */
 const HEX_COLUMN = Math.sqrt(3) / 2;
+/** How far a flat-topped hex's left and right corners reach past its box (one space square): 1 / √3 − 1 / 2. */
+const HEX_OVERHANG = 1 / Math.sqrt(3) - 0.5;
 
 /** Where a board is drawn: each space's place and the whole board's size, in spaces (cell units). */
 export interface Drawing {
@@ -241,8 +245,9 @@ const DRAWINGS = new WeakMap<BoardCell[][], Drawing>();
 /**
  * How a board is drawn. Square boards are drawn as stored. A hex board's flat-topped hexes are one
  * space tall (flat side to flat side), with columns HEX_COLUMN apart, each half a hex lower than the
- * one before; `at` gives the top left of the square box centred on the hex. Fractional positions
- * (a ship part-way into its target) work too.
+ * one before; `at` gives the top left of the square box centred on the hex, and the drawing is wide
+ * enough for the hexes' corners past their boxes at either side. Fractional positions (a ship part-way
+ * into its target) work too.
  */
 export function drawing(board: Board): Drawing {
   let d = DRAWINGS.get(board.cells);
@@ -253,10 +258,10 @@ export function drawing(board: Board): Drawing {
     const on: Cell[] = [];
     board.cells.forEach((row, r) => row.forEach((x, c) => x.kind !== 'off' && on.push(raw({ r, c }))));
     const top = Math.min(...on.map((p) => p.r));
-    const left = Math.min(...on.map((p) => p.c));
+    const left = Math.min(...on.map((p) => p.c)) - HEX_OVERHANG;
     d = {
       rows: Math.max(...on.map((p) => p.r)) - top + 1,
-      cols: Math.max(...on.map((p) => p.c)) - left + 1,
+      cols: Math.max(...on.map((p) => p.c)) - left + 1 + HEX_OVERHANG,
       at: (p) => {
         const q = raw(p);
         return { r: q.r - top, c: q.c - left };
@@ -267,7 +272,11 @@ export function drawing(board: Board): Drawing {
   return d;
 }
 
-/** The space drawn at a point of the drawing (in spaces from its top left), if any: the nearest on-board one within half a space. */
+/**
+ * The space drawn at a point of the drawing (in spaces from its top left), if any. On a hex board, the
+ * nearest on-board hex within 0.75 spaces of the point: that is the hex the point lies in, or, a little
+ * way off the map's edge, the hex nearest it, so a tap just outside still counts.
+ */
 export function cellAtPoint(board: Board, y: number, x: number): Cell | undefined {
   if (!board.hex) return { r: Math.floor(y), c: Math.floor(x) };
   const { at } = drawing(board);
