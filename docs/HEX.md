@@ -102,6 +102,68 @@ cards without Ingenious on hexes), the same seeds, 20 October 2026:
 Zones of control halve the fighting on hexes as on squares, and Gamma (hex) no longer runs long: about as
 many rounds as Beta. No game stalled.
 
+## Interaction
+
+The question: are the classic rules on squares a more solitary game, each player conquering on their own,
+with fewer ways of getting in each other's way? `npm run interaction` ([`interaction.ts`](../scripts/interaction.ts))
+measures it over self-play. After every action it scores each player's own position with the AI's evaluation
+(`valueOf` in [`evaluate.ts`](../packages/ai/src/evaluate.ts), in cube points) and credits the change to the
+player who acted and to what they did. The main measure:
+
+- **Interaction ratio**: how much a player's value moves in the opponent's actions, over how much it moves in
+  their own. Near 0, the opponent hardly matters.
+- **Harm**: what the opponent's actions take off a player's value, per player-turn, and what kind of
+  action did it (attacks with their battles, moves, cards: research, picks, skills and tactics).
+
+And counts of the board itself: turns starting with the two fleets at most 2 spaces apart, moves ending next to
+an enemy ship, turns with both players' ships in one planet's orbit, and turns where a player's orbit adds up to a
+planet's number but an enemy ship sits in it (a conquest blocked). The setups compare the hex board with the
+rules apart: Prototyping without cards is the same rules with `cards: null`.
+
+Level 4 AI (Admiral) in both seats, Alpha Sector, 200 games per setup, the same seeds, 21 October 2026
+(`npm run interaction -- 200 4,4`):
+
+| | Basic | Classic | Community | Proto, no cards | Proto | Proto (hex), no cards | Proto (hex) |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| Player-turns | 23.3 | 19.5 | 17.1 | 24.8 | 17.4 | 25.4 | 17.2 |
+| Battles | 15.1 | 10.8 | 9.1 | 12.7 | 7.0 | 18.7 | 9.6 |
+| **Interaction ratio** (±0.02) | 0.34 | 0.30 | 0.30 | 0.38 | 0.33 | 0.44 | **0.39** |
+| Harm per player-turn (cubes) | 0.20 | 0.20 | 0.22 | 0.19 | 0.21 | 0.25 | **0.29** |
+| Harm from attacks | 82% | 73% | 56% | 41% | 30% | 47% | 32% |
+| Harm from moves | 13% | 14% | 11% | 47% | 42% | 42% | 39% |
+| Harm from cards | | 8% | 16% | | 15% | | 16% |
+| Harm from missiles | | | 12% | 6% | 7% | 4% | 7% |
+| Own gains from cards | | 7% | 11% | | 12% | | 12% |
+| Card actions per game | | 10.6 | 17.4 | | 18.5 | | 18.3 |
+| Turns with fleets ≤ 2 apart | 44% | 41% | 36% | 49% | 40% | 61% | 51% |
+| Moves ending next to an enemy | 8% | 8% | 7% | 7% | 7% | 17% | 16% |
+| Turns with a shared orbit | 22% | 23% | 21% | 35% | 31% | 40% | 34% |
+| Conquests blocked per game | 0.17 | 0.24 | 0.14 | 1.25 | 0.82 | 1.72 | 1.00 |
+
+- **Classic on squares is the most solitary.** The Prototyping rules on squares add a little interaction
+  (0.30 → 0.33), the hex board as much again (0.39), with 45% more harm per turn than Classic: the fleets
+  meet more, and twice as many moves end next to an enemy ship.
+- **The interaction changes kind.** In Classic three quarters of the harm is attacks. In Prototyping about
+  40% is moves: zones of control, orbits taken, conquests blocked (most of those are contested orbit's, §6.8
+  in [PROTOTYPING.md](PROTOTYPING.md)), the getting in each other's way the classic game lacks.
+- **Cards make every game more solitary.** With cards the games are about a third shorter in Prototyping,
+  with half the battles and less contact, and the ratio falls by 0.04–0.05 in every rule set: cards harm the
+  opponent (Tactics mostly), but they help their player about as much, so players race for conquests more
+  than they fight.
+- **Cards weigh about twice as much in Prototyping as in Classic** (15–16% of the harm against 8%), as
+  Community's Skills and Tactics do more than Command and Gambit cards. Hexes don't change that.
+- The player who took more cards won 86–97% of games, but a player ahead has actions to spare for research,
+  so that says little of what the cards do; the games without cards do.
+
+**Skill.** Level 4 against level 2 (`npm run interaction -- 200 2,4`), Admiral's wins: Basic 78%,
+Classic 84%, Prototyping without cards 82% (square) and 82% (hex), with cards 84% and 82%, each ±5. Neither
+the hexes nor the cards make the stronger player win more or less often: they add neither luck nor
+skill that this measures.
+
+**Limits.** The AI's evaluation was tuned on squares and may miss what hexes offer; harm is the evaluation's
+view, so threats count as well as losses; one 2-player map. Gamma (hex), where the fighting was heaviest,
+is next.
+
 ## Drawing
 
 Hexes are flat-topped, one space tall, with columns √3/2 of a space apart. The flower lattice is turned

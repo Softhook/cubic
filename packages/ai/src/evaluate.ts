@@ -308,3 +308,8 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
   const value = CUBE * (Math.max(best, presence, approach) + progress);
   return mover ? value : value * 0.8;
 }
+
+/** Player p's own value, without the rivals', scored as if p moves next (scripts/interaction.ts). */
+export function valueOf(s: GameState, p: PlayerId): number {
+  return playerValue(context(s, p), p);
+}

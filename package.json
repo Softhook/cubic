@@ -18,6 +18,7 @@
     "check": "npm run typecheck && npm run lint -- --max-warnings 0 && npm run circular && npm run knip && npm run format:check && npm test",
     "ai:match": "npm run data && vite-node scripts/ai-match.ts",
     "power:usage": "npm run data && vite-node scripts/power-usage.ts --",
+    "interaction": "npm run data && vite-node scripts/interaction.ts --",
     "selfplay:cards": "npm run data && vite-node scripts/selfplay-cards.ts",
     "selfplay:skills": "npm run data && vite-node scripts/skill-ab.ts --",
     "audit:cards": "npm run data && vite-node scripts/card-audit.ts --",
