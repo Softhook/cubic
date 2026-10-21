@@ -16,6 +16,7 @@ Live canvas: https://claude.ai/artifact/HXXvHR2kv7qATjy7nCudZb (private to its o
 | [Ladder](Ladder.dc.html) | One card's art at four levels, diagram to painted |
 | [Surface](Surface.dc.html) | Photographic ground from one lit height map (height, smoothness and brightness in the red, green and blue channels), before and after, and how Chrome, Firefox and Safari differ |
 | [MechStudy](MechStudy.dc.html) | A detailed mech as full-art card art, built up in six layers (paint, shading, panel lines, light, wear, glow), at full and actual size |
+| [HexSurface](HexSurface.dc.html) | The seven-tile map redrawn from the Surface study's lit height map, with plain pip dice in the side colours |
 
 Each board is a static HTML page and opens in a browser as it is. The `support.js` it asks for belongs
 to the canvas editor; without it the page draws the same, only not editable. `canvas.json` is the
