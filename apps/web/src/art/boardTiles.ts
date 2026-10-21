@@ -1,4 +1,4 @@
-import { tileCentres, type Board, type Cell } from '@quantum/engine';
+import { drawing, tileCentres, type Board, type Cell } from '@quantum/engine';
 import { assignTiles, tileFlavour, tileSpec } from '@quantum/art';
 
 export interface TileArt {
@@ -11,15 +11,20 @@ export interface TileArt {
   id: string;
   /** Where the tile's body is drawn: its planet's space, anywhere on the tile, or the middle for a Void. */
   body: Cell;
+  /** Where the body is as drawn, in spaces from the tile's middle (x right, y down). */
+  at: { x: number; y: number };
 }
 
 /** Each tile of the map (3×3 squares, or a hex map's 7-hex flowers), with the physical tile it uses (packages/art). */
 export function tileArt(board: Board): TileArt[] {
   const { tiles, ids } = tileIds(board);
   const planets = new Map(board.planets.map((p) => [board.cells[p.r][p.c].tile, p]));
+  const drawn = drawing(board).at;
   return [...tiles].map(([index, { r, c }]) => {
     const p = planets.get(index);
-    return { r, c, tile: index, id: ids.get(index)!, body: p ? { r: p.r, c: p.c } : { r, c } };
+    const body = p ? { r: p.r, c: p.c } : { r, c };
+    const [a, b] = [drawn({ r, c }), drawn(body)];
+    return { r, c, tile: index, id: ids.get(index)!, body, at: { x: b.c - a.c, y: b.r - a.r } };
   });
 }
 

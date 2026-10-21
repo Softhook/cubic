@@ -19,6 +19,7 @@ export {
 } from './tokens';
 export { ICONS, icon } from './icons';
 export { starfield, type StarfieldOptions } from './starfield';
+export { regolithSvg } from './regolith';
 export { planet, type PlanetOptions } from './planet';
 export {
   HATCH,

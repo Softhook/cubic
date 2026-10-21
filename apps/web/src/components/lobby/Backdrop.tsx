@@ -64,7 +64,7 @@ function useTileImages(tiles: TileArt[], layer: TileLayer) {
   useEffect(() => {
     let live = true;
     for (const t of tiles)
-      decodedTileImage(t.id, layer).then((url) => {
+      decodedTileImage(t, layer).then((url) => {
         const img = new Image();
         img.src = url;
         img.decode().then(

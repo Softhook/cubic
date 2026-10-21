@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { cellAt, type Board } from '@quantum/engine';
 import { HATCH, HEX_WELL, SPACE_BASE_CSS, TILE, WELL, hexWell, tileLabel, tileSpec, voidFlask, well } from '@quantum/art';
+import { useMoonMaps } from '../../art/mapLook';
 import { useTileImages } from '../../art/tileImages';
 import type { TileArt } from '../../art/boardTiles';
 import { SQUARE_TILE_GAP, hexCorners, hexFlower, hexSeams, placement } from './geometry';
@@ -86,10 +87,12 @@ function marksOf(board: Board, tiles: readonly TileArt[]): string {
 /**
  * A map's tiles in SVG, square or hex, in layers: each tile's sky, its body (planet and moons, or a Void's
  * heart) wherever the planet sits, cut off at the tile's edge, then the seams between hex tiles, the spaces
- * and the labels. The planets' numbers and cubes go on top (BoardArt).
+ * and the labels. The planets' numbers and cubes go on top (BoardArt). A hex map may be on the moon instead
+ * (mapLook): moon ground, each tile's building already standing on its planet's space.
  */
 export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: Board; tiles: TileArt[]; cell: number }) {
-  const skies = useTileImages(tiles, board.hex ? 'sky-hex' : 'sky-square');
+  const moon = useMoonMaps() && !!board.hex;
+  const skies = useTileImages(tiles, moon ? 'ground' : board.hex ? 'sky-hex' : 'sky-square');
   const bodies = useTileImages(tiles, 'body');
   const { mid } = placement(board, cell);
   const mm = cell / TILE.cell;
@@ -130,7 +133,7 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
         <g key={t.tile} clipPath={`url(#map-tile-${t.tile})`}>
           <rect x={mid(t).x - size / 2} y={mid(t).y - size / 2} width={size} height={size} fill={SPACE_BASE_CSS} />
           {art(skies[t.id], mid(t))}
-          {art(bodies[t.id], mid(t.body))}
+          {!moon && art(bodies[t.id], mid(t.body))}
         </g>
       ))}
       {board.hex && (
