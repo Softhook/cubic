@@ -11,6 +11,7 @@
 import { mkdirSync } from 'node:fs';
 import type { Page } from 'playwright';
 import { apply, legalActions, orbitals, type GameState } from '../packages/engine/src';
+import { PROTOTYPING_OVER_CONQUEST } from '../packages/engine/src/prototyping';
 import { arrange, quickStart } from '../packages/engine/test/helpers';
 import { devServer, finish, launchChrome, playUrl, succeeds } from './mobile-common';
 
@@ -36,6 +37,19 @@ function overConquest() {
   s.players.forEach((p) => (p.ai = false));
   s.turn.actionsLeft = 3;
   return { s, planet: target, me, victim: others[1] };
+}
+
+/** A Prototyping hex position where the player to move has a free planet's sum in orbit, but an enemy ship in it too (contested orbit). */
+function contested() {
+  // 3 players, as the page and the other positions have.
+  let s: GameState = quickStart(3, 1, 'prototyping', 'beta-hex');
+  const me = s.turn.player;
+  const planet = s.board.planets.find((p) => !p.start && !p.cubes.length)!;
+  const [a, b, c] = orbitals(s.board, planet);
+  s = arrange(s, { [`p${me}d0`]: [a.r, a.c, 6], [`p${me}d1`]: [b.r, b.c, planet.number - 6], [`p${(me + 1) % 3}d0`]: [c.r, c.c, 3] });
+  s.players.forEach((p) => (p.ai = false));
+  s.turn.actionsLeft = 3;
+  return { s, planet };
 }
 
 /**
@@ -68,27 +82,48 @@ try {
   await page.goto(playUrl(base, { play: 'prototyping', players: 3 }));
   await page.waitForFunction(() => '__quantum' in window);
 
-  // Over-conquest with two opponents' cubes: the player chooses whose to displace.
-  const { s, planet, me, victim } = overConquest();
-  if (legalActions(s).filter((x) => x.type === 'conquer' && x.planet === planet.id).length !== 2)
-    fail('the position does not offer two over-conquests');
-  await load(page, s);
-  await page.click(`.planet-hit[data-r="${planet.r}"][data-c="${planet.c}"]`);
-  const dialog = page.getByRole('dialog', { name: `Conquer planet ${planet.number}` });
-  await dialog.waitFor({ timeout: 5000 }).catch(() => fail('tapping the planet opens no "Conquer planet" dialog'));
-  await page.waitForTimeout(400);
-  await page.screenshot({ path: `${OUT}/conquer-choice.png` });
-  const name = s.players[victim].name;
-  await dialog
-    .getByRole('button', { name: `Displace ${name}’s cube` })
-    .click({ timeout: 5000 })
-    .catch(() => fail(`no "Displace ${name}’s cube" button`));
-  await dialog.waitFor({ state: 'detached', timeout: 5000 }).catch(() => fail('the dialog stays open after choosing'));
-  const after = await cubesOn(page, planet.id);
-  const count = (cubes: number[], p: number) => cubes.filter((c) => c === p).length;
-  if (count(after, victim) !== count(planet.cubes, victim) - 1 || count(after, me) !== 1) {
-    fail(`displacing ${name}: the planet's cubes went from ${JSON.stringify(planet.cubes)} to ${JSON.stringify(after)}`);
-  } else console.log(`✓ over-conquest: chose ${name}'s cube, and it was displaced`);
+  // Over-conquest with two opponents' cubes: the player chooses whose to displace (only while Prototyping plays it).
+  if (PROTOTYPING_OVER_CONQUEST) {
+    const { s, planet, me, victim } = overConquest();
+    if (legalActions(s).filter((x) => x.type === 'conquer' && x.planet === planet.id).length !== 2)
+      fail('the position does not offer two over-conquests');
+    await load(page, s);
+    await page.click(`.planet-hit[data-r="${planet.r}"][data-c="${planet.c}"]`);
+    const dialog = page.getByRole('dialog', { name: `Conquer planet ${planet.number}` });
+    await dialog.waitFor({ timeout: 5000 }).catch(() => fail('tapping the planet opens no "Conquer planet" dialog'));
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}/conquer-choice.png` });
+    const name = s.players[victim].name;
+    await dialog
+      .getByRole('button', { name: `Displace ${name}’s cube` })
+      .click({ timeout: 5000 })
+      .catch(() => fail(`no "Displace ${name}’s cube" button`));
+    await dialog.waitFor({ state: 'detached', timeout: 5000 }).catch(() => fail('the dialog stays open after choosing'));
+    const after = await cubesOn(page, planet.id);
+    const count = (cubes: number[], p: number) => cubes.filter((c) => c === p).length;
+    if (count(after, victim) !== count(planet.cubes, victim) - 1 || count(after, me) !== 1) {
+      fail(`displacing ${name}: the planet's cubes went from ${JSON.stringify(planet.cubes)} to ${JSON.stringify(after)}`);
+    } else console.log(`✓ over-conquest: chose ${name}'s cube, and it was displaced`);
+  } else console.log('- over-conquest: off in Prototyping (PROTOTYPING_OVER_CONQUEST), not checked');
+
+  // Contested orbit: the planet is marked blocked, and tapping it says why instead of conquering.
+  {
+    const { s, planet } = contested();
+    await load(page, s);
+    const hit = page.locator(`.planet-hit.planet-blocked[data-r="${planet.r}"][data-c="${planet.c}"]`);
+    if (!(await succeeds(hit.waitFor({ timeout: 5000 })))) fail('a blocked planet is not marked "Blocked"');
+    else {
+      await page.screenshot({ path: `${OUT}/contested-orbit.png` });
+      await hit.click();
+      const info = page.locator('.info-pop', { hasText: 'Contested orbit' });
+      if (!(await succeeds(info.waitFor({ timeout: 5000 })))) fail('tapping a blocked planet shows no "Contested orbit" info');
+      else if ((await cubesOn(page, planet.id)).length) fail('tapping a blocked planet conquered it');
+      else {
+        await page.screenshot({ path: `${OUT}/contested-orbit-info.png` });
+        console.log('✓ contested orbit: the planet is marked blocked, and its info says why');
+      }
+    }
+  }
 
   // Battles: one between two AIs resolves by itself while a human watches; a human's own waits for OK.
   const overlay = page.locator('.combat-overlay');
@@ -111,7 +146,7 @@ try {
   }
 
   // A position the screen can't draw: the crash screen, not a blank page, and a way back to the lobby.
-  await load(page, { ...s, dice: null }).catch(() => {});
+  await load(page, { ...quickStart(3, 1, 'prototyping'), dice: null }).catch(() => {});
   const crash = page.locator('.crash');
   if (await succeeds(crash.waitFor({ timeout: 5000 }))) {
     await page.screenshot({ path: `${OUT}/crash.png` });

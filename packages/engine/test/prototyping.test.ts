@@ -1,7 +1,7 @@
 /**
  * Prototyping mode (docs/PROTOTYPING.md, src/prototyping): Community Edition with movement capped at 3,
  * zones of control (every ship pickets the spaces around it), a new power for the 5 (Shoot), which
- * replaces Manoeuvre, and over-conquest (an orbit of 12). The first block checks that none of it reaches the official modes, and that the mode
+ * replaces Manoeuvre, contested orbits, and over-conquest (an orbit of 12) when PROTOTYPING_OVER_CONQUEST is on. The first block checks that none of it reaches the official modes, and that the mode
  * folder and the engine meet only at RULESETS and the prototype kit.
  *
  * Scenarios run on Alpha Sector, the basic map for 2 players (9×9; planets at rows/cols 1, 4, 7,
@@ -17,6 +17,9 @@ import {
   CLASSIC_SHIPS,
   orbitals,
   conquerCheck,
+  diagonals,
+  infamyTargets,
+  orbitedPlanets,
   grid,
   attackLaunches,
   legalActions,
@@ -36,10 +39,10 @@ import {
   type GameState,
 } from '../src';
 import { beginPlay } from '../src/turn';
-import { PROTOTYPING_CARDS } from '../src/prototyping';
+import { PROTOTYPING_CARDS, PROTOTYPING_OVER_CONQUEST } from '../src/prototyping';
 import { picket } from '../src/prototyping/powers/picket';
 import { shoot as shootPower, shootTargets } from '../src/prototyping/powers/shoot';
-import { quickStart } from './helpers';
+import { arrange, quickStart } from './helpers';
 
 /** `hex`: Prototyping on Alpha Sector (hex), with axial cells (docs/HEX.md): a space's sides are a row or column away, or (-1, +1) and (+1, -1). */
 const BASE: Record<'prototyping' | 'community' | 'hex', GameState> = {
@@ -86,7 +89,8 @@ describe('Prototyping mode', () => {
     expect(prototyping.mapGroups).toEqual([...community.mapGroups, 'hex', 'drift']);
     expect(prototyping.startingMissiles).toBe(1);
     expect(prototyping.maxMovement).toBe(3);
-    expect(prototyping.overConquest).toBe(true);
+    expect(prototyping.overConquest).toBe(PROTOTYPING_OVER_CONQUEST);
+    expect(prototyping.contestedOrbit).toBe(true);
     expect(prototyping.ships[5].hooks).toEqual({ ...shootPower.hooks, ...picket.hooks });
     expect(prototyping.ships[5].power).toBeUndefined();
     const withoutHooks = (v: number) => ({ ...prototyping.ships[v], hooks: undefined });
@@ -511,7 +515,108 @@ describe('Shoot (5 Interceptor)', () => {
   });
 });
 
-describe('over-conquest', () => {
+describe('contested orbit', () => {
+  /** p0's ships making a free planet's number in its orbit, and `enemy` (p1's ship) in another of its spaces or beside the orbit. */
+  const siege = (mode: 'prototyping' | 'community' | 'hex', enemy: 'orbit' | 'outside' | 'none' = 'orbit') => {
+    const base = BASE[mode];
+    const planet = base.board.planets.find((q) => !q.start && !q.cubes.length)!;
+    const [a, b, c] = orbitals(base.board, planet);
+    const placed: Record<string, [number, number, number]> = { p0d0: [a.r, a.c, 6], p0d1: [b.r, b.c, planet.number - 6] };
+    if (enemy === 'orbit') placed.p1d0 = [c.r, c.c, 3];
+    if (enemy === 'outside') {
+      // A space next to the orbit but not in it (on a hex map, another planet's orbit).
+      const g = grid(base.board);
+      const inOrbit = (q: { r: number; c: number }) => orbitals(base.board, planet).some((o) => o.r === q.r && o.c === q.c);
+      const near = g.cells.find((q, i) => g.space[i] && !inOrbit(q) && g.orthoCells[i].some(inOrbit))!;
+      placed.p1d0 = [near.r, near.c, 3];
+    }
+    return { s: scenario(placed, mode), planet: planet.id };
+  };
+
+  it('stops a conquest while an enemy ship is in orbit, though the sum is made', () => {
+    for (const mode of ['prototyping', 'hex'] as const) {
+      const { s, planet } = siege(mode);
+      const check = conquerCheck(s, 0, planet);
+      expect(check, mode).toMatchObject({ ok: false, blocked: true, sum: s.board.planets[planet].number });
+      expect(offered(s, 'conquer'), mode).toEqual([]);
+      expect(tryApply(s, { type: 'conquer', planet }), mode).toBeNull();
+    }
+  });
+
+  it('lets it go ahead once the orbit is clear, or with the enemy ship beside the orbit', () => {
+    for (const mode of ['prototyping', 'hex'] as const) {
+      for (const enemy of ['none', 'outside'] as const) {
+        const { s, planet } = siege(mode, enemy);
+        expect(conquerCheck(s, 0, planet).ok, `${mode} ${enemy}`).toBe(true);
+        expect(offered(s, 'conquer'), `${mode} ${enemy}`).toContainEqual({ type: 'conquer', planet });
+      }
+    }
+  });
+
+  it('never blocks a player’s own ships, nor Infamy', () => {
+    const { s, planet } = siege('prototyping');
+    expect(conquerCheck(s, 1, planet)).not.toMatchObject({ blocked: true });
+    expect(infamyTargets(s, 0).map((p) => p.id)).toContain(planet);
+  });
+
+  it('is off outside Prototyping', () => {
+    const { s, planet } = siege('community');
+    expect(conquerCheck(s, 0, planet).ok).toBe(true);
+  });
+
+  it('names the blockade when the sum is short too', () => {
+    const { s, planet } = siege('hex');
+    s.dice.find((d) => d.id === 'p0d1')!.value++;
+    const check = conquerCheck(s, 0, planet);
+    expect(check.blocked).toBeUndefined();
+    expect(check.reason).toMatch(/needs .*enemy ships in orbit block it too \(3\)/);
+  });
+
+  it('with Ingenious: an enemy on a corner doesn’t block, an own ship on a corner is blocked like the rest', () => {
+    const base = BASE.prototyping;
+    const planet = base.board.planets.find((q) => !q.start && !q.cubes.length)!;
+    const [o1, o2] = orbitals(base.board, planet);
+    const [k1, k2] = diagonals(base.board, planet);
+    const sum = { p0d0: [o1.r, o1.c, 6], p0d1: [k1.r, k1.c, planet.number - 6] } as Record<string, [number, number, number]>;
+    expect(conquerCheck(scenario({ ...sum, p1d0: [k2.r, k2.c, 3] }, 'prototyping', ['ingenious']), 0, planet.id).ok).toBe(true);
+    expect(conquerCheck(scenario({ ...sum, p1d0: [o2.r, o2.c, 3] }, 'prototyping', ['ingenious']), 0, planet.id).blocked).toBe(true);
+  });
+
+  it('on off-centre maps, an enemy on a space two orbits share blocks both planets', () => {
+    for (const map of ['twin-drift', 'binary-reach']) {
+      const base = quickStart(2, 1, 'prototyping', map);
+      const shared = base.board.planets.flatMap((p) => orbitals(base.board, p)).find((c) => orbitedPlanets(base.board, c).length > 1)!;
+      const planets = orbitedPlanets(base.board, shared);
+      expect(planets.length, map).toBe(2);
+      for (const planet of planets) {
+        const [a, b] = orbitals(base.board, planet).filter((c) => c.r !== shared.r || c.c !== shared.c);
+        const s = arrange(base, { p0d0: [a.r, a.c, 6], p0d1: [b.r, b.c, planet.number - 6], p1d0: [shared.r, shared.c, 2] });
+        s.board.planets[planet.id].cubes = [];
+        expect(conquerCheck(s, 0, planet.id).blocked, `${map}, planet ${planet.number}`).toBe(true);
+      }
+    }
+  });
+
+  it('blocks over-conquest too, when that is on', () => {
+    const base = BASE.prototyping;
+    const planet = base.board.planets.find((q) => !q.start && q.capacity >= 2)!;
+    const [a, b, c] = orbitals(base.board, planet);
+    const s = scenario({ p0d0: [a.r, a.c, 6], p0d1: [b.r, b.c, 6], p1d0: [c.r, c.c, 3] });
+    s.board.planets[planet.id].cubes = Array(planet.capacity).fill(1);
+    const rules = rulesOf(s) as { overConquest?: boolean };
+    const was = rules.overConquest;
+    rules.overConquest = true;
+    try {
+      expect(offered(s, 'conquer')).toEqual([]);
+      at(s, 'p1d0').loc = { zone: 'scrapyard' };
+      expect(offered(s, 'conquer')).toEqual([{ type: 'conquer', planet: planet.id, replace: 1 }]);
+    } finally {
+      rules.overConquest = was;
+    }
+  });
+});
+
+describe.runIf(PROTOTYPING_OVER_CONQUEST)('over-conquest', () => {
   const full = (mode: 'prototyping' | 'community') => {
     const s = scenario({ p0d0: [0, 1, 6], p0d1: [1, 0, 6] }, mode);
     const planet = s.board.planets.find((p) => p.cubes.length === 0)!;

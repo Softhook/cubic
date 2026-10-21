@@ -36,6 +36,7 @@ export const shoot: PrototypePower = {
     hint: 'Shoot: choose an enemy in a clear straight line, not diagonally, at any distance. Your Interceptor stays put. It uses the ship’s action for the turn.',
   },
   hooks: {
+    threatens: shootTargets,
     action: {
       options(s, d) {
         // An attack also pays for any Curious free moves taken (payForAttack).

@@ -25,10 +25,11 @@ As of 2026-10-12, Prototyping is **Community Edition**, with only these changes:
 | **Current** | A ship's die value contributes at most **3** movement; skill bonuses apply after that cap. |
 | **Current** | **Zones of control:** every ship pickets the 4 orthogonally adjacent spaces (the 6 sides on hex maps; not diagonals) as a mode rule, not a ship power. Diagonals were dropped (2026-10-12) because most ships can't attack diagonally from where they stop. An enemy ship that moves into one must stop there (it may still attack from there; one that starts its move there may leave). Friendly ships are never stopped, and a player with the **Devious** skill ignores zones (ruling 2026-10-12; the card text is unchanged). |
 | **Current** | The **5 Interceptor** replaces its diagonal Manoeuvre ability with **Shoot**: spend one action to attack the first enemy in a clear orthogonal line (one out of each of a hex's 6 sides on hex maps) without advancing. Shooting is that ship's action for the turn. |
-| **Current** | **Over-conquest:** a player may replace an opponent's cube by meeting an orbit sum of exactly **12**, including on a planet that still has an empty cube location. |
+| **Current** | **Contested orbit** (§6.8, since 2026-10-21): a planet can't be conquered while an opponent's ship is in one of its orbital positions. Friendly ships never block, ships beside the orbit don't, and Infamy ignores it. |
+| **Off** | **Over-conquest** (§6.10): replacing an opponent's cube with an orbit of exactly **12**. Off since 2026-10-21; `PROTOTYPING_OVER_CONQUEST` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) turns it back on. |
 | **Unchanged** | Ships 1–3 retain their Community abilities. The **4 Frigate** retains Modify and the **6 Scout** retains Free Reconfigure. |
 
-Picket is active as the default zone-of-control rule for every ship rather than as the 4's power. Beacon, Contested Orbit, and every other rule below are **candidates**, not current rules.
+Picket is active as the default zone-of-control rule for every ship rather than as the 4's power. Contested Orbit (§6.8) is current. Beacon and every other rule below are **candidates**, not current rules.
 
 ---
 
@@ -407,8 +408,28 @@ or trusted hosts for online games.
 
 ### 6.8 Contested orbit (orbital blockade): no conquering under enemy ships
 
+**Status: current since 2026-10-21** (`RuleSet.contestedOrbit`, `orbitBlockers` in
+[queries.ts](../packages/engine/src/queries.ts)), with over-conquest switched off. Rulings as proposed below:
+Infamy ignores the blockade, Ingenious corners don't block, and only opponents' ships in the orbital
+positions do. The AI counts each blocker as an attack before the conquest, by a ship of its own (`clearing`
+in [evaluate.ts](../packages/ai/src/evaluate.ts)). The board marks a planet whose orbit makes the sum but is
+blocked, and its info and the turn hint say why. With the Captain AI in every seat, 200 games per hex map
+(same seeds, against over-conquest without the blockade):
+
+| Map | Rounds | Conquests | Infamy | Attacks | Unfinished |
+|---|--:|--:|--:|--:|--:|
+| Alpha Sector (hex) | 7.5 → 9.8 | 5.8 → 5.1 | 0.4 → 0.7 | 5.2 → 8.3 | 0 |
+| Beta Sector (hex) | 9.2 → 11.5 | 7.2 → 6.1 | 1.3 → 1.9 | 15.3 → 19.9 | 0 |
+| Gamma Sector (hex) | 9.9 → 13.2 | 7.5 → 4.7 | 2.4 → 3.6 | 29.4 → 39.7 | 0 |
+
+Most of it is the blockade: with over-conquest off and no blockade, games run as before except on Gamma
+(+0.8 rounds). About 40% of Alpha games and 70% of Beta and Gamma ones end on an Infamy cube, against
+17–47% without the blockade. The AI barely parks ships in orbit on purpose, so with people, who will,
+games may well run longer.
+
 **Rule.** A planet cannot be conquered while any opponent's ship occupies one of its orbital
-positions (the 4 orthogonal spaces around the planet). To place a quantum cube you must first clear
+positions: the 4 orthogonal spaces around it on squares, the 6 around it on hexes, and on the off-centre
+maps whatever its orbit has (fewer at the map's edge; a space two orbits share blocks both planets). To place a quantum cube you must first clear
 orbit, which in practice means destroying every opposing ship there, since nothing forces a ship to
 move. Friendly ships never block. The check is made only when conquering: a cube already on the
 planet is never lost to ships arriving later.
@@ -421,7 +442,8 @@ enemy fleet. Requiring a clear orbit changes the dynamics:
 - **Combat comes before conquest.** Players can no longer rush the sum past the defenders.
   Conquering becomes a two-step effort: win orbit first, then build.
 
-**Implications under the current baseline (2026-10-12).**
+**Implications under the current baseline (2026-10-12).** Written for square maps; *On hex maps* below
+says what differs there.
 - **Tempo: a contested planet usually takes two turns.** Attack (1) + Conquer (2) is the full 3
   actions, so a one-turn capture needs the rest of the sum already in orbit and the attack to succeed.
   If the attacker advances into the vacated orbital space, its own value joins the sum, so
@@ -454,11 +476,26 @@ enemy fleet. Requiring a clear orbit changes the dynamics:
 - **Skill conquest still needs a clear orbit.** Pioneering, Tyrannical and Intelligent change the
   sum, not the blockade, so a planet with a blocker stays locked whatever they add.
 
-**Rulings to make before building.**
+**On hex maps** (the review of 2026-10-21), several of the points above change:
+- **Every space is some planet's orbit**, so every ship, wherever it stands, blocks the planet it orbits
+  for every opponent. On squares the corners are no planet's orbit and parking in an orbit is a choice;
+  on hexes blocking happens by itself.
+- **Orbital spaces touch.** The six form a ring, each next to two others, so a ship in orbit can attack a
+  blocker beside it and advance into its space without changing its own sum. Clearing a blocker no longer
+  needs a ship from outside.
+- **Re-blocking can't be stopped.** Filling all 6 orbital spaces takes more ships than a fleet has, so a
+  defender with a cube on the planet can always Deploy back into orbit for 1 action.
+- **Blockers support each other.** Two blockers side by side in the ring get Strategic's −2 and zone
+  each other's neighbours, which squares never allow.
+- **Stealthy** (deploy anywhere not next to a ship) lands in an orbit every time: it can block a planet
+  for 1 action.
+
+**Rulings** (made as proposed, 2026-10-21, except 4, which is untried).
 1. Does **Infamy** ignore the blockade? *Proposed: yes*, since Infamy already ignores orbital
    positions, and it keeps a release valve.
-2. Do enemy ships on the **corners** block an **Ingenious** conquest? *Proposed: no.* Only the 4
-   orthogonal orbital positions block, for every player, so there is one rule to remember.
+2. Do enemy ships on the **corners** block an **Ingenious** conquest? *Proposed: no.* Only the
+   orbital positions block, for every player, so there is one rule to remember. (Ingenious is left out
+   of the decks on hexes.)
 3. Does the blockade apply to **over-conquest**? *Proposed: yes* at first, and measure it. If
    over-conquest disappears from games, exempt it or let over-conquest ignore one blocker.
 4. Softer variant if games stall: block only when the opponent has **at least as many ships** in
@@ -513,9 +550,9 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 
 ---
 
-### 6.10 Current rule: over-conquest, a sum of 12 to displace a cube
+### 6.10 Off: over-conquest, a sum of 12 to displace a cube
 
-**Current rule.** A player may conquer a planet that holds an opponent's cube by displacing that cube, whether or not the planet is full. A full planet is not locked out: this is the only way to take it. The requirement is one number to remember: the orbiting ships must sum to **exactly 12**, whatever the planet's printed value. (Doubling the value, 14 to 20, was tried first: those sums were too unlikely, and the AI almost never reached them.)
+**Rule (off since 2026-10-21, `PROTOTYPING_OVER_CONQUEST`).** A player may conquer a planet that holds an opponent's cube by displacing that cube, whether or not the planet is full. A full planet is not locked out: this is the only way to take it. The requirement is one number to remember: the orbiting ships must sum to **exactly 12**, whatever the planet's printed value. (Doubling the value, 14 to 20, was tried first: those sums were too unlikely, and the AI almost never reached them.)
 - On a planet with room, the ordinary conquest (printed value) stays available; over-conquest is the alternative that takes an opponent's cube instead of a free location.
 - Ships in orbit are still subject to orbital limits and standard conquer restrictions.
 - Upon success the player places their cube and chooses which opponent's cube to replace (if there is a choice). The displaced cube is returned to its owner's supply.
@@ -537,7 +574,7 @@ display remain possible follow-up work.
 
 | Idea | Core Change | How Different | Build Cost | Fits Architecture |
 |---|---|---|---|---|
-| **6.8 Contested orbit** | No conquer while enemy in orbit | Medium | Small | Yes (via §4 step 3 hook) |
+| **6.8 Contested orbit** (current) | No conquer while enemy in orbit | Medium | Small | Built |
 | **6.1 Kinetic ships** | Speed equals arrival value | High | Small | Yes |
 | **6.2 Supply lines** | Supply chains for attack/defense | High | Medium | Yes |
 | **6.4 Command dice** | Rolled order dice replace fixed actions | High | Medium | Yes |
@@ -548,11 +585,9 @@ display remain possible follow-up work.
 | **6.7 Fog of war** | Local vision ranges | Very high | Very large | Conflicts with online model |
 
 **Recommendation:**
-1. Keep the live Prototyping baseline: **movement cap 3 + Shoot + over-conquest**.
-2. Prototype **Contested orbit (§6.8)** first—it is tiny to build (a `conquerCheck` hook) and tests
-   whether orbital defense adds useful positional play.
-3. Test **Kinetic ships (§6.1)** as an independent one-file experiment to explore movement-driven sums.
-4. If fleet expansion still feels underwhelming, evaluate **Ship activations (§6.9)** to unlock full
+1. Keep the live Prototyping baseline: **movement cap 3 + Shoot + contested orbit (§6.8)**; over-conquest is off.
+2. Test **Kinetic ships (§6.1)** as an independent one-file experiment to explore movement-driven sums.
+3. If fleet expansion still feels underwhelming, evaluate **Ship activations (§6.9)** to unlock full
    multi-front command bandwidth.
 
 ---

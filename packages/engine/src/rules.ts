@@ -35,6 +35,8 @@ export interface RuleSet {
   maxMovement?: number;
   /** A fully occupied planet can still be conquered by an orbit summing to 12, displacing an opponent's cube (PROTOTYPING.md §6.10). */
   overConquest?: boolean;
+  /** A planet can't be conquered while an opponent's ship is in one of its orbital positions (PROTOTYPING.md §6.8). */
+  contestedOrbit?: boolean;
   /** A rule set we're still testing: playable from the lobby, but left out of the rulebook. */
   experimental?: boolean;
 }

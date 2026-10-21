@@ -1,5 +1,18 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-import { SHIP_NAMES, cellAtPoint, die, drawing, key, moveOptions, same, shipOf, type GameState } from '@quantum/engine';
+import {
+  SHIP_NAMES,
+  cellAtPoint,
+  die,
+  dieAt,
+  drawing,
+  key,
+  moveOptions,
+  orbitals,
+  rulesOf,
+  same,
+  shipOf,
+  type GameState,
+} from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { ActionEffects } from './board/ActionEffects';
@@ -381,16 +394,28 @@ function planetLabel(game: GameState, id: number): string {
   return name ? `${name} (${p.number})` : `Planet ${p.number}`;
 }
 
-/** A planet's name, its free cube spaces and whose cubes are on it. */
+/** A planet's name, its free cube spaces, whose cubes are on it, and who its orbit blocks (contested orbit). */
 function PlanetInfo({ game, id }: { game: GameState; id: number }) {
   const p = game.board.planets.find((x) => x.id === id)!;
   const free = p.capacity - p.cubes.length;
+  const holders = rulesOf(game).contestedOrbit
+    ? [...new Set(orbitals(game.board, p).flatMap((c) => dieAt(game, c)?.owner ?? []))].map((o) => game.players[o].name)
+    : [];
   return (
     <>
       <div className="info-title">{planetLabel(game, id)}</div>
       <div>
         {free} of {p.capacity} cube space{p.capacity > 1 ? 's' : ''} free.
       </div>
+      {holders.length > 0 && (
+        <div>
+          {holders.length === 1
+            ? `Contested orbit: while ${holders[0]}’s ships are in orbit, only ${holders[0]} can conquer it.`
+            : holders.length === 2
+              ? `Contested orbit: ${holders.join(' and ')} both have ships in orbit, so neither can conquer it.`
+              : `Contested orbit: ${holders.join(', ')} all have ships in orbit, so none of them can conquer it.`}
+        </div>
+      )}
       {p.cubes.map((owner, i) => (
         <div key={i} className="info-title" style={{ '--pc': game.players[owner].color } as CSSProperties}>
           <span className="info-swatch" /> {game.players[owner].name}'s cube

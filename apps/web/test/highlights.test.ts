@@ -1,8 +1,9 @@
 /** Board highlights: everything lit up is a legal action, and every legal move or attack is lit up. */
 import { describe, expect, it } from 'vitest';
-import { actor, apply, createGame, key, legalActions, type GameState } from '@quantum/engine';
+import { actor, apply, createGame, key, legalActions, orbitals, type GameState } from '@quantum/engine';
 import { arrange, playAiGame, players, quickStart } from '../../../packages/engine/test/helpers';
 import { highlightsFor } from '../src/game/highlights';
+import { hintFor } from '../src/game/hints';
 import { legalFor } from '../src/game/legal';
 import type { Sel } from '../src/game/controller';
 
@@ -17,6 +18,20 @@ function myTurn(s: GameState): GameState {
 }
 
 describe('highlightsFor', () => {
+  it('marks a planet blocked when its orbit makes the sum but an enemy ship is in it (contested orbit), and says why', () => {
+    const base = quickStart(2, 1, 'prototyping', 'alpha-hex');
+    const planet = base.board.planets.find((q) => !q.start && !q.cubes.length)!;
+    const [a, b, c] = orbitals(base.board, planet);
+    const sum = { p0d0: [a.r, a.c, 6], p0d1: [b.r, b.c, planet.number - 6] } as Record<string, [number, number, number]>;
+    const s = myTurn(arrange(base, { ...sum, p1d0: [c.r, c.c, 3] }));
+    expect(lit(s, { kind: 'none' }).planets.get(planet.id)).toEqual({ tone: 'blocked', label: 'Blocked' });
+    expect(legalFor(s).of('conquer')).toEqual([]);
+    expect(hintFor(s, { kind: 'none' })).toMatch(`planet ${planet.number}, but enemy ships in orbit block the conquest`);
+    const clear = myTurn(arrange(base, sum));
+    expect(lit(clear, { kind: 'none' }).planets.get(planet.id)?.tone).toBe('conquer');
+    expect(hintFor(clear, { kind: 'none' })).toBe('Select a ship');
+  });
+
   it('lights the starting planets during setup', () => {
     let g = createGame({ players: players(2), seed: 1, mode: 'basic' });
     while (g.pending[0]?.kind !== 'placeStart') g = apply(g, legalActions(g)[0]);

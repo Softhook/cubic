@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { orbitals, type GameMode, type GameState, type PlayerId } from '@quantum/engine';
 import { arrange, quickStart } from '../../../packages/engine/test/helpers';
+import { PROTOTYPING_OVER_CONQUEST } from '../../../packages/engine/src/prototyping';
 import { conquerOptions, conquerTap, legalFor } from '../src/game/legal';
 
 /**
@@ -36,7 +37,7 @@ describe('conquerTap', () => {
     expect(conquerTap(legalFor(s), planet)).toEqual({ type: 'conquer', planet });
   });
 
-  it('asks how when a full planet holds two opponents’ cubes (over-conquest)', () => {
+  it.runIf(PROTOTYPING_OVER_CONQUEST)('asks how when a full planet holds two opponents’ cubes (over-conquest)', () => {
     const probe = position(
       'prototyping',
       () => 12,
@@ -57,7 +58,7 @@ describe('conquerTap', () => {
     expect(conquerTap(legal, planet)).toBe('choose');
   });
 
-  it('conquers at once when a full planet holds one opponent’s cubes', () => {
+  it.runIf(PROTOTYPING_OVER_CONQUEST)('conquers at once when a full planet holds one opponent’s cubes', () => {
     const probe = position(
       'prototyping',
       () => 12,

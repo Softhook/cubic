@@ -1,4 +1,4 @@
-import { SHIP_NAMES, canProfiteer, die, rulesOf, shipOf, type GameState } from '@quantum/engine';
+import { SHIP_NAMES, canProfiteer, conquerCheck, die, rulesOf, shipOf, type GameState } from '@quantum/engine';
 import type { Sel } from './controller';
 
 /** One-line guidance for the current human decision. */
@@ -66,5 +66,9 @@ export function hintFor(game: GameState, sel: Sel): string {
     case 'carryDrop':
       return 'Choose where to drop the passenger.';
   }
+  // Contested orbit: say why a planet whose orbit makes the sum can't be conquered.
+  const blocked = game.board.planets.filter((p) => conquerCheck(game, game.turn.player, p.id).blocked).map((p) => `planet ${p.number}`);
+  if (blocked.length)
+    return `Select a ship. Your orbit makes the sum for ${blocked.join(' and ')}, but enemy ships in orbit block the conquest: destroy them first.`;
   return 'Select a ship';
 }

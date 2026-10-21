@@ -632,6 +632,16 @@ export interface ConquerCheck {
   reason?: string;
   /** Over-conquest: owners whose cube may be displaced. */
   replace?: PlayerId[];
+  /** Contested orbit: the ships make the sum, but opponents' ships in orbit stop the conquest. */
+  blocked?: boolean;
+}
+
+/** Contested orbit (PROTOTYPING.md §6.8): opponents' ships in the planet's orbital positions, which stop `player` conquering it. */
+export function orbitBlockers(state: GameState, player: PlayerId, planet: Planet): Die[] {
+  if (!rulesOf(state).contestedOrbit) return [];
+  return orbitals(state.board, planet)
+    .map((p) => dieAt(state, p))
+    .filter((d): d is Die => !!d && d.owner !== player);
 }
 
 /** The orbit sum that displaces an opponent's cube, on any planet (PROTOTYPING.md §6.10). */
@@ -672,7 +682,10 @@ export function conquerCheck(state: GameState, player: PlayerId, planetId: numbe
   const corners = rules.some((r) => r.diagonals) ? mine(diagonals(state.board, planet)) : [];
   const all = [...orbit, ...corners];
   const total = (ships: Die[]) => ships.reduce((a, d) => a + d.value, 0);
-  if (!all.length) return fail('No ships in orbit', all, 0);
+  // Contested orbit: named in every refusal, though the sum is checked first, so a blocked orbit still says how far it is from it.
+  const blockers = orbitBlockers(state, player, planet);
+  const blockade = blockers.length ? `; enemy ships in orbit block it too (${blockers.map((d) => d.value).join(', ')})` : '';
+  if (!all.length) return fail(`No ships in orbit${blockade}`, all, 0);
 
   const p = state.players[player];
   const tolerance = Math.max(0, ...rules.map((r) => r.tolerance ?? 0));
@@ -683,10 +696,13 @@ export function conquerCheck(state: GameState, player: PlayerId, planetId: numbe
     const sum = total(ships);
     const ctx = { sum, ships, dominance: p.dominance, research: p.research };
     const sums = [sum, ...rules.flatMap((r) => r.sums?.(ctx) ?? [])];
-    if (sums.some((s) => Math.abs(s - target) <= tolerance)) return { ok: true, sum, target, ships, replace };
+    if (!sums.some((s) => Math.abs(s - target) <= tolerance)) continue;
+    if (blockers.length)
+      return { ...fail(`Enemy ships in orbit block it (${blockers.map((d) => d.value).join(', ')})`, ships, sum), blocked: true };
+    return { ok: true, sum, target, ships, replace };
   }
   const sum = total(all);
-  return fail(`Orbit totals ${sum}, needs ${target}`, all, sum);
+  return fail(`Orbit totals ${sum}, needs ${target}${blockade}`, all, sum);
 }
 
 /** Any planet without your cube; if none has room, Quantum Entanglement allows your own planets. */

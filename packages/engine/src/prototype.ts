@@ -31,6 +31,11 @@ export interface ShipHooks {
   /** Extra spaces its owner may deploy into (the engine keeps only empty ones). */
   deployTargets?(state: GameState, ship: Die): Iterable<Cell>;
   /**
+   * The enemy ships its power could attack from where it stands, whatever the cost now (as Shoot's
+   * targets): the AI reads it to judge what the ship threatens beyond its normal attacks.
+   */
+  threatens?(state: GameState, ship: Die): Die[];
+  /**
    * An action of its own: the `power` action. `options` are the legal choices now, cost included;
    * `apply` runs only for one of them, and pays for it.
    */

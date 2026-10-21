@@ -171,7 +171,8 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
     (id: number): false | void => {
       if (!human) return false;
       const hl = highlights.planets.get(id);
-      if (!hl) return false;
+      // A blocked planet (contested orbit) shows its info, which says why.
+      if (!hl || hl.tone === 'blocked') return false;
       if (head?.kind === 'relocation') {
         if (sel.kind === 'relocate' && id !== sel.planet)
           return void dispatch({ type: 'relocate', planet: sel.planet, owner: sel.owner, to: id });

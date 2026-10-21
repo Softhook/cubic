@@ -244,7 +244,10 @@ function conquerPotential(s: GameState, p: PlayerId): number {
     const empty = slots.filter((c) => isEmptySpace(s, c)).length;
     const target = full ? 12 : planet.number;
     let v: number;
-    if (conquerCheck(s, p, planet.id).ok || (!full && conquerCheck(s, p, planet.id, true).ok)) v = 320;
+    const check = conquerCheck(s, p, planet.id);
+    if (check.ok || (!full && conquerCheck(s, p, planet.id, true).ok)) v = 320;
+    // Contested orbit: the sum is made, but enemy ships in orbit have to be destroyed first.
+    else if (check.blocked) v = 100;
     else if (sum < target && empty > 0 && target - sum <= 6) v = 40 + 30 * inOrbit.length;
     else if (sum < target) v = 12 * inOrbit.length;
     else v = Math.max(0, 8 * inOrbit.length - (sum - target) * 6);

@@ -5,7 +5,9 @@ import {
   conquerCheck,
   distance,
   grid,
+  hooksOf,
   movementRange,
+  orbitBlockers,
   orbitals,
   planetFreeSlots,
   rulesOf,
@@ -53,6 +55,8 @@ const RECONFIGURE_ODDS = 0.4;
 const ORBIT_PROGRESS = 0.12;
 /** Share of a cube for a ship two moves from a planet's orbit; less the further it is (below one reacher's presence). */
 const APPROACH = 0.024;
+/** Chance of clearing an enemy ship from orbit that none of mine can attack yet: it takes a move first. */
+const UNREACHED_BLOCKER = 0.3;
 
 interface Ctx {
   s: GameState;
@@ -167,6 +171,57 @@ function playerValue(ctx: Ctx, p: PlayerId): number {
   return v;
 }
 
+/** A combat won with the attacker's roll set to 1 by a missile, against the defender's die. */
+function missileOdds(attacker: number, defender: number): number {
+  let wins = 0;
+  for (let y = 1; y <= 6; y++) if (1 + attacker <= defender + y) wins++;
+  return wins / 6;
+}
+
+/**
+ * Contested orbit: the chance of clearing `blockers` from a planet's orbit, and the attack actions it
+ * takes. Each blocker needs a ship of its own, as a ship acts once a turn. A ship in `orbit` (making
+ * the sum) only counts where it attacks without leaving its space, next to the blocker or with its power
+ * (Shoot); a missile left sets the attacker's roll to 1. A blocker none of mine can attack yet takes a
+ * move first (UNREACHED_BLOCKER).
+ */
+function clearing(ctx: Ctx, p: PlayerId, blockers: Die[], orbit: Die[]): { odds: number; actions: number } {
+  const { s } = ctx;
+  const g = grid(s.board);
+  const index = (d: Die) => {
+    const c = cellOf(d)!;
+    return c.r * g.cols + c.c;
+  };
+  const used = new Set<string>();
+  let missiles = s.players[p].missiles;
+  let odds = 1;
+  let actions = 0;
+  for (const b of blockers) {
+    let best = 0;
+    let by: Die | undefined;
+    let byMissile = false;
+    for (const d of ctx.fleets[p]) {
+      if (used.has(d.id)) continue;
+      const shoots = !!hooksOf(s, d)?.threatens?.(s, d).includes(b);
+      const attacks = orbit.includes(d) ? g.ortho[index(b)].includes(index(d)) : !!ctx.reach.get(d.id)?.attacks.includes(b);
+      if (!shoots && !attacks) continue;
+      const plain = attackChance(s, d, b);
+      const fired = missiles > 0 ? missileOdds(d.value, b.value) : 0;
+      if (Math.max(plain, fired) > best) [best, by, byMissile] = [Math.max(plain, fired), d, fired > plain];
+    }
+    if (by) {
+      used.add(by.id);
+      if (byMissile) missiles--;
+      odds *= best;
+      actions += 1;
+    } else {
+      odds *= UNREACHED_BLOCKER;
+      actions += 2;
+    }
+  }
+  return { odds, actions };
+}
+
 /** The best planets this player is working towards: best + a little of the next two. */
 function conquestPotential(ctx: Ctx, p: PlayerId): number {
   const values = ctx.s.board.planets.map((planet) => planetPotential(ctx, p, planet)).sort((a, b) => b - a);
@@ -187,15 +242,20 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
     if (over.ok) check = over;
   }
   const mover = ctx.mover === p;
+  // The others move first: any orbiting ship they destroy breaks the sum.
+  const safe = () => check.ships.reduce((a, d) => a * (1 - (ctx.kill.get(d.id) ?? 0)), 1);
+  const clear = clearing(ctx, p, orbitBlockers(s, p, planet), check.ships);
+  if (check.blocked) {
+    const value = CUBE * (PROGRESS[2 + clear.actions] ?? 0) * clear.odds;
+    return mover ? value : value * (0.35 + 0.55 * safe());
+  }
 
   if (check.ok) {
     // Still my turn with the actions to conquer: nobody can stop it.
     const t = s.turn;
     if (t.player === p && t.phase === 'actions' && !s.pending.length && t.actionsLeft >= 2) return CUBE * 0.95;
     if (mover) return CUBE * PROGRESS[2];
-    // The others move first: any orbiting ship they destroy breaks the sum.
-    const safe = check.ships.reduce((a, d) => a * (1 - (ctx.kill.get(d.id) ?? 0)), 1);
-    return CUBE * PROGRESS[2] * (0.35 + 0.55 * safe);
+    return CUBE * PROGRESS[2] * (0.35 + 0.55 * safe());
   }
 
   const { sum, target, ships: inOrbit } = check;
@@ -209,7 +269,7 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
   const reachers = outside.filter(reaches);
 
   let best = 0;
-  const option = (actions: number, odds = 1) => (best = Math.max(best, PROGRESS[actions] * odds));
+  const option = (actions: number, odds = 1) => (best = Math.max(best, (PROGRESS[actions + clear.actions] ?? 0) * odds * clear.odds));
   // One ship of the right value flies in.
   if (reachers.some((d) => d.value === gap)) option(3);
   // One orbiting ship flies off and leaves the right sum.

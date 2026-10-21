@@ -1,4 +1,5 @@
 import {
+  conquerCheck,
   die as getDie,
   grid,
   key,
@@ -96,6 +97,10 @@ export function highlightsFor(game: GameState, sel: Sel, legal: Legal, actionPha
   if (!actionPhase) return h;
 
   for (const a of legal.of('conquer')) h.planets.set(a.planet, { tone: 'conquer', label: 'Conquer' });
+  // Contested orbit: an orbit that makes the sum, held up only by enemy ships in it, so the player sees why it isn't offered.
+  for (const p of game.board.planets)
+    if (!h.planets.has(p.id) && conquerCheck(game, game.turn.player, p.id).blocked)
+      h.planets.set(p.id, { tone: 'blocked', label: 'Blocked' });
   // A Flagship transport, as a regular carry or as a Tactical step.
   const transports = (die: string, tactical?: boolean) =>
     tactical

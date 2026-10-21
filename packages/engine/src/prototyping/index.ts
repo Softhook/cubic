@@ -21,6 +21,12 @@ import { shoot } from './powers/shoot';
  */
 export const PROTOTYPING_CARDS = true;
 
+/**
+ * Over-conquest (PROTOTYPING.md §6.10): an orbit of exactly 12 displaces an opponent's cube. Off since
+ * 2026-10-21, when contested orbit came in; flip it to try both together.
+ */
+export const PROTOTYPING_OVER_CONQUEST = false;
+
 /** The most a ship's die value counts for movement; skill bonuses add to it (ruling 2026-10-08). */
 const MAX_MOVEMENT = 3;
 
@@ -48,12 +54,13 @@ export function prototypingMode(base: RuleSet): RuleSet {
     id: 'prototyping',
     name: 'Prototyping',
     title: 'Prototyping',
-    summary: `Community Edition${PROTOTYPING_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a ship moving next to an enemy ship, not diagonally, stops there), a ranged Interceptor and over-conquest, displacing an opponent cube.`,
+    summary: `Community Edition${PROTOTYPING_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a ship moving next to an enemy ship, not diagonally, stops there), a ranged Interceptor and contested orbits (no conquering while an enemy ship is in orbit)${PROTOTYPING_OVER_CONQUEST ? ' and over-conquest, displacing an opponent cube' : ''}.`,
     cards: PROTOTYPING_CARDS ? base.cards : null,
     mapGroups: [...base.mapGroups, 'hex', 'drift'],
     ships: PROTOTYPING_SHIPS,
     maxMovement: MAX_MOVEMENT,
-    overConquest: true,
+    overConquest: PROTOTYPING_OVER_CONQUEST,
+    contestedOrbit: true,
     experimental: true,
   };
 }

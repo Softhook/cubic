@@ -488,6 +488,17 @@ svg.zones polygon {
 }
 .planet-infamy .planet-label { background: var(--gold); color: #1c1300; }
 .planet-start .planet-label { background: #fff; color: #0a0f1e; }
+/* Contested orbit: the sum is made, but enemy ships in orbit block the conquest. A still ring: nothing to do here yet. */
+.planet-blocked { cursor: help; z-index: 2; }
+.planet-blocked::before {
+  content: '';
+  position: absolute;
+  inset: 2%;
+  border-radius: 50%;
+  border: calc(var(--bw) * 1.5) dashed var(--bad);
+  box-shadow: 0 0 12px rgba(255,93,115,.6);
+}
+.planet-blocked .planet-label { background: var(--bad); color: #2a0008; }
 
 .ship {
   position: absolute;
