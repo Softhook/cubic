@@ -618,6 +618,16 @@ export function deployTargets(state: GameState, player: PlayerId): Cell[] {
       if (isEmptySpace(state, p) && !linked(state, p).some((q) => dieAt(state, q))) targets.set(key(p), p);
     }
   }
+  // Every way of deploying (Expansion, Stealthy, Beacon too) stays out of a contested orbit, except a home shipyard's.
+  const rules = rulesOf(state);
+  if (rules.contestedDeploy) {
+    const home = rules.homeShipyard ? homePlanet(state, player) : undefined;
+    for (const planet of state.board.planets) {
+      if (planet !== home && orbitBlockers(state, player, planet).length)
+        for (const p of orbitals(state.board, planet))
+          if (!(home && orbitals(state.board, home).some((h) => same(h, p)))) targets.delete(key(p));
+    }
+  }
   return [...targets.values()];
 }
 
@@ -634,6 +644,12 @@ export interface ConquerCheck {
   replace?: PlayerId[];
   /** Contested orbit: the ships make the sum, but opponents' ships in orbit stop the conquest. */
   blocked?: boolean;
+}
+
+/** The player's home planet (home shipyard): their starting planet, unless their cube there has moved (`cubeLeft`). */
+export function homePlanet(state: GameState, player: PlayerId): Planet | undefined {
+  const id = state.players[player].home;
+  return id === undefined ? undefined : state.board.planets[id];
 }
 
 /** Contested orbit (PROTOTYPING.md §6.8): opponents' ships in the planet's orbital positions, which stop `player` conquering it. */

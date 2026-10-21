@@ -398,6 +398,7 @@ function planetLabel(game: GameState, id: number): string {
 function PlanetInfo({ game, id }: { game: GameState; id: number }) {
   const p = game.board.planets.find((x) => x.id === id)!;
   const free = p.capacity - p.cubes.length;
+  const homeOf = game.players.find((pl) => pl.home === id);
   const holders = rulesOf(game).contestedOrbit
     ? [...new Set(orbitals(game.board, p).flatMap((c) => dieAt(game, c)?.owner ?? []))].map((o) => game.players[o].name)
     : [];
@@ -410,12 +411,13 @@ function PlanetInfo({ game, id }: { game: GameState; id: number }) {
       {holders.length > 0 && (
         <div>
           {holders.length === 1
-            ? `Contested orbit: while ${holders[0]}’s ships are in orbit, only ${holders[0]} can conquer it.`
+            ? `Contested orbit: while ${holders[0]}’s ships are in orbit, only ${holders[0]} can conquer it${rulesOf(game).contestedDeploy ? ' or deploy to it' : ''}.`
             : holders.length === 2
-              ? `Contested orbit: ${holders.join(' and ')} both have ships in orbit, so neither can conquer it.`
-              : `Contested orbit: ${holders.join(', ')} all have ships in orbit, so none of them can conquer it.`}
+              ? `Contested orbit: ${holders.join(' and ')} both have ships in orbit, so neither can conquer it${rulesOf(game).contestedDeploy ? ' or deploy to it' : ''}.`
+              : `Contested orbit: ${holders.join(', ')} all have ships in orbit, so none of them can conquer it${rulesOf(game).contestedDeploy ? ' or deploy to it' : ''}.`}
         </div>
       )}
+      {holders.length > 0 && homeOf && <div>Home planet: {homeOf.name} can always deploy here.</div>}
       {p.cubes.map((owner, i) => (
         <div key={i} className="info-title" style={{ '--pc': game.players[owner].color } as CSSProperties}>
           <span className="info-swatch" /> {game.players[owner].name}'s cube

@@ -27,6 +27,15 @@ export const PROTOTYPING_CARDS = true;
  */
 export const PROTOTYPING_OVER_CONQUEST = false;
 
+/**
+ * Contested deploy (PROTOTYPING.md §6.8): no deploying into a planet's orbit while an opponent's ship is in
+ * it, so a defender can't re-block a planet as fast as its blockers are destroyed. Since 2026-10-21.
+ */
+export const PROTOTYPING_CONTESTED_DEPLOY = true;
+
+/** Home shipyard (PROTOTYPING.md §6.8): with contested deploy, a player may always deploy to their own home planet, so nobody is shut out. */
+export const PROTOTYPING_HOME_SHIPYARD = true;
+
 /** The most a ship's die value counts for movement; skill bonuses add to it (ruling 2026-10-08). */
 const MAX_MOVEMENT = 3;
 
@@ -54,13 +63,15 @@ export function prototypingMode(base: RuleSet): RuleSet {
     id: 'prototyping',
     name: 'Prototyping',
     title: 'Prototyping',
-    summary: `Community Edition${PROTOTYPING_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a ship moving next to an enemy ship, not diagonally, stops there), a ranged Interceptor and contested orbits (no conquering while an enemy ship is in orbit)${PROTOTYPING_OVER_CONQUEST ? ' and over-conquest, displacing an opponent cube' : ''}.`,
+    summary: `Community Edition${PROTOTYPING_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a ship moving next to an enemy ship, not diagonally, stops there), a ranged Interceptor and contested orbits (no conquering${PROTOTYPING_CONTESTED_DEPLOY ? ` or deploying${PROTOTYPING_HOME_SHIPYARD ? ', except to your home planet,' : ''}` : ''} while an enemy ship is in orbit)${PROTOTYPING_OVER_CONQUEST ? ' and over-conquest, displacing an opponent cube' : ''}.`,
     cards: PROTOTYPING_CARDS ? base.cards : null,
     mapGroups: [...base.mapGroups, 'hex', 'drift'],
     ships: PROTOTYPING_SHIPS,
     maxMovement: MAX_MOVEMENT,
     overConquest: PROTOTYPING_OVER_CONQUEST,
     contestedOrbit: true,
+    contestedDeploy: PROTOTYPING_CONTESTED_DEPLOY,
+    homeShipyard: PROTOTYPING_HOME_SHIPYARD,
     experimental: true,
   };
 }

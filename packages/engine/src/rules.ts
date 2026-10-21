@@ -37,6 +37,10 @@ export interface RuleSet {
   overConquest?: boolean;
   /** A planet can't be conquered while an opponent's ship is in one of its orbital positions (PROTOTYPING.md §6.8). */
   contestedOrbit?: boolean;
+  /** No deploying into a planet's orbit while an opponent's ship is in it (PROTOTYPING.md §6.8, *Deploying to a contested planet*). */
+  contestedDeploy?: boolean;
+  /** With `contestedDeploy`: a player may still deploy to their own home planet (PROTOTYPING.md §6.8, *Home shipyard*). */
+  homeShipyard?: boolean;
   /** A rule set we're still testing: playable from the lobby, but left out of the rulebook. */
   experimental?: boolean;
 }

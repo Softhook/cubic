@@ -74,6 +74,11 @@ export interface PlayerState extends PlayerConfig {
   research: number;
   missiles: number;
   cubesLeft: number;
+  /**
+   * Home shipyard (Prototyping): the planet this player may always deploy to. Their starting planet; when
+   * their last cube there leaves, it goes with the cube (Relocation) or to another of their planets.
+   */
+  home?: number;
   skills: OwnedSkill[];
   ambitionTokens: number;
   /** Actions lost on the next turn (Sabotage). */

@@ -17,6 +17,8 @@ import {
   CLASSIC_SHIPS,
   orbitals,
   conquerCheck,
+  deployTargets,
+  homePlanet,
   diagonals,
   infamyTargets,
   orbitedPlanets,
@@ -38,8 +40,9 @@ import {
   type GameMode,
   type GameState,
 } from '../src';
+import { cubeLeft } from '../src/core';
 import { beginPlay } from '../src/turn';
-import { PROTOTYPING_CARDS, PROTOTYPING_OVER_CONQUEST } from '../src/prototyping';
+import { PROTOTYPING_CARDS, PROTOTYPING_CONTESTED_DEPLOY, PROTOTYPING_HOME_SHIPYARD, PROTOTYPING_OVER_CONQUEST } from '../src/prototyping';
 import { picket } from '../src/prototyping/powers/picket';
 import { shoot as shootPower, shootTargets } from '../src/prototyping/powers/shoot';
 import { arrange, quickStart } from './helpers';
@@ -91,6 +94,8 @@ describe('Prototyping mode', () => {
     expect(prototyping.maxMovement).toBe(3);
     expect(prototyping.overConquest).toBe(PROTOTYPING_OVER_CONQUEST);
     expect(prototyping.contestedOrbit).toBe(true);
+    expect(prototyping.contestedDeploy).toBe(PROTOTYPING_CONTESTED_DEPLOY);
+    expect(prototyping.homeShipyard).toBe(PROTOTYPING_HOME_SHIPYARD);
     expect(prototyping.ships[5].hooks).toEqual({ ...shootPower.hooks, ...picket.hooks });
     expect(prototyping.ships[5].power).toBeUndefined();
     const withoutHooks = (v: number) => ({ ...prototyping.ships[v], hooks: undefined });
@@ -613,6 +618,145 @@ describe('contested orbit', () => {
     } finally {
       rules.overConquest = was;
     }
+  });
+});
+
+describe.runIf(PROTOTYPING_CONTESTED_DEPLOY)('deploying to a contested planet', () => {
+  const deploys = (s: GameState) => offered(s, 'deploy').map((a) => (a.type === 'deploy' ? `${a.to.r},${a.to.c}` : ''));
+  const ring = (s: GameState, planet: { id: number }) => orbitals(s.board, s.board.planets[planet.id]).map((c) => `${c.r},${c.c}`);
+  const into = (s: GameState, planet: { id: number }) => new Set(deploys(s).filter((c) => ring(s, planet).includes(c))).size;
+  /** Player 0's starting planet (its home, where there is a home shipyard). */
+  const home = (mode: keyof typeof BASE) => BASE[mode].board.planets.find((q) => q.start && q.cubes.includes(0))!;
+  /** Player 0 with a cube on a second planet away from home (sharing no orbit space with it), `ships` placed, and `enemy` in that planet's orbit. */
+  const colony = (mode: keyof typeof BASE, enemy = true, ships: Record<string, [number, number, number]> = {}) => {
+    const base = BASE[mode];
+    const homeRing = ring(base, home(mode));
+    const planet = base.board.planets.find((q) => !q.start && !ring(base, q).some((c) => homeRing.includes(c)))!;
+    const [a] = orbitals(base.board, planet);
+    const s = scenario(enemy ? { ...ships, p1d0: [a.r, a.c, 6] } : ships, mode);
+    s.board.planets[planet.id].cubes = [0];
+    return { s, planet };
+  };
+  /** Runs `f` with the home shipyard on or off. */
+  const shipyard = (s: GameState, on: boolean, f: () => void) => {
+    const rules = rulesOf(s) as { homeShipyard?: boolean };
+    const was = rules.homeShipyard;
+    rules.homeShipyard = on;
+    try {
+      f();
+    } finally {
+      rules.homeShipyard = was;
+    }
+  };
+
+  it('keeps a player out of the orbit of their planet while an enemy ship is in it', () => {
+    for (const mode of ['prototyping', 'hex'] as const) {
+      const { s, planet } = colony(mode);
+      expect(into(s, planet), mode).toBe(0);
+      expect(tryApply(s, { type: 'deploy', die: 'p0d0', to: orbitals(s.board, planet)[1] }), mode).toBeNull();
+      at(s, 'p1d0').loc = { zone: 'scrapyard' };
+      expect(into(s, planet), mode).toBeGreaterThan(0);
+    }
+  });
+
+  it('is never stopped by a player’s own ships in orbit', () => {
+    const base = BASE.prototyping;
+    const homeRing = ring(base, home('prototyping'));
+    const planet = base.board.planets.find((q) => !q.start && !ring(base, q).some((c) => homeRing.includes(c)))!;
+    const [a] = orbitals(base.board, planet);
+    const { s } = colony('prototyping', false, { p0d1: [a.r, a.c, 6] });
+    expect(into(s, planet)).toBeGreaterThan(0);
+  });
+
+  it('keeps Stealthy out of a contested orbit too', () => {
+    const base = BASE.prototyping;
+    const planet = base.board.planets.find((q) => !q.cubes.includes(0))!;
+    const [a] = orbitals(base.board, planet);
+    const s = scenario({ p1d0: [a.r, a.c, 6] }, 'prototyping', ['stealthy']);
+    expect(deployTargets(s, 0).some((c) => ring(s, planet).includes(`${c.r},${c.c}`))).toBe(false);
+  });
+
+  it('knows each player’s home: the starting planet they chose', () => {
+    const s = structuredClone(BASE.prototyping);
+    const mine = homePlanet(s, 0)!;
+    expect(mine.start).toBe(true);
+    expect(mine.cubes).toContain(0);
+    expect(homePlanet(s, 1)).not.toBe(mine);
+    expect(homePlanet(BASE.community, 0)).toBeUndefined();
+  });
+
+  describe('a home moves with the last cube on it', () => {
+    /** Player 1 to resolve a Relocation (a Classic card, lent here) of player 0's cube from `from` to `to`. */
+    const relocate = (s: GameState, from: number, to: number) => {
+      s.pending.unshift({ kind: 'relocation', player: 1 });
+      return apply(s, { type: 'relocate', planet: from, owner: 0, to });
+    };
+    const elsewhere = (s: GameState) => s.board.planets.find((q) => !q.start && !q.cubes.length)!;
+
+    it('to the planet Relocation puts it on, and the shipyard there', () => {
+      const s = structuredClone(BASE.prototyping);
+      const from = homePlanet(s, 0)!.id;
+      const to = elsewhere(s).id;
+      const after = relocate(s, from, to);
+      expect(homePlanet(after, 0)!.id).toBe(to);
+      expect(after.board.planets[from].cubes).not.toContain(0);
+    });
+
+    it('not while another of their cubes stays on it', () => {
+      const s = structuredClone(BASE.prototyping);
+      const home = homePlanet(s, 0)!;
+      s.board.planets[home.id].capacity = 2;
+      s.board.planets[home.id].cubes.push(0);
+      expect(homePlanet(relocate(s, home.id, elsewhere(s).id), 0)!.id).toBe(home.id);
+    });
+
+    it('nor when a cube leaves another planet, and never becomes another player’s', () => {
+      const s = structuredClone(BASE.prototyping);
+      const home = homePlanet(s, 0)!.id;
+      const other = elsewhere(s);
+      s.board.planets[other.id].cubes.push(0);
+      const after = relocate(s, other.id, s.board.planets.find((q) => q !== other && !q.start && !q.cubes.length)!.id);
+      expect(homePlanet(after, 0)!.id).toBe(home);
+      const moved = relocate(structuredClone(BASE.prototyping), home, other.id);
+      expect(homePlanet(moved, 1)!.id).not.toBe(home);
+    });
+
+    it('to another of their planets when over-conquest displaces it, or nowhere', () => {
+      const s = structuredClone(BASE.prototyping);
+      const home = homePlanet(s, 0)!.id;
+      const other = elsewhere(s).id;
+      s.board.planets[other].cubes.push(0);
+      s.board.planets[home].cubes = [];
+      cubeLeft(s, 0, home);
+      expect(homePlanet(s, 0)!.id).toBe(other);
+      s.board.planets[other].cubes = [];
+      cubeLeft(s, 0, other);
+      expect(homePlanet(s, 0)).toBeUndefined();
+    });
+  });
+
+  it('a home shipyard stays open while contested, so a player is never shut out', () => {
+    for (const mode of ['prototyping', 'hex'] as const) {
+      const planet = home(mode);
+      const [a] = orbitals(BASE[mode].board, planet);
+      // Player 0 holds only its home, its whole fleet is in the scrapyard, and an enemy sits in that orbit.
+      const s = scenario({ p1d0: [a.r, a.c, 6] }, mode);
+      for (const q of s.board.planets) q.cubes = q.cubes.filter((x) => x !== 0 || q.id === planet.id);
+      shipyard(s, true, () => expect(into(s, planet), mode).toBe(ring(s, planet).length - 1));
+      shipyard(s, false, () => expect(offered(s, 'deploy'), mode).toEqual([]));
+    }
+  });
+
+  it('a home shipyard doesn’t open a player’s other planets, nor a rival’s home', () => {
+    const { s, planet } = colony('prototyping');
+    shipyard(s, true, () => expect(into(s, planet)).toBe(0));
+    const theirs = homePlanet(s, 1)!;
+    expect(conquerCheck(s, 0, theirs.id).ok).toBe(false);
+  });
+
+  it('is off outside Prototyping', () => {
+    const { s, planet } = colony('community');
+    expect(into(s, planet)).toBeGreaterThan(0);
   });
 });
 

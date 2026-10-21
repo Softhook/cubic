@@ -357,6 +357,16 @@ export function loseDominance(s: GameState, p: PlayerId, n: number, destroyed = 
   pl.dominance = Math.max(1, pl.dominance - n);
 }
 
+/**
+ * After `owner`'s cube left planet `from`: if that was their last cube on their home planet, the home
+ * moves with it to `to` (Relocation) or, the cube gone back to supply, to their first other planet.
+ */
+export function cubeLeft(s: GameState, owner: PlayerId, from: number, to?: number) {
+  const pl = s.players[owner];
+  if (pl.home !== from || s.board.planets[from].cubes.includes(owner)) return;
+  pl.home = to ?? s.board.planets.find((p) => p.cubes.includes(owner))?.id;
+}
+
 /** Places a cube; the game ends the moment a player places their last one. */
 export function placeCube(s: GameState, p: PlayerId, planetId: number) {
   const planet = s.board.planets[planetId];

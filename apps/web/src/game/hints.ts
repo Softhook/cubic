@@ -1,4 +1,15 @@
-import { SHIP_NAMES, canProfiteer, conquerCheck, die, rulesOf, shipOf, type GameState } from '@quantum/engine';
+import {
+  SHIP_NAMES,
+  canProfiteer,
+  conquerCheck,
+  deployTargets,
+  die,
+  homePlanet,
+  orbitBlockers,
+  rulesOf,
+  shipOf,
+  type GameState,
+} from '@quantum/engine';
 import type { Sel } from './controller';
 
 /** One-line guidance for the current human decision. */
@@ -43,8 +54,22 @@ export function hintFor(game: GameState, sel: Sel): string {
       return 'Click a highlighted space to move, or a red target to attack.';
     case 'attackFrom':
       return 'Choose a way to attack along, or click the target again for the solid one.';
-    case 'scrap':
-      return 'Click a highlighted orbital space to deploy this ship.';
+    case 'scrap': {
+      // Contested deploy: say which of your planets an enemy ship in orbit keeps you from.
+      const me = game.turn.player;
+      const rules = rulesOf(game);
+      const home = rules.homeShipyard ? homePlanet(game, me) : undefined;
+      const barred = rules.contestedDeploy
+        ? game.board.planets
+            .filter((p) => p !== home && p.cubes.includes(me) && orbitBlockers(game, me, p).length)
+            .map((p) => `planet ${p.number}`)
+        : [];
+      if (!barred.length) return 'Click a highlighted orbital space to deploy this ship.';
+      const why = `enemy ships in orbit of ${barred.join(' and ')} keep you from deploying there`;
+      return deployTargets(game, me).length
+        ? `Click a highlighted orbital space to deploy this ship (${why}).`
+        : `Nowhere to deploy: ${why}.`;
+    }
     case 'swap':
       return 'Choose another of your ships to switch places with.';
     case 'freeAttack':

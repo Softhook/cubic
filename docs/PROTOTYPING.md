@@ -16,7 +16,7 @@ Nothing here is permanently adopted. Rulings go to [OPEN-QUESTIONS.md](OPEN-QUES
 
 ## Current Prototyping baseline
 
-As of 2026-10-12, Prototyping is **Community Edition**, with only these changes:
+As of 2026-10-21, Prototyping is **Community Edition**, with only these changes:
 
 | Status | Rule |
 |---|---|
@@ -26,10 +26,12 @@ As of 2026-10-12, Prototyping is **Community Edition**, with only these changes:
 | **Current** | **Zones of control:** every ship pickets the 4 orthogonally adjacent spaces (the 6 sides on hex maps; not diagonals) as a mode rule, not a ship power. Diagonals were dropped (2026-10-12) because most ships can't attack diagonally from where they stop. An enemy ship that moves into one must stop there (it may still attack from there; one that starts its move there may leave). Friendly ships are never stopped, and a player with the **Devious** skill ignores zones (ruling 2026-10-12; the card text is unchanged). |
 | **Current** | The **5 Interceptor** replaces its diagonal Manoeuvre ability with **Shoot**: spend one action to attack the first enemy in a clear orthogonal line (one out of each of a hex's 6 sides on hex maps) without advancing. Shooting is that ship's action for the turn. |
 | **Current** | **Contested orbit** (§6.8, since 2026-10-21): a planet can't be conquered while an opponent's ship is in one of its orbital positions. Friendly ships never block, ships beside the orbit don't, and Infamy ignores it. |
+| **Current** | **Contested deploy** (§6.8, since 2026-10-21): no deploying into a planet's orbit while an opponent's ship is in it, by any route (Deploy, Expansion, Stealthy), **except to your own home planet** (home shipyard). `PROTOTYPING_CONTESTED_DEPLOY` and `PROTOTYPING_HOME_SHIPYARD` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) turn them off. |
 | **Off** | **Over-conquest** (§6.10): replacing an opponent's cube with an orbit of exactly **12**. Off since 2026-10-21; `PROTOTYPING_OVER_CONQUEST` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) turns it back on. |
 | **Unchanged** | Ships 1–3 retain their Community abilities. The **4 Frigate** retains Modify and the **6 Scout** retains Free Reconfigure. |
 
 Picket is active as the default zone-of-control rule for every ship rather than as the 4's power. Contested Orbit (§6.8) is current. Beacon and every other rule below are **candidates**, not current rules.
+What the AI self-play says about this baseline is summarised in §8.
 
 ---
 
@@ -42,7 +44,7 @@ Picket is active as the default zone-of-control rule for every ship rather than 
 5. [Candidate Ship Redesign: Powers for the 4, 5, and 6](#5-candidate-ship-redesign-powers-for-the-4-5-and-6)
 6. [Future Experiments](#6-future-experiments-a-different-game-not-a-re-tuned-one)
 7. [Next Steps](#7-next-steps)
-8. [Current Status & Playtest Results](#8-current-status--playtest-results-2026-10-11)
+8. [Current Status & Playtest Results](#8-current-status--playtest-results-2026-10-21)
 9. [Developer Guide: Working on Prototyping](#9-working-on-prototyping)
 
 ---
@@ -65,14 +67,21 @@ so a new mode needs no network changes as long as it stays deterministic.
 A mode is one entry in `RULESETS` ([rulesets.ts](../packages/engine/src/rulesets.ts)). The engine reads it
 through `rulesOf(state)` ([rules.ts](../packages/engine/src/rules.ts)) and never compares mode names. Today a `RuleSet` varies only these:
 
-| Setting | Basic | Classic | Community |
-|---|---|---|---|
-| Cards | none | Command + Gambit | Skills + Tactics |
-| Starting skill draft, peek, expansion pile | — | no | yes |
-| Market refresh | — | yes | no |
-| Starting missiles | 0 | 0 | 1 |
-| Reconfigure | any new number | any new number | a number not seen this turn |
-| Map groups | official | official | official + BGA + CE |
+| Setting | Basic | Classic | Community | Prototyping |
+|---|---|---|---|---|
+| Cards | none | Command + Gambit | Skills + Tactics | as Community (`PROTOTYPING_CARDS`) |
+| Starting skill draft, peek, expansion pile | — | no | yes | yes |
+| Market refresh | — | yes | no | no |
+| Starting missiles | 0 | 0 | 1 | 1 |
+| Reconfigure | any new number | any new number | a number not seen this turn | as Community |
+| Map groups | official | official | official + BGA + CE | Community's + hex + drift |
+| Ship table (`ships`) | classic | classic | classic | 5 = Shoot; zone of control on every ship |
+| `maxMovement` | — | — | — | 3 |
+| `contestedOrbit` (§6.8) | — | — | — | on |
+| `contestedDeploy` (§6.8) | — | — | — | on |
+| `homeShipyard` (§6.8) | — | — | — | on |
+| `overConquest` (§6.10) | — | — | — | off |
+| `experimental` (left out of the rulebook) | — | — | — | yes |
 
 Two patterns make changes cheap:
 
@@ -145,11 +154,16 @@ Capping the total instead would make Agile useless on any ship showing 3 or more
 4. **Measure balance with AI self-play.**
    - `npm run ai:match -- 3 3 100 prototyping 2`: turns per game and seat win rates. Compare with `community`.
    - `npm run selfplay:cards -- 50 prototyping`: card win, pick, and use rates.
+   - `npm run power:usage -- 20 community,prototyping`: how often each ship's power is used, against
+     how often it was on offer, per die value.
+   - `npm run interaction -- 200 4,4`: how much the players get in each other's way (interaction ratio,
+     harm by kind of action, conquests blocked), per mode and map, with and without cards
+     ([HEX.md](HEX.md) *Interaction*).
    - [basic-sweep.ts](../scripts/basic-sweep.ts) is a template for flagging AI mistakes per mode.
 
-**Worth building first:** a stats script that writes one CSV row per game: mode, turns, winner seat,
-attacks, conquers, and **moves and power uses per ship value**. The last column is how we measure
-whether the new 4/5/6 powers get used.
+**Still worth building:** a stats script that writes one CSV row per game: mode, turns, winner seat,
+attacks, conquers, and **moves per ship value**. `power:usage` covers power uses; moves per ship value
+are what would show whether 4s, 5s and 6s are fielded or reconfigured away.
 
 **Caveat:** the AI plays legally under any rule, but its scoring in `evaluate.ts` is hand-tuned for
 Quantum. Passive powers (§5) need no AI work. Reactive powers and radical ideas in §6 need AI
@@ -159,13 +173,13 @@ changes before self-play results become meaningful.
 
 ## 4. Refactoring, in the order it pays off
 
-No up-front refactor is needed. Do each step when a rule needs it. Step 2 is done (§8, §9).
+No up-front refactor is needed. Do each step when a rule needs it. Step 2 is done (§8, §9). Contested orbit and over-conquest needed no step 3: each is a `RuleSet` flag read in `conquerCheck`.
 
 | Step | Refactor | Unlocks | Size |
 |---|---|---|---|
 | 1 | Lift fixed numbers into `RuleSet`: actions per turn and research cap (done); remaining shared track and threshold rules | Variable tweaks | Small (partial) |
 | 2 | **Ship table per mode**: `RuleSet.ships` gives each value its name, movement, and power as hooks like `SkillRule` | §5, and factions in §6 | Medium (Done) |
-| 3 | Formula hooks on `RuleSet`: `combatOutcome`, `conquerCheck`, `deployTargets` | Supply, contested orbit (§6.8), new conquer rules | Small–medium |
+| 3 | Formula hooks on `RuleSet`: `combatOutcome`, `conquerCheck`, `deployTargets` | Supply (§6.2), conquer rules a flag can't express (contested orbit and over-conquest are flags) | Small–medium |
 | 4 | Win check as a hook, not fixed in `placeCube` ([core.ts](../packages/engine/src/core.ts)) | Points, round limits, planet economy (§6.3) | Medium |
 | 5 | Mode-owned player state (an extension field, not new fields on every player) | New resources, energy economy | Medium |
 | 6 | Mode-gated actions and decisions | Ship activations (§6.9), command dice (§6.4) | Medium–large |
@@ -225,16 +239,16 @@ so it is not a power of the 4. Beacon is a candidate power with a source file an
 
 | Ship | Current Prototyping rule | Candidate | Intended role if activated |
 |---|:-:|---|---|
-| **4 Frigate** | Move 3; **Modify** remains active | **Picket:** an enemy ship entering any of the 4 orthogonally adjacent spaces must stop there (originally 8, including diagonals). | Zone control: walls off planets and corridors |
+| **4 Frigate** | Move 3; **Modify** remains active | None registered. **Picket** (an enemy ship entering one of the orthogonally adjacent spaces must stop there) was its candidate; it is now every ship's zone of control. See §5.4 for powers the 4 could get instead. | Formerly: zone control |
 | **5 Interceptor** | Move 3; **Shoot** is active | — | Ranged pressure: threatens space without abandoning position |
 | **6 Scout** | Move 3; **Free Reconfigure** remains active | **Beacon:** Deploy into empty spaces around the Scout, as if it were a planet with your cube. | Logistics: forward staging ground for reinforcements |
 
-If Picket and Beacon are activated, they would reshape play as follows:
-- **Frigates turn movement into a puzzle.** A ring of Pickets around a planet could slow enemy approaches
-  by a turn and counters "rush the sum" plays.
+How the current rules and Beacon reshape play:
+- **Every ship turns movement into a puzzle** (current, as zones of control). A ring of ships around a
+  planet slows enemy approaches by a turn and, with contested orbit, counters "rush the sum" plays.
 - **Interceptors control lanes without suicide runs.** Rather than charging into close combat where a 5
   usually loses, Interceptors project ranged area denial.
-- **Scouts make the board feel vast.** With movement capped, a Beacon could make being stranded far from home planets hurt less.
+- **Scouts make the board feel vast** (candidate). With movement capped, a Beacon could make being stranded far from home planets hurt less.
   A forward Scout becomes where destroyed ships redeploy, making its survival crucial.
 
 ### 5.4 Alternatives explored per ship
@@ -278,12 +292,14 @@ on game length and Flagship survival.
 
 ### 5.6 Testing & validation
 
-- Shoot has scenario coverage for its turn limit and line of sight. Before activating Picket or Beacon,
-  add scenarios for Picket pass-through and starting positions, and for Beacon targets after a Scout is destroyed.
-- Self-play metrics on moves, attacks, and power uses per ship value. Success criterion: 4s, 5s, and 6s
-  are fielded intentionally rather than reconfigured away.
-- Average game length compared with Community: a cap plus Picket should lengthen games slightly, but
-  exceeding a 30% increase suggests adding an action or offensive counterweight.
+- Shoot and zones of control have scenario coverage (turn limit and line of sight; pass-through, starting
+  in a zone, Devious, Warp Gate exits, hexes). Before activating Beacon, add scenarios for Beacon targets
+  after a Scout is destroyed.
+- Self-play metrics on moves, attacks, and power uses per ship value (`power:usage`, and the CSV script in
+  §3). Success criterion: 4s, 5s, and 6s are fielded intentionally rather than reconfigured away.
+- Average game length compared with Community: the cap plus zones of control should lengthen games
+  slightly, but exceeding a 30% increase suggests adding an action or offensive counterweight. With
+  contested orbit, the AI's games on hexes already run 23–33% longer (§6.8).
 
 ---
 
@@ -427,6 +443,11 @@ Most of it is the blockade: with over-conquest off and no blockade, games run as
 17–47% without the blockade. The AI barely parks ships in orbit on purpose, so with people, who will,
 games may well run longer.
 
+In the interaction measure ([HEX.md](HEX.md) *Interaction*, Admiral against Admiral on Alpha Sector),
+Prototyping blocks about one conquest a game (0.82 on squares, 1.00 on hexes, against 0.14–0.24 in the
+official modes), and about 40% of the harm players do each other comes from moves rather than attacks,
+against 11–14% in the official modes: zones of control, orbits taken and conquests blocked.
+
 **Rule.** A planet cannot be conquered while any opponent's ship occupies one of its orbital
 positions: the 4 orthogonal spaces around it on squares, the 6 around it on hexes, and on the off-centre
 maps whatever its orbit has (fewer at the map's edge; a space two orbits share blocks both planets). To place a quantum cube you must first clear
@@ -463,7 +484,7 @@ says what differs there.
   orbital position. The attacker can stop this only by filling every orbital position, including the
   one it just emptied (advance after winning). Expansion (Tactic) is a free version of the same
   move. This is the main stalemate risk on planets the defender already holds.
-- **Over-conquest becomes a real siege.** The planet over-conquest targets always holds an
+- **Over-conquest becomes a real siege** (moot while over-conquest is off, §6.10). The planet over-conquest targets always holds an
   opponent's cube, so that opponent can always Deploy there. A sum of exactly 12 now also requires
   a clear orbit, which may tip over-conquest from "hard" to "almost never". If so, the anti-leader
   lever disappears just when leaders can afford to garrison.
@@ -497,16 +518,89 @@ says what differs there.
    orbital positions block, for every player, so there is one rule to remember. (Ingenious is left out
    of the decks on hexes.)
 3. Does the blockade apply to **over-conquest**? *Proposed: yes* at first, and measure it. If
-   over-conquest disappears from games, exempt it or let over-conquest ignore one blocker.
+   over-conquest disappears from games, exempt it or let over-conquest ignore one blocker. *In the
+   end over-conquest was switched off with the blockade's arrival; the engine still blocks it when it is
+   turned back on.*
 4. Softer variant if games stall: block only when the opponent has **at least as many ships** in
    orbit as the conqueror (orbital majority), rather than any single ship.
 
-**Build.** Small: one check in `conquerCheck` ([queries.ts](../packages/engine/src/queries.ts),
-§4 step 3) that `orbitals(state.board, planet)` holds no die owned by another player, behind a new
-`RuleSet` flag so only Prototyping sees it. Infamy goes through a separate path and is unaffected
-unless ruling 1 changes. Legal actions follow automatically. The AI, though, needs an evaluation term
-for attacking blockers and for garrisoning its own planets, or self-play will stall around
-blockaded planets and understate the rule.
+#### Deploying to a contested planet (current since 2026-10-21)
+
+**The loop it stops.** A defender with a cube on the planet re-deploys a destroyed blocker into the orbit
+for 1 action, the same price as the attack that destroyed it, so a planet can be held indefinitely
+(*Deploy lets defenders re-block* above).
+
+**Rule.** No deploying into a planet's orbit while an opponent's ship is in it. It covers every way of
+deploying (Deploy, Expansion, Unveil the Fleet, Stealthy, Beacon), and a space two orbits share is
+closed if either orbit is contested. Contested orbit now reads both ways: an enemy ship in orbit stops
+you conquering the planet *and* deploying to it. Built as `RuleSet.contestedDeploy`, read in
+`deployTargets` ([queries.ts](../packages/engine/src/queries.ts)); the deploy hint and planet info say why.
+
+**Self-play** (Captain AI in every seat, 200 games per map and setting, the same seeds, 2026-10-21).
+*Re-blocks* are deploys into a contested orbit of one's own planet; a *lockout* is a turn starting with
+no ships on the board, ships in the scrapyard and nowhere to deploy.
+
+| Map | Players | Rounds | Conquests | Battles | Re-blocks | Games with a lockout | Longest lockout |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| Alpha Sector | 2 | 9.8 → 9.8 | 5.5 → 5.5 | 6.4 → 6.0 | 0.3 → 0 | 0 | — |
+| Alpha (hex) | 2 | 9.7 → 9.2 | 4.9 → 5.1 | 10.9 → 9.2 | 0.7 → 0 | 1 | 1 turn |
+| Twin Drift | 2 | 11.2 → 10.4 | 6.7 → 6.9 | 11.9 → 9.4 | 1.4 → 0 | 0 | — |
+| Binary Reach | 2 | 13.1 → 12.6 | 6.2 → 6.4 | 10.3 → 9.0 | 1.0 → 0 | 0 | — |
+| Beta Sector | 3 | 12.4 → 11.7 | 6.1 → 6.5 | 21.9 → 19.0 | 3.1 → 0 | 3 (1.5%) | 2 turns |
+| Beta (hex) | 3 | 11.8 → 11.5 | 6.3 → 6.5 | 25.9 → 23.0 | 3.3 → 0 | 0 | — |
+| Gamma Sector | 4 | 15.6 → 14.1 | 5.9 → 6.5 | 43.9 → 35.6 | 7.9 → 0 | 24 (12%) | 7 turns |
+| Gamma (hex) | 4 | 14.1 → 13.2 | 4.9 → 5.5 | 52.4 → 43.8 | 10.0 → 0 | 80 (40%) | 8 turns |
+
+- **The loop is real, and grows with players:** 0.3 re-blocks a game on Alpha Sector, 8–10 with four
+  players. Closing it makes games shorter (up to 10% with four), with more conquests and fewer battles,
+  and no game stalled. Without the rule nobody was ever locked out.
+- **A player can be shut out completely.** With their whole fleet in the scrapyard and every planet they
+  hold (usually only their start) contested, they have no deploy target. In the games looked at, the
+  leader parked 1–2 ships in that orbit and the locked player could only research and end turns until
+  they left. Being locked out is close to elimination: locked players won 9% of those 4-player games
+  (25% is an even share). The AI doesn't seek lockouts on purpose; people would.
+- With 2 players it hardly happens, and with 3 rarely. With 4, mostly on hexes, where every space is an
+  orbit and the fleets crowd every planet.
+
+**Home shipyard (current since 2026-10-21).** Your home planet, the start planet you chose, isn't a
+normal planet: you may always deploy to it, contested or not. Opponents' ships in its orbit still stop
+*other* players conquering it. A home moves with the cube: when a player's last cube on their home
+leaves, Relocation takes the home to the planet the cube goes to, and a cube displaced by over-conquest
+takes it to another planet with their cube (the first in map order), or none if they have no other.
+Neither card is in Prototyping today (Relocation is Classic's; over-conquest is off), so this only
+matters if they come in. `RuleSet.homeShipyard`; the home is `PlayerState.home`, set when the starting
+planet is chosen, moved by `cubeLeft` ([core.ts](../packages/engine/src/core.ts)) and read through
+`homePlanet` ([queries.ts](../packages/engine/src/queries.ts)).
+
+Same games, with the home shipyard (*off* = no contested deploy; re-blocks at home in brackets):
+
+| Map | Players | Rounds off → shipyard | Battles | Re-blocks (at home) | Games with a lockout |
+|---|--:|--:|--:|--:|--:|
+| Alpha (hex) | 2 | 9.7 → 9.2 | 10.9 → 9.2 | 0.7 (0.0) → 0.0 | 0 |
+| Beta Sector | 3 | 12.4 → 11.8 | 21.9 → 19.5 | 3.1 (0.7) → 0.7 | 0 |
+| Beta (hex) | 3 | 11.8 → 11.3 | 25.9 → 23.3 | 3.3 (0.5) → 0.5 | 0 |
+| Gamma Sector | 4 | 15.6 → 15.0 | 43.9 → 39.9 | 7.9 (2.8) → 3.0 | 0 |
+| Gamma (hex) | 4 | 14.1 → 13.6 | 52.4 → 48.4 | 10.0 (3.9) → 4.1 | 0 |
+
+- **No lockouts on any map**, since every player always holds their home. (Filling all of a home's
+  orbit would still shut its owner out, but takes 4 ships on squares and 6 on hexes; it never happened.)
+- **The loop stays only at homes:** 60–85% of re-blocks are gone, and homes become capitals that are hard
+  to take a share of. Games land between the two settings.
+- **Still to watch:** whether people turtle their home on purpose to deny its spare cube spaces, and
+  the off-centre maps, not run with the shipyard yet.
+
+**Other ways out**, if the shipyard turns out wrong (not built):
+1. **Landing clause:** a player with no ships on the board may deploy into any empty space that is in no
+   contested orbit and next to no ship (Stealthy's test).
+2. **Last ship:** a player with no ships on the board ignores the rule. Simplest, but it reopens the loop
+   for a defender down to one blocker.
+3. **Late arrival instead of a ban:** deploying is allowed, but a ship deployed into a contested orbit
+   doesn't block until its owner's next turn. No lockout is possible; it needs a marker per ship.
+
+**Build (done).** `orbitBlockers` in [queries.ts](../packages/engine/src/queries.ts), read by
+`conquerCheck` behind `RuleSet.contestedOrbit`, so only Prototyping sees it. Infamy goes through a
+separate path and is unaffected. The AI has a term for attacking blockers (`clearing`) but not yet one
+for garrisoning its own planets, so self-play still understates the rule.
 
 **Test.** Game length, attacks per conquest, share of conquests made through Infamy,
 over-conquest frequency, and how often a player Deploys back into a planet they are defending.
@@ -563,10 +657,12 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 - **Massive fleet commitment.** Assembling a sum of 12 demands at least two heavy ships, usually three (e.g. 6 + 6, or 5 + 4 + 3), simultaneously holding orbital positions. Committing this much fleet power creates an operational bottleneck and leaves the conqueror vulnerable elsewhere, making over-conquest a major deliberate siege rather than an easy opportunistic capture.
 - **Target selection & diplomacy.** When multiple players share a full planet, the conqueror decides whose cube to eliminate, introducing tactical target selection.
 
-**Implementation status.** This is enabled by `RuleSet.overConquest`, checked by
-`conquerCheck`, and covered by [prototyping.test.ts](../packages/engine/test/prototyping.test.ts).
-The current UI and legal actions offer replacement targets; AI valuation and a dedicated orbit-requirement
-display remain possible follow-up work.
+**Implementation status.** Built and switched off: `RuleSet.overConquest`, checked by `conquerCheck`,
+set from `PROTOTYPING_OVER_CONQUEST` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts).
+Its scenarios in [prototyping.test.ts](../packages/engine/test/prototyping.test.ts) run only while the
+flag is on. The UI and legal actions offer replacement targets; AI valuation and a dedicated
+orbit-requirement display remain possible follow-up work. Worth turning back on only if games under
+the blockade end with planets nobody can take.
 
 ---
 
@@ -601,19 +697,31 @@ display remain possible follow-up work.
 - [x] Replace the 5's diagonal Manoeuvre ability with Shoot
 - [x] Add over-conquest at an orbit sum of 12
 - [x] Picket active as the default zone of control for all ships (2026-10-12)
+- [x] Hex and off-centre (drift) maps playable in Prototyping (2026-10-20)
+- [x] Contested Orbit (§6.8), with the AI's `clearing` term and board marks (2026-10-21)
+- [x] Over-conquest switched off (2026-10-21)
+- [x] Measure interaction across modes and maps (`npm run interaction`, 2026-10-21)
+- [x] Contested deploy: no deploying into a contested orbit (2026-10-21)
+- [x] Home shipyard, so contested deploy can't lock a player out (2026-10-21)
+- [ ] Playtest home turtling with people; run the shipyard on the off-centre maps
+- [ ] Playtest contested orbit with people: the AI hardly garrisons, so stalls may be under-measured
+- [ ] Give the AI a garrison term for its own planets, then re-measure §6.8
+- [ ] Run the interaction measure on Gamma (hex) and with 3–4 players
+- [ ] Decide the 4's power: nothing registered since Picket became every ship's rule (§5.4)
 - [ ] Decide whether to activate Beacon (6); its source file is a candidate only
-- [ ] Prototype Contested Orbit (§6.8) via `conquerCheck` hook
-- [ ] Write per-game stats script (CSV: moves, attacks, power uses per ship value)
+- [ ] Write per-game stats script (CSV: moves per ship value; `power:usage` covers powers)
 - [ ] Prototype Kinetic ships (§6.1) as a separate branch experiment
 - [ ] Evaluate Ship Activations (§6.9) if fleet expansion needs more command capacity
 
 ---
 
-## 8. Current status & playtest results (2026-10-11)
+## 8. Current status & playtest results (2026-10-21)
 
-Prototyping is playable in the lobby. The authoritative current-rule summary is at the top of this
-document: Community Edition with a movement cap of 3, Shoot for the 5, and over-conquest. The 4's
-Modify and the 6's Free Reconfigure are still active. Picket applies to every ship as the zone-of-control rule (since 2026-10-12); Beacon is not enabled.
+Prototyping is playable in the lobby, on Community's maps, the hex tiles and the off-centre maps. The
+authoritative current-rule summary is at the top of this document: Community Edition with a movement
+cap of 3, zones of control on every ship, Shoot for the 5, and contested orbit, which also closes the
+orbit to the defender's deploys except at their home planet; over-conquest is off.
+The 4's Modify and the 6's Free Reconfigure are still active. Beacon is not enabled.
 
 ### Rulings established during implementation
 
@@ -623,16 +731,35 @@ Modify and the 6's Free Reconfigure are still active. Picket applies to every sh
   Shooting costs one action and is the ship's one action of the turn, like a move or an attack: a ship
   can't move, attack or shoot again that turn, and can't shoot after moving or attacking. Normal combat, missiles, and re-rolls apply; the
   shooter never advances.
-- **Over-conquest** is optional alongside an ordinary conquest when an opponent cube is present. It
+- **Zones of control** cover the 4 orthogonal spaces (a hex's 6 sides), not diagonals. A ship stopped
+  in a zone may still attack from there, including another enemy beside it, but not with no steps
+  left. A ship that starts in a zone may leave it; friendly ships are never stopped; a Warp Gate exit
+  in a zone stops the ship there. Devious ignores zones and may pass through enemy ships.
+- **Contested deploy**: no deploying into a contested orbit by any route, including Expansion and
+  Stealthy; a space two orbits share is closed if either orbit is contested. Your home planet's orbit is
+  always open to you (home shipyard).
+- **Contested orbit**: only opponents' ships in the orbital positions block; Infamy ignores it; an
+  enemy on an Ingenious corner doesn't block; on off-centre maps a space two orbits share blocks both
+  planets (§6.8).
+- **Over-conquest** (off) is optional alongside an ordinary conquest when an opponent cube is present. It
   requires an orbit sum of exactly 12 and returns the replaced cube to its owner's reserve.
 
 Scenarios live in [prototyping.test.ts](../packages/engine/test/prototyping.test.ts).
 
 ### Playtest status
 
-There is no current self-play benchmark for this baseline. The previous figures measured a different
-configuration (Picket and Beacon enabled, plus an earlier version of Shoot) and are intentionally not
-used as evidence for the current rules. Re-run the commands in §3 after the current set has stabilized.
+All AI self-play; no games with people yet. Earlier figures (Picket and Beacon as ship powers, an
+earlier Shoot) measured a different configuration and are not evidence for these rules.
+
+| Date | What | Where | Finding |
+|---|---|---|---|
+| 2026-10-20 | Cap, zones of control, Shoot, cards, over-conquest; 20 games per map | [HEX.md](HEX.md) *First AI results* | Zones of control halve the fighting on hexes as on squares; Gamma (hex) no longer runs long; no game stalled. |
+| 2026-10-21 | Contested orbit against over-conquest; 200 games per hex map | §6.8 | Games 2–3 rounds longer, fewer conquests, more attacks and Infamy; no game unfinished. |
+| 2026-10-21 | Contested deploy on and off; 200 games per map, 2–4 players | §6.8 | Ends the re-block loop (up to 10 a game with 4 players) and shortens games, but locks players out in 12–40% of 4-player games. With the home shipyard: no lockouts, and 60–85% of the loop still gone. |
+| 2026-10-21 | Interaction, all modes, Alpha Sector square and hex, with and without cards | [HEX.md](HEX.md) *Interaction* | Prototyping is the most interactive set (ratio 0.33 square, 0.39 hex, against 0.30 Classic), and its harm comes as much from moves as attacks. Cards make every mode more solitary. Neither hexes nor cards change how often the stronger AI wins. |
+
+The open risk is stalls: the AI barely garrisons, so it may understate how long games run when people
+park ships in orbit on purpose.
 
 ---
 
@@ -657,6 +784,9 @@ packages/engine/src/
 | To Change | File to Edit |
 |---|---|
 | Movement cap, mode summary, base rules | [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) |
+| Cards on/off, over-conquest on/off | `PROTOTYPING_CARDS`, `PROTOTYPING_OVER_CONQUEST` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) |
+| Contested deploy, home shipyard on/off | `PROTOTYPING_CONTESTED_DEPLOY`, `PROTOTYPING_HOME_SHIPYARD` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) |
+| Contested orbit | `contestedOrbit` in `prototypingMode()`; the rule itself is `orbitBlockers` in [queries.ts](../packages/engine/src/queries.ts) |
 | Which ship has which power, ship names | `PROTOTYPING_SHIPS` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) |
 | A power's rules text, range, or hooks | Power file in [prototyping/powers/](../packages/engine/src/prototyping/powers) |
 | Add a power using existing hooks | New file in `powers/`, referenced in `PROTOTYPING_SHIPS` |

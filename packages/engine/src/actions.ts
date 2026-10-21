@@ -20,6 +20,7 @@ import {
   spendMove,
   spendPeaceful,
   tally,
+  cubeLeft,
   type Handlers,
 } from './core';
 import { boardLoc, die } from './lookups';
@@ -103,6 +104,7 @@ export const actionHandlers = {
       const planet = s.board.planets[a.planet];
       planet.cubes.splice(planet.cubes.lastIndexOf(owner), 1);
       s.players[owner].cubesLeft++;
+      cubeLeft(s, owner, a.planet);
       log(s, `${name(s, t.player)} displaces ${name(s, owner)}'s cube.`, t.player, 'conquer', [a.planet]);
     }
     spend(s, 2);

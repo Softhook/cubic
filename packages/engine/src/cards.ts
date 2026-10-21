@@ -21,6 +21,7 @@ import {
   aShip,
   shipName,
   tally,
+  cubeLeft,
   type Handlers,
   type PendingOf,
 } from './core';
@@ -341,6 +342,7 @@ export const cardHandlers = {
     const to = s.board.planets[a.to];
     from.cubes.splice(from.cubes.lastIndexOf(a.owner), 1);
     to.cubes.push(a.owner);
+    cubeLeft(s, a.owner, from.id, to.id);
     log(
       s,
       `${name(s, head.player)} relocates ${name(s, a.owner)}'s cube from planet ${from.number} to planet ${to.number}.`,
