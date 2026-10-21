@@ -84,6 +84,8 @@ function marksOf(board: Board, tiles: readonly TileArt[]): string {
   return marks;
 }
 
+const NO_TILES: TileArt[] = [];
+
 /**
  * A map's tiles in SVG, square or hex, in layers: each tile's sky, its body (planet and moons, or a Void's
  * heart) wherever the planet sits, cut off at the tile's edge, then the seams between hex tiles, the spaces
@@ -93,7 +95,8 @@ function marksOf(board: Board, tiles: readonly TileArt[]): string {
 export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: Board; tiles: TileArt[]; cell: number }) {
   const moon = useMoonMaps() && !!board.hex;
   const skies = useTileImages(tiles, moon ? 'ground' : board.hex ? 'sky-hex' : 'sky-square');
-  const bodies = useTileImages(tiles, 'body');
+  // On the moon each tile's ground already has its building, so there are no bodies to load.
+  const bodies = useTileImages(moon ? NO_TILES : tiles, 'body');
   const { mid } = placement(board, cell);
   const mm = cell / TILE.cell;
   // A tile's artwork is a whole printed tile, 3 spaces wide, centred on what it draws.

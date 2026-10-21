@@ -1,6 +1,6 @@
 import { rng, type Rng } from './rng';
 import { TILE } from './tokens';
-import { document, n, type Fragment } from './svg';
+import { document, n, turbulence, type Fragment } from './svg';
 import { cubePadCentres, numberCorner, type Spot } from './tile';
 import type { TileSpec } from './tileset';
 
@@ -78,7 +78,7 @@ const blur = (id: string, sd: number) =>
 /** Weathering: noise pushes a crater's outline about (lobes, slumps), then age softens it. In crater units (r 25). */
 const weather = (id: string, freq: number, seed: number, scale: number, sd: number, box = 'x="-30%" y="-30%" width="160%" height="160%"') =>
   `<filter id="${id}" ${box}>` +
-  `<feTurbulence type="fractalNoise" baseFrequency="${freq}" numOctaves="4" seed="${seed}" result="t"/>` +
+  turbulence(freq, 4, seed, 't') +
   `<feDisplacementMap in="SourceGraphic" in2="t" scale="${scale}" xChannelSelector="R" yChannelSelector="G" result="d"/>` +
   `<feGaussianBlur in="d" stdDeviation="${sd}"/></filter>`;
 
@@ -94,10 +94,10 @@ function ground(r: Rng): string {
     '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0" result="H0"/>' +
     '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 1 0 0 0" result="SMOOTH"/>' +
     '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 1 0 0" result="ALB"/>' +
-    `<feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="${s()}" result="warp"/>` +
-    `<feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="7" seed="${s()}" result="nz"/>` +
+    turbulence(0.012, 2, s(), 'warp') +
+    turbulence(0.03, 7, s(), 'nz') +
     '<feDisplacementMap in="nz" in2="warp" scale="26" xChannelSelector="R" yChannelSelector="G" result="nzw"/>' +
-    `<feTurbulence type="turbulence" baseFrequency="0.018" numOctaves="3" seed="${s()}" result="rg"/>` +
+    turbulence(0.018, 3, s(), 'rg', 'turbulence') +
     '<feDisplacementMap in="rg" in2="warp" scale="26" xChannelSelector="R" yChannelSelector="G" result="rgw"/>' +
     '<feComponentTransfer in="rgw" result="ridged"><feFuncA type="table" tableValues="1 0.55 0.3 0.15 0"/></feComponentTransfer>' +
     '<feComponentTransfer in="SMOOTH" result="ROUGH"><feFuncA type="table" tableValues="1 0.02"/></feComponentTransfer>' +
@@ -117,7 +117,7 @@ function ground(r: Rng): string {
     '<feComposite in2="shB" operator="in" result="SHD"/>' +
     '<feMerge result="Ls"><feMergeNode in="L"/><feMergeNode in="SHD"/></feMerge>' +
     '<feColorMatrix in="ALB" type="matrix" values="0 0 0 1 0  0 0 0 1 0  0 0 0 1 0  0 0 0 0 1" result="albG"/>' +
-    `<feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" seed="${s()}" result="an"/>` +
+    turbulence(0.01, 3, s(), 'an') +
     '<feColorMatrix in="an" type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1" result="anG"/>' +
     '<feComposite in="albG" in2="anG" operator="arithmetic" k2="1" k3="0.45" k4="-0.22" result="albN"/>' +
     '<feComposite in="Ls" in2="albN" operator="arithmetic" k1="2" result="lit"/>' +
@@ -129,7 +129,7 @@ function ground(r: Rng): string {
     '<feFuncG type="table" tableValues="0.025 0.085 0.2 0.36 0.53 0.69 0.83"/>' +
     '<feFuncB type="table" tableValues="0.035 0.095 0.205 0.35 0.5 0.65 0.79"/>' +
     '</feComponentTransfer>' +
-    `<feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="1" seed="${s()}" result="grain"/>` +
+    turbulence(1.4, 1, s(), 'grain') +
     '<feComposite in="ramp" in2="grain" operator="arithmetic" k2="1" k3="0.09" k4="-0.045"/>' +
     '</filter>'
   );
@@ -138,12 +138,18 @@ function ground(r: Rng): string {
 const circle = (r: number, fill: string, blend: string, opacity?: number, filter?: string) =>
   `<circle r="${r}" fill="url(#${fill})" style="mix-blend-mode: ${blend}"${opacity === undefined ? '' : ` opacity="${opacity}"`}${filter ? ` filter="url(#${filter})"` : ''}/>`;
 
+/** A crater's bowl and rim, weathered by `wx`; past its oldest age, terraces inside the rim. */
+const crater = (wx: string, terraced: boolean, bowl = 'rg-bowl', opacity?: number, rim?: number) =>
+  circle(25, bowl, 'multiply', opacity, wx) +
+  circle(36, 'rg-rim', 'screen', rim, wx) +
+  (terraced ? circle(25, 'rg-terr', 'screen', undefined, wx) : '');
+
 /** Craters by age, r 25 (rim 36): old ones shallow and soft, young ones crisp with a bright ejecta ring, the big one with a central peak. */
 const CRATERS =
-  `<g id="rg-cr-o">${circle(25, 'rg-bowlOld', 'multiply', 0.7, 'rg-wx-o')}${circle(36, 'rg-rim', 'screen', 0.45, 'rg-wx-o')}</g>` +
-  `<g id="rg-cr-m">${circle(25, 'rg-bowl', 'multiply', 0.85, 'rg-wx-m')}${circle(36, 'rg-rim', 'screen', 0.75, 'rg-wx-m')}${circle(25, 'rg-terr', 'screen', undefined, 'rg-wx-m')}</g>` +
-  `<g id="rg-cr-y">${circle(25, 'rg-bowl', 'multiply', undefined, 'rg-wx-y')}${circle(36, 'rg-rim', 'screen', undefined, 'rg-wx-y')}${circle(25, 'rg-terr', 'screen', undefined, 'rg-wx-y')}${circle(55, 'rg-ej', 'lighten', 0.4)}</g>` +
-  `<g id="rg-cr-big">${circle(25, 'rg-bowl', 'multiply', undefined, 'rg-wx-y')}${circle(36, 'rg-rim', 'screen', undefined, 'rg-wx-y')}${circle(25, 'rg-terr', 'screen', undefined, 'rg-wx-y')}${circle(7, 'rg-peak', 'screen', undefined, 'rg-wx-y')}${circle(68, 'rg-ej', 'lighten', 0.5)}</g>`;
+  `<g id="rg-cr-o">${crater('rg-wx-o', false, 'rg-bowlOld', 0.7, 0.45)}</g>` +
+  `<g id="rg-cr-m">${crater('rg-wx-m', true, 'rg-bowl', 0.85, 0.75)}</g>` +
+  `<g id="rg-cr-y">${crater('rg-wx-y', true)}${circle(55, 'rg-ej', 'lighten', 0.4)}</g>` +
+  `<g id="rg-cr-big">${crater('rg-wx-y', true)}${circle(7, 'rg-peak', 'screen', undefined, 'rg-wx-y')}${circle(68, 'rg-ej', 'lighten', 0.5)}</g>`;
 
 /** A low ridge: a soft rise with a sharper crest. */
 const RIDGE =

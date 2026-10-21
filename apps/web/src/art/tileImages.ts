@@ -41,12 +41,18 @@ interface TileRef {
   at?: Spot;
 }
 
-const layerSvg = ({ id, at }: TileRef, layer: TileLayer) =>
-  layer === 'body'
-    ? bodySvg(tileSpec(id))
-    : layer === 'ground'
-      ? regolithSvg(tileSpec(id), at)
-      : skySvg(tileSpec(id), layer === 'sky-hex' ? 'hex' : 'square');
+function layerSvg({ id, at }: TileRef, layer: TileLayer): string {
+  switch (layer) {
+    case 'body':
+      return bodySvg(tileSpec(id));
+    case 'ground':
+      return regolithSvg(tileSpec(id), at);
+    case 'sky-hex':
+      return skySvg(tileSpec(id), 'hex');
+    case 'sky-square':
+      return skySvg(tileSpec(id), 'square');
+  }
+}
 
 const nameOf = ({ id, at }: TileRef, layer: TileLayer) =>
   layer === 'ground' && at ? `${id}:${layer}@${at.x.toFixed(3)},${at.y.toFixed(3)}` : `${id}:${layer}`;
