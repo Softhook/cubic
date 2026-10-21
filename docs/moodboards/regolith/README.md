@@ -14,6 +14,7 @@ Live canvas: https://claude.ai/artifact/HXXvHR2kv7qATjy7nCudZb (private to its o
 | [Mechs](Mechs.dc.html) | The six classes as mech die faces, side colours, side-view silhouettes |
 | [Cards](Cards.dc.html) | Unit card, skill, tactic, back |
 | [Ladder](Ladder.dc.html) | One card's art at four levels, diagram to painted |
+| [Surface](Surface.dc.html) | Photographic ground from one lit height map (height, smoothness and brightness in the red, green and blue channels), before and after, and how Chrome, Firefox and Safari differ |
 
 Each board is a static HTML page and opens in a browser as it is. The `support.js` it asks for belongs
 to the canvas editor; without it the page draws the same, only not editable. `canvas.json` is the
