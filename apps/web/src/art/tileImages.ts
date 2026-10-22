@@ -59,7 +59,7 @@ type GroundLayer = 'ground' | 'standing';
 
 const onGround = (layer: TileLayer): layer is GroundLayer => layer === 'ground' || layer === 'standing';
 
-/** A tile to draw: its physical id, and for `ground` where its planet sits, in spaces from its middle, and on which world. */
+/** A tile to draw: its physical id, and for `ground` where its planet sits, in spaces from its middle, and its map's world. */
 interface TileRef {
   id: string;
   at?: Spot;
@@ -80,7 +80,7 @@ function layerSvg(id: string, layer: OwnLayer): string {
   }
 }
 
-const nameOf = ({ id, at, world = 'mars' }: TileRef, layer: TileLayer) =>
+const nameOf = ({ id, at, world }: TileRef, layer: TileLayer) =>
   onGround(layer) ? `${id}:${layer}:${world}` + (at ? `@${at.x.toFixed(3)},${at.y.toFixed(3)}` : '') : `${id}:${layer}`;
 
 /**
@@ -91,7 +91,8 @@ function groundImages(tile: TileRef): Promise<Record<GroundLayer, string>> {
   const name = nameOf(tile, 'ground');
   let pair = grounds.get(name);
   if (!pair) {
-    const svg = regolithSvg(tileSpec(tile.id), tile.at, tile.world);
+    // Only hex maps are drawn on the ground, and every one has a world (Board.world).
+    const svg = regolithSvg(tileSpec(tile.id), tile.world!, tile.at);
     const mask = regolithMaskSvg(tileSpec(tile.id), tile.at);
     const size = Math.round(SIZE * layerScale('ground'));
     const key = `${hash(svg + mask)}:${size}`;
@@ -157,16 +158,29 @@ export async function warmTileImages(): Promise<void> {
     }
 }
 
-/** A layer of each tile of the map by physical tile id, filled in as each image is ready (`decodedTileImage`). */
+const NONE: Record<string, string> = {};
+
+/**
+ * A layer of each tile of the map by physical tile id, filled in as each image is ready (`decodedTileImage`).
+ * Only that layer's: when the layer changes (the map switched to its ground, or back), none of the last
+ * one's, which is drawn at a different size.
+ */
 export function useTileImages(tiles: readonly TileRef[], layer: TileLayer): Record<string, string> {
-  const [images, setImages] = useState<Record<string, string>>({});
+  const [shown, setShown] = useState({ layer, images: NONE });
   useEffect(() => {
     let live = true;
     for (const t of tiles)
-      decodedTileImage(t, layer).then((url) => live && setImages((m) => (m[t.id] === url ? m : { ...m, [t.id]: url })));
+      decodedTileImage(t, layer).then(
+        (url) =>
+          live &&
+          setShown((s) => {
+            const images = s.layer === layer ? s.images : NONE;
+            return images[t.id] === url ? s : { layer, images: { ...images, [t.id]: url } };
+          }),
+      );
     return () => {
       live = false;
     };
   }, [tiles, layer]);
-  return images;
+  return shown.layer === layer ? shown.images : NONE;
 }

@@ -6,7 +6,7 @@ import { fileName, pieceSize } from '../print/pieces';
 import { PrintPanel, Space } from '../print/PrintPanel';
 import { tileFontCss, useFontCss, useSvgUrl } from './cards';
 import { LabHeader } from './LabHeader';
-import { TILE_PRINT, lookShape, printableTile, tileFaceSvg, type TileLook } from './pressSheets';
+import { TILE_PRINT, lookShape, printableTile, tileFaceSvg, worldOf, type TileLook } from './pressSheets';
 
 /**
  * Art Lab, tiles page (#lab): every tile of the physical set, with controls to explore seeds and
@@ -52,12 +52,18 @@ export function TileLab() {
   const { piece, cmyk } = TILE_PRINT[look];
   const item = printable(spec);
 
-  /** Illustrator can't render SVG filters, so the art goes in as a 600 dpi bitmap with vector markings on top. */
+  /**
+   * Illustrator can't render SVG filters, so the art goes in as a 600 dpi bitmap with vector markings on top.
+   * On a world's ground the buildings stand over the spaces' wells, so all that's beneath the planet's
+   * markings goes in the bitmap, and only those are vectors.
+   */
   const exportEditable = async () => {
     const { w, h } = pieceSize(piece, bleed);
-    const art = await blobToDataUrl(await svgToPng(tileFaceSvg(spec, view, { only: 'art', bleed }), w, h, 600));
+    const beneath = !!worldOf(look);
+    const under = tileFaceSvg(spec, view, beneath ? { only: 'beneath', bleed, markings, fontCss: fonts ?? '' } : { only: 'art', bleed });
+    const art = await blobToDataUrl(await svgToPng(under, w, h, 600));
     const name = fileName(piece, item, { bleed, ext: 'svg' }).replace(/\.svg$/, '-illustrator.svg');
-    download(name, new Blob([editableTileSvg(spec, art, { bleed, markings, shape, planetAt })], { type: 'image/svg+xml' }));
+    download(name, new Blob([editableTileSvg(spec, art, { bleed, markings, shape, planetAt, beneath })], { type: 'image/svg+xml' }));
   };
 
   return (

@@ -1,0 +1,86 @@
+import type { Rng } from '../rng';
+import { TILE } from '../tokens';
+import { n } from '../svg';
+import type { Box } from '../starfield';
+import { BLED, HEX_TILE_CUT, type Spot } from '../tile';
+
+/** The Regolith ground's units, the hex flower in them, and the SVG helpers its parts share (index.ts says how a tile is drawn). */
+
+/** One space in the mood board's units. */
+export const SPACE = 69.3;
+/** Millimetres in a board unit. */
+export const SCALE = TILE.cell / SPACE;
+/** The tile's trim, 96 mm, in board units. */
+export const SIZE = TILE.size / SCALE;
+/** How far past the area shown the ground is drawn, in board units: past the furthest shadow (9) and warp (13). */
+const MARGIN = 20;
+
+/** Which world a hex map is on: the grey moon, or Mars. */
+export type World = 'moon' | 'mars';
+
+/** A box as a filter's or mask's region attributes. */
+export const region = (b: Box) => `x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}"`;
+
+/** The point `d` from the origin at `angle` degrees (0 right, y down). */
+export const polar = (angle: number, d: number): Spot => ({
+  x: d * Math.cos((angle * Math.PI) / 180),
+  y: d * Math.sin((angle * Math.PI) / 180),
+});
+
+export const stops = (list: [number, string, number?][]) =>
+  list.map(([o, c, a]) => `<stop offset="${o}" stop-color="${c}"${a === undefined ? '' : ` stop-opacity="${a}"`}/>`).join('');
+
+export const radial = (id: string, list: [number, string, number?][]) => `<radialGradient id="${id}">${stops(list)}</radialGradient>`;
+
+export const blur = (id: string, sd: number) =>
+  `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${sd}"/></filter>`;
+
+/** The hex flower's outline (its cut), in board units. */
+const OUTLINE = HEX_TILE_CUT.map((side) => side.map((v) => v / SCALE));
+
+/** How far (x, y) is inside the hex flower, in board units: negative outside it. */
+export function inside(x: number, y: number): number {
+  let d = Infinity;
+  let crossings = 0;
+  for (const [x1, y1, x2, y2] of OUTLINE) {
+    const [dx, dy] = [x2 - x1, y2 - y1];
+    const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy)));
+    d = Math.min(d, Math.hypot(x - x1 - t * dx, y - y1 - t * dy));
+    if (y1 > y !== y2 > y && x < x1 + ((y - y1) / (y2 - y1)) * dx) crossings++;
+  }
+  return crossings % 2 ? d : -d;
+}
+
+/**
+ * How many features may run over the flower's edge, cut off where the next tile starts: a few, so the
+ * edge doesn't look swept clear, but most stop short of it, as a crater cut in two shows at a seam.
+ */
+const OVER_EDGE = 0.15;
+
+/**
+ * A point anywhere on the hex flower for a feature `reach` across from its middle: clear of the edge by
+ * that, or now and then (`OVER_EDGE`) only within the flower. Spread evenly, not drawn to the middle.
+ */
+export function anywhere(r: Rng, reach: number): Spot {
+  const clear = r.chance(OVER_EDGE) ? 0 : reach;
+  let p = { x: SIZE / 2, y: SIZE / 2 };
+  for (let i = 0; i < 80; i++) {
+    const q = { x: r.range(0, SIZE), y: r.range(0, SIZE) };
+    const d = inside(q.x, q.y);
+    if (d >= clear) return q;
+    // Too big to keep clear of the edge anywhere: the last point inside the flower will do.
+    if (d >= 0) p = q;
+  }
+  return p;
+}
+
+/** A point `d` spaces from the planet's space at `angle` degrees (0 right, y down), in board units. */
+export const toward = (angle: number, d: number): Spot => polar(angle, d * SPACE);
+
+/** The trim and its bleed in board units, and the margin past it, which the ground is drawn and lit over. */
+export const DRAWN: Box = {
+  x: BLED.x / SCALE - MARGIN,
+  y: BLED.y / SCALE - MARGIN,
+  w: BLED.w / SCALE + 2 * MARGIN,
+  h: BLED.h / SCALE + 2 * MARGIN,
+};

@@ -105,7 +105,7 @@ export function Game({
           <button className="btn btn-ghost" onClick={onRules}>
             Rules
           </button>
-          {game.board.hex && <WorldButton world={game.board.world ?? 'mars'} />}
+          {game.board.world && <WorldButton world={game.board.world} />}
           <MusicButton />
           <SoundButton />
           <FullscreenButton />

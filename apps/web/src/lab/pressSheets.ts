@@ -20,7 +20,7 @@ export type TileLook = 'square' | 'hex' | 'moon' | 'mars';
 export const lookShape = (look: TileLook): TileShape => (look === 'square' ? 'square' : 'hex');
 
 /** The world a look's ground is on, if it's on one. */
-const worldOf = (look: TileLook | undefined): World | undefined => (look === 'moon' || look === 'mars' ? look : undefined);
+export const worldOf = (look: TileLook | undefined): World | undefined => (look === 'moon' || look === 'mars' ? look : undefined);
 
 /** How a tile is shown and printed: its look, and where its planet sits (art `TileOptions`). */
 export interface TileView {
@@ -31,7 +31,7 @@ export interface TileView {
 /** A tile as an SVG document in a look, square by default: in space (`tileSvg`) or on a world's ground. */
 export function tileFaceSvg(t: TileSpec, { look = 'square', planetAt }: TileView, o: Omit<TileOptions, 'shape' | 'planetAt'>) {
   const world = worldOf(look);
-  return world ? regolithTileSvg(t, { ...o, planetAt }, world) : tileSvg(t, { ...o, planetAt, shape: lookShape(look) });
+  return world ? regolithTileSvg(t, world, { ...o, planetAt }) : tileSvg(t, { ...o, planetAt, shape: lookShape(look) });
 }
 
 /**

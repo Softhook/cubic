@@ -31,8 +31,12 @@ export interface TileOptions {
   rounded?: boolean;
   /** Prefix for ids; defaults to the tile id. */
   idPrefix?: string;
-  /** Draw only the painted art (no markings) or only the markings (no art). Default: both. */
-  only?: 'art' | 'markings';
+  /**
+   * Draw only the painted art (no markings) or only the markings (no art), or only what lies `'beneath'`
+   * the planet's cube pads and number: the art, label, spaces' wells and anything standing over them, for a
+   * bitmap with the planet's markings over it as vectors (`editableTileSvg`). Default: everything.
+   */
+  only?: 'art' | 'markings' | 'beneath';
   /** `@font-face` rules to embed, so print files set the number and label in their own fonts, not the system's. */
   fontCss?: string;
   /**
@@ -678,8 +682,9 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
   if (t.labelled && o.only !== 'art') parts.push(t.shift(label(spec)));
   if (o.markings && o.only !== 'art') {
     // What stands on the ground goes over the spaces' wells, and the planet's cube pads and number over it.
-    if (ground?.standing) parts.push(t.marks('spaces'), ground.standing, ...(o.markings === 'spaces' ? [] : [t.marks('planet')]));
-    else parts.push(t.marks());
+    const planet = o.markings === 'spaces' || o.only === 'beneath' ? [] : [t.marks('planet')];
+    if (ground?.standing) parts.push(t.marks('spaces'), ground.standing, ...planet);
+    else parts.push(planet.length ? t.marks() : t.marks('spaces'));
   }
 
   const all = join(...parts);
@@ -792,20 +797,22 @@ export function tileHasRings(spec: TileSpec): boolean {
 
 /**
  * A tile for Illustrator and other editors that can't render SVG filters: the painted art as an embedded
- * bitmap (pass a PNG data URL of `tileSvg(spec, { only: 'art', bleed })`), with the markings on top as
- * vectors. Each sits in its own named group, which Illustrator opens as layers.
+ * bitmap (pass a PNG data URL of `tileSvg(spec, { only: 'art', bleed })`), with the label and markings on
+ * top as vectors. Each sits in its own named group, which Illustrator opens as layers. When the bitmap is
+ * of all that's `beneath` (`only: 'beneath'`, for a ground whose buildings stand over the spaces' wells),
+ * only the planet's cube pads and number go over it.
  */
 export function editableTileSvg(
   spec: TileSpec,
   artPng: string,
-  o: Pick<TileOptions, 'bleed' | 'markings' | 'shape' | 'planetAt'> = {},
+  o: Pick<TileOptions, 'bleed' | 'markings' | 'shape' | 'planetAt'> & { beneath?: boolean } = {},
 ): string {
   const b = o.bleed ? TILE.bleed : 0;
   const w = TILE.size + 2 * b;
   const area: Box = { x: -b, y: -b, w, h: w };
   const t = tileLayout(spec, o);
-  const marks = o.markings ? t.marks() : { defs: '', body: '' };
-  const flavour = t.labelled ? t.shift(label(spec)).body : '';
+  const marks = o.markings ? t.marks(o.beneath ? 'planet' : undefined) : { defs: '', body: '' };
+  const flavour = t.labelled && !o.beneath ? t.shift(label(spec)).body : '';
   // A hex tile's die-cut line on a layer of its own, for the print service (a square tile is cut at the trim).
   const cut = t.shape === 'hex' ? `<g id="cut">${dieLine(HEX_TILE_CUT)}</g>` : '';
   return document(
