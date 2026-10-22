@@ -409,6 +409,17 @@ const BUILDING_GRADIENTS =
     [0.9, 'rgb(158,0,125)'],
     [1, 'rgb(128,0,128)', 0],
   ]) +
+  radial('rg-nose', [
+    [0, 'rgb(255,170,235)'],
+    [0.5, 'rgb(240,170,225)'],
+    [1, 'rgb(205,170,205)'],
+  ]) +
+  // A pad's deck, darkened (blue is brightness) where engines have fired on it.
+  radial('rg-scorch', [
+    [0, 'rgb(192,160,40)'],
+    [0.45, 'rgb(192,160,90)'],
+    [0.8, H.deck],
+  ]) +
   radial('rg-frost', [
     [0, 'rgb(0,210,225)', 0.9],
     [1, 'rgb(0,210,225)', 0],
@@ -828,29 +839,208 @@ function fissures(r: Rng, count: number, from: number, reach: number): Part {
   return { grade, paint };
 }
 
-/** A landing pad ringed in amber, now and then with a lander standing on it. */
-function landingPad(lander: boolean, light: string): Part {
-  const legs = [45, 135, 225, 315].map((a) => toward(a, 0.11));
+/** Four landing legs splayed out to `reach`, each on a foot. */
+const legs = (reach: number, angles = [45, 135, 225, 315]) =>
+  angles
+    .map((a) => {
+      const [x, y] = [reach * Math.cos((a * Math.PI) / 180), reach * Math.sin((a * Math.PI) / 180)];
+      return `<path d="M0,0 L${n(x)},${n(y)}" stroke="${H.pipe}" stroke-width="1.3"/>` + disc(x, y, 1.5, H.pipe);
+    })
+    .join('');
+
+/** A rocket stood on its tail, seen from above: the nose high in the middle, four fins and four legs, banded. */
+const rocket = (r: Rng): Part => {
+  const band = r.pick(['#e8322a', '#2a2d30', '#2f6fd0']);
+  const fins = [0, 90, 180, 270].map((a) => `<path d="M0,0 L9,0" transform="rotate(${a})"`);
+  return {
+    heights: legs(9.5) + fins.map((f) => `${f} stroke="rgb(205,160,200)" stroke-width="1.8"/>`).join('') + disc(0, 0, 5.4, 'url(#rg-nose)'),
+    tint: fins.map((f) => `${f} stroke="${band}" stroke-width="2.2"/>`).join('') + disc(0, 0, 5.6, '#f2f2ee'),
+    paint:
+      `<circle r="3.9" fill="none" stroke="${band}" stroke-width="0.9" opacity="0.85"/>` +
+      `<path d="M-5.2,0 H5.2" stroke="#1e2426" stroke-width="0.25" opacity="0.4"/>` +
+      disc(-1.5, -1.5, 1.6, '#fff', ' opacity="0.55" filter="url(#rg-soft1)"'),
+  };
+};
+
+/** A spaceplane: delta wings, a dark nose and its leading edges heat-tiled. */
+const spaceplane = (): Part => {
+  const wing = 'M11,0 L1,-3 L-8,-10 L-10,-10 L-9,0 L-10,10 L-8,10 L1,3 Z';
+  const body = 'M12,0 C10,-2.2 4,-2.6 -10,-2.4 L-10,2.4 C4,2.6 10,2.2 12,0 Z';
+  return {
+    heights: `<path d="${wing}" fill="rgb(192,170,205)"/><path d="${body}" fill="rgb(222,170,215)"/>`,
+    tint: `<path d="${wing}" fill="#ecebe6" stroke="#ecebe6" stroke-width="0.6"/>`,
+    paint:
+      '<path d="M1,-3 L-8,-10 M1,3 L-8,10" stroke="#25272a" stroke-width="1.1" stroke-linecap="round" opacity="0.85"/>' +
+      '<path d="M12,0 C11,-1.6 9,-2 7,-2.1 L7,2.1 C9,2 11,1.6 12,0 Z" fill="#25272a" opacity="0.9"/>' +
+      '<path d="M6,-1 L4,-1.2 L4,1.2 L6,1 Z" fill="#9fd8ff" opacity="0.8"/>' +
+      '<path d="M-3,-5 L-7,-5 M-3,5 L-7,5" stroke="#e8322a" stroke-width="0.7" opacity="0.7"/>' +
+      disc(-10.5, -1.2, 0.9, '#ff9a2a', ' opacity="0.7"') +
+      disc(-10.5, 1.2, 0.9, '#ff9a2a', ' opacity="0.7"'),
+  };
+};
+
+/** A squat lander, its body wrapped in gold foil, an aerial on top. */
+const lander = (): Part => {
+  const hex = [0, 60, 120, 180, 240, 300]
+    .map((a) => `${n(5 * Math.cos((a * Math.PI) / 180))},${n(5 * Math.sin((a * Math.PI) / 180))}`)
+    .join(' ');
+  return {
+    heights: legs(9) + `<polygon points="${hex}" fill="rgb(215,90,190)"/>` + disc(1.5, -1, 1.8, 'rgb(240,150,215)'),
+    tint: `<polygon points="${hex}" fill="#d9a531" stroke="#d9a531" stroke-width="0.6"/>` + disc(1.5, -1, 2, '#e9ecee'),
+    paint:
+      `<polygon points="${hex}" fill="none" stroke="#5b3a08" stroke-width="0.4" opacity="0.6"/>` +
+      '<path d="M-3,2 L0,3.5 L2.5,1.5" stroke="#fff3c0" stroke-width="0.5" fill="none" opacity="0.6"/>' +
+      lamp(-2.5, -2, '#e8322a'),
+  };
+};
+
+/** A landing pad ringed in amber, scorched where engines fired on it, mostly with a ship standing on it. */
+function landingPad(r: Rng, light: string): Part {
   const lamps = [0, 90, 180, 270].map((a) => toward(a, 0.19));
+  const ship = r.chance(0.4) ? r.pick([rocket, rocket, spaceplane, lander])(r) : undefined;
   return {
     extent: 15,
-    grade: graded(0, 0, 20),
-    heights:
-      disc(0, 0, 15, H.apron) +
-      disc(0, 0, 14, H.deck) +
-      (lander
-        ? legs
-            .map((l) => `<path d="M0,0 L${n(l.x)},${n(l.y)}" stroke="${H.pipe}" stroke-width="1.4"/>` + disc(l.x, l.y, 1.6, H.pipe))
-            .join('') + disc(0, 0, 5, 'url(#rg-dome)')
-        : ''),
-    tint: disc(0, 0, 15, '#8d969c') + (lander ? disc(0, 0, 5.5, '#f2f2f2') : ''),
-    paint:
-      '<circle r="11" fill="none" stroke="#F2B233" stroke-width="1.2" stroke-dasharray="4 2.6" opacity="0.8"/>' +
-      (lander
-        ? '<circle r="3.2" fill="none" stroke="#e8322a" stroke-width="1"/>'
-        : '<path d="M-4,-4 V4 M4,-4 V4 M-4,0 H4" stroke="#F2B233" stroke-width="1.3" opacity="0.85"/>') +
-      lamps.map((l) => lamp(l.x, l.y, light)).join(''),
+    ...merged([
+      {
+        grade: graded(0, 0, 20),
+        heights: disc(0, 0, 15, H.apron) + disc(0, 0, 14, 'url(#rg-scorch)'),
+        tint: disc(0, 0, 15, '#8d969c'),
+        paint:
+          '<circle r="11" fill="none" stroke="#F2B233" stroke-width="1.2" stroke-dasharray="4 2.6" opacity="0.8"/>' +
+          (ship ? '' : '<path d="M-4,-4 V4 M4,-4 V4 M-4,0 H4" stroke="#F2B233" stroke-width="1.3" opacity="0.85"/>') +
+          lamps.map((l) => lamp(l.x, l.y, light)).join(''),
+      },
+      ...(ship ? [placed(0, 0, ship, r.range(0, 360))] : []),
+    ]),
   };
+}
+
+/** A six-wheeled rover, facing +x: a white body, a solar deck, its mast and headlights. */
+const rover = (): Part => {
+  const wheels = [-3.4, 0, 3.4].flatMap((x) => [disc(x, -3.6, 1.3, 'rgb(170,60,60)'), disc(x, 3.6, 1.3, 'rgb(170,60,60)')]).join('');
+  return {
+    heights: wheels + box(0, 0, 9, 5.6, 1, 'rgb(196,150,195)') + box(-1, 0, 5, 4.4, 0.4, H.panel) + disc(3, -1.6, 1, 'rgb(225,120,205)'),
+    tint:
+      [-3.4, 0, 3.4].map((x) => box(x, 0, 2.4, 9.4, 1, '#2a282c')).join('') +
+      box(0, 0, 9.4, 6, 1, '#e9e4da') +
+      box(-1, 0, 5, 4.4, 0.4, '#2448b8'),
+    paint:
+      box(-1, 0, 5, 4.4, 0.4, 'none', ' stroke="#bfe6ff" stroke-width="0.25" opacity="0.6"') +
+      disc(3, -1.6, 0.5, '#1e2426') +
+      glow(5.5, -1.6, 1.8, '#fff6e0', 0.6, 'rg-soft1') +
+      glow(5.5, 1.6, 1.8, '#fff6e0', 0.6, 'rg-soft1') +
+      disc(4.6, -1.6, 0.45, '#fffbe8') +
+      disc(4.6, 1.6, 0.45, '#fffbe8'),
+  };
+};
+
+/** Two or three crates stacked by a building, in the containers' colours. */
+function crates(r: Rng): Part {
+  let heights = '';
+  let tint = '';
+  let paint = '';
+  for (let i = r.int(2, 4); i > 0; i--) {
+    const [x, y, s, turn] = [r.range(-3.5, 3.5), r.range(-3.5, 3.5), r.range(2.6, 3.8), r.range(-25, 25)];
+    const at = ` transform="rotate(${n(turn)} ${n(x)} ${n(y)})"`;
+    heights += box(x, y, s, s, 0.3, `rgb(${r.int(170, 200)},150,190)`, at);
+    tint += box(x, y, s, s, 0.3, r.pick(['#d9622b', '#e8e2d4', '#2f6fd0', '#c9a227', '#7a7f84']), at);
+    paint += `<path d="M${n(x - s / 2)},${n(y)} H${n(x + s / 2)}"${at} stroke="#000" stroke-width="0.25" opacity="0.35"/>`;
+  }
+  return { heights, tint, paint };
+}
+
+/** A survey beacon: a thin post on a tripod, its light blinking. */
+const beacon = (r: Rng, light: string): Part => ({
+  heights: legs(2, [90, 210, 330]) + disc(0, 0, 0.9, 'rgb(250,120,200)'),
+  tint: disc(0, 0, 2.6, '#e9ecee'),
+  paint: lamp(0, 0, r.pick([light, '#ff3b3b'])),
+});
+
+/** An old probe from before the bases, long dead and dusty, its parachute lying spread out on the ground where it came down. */
+function probe(r: Rng): Part {
+  const [px, py] = [r.range(14, 22), r.range(-6, 6)];
+  const gores = Array.from({ length: 10 }, (_, i) => {
+    const [a, b] = [(i * 36 * Math.PI) / 180, ((i + 1) * 36 * Math.PI) / 180];
+    return `<path d="M${n(px)},${n(py)} L${n(px + 7 * Math.cos(a))},${n(py + 7 * Math.sin(a))} A7,7 0 0 1 ${n(px + 7 * Math.cos(b))},${n(py + 7 * Math.sin(b))} Z" fill="${i % 2 ? '#e8e2d4' : '#d9622b'}"/>`;
+  }).join('');
+  // Centred between the probe and its chute.
+  return placed(-px / 2, -py / 2, {
+    // The chute lies flat in the dust, folded where it fell: part of the ground, lit with it.
+    grade:
+      `<ellipse cx="${n(px)}" cy="${n(py)}" rx="7.5" ry="7" fill="rgb(140,200,170)" filter="url(#rg-soft1)"/>` +
+      `<path d="M${n(px - 7)},${n(py)} L0,0 M${n(px - 5)},${n(py - 5)} L0,0 M${n(px - 5)},${n(py + 5)} L0,0" stroke="rgb(132,120,170)" stroke-width="0.4"/>`,
+    heights: legs(5.5, [30, 150, 270]) + square(0, 0, 5, 0.6, 'rgb(200,90,150)') + disc(-1, 1, 2.6, 'rgb(215,170,190)'),
+    tint: square(0, 0, 5.4, 0.6, '#b89a5a') + disc(-1, 1, 2.8, '#c9c4bc'),
+    paint:
+      `<g opacity="0.7" style="mix-blend-mode: multiply">${gores}</g>` +
+      `<circle cx="${n(px)}" cy="${n(py)}" r="7" fill="#c9783f" opacity="0.25"/>`,
+  });
+}
+
+/** Tyre tracks behind a rover at p facing `turn`: two treads wandering back the way it came, sunk and darkened, until they leave the tile. */
+function tyreTracks(r: Rng, p: Spot, turn: number, centre: Spot): Part {
+  const pts: Spot[] = [];
+  let [x, y, a] = [p.x, p.y, ((turn + 180) * Math.PI) / 180];
+  for (let i = r.int(6, 14); i > 0 && inside(centre.x + x, centre.y + y) > 2; i--) {
+    pts.push({ x, y });
+    a += r.range(-0.35, 0.35);
+    [x, y] = [x + 6 * Math.cos(a), y + 6 * Math.sin(a)];
+  }
+  if (pts.length < 2) return {};
+  const tread = (side: number) =>
+    pts
+      .map((q, i) => {
+        const [u, v] = [pts[Math.min(i + 1, pts.length - 1)], pts[Math.max(i - 1, 0)]];
+        const len = Math.hypot(u.x - v.x, u.y - v.y) || 1;
+        return `${i ? 'L' : 'M'}${n(q.x - (side * (u.y - v.y)) / len)},${n(q.y + (side * (u.x - v.x)) / len)}`;
+      })
+      .join(' ');
+  return {
+    grade: [-5, 5]
+      .map((s) => `<path d="${tread(s)}" fill="none" stroke="rgb(124,100,108)" stroke-width="1.3" stroke-linejoin="round" opacity="0.6"/>`)
+      .join(''),
+  };
+}
+
+/** A clear circle where something stands, or a link's line. */
+type Taken = Spot & { r: number };
+
+/**
+ * Small things round a base, and out past it: a rover or two with their tracks, crates by the buildings,
+ * survey beacons, now and then an old probe. Each placed on the tile (the planet's space at `centre`),
+ * clear of what's `taken` and the `links`, or left out.
+ */
+function incidentals(r: Rng, centre: Spot, taken: Taken[], links: [Spot, Spot][], hub: number, light: string): Part[] {
+  const spot = (reach: number, near?: [number, number]): Spot | undefined => {
+    for (let i = 0; i < 60; i++) {
+      const p = near
+        ? toward(r.range(0, 360), r.range(...near) / SPACE)
+        : { x: r.range(0, SIZE) - centre.x, y: r.range(0, SIZE) - centre.y };
+      if (inside(centre.x + p.x, centre.y + p.y) < reach + 2) continue;
+      if (taken.some((f) => Math.hypot(p.x - f.x, p.y - f.y) < reach + f.r + GAP)) continue;
+      if (links.some(([s, t]) => gap(p, s, t) < reach + GAP + 2)) continue;
+      taken.push({ ...p, r: reach });
+      return p;
+    }
+    return undefined;
+  };
+  const tracks: Part[] = [];
+  const out: Part[] = [];
+  const add = (p: Spot | undefined, part: Part, turn = 0, scale = 1) => p && out.push(placed(p.x, p.y, part, turn, scale));
+  const roving = [...(r.chance(0.5) ? [[hub + 8, hub + 30]] : []), ...(r.chance(0.25) ? [undefined] : [])] as (
+    [number, number] | undefined
+  )[];
+  for (const near of roving) {
+    const p = spot(8.5, near);
+    if (!p) continue;
+    const turn = r.range(0, 360);
+    tracks.push(tyreTracks(r, p, turn, centre));
+    add(p, rover(), turn, 1.4);
+  }
+  for (let i = r.int(1, 3); i > 0; i--) add(spot(7, [hub + 5, hub + 18]), crates(r), 0, 1.4);
+  for (let i = r.int(0, 3); i > 0; i--) add(spot(4), beacon(r, light), 0, 1.3);
+  if (r.chance(0.2)) add(spot(23), probe(r), r.range(0, 360), 1.25);
+  return [...tracks, ...out];
 }
 
 /** How much larger than drawn a base's outbuildings stand, reaching well into the hexes round it. */
@@ -890,11 +1080,18 @@ function gap(p: Spot, a: Spot, b: Spot): number {
  * until each has stood once, each a little nearer or further out and larger or smaller. Each stands
  * clear of the hub (`hub` across from the planet's space), of the others and their links, and on the
  * tile (the planet's space at `centre` on it): moved further out, or made smaller, until it is, or left
- * out if it can't be.
+ * out if it can't be. Where each stands, and its link, go in `taken` and `links`.
  */
-function outskirts(r: Rng, ways: readonly number[], count: number, pool: readonly Annex[], centre: Spot, hub: number): Part[] {
-  const taken: (Spot & { r: number })[] = [];
-  const links: [Spot, Spot][] = [];
+function outskirts(
+  r: Rng,
+  ways: readonly number[],
+  count: number,
+  pool: readonly Annex[],
+  centre: Spot,
+  hub: number,
+  taken: Taken[],
+  links: [Spot, Spot][],
+): Part[] {
   const out: Part[] = [];
   let left = [...pool];
   for (const a of ways.slice(0, count)) {
@@ -948,7 +1145,14 @@ function base(number: number, at: Spot, r: Rng): Drawn | undefined {
   const ways = exits(r, at, number > 0);
   const count = r.pick(SPREAD);
   const centre = { x: SIZE / 2 + at.x * SPACE, y: SIZE / 2 + at.y * SPACE };
-  const outskirtsOf = (hubReach: number, pool: Annex[]) => outskirts(r, ways, count, pool, centre, hubReach);
+  const taken: Taken[] = [];
+  const links: [Spot, Spot][] = [];
+  const outskirtsOf = (hubReach: number, pool: Annex[]) => outskirts(r, ways, count, pool, centre, hubReach, taken, links);
+  // The hub (or the sinkhole) is taken, then the small things go round what stands.
+  const around = (hubReach: number, light: string) => {
+    taken.push({ x: 0, y: 0, r: hubReach });
+    return incidentals(r.fork('incidentals'), centre, taken, links, hubReach, light);
+  };
   // Links start at the hub's edge, so none crosses the cube sockets.
   const tube = (w: number, colour: string) => (a: number, p: Spot) => run(toward(a, 0.3), p, w * r.range(0.8, 1.2), colour);
   const road = (a: number, p: Spot): Part => {
@@ -959,7 +1163,7 @@ function base(number: number, at: Spot, r: Rng): Drawn | undefined {
     };
   };
   const common = (light: string): Annex[] => [
-    annex(1.2, [0.7, 0.8], tube(3, '#8d969c'), (r) => landingPad(r.chance(0.6), light), 1.15),
+    annex(1.2, [0.7, 0.8], tube(3, '#8d969c'), (r) => landingPad(r, light), 1.15),
     annex(0.8, [0.6, 0.78], tube(2.5, '#8d969c'), containers, 1.5),
     annex(0.6, [0.55, 0.72], tube(2, '#8d969c'), () => dish(light), 1.2),
   ];
@@ -970,6 +1174,7 @@ function base(number: number, at: Spot, r: Rng): Drawn | undefined {
         fissures(r, r.int(2, 6), 32, r.range(45, 66)),
         crystals(r, r.int(5, 11), 36),
         crystals(r, r.int(0, 4), 60),
+        ...around(58, '#b07bff'),
         {
           paint:
             glow(0, 0, 24, '#6a2cff', 0.6, 'rg-soft6') +
@@ -989,6 +1194,7 @@ function base(number: number, at: Spot, r: Rng): Drawn | undefined {
         // The great dome is the base's middle: its hatch, on top, holds the cube.
         dome(great, '#4a9c7a', '#6dff9e', 22),
         hub(pads, '#9aa3a8', 'rgb(246,160,205)', '#7dffb0'),
+        ...around(great + 2.5, '#7dffb0'),
       ]);
     }
     case 8:
@@ -1000,6 +1206,7 @@ function base(number: number, at: Spot, r: Rng): Drawn | undefined {
           ...common('#ffcf4a'),
         ]),
         hub(pads, '#a59c90'),
+        ...around(32, '#ffcf4a'),
       ]);
     case 9: {
       const frost = r.range(45, 66);
@@ -1015,6 +1222,7 @@ function base(number: number, at: Spot, r: Rng): Drawn | undefined {
           ...common('#7fe9ff'),
         ]),
         hub(pads, '#c4ced4', H.deck, '#7fe9ff'),
+        ...around(40, '#7fe9ff'),
       ]);
     }
     case 10: {
@@ -1058,6 +1266,7 @@ function base(number: number, at: Spot, r: Rng): Drawn | undefined {
             vents.map(([x, y]) => glow(x, y, 5, '#ff4a0a', 0.8) + glow(x, y, 2, '#ffd27a', 1, 'rg-soft1')).join(''),
         },
         hub(pads, '#3a383c', H.dark, '#ff7a1a'),
+        ...around(49, '#ff7a1a'),
       ]);
     }
     default:
@@ -1073,8 +1282,15 @@ const DRAWN: Box = {
   h: BLED.h / SCALE + 2 * MARGIN,
 };
 
-/** A tile's Mars ground over its trim and bleed (mm, the trim's top left at 0, 0), its base standing `at` its planet's space. */
-function regolithArt(spec: TileSpec, at: Spot): Fragment {
+/**
+ * Which of a tile's Mars layers to draw: the `ground` with everything on it, or only what stands on it
+ * (`standing`: buildings, ships and rovers, cut to their outlines, without their shadows or the glow round
+ * them), to go over the spaces' wells, so the wells are etched into the ground and not across the buildings.
+ */
+export type RegolithLayer = 'ground' | 'standing';
+
+/** A tile's Mars ground over its trim and bleed (mm, the trim's top left at 0, 0), its base standing `at` its planet's space; or only what stands there. */
+function regolithArt(spec: TileSpec, at: Spot, layer: RegolithLayer = 'ground'): Fragment {
   const r = rng(spec.seed).fork('regolith');
   const site = base(spec.number, at, r.fork('base'));
   const [bx, by] = [SIZE / 2 + at.x * SPACE, SIZE / 2 + at.y * SPACE];
@@ -1107,6 +1323,15 @@ function regolithArt(spec: TileSpec, at: Spot): Fragment {
     weather('rg-wx-o', 0.05, r.noiseSeed(), 10, 2.6) +
     weather('rg-wx-p', 0.3, r.noiseSeed(), 1.8, 0.6, 'x="0" y="0" width="100%" height="100%"') +
     weather('rg-wx-d', 0.02, r.noiseSeed(), 14, 0.4);
+  // The buildings' filters are over the tile's area, so they're applied outside the move to the planet's space.
+  const standing = site
+    ? `<g filter="url(#rg-cast)">${place(site.heights)}</g>` +
+      `<g filter="url(#rg-built)">${place(site.heights)}</g>` +
+      place(`<g style="mix-blend-mode: color">${site.tint}</g>`) +
+      `<g filter="url(#rg-dust)" opacity="0.9" style="mix-blend-mode: soft-light">${place(site.heights)}</g>` +
+      place(site.paint)
+    : '';
+  const area = `x="${n(DRAWN.x)}" y="${n(DRAWN.y)}" width="${n(DRAWN.w)}" height="${n(DRAWN.h)}"`;
   return {
     defs:
       GRADIENTS +
@@ -1118,17 +1343,19 @@ function regolithArt(spec: TileSpec, at: Spot): Fragment {
       cast(DRAWN) +
       dust(r.noiseSeed(), DRAWN) +
       CRATERS +
-      RIDGE,
+      RIDGE +
+      // What stands, as a mask: its heights' shapes in white.
+      (layer === 'standing' && site
+        ? `<filter id="rg-white" filterUnits="userSpaceOnUse" ${area}><feFlood flood-color="#fff"/><feComposite in2="SourceAlpha" operator="in"/></filter>` +
+          `<mask id="rg-standing" maskUnits="userSpaceOnUse" ${area}><g filter="url(#rg-white)">${place(site.heights)}</g></mask>`
+        : ''),
     body:
-      `<g transform="scale(${n(SCALE)})"><g filter="url(#rg-ground)">${heights}</g>` +
-      // The buildings' filters are over the tile's area, so they're applied outside the move to the planet's space.
-      (site
-        ? `<g filter="url(#rg-cast)">${place(site.heights)}</g>` +
-          `<g filter="url(#rg-built)">${place(site.heights)}</g>` +
-          place(`<g style="mix-blend-mode: color">${site.tint}</g>`) +
-          `<g filter="url(#rg-dust)" opacity="0.9" style="mix-blend-mode: soft-light">${place(site.heights)}</g>` +
-          place(site.paint)
-        : '') +
+      `<g transform="scale(${n(SCALE)})">` +
+      (layer === 'ground'
+        ? `<g filter="url(#rg-ground)">${heights}</g>${standing}`
+        : site
+          ? `<g mask="url(#rg-standing)">${standing}</g>`
+          : '') +
       '</g>',
   };
 }
@@ -1137,15 +1364,15 @@ function regolithArt(spec: TileSpec, at: Spot): Fragment {
  * A hex tile's Mars ground, in place of its sky and planet, trim 96 × 96 mm and its 3 mm bleed (so a map's
  * clip a touch past the hexes still lands on ground): the planet's building stands `at` its space (in
  * spaces from the tile's middle, x right and y down). No markings: the game draws the cubes and the
- * number over its bays.
+ * number over its bays, and the spaces' wells between the `ground` and the `standing` layer.
  */
-export function regolithSvg(spec: TileSpec, at: Spot = { x: 0, y: 0 }): string {
-  return document(regolithArt(spec, at), BLED, true);
+export function regolithSvg(spec: TileSpec, at: Spot = { x: 0, y: 0 }, layer: RegolithLayer = 'ground'): string {
+  return document(regolithArt(spec, at, layer), BLED, true);
 }
 
 /**
  * A hex tile on Mars as printed (`tileSvg` with the Mars ground for its art): knocked out past its
- * flower, with its markings, the cube pads in the building's bays.
+ * flower, with its markings, the cube pads in the building's bays, and what stands on the ground over the spaces' wells.
  */
 export const regolithTileSvg = (spec: TileSpec, o: Omit<TileOptions, 'shape' | 'ground'> = {}): string =>
-  tileSvg(spec, { ...o, shape: 'hex', ground: (at) => regolithArt(spec, at) });
+  tileSvg(spec, { ...o, shape: 'hex', ground: (at) => regolithArt(spec, at), standing: (at) => regolithArt(spec, at, 'standing') });

@@ -77,10 +77,10 @@ function labels(board: Board, tiles: readonly TileArt[]): string {
  * The spaces and labels of a map, in millimetres, by map: they follow from where its planets are, not from
  * the cubes on them, so a move (a new board) doesn't redraw them.
  */
-const marksByMap = new Map<string, string>();
-function marksOf(board: Board, tiles: readonly TileArt[]): string {
+const marksByMap = new Map<string, { wells: string; labels: string }>();
+function marksOf(board: Board, tiles: readonly TileArt[]) {
   let marks = marksByMap.get(board.mapId);
-  if (marks === undefined) marksByMap.set(board.mapId, (marks = PATTERNS + wells(board) + labels(board, tiles)));
+  if (marks === undefined) marksByMap.set(board.mapId, (marks = { wells: PATTERNS + wells(board), labels: labels(board, tiles) }));
   return marks;
 }
 
@@ -90,7 +90,8 @@ const NO_TILES: TileArt[] = [];
  * A map's tiles in SVG, square or hex, in layers: each tile's sky, its body (planet and moons, or a Void's
  * heart) wherever the planet sits, cut off at the tile's edge, then the seams between hex tiles, the spaces
  * and the labels. The planets' numbers and cubes go on top (BoardArt). A hex map may be on the moon instead
- * (mapLook): moon ground, each tile's building already standing on its planet's space.
+ * (mapLook): moon ground, each tile's building already standing on its planet's space, and drawn again over
+ * the spaces, so the wells are etched into the ground and not across the buildings.
  */
 export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: Board; tiles: TileArt[]; cell: number }) {
   const moon = useMoonMaps() && !!board.hex;
@@ -98,6 +99,7 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
   const skies = useTileImages(tiles, skyLayer);
   // On the moon each tile's ground already has its building, so there are no bodies to load.
   const bodies = useTileImages(moon ? NO_TILES : tiles, 'body');
+  const standing = useTileImages(moon ? tiles : NO_TILES, 'standing');
   const { mid } = placement(board, cell);
   const mm = cell / TILE.cell;
   // A tile's artwork is a whole printed tile, 3 spaces wide, centred on what it draws.
@@ -125,6 +127,7 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
       />
     );
   };
+  const marks = marksOf(board, tiles);
   return (
     <>
       <defs>
@@ -151,7 +154,14 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
           strokeLinecap="round"
         />
       )}
-      <g transform={`scale(${mm})`} dangerouslySetInnerHTML={{ __html: marksOf(board, tiles) }} />
+      <g transform={`scale(${mm})`} dangerouslySetInnerHTML={{ __html: marks.wells }} />
+      {moon &&
+        tiles.map((t) => (
+          <g key={t.tile} clipPath={`url(#map-tile-${t.tile})`}>
+            {art(standing[t.id], mid(t), layerScale('standing'))}
+          </g>
+        ))}
+      <g transform={`scale(${mm})`} dangerouslySetInnerHTML={{ __html: marks.labels }} />
     </>
   );
 });

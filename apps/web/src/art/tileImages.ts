@@ -13,7 +13,7 @@ import { idle, storeImage, storedImage } from './imageStore';
 const SIZE = 576;
 
 /** How much bigger than its tile a layer's image is: the moon ground has the print bleed round it (`regolithSvg`). */
-export const layerScale = (layer: TileLayer) => (layer === 'ground' ? (TILE.size + 2 * TILE.bleed) / TILE.size : 1);
+export const layerScale = (layer: TileLayer) => (layer === 'ground' || layer === 'standing' ? (TILE.size + 2 * TILE.bleed) / TILE.size : 1);
 
 const images = new Map<string, Promise<string>>();
 const decoded = new Map<string, Promise<string>>();
@@ -34,9 +34,10 @@ async function load(id: string, svg: string, size: number): Promise<string> {
  * The layers of a tile the map is drawn from (MapTiles): its sky for square or hex spaces, and its body, the
  * planet and moons or a Void tile's heart, which the map places wherever the planet sits. The spaces,
  * labels and markings are drawn live over them. A hex map in a game is on the moon instead (the Regolith
- * look): each tile is one `ground` layer, with the planet's building standing where the planet sits.
+ * look): each tile is a `ground` layer, with the planet's building standing where the planet sits, and a
+ * `standing` one of only the buildings (and ships and rovers) to go over the spaces' wells.
  */
-export type TileLayer = 'sky-square' | 'sky-hex' | 'body' | 'ground';
+export type TileLayer = 'sky-square' | 'sky-hex' | 'body' | 'ground' | 'standing';
 
 /** A tile to draw: its physical id, and for `ground` where its planet sits, in spaces from its middle. */
 interface TileRef {
@@ -49,7 +50,8 @@ function layerSvg({ id, at }: TileRef, layer: TileLayer): string {
     case 'body':
       return bodySvg(tileSpec(id));
     case 'ground':
-      return regolithSvg(tileSpec(id), at);
+    case 'standing':
+      return regolithSvg(tileSpec(id), at, layer);
     case 'sky-hex':
       return skySvg(tileSpec(id), 'hex');
     case 'sky-square':
@@ -58,7 +60,7 @@ function layerSvg({ id, at }: TileRef, layer: TileLayer): string {
 }
 
 const nameOf = ({ id, at }: TileRef, layer: TileLayer) =>
-  layer === 'ground' && at ? `${id}:${layer}@${at.x.toFixed(3)},${at.y.toFixed(3)}` : `${id}:${layer}`;
+  (layer === 'ground' || layer === 'standing') && at ? `${id}:${layer}@${at.x.toFixed(3)},${at.y.toFixed(3)}` : `${id}:${layer}`;
 
 /** The image URL for a layer of a tile (`p7-01`…), drawing and storing it the first time. */
 function tileImage(tile: TileRef, layer: TileLayer): Promise<string> {

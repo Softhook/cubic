@@ -47,6 +47,8 @@ export interface TileOptions {
    * building standing `at` its space (in spaces from the middle); in trim mm, over the bleed.
    */
   ground?: (at: Spot) => Fragment;
+  /** What stands on the `ground` (its buildings), drawn again over the spaces' wells but under the cube pads and number. */
+  standing?: (at: Spot) => Fragment;
 }
 
 /** The shape of a map's spaces: a tile of 3 × 3 squares, or a 7-hex flower. */
@@ -330,11 +332,16 @@ export function well(cx: number, cy: number, size: number, rx: number, style: We
  * `numberCorner` picks. The planet sits at `at` (spaces from the middle). Plain SVG only (hex colours, no
  * `paint-order` or `dominant-baseline`), so they import into Illustrator as editable vectors.
  */
-function markings(spec: TileSpec, spacesOnly = false, shape: TileShape = 'square', at: Spot = { x: 0, y: 0 }): Fragment {
+function markings(
+  spec: TileSpec,
+  part: 'all' | 'spaces' | 'planet' = 'all',
+  shape: TileShape = 'square',
+  at: Spot = { x: 0, y: 0 },
+): Fragment {
   const mm = (p: Spot) => ({ x: MID + p.x * TILE.cell, y: MID + p.y * TILE.cell });
   const hasPlanet = spec.number > 0;
   let body = '';
-  for (const spot of Object.values(TILE_SPOTS[shape])) {
+  for (const spot of part === 'planet' ? [] : Object.values(TILE_SPOTS[shape])) {
     const away = Math.hypot(spot.x - at.x, spot.y - at.y);
     if (hasPlanet && away < 1e-6) continue;
     const { x, y } = mm(spot);
@@ -346,7 +353,7 @@ function markings(spec: TileSpec, spacesOnly = false, shape: TileShape = 'square
     // Ships on the Void gain Research: a faint flask on each space.
     if (spec.number === 0) body += voidFlask(x, y);
   }
-  if (hasPlanet && !spacesOnly) {
+  if (hasPlanet && part !== 'spaces') {
     const p = mm(at);
     for (const q of cubePadCentres(spec.number - 6, p.x, p.y)) body += well(q.x, q.y, CUBE_PAD.size, CUBE_PAD.corner, WELL.cube);
     const num = numberPlacement(spec.number, shape);
@@ -669,7 +676,12 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
         t.shift(bodyArt(spec, id)),
       ];
   if (t.labelled && o.only !== 'art') parts.push(t.shift(label(spec)));
-  if (o.markings && o.only !== 'art') parts.push(t.marks());
+  const standing = o.ground && o.standing ? o.standing(t.at) : undefined;
+  if (o.markings && o.only !== 'art') {
+    // What stands on the ground goes over the spaces' wells, and the planet's cube pads and number over it.
+    if (standing) parts.push(t.marks('spaces'), standing, ...(o.markings === 'spaces' ? [] : [t.marks('planet')]));
+    else parts.push(t.marks());
+  } else if (standing) parts.push(standing);
 
   const all = join(...parts);
   // A hex tile's art is knocked out past its flower, so the paper shows its shape: at the cut on screen
@@ -702,7 +714,7 @@ function tileLayout(spec: TileSpec, o: Pick<TileOptions, 'shape' | 'planetAt' | 
     p,
     labelled: spec.number > 0 && tileLabelFits(shape, at),
     shift: (f: Fragment) => moved(f, p.x - MID, p.y - MID),
-    marks: () => markings(spec, o.markings === 'spaces', shape, at),
+    marks: (part: 'all' | 'spaces' | 'planet' = o.markings === 'spaces' ? 'spaces' : 'all') => markings(spec, part, shape, at),
   };
 }
 
