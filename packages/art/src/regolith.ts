@@ -316,6 +316,11 @@ const H = {
 };
 
 const BUILDING_GRADIENTS =
+  `<linearGradient id="rg-vault" x2="0" y2="1">${stops([
+    [0, 'rgb(165,255,195)'],
+    [0.5, 'rgb(225,255,220)'],
+    [1, 'rgb(165,255,195)'],
+  ])}</linearGradient>` +
   radial('rg-sphere', [
     [0, 'rgb(255,60,235)'],
     [0.8, 'rgb(228,60,215)'],
@@ -460,12 +465,48 @@ function dome(size: number, glass: string, plants: string): Part {
   };
 }
 
-/** Solar panels in two rows, across the way they're turned. */
-function solar(): Part {
-  const cells = [-1, 0, 1].flatMap((i) => [-1, 1].map((j) => ({ x: i * 10.5, y: j * 4.2 })));
-  const each = (f: (c: Spot) => string) => cells.map(f).join('');
+/** Up to `count` things in a row `gap` apart, centred on 0. */
+const row = (count: number, gap: number) => Array.from({ length: count }, (_, i) => (i - (count - 1) / 2) * gap);
+
+/** One to three greenhouse halls side by side: vaulted violet glass, magenta grow lights under it. */
+function greenhouses(r: Rng): Part {
+  const ys = row(r.pick([1, 2, 2, 3]), 13);
+  const len = r.range(26, 38);
+  const ribs = row(Math.floor(len / 4.5), 4.5)
+    .map((x) => `M${n(x)},-4.5 V4.5`)
+    .join(' ');
   return {
-    grade: graded(0, 0, 22),
+    grade: graded(0, 0, len / 2 + 8),
+    heights: ys
+      .map((y) => box(0, y, len + 2, 10.5, 5, H.apron, ' filter="url(#rg-soft1)"') + box(0, y, len, 9, 4.5, 'url(#rg-vault)'))
+      .join(''),
+    tint: ys.map((y) => box(0, y, len + 2, 10.5, 5, '#a77bff')).join(''),
+    paint: ys
+      .map(
+        (y) =>
+          `<ellipse cx="0" cy="${n(y)}" rx="${n(len * 0.4)}" ry="3" fill="#ff5fd2" opacity="0.4" filter="url(#rg-soft1)" style="mix-blend-mode: screen"/>` +
+          `<path d="${ribs}" transform="translate(0,${n(y)})" stroke="#f4e8ff" stroke-width="0.35" opacity="0.45"/>`,
+      )
+      .join(''),
+  };
+}
+
+/** Small blue domes, one to three, joined in a line. */
+function domelets(r: Rng): Part {
+  const xs = row(r.int(1, 3), 21);
+  return merged([
+    ...(xs.length > 1 ? [run({ x: xs[0], y: 0 }, { x: xs[xs.length - 1], y: 0 }, 5, '#a7b0b6')] : []),
+    ...xs.map((x) => placed(x, r.range(-3, 3), dome(r.range(6.5, 10), '#3ab8e8', '#8fe8ff'))),
+  ]);
+}
+
+/** Solar panels, one or two rows of two to four, across the way they're turned. */
+function solar(r: Rng): Part {
+  const cells = row(r.int(2, 4), 10.5).flatMap((x) => row(r.pick([1, 2, 2]), 8.4).map((y) => ({ x, y })));
+  const each = (f: (c: Spot) => string) => cells.map(f).join('');
+  const span = Math.max(...cells.map((c) => Math.abs(c.x))) + 6;
+  return {
+    grade: graded(0, 0, span + 6),
     heights: box(0, 0, 3, 18, 0.5, H.pipe) + each((c) => box(c.x, c.y, 9.5, 7, 0.5, H.panel)),
     tint: each((c) => box(c.x, c.y, 9.5, 7, 0.5, '#2448b8')),
     paint:
@@ -487,39 +528,74 @@ const tank = (x: number, y: number, r: number): Part => ({
     disc(x - r * 0.35, y - r * 0.35, r * 0.28, '#fffbe8', ' opacity="0.7" filter="url(#rg-soft1)"'),
 });
 
-/** A tall flare stack, burning off gas. */
-const flare = (): Part => ({
-  grade: graded(0, 0, 14),
-  heights: square(0, 0, 11, 1, H.dark) + disc(0, 0, 3.2, 'rgb(250,120,200)'),
-  tint: square(0, 0, 11.5, 1, '#55504a') + disc(0, 0, 3.4, '#c9c4bc'),
-  paint:
-    glow(-1, -1, 11, '#ff6a10', 0.55, 'rg-soft6') +
-    glow(-1, -1, 5, '#ff9a2a', 0.85) +
-    glow(-1, -1, 2.2, '#ffe9a0', 1, 'rg-soft1') +
-    disc(-1, -1, 0.9, '#fff'),
-});
+/** Two to four gold tanks in a huddle, sizes mixed. */
+function tankFarm(r: Rng): Part {
+  const count = r.int(2, 4);
+  const turn = r.range(0, 360);
+  const spots = Array.from({ length: count }, (_, i) => {
+    const a = ((turn + (360 * i) / count) * Math.PI) / 180;
+    const d = count === 2 ? 11 : 14;
+    return { x: d * Math.cos(a), y: d * Math.sin(a) };
+  });
+  return merged([{ grade: graded(0, 0, 32) }, ...spots.map((s) => tank(s.x, s.y, r.range(8.5, 12.5))), { paint: lamp(0, 0, '#ffcf4a') }]);
+}
 
-/** Process columns in a row on a platform, copper. */
-const columns = (): Part => ({
-  grade: graded(0, 0, 22),
-  heights: box(0, 0, 38, 13, 2, H.deck) + [-13.5, -4.5, 4.5, 13.5].map((x, i) => disc(x, 0, i % 2 ? 4 : 4.8, 'url(#rg-sphere)')).join(''),
-  tint: box(0, 0, 38.5, 13.5, 2, '#8e8a86') + [-13.5, -4.5, 4.5, 13.5].map((x, i) => disc(x, 0, i % 2 ? 4.3 : 5.1, '#d4802a')).join(''),
-  paint: [-13.5, -4.5, 4.5, 13.5].map((x) => disc(x - 1.4, -1.4, 1.2, '#fff4d8', ' opacity="0.7"')).join('') + lamp(-17, 5, '#ff3b2a'),
-});
+/** One or two tall flare stacks, burning off gas. */
+function flares(r: Rng): Part {
+  const xs = row(r.pick([1, 1, 2]), 15);
+  return merged(
+    xs.map((x) =>
+      placed(x, 0, {
+        grade: graded(0, 0, 14),
+        heights: square(0, 0, 11, 1, H.dark) + disc(0, 0, 3.2, 'rgb(250,120,200)'),
+        tint: square(0, 0, 11.5, 1, '#55504a') + disc(0, 0, 3.4, '#c9c4bc'),
+        paint:
+          glow(-1, -1, 11, '#ff6a10', 0.55, 'rg-soft6') +
+          glow(-1, -1, 5, '#ff9a2a', 0.85) +
+          glow(-1, -1, 2.2, '#ffe9a0', 1, 'rg-soft1') +
+          disc(-1, -1, 0.9, '#fff'),
+      }),
+    ),
+  );
+}
 
-/** An open pit stepping down to glowing ice. */
-const pit = (): Part => ({
-  grade: graded(0, 0, 30),
-  heights: [24, 18.5, 13, 8]
-    .map((r, i) => disc(0, 0, r, `rgb(${116 - i * 16},${170 + i * 20},${150 + i * 20})`, i ? '' : ' filter="url(#rg-wx-y)"'))
-    .join(''),
-  tint: disc(0, 0, 24, '#bfd9e6'),
-  paint:
-    glow(0, 0, 13, '#3fe6ff', 0.55, 'rg-soft6') +
-    glow(0, 0, 6.5, '#7ff5ff', 0.85) +
-    `<path d="M-3,-2 L1,-4 L4,0 L1,3 L-2,2 Z" fill="#effeff" opacity="0.85" filter="url(#rg-soft1)"/>` +
-    `<circle r="24" fill="#eaf6ff" opacity="0.18" filter="url(#rg-soft3)" style="mix-blend-mode: screen"/>`,
-});
+/** Three to five process columns in a row on a platform, copper. */
+function columns(r: Rng): Part {
+  const xs = row(r.int(3, 5), 9);
+  const len = xs.length * 9 + 2;
+  const size = xs.map(() => r.range(3.6, 5.2));
+  return {
+    grade: graded(0, 0, len / 2 + 6),
+    heights: box(0, 0, len, 13, 2, H.deck) + xs.map((x, i) => disc(x, 0, size[i], 'url(#rg-sphere)')).join(''),
+    tint: box(0, 0, len + 0.5, 13.5, 2, '#8e8a86') + xs.map((x, i) => disc(x, 0, size[i] + 0.3, '#d4802a')).join(''),
+    paint: xs.map((x) => disc(x - 1.4, -1.4, 1.2, '#fff4d8', ' opacity="0.7"')).join('') + lamp(-len / 2 + 2, 5, '#ff3b2a'),
+  };
+}
+
+/** An open pit stepping down to glowing ice, three to five benches deep. */
+function pit(r: Rng): Part {
+  const steps = r.int(3, 5);
+  const outer = r.range(19, 26);
+  return {
+    grade: graded(0, 0, outer + 6),
+    heights: Array.from({ length: steps }, (_, i) => {
+      const k = i / steps;
+      return disc(
+        0,
+        0,
+        outer * (1 - k * 0.8),
+        `rgb(${n(116 - k * 64)},${n(170 + k * 80)},${n(150 + k * 80)})`,
+        i ? '' : ' filter="url(#rg-wx-y)"',
+      );
+    }).join(''),
+    tint: disc(0, 0, outer, '#bfd9e6'),
+    paint:
+      glow(0, 0, outer * 0.55, '#3fe6ff', 0.55, 'rg-soft6') +
+      glow(0, 0, outer * 0.27, '#7ff5ff', 0.85) +
+      `<path d="M-3,-2 L1,-4 L4,0 L1,3 L-2,2 Z" fill="#effeff" opacity="0.85" filter="url(#rg-soft1)"/>` +
+      `<circle r="${n(outer)}" fill="#eaf6ff" opacity="0.18" filter="url(#rg-soft3)" style="mix-blend-mode: screen"/>`,
+  };
+}
 
 /** A drill rig: a lattice tower, its light on top. */
 const rig = (): Part => ({
@@ -532,16 +608,16 @@ const rig = (): Part => ({
   paint: `<path d="M-6.5,-6.5 L6.5,6.5 M6.5,-6.5 L-6.5,6.5" stroke="#fff" stroke-width="0.4" opacity="0.5"/>` + lamp(0, 0, '#ff3b3b'),
 });
 
-/** Ice silos, white with blue caps. */
-const silos = (): Part => {
-  const xs = [-11, 0, 11];
+/** Two to four ice silos, white with blue caps. */
+function silos(r: Rng): Part {
+  const xs = row(r.int(2, 4), 11);
   return {
-    grade: graded(0, 0, 20),
+    grade: graded(0, 0, xs.length * 5.5 + 8),
     heights: xs.map((x) => disc(x, 0, 5.6, 'url(#rg-dome)')).join(''),
     tint: xs.map((x) => disc(x, 0, 6, '#eef5fb')).join(''),
     paint: xs.map((x) => disc(x, 0, 2.2, '#2f8fff', ' opacity="0.9"') + disc(x - 0.6, -0.6, 0.7, '#dff1ff')).join(''),
   };
-};
+}
 
 /** A cooling tower: a dark ring round a hot glowing throat. */
 const coolingTower = (): Part => ({
@@ -555,22 +631,27 @@ const coolingTower = (): Part => ({
     `<circle r="12.3" fill="none" stroke="#ff7a1a" stroke-width="0.5" stroke-dasharray="1 2.2" opacity="0.8"/>`,
 });
 
-/** Radiator fins, black, heat glowing between them. */
-const radiators = (): Part => {
-  const xs = [-12, -6, 0, 6, 12];
+/** Three to six radiator fins, black, heat glowing between them. */
+function radiators(r: Rng): Part {
+  const xs = row(r.int(3, 6), 6);
+  const len = r.range(18, 26);
+  const gaps = xs.slice(1).map((x) => x - 3);
   return {
-    grade: graded(0, 0, 22),
-    heights: xs.map((x) => box(x, 0, 3.2, 24, 0.6, 'rgb(220,150,70)')).join(''),
-    tint: box(0, 0, 28, 25, 1, '#2a282c'),
+    grade: graded(0, 0, Math.max(len / 2, xs.length * 3) + 8),
+    heights: xs.map((x) => box(x, 0, 3.2, len, 0.6, 'rgb(220,150,70)')).join(''),
+    tint: box(0, 0, xs.length * 6 - 2, len + 1, 1, '#2a282c'),
     paint:
-      [-9, -3, 3, 9]
+      gaps
         .map(
           (x) =>
-            `<path d="M${x},-11 V11" stroke="#ff6a00" stroke-width="1.6" opacity="0.6" filter="url(#rg-soft1)" style="mix-blend-mode: screen"/>`,
+            `<path d="M${n(x)},${n(-len / 2 + 1)} V${n(len / 2 - 1)}" stroke="#ff6a00" stroke-width="1.6" opacity="0.6" filter="url(#rg-soft1)" style="mix-blend-mode: screen"/>`,
         )
-        .join('') + [-9, -3, 3, 9].map((x) => `<path d="M${x},-10 V10" stroke="#ffc060" stroke-width="0.4" opacity="0.9"/>`).join(''),
+        .join('') +
+      gaps
+        .map((x) => `<path d="M${n(x)},${n(-len / 2 + 2)} V${n(len / 2 - 2)}" stroke="#ffc060" stroke-width="0.4" opacity="0.9"/>`)
+        .join(''),
   };
-};
+}
 
 /** A conduit carrying power, glowing along its length. */
 function conduit(a: Spot, b: Spot, colour: string): Part {
@@ -582,6 +663,33 @@ function conduit(a: Spot, b: Spot, colour: string): Part {
       `<path d="${d}" stroke="#ffe2a0" stroke-width="0.6" stroke-dasharray="3 2"/>`,
   };
 }
+
+/** Cargo containers stacked about, three to seven, in the usual colours. */
+function containers(r: Rng): Part {
+  let heights = '';
+  let tint = '';
+  let paint = '';
+  for (let i = r.int(3, 7); i > 0; i--) {
+    const [x, y] = [r.range(-11, 11), r.range(-7, 7)];
+    const turn = r.pick([0, 0, 90, r.range(-20, 20)]);
+    const at = `translate(${n(x)},${n(y)}) rotate(${n(turn)})`;
+    heights += `<g transform="${at}">${box(0, 0, 11, 5, 0.5, r.chance(0.3) ? 'rgb(214,150,200)' : 'rgb(182,150,200)')}</g>`;
+    tint += `<g transform="${at}">${box(0, 0, 11, 5, 0.5, r.pick(['#d9622b', '#e8e2d4', '#2f6fd0', '#c9a227', '#b8322a']))}</g>`;
+    paint += `<g transform="${at}"><path d="M-3.5,-2.5 V2.5 M0,-2.5 V2.5 M3.5,-2.5 V2.5" stroke="#000" stroke-width="0.3" opacity="0.3"/></g>`;
+  }
+  return { grade: graded(0, 0, 20), heights, tint, paint };
+}
+
+/** A dish aerial on its mount, turned to the sky. */
+const dish = (light: string): Part => ({
+  grade: graded(0, 0, 13),
+  heights:
+    disc(0, 0, 9, H.apron, ' filter="url(#rg-soft1)"') +
+    disc(0, 0, 8, 'rgb(236,150,215)') +
+    disc(1, 1, 5.5, 'rgb(196,200,215)', ' filter="url(#rg-soft1)"'),
+  tint: disc(0, 0, 9, '#e9ecee'),
+  paint: `<path d="M1,1 L-4,-4" stroke="#2a2d30" stroke-width="0.8"/>` + lamp(-4, -4, light),
+});
 
 /** Crystals jutting from the ground, violet, catching light. */
 function crystals(r: Rng, count: number, reach: number): Part {
@@ -653,32 +761,80 @@ function landingPad(lander: boolean, light: string): Part {
 /** How much larger than drawn a base's outbuildings stand, reaching well into the hexes round it. */
 const BIG = 1.35;
 
+/** An outbuilding a base may have: how likely it is, how far out it stands (in spaces), and how it's built at `p`, out along `a`. */
+interface Annex {
+  weight: number;
+  reach: [number, number];
+  build: (r: Rng, p: Spot, a: number) => Part[];
+}
+
+/**
+ * A base's outbuildings, one each way out (`ways`) for as many as it has: picked by weight, none twice
+ * until each has stood once, each a little nearer or further out and larger or smaller.
+ */
+function outskirts(r: Rng, ways: readonly number[], count: number, pool: readonly Annex[]): Part[] {
+  let left = [...pool];
+  return ways.slice(0, count).flatMap((a) => {
+    if (!left.length) left = [...pool];
+    let pick = r.next() * left.reduce((s, x) => s + x.weight, 0);
+    const annex = left.find((x) => (pick -= x.weight) < 0) ?? left[0];
+    left = left.filter((x) => x !== annex);
+    return annex.build(r, toward(a, r.range(...annex.reach)), a);
+  });
+}
+
+/** A base's outbuilding: `part` linked to the hub along `a` by `link`, turned with the way out if `turned`, grown about `scale`. */
+const annex = (
+  weight: number,
+  reach: [number, number],
+  link: (a: number, p: Spot) => Part,
+  part: (r: Rng) => Part,
+  scale = BIG,
+  turned = false,
+): Annex => ({
+  weight,
+  reach,
+  build: (r, p, a) => [link(a, p), placed(p.x, p.y, part(r), turned ? a + 90 : r.range(-15, 15), scale * r.range(0.88, 1.1))],
+});
+
+/** How many outbuildings a base has: one to four, two or three most often. */
+const SPREAD = [1, 1, 2, 2, 2, 3, 3, 3, 4];
+
 /**
  * The base on a planet's space, after the planets' own colours: a hub round its cube sockets (one per cube
- * the planet holds), and buildings reaching out into the hexes round it, joined to it: for a 7 a habitat
- * of green glass domes and solar panels; for an 8 a refinery, gold tanks and a burning flare stack; for a 9
- * an ice mine, its pit glowing blue in a ring of frost; for a 10 a black reactor with red-hot cooling towers;
- * and on a Void tile a sinkhole ringed by violet crystals, its cracks glowing. A base with room to spare
- * has a landing pad too. Centred on the planet's space, in board units. `at` is where the planet sits on
- * its tile (in spaces from the middle).
+ * the planet holds), and a few outbuildings out in the hexes round it, joined to it, a different few on
+ * each tile: for a 7 a habitat under a great green dome, with violet greenhouses, blue domes and solar
+ * panels; for an 8 a refinery, gold tanks and burning flare stacks; for a 9 an ice mine in a ring of frost,
+ * its pit glowing blue; for a 10 a black reactor with red-hot cooling towers; any of them with a landing
+ * pad, containers or a dish; and on a Void tile a sinkhole ringed by violet crystals, its cracks glowing.
+ * Centred on the planet's space, in board units. `at` is where the planet sits on its tile (in spaces from
+ * the middle).
  */
 function base(number: number, at: Spot, r: Rng): Required<Part> | undefined {
   const pads = cubePadCentres(number - 6, 0, 0).map((p) => ({ x: p.x / SCALE, y: p.y / SCALE }));
   const ways = exits(r, at, number > 0);
-  const out = (i: number, d: number, f: (p: Spot, a: number, from: Spot) => Part[]): Part[] => {
-    const a = ways[i];
-    // Links start at the hub's edge, so none crosses the cube sockets.
-    return a === undefined ? [] : f(toward(a, d), a, toward(a, 0.3));
+  const count = r.pick(SPREAD);
+  // Links start at the hub's edge, so none crosses the cube sockets.
+  const tube = (w: number, colour: string) => (a: number, p: Spot) => run(toward(a, 0.3), p, w * r.range(0.8, 1.2), colour);
+  const road = (a: number, p: Spot): Part => {
+    const d = `M${n(toward(a, 0.3).x)},${n(toward(a, 0.3).y)} L${n(p.x)},${n(p.y)}`;
+    return {
+      grade: `<path d="${d}" stroke="${H.graded}" stroke-width="14" filter="url(#rg-soft3)"/>`,
+      paint: `<path d="${d}" stroke="#e6eef2" stroke-width="0.9" stroke-dasharray="2.5 2" opacity="0.6"/>`,
+    };
   };
-  const pad = (light: string) =>
-    out(3, 0.74, (p, _, from) => [run(from, p, 3, '#8d969c'), placed(p.x, p.y, landingPad(r.chance(0.6), light), 0, 1.15)]);
+  const common = (light: string): Annex[] => [
+    annex(1.2, [0.7, 0.8], tube(3, '#8d969c'), (r) => landingPad(r.chance(0.6), light), 1.15),
+    annex(0.8, [0.6, 0.78], tube(2.5, '#8d969c'), containers, 1.5),
+    annex(0.6, [0.55, 0.72], tube(2, '#8d969c'), () => dish(light), 1.2),
+  ];
   switch (number) {
     case 0:
       return merged([
-        { heights: disc(0, 0, 46, 'url(#rg-sink)', ' filter="url(#rg-wx-m)"') },
-        fissures(r, r.int(4, 5), 32, 62),
-        crystals(r, r.int(7, 10), 36),
-        crystals(r, r.int(2, 3), 60),
+        { heights: disc(0, 0, r.range(38, 48), 'url(#rg-sink)', ' filter="url(#rg-wx-m)"') },
+        fissures(r, r.int(2, 6), 32, r.range(45, 66)),
+        crystals(r, r.int(5, 11), 36),
+        crystals(r, r.int(0, 4), 60),
         {
           paint:
             glow(0, 0, 24, '#6a2cff', 0.6, 'rg-soft6') +
@@ -688,63 +844,42 @@ function base(number: number, at: Spot, r: Rng): Required<Part> | undefined {
       ]);
     case 7:
       return merged([
-        ...out(0, 0.72, (p, _, from) => [
-          run(from, p, 7, '#a7b0b6'),
-          placed(p.x, p.y, dome(19, '#2fcf8c', '#6dff9e'), 0, BIG),
-          { paint: lamp(p.x + 22, p.y - 12, '#7dffb0') },
+        ...outskirts(r, ways, count, [
+          annex(2, [0.74, 0.84], tube(6, '#a7b0b6'), greenhouses, 1.15, true),
+          annex(1.5, [0.64, 0.74], tube(6, '#a7b0b6'), domelets, BIG, true),
+          annex(1.5, [0.7, 0.8], tube(2.5, '#8d969c'), solar, BIG, true),
+          ...common('#7dffb0'),
         ]),
-        ...out(1, 0.68, (p, a, from) => {
-          const side = toward(a + 90, 0.2);
-          const [d1, d2] = [
-            { x: p.x + side.x, y: p.y + side.y },
-            { x: p.x - side.x, y: p.y - side.y },
-          ];
-          return [
-            run(from, p, 6, '#a7b0b6'),
-            run(d1, d2, 5, '#a7b0b6'),
-            placed(d1.x, d1.y, dome(9, '#3ab8e8', '#8fe8ff'), 0, BIG),
-            placed(d2.x, d2.y, dome(7.5, '#3ab8e8', '#8fe8ff'), 0, BIG),
-          ];
-        }),
-        ...out(2, 0.76, (p, a, from) => [run(from, p, 2.5, '#8d969c'), placed(p.x, p.y, solar(), a + 90, BIG)]),
-        ...pad('#7dffb0'),
-        hub(pads, '#9aa3a8', H.deck, '#7dffb0'),
+        // The great dome is the base's middle: its hatch, on top, holds the cube.
+        dome(r.range(25, 30), '#2fcf8c', '#6dff9e'),
+        hub(pads, '#9aa3a8', 'rgb(246,160,205)', '#7dffb0'),
       ]);
     case 8:
       return merged([
-        ...out(0, 0.74, (p, a, from) => {
-          const spots = [0, 120, 240].map((t) => toward(a + t + 30, 0.23)).map((s) => ({ x: p.x + s.x, y: p.y + s.y }));
-          const side = toward(a + 90, 0.05);
-          return [
-            run({ x: from.x + side.x, y: from.y + side.y }, p, 3, '#f2ad2c'),
-            run({ x: from.x - side.x, y: from.y - side.y }, p, 3, '#f2ad2c'),
-            { grade: graded(p.x, p.y, 34) },
-            ...spots.map((s) => tank(s.x, s.y, 12.5)),
-            { paint: lamp(p.x, p.y, '#ffcf4a') },
-          ];
-        }),
-        ...out(1, 0.66, (p, _, from) => [run(from, p, 3, '#c9c4bc'), placed(p.x, p.y, flare(), 0, BIG)]),
-        ...out(2, 0.76, (p, a, from) => [run(from, p, 3.5, '#d4802a'), placed(p.x, p.y, columns(), a + 90, BIG)]),
-        ...pad('#ffcf4a'),
+        ...outskirts(r, ways, count, [
+          annex(2.5, [0.7, 0.8], tube(3, '#f2ad2c'), tankFarm, 1),
+          annex(1.5, [0.6, 0.72], tube(3, '#c9c4bc'), flares, BIG, true),
+          annex(1.5, [0.72, 0.8], tube(3.5, '#d4802a'), columns, BIG, true),
+          ...common('#ffcf4a'),
+        ]),
         hub(pads, '#a59c90'),
       ]);
-    case 9:
+    case 9: {
+      const frost = r.range(45, 66);
       return merged([
-        { grade: disc(0, 0, 60, 'url(#rg-frost)', ' style="mix-blend-mode: lighten"'), paint: glow(0, 0, 58, '#d6ecff', 0.28, 'rg-soft6') },
-        ...out(0, 0.8, (p, _, from) => [
-          {
-            grade: `<path d="M${n(from.x)},${n(from.y)} L${n(p.x)},${n(p.y)}" stroke="${H.graded}" stroke-width="14" filter="url(#rg-soft3)"/>`,
-          },
-          {
-            paint: `<path d="M${n(from.x)},${n(from.y)} L${n(p.x)},${n(p.y)}" stroke="#e6eef2" stroke-width="0.9" stroke-dasharray="2.5 2" opacity="0.6"/>`,
-          },
-          placed(p.x, p.y, pit(), 0, BIG),
+        {
+          grade: disc(0, 0, frost, 'url(#rg-frost)', ' style="mix-blend-mode: lighten"'),
+          paint: glow(0, 0, frost, '#d6ecff', 0.28, 'rg-soft6'),
+        },
+        ...outskirts(r, ways, count, [
+          annex(2.5, [0.74, 0.84], road, pit),
+          annex(1.5, [0.6, 0.72], tube(3.5, '#e8eef2'), rig, 1.6),
+          annex(1.5, [0.68, 0.78], tube(3.5, '#e8eef2'), silos, BIG, true),
+          ...common('#7fe9ff'),
         ]),
-        ...out(1, 0.66, (p, _, from) => [run(from, p, 3.5, '#e8eef2'), placed(p.x, p.y, rig(), 0, 1.6)]),
-        ...out(2, 0.74, (p, a, from) => [run(from, p, 3.5, '#e8eef2'), placed(p.x, p.y, silos(), a + 90, BIG)]),
-        ...pad('#7fe9ff'),
         hub(pads, '#c4ced4', H.deck, '#7fe9ff'),
       ]);
+    }
     case 10: {
       const vents = [
         [37, 0],
@@ -766,12 +901,14 @@ function base(number: number, at: Spot, r: Rng): Required<Part> | undefined {
           .map(([x, y]) => `${n(x * s)},${n(y * s)}`)
           .join(' ');
       // The conduits start at the reactor's edge.
-      const edge = (a: number) => toward(a, 0.6);
+      const power = (a: number, p: Spot) => conduit(toward(a, 0.6), p, '#ff5a14');
       return merged([
-        ...out(0, 0.82, (p, a) => [conduit(edge(a), p, '#ff5a14'), placed(p.x, p.y, coolingTower(), 0, 1.25)]),
-        ...out(1, 0.82, (p, a) => [conduit(edge(a), p, '#ff5a14'), placed(p.x, p.y, coolingTower(), 0, 1.1)]),
-        ...out(2, 0.84, (p, a) => [conduit(edge(a), p, '#ff5a14'), placed(p.x, p.y, radiators(), a + 90, 1.2)]),
-        ...out(3, 0.84, (p, a) => [conduit(edge(a), p, '#ff5a14'), placed(p.x, p.y, radiators(), a + 90, 1.1)]),
+        ...outskirts(r, ways, count, [
+          annex(2.5, [0.78, 0.86], power, coolingTower, 1.2),
+          annex(1.2, [0.8, 0.88], power, coolingTower, 1),
+          annex(2, [0.8, 0.88], power, radiators, 1.15, true),
+          ...common('#ff7a1a').slice(0, 2),
+        ]),
         {
           grade: graded(0, 0, 52),
           heights:
