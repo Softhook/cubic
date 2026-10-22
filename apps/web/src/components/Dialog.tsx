@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useSay } from '../game/words';
 
 /**
  * A modal that must be answered: no × button, and Escape or a backdrop click do nothing. `pc` is the
@@ -20,6 +21,7 @@ export function Modal({
   className?: string;
   children: ReactNode;
 }) {
+  const say = useSay();
   const titleId = useId();
   return (
     <div className="overlay">
@@ -30,8 +32,8 @@ export function Modal({
         className={`modal ${wide ? 'wide' : ''} ${className}`}
         style={{ '--pc': pc ?? 'var(--accent)' } as CSSProperties}
       >
-        <h2 id={titleId}>{title}</h2>
-        {subtitle && <p className="modal-sub">{subtitle}</p>}
+        <h2 id={titleId}>{say(title)}</h2>
+        {subtitle && <p className="modal-sub">{say(subtitle)}</p>}
         {children}
       </div>
     </div>
@@ -90,6 +92,7 @@ export function Dialog({
   onClose: () => void;
   children: ReactNode;
 }) {
+  const say = useSay();
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const bareRef = useRef<HTMLDivElement>(null);
@@ -114,7 +117,7 @@ export function Dialog({
           ref={bareRef}
           role="dialog"
           aria-modal="true"
-          aria-label={subtitle ? `${title}: ${subtitle}` : title}
+          aria-label={say(subtitle ? `${title}: ${subtitle}` : title)}
           tabIndex={-1}
           className={`dialog-bare ${className}`}
         >
@@ -137,8 +140,8 @@ export function Dialog({
         <button ref={closeRef} className="icon-btn dialog-close" onClick={onClose} aria-label="Close">
           ×
         </button>
-        <h2 id={titleId}>{title}</h2>
-        {subtitle && <p className="modal-sub">{subtitle}</p>}
+        <h2 id={titleId}>{say(title)}</h2>
+        {subtitle && <p className="modal-sub">{say(subtitle)}</p>}
         {children}
       </div>
     </div>,

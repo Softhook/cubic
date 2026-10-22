@@ -63,3 +63,4 @@ export * from './types';
 export { hasPower, hooksOf, rulesOf, shipOf, type RuleSet } from './rules';
 export { startCombat } from './combat';
 export { CLASSIC_SHIPS, type ShipDef, type ShipTable } from './data';
+export { reword, type Words } from './words';

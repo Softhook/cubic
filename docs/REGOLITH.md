@@ -166,10 +166,13 @@ The names, words and story are kept in one place, [REGOLITH-WORLD.md](REGOLITH-W
 (Bastion, Vanguard, Breacher, Warden, Sniper, Wisp), the objectives (Habitat, Refinery, Ice Mine, Reactor,
 Sinkhole), the sides, and how each Quantum term reads in Regolith.
 
-A card takes the new words when it is renamed. Saying them across the game (log, hints, sidebar,
-rulebook) means widening `RuleSet.cards.terms` into a mode-wide vocabulary that every piece of UI text
-reads from. Until then a Regolith game mixes the two (cards say "mech", the log says "ship"), so it is
-worth doing before many cards are renamed.
+The game says them everywhere (22 October 2026): `RuleSet.words` (engine `words.ts`) is the mode's
+vocabulary, REGOLITH-WORLD.md's table as `REGOLITH_WORDS` (`prototyping/words.ts`), and `reword` / `say`
+put a text in it, with its case and article ("a planet" → "an objective") and with players' names kept.
+The engine, its log and the card data stay in Quantum's words; the web app rewords what it shows: the
+log and toasts (`logText`), hints, rule errors, cards (`CardView`, through `useSay` from GameScreen),
+modals, tips, and the ship, planet and player panels. A new string in the game UI goes through `say` too.
+A card renamed in its own deck can say the words itself; the rewording leaves them as they are.
 
 ## 8. Testing
 
@@ -197,7 +200,7 @@ worth doing before many cards are renamed.
 4. **Screenprint kit.** Mechs, objectives, props; the category art for copied cards.
 5. **Moving away, card by card.** Renames with the new words and their own scenes, then reworked and new
    actions, with the card-hook surface built for the first one. Playtest and AI self-play as they land.
-6. **Words and aid.** The mode-wide vocabulary, a Regolith player aid and rulebook pages.
+6. **Words and aid.** A Regolith player aid and rulebook pages (the mode-wide vocabulary is done, §7).
 
 Steps 1–4 need no card designed.
 
@@ -205,7 +208,6 @@ Steps 1–4 need no card designed.
 
 - **Deck names** in the theme (the permanent and the one-shot deck), and whether the Expansion card stays.
 - **Deck size:** Community's (35 Skills, 9 Tactics), or smaller as cards are reworked.
-- **When the whole UI speaks Regolith:** the mode-wide vocabulary (§7), before or after most cards are renamed.
 - **One look for map and cards:** keep the photographic ground with flat-ink cards, or move tiles and
   dice towards the screenprint inks (CardScale's warning).
 - **Binary Reach:** where the one square drift map goes.

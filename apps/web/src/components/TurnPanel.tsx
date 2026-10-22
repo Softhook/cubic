@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { canCurious, shipOf, card, die, rulesOf, skillCard, type GameState, type SkillEffect } from '@quantum/engine';
+import { canCurious, say, shipOf, card, die, rulesOf, skillCard, type GameState, type SkillEffect } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { hintFor } from '../game/hints';
 import type { Dispatch } from '../game/useGame';
@@ -147,7 +147,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
       {head?.kind === 'placeExpansion' && ctl.human && (
         <div className="turn-actions">
           <button className="btn" onClick={() => dispatch({ type: 'placeExpansion', to: null })}>
-            Send to scrapyard
+            {say(game, 'Send to scrapyard')}
           </button>
         </div>
       )}
@@ -207,8 +207,8 @@ function SkillButton({
   if (!id) return null;
   const def = card(id);
   return (
-    <button className="btn" disabled={disabled} onClick={onClick} title={def.text}>
-      {label ?? def.name}
+    <button className="btn" disabled={disabled} onClick={onClick} title={say(game, def.text)}>
+      {label ?? say(game, def.name)}
     </button>
   );
 }

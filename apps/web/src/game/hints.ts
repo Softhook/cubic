@@ -1,5 +1,6 @@
 import {
   canProfiteer,
+  say,
   conquerCheck,
   deployTargets,
   die,
@@ -14,8 +15,10 @@ import type { Sel } from './controller';
 /** The carrying ship's name in this game's rules, as a common noun: "flagship", or "vanguard" in Regolith. */
 const carrier = (game: GameState, id: string) => shipOf(game, die(game, id).value).name.toLowerCase();
 
-/** One-line guidance for the current human decision. */
-export function hintFor(game: GameState, sel: Sel): string {
+/** One-line guidance for the current human decision, in the game's words. */
+export const hintFor = (game: GameState, sel: Sel): string => say(game, hint(game, sel));
+
+function hint(game: GameState, sel: Sel): string {
   const head = game.pending[0];
   if (head) {
     switch (head.kind) {

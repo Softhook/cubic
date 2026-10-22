@@ -1,4 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { useSay } from '../game/words';
 
 /** A CSS anchor name that is unique on the page (React's ids, like ":r3:", aren't valid in CSS). */
 export function useAnchorName(): string {
@@ -67,6 +68,7 @@ export function Tip({
   /** The spot a moment's effect marks (see CardCasts). */
   'data-fx'?: string;
 }) {
+  const say = useSay();
   const anchor = useAnchorName();
   const [open, setOpen] = useState(false);
   const hover = useRef<ReturnType<typeof setTimeout>>();
@@ -93,7 +95,7 @@ export function Tip({
       </Tag>
       {open && (
         <InfoPop anchor={anchor} onClose={() => setOpen(false)}>
-          {tip}
+          {typeof tip === 'string' ? say(tip) : tip}
         </InfoPop>
       )}
     </>

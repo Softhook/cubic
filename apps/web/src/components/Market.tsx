@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
-import { EXPANSION, card, cardKind, effectOf, rulesOf, type DeckKind, type GameState } from '@quantum/engine';
+import { EXPANSION, card, cardKind, effectOf, rulesOf, say, type DeckKind, type GameState } from '@quantum/engine';
 import type { Legal } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
 import { FOLD_MARKET, useMediaQuery } from '../game/useMediaQuery';
@@ -169,12 +169,12 @@ export function Market({
             key={`${id}#${index}`}
             className={`market-chip market-chip-${kind} ${canTake(deck, index) ? 'takeable' : ''}`}
             style={categoryStyle(def.category, kind === 'skill')}
-            title={`${def.name} — ${def.text}`}
+            title={say(game, `${def.name} — ${def.text}`)}
             data-card={id}
             data-index={index}
             onClick={() => setViewingCard(id)}
           >
-            {def.name}
+            {say(game, def.name)}
           </button>
         );
       })}
@@ -236,10 +236,10 @@ export function Market({
       {legal.can('profiteer') && (
         <button
           className="btn btn-ghost market-refresh"
-          title="Profiteering: a card earned by a Conquer action"
+          title={say(game, 'Profiteering: a card earned by a Conquer action')}
           onClick={() => dispatch({ type: 'profiteer' })}
         >
-          Take 1 missile instead of a card
+          {say(game, 'Take 1 missile instead of a card')}
         </button>
       )}
       {legal.can('refreshMarket') && (

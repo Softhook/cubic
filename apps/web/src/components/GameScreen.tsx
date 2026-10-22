@@ -1,11 +1,12 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { actor, drawing, rulesOf, type GameState, type PlayerId } from '@quantum/engine';
+import { actor, drawing, rulesOf, say, type GameState, type PlayerId } from '@quantum/engine';
 import { useController } from '../game/controller';
 import { useUndoShortcut } from '../game/useGame';
 import { conquerOptions } from '../game/legal';
 import { lost, type GameView } from '../game/view';
 import { useReview, type Review } from '../game/review';
 import { logText } from '../game/logText';
+import { SayContext } from '../game/words';
 import { SHEET, useMediaQuery } from '../game/useMediaQuery';
 import { BottomSheet } from './BottomSheet';
 import { Board } from './Board';
@@ -89,101 +90,103 @@ export function Game({
   const log = <Log game={live} review={{ can, pick: lookBack, picked: review?.entry.id, move: review?.move }} />;
 
   return (
-    <div className={`app ${review ? 'reviewing' : ''}`}>
-      <header className="topbar">
-        <button type="button" className="brand" title="Back to the lobby" onClick={onLobby}>
-          Cubic
-        </button>
-        <div className="topbar-map">
-          <span className={`mode-badge mode-${game.mode}`}>{rulesOf(game).name}</span>
-          {game.board.mapName}
-        </div>
-        <div className="topbar-actions">
-          <button className="btn btn-ghost" onClick={onLobby}>
-            Lobby
+    <SayContext.Provider value={(text) => say(game, text)}>
+      <div className={`app ${review ? 'reviewing' : ''}`}>
+        <header className="topbar">
+          <button type="button" className="brand" title="Back to the lobby" onClick={onLobby}>
+            Cubic
           </button>
-          <button className="btn btn-ghost" onClick={onRules}>
-            Rules
-          </button>
-          {game.board.world && <WorldButton world={game.board.world} />}
-          <MusicButton />
-          <SoundButton />
-          <FullscreenButton />
-        </div>
-      </header>
+          <div className="topbar-map">
+            <span className={`mode-badge mode-${game.mode}`}>{rulesOf(game).name}</span>
+            {game.board.mapName}
+          </div>
+          <div className="topbar-actions">
+            <button className="btn btn-ghost" onClick={onLobby}>
+              Lobby
+            </button>
+            <button className="btn btn-ghost" onClick={onRules}>
+              Rules
+            </button>
+            {game.board.world && <WorldButton world={game.board.world} />}
+            <MusicButton />
+            <SoundButton />
+            <FullscreenButton />
+          </div>
+        </header>
 
-      <main className={`layout ${sheet ? 'sheet-layout' : ''}`}>
-        {/* First in both layouts, so turning the phone keeps the board (and its zoom). */}
-        <div className="stage" style={{ '--map-ratio': mapRatio(game) } as CSSProperties}>
-          {/* Choosing a starting planet is the first moment the map is yours to look at: show it zooms then. */}
-          <Board
-            game={returning ?? game}
-            ctl={ctl}
-            scene={scene}
-            introduce={!review && game.phase === 'setup' && ctl.highlights.planets.size > 0}
-          />
-          {review && <ReviewBar review={review} game={live} waiting={waitingFor(view)} />}
-          {/* The game's news goes on while looking back, as news of the game now. */}
-          <Toasts toasts={toasts} game={live} now={!!review} />
-          <PlayedCard
-            game={live}
-            mine={view.mine}
-            jumps={view.jumps}
-            review={review ? live.log.filter((e) => review.move.has(e.id)) : undefined}
-            hold={!review && head?.kind === 'combat'}
-          />
-          <ErrorToast error={error} />
-        </div>
-        {sheet ? (
-          <BottomSheet
-            peek={turnPanel}
-            wantOpen={!!cards && (ctl.legal.can('takeCard') || ctl.legal.can('patientTactic'))}
-            closeFor={review?.entry.id}
-          >
-            {side}
-            {market}
-            {players}
-            {log}
-          </BottomSheet>
-        ) : (
-          <>
-            <aside className="sidebar">
+        <main className={`layout ${sheet ? 'sheet-layout' : ''}`}>
+          {/* First in both layouts, so turning the phone keeps the board (and its zoom). */}
+          <div className="stage" style={{ '--map-ratio': mapRatio(game) } as CSSProperties}>
+            {/* Choosing a starting planet is the first moment the map is yours to look at: show it zooms then. */}
+            <Board
+              game={returning ?? game}
+              ctl={ctl}
+              scene={scene}
+              introduce={!review && game.phase === 'setup' && ctl.highlights.planets.size > 0}
+            />
+            {review && <ReviewBar review={review} game={live} waiting={waitingFor(view)} />}
+            {/* The game's news goes on while looking back, as news of the game now. */}
+            <Toasts toasts={toasts} game={live} now={!!review} />
+            <PlayedCard
+              game={live}
+              mine={view.mine}
+              jumps={view.jumps}
+              review={review ? live.log.filter((e) => review.move.has(e.id)) : undefined}
+              hold={!review && head?.kind === 'combat'}
+            />
+            <ErrorToast error={error} />
+          </div>
+          {sheet ? (
+            <BottomSheet
+              peek={turnPanel}
+              wantOpen={!!cards && (ctl.legal.can('takeCard') || ctl.legal.can('patientTactic'))}
+              closeFor={review?.entry.id}
+            >
               {side}
-              {turnPanel}
+              {market}
               {players}
               {log}
-            </aside>
-            {market}
-          </>
-        )}
-      </main>
+            </BottomSheet>
+          ) : (
+            <>
+              <aside className="sidebar">
+                {side}
+                {turnPanel}
+                {players}
+                {log}
+              </aside>
+              {market}
+            </>
+          )}
+        </main>
 
-      {!review && head?.kind === 'combat' && (
-        <CombatOverlay
-          key={head.id}
-          game={game}
-          combat={head}
-          dispatch={dispatch}
-          mine={view.mine}
-          aiResponder={view.aiResponder ?? null}
-          online={online ? view.combat : undefined}
-        />
-      )}
-      {!review && <DecisionOverlay game={game} dispatch={dispatch} human={ctl.human} />}
-      {conquering.length > 0 && (
-        <ConquerChoice game={game} options={conquering} dispatch={dispatch} onClose={() => ctl.select({ kind: 'none' })} />
-      )}
-      {!review && game.phase === 'over' && !hideGameOver && (
-        <GameOver
-          game={game}
-          lost={lost(game, view.mine)}
-          onNew={onQuit}
-          onClose={() => setHideGameOver(true)}
-          newLabel={online ? 'Back to lobby' : undefined}
-        />
-      )}
-      {overlay}
-    </div>
+        {!review && head?.kind === 'combat' && (
+          <CombatOverlay
+            key={head.id}
+            game={game}
+            combat={head}
+            dispatch={dispatch}
+            mine={view.mine}
+            aiResponder={view.aiResponder ?? null}
+            online={online ? view.combat : undefined}
+          />
+        )}
+        {!review && <DecisionOverlay game={game} dispatch={dispatch} human={ctl.human} />}
+        {conquering.length > 0 && (
+          <ConquerChoice game={game} options={conquering} dispatch={dispatch} onClose={() => ctl.select({ kind: 'none' })} />
+        )}
+        {!review && game.phase === 'over' && !hideGameOver && (
+          <GameOver
+            game={game}
+            lost={lost(game, view.mine)}
+            onNew={onQuit}
+            onClose={() => setHideGameOver(true)}
+            newLabel={online ? 'Back to lobby' : undefined}
+          />
+        )}
+        {overlay}
+      </div>
+    </SayContext.Provider>
   );
 }
 

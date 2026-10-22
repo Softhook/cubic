@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { CARD_CATEGORIES } from '@quantum/art';
-import { shipOf, card, die, rulesOf, scrapyard, type Action, type ActionOf, type GameState } from '@quantum/engine';
+import { say, shipOf, card, die, rulesOf, scrapyard, type Action, type ActionOf, type GameState } from '@quantum/engine';
 import { SHORT, useMediaQuery } from '../game/useMediaQuery';
 import type { Dispatch } from '../game/useGame';
 import { CardView, CategoryIcon, categoryStyle } from './Card';
@@ -91,7 +91,7 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
               Fight
             </button>
             <button className="btn btn-primary" onClick={() => dispatch({ type: 'dangerous', destroy: true })}>
-              Destroy both ships
+              {say(game, 'Destroy both ships')}
             </button>
           </div>
         </Modal>
@@ -134,7 +134,7 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
                 key={value}
                 className="fleet-die clever-choice"
                 disabled={value === head.avoid}
-                title={value === head.avoid ? 'A reconfigured ship must change its number' : undefined}
+                title={value === head.avoid ? say(game, 'A reconfigured ship must change its number') : undefined}
                 onClick={() => dispatch({ type: 'clever', value })}
               >
                 <Die3D value={value} size={54} color={p.color} sound={false} />
@@ -142,7 +142,7 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
               </button>
             ))}
           </div>
-          {d.loc.zone === 'scrapyard' && <p className="modal-sub">The ship goes to your scrapyard.</p>}
+          {d.loc.zone === 'scrapyard' && <p className="modal-sub">{say(game, 'The ship goes to your scrapyard.')}</p>}
         </Modal>
       );
     }
@@ -385,12 +385,12 @@ function GameStats({ game }: { game: GameState }) {
       <thead>
         <tr>
           <th />
-          <th title="Cubes on planets">Cubes</th>
+          <th title={say(game, 'Cubes on planets')}>Cubes</th>
           {kept && (
             <>
-              <th title="Planets conquered">Planets</th>
+              <th title={say(game, 'Planets conquered')}>{say(game, 'Planets')}</th>
               <th title="Battles won – lost">Battles</th>
-              <th title="Enemy ships destroyed – own ships lost">Ships</th>
+              <th title={say(game, 'Enemy ships destroyed – own ships lost')}>{say(game, 'Ships')}</th>
             </>
           )}
           {cards && <th title="Cards gained">Cards</th>}

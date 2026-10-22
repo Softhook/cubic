@@ -147,6 +147,7 @@ What a Regolith game shows today (the mode is still `prototyping` in the code):
   [prototyping/index.ts](../packages/engine/src/prototyping/index.ts)), and the engine and web app ask the
   game's rules for a name (`shipOf`, `shipName`), so Community games keep Battlestation to Scout.
 - **Hex maps only**, on the moon's and Mars's ground.
+- **The words** in the table above, across the game's text: log, hints, cards, panels and errors
+  ([REGOLITH.md](REGOLITH.md) §7).
 
-Not yet: the other words (objective, power, claim and the rest), the objective names, the sides. They wait
-for the mode-wide vocabulary ([REGOLITH.md](REGOLITH.md) §7).
+Not yet: the objective names, the sides.

@@ -1,6 +1,7 @@
 import { defaultMap, MAPS, type CardDef, type GameMode, type MapDef, type ShipDef, type ShipPower, type ShipTable } from './data';
 import type { ShipHooks } from './prototype';
 import type { Die, GameState } from './types';
+import { reword, type Words } from './words';
 
 /**
  * Everything that differs between rule sets lives here. The engine and the UI ask the rule set
@@ -43,6 +44,8 @@ export interface RuleSet {
   homeShipyard?: boolean;
   /** A rule set we're still testing: playable from the lobby, but left out of the rulebook. */
   experimental?: boolean;
+  /** The mode's own words for Quantum's, as the UI shows its text (words.ts); none: Quantum's. */
+  words?: Words;
 }
 
 export interface CardRules {
@@ -113,6 +116,12 @@ export function modeHasHook(state: GameState, hook: keyof ShipHooks): boolean {
     HOOKS.set(ships, hooks);
   }
   return hooks.has(hook);
+}
+
+/** `text` in this game's words (RuleSet.words), its players' names kept as they are. */
+export function say(state: GameState, text: string, keep: readonly string[] = []): string {
+  const { words } = rulesOf(state);
+  return words ? reword(words, text, [...state.players.map((p) => p.name), ...keep]) : text;
 }
 
 /** The map a rule set starts on for a player count: the basic map, or its first map if it doesn't play that one. */

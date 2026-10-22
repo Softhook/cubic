@@ -10,9 +10,10 @@
  * To try a change: a setting, edit this file; how a power works or its text, its file in powers/; a
  * power on another ship, move it in PROTOTYPING_SHIPS; a new power, copy a file in powers/.
  */
-import { CLASSIC_SHIPS, type RuleSet, type ShipTable } from '../prototype';
+import { CLASSIC_SHIPS, reword, type RuleSet, type ShipTable } from '../prototype';
 import { picket } from './powers/picket';
 import { shoot } from './powers/shoot';
+import { REGOLITH_WORDS } from './words';
 
 /**
  * Whether Prototyping plays with Community's cards (Skills, Tactics, research). Flip it to try the mode
@@ -79,7 +80,10 @@ export function prototypingMode(base: RuleSet): RuleSet {
     id: 'prototyping',
     name: 'Regolith',
     title: 'Regolith',
-    summary: `Mechs fight over the ice of Mars and the moon, on hex maps. Community Edition${PROTOTYPING_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a mech moving next to an enemy mech, not diagonally, stops there), a ranged Sniper and contested orbits (no conquering${PROTOTYPING_CONTESTED_DEPLOY ? ` or deploying${PROTOTYPING_HOME_SHIPYARD ? ', except to your home planet,' : ''}` : ''} while an enemy mech is in orbit)${PROTOTYPING_OVER_CONQUEST ? ' and over-conquest, displacing an opponent cube' : ''}.`,
+    summary: reword(
+      REGOLITH_WORDS,
+      `Mechs fight over the ice of Mars and the moon, on hex maps. Community Edition${PROTOTYPING_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a mech moving next to an enemy mech, not diagonally, stops there), a ranged Sniper and contested orbits (no conquering${PROTOTYPING_CONTESTED_DEPLOY ? ` or deploying${PROTOTYPING_HOME_SHIPYARD ? ', except to your home planet,' : ''}` : ''} while an enemy mech is in orbit)${PROTOTYPING_OVER_CONQUEST ? ' and over-conquest, displacing an opponent cube' : ''}.`,
+    ),
     cards: PROTOTYPING_CARDS ? base.cards : null,
     mapGroups: ['hex', 'drift'],
     ships: PROTOTYPING_SHIPS,
@@ -89,5 +93,6 @@ export function prototypingMode(base: RuleSet): RuleSet {
     contestedDeploy: PROTOTYPING_CONTESTED_DEPLOY,
     homeShipyard: PROTOTYPING_HOME_SHIPYARD,
     experimental: true,
+    words: REGOLITH_WORDS,
   };
 }

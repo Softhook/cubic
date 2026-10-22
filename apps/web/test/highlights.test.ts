@@ -26,10 +26,11 @@ describe('highlightsFor', () => {
     const s = myTurn(arrange(base, { ...sum, p1d0: [c.r, c.c, 3] }));
     expect(lit(s, { kind: 'none' }).planets.get(planet.id)).toEqual({ tone: 'blocked', label: 'Blocked' });
     expect(legalFor(s).of('conquer')).toEqual([]);
-    expect(hintFor(s, { kind: 'none' })).toMatch(`planet ${planet.number}, but enemy ships in orbit block the conquest`);
+    // In Regolith's words (RuleSet.words).
+    expect(hintFor(s, { kind: 'none' })).toMatch(`objective ${planet.number}, but enemy mechs on the perimeter block the claim`);
     const clear = myTurn(arrange(base, sum));
     expect(lit(clear, { kind: 'none' }).planets.get(planet.id)?.tone).toBe('conquer');
-    expect(hintFor(clear, { kind: 'none' })).toBe('Select a ship');
+    expect(hintFor(clear, { kind: 'none' })).toBe('Select a mech');
   });
 
   it('lights the starting planets during setup', () => {

@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { CARD_CATEGORIES, ICONS, cardPalette, missile } from '@quantum/art';
-import { card, cardKind, effectOf, isOriginalCard } from '@quantum/engine';
+import { card, cardKind, effectOf, isOriginalCard, type CardDef } from '@quantum/engine';
 import { useCardImage } from '../art/useCardImages';
+import { useSay } from '../game/words';
 
 /** A card category's icon (the same drawing as on the printed cards). */
 export function CategoryIcon({ category, size = 14 }: { category: string; size?: number }) {
@@ -92,12 +93,21 @@ export interface CardViewProps {
   art?: boolean;
 }
 
+/** A card's name and text in the game's words. */
+const sayCard = (def: CardDef, say: (text: string) => string): CardDef => ({
+  ...def,
+  name: say(def.name),
+  subtitle: say(def.subtitle),
+  text: say(def.text),
+});
+
 export function CardView({ id, size = 'md', onClick, disabled, badge, inactive, className = '', index, art }: CardViewProps) {
-  const def = card(id);
+  const say = useSay();
+  const def = sayCard(card(id), say);
   const original = isOriginalCard(id);
   // The original Expansion is a Gambit card but looks like the CE Expansion card.
   const kind = effectOf(id) === 'expansion' ? 'expansion' : cardKind(id);
-  const category = CARD_CATEGORIES[def.category]?.label ?? def.category;
+  const category = say(CARD_CATEGORIES[def.category]?.label ?? def.category);
   // One-shot cards name their deck too, where it isn't their category already (Expansion).
   const kindLabel = kind === 'skill' ? undefined : original ? 'Gambit' : kind === 'expansion' ? 'Expansion' : 'Tactic';
   const clickable = !!onClick && !disabled;
