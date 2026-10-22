@@ -14,7 +14,7 @@ import {
   tileSvg,
 } from '../src';
 import { CUBE_PAD } from '../src/tokens';
-import { boxGap } from '../src/tile';
+import { boxGap } from '../src/tile/geometry';
 import maps from '../../engine/src/data/maps.json';
 import { parseToken } from '../../engine/src/board';
 import cards from '../../engine/src/data/cards.json';
@@ -157,11 +157,11 @@ describe('tiles off the square', () => {
   });
 
   it('draw a hex tile as six unhatched hex wells round its planet, cut to the flower', () => {
-    const svg = tileSvg(seven, { shape: 'hex', markings: true, rounded: true });
+    const svg = tileSvg(seven, { look: 'hex', markings: true, rounded: true });
     expect(wells(svg)).toBe(6);
     expect(svg).toContain(`${seven.id}-flower`);
     expect(hatched(svg)).toBe(0);
-    const outer = tileSvg(seven, { shape: 'hex', markings: true, planetAt: 'n' });
+    const outer = tileSvg(seven, { look: 'hex', markings: true, planetAt: 'n' });
     expect(wells(outer)).toBe(6);
     expect(hatched(outer)).toBe(0);
   });
@@ -169,14 +169,14 @@ describe('tiles off the square', () => {
   it('knock a hex tile out past its flower: at the cut, or past it by the bleed', () => {
     const clip = (o: Parameters<typeof tileSvg>[1]) => /<clipPath id="[^"]*-flower"><path d="M([\d.]+) /.exec(tileSvg(seven, o))?.[1];
     // The first hex's right corner: 1/√3 of a space right of its middle, and 3 mm further (over cos 30°) with the bleed.
-    expect(Number(clip({ shape: 'hex', rounded: true }))).toBeCloseTo(48 + 32 / Math.sqrt(3), 1);
-    expect(Number(clip({ shape: 'hex', bleed: true }))).toBeCloseTo(48 + (32 + 6) / Math.sqrt(3), 1);
-    expect(Number(clip({ shape: 'hex' }))).toBeCloseTo(48 + 32 / Math.sqrt(3), 1);
+    expect(Number(clip({ look: 'hex', rounded: true }))).toBeCloseTo(48 + 32 / Math.sqrt(3), 1);
+    expect(Number(clip({ look: 'hex', bleed: true }))).toBeCloseTo(48 + (32 + 6) / Math.sqrt(3), 1);
+    expect(Number(clip({ look: 'hex' }))).toBeCloseTo(48 + 32 / Math.sqrt(3), 1);
     expect(clip({})).toBeUndefined();
   });
 
   it('give the Illustrator file a cut layer on hex tiles only', () => {
-    expect(editableTileSvg(seven, 'x', { shape: 'hex', planetAt: 'ne', markings: true })).toContain('<g id="cut">');
+    expect(editableTileSvg(seven, 'x', { look: 'hex', planetAt: 'ne', markings: true })).toContain('<g id="cut">');
     expect(editableTileSvg(seven, 'x', { markings: true })).not.toContain('<g id="cut">');
   });
 
@@ -197,7 +197,7 @@ describe('tiles off the square', () => {
     expect(named({})).toBe(true);
     expect(named({ planetAt: 's' })).toBe(true);
     expect(named({ planetAt: 'w' })).toBe(false);
-    expect(named({ shape: 'hex' })).toBe(false);
+    expect(named({ look: 'hex' })).toBe(false);
   });
 });
 

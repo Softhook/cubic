@@ -1,6 +1,6 @@
 import { rng, type Rng } from './rng';
-import { starfield, type Box } from './starfield';
-import { dieCut, document, esc, hsl, join, n, type Fragment } from './svg';
+import { starfield } from './starfield';
+import { dieCut, document, esc, hsl, join, n, type Box, type Fragment } from './svg';
 import { CARD_CATEGORIES, FONTS, INK, PLAYER_HUES } from './tokens';
 import { icon } from './icons';
 import { die, glow } from './kit';

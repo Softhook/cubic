@@ -3,6 +3,21 @@
 /** A number rounded to 0.01 (artwork is in mm, so that's 10 µm), without trailing zeros. */
 export const n = (x: number) => String(Math.round(x * 100) / 100);
 
+/** A rectangle: its top left, width and height. */
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** A box as a filter's, mask's or image's position and size attributes. */
+export const region = (b: Box) => `x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}"`;
+
+/** A soft blur filter, its region half as big again all round what it blurs. */
+export const blur = (id: string, sd: number) =>
+  `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${n(sd)}"/></filter>`;
+
 /** One SVG fragment: what goes in `<defs>` and what is drawn. */
 export interface Fragment {
   defs: string;

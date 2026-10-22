@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { cellAt, type Board } from '@quantum/engine';
-import { HATCH, HEX_WELL, SPACE_BASE_CSS, TILE, WELL, hexWell, tileLabel, tileSpec, voidFlask, well } from '@quantum/art';
-import { useGroundMaps } from '../../art/mapLook';
+import { HATCH, HEX_WELL, SPACE_BASE_CSS, TILE, WELL, hexWell, lookWorld, tileLabel, tileSpec, voidFlask, well } from '@quantum/art';
+import { useMapLook } from '../../art/mapLook';
 import { layerScale, useTileImages } from '../../art/tileImages';
 import type { TileArt } from '../../art/boardTiles';
 import { SQUARE_TILE_GAP, hexCorners, hexFlower, hexSeams, placement } from './geometry';
@@ -10,7 +10,7 @@ import { labelFits, spaceRoles } from './layers';
 const points = (list: number[][]) => list.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
 const line = (list: number[][]) => `M${list.map(([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join(' L')}`;
 
-/** The hatch lines' gap across them (mm): print's (tile.ts `hatch`) is along a pad's side, at 45°. */
+/** The hatch lines' gap across them (mm): print's (art tile/markings.ts `hatch`) is along a pad's side, at 45°. */
 const HATCH_GAP = HATCH.gap / Math.SQRT2;
 
 /** One hatch pattern: faint diagonal lines, or crossed ones for `cross`. In millimetres. */
@@ -92,12 +92,12 @@ const NO_TILES: TileArt[] = [];
  * the spaces, so the wells are etched into the ground and not across the buildings.
  */
 export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: Board; tiles: TileArt[]; cell: number }) {
-  const ground = useGroundMaps() && !!board.hex;
-  const skyLayer = ground ? 'ground' : board.hex ? 'sky-hex' : 'sky-square';
-  const skies = useTileImages(tiles, skyLayer);
+  const look = useMapLook(board);
+  const ground = !!lookWorld(look);
+  const backs = useTileImages(tiles, look, 'back');
   // On the ground each tile already has its building, so there are no bodies to load.
-  const bodies = useTileImages(ground ? NO_TILES : tiles, 'body');
-  const standing = useTileImages(ground ? tiles : NO_TILES, 'standing');
+  const bodies = useTileImages(ground ? NO_TILES : tiles, look, 'body');
+  const standing = useTileImages(ground ? tiles : NO_TILES, look, 'standing');
   const { mid } = placement(board, cell);
   const mm = cell / TILE.cell;
   // A tile's artwork is a whole printed tile, 3 spaces wide, centred on what it draws.
@@ -138,7 +138,7 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
       {tiles.map((t) => (
         <g key={t.tile} clipPath={`url(#map-tile-${t.tile})`}>
           <rect x={mid(t).x - size / 2} y={mid(t).y - size / 2} width={size} height={size} fill={SPACE_BASE_CSS} />
-          {art(skies[t.id], mid(t), layerScale(skyLayer))}
+          {art(backs[t.id], mid(t), layerScale(look, 'back'))}
           {!ground && art(bodies[t.id], mid(t.body))}
         </g>
       ))}
@@ -156,7 +156,7 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
       {ground &&
         tiles.map((t) => (
           <g key={t.tile} clipPath={`url(#map-tile-${t.tile})`}>
-            {art(standing[t.id], mid(t), layerScale('standing'))}
+            {art(standing[t.id], mid(t), layerScale(look, 'standing'))}
           </g>
         ))}
       <g transform={`scale(${mm})`} dangerouslySetInnerHTML={{ __html: marks.labels }} />

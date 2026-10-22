@@ -36,7 +36,7 @@ export interface WellStyle {
 const SPACE_WELL: WellStyle = { fill: 0.055, shade: 0.55, shadeWidth: 0.7, lit: 0.16, litWidth: 0.35 };
 
 /**
- * The wells printed for the spaces and the cube pads (tile.ts `well`). The space wells are barely
+ * The wells printed for the spaces and the cube pads (tile/markings.ts `well`). The space wells are barely
  * filled, so the nebula shows through, and carried by their edges; the four beside a planet (where
  * dice conquer it) are a shade darker. The cube wells are gentler, so the planet's surface shows
  * through; the game draws its empty cube slots with the same function.

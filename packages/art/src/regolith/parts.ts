@@ -1,5 +1,5 @@
 import { n, turbulence } from '../svg';
-import type { Spot } from '../tile';
+import type { Spot } from '../tile/geometry';
 import { polar, stops, radial } from './core';
 
 /**

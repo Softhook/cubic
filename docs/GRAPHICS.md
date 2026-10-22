@@ -146,7 +146,19 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
      `CUBE_PAD`). Then gates, ships and highlights.
 
   A printed tile (`tileSvg`) is the same layers in one piece, so the screen and the table look alike.
-  The Art Lab shows the set as hex tiles too, and with each planet on any space (`shape`, `planetAt`).
+  The Art Lab shows the set as hex tiles too, and with each planet on any space (`look`, `planetAt`).
+- **Looks.** A tile has one of four looks (`TileLook`, [`tile/look.ts`](../packages/art/src/tile/look.ts)):
+  `square` or `hex` in space, or a hex tile on a world's ground, `moon` or `mars` (the Regolith look,
+  [`regolith/`](../packages/art/src/regolith/)), with a building on its planet's space in place of the
+  sky and body. Print, the Art Lab and the map all take the same look: a hex map is on its world's ground
+  unless the top bar switches it to space ([`mapLook.ts`](../apps/web/src/art/mapLook.ts) `useMapLook`).
+  On the ground the map draws each tile's ground with its building (`regolithSvg`), the spaces' wells, and
+  then what stands on the ground again over the wells (`regolithMaskSvg`). Print draws the lit ground as a
+  bitmap first (`tileGroundSvg`), since its light falls into contour lines at a print's resolution.
+- **Where the code is.** [`tile/`](../packages/art/src/tile/): `geometry` (spaces, planet spots, number
+  and cube pads, the hex flower and its cut), `look`, `set` (the 30 tiles and their seeds), `markings`
+  (wells, hatching), `label`, `space` (sky, planet, moons), `voids` (the Void hearts) and `index`, which
+  puts a tile together in its look. The ground's own parts are in `regolith/` (its `index.ts` lists them).
 - **Loading.** Drawing a tile's noise filters takes ~45 ms, so the game draws each tile's sky (one per
   shape) and body once to 576 px images and keeps them in the browser's IndexedDB
   ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)), whatever the map and wherever its planet sits.

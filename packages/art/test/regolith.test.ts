@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BLED, REGOLITH_GROUND_PX, TILE_SPOTS, regolithGroundSvg, regolithSvg, regolithTileSvg, tileSpec } from '../src';
+import { BLED, REGOLITH_GROUND_PX, TILE_SPOTS, regolithSvg, tileGroundSvg, tileSpec, tileSvg, type World } from '../src';
 import { LIT, SCALE } from '../src/regolith/core';
 
 /**
@@ -10,31 +10,33 @@ import { LIT, SCALE } from '../src/regolith/core';
 
 const spec = tileSpec('p7-01');
 const IMAGE = 'data:image/png;base64,AAAA';
+/** A tile's lit ground alone, with its planet `at` a space. */
+const groundOf = (world: World, planetAt?: string) => tileGroundSvg(spec, { look: world, planetAt })!;
 /** The ids of the filters a document draws with. */
 const filters = (svg: string) => new Set([...svg.matchAll(/filter="url\(#([\w-]+)\)"/g)].map((m) => m[1]));
 
 describe('regolith ground in print', () => {
   it('is drawn at the pixel its light is made for', () => {
     expect(BLED.w / SCALE / REGOLITH_GROUND_PX).toBeCloseTo(LIT, 3);
-    expect(regolithGroundSvg(spec, 'moon')).toContain(`kernelUnitLength="${LIT}"`);
+    expect(groundOf('moon')).toContain(`kernelUnitLength="${LIT}"`);
   });
 
   it.each(['moon', 'mars'] as const)('is the lit ground alone, with nothing standing on it (%s)', (world) => {
-    const used = filters(regolithGroundSvg(spec, world));
+    const used = filters(groundOf(world));
     expect(used.has('rg-ground')).toBe(true);
     for (const standing of ['rg-built', 'rg-cast', 'rg-dust']) expect(used.has(standing)).toBe(false);
   });
 
   it.each(Object.keys(TILE_SPOTS.hex))("is the tile's own ground, levelled round its planet's space (%s)", (at) => {
-    const ground = regolithGroundSvg(spec, 'mars', at);
+    const ground = groundOf('mars', at);
     // Up to the end of the lit ground, the tile's ground starts the same: what stands on it follows.
     const lit = ground.slice(0, ground.lastIndexOf('</g></g>'));
     expect(regolithSvg(spec, 'mars', TILE_SPOTS.hex[at]).startsWith(lit)).toBe(true);
-    if (at) expect(ground).not.toBe(regolithGroundSvg(spec, 'mars'));
+    if (at) expect(ground).not.toBe(groundOf('mars'));
   });
 
   it.each(['moon', 'mars'] as const)('goes in a tile as a bitmap, over its trim and bleed, under what stands (%s)', (world) => {
-    const svg = regolithTileSvg(spec, world, { bleed: true, markings: true, ground: IMAGE });
+    const svg = tileSvg(spec, { look: world, bleed: true, markings: true, ground: IMAGE });
     expect(filters(svg).has('rg-ground')).toBe(false);
     expect(filters(svg).has('rg-built')).toBe(true);
     const image = svg.match(/<image href="([^"]*)" x="([-\d.]+)" y="([-\d.]+)" width="([\d.]+)" height="([\d.]+)"/);
@@ -45,6 +47,10 @@ describe('regolith ground in print', () => {
   });
 
   it('is lit by its filter when no bitmap is given', () => {
-    expect(filters(regolithTileSvg(spec, 'moon', { bleed: true })).has('rg-ground')).toBe(true);
+    expect(filters(tileSvg(spec, { look: 'moon', bleed: true })).has('rg-ground')).toBe(true);
+  });
+
+  it('is nothing in space', () => {
+    expect(tileGroundSvg(spec, { look: 'hex' })).toBeUndefined();
   });
 });

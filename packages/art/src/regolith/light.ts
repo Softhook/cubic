@@ -1,7 +1,7 @@
 import type { Rng } from '../rng';
-import { n, turbulence } from '../svg';
-import type { Box } from '../starfield';
-import { type World, LIT, region } from './core';
+import { n, region, turbulence, type Box } from '../svg';
+import type { World } from '../tile/look';
+import { LIT } from './core';
 
 /**
  * The Regolith ground's light: filters that turn a height map into lit, coloured ground (`ground`), and

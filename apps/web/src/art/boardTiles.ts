@@ -1,5 +1,5 @@
-import { drawing, tileCentres, type Board, type Cell, type World } from '@quantum/engine';
-import { assignTiles, tileFlavour, tileSpec } from '@quantum/art';
+import { drawing, tileCentres, type Board, type Cell } from '@quantum/engine';
+import { assignTiles, tileFlavour, tileSpec, type Spot } from '@quantum/art';
 
 export interface TileArt {
   /** The tile's middle space, where its sky is centred. */
@@ -12,9 +12,7 @@ export interface TileArt {
   /** Where the tile's body is drawn: its planet's space, anywhere on the tile, or the middle for a Void. */
   body: Cell;
   /** Where the body is as drawn, in spaces from the tile's middle (x right, y down). */
-  at: { x: number; y: number };
-  /** The world a hex map's ground shows (`Board.world`). */
-  world?: World;
+  at: Spot;
 }
 
 /** Each tile of the map (3×3 squares, or a hex map's 7-hex flowers), with the physical tile it uses (packages/art). */
@@ -26,7 +24,7 @@ export function tileArt(board: Board): TileArt[] {
     const p = planets.get(index);
     const body = p ? { r: p.r, c: p.c } : { r, c };
     const [a, b] = [drawn({ r, c }), drawn(body)];
-    return { r, c, tile: index, id: ids.get(index)!, body, at: { x: b.c - a.c, y: b.r - a.r }, world: board.world };
+    return { r, c, tile: index, id: ids.get(index)!, body, at: { x: b.c - a.c, y: b.r - a.r } };
   });
 }
 

@@ -1,12 +1,23 @@
 import { useMemo, useState } from 'react';
-import { OFF_CENTRE, TILE_SET, TILE_SPOTS, dataUrl, editableTileSvg, type PlanetType, type TileSpec } from '@quantum/art';
+import {
+  OFF_CENTRE,
+  TILE_SET,
+  TILE_SPOTS,
+  dataUrl,
+  editableTileSvg,
+  lookShape,
+  tileSvg,
+  type PlanetType,
+  type TileLook,
+  type TileSpec,
+} from '@quantum/art';
 import { blobToDataUrl, download } from '../files';
 import { svgToPng } from '../print/exports';
 import { fileName, pieceSize } from '../print/pieces';
 import { PrintPanel, Space } from '../print/PrintPanel';
 import { tileFontCss, useFontCss, useSvgUrl } from './cards';
 import { LabHeader } from './LabHeader';
-import { TILE_PRINT, lookShape, printableTile, printedTileFaceSvg, tileFaceSvg, worldOf, type TileLook } from './pressSheets';
+import { TILE_PRINT, printableTile, printedTileSvg } from './pressSheets';
 
 /**
  * Art Lab, tiles page (#lab): every tile of the physical set, with controls to explore seeds and
@@ -17,6 +28,8 @@ import { TILE_PRINT, lookShape, printableTile, printedTileFaceSvg, tileFaceSvg, 
  */
 
 const TYPES: PlanetType[] = ['gas', 'rocky', 'ice', 'lava', 'ocean'];
+
+const LOOKS: Record<TileLook, string> = { square: 'Square', hex: 'Hex', moon: 'Hex, on the moon', mars: 'Hex, on Mars' };
 
 type Override = Partial<Pick<TileSpec, 'seed' | 'type' | 'rings'>>;
 
@@ -35,13 +48,13 @@ export function TileLab() {
 
   const specs = useMemo(() => TILE_SET.map((t) => ({ ...t, ...overrides[t.id] })), [overrides]);
   const thumbs = useMemo(
-    () => specs.map((t) => ({ spec: t, url: dataUrl(tileFaceSvg(t, view, { markings, rounded: true })) })),
+    () => specs.map((t) => ({ spec: t, url: dataUrl(tileSvg(t, { ...view, markings, rounded: true })) })),
     [specs, markings, view],
   );
   const spec = specs.find((t) => t.id === selected)!;
   // A hex tile is shown cut to its flower; a square one as printed, with its bleed.
   const svg = useMemo(
-    () => tileFaceSvg(spec, view, { markings, bleed, fontCss: fonts ?? '', rounded: shape === 'hex' }),
+    () => tileSvg(spec, { ...view, markings, bleed, fontCss: fonts ?? '', rounded: shape === 'hex' }),
     [spec, markings, bleed, fonts, view, shape],
   );
   const detail = useSvgUrl(svg);
@@ -59,15 +72,10 @@ export function TileLab() {
    */
   const exportEditable = async () => {
     const { w, h } = pieceSize(piece, bleed);
-    const beneath = !!worldOf(look);
-    const under = await printedTileFaceSvg(
-      spec,
-      view,
-      beneath ? { only: 'beneath', bleed, markings, fontCss: fonts ?? '' } : { only: 'art', bleed },
-    );
+    const under = await printedTileSvg(spec, { ...view, only: 'beneath', bleed, markings, fontCss: fonts ?? '' });
     const art = await blobToDataUrl(await svgToPng(under, w, h, 600));
     const name = fileName(piece, item, { bleed, ext: 'svg' }).replace(/\.svg$/, '-illustrator.svg');
-    download(name, new Blob([editableTileSvg(spec, art, { bleed, markings, shape, planetAt, beneath })], { type: 'image/svg+xml' }));
+    download(name, new Blob([editableTileSvg(spec, art, { ...view, bleed, markings })], { type: 'image/svg+xml' }));
   };
 
   return (
@@ -86,10 +94,11 @@ export function TileLab() {
               if (!(planetAt in TILE_SPOTS[lookShape(next)])) setPlanetAt('');
             }}
           >
-            <option value="square">Square</option>
-            <option value="hex">Hex</option>
-            <option value="moon">Hex, on the moon</option>
-            <option value="mars">Hex, on Mars</option>
+            {Object.entries(LOOKS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
         </label>
         <label title="Where each planet sits on its tile, as a map's layout token says (7ne)">

@@ -1,5 +1,5 @@
-import { gradientMap, greyFromRed, hsl, n, stretch, tint, turbulence, type Hsl } from '../svg';
-import { blur, type Ctx, type Surface } from './core';
+import { blur, gradientMap, greyFromRed, hsl, n, stretch, tint, turbulence, type Hsl } from '../svg';
+import { type Ctx, type Surface } from './core';
 
 /**
  * Land on Earth-like worlds: hue, saturation, lightness from shore to highland, and the peaks. Listed

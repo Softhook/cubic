@@ -1,5 +1,5 @@
-import { gradientMap, greyFromRed, hsl, n, stretch, turbulence, type Hsl } from '../svg';
-import { blur, spot, type Ctx, type Surface } from './core';
+import { blur, gradientMap, greyFromRed, hsl, n, stretch, turbulence, type Hsl } from '../svg';
+import { spot, type Ctx, type Surface } from './core';
 
 /** Gas giant palettes (8): all gold to amber, from pale cream to deep rust, so every 8 reads golden. */
 const GIANTS: Record<string, (h: number, light: number) => Hsl[]> = {

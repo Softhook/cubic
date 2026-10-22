@@ -1,6 +1,6 @@
 import type { Rng } from '../rng';
-import { n, turbulence } from '../svg';
-import { DRAWN, SIZE, anywhere, radial, region, stops } from './core';
+import { n, region, turbulence } from '../svg';
+import { DRAWN, SIZE, anywhere, radial, stops } from './core';
 
 /** The Regolith ground's terrain, as a height map: craters of every age, pits, boulders, ridges, and on Mars dunes and dust devils' tracks. */
 

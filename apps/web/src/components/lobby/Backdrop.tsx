@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { buildBoard, drawing, spaces, type Board, type MapDef } from '@quantum/engine';
-import { HEX_WELL, PLANET_DIAMETER, SPACE_BASE_CSS, TILE, TILE_SET, tileHasRings, tileSpec } from '@quantum/art';
+import { HEX_WELL, PLANET_DIAMETER, SPACE_BASE_CSS, TILE, TILE_SET, tileHasRings, tileSpec, type TileLook } from '@quantum/art';
 import { decodedTileImage, type TileLayer } from '../../art/tileImages';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { PIPS } from '../Die3D';
@@ -59,12 +59,12 @@ function useCell(board: Board): number {
 }
 
 /** A layer of each tile's artwork (tileImages), as a decoded image and its URL, filled in as each is ready. */
-function useTileImages(tiles: TileArt[], layer: TileLayer) {
+function useTileImages(tiles: TileArt[], look: TileLook, layer: TileLayer) {
   const [images, setImages] = useState<Record<string, HTMLImageElement>>({});
   useEffect(() => {
     let live = true;
     for (const t of tiles)
-      decodedTileImage(t, layer).then((url) => {
+      decodedTileImage(t, look, layer).then((url) => {
         const img = new Image();
         img.src = url;
         img.decode().then(
@@ -75,7 +75,7 @@ function useTileImages(tiles: TileArt[], layer: TileLayer) {
     return () => {
       live = false;
     };
-  }, [tiles, layer]);
+  }, [tiles, look, layer]);
   return images;
 }
 
@@ -309,8 +309,10 @@ function Planets({ board, tiles, bodies }: { board: Board; tiles: TileArt[]; bod
 function Plane({ map, fleet, still }: { map: MapDef; fleet: number; still: boolean }) {
   const board = useMemo(() => buildBoard(map), [map]);
   const tiles = useMemo(() => ringlessTiles(board), [board]);
-  const skies = useTileImages(tiles, board.hex ? 'sky-hex' : 'sky-square');
-  const bodies = useTileImages(tiles, 'body');
+  // Always in space: the planets stand up off the map as spheres.
+  const look = board.hex ? 'hex' : 'square';
+  const skies = useTileImages(tiles, look, 'back');
+  const bodies = useTileImages(tiles, look, 'body');
   const open = useMemo(() => new Set(openSpaces(board).map(at)), [board]);
   const cell = useCell(board);
   // Ships and blasts keep board spaces; they're drawn where the map draws them (hexes sit between rows).

@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from 'react';
+import type { Board } from '@quantum/engine';
+import type { TileLook } from '@quantum/art';
 import { remember, stored } from '../storage';
 
 /*
@@ -23,3 +25,10 @@ export function setGroundMaps(on: boolean) {
 
 /** Whether hex maps are drawn on their world's ground. */
 export const useGroundMaps = () => useSyncExternalStore(subscribe, () => onGround);
+
+/** How a map's tiles look: square, or hex on its world's ground or, with that switched off, in space. */
+export function useMapLook(board: Board): TileLook {
+  const ground = useGroundMaps();
+  if (!board.hex) return 'square';
+  return ground && board.world ? board.world : 'hex';
+}

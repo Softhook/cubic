@@ -19,39 +19,31 @@ export {
 } from './tokens';
 export { ICONS, icon } from './icons';
 export { starfield, type StarfieldOptions } from './starfield';
-export { REGOLITH_GROUND_PX, regolithGroundSvg, regolithMaskSvg, regolithSvg, regolithTileSvg, type World } from './regolith';
+export { REGOLITH_GROUND_PX, regolithMaskSvg, regolithSvg } from './regolith';
 export { planet, type PlanetOptions } from './planet';
 export {
   BLED,
-  HATCH,
   HEX_TILE_CUT,
   HEX_WELL,
   OFF_CENTRE,
   TILE_SPOTS,
-  bodySvg,
   cubePadCentres,
   dieLine,
-  editableTileSvg,
   hexTileShape,
-  hexWell,
   numberCorner,
   numberPlacement,
-  skySvg,
-  tileFlavour,
-  tileHasRings,
-  tileLabel,
-  tileLabelFits,
-  tileSvg,
-  voidFlask,
-  well,
   type Corner,
   type NumberPlacement,
   type Segment,
   type Spot,
-  type TileOptions,
   type TileShape,
-} from './tile';
-export { SET_COUNTS, TILE_SET, assignTiles, tileSpec, type TileSpec } from './tileset';
+} from './tile/geometry';
+export { lookShape, lookWorld, type TileLook, type World } from './tile/look';
+export { HATCH, hexWell, voidFlask, well } from './tile/markings';
+export { tileFlavour, tileLabel, tileLabelFits } from './tile/label';
+export { bodySvg, skySvg, tileHasRings } from './tile/space';
+export { editableTileSvg, tileGroundSvg, tileSvg, type TileOptions } from './tile';
+export { SET_COUNTS, TILE_SET, assignTiles, tileSpec, type TileSpec } from './tile/set';
 export {
   CARD,
   cardBackSvg,

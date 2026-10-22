@@ -1,58 +1,32 @@
 import {
   REGOLITH_GROUND_PX,
   TILE_SET,
+  lookWorld,
   playerAidSvg,
-  regolithGroundSvg,
-  regolithTileSvg,
+  tileGroundSvg,
   tileSvg,
   type AidEdition,
+  type TileLook,
   type TileOptions,
-  type TileShape,
   type TileSpec,
-  type World,
 } from '@quantum/art';
 import { blobToDataUrl, rasterise } from '../files';
 import type { PressSheets } from '../print/exports';
 import { PIECES, type Piece, type Printable } from '../print/pieces';
 import { cardFontCss, measure, tileFontCss } from './cards';
 
-/** How a tile looks: square, hex in space, or hex on the moon or Mars (the Regolith look, `regolithTileSvg`). */
-export type TileLook = 'square' | 'hex' | 'moon' | 'mars';
-
-/** The shape of a look's spaces. */
-export const lookShape = (look: TileLook): TileShape => (look === 'square' ? 'square' : 'hex');
-
-/** The world a look's ground is on, if it's on one. */
-export const worldOf = (look: TileLook | undefined): World | undefined => (look === 'moon' || look === 'mars' ? look : undefined);
-
 /** How a tile is shown and printed: its look, and where its planet sits (art `TileOptions`). */
-export interface TileView {
-  look?: TileLook;
-  planetAt?: string;
-}
-
-/** How to draw a tile face: art `TileOptions` but its look's, and its lit ground as a bitmap (`printedTileFaceSvg`). */
-type FaceOptions = Omit<TileOptions, 'shape' | 'planetAt' | 'ground'> & { ground?: string };
+export type TileView = Pick<TileOptions, 'look' | 'planetAt'>;
 
 /**
- * A tile as an SVG document in a look, square by default: in space (`tileSvg`) or on a world's ground,
- * its light drawn by its filter or, as `ground`, a bitmap of it (`printedTileFaceSvg`).
+ * A tile as an SVG document to print (art `tileSvg`): on a world's ground, its light drawn first at the size
+ * it's made for and scaled up (art `tileGroundSvg`), since drawn at a print's resolution it falls into contour lines.
  */
-export function tileFaceSvg(t: TileSpec, { look = 'square', planetAt }: TileView, { ground, ...o }: FaceOptions) {
-  const world = worldOf(look);
-  return world ? regolithTileSvg(t, world, { ...o, planetAt, ground }) : tileSvg(t, { ...o, planetAt, shape: lookShape(look) });
-}
-
-/**
- * A tile as an SVG document to print: on a world's ground, its light drawn first at the size it's made
- * for and scaled up (art `regolithGroundSvg`), since drawn at a print's resolution it falls into contour lines.
- */
-export async function printedTileFaceSvg(t: TileSpec, view: TileView, o: Omit<FaceOptions, 'ground'>) {
-  const world = worldOf(view.look);
-  if (!world) return tileFaceSvg(t, view, o);
+export async function printedTileSvg(t: TileSpec, o: Omit<TileOptions, 'ground'>): Promise<string> {
+  const lit = tileGroundSvg(t, o);
+  if (!lit) return tileSvg(t, o);
   const px = REGOLITH_GROUND_PX;
-  const ground = await blobToDataUrl(await rasterise(regolithGroundSvg(t, world, view.planetAt), px, px));
-  return tileFaceSvg(t, view, { ...o, ground });
+  return tileSvg(t, { ...o, ground: await blobToDataUrl(await rasterise(lit, px, px)) });
 }
 
 /**
@@ -60,9 +34,9 @@ export async function printedTileFaceSvg(t: TileSpec, view: TileView, o: Omit<Fa
  * world when it's on one: `p7-01`, `p7-01-ne`, `p7-01-moon` (a Void has no spot).
  */
 export const printableTile = (t: TileSpec, fontCss: string, markings = true, view: TileView = {}): Printable => ({
-  name: (view.planetAt && t.number > 0 ? `${t.id}-${view.planetAt}` : t.id) + (worldOf(view.look) ? `-${view.look}` : ''),
-  svg: (bleed) => tileFaceSvg(t, view, { markings, bleed, fontCss }),
-  print: (bleed) => printedTileFaceSvg(t, view, { markings, bleed, fontCss }),
+  name: (view.planetAt && t.number > 0 ? `${t.id}-${view.planetAt}` : t.id) + (lookWorld(view.look) ? `-${view.look}` : ''),
+  svg: (bleed) => tileSvg(t, { ...view, markings, bleed, fontCss }),
+  print: (bleed) => printedTileSvg(t, { ...view, markings, bleed, fontCss }),
 });
 
 /** A player aid as a printable face. */
@@ -95,7 +69,7 @@ export const TILES_AND_AIDS: PressSheets = {
 };
 
 /** The set as hex tiles, in space or on the moon or Mars, planets in the middle, on press sheets of their own with each tile's die-cut line. */
-const hexTiles = (look: 'hex' | 'moon' | 'mars'): PressSheets => {
+const hexTiles = (look: Exclude<TileLook, 'square'>): PressSheets => {
   const on = { hex: '', moon: ' on the moon', mars: ' on Mars' }[look];
   return {
     name: look === 'hex' ? 'hex-tiles' : `hex-tiles-${look}`,

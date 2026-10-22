@@ -1,14 +1,13 @@
 import { rng } from '../rng';
-import { document, n, type Fragment } from '../svg';
-import { BLED, planetSpot, tileSvg, type Spot, type TileOptions } from '../tile';
-import type { TileSpec } from '../tileset';
-import { SPACE, SCALE, SIZE, LIT, type World, region, blur, DRAWN } from './core';
+import { blur, document, n, region, type Fragment } from '../svg';
+import { BLED, type Spot } from '../tile/geometry';
+import type { World } from '../tile/look';
+import type { TileSpec } from '../tile/set';
+import { SPACE, SCALE, SIZE, LIT, DRAWN } from './core';
 import { ground, built, cast, dust } from './light';
 import { GRADIENTS, CRATERS, RIDGE, DUNES, terrain, weathering } from './terrain';
 import { BUILDING_GRADIENTS } from './parts';
 import { base } from './base';
-
-export type { World } from './core';
 
 /**
  * Moon or Mars ground for a hex tile, after the Regolith mood board (docs/moodboards/regolith/HexSurface.dc.html):
@@ -95,9 +94,10 @@ const silhouette = (heights: string) => inMm(`<g filter="url(#rg-white)">${heigh
 /**
  * A tile's ground on `world` over its trim and bleed (mm, the trim's top left at 0, 0), with everything on it;
  * and what stands on it alone (its buildings, ships and rovers), cut to their outlines, to print over the
- * spaces' wells.
+ * spaces' wells. Its lit ground drawn by its filter, or as `image`, a bitmap of it (`regolithGroundSvg`). For
+ * a tile on a world's ground (tile/index.ts `tileSvg`), in place of its sky and planet.
  */
-function groundArt(spec: TileSpec, at: Spot, world: World, image?: string): Fragment & { standing?: Fragment } {
+export function groundArt(spec: TileSpec, at: Spot, world: World, image?: string): Fragment & { standing?: Fragment } {
   const s = scene(spec, at, world);
   const { defs, standing } = s;
   return {
@@ -124,13 +124,13 @@ export function regolithSvg(spec: TileSpec, world: World, at: Spot = { x: 0, y: 
 }
 
 /**
- * A hex tile's lit ground on `world` alone, over the same area as `regolithSvg`, with its planet's space
- * `planetAt` (`TileOptions`): nothing standing on it, as that's drawn over it. For print, drawn at
- * `REGOLITH_GROUND_PX` and passed back to `regolithTileSvg` as `ground`, so the light is as on screen, not
- * in contour lines (`LIT`), while what stands is drawn at the print's own resolution.
+ * A hex tile's lit ground on `world` alone, over the same area as `regolithSvg`, its building `at` its planet's
+ * space: nothing standing on it, as that's drawn over it. For print, drawn at `REGOLITH_GROUND_PX` and passed
+ * back as the tile's `ground` (tile/index.ts `tileGroundSvg`), so the light is as on screen, not in contour
+ * lines (`LIT`), while what stands is drawn at the print's own resolution.
  */
-export function regolithGroundSvg(spec: TileSpec, world: World, planetAt?: string): string {
-  const { defs, lit } = scene(spec, planetSpot('hex', planetAt), world);
+export function regolithGroundSvg(spec: TileSpec, world: World, at: Spot = { x: 0, y: 0 }): string {
+  const { defs, lit } = scene(spec, at, world);
   return document({ defs, body: inMm(lit) }, BLED, true);
 }
 
@@ -146,14 +146,3 @@ export function regolithMaskSvg(spec: TileSpec, at: Spot = { x: 0, y: 0 }): stri
   const defs = WHITE + BUILDING_GRADIENTS + blur('rg-soft1', 1);
   return document(standing ? { defs, body: silhouette(standing.heights) } : { defs: '', body: '' }, BLED, true);
 }
-
-/**
- * A hex tile on `world` as printed (`tileSvg` with that ground for its art): knocked out past its
- * flower, with its markings, the cube pads in the building's bays, and what stands on the ground over the
- * spaces' wells. Its lit ground drawn by its filter, or as `ground`, a bitmap of it (`regolithGroundSvg`).
- */
-export const regolithTileSvg = (
-  spec: TileSpec,
-  world: World,
-  { ground, ...o }: Omit<TileOptions, 'shape' | 'ground'> & { ground?: string } = {},
-): string => tileSvg(spec, { ...o, shape: 'hex', ground: (at) => groundArt(spec, at, world, ground) });

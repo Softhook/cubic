@@ -1,8 +1,7 @@
 import type { Rng } from '../rng';
 import { TILE } from '../tokens';
-import { n } from '../svg';
-import type { Box } from '../starfield';
-import { BLED, HEX_TILE_CUT, type Spot } from '../tile';
+import type { Box } from '../svg';
+import { BLED, HEX_TILE_CUT, type Spot } from '../tile/geometry';
 
 /** The Regolith ground's units, the hex flower in them, and the SVG helpers its parts share (index.ts says how a tile is drawn). */
 
@@ -21,12 +20,6 @@ const MARGIN = 20;
  */
 export const LIT = 0.28;
 
-/** Which world a hex map is on: the grey moon, or Mars. */
-export type World = 'moon' | 'mars';
-
-/** A box as a filter's or mask's region attributes. */
-export const region = (b: Box) => `x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}"`;
-
 /** The point `d` from the origin at `angle` degrees (0 right, y down). */
 export const polar = (angle: number, d: number): Spot => ({
   x: d * Math.cos((angle * Math.PI) / 180),
@@ -37,9 +30,6 @@ export const stops = (list: [number, string, number?][]) =>
   list.map(([o, c, a]) => `<stop offset="${o}" stop-color="${c}"${a === undefined ? '' : ` stop-opacity="${a}"`}/>`).join('');
 
 export const radial = (id: string, list: [number, string, number?][]) => `<radialGradient id="${id}">${stops(list)}</radialGradient>`;
-
-export const blur = (id: string, sd: number) =>
-  `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${sd}"/></filter>`;
 
 /** The hex flower's outline (its cut), in board units. */
 const OUTLINE = HEX_TILE_CUT.map((side) => side.map((v) => v / SCALE));

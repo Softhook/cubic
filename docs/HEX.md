@@ -246,7 +246,7 @@ planets look scattered. 6 cubes each, slack 6.
 | Twin Drift (hex), 12 tiles | `7se 8* . .` / `9 0 7n` / `. 8 8 .` / `7s 0 9` / `. . 8* 7nw` | Each start shares 2 orbital hexes with the 7 beside it, and the 9s share 2 more. Two 7s drift to the edge (3 orbital hexes); two Voids sit between. |
 
 Only 7s and 8s go off the middle of a square tile, and only 7s off a hex tile (`OFF_CENTRE` in
-[`tile.ts`](../packages/art/src/tile.ts)). An off-centre planet sits on its tile's edge space, half a space
+[`tile/geometry.ts`](../packages/art/src/tile/geometry.ts)). An off-centre planet sits on its tile's edge space, half a space
 from the edge: a 9 or 10 is wider than that (0.6 and 0.72 spaces from its middle to its rim), and an 8
 fills an outer hex right to its sides. [`mapLayers.test.ts`](../apps/web/test/mapLayers.test.ts) holds every
 map to this.

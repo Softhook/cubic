@@ -1,7 +1,7 @@
 import { GROUND, cubePad, diePad } from './aid';
 import { CARD, cardPalette } from './card';
 import { document, esc, hsl, hslToRgb, n } from './svg';
-import { hatch, well } from './tile';
+import { hatch, well } from './tile/markings';
 import { CARD_CATEGORIES, CUBE_PAD, DOMINANCE, FONTS, INK, LABEL_TEXT, SPACE_BASE, SPACE_BASE_CSS, TILE, WELL } from './tokens';
 
 /**

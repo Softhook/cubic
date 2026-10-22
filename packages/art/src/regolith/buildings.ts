@@ -1,6 +1,6 @@
 import type { Rng } from '../rng';
 import { n } from '../svg';
-import type { Spot } from '../tile';
+import type { Spot } from '../tile/geometry';
 import { polar } from './core';
 import { H, type Part, placed, merged, disc, square, box, graded, glow, lamp, run } from './parts';
 

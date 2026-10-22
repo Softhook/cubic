@@ -1,6 +1,5 @@
-import type { Box } from '../starfield';
 import type { Rng } from '../rng';
-import { n, type Fragment } from '../svg';
+import { n, type Box, type Fragment } from '../svg';
 
 /** The base every card illustration is drawn on: the scene it gets, and small helpers. Sizes in mm. */
 

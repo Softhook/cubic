@@ -1,13 +1,6 @@
 import type { Rng } from './rng';
 import { NEBULA_HUES, SPACE_BASE, SPACE_BASE_CSS } from './tokens';
-import { hsl, n, tint, turbulence, type Fragment } from './svg';
-
-export interface Box {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+import { hsl, n, tint, turbulence, type Box, type Fragment } from './svg';
 
 export interface StarfieldOptions {
   rng: Rng;

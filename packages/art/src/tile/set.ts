@@ -1,5 +1,5 @@
-import { hash } from './rng';
-import { PLANET_FAMILY, type PlanetType } from './tokens';
+import { hash } from '../rng';
+import { PLANET_FAMILY, type PlanetType } from '../tokens';
 
 /** One physical tile: which planet it carries and the seed its look comes from. */
 export interface TileSpec {
@@ -60,3 +60,6 @@ export function assignTiles(tiles: { index: number; number: number }[]): Map<num
   }
   return out;
 }
+
+/** A tile's kind of planet: its spec's, or its number's first. */
+export const planetType = (spec: TileSpec): PlanetType => spec.type ?? PLANET_FAMILY[spec.number].types[0];

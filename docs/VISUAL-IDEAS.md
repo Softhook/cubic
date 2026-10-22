@@ -46,7 +46,7 @@ battles still resolve in a static card, and the players have no faces.
 - **Tile art, round one** (picked 17 October 2026 from seven ideas with three candidates each):
   film-style planet lighting (hard terminator, edge-lit atmosphere, back light), spaces and cube slots as etched wells, and a black hole, the old rift and a supernova on the
   three Void tiles
-  ([planet.ts](../packages/art/src/planet.ts), [tile.ts](../packages/art/src/tile.ts)). Kept as they
+  ([planet/](../packages/art/src/planet/), [tile/](../packages/art/src/tile/)). Kept as they
   were: the nebula colours (a corner key light was tried and dropped), the molten 10s, the planet number and the starfield. Not tried yet: ring shadows, and
   animation on the board (drifting clouds, a turning disc).
 - **Starfield, round two** (picked 19 October 2026 from five ideas with three candidates each): bright

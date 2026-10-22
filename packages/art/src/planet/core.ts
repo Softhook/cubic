@@ -40,10 +40,6 @@ export interface Ctx {
   f: (x: number) => string;
 }
 
-/** Soft blur filter for marks drawn on the surface. */
-export const blur = (id: string, sd: number) =>
-  `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${n(sd)}"/></filter>`;
-
 /** A point on the disc, `k` of the radius from the centre at most, spread evenly. */
 export function spot(c: Ctx, k: number): { x: number; y: number } {
   const a = c.rng.range(0, Math.PI * 2);

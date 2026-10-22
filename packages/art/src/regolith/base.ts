@@ -1,6 +1,6 @@
 import type { Rng } from '../rng';
 import { n } from '../svg';
-import { cubePadCentres, numberCorner, type Spot } from '../tile';
+import { cubePadCentres, numberCorner, type Spot } from '../tile/geometry';
 import { SPACE, SCALE, SIZE, inside, toward } from './core';
 import { H, biohazard, type Part, placed, type Drawn, merged, disc, graded, glow, run } from './parts';
 import {
