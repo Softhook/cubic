@@ -19,6 +19,7 @@ Live canvas: https://claude.ai/artifact/HXXvHR2kv7qATjy7nCudZb (private to its o
 | [HexSurface](HexSurface.dc.html) | The seven-tile map redrawn from the Surface study's lit height map, weathered, overlapping craters, objectives built round their cube bays (1–4), and plain pip dice in the side colours |
 | [CardStyles](CardStyles.dc.html) | Four real cards renamed for the theme (Agile, Ferocious, Show of Force, Warp Gate) drawn four ways at print size: detailed (the Mech Study model), cinematic silhouette, screenprint and field-manual diagram, plus the new words |
 | [CardScale](CardScale.dc.html) | The same cards at the app's card-viewer and market sizes, and which style to use for what |
+| [Vocabulary](Vocabulary.dc.html) | Screenprint parts: the six mech classes, the objectives (Habitat to Reactor, Sinkhole) and props, printed as plate, key ink and accent, with three scenes built from them |
 
 Each board is a static HTML page and opens in a browser as it is. The `support.js` it asks for belongs
 to the canvas editor; without it the page draws the same, only not editable. `canvas.json` is the
