@@ -386,7 +386,40 @@ const H = {
   graded: 'rgb(128,190,128)',
 };
 
+/**
+ * The biohazard sign, 14.4 across and centred on its box (its arms reach further up than down, so it's
+ * moved down by the difference): three crescents round a ring, cut through by a hole in the middle and gaps
+ * along each arm. And its paint, worn: chipped away in flecks and thinned in patches.
+ */
+const BIOHAZARD = (() => {
+  const arms = [-90, 30, 150].map((a) => [Math.cos((a * Math.PI) / 180), Math.sin((a * Math.PI) / 180)]);
+  const at = (k: number, d: number) => `cx="${n(arms[k][0] * d)}" cy="${n(arms[k][1] * d)}"`;
+  return (
+    '<mask id="rg-biohazardCut" maskUnits="userSpaceOnUse" x="-10" y="-10" width="20" height="20"><g transform="translate(0,0.9)">' +
+    arms.map((_, k) => `<circle ${at(k, 3.6)} r="3.6" fill="#fff"/>`).join('') +
+    '<circle r="3.75" fill="none" stroke="#fff" stroke-width="0.75"/>' +
+    arms.map((_, k) => `<circle ${at(k, 4.7)} r="2.5" fill="#000"/>`).join('') +
+    '<circle r="1.2" fill="#000"/>' +
+    arms.map((_, k) => `<path d="M0,0 L${n(arms[k][0] * 2.4)},${n(arms[k][1] * 2.4)}" stroke="#000" stroke-width="0.45"/>`).join('') +
+    '</g></mask>' +
+    '<filter id="rg-worn" color-interpolation-filters="sRGB">' +
+    turbulence(0.5, 3, 11, 'chip') +
+    '<feColorMatrix in="chip" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  6 0 0 0 -1.6" result="kept"/>' +
+    turbulence(0.12, 2, 5, 'thin') +
+    '<feColorMatrix in="thin" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.5 0 0 0 0.2" result="left"/>' +
+    '<feComposite in="kept" in2="left" operator="arithmetic" k1="1"/>' +
+    '<feComposite in="SourceGraphic" operator="in"/>' +
+    '</filter>' +
+    '<symbol id="rg-biohazard" overflow="visible"><rect x="-10" y="-10" width="20" height="20" fill="currentColor" mask="url(#rg-biohazardCut)"/></symbol>'
+  );
+})();
+
+/** The biohazard sign, painted red on a socket at (x, y): worn, and multiplied in, so the grime and light under it show through. */
+const biohazard = (p: Spot) =>
+  `<g style="mix-blend-mode: multiply"><use href="#rg-biohazard" transform="translate(${n(p.x)},${n(p.y)}) scale(1.35)" color="#d8261c" filter="url(#rg-worn)"/></g>`;
+
 const BUILDING_GRADIENTS =
+  BIOHAZARD +
   `<linearGradient id="rg-vault" x2="0" y2="1">${stops([
     [0, 'rgb(165,255,120)'],
     [0.5, 'rgb(225,255,150)'],
@@ -492,20 +525,54 @@ function run(a: Spot, b: Spot, w: number, colour: string, height = H.pipe): Part
 }
 
 /**
+ * The outline of a deck round three sockets, two side by side over one between them, `e` out from their
+ * centres (`cubePadCentres` order): a bar over a block, its corners rounded to `round` and the corners where they meet filled to `fill`.
+ */
+function trefoil(pads: readonly Spot[], e: number, round: number, fill: number): string {
+  const [left, right, below] = pads;
+  const cx = below.x;
+  const X = (right.x - left.x) / 2 + e;
+  const [T, B1, B2] = [left.y - e, left.y + e, below.y + e];
+  const [r, f] = [round, fill];
+  const at = (x: number, y: number) => `${n(cx + x)},${n(y)}`;
+  const arc = (rad: number, sweep: number, x: number, y: number) => `A${n(rad)},${n(rad)} 0 0 ${sweep} ${at(x, y)}`;
+  return (
+    `M${at(-X + r, T)} L${at(X - r, T)} ${arc(r, 1, X, T + r)} L${at(X, B1 - r)} ${arc(r, 1, X - r, B1)} ` +
+    `L${at(e + f, B1)} ${arc(f, 0, e, B1 + f)} L${at(e, B2 - r)} ${arc(r, 1, e - r, B2)} ` +
+    `L${at(-e + r, B2)} ${arc(r, 1, -e, B2 - r)} L${at(-e, B1 + f)} ${arc(f, 0, -e - f, B1)} ` +
+    `L${at(-X + r, B1)} ${arc(r, 1, -X, B1 - r)} L${at(-X, T + r)} ${arc(r, 1, -X + r, T)} Z`
+  );
+}
+
+/**
  * The hub: a deck round the planet's cube sockets (`cubePadCentres`, one per cube it holds), no larger
- * than they need, edged in amber, a light at a corner.
+ * than they need, edged in amber, a light at a corner: round three, the three squares' own
+ * shape, smoothed; otherwise a box.
  */
 function hub(pads: readonly Spot[], deck: string, height = H.deck, light = '#F2B233'): Part {
   const xs = pads.map((p) => p.x);
   const ys = pads.map((p) => p.y);
   const [x0, x1, y0, y1] = [Math.min(...xs) - 15, Math.max(...xs) + 15, Math.min(...ys) - 15, Math.max(...ys) + 15];
   const [w, h, cx, cy] = [x1 - x0, y1 - y0, (x0 + x1) / 2, (y0 + y1) / 2];
+  const sockets = pads.map((p) => square(p.x, p.y, 24.5, 3.4, H.socket)).join('');
+  const grade = graded(cx, cy, Math.max(w, h) / 2 + 12);
+  if (pads.length === 3) {
+    // Grown by `g` (shrunk if less than 0), as the boxes are; the rounding and the fill share the 13.5 the bar
+    // overhangs the block by.
+    const shape = (g: number, fill: string, extra = '') => `<path d="${trefoil(pads, 15 + g, 5 + g / 2, 7 - g)}" fill="${fill}"${extra}/>`;
+    return {
+      grade,
+      heights: shape(1.5, H.apron) + shape(0, height) + sockets,
+      tint: shape(0.5, deck),
+      paint:
+        shape(-2, 'none', ` stroke="#F2B233" stroke-width="0.7" stroke-dasharray="3 2" opacity="0.55"`) +
+        lamp(x0 + 3, y0 + 3, light) +
+        lamp(pads[2].x + 12, y1 - 3, light),
+    };
+  }
   return {
-    grade: graded(cx, cy, Math.max(w, h) / 2 + 12),
-    heights:
-      box(cx, cy, w + 3, h + 3, 4, H.apron) +
-      box(cx, cy, w, h, 3.5, height) +
-      pads.map((p) => square(p.x, p.y, 24.5, 3.4, H.socket)).join(''),
+    grade,
+    heights: box(cx, cy, w + 3, h + 3, 4, H.apron) + box(cx, cy, w, h, 3.5, height) + sockets,
     tint: box(cx, cy, w + 1, h + 1, 3.5, deck),
     paint:
       box(cx, cy, w - 4, h - 4, 2.5, 'none', ` stroke="#F2B233" stroke-width="0.7" stroke-dasharray="3 2" opacity="0.55"`) +
@@ -661,6 +728,32 @@ function flares(r: Rng): Part {
     ),
   };
 }
+
+/**
+ * A refinery's tower: a tall stack, banded red and white, ringed by a walkway, burning off gas at its top.
+ */
+const stack = (): Part => ({
+  extent: 8,
+  grade: graded(0, 0, 13),
+  heights:
+    disc(0, 0, 8, H.apron) +
+    `<circle r="7" fill="none" stroke="${H.pipe}" stroke-width="1.2"/>` +
+    disc(0, 0, 5.4, 'url(#rg-sphere)') +
+    disc(0, 0, 2.2, 'rgb(255,120,235)'),
+  tint:
+    disc(0, 0, 8, '#55504a') +
+    `<circle r="7" fill="none" stroke="#8e8a86" stroke-width="1.4"/>` +
+    disc(0, 0, 5.6, '#e8e2d4') +
+    `<circle r="4.3" fill="none" stroke="#c8321f" stroke-width="1.4"/>` +
+    `<circle r="2.2" fill="none" stroke="#c8321f" stroke-width="1.2"/>`,
+  paint:
+    `<circle r="7" fill="none" stroke="#ffd27a" stroke-width="0.3" stroke-dasharray="1 1.2" opacity="0.6"/>` +
+    glow(-1, -1, 12, '#ff6a10', 0.5, 'rg-soft6') +
+    glow(-1, -1, 5, '#ff9a2a', 0.85) +
+    glow(-1, -1, 2.2, '#ffe9a0', 1, 'rg-soft1') +
+    disc(-1, -1, 0.9, '#fff') +
+    lamp(5.2, 5.2, '#ff3b2a'),
+});
 
 /** Three to five process columns in a row on a platform, copper. */
 function columns(r: Rng): Part {
@@ -1217,6 +1310,7 @@ function base(number: number, at: Spot, r: Rng): Drawn | undefined {
       ]);
     case 9: {
       const frost = r.range(45, 66);
+      const tower = r.pick([-1, 1]) * 25;
       return merged([
         {
           grade: disc(0, 0, frost, 'url(#rg-frost)', ' style="mix-blend-mode: lighten"'),
@@ -1228,7 +1322,12 @@ function base(number: number, at: Spot, r: Rng): Drawn | undefined {
           annex(1.5, [0.68, 0.78], tube(3.5, '#e8eef2'), silos, BIG, true),
           ...common('#7fe9ff'),
         ]),
-        hub(pads, '#c4ced4', H.deck, '#7fe9ff'),
+        hub(pads, '#c4ced4', H.deck, '#ff3b2a'),
+        // A biohazard sign on one of its sockets.
+        { paint: biohazard(r.pick(pads)) },
+        // Its tower, in a corner the three sockets leave, piped up to the deck.
+        run({ x: tower, y: 15 }, { x: tower, y: -4 }, 2.5, '#c9c4bc'),
+        placed(tower, 15, stack(), 0, 1.25),
         ...around(40, '#7fe9ff'),
       ]);
     }
