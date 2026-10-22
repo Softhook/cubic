@@ -154,6 +154,45 @@ function ground(r: Rng, area: Box): string {
   );
 }
 
+/**
+ * The buildings' own light, over `area`: made, not weathered, so no fine noise, dust colour or grain, and
+ * hard-edged, each standing up sharply from nothing, so its outline catches the light or falls in shadow.
+ * Their heights are in the ground's map too, so they still cast their shadows on it.
+ */
+function built(r: Rng, area: Box): string {
+  const light = '<feDistantLight azimuth="225" elevation="38"/>';
+  const ramp = (values: string) => `type="table" tableValues="${values}"`;
+  return (
+    `<filter id="rg-built" filterUnits="userSpaceOnUse" x="${n(area.x)}" y="${n(area.y)}" width="${n(area.w)}" height="${n(area.h)}" color-interpolation-filters="sRGB">` +
+    '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0" result="H"/>' +
+    '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 1 0 0 0" result="SMOOTH"/>' +
+    '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 1 0 0  0 0 1 0 0  0 0 1 0 0  0 0 0 0 1" result="ALB"/>' +
+    `<feDiffuseLighting in="H" surfaceScale="5" diffuseConstant="1.2" lighting-color="#ffffff" result="L">${light}</feDiffuseLighting>` +
+    // Worn: brightness mottled by grime in patches and flecks, larger and finer than the ground's grain.
+    turbulence(0.07, 3, r.noiseSeed(), 'gm') +
+    '<feColorMatrix in="gm" type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1" result="gmG"/>' +
+    turbulence(0.45, 2, r.noiseSeed(), 'gf') +
+    '<feColorMatrix in="gf" type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1" result="gfG"/>' +
+    '<feComposite in="ALB" in2="gmG" operator="arithmetic" k1="1.3" k2="0.33" result="alb1"/>' +
+    '<feComposite in="alb1" in2="gfG" operator="arithmetic" k1="0.5" k2="0.75" result="ALBW"/>' +
+    '<feComposite in="L" in2="ALBW" operator="arithmetic" k1="1.15" result="lit"/>' +
+    `<feSpecularLighting in="H" surfaceScale="5" specularConstant="0.35" specularExponent="18" lighting-color="#ffffff" result="spec">${light}</feSpecularLighting>` +
+    '<feComposite in="spec" in2="SMOOTH" operator="in" result="specM"/>' +
+    '<feComposite in="lit" in2="specM" operator="arithmetic" k2="1" k3="0.6" result="lit2"/>' +
+    `<feComponentTransfer in="lit2"><feFuncR ${ramp('0.03 0.17 0.39 0.61 0.81 0.95')}/><feFuncG ${ramp('0.035 0.18 0.4 0.62 0.82 0.96')}/><feFuncB ${ramp('0.045 0.2 0.42 0.64 0.84 0.97')}/></feComponentTransfer>` +
+    '<feComposite in2="SourceAlpha" operator="in"/>' +
+    '</filter>'
+  );
+}
+
+/** Mars dust settled on the buildings, in drifts: their shapes (`SourceAlpha`) filled with dust where noise says, over `area`. */
+const dust = (seed: number, area: Box) =>
+  `<filter id="rg-dust" filterUnits="userSpaceOnUse" x="${n(area.x)}" y="${n(area.y)}" width="${n(area.w)}" height="${n(area.h)}" color-interpolation-filters="sRGB">` +
+  turbulence(0.03, 3, seed, 'dn') +
+  '<feColorMatrix in="dn" type="matrix" values="0 0 0 0 0.66  0 0 0 0 0.38  0 0 0 0 0.22  3 0 0 0 -1.1"/>' +
+  '<feComposite in2="SourceAlpha" operator="in"/>' +
+  '</filter>';
+
 const circle = (r: number, fill: string, blend: string, opacity?: number, filter?: string) =>
   `<circle r="${r}" fill="url(#${fill})" style="mix-blend-mode: ${blend}"${opacity === undefined ? '' : ` opacity="${opacity}"`}${filter ? ` filter="url(#${filter})"` : ''}/>`;
 
@@ -308,7 +347,7 @@ function tracks(r: Rng): string {
 const H = {
   apron: 'rgb(150,0,150)',
   deck: 'rgb(192,160,205)',
-  dark: 'rgb(196,150,70)',
+  dark: 'rgb(196,150,42)',
   socket: 'rgb(168,215,120)',
   pipe: 'rgb(176,120,200)',
   panel: 'rgb(146,220,110)',
@@ -317,14 +356,20 @@ const H = {
 
 const BUILDING_GRADIENTS =
   `<linearGradient id="rg-vault" x2="0" y2="1">${stops([
-    [0, 'rgb(165,255,195)'],
-    [0.5, 'rgb(225,255,220)'],
-    [1, 'rgb(165,255,195)'],
+    [0, 'rgb(165,255,120)'],
+    [0.5, 'rgb(225,255,150)'],
+    [1, 'rgb(165,255,120)'],
   ])}</linearGradient>` +
   radial('rg-sphere', [
     [0, 'rgb(255,60,235)'],
     [0.8, 'rgb(228,60,215)'],
     [1, 'rgb(190,60,190)'],
+  ]) +
+  radial('rg-glass', [
+    [0, 'rgb(250,255,150)'],
+    [0.6, 'rgb(228,255,140)'],
+    [0.88, 'rgb(185,255,125)'],
+    [1, 'rgb(150,255,115)'],
   ]) +
   radial('rg-dome', [
     [0, 'rgb(250,255,225)'],
@@ -346,6 +391,8 @@ const BUILDING_GRADIENTS =
 
 /** A piece of a base, round its planet's space in board units: the ground levelled under it, its height map, colour laid on the lit relief (by hue, so the light stays), and paint and lights over that. */
 interface Part {
+  /** How far it reaches from its middle: the circle it stands in, before it's placed. */
+  extent?: number;
   grade?: string;
   heights?: string;
   tint?: string;
@@ -364,8 +411,10 @@ const placed = (x: number, y: number, part: Part, turn = 0, scale = 1): Part =>
     ]),
   );
 
-const merged = (parts: Part[]): Required<Part> =>
-  Object.fromEntries(LAYERS.map((k) => [k, parts.map((p) => p[k] ?? '').join('')])) as Required<Part>;
+/** A part's drawing, layer by layer. */
+type Drawn = Record<(typeof LAYERS)[number], string>;
+
+const merged = (parts: Part[]): Drawn => Object.fromEntries(LAYERS.map((k) => [k, parts.map((p) => p[k] ?? '').join('')])) as Drawn;
 
 const disc = (x: number, y: number, r: number, fill: string, extra = '') =>
   `<circle cx="${n(x)}" cy="${n(y)}" r="${n(r)}" fill="${fill}"${extra}/>`;
@@ -411,7 +460,7 @@ function hub(pads: readonly Spot[], deck: string, height = H.deck, light = '#F2B
   return {
     grade: graded(cx, cy, Math.max(w, h) / 2 + 12),
     heights:
-      box(cx, cy, w + 3, h + 3, 4, H.apron, ' filter="url(#rg-soft1)"') +
+      box(cx, cy, w + 3, h + 3, 4, H.apron) +
       box(cx, cy, w, h, 3.5, height) +
       pads.map((p) => square(p.x, p.y, 24.5, 3.4, H.socket)).join(''),
     tint: box(cx, cy, w + 1, h + 1, 3.5, deck),
@@ -446,22 +495,23 @@ function exits(r: Rng, at: Spot, numbered: boolean): number[] {
     .map((p) => p.a);
 }
 
-/** A glass dome `size` across, its plants glowing through it. */
-function dome(size: number, glass: string, plants: string): Part {
-  const spokes = [0, 60, 120]
+/** A glass dome `size` across, its plants glowing through it; its frame starts `clear` out from its middle, past a hatch there. */
+function dome(size: number, glass: string, plants: string, clear = 0): Part {
+  const spokes = [0, 60, 120, 180, 240, 300]
     .map((a) => {
-      const { x, y } = { x: size * Math.cos((a * Math.PI) / 180), y: size * Math.sin((a * Math.PI) / 180) };
-      return `M${n(-x)},${n(-y)} L${n(x)},${n(y)}`;
+      const [c, s] = [Math.cos((a * Math.PI) / 180), Math.sin((a * Math.PI) / 180)];
+      return `M${n(clear * c)},${n(clear * s)} L${n(size * c)},${n(size * s)}`;
     })
     .join(' ');
+  const rings = [0.5, 0.85, 0.94].filter((k) => k * size > clear + 1);
   return {
     grade: graded(0, 0, size + 7),
-    heights: disc(0, 0, size + 2, H.deck) + disc(0, 0, size, 'url(#rg-dome)'),
+    heights: disc(0, 0, size + 2, H.deck) + disc(0, 0, size, 'url(#rg-glass)'),
     tint: disc(0, 0, size + 2.5, '#8d969c') + disc(0, 0, size, glass),
     paint:
       glow(0, 0, size * 0.65, plants, 0.45) +
-      `<g fill="none" stroke="#e6fff6" stroke-width="0.4" opacity="0.4"><circle r="${n(size * 0.5)}"/><circle r="${n(size * 0.85)}"/><path d="${spokes}"/></g>` +
-      `<ellipse cx="${n(-size * 0.35)}" cy="${n(-size * 0.4)}" rx="${n(size * 0.3)}" ry="${n(size * 0.18)}" transform="rotate(-40 ${n(-size * 0.35)} ${n(-size * 0.4)})" fill="#fff" opacity="0.45" filter="url(#rg-soft1)"/>`,
+      `<g fill="none" stroke="#1e2426" stroke-width="0.5" opacity="0.55">${rings.map((k) => `<circle r="${n(size * k)}"/>`).join('')}<path d="${spokes}"/></g>` +
+      `<ellipse cx="${n(-size * 0.35)}" cy="${n(-size * 0.4)}" rx="${n(size * 0.3)}" ry="${n(size * 0.18)}" transform="rotate(-40 ${n(-size * 0.35)} ${n(-size * 0.4)})" fill="#fff" opacity="0.22" filter="url(#rg-soft1)"/>`,
   };
 }
 
@@ -476,16 +526,15 @@ function greenhouses(r: Rng): Part {
     .map((x) => `M${n(x)},-4.5 V4.5`)
     .join(' ');
   return {
+    extent: Math.hypot(len / 2 + 1, (ys.length * 13 - 2.5) / 2),
     grade: graded(0, 0, len / 2 + 8),
-    heights: ys
-      .map((y) => box(0, y, len + 2, 10.5, 5, H.apron, ' filter="url(#rg-soft1)"') + box(0, y, len, 9, 4.5, 'url(#rg-vault)'))
-      .join(''),
-    tint: ys.map((y) => box(0, y, len + 2, 10.5, 5, '#a77bff')).join(''),
+    heights: ys.map((y) => box(0, y, len + 2, 10.5, 5, H.apron) + box(0, y, len, 9, 4.5, 'url(#rg-vault)')).join(''),
+    tint: ys.map((y) => box(0, y, len + 2, 10.5, 5, '#8e72c4')).join(''),
     paint: ys
       .map(
         (y) =>
           `<ellipse cx="0" cy="${n(y)}" rx="${n(len * 0.4)}" ry="3" fill="#ff5fd2" opacity="0.4" filter="url(#rg-soft1)" style="mix-blend-mode: screen"/>` +
-          `<path d="${ribs}" transform="translate(0,${n(y)})" stroke="#f4e8ff" stroke-width="0.35" opacity="0.45"/>`,
+          `<path d="${ribs}" transform="translate(0,${n(y)})" stroke="#1e2426" stroke-width="0.45" opacity="0.5"/>`,
       )
       .join(''),
   };
@@ -493,11 +542,14 @@ function greenhouses(r: Rng): Part {
 
 /** Small blue domes, one to three, joined in a line. */
 function domelets(r: Rng): Part {
-  const xs = row(r.int(1, 3), 21);
-  return merged([
-    ...(xs.length > 1 ? [run({ x: xs[0], y: 0 }, { x: xs[xs.length - 1], y: 0 }, 5, '#a7b0b6')] : []),
-    ...xs.map((x) => placed(x, r.range(-3, 3), dome(r.range(6.5, 10), '#3ab8e8', '#8fe8ff'))),
-  ]);
+  const xs = row(r.int(1, 3), 26);
+  return {
+    extent: (xs.length - 1) * 13 + 13,
+    ...merged([
+      ...(xs.length > 1 ? [run({ x: xs[0], y: 0 }, { x: xs[xs.length - 1], y: 0 }, 5, '#a7b0b6')] : []),
+      ...xs.map((x) => placed(x, r.range(-3, 3), dome(r.range(6.5, 10), '#4b93b5', '#8fe8ff'))),
+    ]),
+  };
 }
 
 /** Solar panels, one or two rows of two to four, across the way they're turned. */
@@ -506,6 +558,7 @@ function solar(r: Rng): Part {
   const each = (f: (c: Spot) => string) => cells.map(f).join('');
   const span = Math.max(...cells.map((c) => Math.abs(c.x))) + 6;
   return {
+    extent: Math.hypot(span, Math.max(...cells.map((c) => Math.abs(c.y))) + 3.5),
     grade: graded(0, 0, span + 6),
     heights: box(0, 0, 3, 18, 0.5, H.pipe) + each((c) => box(c.x, c.y, 9.5, 7, 0.5, H.panel)),
     tint: each((c) => box(c.x, c.y, 9.5, 7, 0.5, '#2448b8')),
@@ -528,43 +581,51 @@ const tank = (x: number, y: number, r: number): Part => ({
     disc(x - r * 0.35, y - r * 0.35, r * 0.28, '#fffbe8', ' opacity="0.7" filter="url(#rg-soft1)"'),
 });
 
-/** Two to four gold tanks in a huddle, sizes mixed. */
+/** Two to four gold tanks in a huddle, sizes mixed, far enough apart that none touches the next. */
 function tankFarm(r: Rng): Part {
   const count = r.int(2, 4);
+  // Tanks up to 12.2 across with their aprons, a little clear ground between.
+  const spread = [13, 15, 18][count - 2];
   const turn = r.range(0, 360);
   const spots = Array.from({ length: count }, (_, i) => {
     const a = ((turn + (360 * i) / count) * Math.PI) / 180;
-    const d = count === 2 ? 11 : 14;
-    return { x: d * Math.cos(a), y: d * Math.sin(a) };
+    return { x: spread * Math.cos(a), y: spread * Math.sin(a) };
   });
-  return merged([{ grade: graded(0, 0, 32) }, ...spots.map((s) => tank(s.x, s.y, r.range(8.5, 12.5))), { paint: lamp(0, 0, '#ffcf4a') }]);
+  return {
+    extent: spread + 12.2,
+    ...merged([{ grade: graded(0, 0, 32) }, ...spots.map((s) => tank(s.x, s.y, r.range(8, 11))), { paint: lamp(0, 0, '#ffcf4a') }]),
+  };
 }
 
 /** One or two tall flare stacks, burning off gas. */
 function flares(r: Rng): Part {
   const xs = row(r.pick([1, 1, 2]), 15);
-  return merged(
-    xs.map((x) =>
-      placed(x, 0, {
-        grade: graded(0, 0, 14),
-        heights: square(0, 0, 11, 1, H.dark) + disc(0, 0, 3.2, 'rgb(250,120,200)'),
-        tint: square(0, 0, 11.5, 1, '#55504a') + disc(0, 0, 3.4, '#c9c4bc'),
-        paint:
-          glow(-1, -1, 11, '#ff6a10', 0.55, 'rg-soft6') +
-          glow(-1, -1, 5, '#ff9a2a', 0.85) +
-          glow(-1, -1, 2.2, '#ffe9a0', 1, 'rg-soft1') +
-          disc(-1, -1, 0.9, '#fff'),
-      }),
+  return {
+    extent: (xs.length - 1) * 7.5 + 8,
+    ...merged(
+      xs.map((x) =>
+        placed(x, 0, {
+          grade: graded(0, 0, 14),
+          heights: square(0, 0, 11, 1, H.dark) + disc(0, 0, 3.2, 'rgb(250,120,200)'),
+          tint: square(0, 0, 11.5, 1, '#55504a') + disc(0, 0, 3.4, '#c9c4bc'),
+          paint:
+            glow(-1, -1, 11, '#ff6a10', 0.55, 'rg-soft6') +
+            glow(-1, -1, 5, '#ff9a2a', 0.85) +
+            glow(-1, -1, 2.2, '#ffe9a0', 1, 'rg-soft1') +
+            disc(-1, -1, 0.9, '#fff'),
+        }),
+      ),
     ),
-  );
+  };
 }
 
 /** Three to five process columns in a row on a platform, copper. */
 function columns(r: Rng): Part {
-  const xs = row(r.int(3, 5), 9);
-  const len = xs.length * 9 + 2;
+  const xs = row(r.int(3, 5), 11.5);
+  const len = xs.length * 11.5 + 1;
   const size = xs.map(() => r.range(3.6, 5.2));
   return {
+    extent: Math.hypot(len / 2, 6.75),
     grade: graded(0, 0, len / 2 + 6),
     heights: box(0, 0, len, 13, 2, H.deck) + xs.map((x, i) => disc(x, 0, size[i], 'url(#rg-sphere)')).join(''),
     tint: box(0, 0, len + 0.5, 13.5, 2, '#8e8a86') + xs.map((x, i) => disc(x, 0, size[i] + 0.3, '#d4802a')).join(''),
@@ -577,17 +638,20 @@ function pit(r: Rng): Part {
   const steps = r.int(3, 5);
   const outer = r.range(19, 26);
   return {
-    grade: graded(0, 0, outer + 6),
-    heights: Array.from({ length: steps }, (_, i) => {
-      const k = i / steps;
-      return disc(
-        0,
-        0,
-        outer * (1 - k * 0.8),
-        `rgb(${n(116 - k * 64)},${n(170 + k * 80)},${n(150 + k * 80)})`,
-        i ? '' : ' filter="url(#rg-wx-y)"',
-      );
-    }).join(''),
+    extent: outer,
+    // Dug ground, not built: lit with the surface.
+    grade:
+      graded(0, 0, outer + 6) +
+      Array.from({ length: steps }, (_, i) => {
+        const k = i / steps;
+        return disc(
+          0,
+          0,
+          outer * (1 - k * 0.8),
+          `rgb(${n(116 - k * 64)},${n(170 + k * 80)},${n(150 + k * 80)})`,
+          i ? '' : ' filter="url(#rg-wx-y)"',
+        );
+      }).join(''),
     tint: disc(0, 0, outer, '#bfd9e6'),
     paint:
       glow(0, 0, outer * 0.55, '#3fe6ff', 0.55, 'rg-soft6') +
@@ -599,6 +663,7 @@ function pit(r: Rng): Part {
 
 /** A drill rig: a lattice tower, its light on top. */
 const rig = (): Part => ({
+  extent: 9.5,
   grade: graded(0, 0, 14),
   heights:
     `<rect x="-6.5" y="-6.5" width="13" height="13" fill="none" stroke="${H.pipe}" stroke-width="2"/>` +
@@ -610,8 +675,9 @@ const rig = (): Part => ({
 
 /** Two to four ice silos, white with blue caps. */
 function silos(r: Rng): Part {
-  const xs = row(r.int(2, 4), 11);
+  const xs = row(r.int(2, 4), 13.5);
   return {
+    extent: (xs.length - 1) * 6.75 + 6,
     grade: graded(0, 0, xs.length * 5.5 + 8),
     heights: xs.map((x) => disc(x, 0, 5.6, 'url(#rg-dome)')).join(''),
     tint: xs.map((x) => disc(x, 0, 6, '#eef5fb')).join(''),
@@ -621,8 +687,9 @@ function silos(r: Rng): Part {
 
 /** A cooling tower: a dark ring round a hot glowing throat. */
 const coolingTower = (): Part => ({
+  extent: 15.5,
   grade: graded(0, 0, 21),
-  heights: disc(0, 0, 15.5, H.apron, ' filter="url(#rg-soft1)"') + disc(0, 0, 14.5, 'rgb(240,170,80)') + disc(0, 0, 10, 'rgb(70,200,40)'),
+  heights: disc(0, 0, 15.5, H.apron) + disc(0, 0, 14.5, 'rgb(240,170,50)') + disc(0, 0, 10, 'rgb(70,200,40)'),
   tint: disc(0, 0, 15.5, '#2e2c30'),
   paint:
     glow(0, 0, 10, '#ff3c0a', 0.75, 'rg-soft3') +
@@ -637,8 +704,9 @@ function radiators(r: Rng): Part {
   const len = r.range(18, 26);
   const gaps = xs.slice(1).map((x) => x - 3);
   return {
+    extent: Math.hypot(xs.length * 3, len / 2 + 0.5),
     grade: graded(0, 0, Math.max(len / 2, xs.length * 3) + 8),
-    heights: xs.map((x) => box(x, 0, 3.2, len, 0.6, 'rgb(220,150,70)')).join(''),
+    heights: xs.map((x) => box(x, 0, 3.2, len, 0.6, 'rgb(220,150,45)')).join(''),
     tint: box(0, 0, xs.length * 6 - 2, len + 1, 1, '#2a282c'),
     paint:
       gaps
@@ -664,29 +732,29 @@ function conduit(a: Spot, b: Spot, colour: string): Part {
   };
 }
 
-/** Cargo containers stacked about, three to seven, in the usual colours. */
+/** Cargo containers set down in rows, three to seven, a few askew, in the usual colours. */
 function containers(r: Rng): Part {
   let heights = '';
   let tint = '';
   let paint = '';
-  for (let i = r.int(3, 7); i > 0; i--) {
-    const [x, y] = [r.range(-11, 11), r.range(-7, 7)];
-    const turn = r.pick([0, 0, 90, r.range(-20, 20)]);
+  // Slots in a grid, each a container's length and width with a gap, taken at random.
+  const slots = row(2, 13).flatMap((x) => row(3, 7.5).map((y) => ({ x, y, k: r.next() })));
+  for (const { x: sx, y: sy } of slots.sort((a, b) => a.k - b.k).slice(0, r.int(3, 6))) {
+    const [x, y] = [sx + r.range(-0.6, 0.6), sy + r.range(-0.4, 0.4)];
+    const turn = r.chance(0.25) ? r.range(-8, 8) : 0;
     const at = `translate(${n(x)},${n(y)}) rotate(${n(turn)})`;
     heights += `<g transform="${at}">${box(0, 0, 11, 5, 0.5, r.chance(0.3) ? 'rgb(214,150,200)' : 'rgb(182,150,200)')}</g>`;
     tint += `<g transform="${at}">${box(0, 0, 11, 5, 0.5, r.pick(['#d9622b', '#e8e2d4', '#2f6fd0', '#c9a227', '#b8322a']))}</g>`;
     paint += `<g transform="${at}"><path d="M-3.5,-2.5 V2.5 M0,-2.5 V2.5 M3.5,-2.5 V2.5" stroke="#000" stroke-width="0.3" opacity="0.3"/></g>`;
   }
-  return { grade: graded(0, 0, 20), heights, tint, paint };
+  return { extent: 17, grade: graded(0, 0, 20), heights, tint, paint };
 }
 
 /** A dish aerial on its mount, turned to the sky. */
 const dish = (light: string): Part => ({
+  extent: 9,
   grade: graded(0, 0, 13),
-  heights:
-    disc(0, 0, 9, H.apron, ' filter="url(#rg-soft1)"') +
-    disc(0, 0, 8, 'rgb(236,150,215)') +
-    disc(1, 1, 5.5, 'rgb(196,200,215)', ' filter="url(#rg-soft1)"'),
+  heights: disc(0, 0, 9, H.apron) + disc(0, 0, 8, 'rgb(236,150,215)') + disc(1, 1, 5.5, 'rgb(196,200,215)', ' filter="url(#rg-soft1)"'),
   tint: disc(0, 0, 9, '#e9ecee'),
   paint: `<path d="M1,1 L-4,-4" stroke="#2a2d30" stroke-width="0.8"/>` + lamp(-4, -4, light),
 });
@@ -714,7 +782,8 @@ function crystals(r: Rng, count: number, reach: number): Part {
 
 /** Glowing cracks running out from a point, jagged, `reach` long. */
 function fissures(r: Rng, count: number, from: number, reach: number): Part {
-  let heights = '';
+  // Cracks in the ground, lit with it.
+  let grade = '';
   let paint = '';
   for (let i = 0; i < count; i++) {
     let a = r.range(0, 2 * Math.PI);
@@ -726,12 +795,12 @@ function fissures(r: Rng, count: number, from: number, reach: number): Part {
       [x, y] = [x + step * Math.cos(a), y + step * Math.sin(a)];
       d += ` L${n(x)},${n(y)}`;
     }
-    heights += `<path d="${d}" fill="none" stroke="rgb(80,0,128)" stroke-width="2" stroke-linejoin="round"/>`;
+    grade += `<path d="${d}" fill="none" stroke="rgb(80,0,128)" stroke-width="2" stroke-linejoin="round"/>`;
     paint +=
       `<path d="${d}" fill="none" stroke="#a46bff" stroke-width="4" opacity="0.45" filter="url(#rg-soft1)" style="mix-blend-mode: screen"/>` +
       `<path d="${d}" fill="none" stroke="#e2ccff" stroke-width="0.7" stroke-linejoin="round" opacity="0.9"/>`;
   }
-  return { heights, paint };
+  return { grade, paint };
 }
 
 /** A landing pad ringed in amber, now and then with a lander standing on it. */
@@ -739,9 +808,10 @@ function landingPad(lander: boolean, light: string): Part {
   const legs = [45, 135, 225, 315].map((a) => toward(a, 0.11));
   const lamps = [0, 90, 180, 270].map((a) => toward(a, 0.19));
   return {
+    extent: 15,
     grade: graded(0, 0, 20),
     heights:
-      disc(0, 0, 15, H.apron, ' filter="url(#rg-soft1)"') +
+      disc(0, 0, 15, H.apron) +
       disc(0, 0, 14, H.deck) +
       (lander
         ? legs
@@ -761,29 +831,16 @@ function landingPad(lander: boolean, light: string): Part {
 /** How much larger than drawn a base's outbuildings stand, reaching well into the hexes round it. */
 const BIG = 1.35;
 
-/** An outbuilding a base may have: how likely it is, how far out it stands (in spaces), and how it's built at `p`, out along `a`. */
+/** An outbuilding a base may have: how likely it is, how far out it stands (in spaces), how it's linked to the hub along `a`, what it is, how much larger than drawn, and whether it's turned with the way out. */
 interface Annex {
   weight: number;
   reach: [number, number];
-  build: (r: Rng, p: Spot, a: number) => Part[];
+  link: (a: number, p: Spot) => Part;
+  part: (r: Rng) => Part;
+  scale: number;
+  turned: boolean;
 }
 
-/**
- * A base's outbuildings, one each way out (`ways`) for as many as it has: picked by weight, none twice
- * until each has stood once, each a little nearer or further out and larger or smaller.
- */
-function outskirts(r: Rng, ways: readonly number[], count: number, pool: readonly Annex[]): Part[] {
-  let left = [...pool];
-  return ways.slice(0, count).flatMap((a) => {
-    if (!left.length) left = [...pool];
-    let pick = r.next() * left.reduce((s, x) => s + x.weight, 0);
-    const annex = left.find((x) => (pick -= x.weight) < 0) ?? left[0];
-    left = left.filter((x) => x !== annex);
-    return annex.build(r, toward(a, r.range(...annex.reach)), a);
-  });
-}
-
-/** A base's outbuilding: `part` linked to the hub along `a` by `link`, turned with the way out if `turned`, grown about `scale`. */
 const annex = (
   weight: number,
   reach: [number, number],
@@ -791,11 +848,62 @@ const annex = (
   part: (r: Rng) => Part,
   scale = BIG,
   turned = false,
-): Annex => ({
-  weight,
-  reach,
-  build: (r, p, a) => [link(a, p), placed(p.x, p.y, part(r), turned ? a + 90 : r.range(-15, 15), scale * r.range(0.88, 1.1))],
-});
+): Annex => ({ weight, reach, link, part, scale, turned });
+
+/** The clear ground kept between a base's buildings, in board units. */
+const GAP = 3;
+
+/** How far p is from the line from a to b. */
+function gap(p: Spot, a: Spot, b: Spot): number {
+  const [dx, dy] = [b.x - a.x, b.y - a.y];
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy || 1)));
+  return Math.hypot(p.x - a.x - t * dx, p.y - a.y - t * dy);
+}
+
+/**
+ * A base's outbuildings, one each way out (`ways`) for as many as it has: picked by weight, none twice
+ * until each has stood once, each a little nearer or further out and larger or smaller. Each stands
+ * clear of the hub (`hub` across from the planet's space), of the others and their links, and on the
+ * tile (the planet's space at `centre` on it): moved further out, or made smaller, until it is, or left
+ * out if it can't be.
+ */
+function outskirts(r: Rng, ways: readonly number[], count: number, pool: readonly Annex[], centre: Spot, hub: number): Part[] {
+  const taken: (Spot & { r: number })[] = [];
+  const links: [Spot, Spot][] = [];
+  const out: Part[] = [];
+  let left = [...pool];
+  for (const a of ways.slice(0, count)) {
+    if (!left.length) left = [...pool];
+    let pick = r.next() * left.reduce((s, x) => s + x.weight, 0);
+    const annex = left.find((x) => (pick -= x.weight) < 0) ?? left[0];
+    left = left.filter((x) => x !== annex);
+    const part = annex.part(r);
+    const turn = annex.turned ? a + 90 : r.range(-15, 15);
+    const grow = annex.scale * r.range(0.88, 1.1);
+    const near = r.range(...annex.reach);
+    const from = toward(a, 0.3);
+    const fit = (() => {
+      for (const k of [1, 0.9, 0.8, 0.7])
+        for (let d = near; d <= near + 0.35; d += 0.025) {
+          const p = toward(a, d);
+          const e = (part.extent ?? 15) * grow * k;
+          if (Math.hypot(p.x, p.y) < hub + e + GAP) continue;
+          // Further out is only nearer the tile's edge.
+          if (inside(centre.x + p.x, centre.y + p.y) < e + 1) break;
+          if (taken.some((f) => Math.hypot(p.x - f.x, p.y - f.y) < e + f.r + GAP)) continue;
+          if (links.some(([s, t]) => gap(p, s, t) < e + GAP)) continue;
+          if (taken.some((f) => gap(f, from, p) < f.r + GAP)) continue;
+          return { p, e, scale: grow * k };
+        }
+      return undefined;
+    })();
+    if (!fit) continue;
+    taken.push({ ...fit.p, r: fit.e });
+    links.push([from, fit.p]);
+    out.push(annex.link(a, fit.p), placed(fit.p.x, fit.p.y, part, turn, fit.scale));
+  }
+  return out;
+}
 
 /** How many outbuildings a base has: one to four, two or three most often. */
 const SPREAD = [1, 1, 2, 2, 2, 3, 3, 3, 4];
@@ -810,10 +918,12 @@ const SPREAD = [1, 1, 2, 2, 2, 3, 3, 3, 4];
  * Centred on the planet's space, in board units. `at` is where the planet sits on its tile (in spaces from
  * the middle).
  */
-function base(number: number, at: Spot, r: Rng): Required<Part> | undefined {
+function base(number: number, at: Spot, r: Rng): Drawn | undefined {
   const pads = cubePadCentres(number - 6, 0, 0).map((p) => ({ x: p.x / SCALE, y: p.y / SCALE }));
   const ways = exits(r, at, number > 0);
   const count = r.pick(SPREAD);
+  const centre = { x: SIZE / 2 + at.x * SPACE, y: SIZE / 2 + at.y * SPACE };
+  const outskirtsOf = (hubReach: number, pool: Annex[]) => outskirts(r, ways, count, pool, centre, hubReach);
   // Links start at the hub's edge, so none crosses the cube sockets.
   const tube = (w: number, colour: string) => (a: number, p: Spot) => run(toward(a, 0.3), p, w * r.range(0.8, 1.2), colour);
   const road = (a: number, p: Spot): Part => {
@@ -831,7 +941,7 @@ function base(number: number, at: Spot, r: Rng): Required<Part> | undefined {
   switch (number) {
     case 0:
       return merged([
-        { heights: disc(0, 0, r.range(38, 48), 'url(#rg-sink)', ' filter="url(#rg-wx-m)"') },
+        { grade: disc(0, 0, r.range(38, 48), 'url(#rg-sink)', ' filter="url(#rg-wx-m)"') },
         fissures(r, r.int(2, 6), 32, r.range(45, 66)),
         crystals(r, r.int(5, 11), 36),
         crystals(r, r.int(0, 4), 60),
@@ -842,21 +952,23 @@ function base(number: number, at: Spot, r: Rng): Required<Part> | undefined {
             disc(0, 0, 14, '#000', ' opacity="0.35" filter="url(#rg-soft3)"'),
         },
       ]);
-    case 7:
+    case 7: {
+      const great = r.range(25, 30);
       return merged([
-        ...outskirts(r, ways, count, [
+        ...outskirtsOf(great + 2.5, [
           annex(2, [0.74, 0.84], tube(6, '#a7b0b6'), greenhouses, 1.15, true),
           annex(1.5, [0.64, 0.74], tube(6, '#a7b0b6'), domelets, BIG, true),
           annex(1.5, [0.7, 0.8], tube(2.5, '#8d969c'), solar, BIG, true),
           ...common('#7dffb0'),
         ]),
         // The great dome is the base's middle: its hatch, on top, holds the cube.
-        dome(r.range(25, 30), '#2fcf8c', '#6dff9e'),
+        dome(great, '#4a9c7a', '#6dff9e', 22),
         hub(pads, '#9aa3a8', 'rgb(246,160,205)', '#7dffb0'),
       ]);
+    }
     case 8:
       return merged([
-        ...outskirts(r, ways, count, [
+        ...outskirtsOf(32, [
           annex(2.5, [0.7, 0.8], tube(3, '#f2ad2c'), tankFarm, 1),
           annex(1.5, [0.6, 0.72], tube(3, '#c9c4bc'), flares, BIG, true),
           annex(1.5, [0.72, 0.8], tube(3.5, '#d4802a'), columns, BIG, true),
@@ -871,7 +983,7 @@ function base(number: number, at: Spot, r: Rng): Required<Part> | undefined {
           grade: disc(0, 0, frost, 'url(#rg-frost)', ' style="mix-blend-mode: lighten"'),
           paint: glow(0, 0, frost, '#d6ecff', 0.28, 'rg-soft6'),
         },
-        ...outskirts(r, ways, count, [
+        ...outskirtsOf(40, [
           annex(2.5, [0.74, 0.84], road, pit),
           annex(1.5, [0.6, 0.72], tube(3.5, '#e8eef2'), rig, 1.6),
           annex(1.5, [0.68, 0.78], tube(3.5, '#e8eef2'), silos, BIG, true),
@@ -903,7 +1015,7 @@ function base(number: number, at: Spot, r: Rng): Required<Part> | undefined {
       // The conduits start at the reactor's edge.
       const power = (a: number, p: Spot) => conduit(toward(a, 0.6), p, '#ff5a14');
       return merged([
-        ...outskirts(r, ways, count, [
+        ...outskirtsOf(49, [
           annex(2.5, [0.78, 0.86], power, coolingTower, 1.2),
           annex(1.2, [0.8, 0.88], power, coolingTower, 1),
           annex(2, [0.8, 0.88], power, radiators, 1.15, true),
@@ -912,7 +1024,7 @@ function base(number: number, at: Spot, r: Rng): Required<Part> | undefined {
         {
           grade: graded(0, 0, 52),
           heights:
-            `<polygon points="${octagon(45)}" fill="${H.apron}" filter="url(#rg-soft1)"/>` +
+            `<polygon points="${octagon(45)}" fill="${H.apron}"/>` +
             `<polygon points="${octagon(44)}" fill="${H.dark}"/>` +
             `<g fill="rgb(150,40,90)">${vents.map(([x, y]) => `<rect x="-5" y="-5" width="10" height="10" transform="translate(${x},${y}) rotate(45)"/>`).join('')}</g>`,
           tint: `<polygon points="${octagon(45)}" fill="#2e2c30"/>`,
@@ -971,10 +1083,25 @@ function regolithArt(spec: TileSpec, at: Spot): Fragment {
     weather('rg-wx-p', 0.3, r.noiseSeed(), 1.8, 0.6, 'x="0" y="0" width="100%" height="100%"') +
     weather('rg-wx-d', 0.02, r.noiseSeed(), 14, 0.4);
   return {
-    defs: GRADIENTS + BUILDING_GRADIENTS + DUNES + filters + ground(r.fork('ground'), DRAWN) + CRATERS + RIDGE,
+    defs:
+      GRADIENTS +
+      BUILDING_GRADIENTS +
+      DUNES +
+      filters +
+      ground(r.fork('ground'), DRAWN) +
+      built(r.fork('built'), DRAWN) +
+      dust(r.noiseSeed(), DRAWN) +
+      CRATERS +
+      RIDGE,
     body:
       `<g transform="scale(${n(SCALE)})"><g filter="url(#rg-ground)">${heights}</g>` +
-      (site ? place(`<g style="mix-blend-mode: color">${site.tint}</g>${site.paint}`) : '') +
+      // The buildings' filters are over the tile's area, so they're applied outside the move to the planet's space.
+      (site
+        ? `<g filter="url(#rg-built)">${place(site.heights)}</g>` +
+          place(`<g style="mix-blend-mode: color">${site.tint}</g>`) +
+          `<g filter="url(#rg-dust)" opacity="0.9" style="mix-blend-mode: soft-light">${place(site.heights)}</g>` +
+          place(site.paint)
+        : '') +
       '</g>',
   };
 }
