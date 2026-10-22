@@ -121,7 +121,7 @@ packages/art/src/
     inks.ts         paper, night paper, key ink, bone, oxide and ice plates, amber accent (Vocabulary board)
     plates.ts       printing a part in three passes: offset colour plate, key ink, accent; registration offset
     layout.ts       the card face: art window, name, subtitle, rules text, category mark, tag
-    mechs.ts        the six mech classes (Bastion, Vanguard, Breacher, Warden, Sniper, Wisp), posable parts
+    mechs.ts        the six mech classes (Breacher, Behemoth, Tactician, Chameleon, Sniper, Wisp), posable parts
     objectives.ts   Habitat, Refinery, Ice Mine, Reactor, Sinkhole
     props.ts        bunker, comms mast, drop pod, barricade, boulders, ordnance, intel and control readouts
   scenes/
@@ -163,7 +163,7 @@ should agree with it; how far the tiles move towards flat inks is open, below.
 ## 7. Words
 
 The names, words and story are kept in one place, [REGOLITH-WORLD.md](REGOLITH-WORLD.md): the six mechs
-(Bastion, Vanguard, Breacher, Warden, Sniper, Wisp), the objectives (Habitat, Refinery, Ice Mine, Reactor,
+(Breacher, Behemoth, Tactician, Chameleon, Sniper, Wisp), the objectives (Habitat, Refinery, Ice Mine, Reactor,
 Sinkhole), the sides, and how each Quantum term reads in Regolith.
 
 The game says them everywhere (22 October 2026): `RuleSet.words` (engine `words.ts`) is the mode's

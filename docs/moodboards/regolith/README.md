@@ -21,6 +21,7 @@ Live canvas: https://claude.ai/artifact/HXXvHR2kv7qATjy7nCudZb (private to its o
 | [CardScale](CardScale.dc.html) | The same cards at the app's card-viewer and market sizes, and which style to use for what |
 | [World](World.dc.html) | The setting as a screenprint bulletin: the story, the four sides, what it feels like, the objectives and the words ([REGOLITH-WORLD.md](../../REGOLITH-WORLD.md)) |
 | [Roster](Roster.dc.html) | The six mechs: die face, fit, power and the reference silhouettes for each. Their names are the board's Tweaks (*Mech names*), so a rename shows everywhere on the board; copy a settled name into REGOLITH-WORLD.md |
+| [Silhouettes](Silhouettes.dc.html) | Our own front-view outline for each of the six mechs, in one ink and to one scale beside a 1.8 m person: a lineup, then one panel per mech. Drawn from each mech's fit, with weight, stance and scale taken from the reference sheets but no outline copied |
 | [Vocabulary](Vocabulary.dc.html) | Screenprint parts: the six mech classes, the objectives (Habitat to Reactor, Sinkhole) and props, printed as plate, key ink and accent, with three scenes built from them |
 
 **Reference images** (other people's art, for looking at only: not to be traced, printed or shipped):
@@ -28,6 +29,7 @@ Live canvas: https://claude.ai/artifact/HXXvHR2kv7qATjy7nCudZb (private to its o
 | Image | What it's for | Source |
 |---|---|---|
 | [mech-silhouettes.jpg](reference/mech-silhouettes.jpg) | Twelve front-view mech silhouettes: industrial walkers with boxy or domed bodies, heavy and spindly legs, claw, drill and gun arms. The weight and range of shapes for the six mechs ([REGOLITH-WORLD.md](../../REGOLITH-WORLD.md) *The six mechs*) | Pinterest, `i.pinimg.com/1200x/f0/02/12/f002126832905d7f7582f08f3b746c36.jpg`; artist not credited there. Uploaded to the canvas as `/_blob/171dfca01254210e3507e462e1f69d33`, which the Roster board crops; opened from the repo, that board shows no silhouettes |
+| [mech-silhouettes-2.jpg](reference/mech-silhouettes-2.jpg) | Eight front-view mech silhouettes in two rows of four, each beside a human figure: walkers with gun, cannon and missile arms, a shield, a four-legged turret. Scale against a person, and more weapon shapes | Unknown; the uploaded file was named `360_F_2189037674_…`, a stock-photo preview's name, so probably a stock image. Uploaded to the canvas as `/_blob/dc782efb217408f61db8a0ccbf2f0491`, shown whole on the Roster board |
 
 Each board is a static HTML page and opens in a browser as it is. The `support.js` it asks for belongs
 to the canvas editor; without it the page draws the same, only not editable. `canvas.json` is the

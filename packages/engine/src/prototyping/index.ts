@@ -47,16 +47,16 @@ const MAX_MOVEMENT = 3;
 const SHIPS: ShipTable = {
   1: {
     ...CLASSIC_SHIPS[1],
-    name: 'Bastion',
+    name: 'Breacher',
     ability: { name: 'Free Attack', text: 'Attack an adjacent enemy without using this mech’s move.' },
   },
   2: {
     ...CLASSIC_SHIPS[2],
-    name: 'Vanguard',
+    name: 'Behemoth',
     ability: { name: 'Carry & Move', text: 'Carry one of your nearby mechs as part of a move, then drop it next to you.' },
   },
-  3: { ...CLASSIC_SHIPS[3], name: 'Breacher', ability: { name: 'Swap', text: 'Swap places with any of your other mechs.' } },
-  4: { ...CLASSIC_SHIPS[4], name: 'Warden', ability: { name: 'Change to 3 or 5', text: 'Refit as a Breacher or a Sniper.' } },
+  3: { ...CLASSIC_SHIPS[3], name: 'Tactician', ability: { name: 'Swap', text: 'Swap places with any of your other mechs.' } },
+  4: { ...CLASSIC_SHIPS[4], name: 'Chameleon', ability: { name: 'Change to 3 or 5', text: 'Refit as a Tactician or a Sniper.' } },
   5: { name: 'Sniper', ...shoot },
   6: { ...CLASSIC_SHIPS[6], name: 'Wisp', ability: { name: 'Free Refit', text: 'Re-roll this mech for free.' } },
 };

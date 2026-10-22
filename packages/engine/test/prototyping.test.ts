@@ -111,10 +111,10 @@ describe('Prototyping mode', () => {
     expect(prototyping.ships[5].power).toBeUndefined();
     expect([1, 2, 3, 4, 6].map((v) => prototyping.ships[v].power)).toEqual([1, 2, 3, 4, 6].map((v) => community.ships[v].power));
     expect([1, 2, 3, 4, 5, 6].map((v) => prototyping.ships[v].name)).toEqual([
-      'Bastion',
-      'Vanguard',
       'Breacher',
-      'Warden',
+      'Behemoth',
+      'Tactician',
+      'Chameleon',
       'Sniper',
       'Wisp',
     ]);

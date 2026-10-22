@@ -61,7 +61,7 @@ rules. They are the starting point if Regolith ever tries asymmetric sides (PROT
 |---|---|---|---|---|
 | 1 | Blue (`#3d8bff`) | **Yuropa Commune** | Ice miners from the north polar cap, the oldest settlement. Run by their work crews. | To keep the ice that was theirs first |
 | 2 | Red (`#d62839`) | **Zhong Combine** | What is left of the Earth-chartered company: the contracts, the refineries and the best workshops. | To keep running Mars as a business |
-| 3 | Amber (`#ffb703`) | **Merika Free Ports** | Traders and fixers from the volcanic highlands, who own the reactors and owe nobody. | Power, and the price of it |
+| 3 | Amber (`#ffb703`) | **Merika Free Port** | Traders and fixers from the volcanic highlands, who own the reactors and owe nobody. | Power, and the price of it |
 | 4 | Green (`#80ed99`) | **Austral Collective** | Farm settlements in the deep Hellas basin: the most people and the thirstiest crops. | Water, before the next harvest fails |
 
 The colours are `PLAYER_COLORS` in [theme.ts](../apps/web/src/theme.ts) (and `PLAYER_HUES` in the art package), the same in every mode. The sides are not in the game yet: players still name their own seats.
@@ -73,23 +73,24 @@ combat, higher is lighter and quicker. A refit re-rolls the die.
 
 | Die | Mech | Fit | Power (Regolith rules as they stand) | Why it fits |
 |---|---|---|---|---|
-| 1 | **Bastion** | Close combat mech | *Free Attack*: attack an adjacent enemy without using its move | Sits on the ground with its gun already trained |
-| 2 | **Vanguard** | Battle carrier | *Carry & Move*: carry a nearby mech as part of its move, then drop it next to it | Hauls other frames in its cargo cradle and leads the column |
-| 3 | **Breacher** | Tunnelling assault frame | *Swap*: swap places with any of your other mechs | Bores through the ice tunnels and surfaces where another mech stood |
-| 4 | **Warden** | Flexible hardpoint | *Change to 3 or 5*: refit as a Breacher or a Sniper | The standard frame, one arm swap away from either |
+| 1 | **Breacher** | Close combat mech | *Free Attack*: attack an adjacent enemy without using its move | Sits on the ground with its gun already trained |
+| 2 | **Behemoth** | Battle carrier | *Carry & Move*: carry a nearby mech as part of its move, then drop it next to it | Hauls other frames in its cargo cradle and leads the column |
+| 3 | **Tactician** | Tunnelling assault frame | *Swap*: swap places with any of your other mechs | Bores through the ice tunnels and surfaces where another mech stood |
+| 4 | **Chameleon** | Flexible hardpoint | *Change to 3 or 5*: refit as a Tactician or a Sniper | The standard frame, one arm swap away from either |
 | 5 | **Sniper** | Long-range gunner | *Shoot*: attack the first enemy in a clear straight line, without moving | Fires down a line of hexes from where it stands |
 | 6 | **Wisp** | Recon drone | *Free Refit*: re-roll for free | Cheap and fragile, swapped out without a second thought |
 
 **Silhouette reference:** [mech-silhouettes.jpg](moodboards/regolith/reference/mech-silhouettes.jpg), twelve
 front views (reference only, not ours to print). The mechs should read apart by outline alone, in black, as
-these do. Rows and columns count from the top left:
+these do. A second sheet, [mech-silhouettes-2.jpg](moodboards/regolith/reference/mech-silhouettes-2.jpg), has
+eight more, each beside a human figure for scale. Rows and columns of the first sheet count from the top left:
 
 | Mech | Closest silhouettes | What to take |
 |---|---|---|
-| Bastion (1) | Row 3, 1 and 2 | Squat, solid, low and wide; legs barely visible |
-| Vanguard (2) | Row 2, 1 and 2 | Flat wide body slung between long crane arms: a carrier |
-| Breacher (3) | Row 1, 3; row 3, 3 | Hunched, long heavy arms, a drill or ram |
-| Warden (4) | Row 1, 1; row 3, 4 | Upright and boxy, missile pod on the shoulder, long gun: the standard frame |
+| Breacher (1) | Row 3, 1 and 2 | Squat, solid, low and wide; legs barely visible |
+| Behemoth (2) | Row 2, 1 and 2 | Flat wide body slung between long crane arms: a carrier |
+| Tactician (3) | Row 1, 3; row 3, 3 | Hunched, long heavy arms, a drill or ram |
+| Chameleon (4) | Row 1, 1; row 3, 4 | Upright and boxy, missile pod on the shoulder, long gun: the standard frame |
 | Sniper (5) | Row 1, 4 | Top-heavy gun body on thin legs |
 | Wisp (6) | Row 2, 3 | Small pod on spindly legs; lighter than the rest (or lifted off the ground, as the Vocabulary board's drone) |
 

@@ -12,7 +12,7 @@ import {
 } from '@quantum/engine';
 import type { Sel } from './controller';
 
-/** The carrying ship's name in this game's rules, as a common noun: "flagship", or "vanguard" in Regolith. */
+/** The carrying ship's name in this game's rules, as a common noun: "flagship", or "behemoth" in Regolith. */
 const carrier = (game: GameState, id: string) => shipOf(game, die(game, id).value).name.toLowerCase();
 
 /** One-line guidance for the current human decision, in the game's words. */
