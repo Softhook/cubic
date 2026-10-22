@@ -46,31 +46,48 @@ const CANVAS_PIXELS = 16_000_000;
 
 /**
  * Draws an SVG document at `w` × `h` px over an opaque `background`: its RGBA pixels in bands of rows, top
- * to bottom. In one band when it fits a canvas (every card, tile and aid); a bigger page is drawn in bands
- * with `overlap` px drawn above and below each and dropped, because Chromium and WebKit draw filters
- * (displacement, blur) near a band's edge a little differently from the whole: with 200 px at 300 dpi
- * the bands differ from the whole by 2/255 at most (Firefox: not at all).
+ * to bottom. Drawn `oversample` times larger and scaled down, because the art's lighting filters work pixel
+ * by pixel, so at the drawn size the light along every outline steps from pixel to pixel; drawn larger, the
+ * steps are averaged away and the edges stay hard. In one band when it fits a canvas (every card, tile and
+ * aid); a bigger page is drawn in bands with `overlap` px drawn above and below each and dropped, because
+ * Chromium and WebKit draw filters (displacement, blur) near a band's edge a little differently from the
+ * whole: with 200 px at 300 dpi the bands differ from the whole by 2/255 at most (Firefox: not at all).
  */
-export async function* drawBands(svg: string, w: number, h: number, background: string, overlap = 0, canvasPixels = CANVAS_PIXELS) {
+export async function* drawBands(
+  svg: string,
+  w: number,
+  h: number,
+  background: string,
+  overlap = 0,
+  canvasPixels = CANVAS_PIXELS,
+  oversample = 2,
+) {
   const img = await loadSvg(svg);
-  const single = w * h <= canvasPixels;
+  const k = oversample;
+  const single = w * h * k * k <= canvasPixels;
   const pad = single ? 0 : overlap;
-  const rows = single ? h : Math.max(1, Math.floor(canvasPixels / w) - 2 * pad);
+  const rows = single ? h : Math.max(1, Math.floor(canvasPixels / (w * k * k)) - 2 * pad);
+  const big = document.createElement('canvas');
+  big.width = w * k;
+  big.height = Math.min(h, rows + 2 * pad) * k;
   const canvas = document.createElement('canvas');
   canvas.width = w;
-  canvas.height = Math.min(h, rows + 2 * pad);
+  canvas.height = big.height / k;
+  const drawn = big.getContext('2d')!;
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  ctx.imageSmoothingQuality = 'high';
   try {
     for (let y = 0; y < h; y += rows) {
       const top = Math.min(pad, y);
-      ctx.fillStyle = background;
-      ctx.fillRect(0, 0, w, canvas.height);
-      ctx.drawImage(img, 0, top - y, w, h);
+      drawn.fillStyle = background;
+      drawn.fillRect(0, 0, big.width, big.height);
+      drawn.drawImage(img, 0, (top - y) * k, w * k, h * k);
+      ctx.drawImage(big, 0, 0, w, canvas.height);
       yield ctx.getImageData(0, top, w, Math.min(rows, h - y)).data;
     }
   } finally {
     // Safari frees a canvas's memory only once it's sized to nothing.
-    canvas.width = canvas.height = 0;
+    big.width = big.height = canvas.width = canvas.height = 0;
   }
 }
 
