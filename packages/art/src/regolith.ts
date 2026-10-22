@@ -167,7 +167,7 @@ function built(r: Rng, area: Box): string {
     '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0" result="H"/>' +
     '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 1 0 0 0" result="SMOOTH"/>' +
     '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 1 0 0  0 0 1 0 0  0 0 1 0 0  0 0 0 0 1" result="ALB"/>' +
-    `<feDiffuseLighting in="H" surfaceScale="5" diffuseConstant="1.2" lighting-color="#ffffff" result="L">${light}</feDiffuseLighting>` +
+    `<feDiffuseLighting in="H" surfaceScale="7" diffuseConstant="1.2" lighting-color="#ffffff" result="L">${light}</feDiffuseLighting>` +
     // Worn: brightness mottled by grime in patches and flecks, larger and finer than the ground's grain.
     turbulence(0.07, 3, r.noiseSeed(), 'gm') +
     '<feColorMatrix in="gm" type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1" result="gmG"/>' +
@@ -176,11 +176,36 @@ function built(r: Rng, area: Box): string {
     '<feComposite in="ALB" in2="gmG" operator="arithmetic" k1="1.3" k2="0.33" result="alb1"/>' +
     '<feComposite in="alb1" in2="gfG" operator="arithmetic" k1="0.5" k2="0.75" result="ALBW"/>' +
     '<feComposite in="L" in2="ALBW" operator="arithmetic" k1="1.15" result="lit"/>' +
-    `<feSpecularLighting in="H" surfaceScale="5" specularConstant="0.35" specularExponent="18" lighting-color="#ffffff" result="spec">${light}</feSpecularLighting>` +
+    `<feSpecularLighting in="H" surfaceScale="7" specularConstant="0.35" specularExponent="18" lighting-color="#ffffff" result="spec">${light}</feSpecularLighting>` +
     '<feComposite in="spec" in2="SMOOTH" operator="in" result="specM"/>' +
     '<feComposite in="lit" in2="specM" operator="arithmetic" k2="1" k3="0.6" result="lit2"/>' +
     `<feComponentTransfer in="lit2"><feFuncR ${ramp('0.03 0.17 0.39 0.61 0.81 0.95')}/><feFuncG ${ramp('0.035 0.18 0.4 0.62 0.82 0.96')}/><feFuncB ${ramp('0.045 0.2 0.42 0.64 0.84 0.97')}/></feComponentTransfer>` +
     '<feComposite in2="SourceAlpha" operator="in"/>' +
+    '</filter>'
+  );
+}
+
+/**
+ * The shadows the buildings cast on the ground, away from the light (to the bottom right), as long as
+ * they're tall: each height (red, 128 the ground) stands in its shadow that much further along, so a dome
+ * or a tank throws a long one and a deck or a pipe a short one. Over `area`.
+ */
+function cast(area: Box): string {
+  const levels = Array.from({ length: 12 }, (_, i) => 0.52 + i * 0.04);
+  return (
+    `<filter id="rg-cast" filterUnits="userSpaceOnUse" x="${n(area.x)}" y="${n(area.y)}" width="${n(area.w)}" height="${n(area.h)}" color-interpolation-filters="sRGB">` +
+    levels
+      .map((t, i) => {
+        const d = n((t - 0.5) * 42);
+        return (
+          `<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  40 0 0 0 ${n(-40 * t)}" result="a${i}"/>` +
+          `<feOffset in="a${i}" dx="${d}" dy="${d}" result="s${i}"/>`
+        );
+      })
+      .join('') +
+    `<feMerge>${levels.map((_, i) => `<feMergeNode in="s${i}"/>`).join('')}</feMerge>` +
+    '<feGaussianBlur stdDeviation="0.9"/>' +
+    '<feComponentTransfer><feFuncA type="linear" slope="0.85"/></feComponentTransfer>' +
     '</filter>'
   );
 }
@@ -1090,6 +1115,7 @@ function regolithArt(spec: TileSpec, at: Spot): Fragment {
       filters +
       ground(r.fork('ground'), DRAWN) +
       built(r.fork('built'), DRAWN) +
+      cast(DRAWN) +
       dust(r.noiseSeed(), DRAWN) +
       CRATERS +
       RIDGE,
@@ -1097,7 +1123,8 @@ function regolithArt(spec: TileSpec, at: Spot): Fragment {
       `<g transform="scale(${n(SCALE)})"><g filter="url(#rg-ground)">${heights}</g>` +
       // The buildings' filters are over the tile's area, so they're applied outside the move to the planet's space.
       (site
-        ? `<g filter="url(#rg-built)">${place(site.heights)}</g>` +
+        ? `<g filter="url(#rg-cast)">${place(site.heights)}</g>` +
+          `<g filter="url(#rg-built)">${place(site.heights)}</g>` +
           place(`<g style="mix-blend-mode: color">${site.tint}</g>`) +
           `<g filter="url(#rg-dust)" opacity="0.9" style="mix-blend-mode: soft-light">${place(site.heights)}</g>` +
           place(site.paint)
