@@ -44,11 +44,10 @@ export interface TileOptions {
   planetAt?: string;
   /**
    * Ground to print in place of the sky and planet (the moon's, `regolithTileSvg`), with the planet's
-   * building standing `at` its space (in spaces from the middle); in trim mm, over the bleed.
+   * building standing `at` its space (in spaces from the middle); in trim mm, over the bleed. With what
+   * stands on it (its buildings) again, alone, to go over the spaces' wells but under the cube pads and number.
    */
-  ground?: (at: Spot) => Fragment;
-  /** What stands on the `ground` (its buildings), drawn again over the spaces' wells but under the cube pads and number. */
-  standing?: (at: Spot) => Fragment;
+  ground?: (at: Spot) => Fragment & { standing?: Fragment };
 }
 
 /** The shape of a map's spaces: a tile of 3 × 3 squares, or a 7-hex flower. */
@@ -662,8 +661,9 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
   const t = tileLayout(spec, o);
 
   if (o.only === 'markings') return document(t.marks(), area);
-  const parts: Fragment[] = o.ground
-    ? [o.ground(t.at)]
+  const ground = o.ground?.(t.at);
+  const parts: Fragment[] = ground
+    ? [ground]
     : [
         skyArt(
           spec,
@@ -676,12 +676,11 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
         t.shift(bodyArt(spec, id)),
       ];
   if (t.labelled && o.only !== 'art') parts.push(t.shift(label(spec)));
-  const standing = o.ground && o.standing ? o.standing(t.at) : undefined;
   if (o.markings && o.only !== 'art') {
     // What stands on the ground goes over the spaces' wells, and the planet's cube pads and number over it.
-    if (standing) parts.push(t.marks('spaces'), standing, ...(o.markings === 'spaces' ? [] : [t.marks('planet')]));
+    if (ground?.standing) parts.push(t.marks('spaces'), ground.standing, ...(o.markings === 'spaces' ? [] : [t.marks('planet')]));
     else parts.push(t.marks());
-  } else if (standing) parts.push(standing);
+  }
 
   const all = join(...parts);
   // A hex tile's art is knocked out past its flower, so the paper shows its shape: at the cut on screen

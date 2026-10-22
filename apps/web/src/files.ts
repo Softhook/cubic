@@ -80,6 +80,30 @@ const encode = (canvas: HTMLCanvasElement, type = 'image/png', quality?: number)
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('drawing the SVG failed'))), type, quality),
   );
 
+/**
+ * Draws an SVG document to a `w` × `h` px bitmap, encoded as `type`, and the same bitmap cut out by a
+ * second, `mask` (kept where the mask is drawn): drawn once, for both.
+ */
+export async function rasteriseWithCutout(
+  svg: string,
+  mask: string,
+  w: number,
+  h: number,
+  type = 'image/png',
+  quality?: number,
+): Promise<[Blob, Blob]> {
+  const [canvas, cutter] = await Promise.all([drawSvg(svg, w, h), loadSvg(mask)]);
+  try {
+    const whole = await encode(canvas, type, quality);
+    const ctx = canvas.getContext('2d')!;
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.drawImage(cutter, 0, 0, w, h);
+    return [whole, await encode(canvas, type, quality)];
+  } finally {
+    canvas.width = canvas.height = 0;
+  }
+}
+
 /** Draws an SVG document to a `w` × `h` px bitmap, encoded as `type`. */
 export async function rasterise(svg: string, w: number, h: number, type = 'image/png', quality?: number): Promise<Blob> {
   const canvas = await drawSvg(svg, w, h);

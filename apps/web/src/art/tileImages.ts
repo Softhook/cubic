@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { TILE, TILE_SET, bodySvg, dataUrl, hash, regolithSvg, skySvg, tileSpec, type Spot } from '@quantum/art';
-import { rasterise } from '../files';
+import { TILE, TILE_SET, bodySvg, dataUrl, hash, regolithMaskSvg, regolithSvg, skySvg, tileSpec, type Spot } from '@quantum/art';
+import { rasterise, rasteriseWithCutout } from '../files';
 import { idle, storeImage, storedImage } from './imageStore';
 
 /**
@@ -16,6 +16,7 @@ const SIZE = 576;
 export const layerScale = (layer: TileLayer) => (layer === 'ground' || layer === 'standing' ? (TILE.size + 2 * TILE.bleed) / TILE.size : 1);
 
 const images = new Map<string, Promise<string>>();
+const moons = new Map<string, Promise<Record<'ground' | 'standing', string>>>();
 const decoded = new Map<string, Promise<string>>();
 
 // WebP keeps the stored tiles small; browsers that can't encode it give PNG instead.
@@ -35,7 +36,7 @@ async function load(id: string, svg: string, size: number): Promise<string> {
  * planet and moons or a Void tile's heart, which the map places wherever the planet sits. The spaces,
  * labels and markings are drawn live over them. A hex map in a game is on the moon instead (the Regolith
  * look): each tile is a `ground` layer, with the planet's building standing where the planet sits, and a
- * `standing` one of only the buildings (and ships and rovers) to go over the spaces' wells.
+ * `standing` one, the same image cut down to the buildings (and ships and rovers), to go over the spaces' wells.
  */
 export type TileLayer = 'sky-square' | 'sky-hex' | 'body' | 'ground' | 'standing';
 
@@ -45,13 +46,13 @@ interface TileRef {
   at?: Spot;
 }
 
-function layerSvg({ id, at }: TileRef, layer: TileLayer): string {
+/** The layers drawn from an SVG of their own: a moon tile's two are drawn together (`moonImages`). */
+type OwnLayer = Exclude<TileLayer, 'ground' | 'standing'>;
+
+function layerSvg(id: string, layer: OwnLayer): string {
   switch (layer) {
     case 'body':
       return bodySvg(tileSpec(id));
-    case 'ground':
-    case 'standing':
-      return regolithSvg(tileSpec(id), at, layer);
     case 'sky-hex':
       return skySvg(tileSpec(id), 'hex');
     case 'sky-square':
@@ -62,12 +63,42 @@ function layerSvg({ id, at }: TileRef, layer: TileLayer): string {
 const nameOf = ({ id, at }: TileRef, layer: TileLayer) =>
   (layer === 'ground' || layer === 'standing') && at ? `${id}:${layer}@${at.x.toFixed(3)},${at.y.toFixed(3)}` : `${id}:${layer}`;
 
+/**
+ * A moon tile's `ground` and `standing` images: the ground drawn once, and cut down by its cheap mask
+ * (`regolithMaskSvg`) for what stands, so the two match to the pixel. Stored as a pair, under one key.
+ */
+function moonImages(tile: TileRef): Promise<Record<'ground' | 'standing', string>> {
+  const name = nameOf(tile, 'ground');
+  let pair = moons.get(name);
+  if (!pair) {
+    const svg = regolithSvg(tileSpec(tile.id), tile.at);
+    const mask = regolithMaskSvg(tileSpec(tile.id), tile.at);
+    const size = Math.round(SIZE * layerScale('ground'));
+    const key = `${hash(svg + mask)}:${size}`;
+    const ids = { ground: name, standing: nameOf(tile, 'standing') };
+    pair = (async () => {
+      const [ground, standing] = await Promise.all(
+        [ids.ground, ids.standing].map((id) => storedImage('tiles', id, key).catch(() => undefined)),
+      );
+      if (ground && standing) return { ground: URL.createObjectURL(ground), standing: URL.createObjectURL(standing) };
+      const blobs = await rasteriseWithCutout(svg, mask, size, size, 'image/webp', 0.92);
+      blobs.forEach((blob, i) => storeImage('tiles', [ids.ground, ids.standing][i], key, blob).catch(() => {}));
+      return { ground: URL.createObjectURL(blobs[0]), standing: URL.createObjectURL(blobs[1]) };
+    })()
+      // If drawing fails, the ground as SVG (slower to show, same look), and nothing over the wells.
+      .catch(() => ({ ground: dataUrl(svg), standing: '' }));
+    moons.set(name, pair);
+  }
+  return pair;
+}
+
 /** The image URL for a layer of a tile (`p7-01`…), drawing and storing it the first time. */
 function tileImage(tile: TileRef, layer: TileLayer): Promise<string> {
+  if (layer === 'ground' || layer === 'standing') return moonImages(tile).then((pair) => pair[layer]);
   const name = nameOf(tile, layer);
   let image = images.get(name);
   if (!image) {
-    const svg = layerSvg(tile, layer);
+    const svg = layerSvg(tile.id, layer);
     // If drawing or storage fails, fall back to the SVG itself (slower to show, same look).
     image = load(name, svg, Math.round(SIZE * layerScale(layer))).catch(() => dataUrl(svg));
     images.set(name, image);

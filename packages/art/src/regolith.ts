@@ -91,20 +91,24 @@ const weather = (id: string, freq: number, seed: number, scale: number, sd: numb
 /** The light: the height map gains fine noise where it isn't smooth, is lit from the top left, shadowed, tinted and grained. Over `area`, in board units. */
 function ground(r: Rng, area: Box): string {
   const s = () => r.noiseSeed();
+  // A point is in shadow where the ground towards the light, `d` away, stands higher than it: read from the
+  // height map before its fine noise, as moving the noisy one makes Chrome work it all out again for each
+  // shadow (~65 ms a time), and the noise's own shadows are too small to see.
   const offset = (d: number, k: number, i: number) =>
-    `<feOffset in="H" dx="${d}" dy="${d}" result="o${i}"/>` +
-    `<feComposite in="o${i}" in2="H" operator="arithmetic" k2="1" k3="-1" k4="${k}" result="d${i}"/>`;
+    `<feOffset in="H0" dx="${d}" dy="${d}" result="o${i}"/>` +
+    `<feComposite in="o${i}" in2="H0" operator="arithmetic" k2="1" k3="-1" k4="${k}" result="d${i}"/>`;
   const light = '<feDistantLight azimuth="225" elevation="22"/>';
   return (
     `<filter id="rg-ground" filterUnits="userSpaceOnUse" x="${n(area.x)}" y="${n(area.y)}" width="${n(area.w)}" height="${n(area.h)}" color-interpolation-filters="sRGB">` +
     '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0" result="H0"/>' +
     '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 1 0 0 0" result="SMOOTH"/>' +
     '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 1 0 0" result="ALB"/>' +
-    turbulence(0.012, 2, s(), 'warp') +
+    // One broad noise, four ways: its red and green warp the fine noise, its blue mottles the brightness, its alpha lays the dust and rock patches.
+    turbulence(0.01, 3, s(), 'broad') +
     turbulence(0.03, 7, s(), 'nz') +
-    '<feDisplacementMap in="nz" in2="warp" scale="26" xChannelSelector="R" yChannelSelector="G" result="nzw"/>' +
     turbulence(0.018, 3, s(), 'rg', 'turbulence') +
-    '<feDisplacementMap in="rg" in2="warp" scale="26" xChannelSelector="R" yChannelSelector="G" result="rgw"/>' +
+    '<feDisplacementMap in="nz" in2="broad" scale="26" xChannelSelector="R" yChannelSelector="G" result="nzw"/>' +
+    '<feDisplacementMap in="rg" in2="broad" scale="26" xChannelSelector="R" yChannelSelector="G" result="rgw"/>' +
     '<feComponentTransfer in="rgw" result="ridged"><feFuncA type="table" tableValues="1 0.55 0.3 0.15 0"/></feComponentTransfer>' +
     '<feComponentTransfer in="SMOOTH" result="ROUGH"><feFuncA type="table" tableValues="1 0.02"/></feComponentTransfer>' +
     '<feComposite in="nzw" in2="ROUGH" operator="in" result="nzm"/>' +
@@ -123,8 +127,7 @@ function ground(r: Rng, area: Box): string {
     '<feComposite in2="shB" operator="in" result="SHD"/>' +
     '<feMerge result="Ls"><feMergeNode in="L"/><feMergeNode in="SHD"/></feMerge>' +
     '<feColorMatrix in="ALB" type="matrix" values="0 0 0 1 0  0 0 0 1 0  0 0 0 1 0  0 0 0 0 1" result="albG"/>' +
-    turbulence(0.01, 3, s(), 'an') +
-    '<feColorMatrix in="an" type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1" result="anG"/>' +
+    '<feColorMatrix in="broad" type="matrix" values="0 0 1 0 0  0 0 1 0 0  0 0 1 0 0  0 0 0 0 1" result="anG"/>' +
     '<feComposite in="albG" in2="anG" operator="arithmetic" k2="1" k3="0.45" k4="-0.22" result="albN"/>' +
     '<feComposite in="Ls" in2="albN" operator="arithmetic" k1="2" result="lit"/>' +
     `<feSpecularLighting in="H" kernelUnitLength="0.28" surfaceScale="9" specularConstant="0.6" specularExponent="40" lighting-color="#e6f6ff" result="spec">${light}</feSpecularLighting>` +
@@ -141,8 +144,7 @@ function ground(r: Rng, area: Box): string {
     '<feFuncG type="table" tableValues="0.015 0.045 0.1 0.16 0.23 0.31 0.39"/>' +
     '<feFuncB type="table" tableValues="0.015 0.045 0.1 0.15 0.21 0.28 0.35"/>' +
     '</feComponentTransfer>' +
-    turbulence(0.009, 3, s(), 'pn') +
-    '<feColorMatrix in="pn" type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1" result="pg"/>' +
+    '<feColorMatrix in="broad" type="matrix" values="0 0 0 1 0  0 0 0 1 0  0 0 0 1 0  0 0 0 0 1" result="pg"/>' +
     '<feComponentTransfer in="pg" result="mD"><feFuncR type="table" tableValues="0 0 0.1 0.9 1 1"/><feFuncG type="table" tableValues="0 0 0.1 0.9 1 1"/><feFuncB type="table" tableValues="0 0 0.1 0.9 1 1"/></feComponentTransfer>' +
     '<feComponentTransfer in="mD" result="mR"><feFuncR type="linear" slope="-1" intercept="1"/><feFuncG type="linear" slope="-1" intercept="1"/><feFuncB type="linear" slope="-1" intercept="1"/></feComponentTransfer>' +
     '<feComposite in="dust" in2="mD" operator="arithmetic" k1="1" result="dustM"/>' +
@@ -295,13 +297,18 @@ function craters(r: Rng, kind: string, count: number, min: number, max: number):
   return out;
 }
 
-/** Pits too small to weather apart: bowls in one group and rims in another, sizes skewed small. */
-function pits(r: Rng, count: number, min: number, max: number): string {
-  const list = Array.from({ length: count }, () => {
-    const size = min + (max - min) * r.next() ** 2;
-    // The rim is 1.45 times the bowl, and weathered a little further.
-    return { ...anywhere(r, size * 1.45 + 1), r: size };
-  });
+/**
+ * Pits too small to weather apart, `count` of each size from `min` to `max` (skewed small): all their bowls
+ * in one group and rims in another, so each is weathered in one go.
+ */
+function pits(r: Rng, sizes: [count: number, min: number, max: number][]): string {
+  const list = sizes.flatMap(([count, min, max]) =>
+    Array.from({ length: count }, () => {
+      const size = min + (max - min) * r.next() ** 2;
+      // The rim is 1.45 times the bowl, and weathered a little further.
+      return { ...anywhere(r, size * 1.45 + 1), r: size };
+    }),
+  );
   const group = (attrs: string, k: number) =>
     `<g ${attrs} filter="url(#rg-wx-p)">${list.map((p) => `<circle cx="${n(p.x)}" cy="${n(p.y)}" r="${n(p.r * k)}"/>`).join('')}</g>`;
   return (
@@ -1282,15 +1289,19 @@ const DRAWN: Box = {
   h: BLED.h / SCALE + 2 * MARGIN,
 };
 
-/**
- * Which of a tile's Mars layers to draw: the `ground` with everything on it, or only what stands on it
- * (`standing`: buildings, ships and rovers, cut to their outlines, without their shadows or the glow round
- * them), to go over the spaces' wells, so the wells are etched into the ground and not across the buildings.
- */
-export type RegolithLayer = 'ground' | 'standing';
+/** A box as a filter's or mask's region attributes. */
+const region = (b: Box) => `x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}"`;
 
-/** A tile's Mars ground over its trim and bleed (mm, the trim's top left at 0, 0), its base standing `at` its planet's space; or only what stands there. */
-function regolithArt(spec: TileSpec, at: Spot, layer: RegolithLayer = 'ground'): Fragment {
+/** A tile's Mars scene, in board units: the ground's defs and drawing, and what stands on it (if anything), drawn round the planet's space. */
+interface Scene {
+  defs: string;
+  ground: string;
+  /** What stands: its height map, which also cuts it out, and its drawing over the ground. */
+  standing?: { heights: string; drawn: string };
+}
+
+/** A tile's Mars scene, its base standing `at` its planet's space. */
+function scene(spec: TileSpec, at: Spot): Scene {
   const r = rng(spec.seed).fork('regolith');
   const site = base(spec.number, at, r.fork('base'));
   const [bx, by] = [SIZE / 2 + at.x * SPACE, SIZE / 2 + at.y * SPACE];
@@ -1300,7 +1311,7 @@ function regolithArt(spec: TileSpec, at: Spot, layer: RegolithLayer = 'ground'):
     return `<use href="#rg-ridge" transform="translate(${n(x)},${n(y)}) rotate(${r.int(-40, 40)})"/>`;
   }).join('');
   const heights =
-    `<rect x="${n(DRAWN.x)}" y="${n(DRAWN.y)}" width="${n(DRAWN.w)}" height="${n(DRAWN.h)}" fill="rgb(128,0,128)"/>` +
+    `<rect ${region(DRAWN)} fill="rgb(128,0,128)"/>` +
     dunes(r.fork('dunes')) +
     tracks(r.fork('tracks')) +
     ridges +
@@ -1309,8 +1320,10 @@ function regolithArt(spec: TileSpec, at: Spot, layer: RegolithLayer = 'ground'):
     craters(r, 'm', r.int(1, 2), 0.32, 0.8) +
     craters(r, 'y', r.int(1, 2), 0.24, 0.6) +
     // As many on the flower as there were when they were strewn past the tile's square too.
-    pits(r.fork('pits'), 55, 0.45, 1.12) +
-    pits(r.fork('small'), 21, 1.2, 5.6) +
+    pits(r.fork('pits'), [
+      [55, 0.45, 1.12],
+      [21, 1.2, 5.6],
+    ]) +
     boulders(r.fork('boulders'), 1, 15) +
     // The ground is levelled round a base, smoothing over any crater there, then it's built.
     (site ? place(site.grade + site.heights) : '');
@@ -1323,40 +1336,54 @@ function regolithArt(spec: TileSpec, at: Spot, layer: RegolithLayer = 'ground'):
     weather('rg-wx-o', 0.05, r.noiseSeed(), 10, 2.6) +
     weather('rg-wx-p', 0.3, r.noiseSeed(), 1.8, 0.6, 'x="0" y="0" width="100%" height="100%"') +
     weather('rg-wx-d', 0.02, r.noiseSeed(), 14, 0.4);
+  const defs =
+    GRADIENTS +
+    BUILDING_GRADIENTS +
+    DUNES +
+    filters +
+    ground(r.fork('ground'), DRAWN) +
+    built(r.fork('built'), DRAWN) +
+    cast(DRAWN) +
+    dust(r.noiseSeed(), DRAWN) +
+    CRATERS +
+    RIDGE;
+  if (!site) return { defs, ground: `<g filter="url(#rg-ground)">${heights}</g>` };
+  const standing = place(site.heights);
   // The buildings' filters are over the tile's area, so they're applied outside the move to the planet's space.
-  const standing = site
-    ? `<g filter="url(#rg-cast)">${place(site.heights)}</g>` +
-      `<g filter="url(#rg-built)">${place(site.heights)}</g>` +
-      place(`<g style="mix-blend-mode: color">${site.tint}</g>`) +
-      `<g filter="url(#rg-dust)" opacity="0.9" style="mix-blend-mode: soft-light">${place(site.heights)}</g>` +
-      place(site.paint)
-    : '';
-  const area = `x="${n(DRAWN.x)}" y="${n(DRAWN.y)}" width="${n(DRAWN.w)}" height="${n(DRAWN.h)}"`;
+  const drawn =
+    `<g filter="url(#rg-cast)">${standing}</g>` +
+    `<g filter="url(#rg-built)">${standing}</g>` +
+    place(`<g style="mix-blend-mode: color">${site.tint}</g>`) +
+    `<g filter="url(#rg-dust)" opacity="0.9" style="mix-blend-mode: soft-light">${standing}</g>` +
+    place(site.paint);
+  return { defs, ground: `<g filter="url(#rg-ground)">${heights}</g>${drawn}`, standing: { heights: standing, drawn } };
+}
+
+/** Board units drawn as trim millimetres. */
+const inMm = (body: string) => `<g transform="scale(${n(SCALE)})">${body}</g>`;
+
+/** Paints what it's given white, keeping its shape. */
+const WHITE = `<filter id="rg-white" filterUnits="userSpaceOnUse" ${region(DRAWN)}><feFlood flood-color="#fff"/><feComposite in2="SourceAlpha" operator="in"/></filter>`;
+
+/** What stands on a tile in white: its heights' shapes, in mm. */
+const silhouette = (heights: string) => inMm(`<g filter="url(#rg-white)">${heights}</g>`);
+
+/**
+ * A tile's Mars ground over its trim and bleed (mm, the trim's top left at 0, 0), with everything on it;
+ * and what stands on it alone (its buildings, ships and rovers), cut to their outlines, to print over the
+ * spaces' wells.
+ */
+function moonArt(spec: TileSpec, at: Spot): Fragment & { standing?: Fragment } {
+  const { defs, ground, standing } = scene(spec, at);
   return {
-    defs:
-      GRADIENTS +
-      BUILDING_GRADIENTS +
-      DUNES +
-      filters +
-      ground(r.fork('ground'), DRAWN) +
-      built(r.fork('built'), DRAWN) +
-      cast(DRAWN) +
-      dust(r.noiseSeed(), DRAWN) +
-      CRATERS +
-      RIDGE +
-      // What stands, as a mask: its heights' shapes in white.
-      (layer === 'standing' && site
-        ? `<filter id="rg-white" filterUnits="userSpaceOnUse" ${area}><feFlood flood-color="#fff"/><feComposite in2="SourceAlpha" operator="in"/></filter>` +
-          `<mask id="rg-standing" maskUnits="userSpaceOnUse" ${area}><g filter="url(#rg-white)">${place(site.heights)}</g></mask>`
-        : ''),
-    body:
-      `<g transform="scale(${n(SCALE)})">` +
-      (layer === 'ground'
-        ? `<g filter="url(#rg-ground)">${heights}</g>${standing}`
-        : site
-          ? `<g mask="url(#rg-standing)">${standing}</g>`
-          : '') +
-      '</g>',
+    defs,
+    body: inMm(ground),
+    ...(standing && {
+      standing: {
+        defs: WHITE + `<mask id="rg-standing" maskUnits="userSpaceOnUse" ${region(BLED)}>${silhouette(standing.heights)}</mask>`,
+        body: `<g mask="url(#rg-standing)">${inMm(standing.drawn)}</g>`,
+      },
+    }),
   };
 }
 
@@ -1364,10 +1391,23 @@ function regolithArt(spec: TileSpec, at: Spot, layer: RegolithLayer = 'ground'):
  * A hex tile's Mars ground, in place of its sky and planet, trim 96 × 96 mm and its 3 mm bleed (so a map's
  * clip a touch past the hexes still lands on ground): the planet's building stands `at` its space (in
  * spaces from the tile's middle, x right and y down). No markings: the game draws the cubes and the
- * number over its bays, and the spaces' wells between the `ground` and the `standing` layer.
+ * number over its bays, and the spaces' wells under what stands (`regolithMaskSvg`).
  */
-export function regolithSvg(spec: TileSpec, at: Spot = { x: 0, y: 0 }, layer: RegolithLayer = 'ground'): string {
-  return document(regolithArt(spec, at, layer), BLED, true);
+export function regolithSvg(spec: TileSpec, at: Spot = { x: 0, y: 0 }): string {
+  const { defs, ground } = scene(spec, at);
+  return document({ defs, body: inMm(ground) }, BLED, true);
+}
+
+/**
+ * What stands on a tile's ground (`regolithSvg`), as a mask over the same area: white where it stands,
+ * clear elsewhere. Cheap to draw (no lighting), so the game cuts what stands out of the drawn ground with
+ * it, to lay over the spaces' wells, rather than drawing it again.
+ */
+export function regolithMaskSvg(spec: TileSpec, at: Spot = { x: 0, y: 0 }): string {
+  const { standing } = scene(spec, at);
+  // Only the defs its shapes use: their gradients, and a blur.
+  const defs = WHITE + BUILDING_GRADIENTS + blur('rg-soft1', 1);
+  return document(standing ? { defs, body: silhouette(standing.heights) } : { defs: '', body: '' }, BLED, true);
 }
 
 /**
@@ -1375,4 +1415,4 @@ export function regolithSvg(spec: TileSpec, at: Spot = { x: 0, y: 0 }, layer: Re
  * flower, with its markings, the cube pads in the building's bays, and what stands on the ground over the spaces' wells.
  */
 export const regolithTileSvg = (spec: TileSpec, o: Omit<TileOptions, 'shape' | 'ground'> = {}): string =>
-  tileSvg(spec, { ...o, shape: 'hex', ground: (at) => regolithArt(spec, at), standing: (at) => regolithArt(spec, at, 'standing') });
+  tileSvg(spec, { ...o, shape: 'hex', ground: (at) => moonArt(spec, at) });
