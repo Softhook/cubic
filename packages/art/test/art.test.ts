@@ -156,14 +156,14 @@ describe('tiles off the square', () => {
     for (const [dir, p] of Object.entries(TILE_SPOTS.hex)) expect(Math.hypot(p.x, p.y)).toBeCloseTo(dir ? 1 : 0);
   });
 
-  it('draw a hex tile as six hex wells round its planet, all hatched, cut to the flower', () => {
+  it('draw a hex tile as six unhatched hex wells round its planet, cut to the flower', () => {
     const svg = tileSvg(seven, { shape: 'hex', markings: true, rounded: true });
     expect(wells(svg)).toBe(6);
     expect(svg).toContain(`${seven.id}-flower`);
+    expect(hatched(svg)).toBe(0);
     const outer = tileSvg(seven, { shape: 'hex', markings: true, planetAt: 'n' });
-    // On an outer hex, only 3 of its orbit's hexes are on the tile (the middle and the two beside it) to hatch.
     expect(wells(outer)).toBe(6);
-    expect(hatched(outer)).toBeLessThan(hatched(svg));
+    expect(hatched(outer)).toBe(0);
   });
 
   it('knock a hex tile out past its flower: at the cut, or past it by the bleed', () => {
