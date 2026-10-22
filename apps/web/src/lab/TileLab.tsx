@@ -1,29 +1,19 @@
 import { useMemo, useState } from 'react';
-import {
-  OFF_CENTRE,
-  TILE_SET,
-  TILE_SPOTS,
-  dataUrl,
-  editableTileSvg,
-  tileSvg,
-  type PlanetType,
-  type TileShape,
-  type TileSpec,
-} from '@quantum/art';
+import { OFF_CENTRE, TILE_SET, TILE_SPOTS, dataUrl, editableTileSvg, type PlanetType, type TileSpec } from '@quantum/art';
 import { blobToDataUrl, download } from '../files';
 import { svgToPng } from '../print/exports';
 import { fileName, pieceSize } from '../print/pieces';
 import { PrintPanel, Space } from '../print/PrintPanel';
 import { tileFontCss, useFontCss, useSvgUrl } from './cards';
 import { LabHeader } from './LabHeader';
-import { TILE_PRINT, printableTile } from './pressSheets';
+import { TILE_PRINT, lookShape, printableTile, tileFaceSvg, type TileLook } from './pressSheets';
 
 /**
  * Art Lab, tiles page (#lab): every tile of the physical set, with controls to explore seeds and
  * planet types and to export print files: single tiles, the whole set, print sheets, and the CMYK press
  * sheets the tiles share with the player aids. See docs/GRAPHICS.md §3–4. The set can be shown and
- * exported as hex tiles too (die-cut along the flower), and with its planets moved off the middle, as maps
- * place them (docs/HEX.md).
+ * exported as hex tiles too (die-cut along the flower), in space or on the moon (the Regolith look), and with
+ * its planets moved off the middle, as maps place them (docs/HEX.md).
  */
 
 const TYPES: PlanetType[] = ['gas', 'rocky', 'ice', 'lava', 'ocean'];
@@ -35,35 +25,37 @@ export function TileLab() {
   const [selected, setSelected] = useState(TILE_SET[0].id);
   const [markings, setMarkings] = useState(true);
   const [bleed, setBleed] = useState(false);
-  const [shape, setShape] = useState<TileShape>('square');
+  const [look, setLook] = useState<TileLook>('square');
   // Where the planets sit, as a map's layout token says (`7ne`): '' for the middle.
   const [planetAt, setPlanetAt] = useState('');
+  const view = useMemo(() => ({ look, planetAt }), [look, planetAt]);
+  const shape = lookShape(look);
   // The number and label fonts, embedded in the detail view and the print files (thumbnails use the system's).
   const fonts = useFontCss(tileFontCss);
 
   const specs = useMemo(() => TILE_SET.map((t) => ({ ...t, ...overrides[t.id] })), [overrides]);
   const thumbs = useMemo(
-    () => specs.map((t) => ({ spec: t, url: dataUrl(tileSvg(t, { markings, rounded: true, shape, planetAt })) })),
-    [specs, markings, shape, planetAt],
+    () => specs.map((t) => ({ spec: t, url: dataUrl(tileFaceSvg(t, view, { markings, rounded: true })) })),
+    [specs, markings, view],
   );
   const spec = specs.find((t) => t.id === selected)!;
   // A hex tile is shown cut to its flower; a square one as printed, with its bleed.
   const svg = useMemo(
-    () => tileSvg(spec, { markings, bleed, fontCss: fonts ?? '', shape, planetAt, rounded: shape === 'hex' }),
-    [spec, markings, bleed, fonts, shape, planetAt],
+    () => tileFaceSvg(spec, view, { markings, bleed, fontCss: fonts ?? '', rounded: shape === 'hex' }),
+    [spec, markings, bleed, fonts, view, shape],
   );
   const detail = useSvgUrl(svg);
   const set = (o: Override) => setOverrides((all) => ({ ...all, [spec.id]: { ...all[spec.id], ...o } }));
 
   // Prints the set as shown: seeds and types being explored, the markings setting, the shape and planet spot included.
-  const printable = (t: TileSpec) => printableTile(t, fonts ?? '', markings, { shape, planetAt });
-  const { piece, cmyk } = TILE_PRINT[shape];
+  const printable = (t: TileSpec) => printableTile(t, fonts ?? '', markings, view);
+  const { piece, cmyk } = TILE_PRINT[look];
   const item = printable(spec);
 
   /** Illustrator can't render SVG filters, so the art goes in as a 600 dpi bitmap with vector markings on top. */
   const exportEditable = async () => {
     const { w, h } = pieceSize(piece, bleed);
-    const art = await blobToDataUrl(await svgToPng(tileSvg(spec, { only: 'art', bleed, shape, planetAt }), w, h, 600));
+    const art = await blobToDataUrl(await svgToPng(tileFaceSvg(spec, view, { only: 'art', bleed }), w, h, 600));
     const name = fileName(piece, item, { bleed, ext: 'svg' }).replace(/\.svg$/, '-illustrator.svg');
     download(name, new Blob([editableTileSvg(spec, art, { bleed, markings, shape, planetAt })], { type: 'image/svg+xml' }));
   };
@@ -77,15 +69,16 @@ export function TileLab() {
         <label>
           Shape
           <select
-            value={shape}
+            value={look}
             onChange={(e) => {
-              const next = e.target.value as TileShape;
-              setShape(next);
-              if (!(planetAt in TILE_SPOTS[next])) setPlanetAt('');
+              const next = e.target.value as TileLook;
+              setLook(next);
+              if (!(planetAt in TILE_SPOTS[lookShape(next)])) setPlanetAt('');
             }}
           >
             <option value="square">Square</option>
             <option value="hex">Hex</option>
+            <option value="moon">Hex, on the moon</option>
           </select>
         </label>
         <label title="Where each planet sits on its tile, as a map's layout token says (7ne)">

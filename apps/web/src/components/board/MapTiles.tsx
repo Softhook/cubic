@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { cellAt, type Board } from '@quantum/engine';
 import { HATCH, HEX_WELL, SPACE_BASE_CSS, TILE, WELL, hexWell, tileLabel, tileSpec, voidFlask, well } from '@quantum/art';
 import { useMoonMaps } from '../../art/mapLook';
-import { useTileImages } from '../../art/tileImages';
+import { layerScale, useTileImages } from '../../art/tileImages';
 import type { TileArt } from '../../art/boardTiles';
 import { SQUARE_TILE_GAP, hexCorners, hexFlower, hexSeams, placement } from './geometry';
 import { labelFits, spaceRoles } from './layers';
@@ -94,15 +94,17 @@ const NO_TILES: TileArt[] = [];
  */
 export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: Board; tiles: TileArt[]; cell: number }) {
   const moon = useMoonMaps() && !!board.hex;
-  const skies = useTileImages(tiles, moon ? 'ground' : board.hex ? 'sky-hex' : 'sky-square');
+  const skyLayer = moon ? 'ground' : board.hex ? 'sky-hex' : 'sky-square';
+  const skies = useTileImages(tiles, skyLayer);
   // On the moon each tile's ground already has its building, so there are no bodies to load.
   const bodies = useTileImages(moon ? NO_TILES : tiles, 'body');
   const { mid } = placement(board, cell);
   const mm = cell / TILE.cell;
   // A tile's artwork is a whole printed tile, 3 spaces wide, centred on what it draws.
   const size = 3 * cell;
-  const art = (url: string | undefined, at: { x: number; y: number }) =>
-    url && <image href={url} x={at.x - size / 2} y={at.y - size / 2} width={size} height={size} />;
+  // The moon ground reaches past its tile, by the bleed, so the clip a touch past the hexes is on ground.
+  const art = (url: string | undefined, at: { x: number; y: number }, scale = 1) =>
+    url && <image href={url} x={at.x - (size * scale) / 2} y={at.y - (size * scale) / 2} width={size * scale} height={size * scale} />;
   // Square tiles stand a little apart, with the printed rounded corners; hex tiles meet at a seam.
   const inset = cell * SQUARE_TILE_GAP;
   const outline = (t: TileArt) => {
@@ -135,7 +137,7 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
       {tiles.map((t) => (
         <g key={t.tile} clipPath={`url(#map-tile-${t.tile})`}>
           <rect x={mid(t).x - size / 2} y={mid(t).y - size / 2} width={size} height={size} fill={SPACE_BASE_CSS} />
-          {art(skies[t.id], mid(t))}
+          {art(skies[t.id], mid(t), layerScale(skyLayer))}
           {!moon && art(bodies[t.id], mid(t.body))}
         </g>
       ))}

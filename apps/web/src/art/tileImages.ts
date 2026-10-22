@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { TILE_SET, bodySvg, dataUrl, hash, regolithSvg, skySvg, tileSpec, type Spot } from '@quantum/art';
+import { TILE, TILE_SET, bodySvg, dataUrl, hash, regolithSvg, skySvg, tileSpec, type Spot } from '@quantum/art';
 import { rasterise } from '../files';
 import { idle, storeImage, storedImage } from './imageStore';
 
@@ -12,17 +12,20 @@ import { idle, storeImage, storedImage } from './imageStore';
 /** Pixel size of a stored tile: the largest on-screen tile (3 × 92 px cells) at 2× device pixels. */
 const SIZE = 576;
 
+/** How much bigger than its tile a layer's image is: the moon ground has the print bleed round it (`regolithSvg`). */
+export const layerScale = (layer: TileLayer) => (layer === 'ground' ? (TILE.size + 2 * TILE.bleed) / TILE.size : 1);
+
 const images = new Map<string, Promise<string>>();
 const decoded = new Map<string, Promise<string>>();
 
 // WebP keeps the stored tiles small; browsers that can't encode it give PNG instead.
-const draw = (svg: string) => rasterise(svg, SIZE, SIZE, 'image/webp', 0.92);
+const draw = (svg: string, size: number) => rasterise(svg, size, size, 'image/webp', 0.92);
 
-async function load(id: string, svg: string): Promise<string> {
-  const key = `${hash(svg)}:${SIZE}`;
+async function load(id: string, svg: string, size: number): Promise<string> {
+  const key = `${hash(svg)}:${size}`;
   const stored = await storedImage('tiles', id, key).catch(() => undefined);
   if (stored) return URL.createObjectURL(stored);
-  const blob = await draw(svg);
+  const blob = await draw(svg, size);
   storeImage('tiles', id, key, blob).catch(() => {});
   return URL.createObjectURL(blob);
 }
@@ -64,7 +67,7 @@ function tileImage(tile: TileRef, layer: TileLayer): Promise<string> {
   if (!image) {
     const svg = layerSvg(tile, layer);
     // If drawing or storage fails, fall back to the SVG itself (slower to show, same look).
-    image = load(name, svg).catch(() => dataUrl(svg));
+    image = load(name, svg, Math.round(SIZE * layerScale(layer))).catch(() => dataUrl(svg));
     images.set(name, image);
   }
   return image;

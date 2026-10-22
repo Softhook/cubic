@@ -42,6 +42,11 @@ export interface TileOptions {
   shape?: TileShape;
   /** Where the planet sits, as a map's layout token says it (`TILE_SPOTS`): the middle when absent. */
   planetAt?: string;
+  /**
+   * Ground to print in place of the sky and planet (the moon's, `regolithTileSvg`), with the planet's
+   * building standing `at` its space (in spaces from the middle); in trim mm, over the bleed.
+   */
+  ground?: (at: Spot) => Fragment;
 }
 
 /** The shape of a map's spaces: a tile of 3 × 3 squares, or a 7-hex flower. */
@@ -647,21 +652,22 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
   const id = o.idPrefix ?? spec.id;
   const b = o.bleed ? TILE.bleed : 0;
   const area: Box = { x: -b, y: -b, w: TILE.size + 2 * b, h: TILE.size + 2 * b };
-  const full: Box = { x: -TILE.bleed, y: -TILE.bleed, w: TILE.size + 2 * TILE.bleed, h: TILE.size + 2 * TILE.bleed };
   const t = tileLayout(spec, o);
 
   if (o.only === 'markings') return document(t.marks(), area);
-  const parts: Fragment[] = [
-    skyArt(
-      spec,
-      id,
-      full,
-      // A Void keeps the planet's strips clear too, as printed.
-      (x, y) => inGutter(t.shape, t.p, numberCorner(t.at, t.shape), tileLabelFits(t.shape, t.at), x, y),
-      t.labelled ? (x: number, y: number) => !inLabel(t.p, x, y) : undefined,
-    ),
-    t.shift(bodyArt(spec, id)),
-  ];
+  const parts: Fragment[] = o.ground
+    ? [o.ground(t.at)]
+    : [
+        skyArt(
+          spec,
+          id,
+          BLED,
+          // A Void keeps the planet's strips clear too, as printed.
+          (x, y) => inGutter(t.shape, t.p, numberCorner(t.at, t.shape), tileLabelFits(t.shape, t.at), x, y),
+          t.labelled ? (x: number, y: number) => !inLabel(t.p, x, y) : undefined,
+        ),
+        t.shift(bodyArt(spec, id)),
+      ];
   if (t.labelled && o.only !== 'art') parts.push(t.shift(label(spec)));
   if (o.markings && o.only !== 'art') parts.push(t.marks());
 
@@ -702,6 +708,9 @@ function tileLayout(spec: TileSpec, o: Pick<TileOptions, 'shape' | 'planetAt' | 
 
 /** The trim of a tile (mm). */
 const TRIM: Box = { x: 0, y: 0, w: TILE.size, h: TILE.size };
+
+/** The trim of a tile with its bleed (mm): how far a tile's art is drawn, whether the bleed is shown or not. */
+export const BLED: Box = { x: -TILE.bleed, y: -TILE.bleed, w: TILE.size + 2 * TILE.bleed, h: TILE.size + 2 * TILE.bleed };
 
 /** A tile's starfield and nebula over `area`, faded to the shared base colour at the trim's edge. */
 function skyArt(

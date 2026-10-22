@@ -1,7 +1,8 @@
 import { rng, type Rng } from './rng';
 import { TILE } from './tokens';
 import { document, n, turbulence, type Fragment } from './svg';
-import { cubePadCentres, numberCorner, type Spot } from './tile';
+import type { Box } from './starfield';
+import { BLED, HEX_TILE_CUT, cubePadCentres, numberCorner, tileSvg, type Spot, type TileOptions } from './tile';
 import type { TileSpec } from './tileset';
 
 /**
@@ -13,6 +14,9 @@ import type { TileSpec } from './tileset';
  *
  * Chrome ignores the lighting's `kernelUnitLength`, so its relief differs from Firefox's and Safari's
  * (the mood board's Surface study); the game draws each tile once to a bitmap, in the player's browser.
+ *
+ * The ground is drawn, and lit, past the area shown by `MARGIN`: the lighting reads its neighbours and the
+ * shadows and warps reach in from further, so at the filter's edge they'd go wrong, as a grey line.
  */
 
 /** One space in the mood board's units. */
@@ -20,6 +24,8 @@ const SPACE = 69.3;
 const SCALE = TILE.cell / SPACE;
 /** The tile's trim, 96 mm, in board units. */
 const SIZE = TILE.size / SCALE;
+/** How far past the area shown the ground is drawn, in board units: past the furthest shadow (9) and warp (13). */
+const MARGIN = 20;
 
 const stops = (list: [number, string, number?][]) =>
   list.map(([o, c, a]) => `<stop offset="${o}" stop-color="${c}"${a === undefined ? '' : ` stop-opacity="${a}"`}/>`).join('');
@@ -82,15 +88,15 @@ const weather = (id: string, freq: number, seed: number, scale: number, sd: numb
   `<feDisplacementMap in="SourceGraphic" in2="t" scale="${scale}" xChannelSelector="R" yChannelSelector="G" result="d"/>` +
   `<feGaussianBlur in="d" stdDeviation="${sd}"/></filter>`;
 
-/** The light: the height map gains fine noise where it isn't smooth, is lit from the top left, shadowed, tinted and grained. */
-function ground(r: Rng): string {
+/** The light: the height map gains fine noise where it isn't smooth, is lit from the top left, shadowed, tinted and grained. Over `area`, in board units. */
+function ground(r: Rng, area: Box): string {
   const s = () => r.noiseSeed();
   const offset = (d: number, k: number, i: number) =>
     `<feOffset in="H" dx="${d}" dy="${d}" result="o${i}"/>` +
     `<feComposite in="o${i}" in2="H" operator="arithmetic" k2="1" k3="-1" k4="${k}" result="d${i}"/>`;
   const light = '<feDistantLight azimuth="225" elevation="22"/>';
   return (
-    `<filter id="rg-ground" filterUnits="userSpaceOnUse" x="0" y="0" width="${n(SIZE)}" height="${n(SIZE)}" color-interpolation-filters="sRGB">` +
+    `<filter id="rg-ground" filterUnits="userSpaceOnUse" x="${n(area.x)}" y="${n(area.y)}" width="${n(area.w)}" height="${n(area.h)}" color-interpolation-filters="sRGB">` +
     '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0" result="H0"/>' +
     '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 1 0 0 0" result="SMOOTH"/>' +
     '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 1 0 0" result="ALB"/>' +
@@ -159,15 +165,54 @@ const RIDGE =
   '<path d="M-20,6 C-11,-5 6,-11 21,-7" fill="none" stroke="rgb(236,0,128)" stroke-width="1.6" stroke-linecap="round" filter="url(#rg-soft1)"/>' +
   '</g>';
 
-/** A point anywhere on the tile, or a little past its edge, so craters there are cut off by the next tile. */
-const anywhere = (r: Rng) => ({ x: r.range(-20, SIZE + 20), y: r.range(-20, SIZE + 20) });
+/** The hex flower's outline (its cut), in board units. */
+const OUTLINE = HEX_TILE_CUT.map((side) => side.map((v) => v / SCALE));
+
+/** How far (x, y) is inside the hex flower, in board units: negative outside it. */
+function inside(x: number, y: number): number {
+  let d = Infinity;
+  let crossings = 0;
+  for (const [x1, y1, x2, y2] of OUTLINE) {
+    const [dx, dy] = [x2 - x1, y2 - y1];
+    const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy)));
+    d = Math.min(d, Math.hypot(x - x1 - t * dx, y - y1 - t * dy));
+    if (y1 > y !== y2 > y && x < x1 + ((y - y1) / (y2 - y1)) * dx) crossings++;
+  }
+  return crossings % 2 ? d : -d;
+}
+
+/**
+ * How many features may run over the flower's edge, cut off where the next tile starts: a few, so the
+ * edge doesn't look swept clear, but most stop short of it, as a crater cut in two shows at a seam.
+ */
+const OVER_EDGE = 0.15;
+
+/**
+ * A point anywhere on the hex flower for a feature `reach` across from its middle: clear of the edge by
+ * that, or now and then (`OVER_EDGE`) only within the flower. Spread evenly, not drawn to the middle.
+ */
+function anywhere(r: Rng, reach: number): Spot {
+  const clear = r.chance(OVER_EDGE) ? 0 : reach;
+  let p = { x: SIZE / 2, y: SIZE / 2 };
+  for (let i = 0; i < 80; i++) {
+    const q = { x: r.range(0, SIZE), y: r.range(0, SIZE) };
+    const d = inside(q.x, q.y);
+    if (d >= clear) return q;
+    // Too big to keep clear of the edge anywhere: the last point inside the flower will do.
+    if (d >= 0) p = q;
+  }
+  return p;
+}
+
+/** How far a crater of each kind reaches, at scale 1: its rim (36), or where its bright ejecta fades (r 55, 68). */
+const CRATER_REACH: Record<string, number> = { o: 38, m: 38, y: 42, big: 52 };
 
 /** Copies of a crater, each placed, turned and stretched a little (as the mood board's are). */
 function craters(r: Rng, kind: string, count: number, min: number, max: number): string {
   let out = '';
   for (let i = 0; i < count; i++) {
-    const { x, y } = anywhere(r);
     const s = r.range(min, max);
+    const { x, y } = anywhere(r, CRATER_REACH[kind] * s);
     out += `<use href="#rg-cr-${kind}" transform="translate(${n(x)},${n(y)}) rotate(${r.int(0, 359)}) scale(${n(s)},${n(s * r.range(0.9, 1))})"/>`;
   }
   return out;
@@ -175,7 +220,11 @@ function craters(r: Rng, kind: string, count: number, min: number, max: number):
 
 /** Pits too small to weather apart: bowls in one group and rims in another, sizes skewed small. */
 function pits(r: Rng, count: number, min: number, max: number): string {
-  const list = Array.from({ length: count }, () => ({ ...anywhere(r), r: min + (max - min) * r.next() ** 2 }));
+  const list = Array.from({ length: count }, () => {
+    const size = min + (max - min) * r.next() ** 2;
+    // The rim is 1.45 times the bowl, and weathered a little further.
+    return { ...anywhere(r, size * 1.45 + 1), r: size };
+  });
   const group = (attrs: string, k: number) =>
     `<g ${attrs} filter="url(#rg-wx-p)">${list.map((p) => `<circle cx="${n(p.x)}" cy="${n(p.y)}" r="${n(p.r * k)}"/>`).join('')}</g>`;
   return (
@@ -188,7 +237,7 @@ function pits(r: Rng, count: number, min: number, max: number): string {
 function boulders(r: Rng, clusters: number, each: number): string {
   let out = '';
   for (let c = 0; c < clusters; c++) {
-    const { x, y } = anywhere(r);
+    const { x, y } = anywhere(r, 18);
     for (let i = 0; i < each; i++) {
       const a = r.range(0, 2 * Math.PI);
       const d = 14 * Math.sqrt(r.next());
@@ -383,26 +432,35 @@ function building(number: number, at: Spot): Building | undefined {
   }
 }
 
+/** The trim and its bleed in board units, and the margin past it, which the ground is drawn and lit over. */
+const DRAWN: Box = {
+  x: BLED.x / SCALE - MARGIN,
+  y: BLED.y / SCALE - MARGIN,
+  w: BLED.w / SCALE + 2 * MARGIN,
+  h: BLED.h / SCALE + 2 * MARGIN,
+};
+
+/** A tile's moon ground over its trim and bleed (mm, the trim's top left at 0, 0), its building standing `at` its planet's space. */
 function regolithArt(spec: TileSpec, at: Spot): Fragment {
   const r = rng(spec.seed).fork('regolith');
   const site = building(spec.number, at);
   const [bx, by] = [SIZE / 2 + at.x * SPACE, SIZE / 2 + at.y * SPACE];
   const place = (f: string) => `<g transform="translate(${n(bx)},${n(by)})">${f}</g>`;
-  const ridges = Array.from(
-    { length: r.int(0, 2) },
-    () =>
-      `<use href="#rg-ridge" transform="translate(${n(r.range(20, SIZE - 20))},${n(r.range(20, SIZE - 20))}) rotate(${r.int(-40, 40)})"/>`,
-  ).join('');
+  const ridges = Array.from({ length: r.int(0, 2) }, () => {
+    const { x, y } = anywhere(r, 34);
+    return `<use href="#rg-ridge" transform="translate(${n(x)},${n(y)}) rotate(${r.int(-40, 40)})"/>`;
+  }).join('');
   const heights =
-    `<rect x="0" y="0" width="${n(SIZE)}" height="${n(SIZE)}" fill="rgb(128,0,128)"/>` +
+    `<rect x="${n(DRAWN.x)}" y="${n(DRAWN.y)}" width="${n(DRAWN.w)}" height="${n(DRAWN.h)}" fill="rgb(128,0,128)"/>` +
     ridges +
     craters(r, 'o', r.int(1, 2), 0.6, 1.4) +
     (r.chance(0.25) ? craters(r, 'big', 1, 0.8, 1.05) : '') +
     craters(r, 'm', r.int(1, 2), 0.32, 0.8) +
     craters(r, 'y', r.int(1, 2), 0.24, 0.6) +
-    pits(r.fork('pits'), 115, 0.45, 1.12) +
-    pits(r.fork('small'), 45, 1.2, 5.6) +
-    boulders(r.fork('boulders'), 2, 15) +
+    // As many on the flower as there were when they were strewn past the tile's square too.
+    pits(r.fork('pits'), 55, 0.45, 1.12) +
+    pits(r.fork('small'), 21, 1.2, 5.6) +
+    boulders(r.fork('boulders'), 1, 15) +
     // The ground is levelled round a building, smoothing over any crater there, then it's built.
     (site?.graded ? place(`<circle r="${site.graded}" fill="rgb(128,190,128)" filter="url(#rg-soft6)"/>`) : '') +
     (site ? place(site.heights) : '');
@@ -415,16 +473,24 @@ function regolithArt(spec: TileSpec, at: Spot): Fragment {
     weather('rg-wx-o', 0.05, r.noiseSeed(), 10, 2.6) +
     weather('rg-wx-p', 0.3, r.noiseSeed(), 1.8, 0.6, 'x="0" y="0" width="100%" height="100%"');
   return {
-    defs: GRADIENTS + BUILDING_GRADIENTS + filters + ground(r.fork('ground')) + CRATERS + RIDGE,
+    defs: GRADIENTS + BUILDING_GRADIENTS + filters + ground(r.fork('ground'), DRAWN) + CRATERS + RIDGE,
     body: `<g transform="scale(${n(SCALE)})"><g filter="url(#rg-ground)">${heights}</g>${site ? place(site.paint) : ''}</g>`,
   };
 }
 
 /**
- * A hex tile's moon ground, trim 96 × 96 mm, in place of its sky and planet: the planet's building stands
- * `at` its space (in spaces from the tile's middle, x right and y down). No markings: the game draws
- * the cubes and the number over its bays.
+ * A hex tile's moon ground, in place of its sky and planet, trim 96 × 96 mm and its 3 mm bleed (so a map's
+ * clip a touch past the hexes still lands on ground): the planet's building stands `at` its space (in
+ * spaces from the tile's middle, x right and y down). No markings: the game draws the cubes and the
+ * number over its bays.
  */
 export function regolithSvg(spec: TileSpec, at: Spot = { x: 0, y: 0 }): string {
-  return document(regolithArt(spec, at), { x: 0, y: 0, w: TILE.size, h: TILE.size }, true);
+  return document(regolithArt(spec, at), BLED, true);
 }
+
+/**
+ * A hex tile on the moon as printed (`tileSvg` with the moon ground for its art): knocked out past its
+ * flower, with its markings, the cube pads in the building's bays.
+ */
+export const regolithTileSvg = (spec: TileSpec, o: Omit<TileOptions, 'shape' | 'ground'> = {}): string =>
+  tileSvg(spec, { ...o, shape: 'hex', ground: (at) => regolithArt(spec, at) });
