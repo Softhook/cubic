@@ -269,32 +269,13 @@ export const HATCH = { gap: 3, inset: 1.5, ink: hex(222, 80, 82) };
  * Diagonal hatching across the pad centred on (cx, cy): plain line segments, clipped by hand to a
  * square inset from the pad, so they stay editable vectors without a clip path.
  */
-export function hatch(cx: number, cy: number, shape: TileShape = 'square'): string {
-  if (shape === 'hex') return hexHatch(cx, cy);
+export function hatch(cx: number, cy: number): string {
   const h = TILE.pad / 2 - HATCH.inset;
   let out = '';
   // Lines u + v = c across the square |u|, |v| ≤ h (u right, v down from the centre): bottom left to top right.
   for (let c = -2 * h + HATCH.gap; c < 2 * h - 0.01; c += HATCH.gap) {
     const u1 = Math.max(-h, c - h);
     const u2 = Math.min(h, c + h);
-    out += `<line x1="${n(cx + u1)}" y1="${n(cy + c - u1)}" x2="${n(cx + u2)}" y2="${n(cy + c - u2)}" stroke="${HATCH.ink}" stroke-opacity=".14" stroke-width=".25"/>`;
-  }
-  return out;
-}
-
-/** Hatching across a hex well centred on (cx, cy), as `hatch`: the lines u + v = c clipped by hand to the hex inset from the well. */
-function hexHatch(cx: number, cy: number): string {
-  const poly = hexCorners(0, 0, TILE.cell * HEX_WELL - 2 * HATCH.inset);
-  const sums = poly.map((p) => p.x + p.y);
-  let out = '';
-  for (let c = Math.min(...sums) + HATCH.gap; c < Math.max(...sums) - 0.01; c += HATCH.gap) {
-    // Where the line crosses the hex's sides: its two ends.
-    const us = poly.flatMap((p, i) => {
-      const q = poly[(i + 1) % poly.length];
-      const [fp, fq] = [p.x + p.y - c, q.x + q.y - c];
-      return fp * fq <= 0 && fp !== fq ? [p.x + (fp / (fp - fq)) * (q.x - p.x)] : [];
-    });
-    const [u1, u2] = [Math.min(...us), Math.max(...us)];
     out += `<line x1="${n(cx + u1)}" y1="${n(cy + c - u1)}" x2="${n(cx + u2)}" y2="${n(cy + c - u2)}" stroke="${HATCH.ink}" stroke-opacity=".14" stroke-width=".25"/>`;
   }
   return out;
@@ -351,8 +332,8 @@ function markings(
     const conquer = hasPlanet && Math.abs(away - 1) < 1e-6;
     const style = conquer ? WELL.conquer : WELL.space;
     body += shape === 'hex' ? hexWell(x, y, TILE.cell * HEX_WELL, style) : well(x, y, TILE.pad, 4, style);
-    // The spaces beside a planet are where dice go to conquer it: very faint diagonal hatching marks them.
-    if (conquer) body += hatch(x, y, shape);
+    // The spaces beside a planet are where dice go to conquer it: on a square tile, very faint diagonal hatching marks them.
+    if (conquer && shape === 'square') body += hatch(x, y);
     // Ships on the Void gain Research: a faint flask on each space.
     if (spec.number === 0) body += voidFlask(x, y);
   }

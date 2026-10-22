@@ -26,14 +26,14 @@ const pattern = (id: string, opacity: number, width: number, cross = false) => {
 };
 
 /**
- * Hatching for the spaces in a planet's orbit, as printed: faint diagonal lines. A space in two orbits
+ * Hatching for the spaces in a planet's orbit on a square map, as printed: faint diagonal lines. A space in two orbits
  * (orbits that overlap) is cross-hatched, a little stronger, as it counts for both planets.
  */
 const PATTERNS = `<defs>${pattern('map-orbit', 0.14, 0.25)}${pattern('map-shared', 0.24, 0.3, true)}</defs>`;
 
 /**
- * The spaces as wells etched into the map, in millimetres: hatched where they orbit a planet, cross-hatched
- * where they orbit two, with a faint flask on a Void's (ships there gain Research). Worked out from the
+ * The spaces as wells etched into the map, in millimetres: on a square map, hatched where they orbit a planet,
+ * cross-hatched where they orbit two, with a faint flask on a Void's (ships there gain Research). Worked out from the
  * board, so an orbit reaching onto another tile is marked there too.
  */
 function wells(board: Board): string {
@@ -46,9 +46,7 @@ function wells(board: Board): string {
     const role = orbits > 1 ? 'shared' : orbits ? 'orbit' : 'space';
     out += `<g class="well" data-r="${p.r}" data-c="${p.c}" data-role="${role}${isVoid ? ' void' : ''}">`;
     if (board.hex) {
-      const size = TILE.cell * HEX_WELL;
-      out += hexWell(x, y, size, style);
-      if (orbits) out += `<polygon points="${points(hexCorners(x, y, size - 2 * HATCH.inset))}" fill="url(#${fill})"/>`;
+      out += hexWell(x, y, HEX_WELL * TILE.cell, style);
     } else {
       out += well(x, y, TILE.pad, 4, style);
       const h = TILE.pad / 2 - HATCH.inset;
