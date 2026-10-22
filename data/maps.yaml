@@ -27,6 +27,9 @@
 #   a tile touches the two tiles beside it and two in each neighbouring row (docs/HEX.md). Hex maps
 #   don't wrap.
 #
+# world (optional, hex maps only): moon | mars. The surface the map lies on, which its tiles show; Mars
+#   when absent.
+#
 # wrap (optional): horizontal | vertical | both. The booklet marks these edges with arrows.
 #   A ship leaving one edge comes back at the opposite edge of the same row or column, as if
 #   the board were a cylinder (or a torus for both). The join is on the full grid, so a row or
@@ -90,6 +93,7 @@ maps:
     players: 2
     group: hex
     grid: hex
+    world: moon
     cubes: 5
     stats: { slack: 0, shared: 1, planets: 7 }
     layout:
@@ -117,6 +121,7 @@ maps:
     players: 4
     group: hex
     grid: hex
+    world: moon
     cubes: 5
     stats: { slack: 4, shared: 5, planets: 9 }
     layout:

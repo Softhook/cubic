@@ -1,6 +1,7 @@
 import cardsJson from './data/cards.json';
 import mapsJson from './data/maps.json';
 import type { ShipHooks } from './prototype';
+import type { World } from './types';
 
 export interface CardDef {
   id: string;
@@ -31,6 +32,8 @@ export interface MapDef {
   wrap?: 'horizontal' | 'vertical' | 'both';
   /** Hex tiles (7-hex flowers) instead of 3×3 squares: data/maps.yaml says how a hex layout reads. */
   grid?: 'hex';
+  /** A hex map's world, the moon or Mars (Mars when absent). */
+  world?: World;
   layout: string[][];
 }
 

@@ -28,6 +28,9 @@ export interface Planet {
   c: number;
 }
 
+/** The surface a hex map lies on: the moon or Mars. */
+export type World = 'moon' | 'mars';
+
 export interface Board {
   mapId: string;
   mapName: string;
@@ -37,6 +40,8 @@ export interface Board {
   wrap?: { rows: boolean; cols: boolean };
   /** A hex board: cells are flat-topped hexes in axial coordinates (board.ts). Absent on square boards. */
   hex?: boolean;
+  /** The world a hex board is on, which its artwork shows (MapDef.world). Absent on square boards. */
+  world?: World;
   cells: BoardCell[][];
   planets: Planet[];
 }

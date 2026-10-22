@@ -23,6 +23,8 @@ for (const m of maps)
 for (const m of maps) {
   if (m.grid !== undefined && m.grid !== 'hex') throw new Error(`data/maps.yaml: ${m.id} has grid ${m.grid}`);
   if (m.grid && m.wrap) throw new Error(`data/maps.yaml: ${m.id}: hex maps don't wrap`);
+  if (m.world !== undefined && !(m.grid && ['moon', 'mars'].includes(m.world)))
+    throw new Error(`data/maps.yaml: ${m.id} has world ${m.world}: only hex maps have one, the moon or Mars`);
 }
 const parsed = maps.map((m) => ({
   id: m.id,
@@ -33,6 +35,7 @@ const parsed = maps.map((m) => ({
   stats: m.stats,
   ...(m.wrap && { wrap: m.wrap }),
   ...(m.grid && { grid: m.grid }),
+  ...(m.world && { world: m.world }),
   layout: m.layout.map((row) => row.trim().split(/\s+/)),
 }));
 writeFileSync(new URL('maps.json', out), JSON.stringify(parsed, null, 2) + '\n');

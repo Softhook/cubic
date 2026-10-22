@@ -1,5 +1,17 @@
 import { useEffect, useState } from 'react';
-import { TILE, TILE_SET, bodySvg, dataUrl, hash, regolithMaskSvg, regolithSvg, skySvg, tileSpec, type Spot } from '@quantum/art';
+import {
+  TILE,
+  TILE_SET,
+  bodySvg,
+  dataUrl,
+  hash,
+  regolithMaskSvg,
+  regolithSvg,
+  skySvg,
+  tileSpec,
+  type Spot,
+  type World,
+} from '@quantum/art';
 import { rasterise, rasteriseWithCutout } from '../files';
 import { idle, storeImage, storedImage } from './imageStore';
 
@@ -40,10 +52,11 @@ async function load(id: string, svg: string, size: number): Promise<string> {
  */
 export type TileLayer = 'sky-square' | 'sky-hex' | 'body' | 'ground' | 'standing';
 
-/** A tile to draw: its physical id, and for `ground` where its planet sits, in spaces from its middle. */
+/** A tile to draw: its physical id, and for `ground` where its planet sits, in spaces from its middle, and on which world. */
 interface TileRef {
   id: string;
   at?: Spot;
+  world?: World;
 }
 
 /** The layers drawn from an SVG of their own: a moon tile's two are drawn together (`moonImages`). */
@@ -60,8 +73,10 @@ function layerSvg(id: string, layer: OwnLayer): string {
   }
 }
 
-const nameOf = ({ id, at }: TileRef, layer: TileLayer) =>
-  (layer === 'ground' || layer === 'standing') && at ? `${id}:${layer}@${at.x.toFixed(3)},${at.y.toFixed(3)}` : `${id}:${layer}`;
+const nameOf = ({ id, at, world = 'mars' }: TileRef, layer: TileLayer) =>
+  layer === 'ground' || layer === 'standing'
+    ? `${id}:${layer}:${world}` + (at ? `@${at.x.toFixed(3)},${at.y.toFixed(3)}` : '')
+    : `${id}:${layer}`;
 
 /**
  * A moon tile's `ground` and `standing` images: the ground drawn once, and cut down by its cheap mask
@@ -71,7 +86,7 @@ function moonImages(tile: TileRef): Promise<Record<'ground' | 'standing', string
   const name = nameOf(tile, 'ground');
   let pair = moons.get(name);
   if (!pair) {
-    const svg = regolithSvg(tileSpec(tile.id), tile.at);
+    const svg = regolithSvg(tileSpec(tile.id), tile.at, tile.world);
     const mask = regolithMaskSvg(tileSpec(tile.id), tile.at);
     const size = Math.round(SIZE * layerScale('ground'));
     const key = `${hash(svg + mask)}:${size}`;

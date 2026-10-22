@@ -224,7 +224,7 @@ function buildHexBoard(map: MapDef): Board {
       cells[r + d.r][c + d.c] = { kind: 'planet', tile: t.tile, planet: id };
     }
   }
-  return { mapId: map.id, mapName: map.name, rows, cols, cells, planets, hex: true };
+  return { mapId: map.id, mapName: map.name, rows, cols, cells, planets, hex: true, world: map.world ?? 'mars' };
 }
 
 /** How far a flat-topped hex's centre is from the next column's, in hex heights (√3 / 2). */

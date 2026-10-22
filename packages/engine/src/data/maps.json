@@ -98,6 +98,7 @@
       "planets": 7
     },
     "grid": "hex",
+    "world": "moon",
     "layout": [
       [
         ".",
@@ -169,6 +170,7 @@
       "planets": 9
     },
     "grid": "hex",
+    "world": "moon",
     "layout": [
       [
         ".",

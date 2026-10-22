@@ -6,11 +6,11 @@ import { BLED, HEX_TILE_CUT, cubePadCentres, numberCorner, tileSvg, type Spot, t
 import type { TileSpec } from './tileset';
 
 /**
- * Mars ground for a hex tile (once the moon), after the Regolith mood board (docs/moodboards/regolith/HexSurface.dc.html):
+ * Moon or Mars ground for a hex tile, after the Regolith mood board (docs/moodboards/regolith/HexSurface.dc.html):
  * a height map painted in colour (red is height, 128 the ground; green marks smooth areas; blue is
  * brightness), then lit once by one filter. Drawn in the board's own units, where a space is 69.3 tall,
  * so its numbers carry over; the tile is scaled to millimetres at the end. Each tile's craters, pits and
- * boulders come from its seed.
+ * boulders come from its seed; the world only changes its colour, and adds Mars's dunes, tracks and dust.
  *
  * Chrome ignores the lighting's `kernelUnitLength`, so its relief differs from Firefox's and Safari's
  * (the mood board's Surface study); the game draws each tile once to a bitmap, in the player's browser.
@@ -26,6 +26,9 @@ const SCALE = TILE.cell / SPACE;
 const SIZE = TILE.size / SCALE;
 /** How far past the area shown the ground is drawn, in board units: past the furthest shadow (9) and warp (13). */
 const MARGIN = 20;
+
+/** Which world a hex map is on: the grey moon, or Mars. */
+export type World = 'moon' | 'mars';
 
 const stops = (list: [number, string, number?][]) =>
   list.map(([o, c, a]) => `<stop offset="${o}" stop-color="${c}"${a === undefined ? '' : ` stop-opacity="${a}"`}/>`).join('');
@@ -88,8 +91,35 @@ const weather = (id: string, freq: number, seed: number, scale: number, sd: numb
   `<feDisplacementMap in="SourceGraphic" in2="t" scale="${scale}" xChannelSelector="R" yChannelSelector="G" result="d"/>` +
   `<feGaussianBlur in="d" stdDeviation="${sd}"/></filter>`;
 
-/** The light: the height map gains fine noise where it isn't smooth, is lit from the top left, shadowed, tinted and grained. Over `area`, in board units. */
-function ground(r: Rng, area: Box): string {
+/** The moon: cool grey dust, a touch blue in the shadows. */
+const MOON_RAMP =
+  '<feComponentTransfer in="lit2" result="ramp">' +
+  '<feFuncR type="table" tableValues="0.02 0.08 0.2 0.37 0.55 0.72 0.86"/>' +
+  '<feFuncG type="table" tableValues="0.025 0.085 0.2 0.36 0.53 0.69 0.83"/>' +
+  '<feFuncB type="table" tableValues="0.035 0.095 0.205 0.35 0.5 0.65 0.79"/>' +
+  '</feComponentTransfer>';
+
+/** Mars: rust and ochre dust, and patches of dark basalt where the wind swept it bare (the broad noise's alpha lays them). */
+const MARS_RAMP =
+  '<feComponentTransfer in="lit2" result="dust">' +
+  '<feFuncR type="table" tableValues="0.03 0.13 0.33 0.55 0.74 0.88 0.96"/>' +
+  '<feFuncG type="table" tableValues="0.015 0.05 0.13 0.25 0.38 0.52 0.66"/>' +
+  '<feFuncB type="table" tableValues="0.01 0.03 0.07 0.13 0.21 0.31 0.43"/>' +
+  '</feComponentTransfer>' +
+  '<feComponentTransfer in="lit2" result="rock">' +
+  '<feFuncR type="table" tableValues="0.02 0.06 0.13 0.22 0.32 0.42 0.5"/>' +
+  '<feFuncG type="table" tableValues="0.015 0.045 0.1 0.16 0.23 0.31 0.39"/>' +
+  '<feFuncB type="table" tableValues="0.015 0.045 0.1 0.15 0.21 0.28 0.35"/>' +
+  '</feComponentTransfer>' +
+  '<feColorMatrix in="broad" type="matrix" values="0 0 0 1 0  0 0 0 1 0  0 0 0 1 0  0 0 0 0 1" result="pg"/>' +
+  '<feComponentTransfer in="pg" result="mD"><feFuncR type="table" tableValues="0 0 0.1 0.9 1 1"/><feFuncG type="table" tableValues="0 0 0.1 0.9 1 1"/><feFuncB type="table" tableValues="0 0 0.1 0.9 1 1"/></feComponentTransfer>' +
+  '<feComponentTransfer in="mD" result="mR"><feFuncR type="linear" slope="-1" intercept="1"/><feFuncG type="linear" slope="-1" intercept="1"/><feFuncB type="linear" slope="-1" intercept="1"/></feComponentTransfer>' +
+  '<feComposite in="dust" in2="mD" operator="arithmetic" k1="1" result="dustM"/>' +
+  '<feComposite in="rock" in2="mR" operator="arithmetic" k1="1" result="rockM"/>' +
+  '<feComposite in="dustM" in2="rockM" operator="arithmetic" k2="1" k3="1" result="ramp"/>';
+
+/** The light: the height map gains fine noise where it isn't smooth, is lit from the top left, shadowed, tinted for its world and grained. Over `area`, in board units. */
+function ground(r: Rng, area: Box, world: World): string {
   const s = () => r.noiseSeed();
   // A point is in shadow where the ground towards the light, `d` away, stands higher than it: read from the
   // height map before its fine noise, as moving the noisy one makes Chrome work it all out again for each
@@ -133,23 +163,7 @@ function ground(r: Rng, area: Box): string {
     `<feSpecularLighting in="H" kernelUnitLength="0.28" surfaceScale="9" specularConstant="0.6" specularExponent="40" lighting-color="#e6f6ff" result="spec">${light}</feSpecularLighting>` +
     '<feComposite in="spec" in2="SMOOTH" operator="in" result="specM"/>' +
     '<feComposite in="lit" in2="specM" operator="arithmetic" k2="1" k3="0.7" result="lit2"/>' +
-    // Mars: rust and ochre dust, and patches of dark basalt where the wind swept it bare.
-    '<feComponentTransfer in="lit2" result="dust">' +
-    '<feFuncR type="table" tableValues="0.03 0.13 0.33 0.55 0.74 0.88 0.96"/>' +
-    '<feFuncG type="table" tableValues="0.015 0.05 0.13 0.25 0.38 0.52 0.66"/>' +
-    '<feFuncB type="table" tableValues="0.01 0.03 0.07 0.13 0.21 0.31 0.43"/>' +
-    '</feComponentTransfer>' +
-    '<feComponentTransfer in="lit2" result="rock">' +
-    '<feFuncR type="table" tableValues="0.02 0.06 0.13 0.22 0.32 0.42 0.5"/>' +
-    '<feFuncG type="table" tableValues="0.015 0.045 0.1 0.16 0.23 0.31 0.39"/>' +
-    '<feFuncB type="table" tableValues="0.015 0.045 0.1 0.15 0.21 0.28 0.35"/>' +
-    '</feComponentTransfer>' +
-    '<feColorMatrix in="broad" type="matrix" values="0 0 0 1 0  0 0 0 1 0  0 0 0 1 0  0 0 0 0 1" result="pg"/>' +
-    '<feComponentTransfer in="pg" result="mD"><feFuncR type="table" tableValues="0 0 0.1 0.9 1 1"/><feFuncG type="table" tableValues="0 0 0.1 0.9 1 1"/><feFuncB type="table" tableValues="0 0 0.1 0.9 1 1"/></feComponentTransfer>' +
-    '<feComponentTransfer in="mD" result="mR"><feFuncR type="linear" slope="-1" intercept="1"/><feFuncG type="linear" slope="-1" intercept="1"/><feFuncB type="linear" slope="-1" intercept="1"/></feComponentTransfer>' +
-    '<feComposite in="dust" in2="mD" operator="arithmetic" k1="1" result="dustM"/>' +
-    '<feComposite in="rock" in2="mR" operator="arithmetic" k1="1" result="rockM"/>' +
-    '<feComposite in="dustM" in2="rockM" operator="arithmetic" k2="1" k3="1" result="ramp"/>' +
+    (world === 'moon' ? MOON_RAMP : MARS_RAMP) +
     turbulence(1.4, 1, s(), 'grain') +
     '<feComposite in="ramp" in2="grain" operator="arithmetic" k2="1" k3="0.09" k4="-0.045"/>' +
     '</filter>'
@@ -1391,7 +1405,7 @@ const DRAWN: Box = {
 /** A box as a filter's or mask's region attributes. */
 const region = (b: Box) => `x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}"`;
 
-/** A tile's Mars scene, in board units: the ground's defs and drawing, and what stands on it (if anything), drawn round the planet's space. */
+/** A tile's scene, in board units: the ground's defs and drawing, and what stands on it (if anything), drawn round the planet's space. */
 interface Scene {
   defs: string;
   ground: string;
@@ -1399,8 +1413,9 @@ interface Scene {
   standing?: { heights: string; drawn: string };
 }
 
-/** A tile's Mars scene, its base standing `at` its planet's space. */
-function scene(spec: TileSpec, at: Spot): Scene {
+/** A tile's scene on `world`, its base standing `at` its planet's space. */
+function scene(spec: TileSpec, at: Spot, world: World): Scene {
+  const mars = world === 'mars';
   const r = rng(spec.seed).fork('regolith');
   const site = base(spec.number, at, r.fork('base'));
   const [bx, by] = [SIZE / 2 + at.x * SPACE, SIZE / 2 + at.y * SPACE];
@@ -1411,8 +1426,7 @@ function scene(spec: TileSpec, at: Spot): Scene {
   }).join('');
   const heights =
     `<rect ${region(DRAWN)} fill="rgb(128,0,128)"/>` +
-    dunes(r.fork('dunes')) +
-    tracks(r.fork('tracks')) +
+    (mars ? dunes(r.fork('dunes')) + tracks(r.fork('tracks')) : '') +
     ridges +
     craters(r, 'o', r.int(1, 2), 0.6, 1.4) +
     (r.chance(0.25) ? craters(r, 'big', 1, 0.8, 1.05) : '') +
@@ -1438,12 +1452,12 @@ function scene(spec: TileSpec, at: Spot): Scene {
   const defs =
     GRADIENTS +
     BUILDING_GRADIENTS +
-    DUNES +
+    (mars ? DUNES : '') +
     filters +
-    ground(r.fork('ground'), DRAWN) +
+    ground(r.fork('ground'), DRAWN, world) +
     built(r.fork('built'), DRAWN) +
     cast(DRAWN) +
-    dust(r.noiseSeed(), DRAWN) +
+    (mars ? dust(r.noiseSeed(), DRAWN) : '') +
     CRATERS +
     RIDGE;
   if (!site) return { defs, ground: `<g filter="url(#rg-ground)">${heights}</g>` };
@@ -1453,7 +1467,7 @@ function scene(spec: TileSpec, at: Spot): Scene {
     `<g filter="url(#rg-cast)">${standing}</g>` +
     `<g filter="url(#rg-built)">${standing}</g>` +
     place(`<g style="mix-blend-mode: color">${site.tint}</g>`) +
-    `<g filter="url(#rg-dust)" opacity="0.9" style="mix-blend-mode: soft-light">${standing}</g>` +
+    (mars ? `<g filter="url(#rg-dust)" opacity="0.9" style="mix-blend-mode: soft-light">${standing}</g>` : '') +
     place(site.paint);
   return { defs, ground: `<g filter="url(#rg-ground)">${heights}</g>${drawn}`, standing: { heights: standing, drawn } };
 }
@@ -1468,12 +1482,12 @@ const WHITE = `<filter id="rg-white" filterUnits="userSpaceOnUse" ${region(DRAWN
 const silhouette = (heights: string) => inMm(`<g filter="url(#rg-white)">${heights}</g>`);
 
 /**
- * A tile's Mars ground over its trim and bleed (mm, the trim's top left at 0, 0), with everything on it;
+ * A tile's ground on `world` over its trim and bleed (mm, the trim's top left at 0, 0), with everything on it;
  * and what stands on it alone (its buildings, ships and rovers), cut to their outlines, to print over the
  * spaces' wells.
  */
-function moonArt(spec: TileSpec, at: Spot): Fragment & { standing?: Fragment } {
-  const { defs, ground, standing } = scene(spec, at);
+function groundArt(spec: TileSpec, at: Spot, world: World): Fragment & { standing?: Fragment } {
+  const { defs, ground, standing } = scene(spec, at, world);
   return {
     defs,
     body: inMm(ground),
@@ -1487,13 +1501,13 @@ function moonArt(spec: TileSpec, at: Spot): Fragment & { standing?: Fragment } {
 }
 
 /**
- * A hex tile's Mars ground, in place of its sky and planet, trim 96 × 96 mm and its 3 mm bleed (so a map's
+ * A hex tile's ground on `world` (Mars unless said), in place of its sky and planet, trim 96 × 96 mm and its 3 mm bleed (so a map's
  * clip a touch past the hexes still lands on ground): the planet's building stands `at` its space (in
  * spaces from the tile's middle, x right and y down). No markings: the game draws the cubes and the
  * number over its bays, and the spaces' wells under what stands (`regolithMaskSvg`).
  */
-export function regolithSvg(spec: TileSpec, at: Spot = { x: 0, y: 0 }): string {
-  const { defs, ground } = scene(spec, at);
+export function regolithSvg(spec: TileSpec, at: Spot = { x: 0, y: 0 }, world: World = 'mars'): string {
+  const { defs, ground } = scene(spec, at, world);
   return document({ defs, body: inMm(ground) }, BLED, true);
 }
 
@@ -1503,15 +1517,16 @@ export function regolithSvg(spec: TileSpec, at: Spot = { x: 0, y: 0 }): string {
  * it, to lay over the spaces' wells, rather than drawing it again.
  */
 export function regolithMaskSvg(spec: TileSpec, at: Spot = { x: 0, y: 0 }): string {
-  const { standing } = scene(spec, at);
+  // What stands is the same on either world.
+  const { standing } = scene(spec, at, 'mars');
   // Only the defs its shapes use: their gradients, and a blur.
   const defs = WHITE + BUILDING_GRADIENTS + blur('rg-soft1', 1);
   return document(standing ? { defs, body: silhouette(standing.heights) } : { defs: '', body: '' }, BLED, true);
 }
 
 /**
- * A hex tile on Mars as printed (`tileSvg` with the Mars ground for its art): knocked out past its
+ * A hex tile on `world` as printed (`tileSvg` with that ground for its art): knocked out past its
  * flower, with its markings, the cube pads in the building's bays, and what stands on the ground over the spaces' wells.
  */
-export const regolithTileSvg = (spec: TileSpec, o: Omit<TileOptions, 'shape' | 'ground'> = {}): string =>
-  tileSvg(spec, { ...o, shape: 'hex', ground: (at) => moonArt(spec, at) });
+export const regolithTileSvg = (spec: TileSpec, o: Omit<TileOptions, 'shape' | 'ground'> = {}, world: World = 'mars'): string =>
+  tileSvg(spec, { ...o, shape: 'hex', ground: (at) => groundArt(spec, at, world) });

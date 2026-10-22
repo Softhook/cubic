@@ -79,6 +79,7 @@ export function TileLab() {
             <option value="square">Square</option>
             <option value="hex">Hex</option>
             <option value="moon">Hex, on the moon</option>
+            <option value="mars">Hex, on Mars</option>
           </select>
         </label>
         <label title="Where each planet sits on its tile, as a map's layout token says (7ne)">
