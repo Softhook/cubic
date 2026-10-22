@@ -19,7 +19,15 @@ Live canvas: https://claude.ai/artifact/HXXvHR2kv7qATjy7nCudZb (private to its o
 | [HexSurface](HexSurface.dc.html) | The seven-tile map redrawn from the Surface study's lit height map, weathered, overlapping craters, objectives built round their cube bays (1–4), and plain pip dice in the side colours |
 | [CardStyles](CardStyles.dc.html) | Four real cards renamed for the theme (Agile, Ferocious, Show of Force, Warp Gate) drawn four ways at print size: detailed (the Mech Study model), cinematic silhouette, screenprint and field-manual diagram, plus the new words |
 | [CardScale](CardScale.dc.html) | The same cards at the app's card-viewer and market sizes, and which style to use for what |
+| [World](World.dc.html) | The setting as a screenprint bulletin: the story, the four sides, what it feels like, the objectives and the words ([REGOLITH-WORLD.md](../../REGOLITH-WORLD.md)) |
+| [Roster](Roster.dc.html) | The six mechs: die face, fit, power and the reference silhouettes for each. Their names are the board's Tweaks (*Mech names*), so a rename shows everywhere on the board; copy a settled name into REGOLITH-WORLD.md |
 | [Vocabulary](Vocabulary.dc.html) | Screenprint parts: the six mech classes, the objectives (Habitat to Reactor, Sinkhole) and props, printed as plate, key ink and accent, with three scenes built from them |
+
+**Reference images** (other people's art, for looking at only: not to be traced, printed or shipped):
+
+| Image | What it's for | Source |
+|---|---|---|
+| [mech-silhouettes.jpg](reference/mech-silhouettes.jpg) | Twelve front-view mech silhouettes: industrial walkers with boxy or domed bodies, heavy and spindly legs, claw, drill and gun arms. The weight and range of shapes for the six mechs ([REGOLITH-WORLD.md](../../REGOLITH-WORLD.md) *The six mechs*) | Pinterest, `i.pinimg.com/1200x/f0/02/12/f002126832905d7f7582f08f3b746c36.jpg`; artist not credited there. Uploaded to the canvas as `/_blob/171dfca01254210e3507e462e1f69d33`, which the Roster board crops; opened from the repo, that board shows no silhouettes |
 
 Each board is a static HTML page and opens in a browser as it is. The `support.js` it asks for belongs
 to the canvas editor; without it the page draws the same, only not editable. `canvas.json` is the

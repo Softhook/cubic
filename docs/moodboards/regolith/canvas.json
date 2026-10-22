@@ -1,1 +1,147 @@
-{"v":3,"createdOnFiles":{"v":1,"at":"2026-10-21T12:00:00Z"},"title":"Moon Mech Mood Board","launch":{"view":"canvas"},"pages":[],"boards":{"Main.dc.html":{"x":0,"y":0,"w":1200,"h":820,"title":"Direction"},"HexMap.dc.html":{"x":1280,"y":0,"w":1240,"h":940,"title":"Hex map, survey style"},"Tiles.dc.html":{"x":0,"y":1060,"w":1200,"h":600,"title":"One tile, three styles"},"Mechs.dc.html":{"x":1280,"y":1060,"w":1240,"h":600,"title":"Mech dice"},"Cards.dc.html":{"x":0,"y":1780,"w":1200,"h":640,"title":"Cards"},"Ladder.dc.html":{"x":1280,"y":1780,"w":1240,"h":640,"title":"How illustrative"},"Surface.dc.html":{"x":0,"y":2540,"w":1240,"h":1080,"title":"Surface study"},"MechStudy.dc.html":{"x":1320,"y":2540,"w":1240,"h":1080,"title":"Mech study"},"HexSurface.dc.html":{"x":0,"y":3740,"w":1240,"h":940,"title":"Seven tiles, lit surface"},"CardStyles.dc.html":{"x":1320,"y":3740,"w":1320,"h":1690,"title":"Card styles"},"CardScale.dc.html":{"x":0,"y":4800,"w":1320,"h":1370,"title":"Cards at game size"},"Vocabulary.dc.html":{"x":0,"y":6290,"w":1320,"h":1640,"title":"Screenprint parts"}},"order":["Main.dc.html","HexMap.dc.html","Tiles.dc.html","Mechs.dc.html","Cards.dc.html","Ladder.dc.html","Surface.dc.html","MechStudy.dc.html","HexSurface.dc.html","CardStyles.dc.html","CardScale.dc.html","Vocabulary.dc.html"],"notes":{"title":{"x":0,"y":-300,"text":"Regolith: a moon mech reskin of Cubic","kind":"title1","maxW":2520}},"designSystems":[]}
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "CardScale.dc.html": {
+      "h": 1370,
+      "title": "Cards at game size",
+      "w": 1320,
+      "x": 0,
+      "y": 4800
+    },
+    "CardStyles.dc.html": {
+      "h": 1690,
+      "title": "Card styles",
+      "w": 1320,
+      "x": 1320,
+      "y": 3740
+    },
+    "Cards.dc.html": {
+      "h": 640,
+      "title": "Cards",
+      "w": 1200,
+      "x": 0,
+      "y": 1780
+    },
+    "HexMap.dc.html": {
+      "h": 940,
+      "title": "Hex map, survey style",
+      "w": 1240,
+      "x": 1280,
+      "y": 0
+    },
+    "HexSurface.dc.html": {
+      "h": 940,
+      "title": "Seven tiles, lit surface",
+      "w": 1240,
+      "x": 0,
+      "y": 3740
+    },
+    "Ladder.dc.html": {
+      "h": 640,
+      "title": "How illustrative",
+      "w": 1240,
+      "x": 1280,
+      "y": 1780
+    },
+    "Main.dc.html": {
+      "h": 820,
+      "title": "Direction",
+      "w": 1200,
+      "x": 0,
+      "y": 0
+    },
+    "MechStudy.dc.html": {
+      "h": 1080,
+      "title": "Mech study",
+      "w": 1240,
+      "x": 1320,
+      "y": 2540
+    },
+    "Mechs.dc.html": {
+      "h": 600,
+      "title": "Mech dice",
+      "w": 1240,
+      "x": 1280,
+      "y": 1060
+    },
+    "Surface.dc.html": {
+      "h": 1080,
+      "title": "Surface study",
+      "w": 1240,
+      "x": 0,
+      "y": 2540
+    },
+    "Tiles.dc.html": {
+      "h": 600,
+      "title": "One tile, three styles",
+      "w": 1200,
+      "x": 0,
+      "y": 1060
+    },
+    "Vocabulary.dc.html": {
+      "h": 1640,
+      "title": "Screenprint parts",
+      "w": 1320,
+      "x": 0,
+      "y": 6290
+    },
+    "World.dc.html": {
+      "x": 0,
+      "y": 8290,
+      "w": 1320,
+      "h": 2240,
+      "title": "Regolith: the world"
+    },
+    "Roster.dc.html": {
+      "x": 1400,
+      "y": 8290,
+      "w": 1320,
+      "h": 2000,
+      "title": "Mech roster"
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-21T12:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "title": {
+      "kind": "title1",
+      "maxW": 2520,
+      "text": "Regolith: a moon mech reskin of Cubic",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "world": {
+      "x": 0,
+      "y": 7990,
+      "text": "The world and the mechs",
+      "kind": "title1",
+      "maxW": 2720
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "HexMap.dc.html",
+    "Tiles.dc.html",
+    "Mechs.dc.html",
+    "Cards.dc.html",
+    "Ladder.dc.html",
+    "Surface.dc.html",
+    "MechStudy.dc.html",
+    "HexSurface.dc.html",
+    "CardStyles.dc.html",
+    "CardScale.dc.html",
+    "Vocabulary.dc.html",
+    "World.dc.html",
+    "Roster.dc.html"
+  ],
+  "pages": [],
+  "title": "Moon Mech Mood Board"
+}

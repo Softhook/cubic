@@ -7,6 +7,8 @@ How to build and evaluate **Prototyping**, our experimental rule set, alongside 
 > **Prototyping aims to restore territorial gravity**: the current movement cap creates distance;
 > candidate powers and experiments explore zone control, forward logistics, and orbital superiority.
 
+Prototyping is becoming **Regolith**, its own hex-only game on the moon and Mars with its own
+screenprint cards, and takes that name in the lobby: [REGOLITH.md](REGOLITH.md).
 Nothing here is permanently adopted. Rulings go to [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) and, once decided, to [RULES.md](RULES.md).
 
 > **Status key:** **Current** rules are enabled in the playable Prototyping mode and covered by
