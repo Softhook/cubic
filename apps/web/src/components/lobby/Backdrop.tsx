@@ -1,7 +1,17 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { buildBoard, drawing, spaces, type Board, type MapDef } from '@quantum/engine';
-import { HEX_WELL, PLANET_DIAMETER, SPACE_BASE_CSS, TILE, TILE_SET, tileHasRings, tileSpec, type TileLook } from '@quantum/art';
-import { decodedTileImage, type TileLayer } from '../../art/tileImages';
+import {
+  HEX_WELL,
+  PLANET_DIAMETER,
+  SPACE_BASE_CSS,
+  TILE,
+  TILE_SET,
+  tileHasRings,
+  tileSpec,
+  type RasterLayer,
+  type TileLook,
+} from '@quantum/art';
+import { decodedTileImage } from '../../art/tileImages';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { PIPS } from '../Die3D';
 import { Boom, EXPLOSION_MS } from '../board/Explosions';
@@ -59,7 +69,7 @@ function useCell(board: Board): number {
 }
 
 /** A layer of each tile's artwork (tileImages), as a decoded image and its URL, filled in as each is ready. */
-function useTileImages(tiles: TileArt[], look: TileLook, layer: TileLayer) {
+function useTileImages(tiles: TileArt[], look: TileLook, layer: RasterLayer) {
   const [images, setImages] = useState<Record<string, HTMLImageElement>>({});
   useEffect(() => {
     let live = true;
@@ -311,7 +321,7 @@ function Plane({ map, fleet, still }: { map: MapDef; fleet: number; still: boole
   const tiles = useMemo(() => ringlessTiles(board), [board]);
   // Always in space: the planets stand up off the map as spheres.
   const look = board.hex ? 'hex' : 'square';
-  const skies = useTileImages(tiles, look, 'back');
+  const skies = useTileImages(tiles, look, 'sky');
   const bodies = useTileImages(tiles, look, 'body');
   const open = useMemo(() => new Set(openSpaces(board).map(at)), [board]);
   const cell = useCell(board);

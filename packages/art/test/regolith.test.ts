@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BLED, REGOLITH_GROUND_PX, TILE_SPOTS, regolithSvg, tileGroundSvg, tileSpec, tileSvg, type World } from '../src';
+import { BLED, REGOLITH_GROUND_PX, TILE_SPOTS, rasterLayerSvg, tileGroundSvg, tileSpec, tileSvg, type World } from '../src';
 import { LIT, SCALE } from '../src/regolith/core';
 
 /**
@@ -31,7 +31,7 @@ describe('regolith ground in print', () => {
     const ground = groundOf('mars', at);
     // Up to the end of the lit ground, the tile's ground starts the same: what stands on it follows.
     const lit = ground.slice(0, ground.lastIndexOf('</g></g>'));
-    expect(regolithSvg(spec, 'mars', TILE_SPOTS.hex[at]).startsWith(lit)).toBe(true);
+    expect(rasterLayerSvg(spec, 'mars', 'ground', TILE_SPOTS.hex[at]).startsWith(lit)).toBe(true);
     if (at) expect(ground).not.toBe(groundOf('mars'));
   });
 

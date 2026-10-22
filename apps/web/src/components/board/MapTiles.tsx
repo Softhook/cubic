@@ -1,11 +1,25 @@
-import { memo } from 'react';
+import { Fragment, memo, type ReactNode } from 'react';
 import { cellAt, type Board } from '@quantum/engine';
-import { HATCH, HEX_WELL, SPACE_BASE_CSS, TILE, WELL, hexWell, lookWorld, tileLabel, tileSpec, voidFlask, well } from '@quantum/art';
+import {
+  HATCH,
+  HEX_WELL,
+  RASTER_AREA,
+  SPACE_BASE_CSS,
+  TILE,
+  WELL,
+  hexWell,
+  tileLabel,
+  tileLayerNames,
+  tileSpec,
+  voidFlask,
+  well,
+  type RasterLayer,
+} from '@quantum/art';
 import { useMapLook } from '../../art/mapLook';
-import { layerScale, useTileImages } from '../../art/tileImages';
+import { useTileImages } from '../../art/tileImages';
 import type { TileArt } from '../../art/boardTiles';
 import { SQUARE_TILE_GAP, hexCorners, hexFlower, hexSeams, placement } from './geometry';
-import { labelFits, spaceRoles } from './layers';
+import { labelFits, mapStack, spaceRoles, type BoardLayer } from './layers';
 
 const points = (list: number[][]) => list.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
 const line = (list: number[][]) => `M${list.map(([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join(' L')}`;
@@ -85,26 +99,29 @@ function marksOf(board: Board, tiles: readonly TileArt[]) {
 const NO_TILES: TileArt[] = [];
 
 /**
- * A map's tiles in SVG, square or hex, in layers: each tile's sky, its body (planet and moons, or a Void's
- * heart) wherever the planet sits, cut off at the tile's edge, then the seams between hex tiles, the spaces
- * and the labels. The planets' numbers and cubes go on top (BoardArt). A hex map may be on its world's
- * ground instead (mapLook): each tile's building already standing on its planet's space, and drawn again over
- * the spaces, so the wells are etched into the ground and not across the buildings.
+ * A map's tiles in SVG, square or hex, in its look's layers (art `tileLayerNames`), as a printed tile has them:
+ * in space each tile's sky, then its body (planet and moons, or a Void's heart) wherever the planet sits, cut off
+ * at the tile's edge; on its world's ground (mapLook) each tile's ground with its building on the planet's space,
+ * and what stands on it drawn again over the spaces, so the wells are etched into the ground and not across the
+ * buildings. The images are the layers drawn with filters (tileImages); the spaces and labels are drawn live,
+ * from the board, the seams between hex tiles under the spaces. The planets' numbers and cubes, their layer,
+ * go on top, with the gates and ships (BoardArt).
  */
 export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: Board; tiles: TileArt[]; cell: number }) {
   const look = useMapLook(board);
-  const ground = !!lookWorld(look);
-  const backs = useTileImages(tiles, look, 'back');
-  // On the ground each tile already has its building, so there are no bodies to load.
-  const bodies = useTileImages(ground ? NO_TILES : tiles, look, 'body');
-  const standing = useTileImages(ground ? tiles : NO_TILES, look, 'standing');
+  const layers = tileLayerNames(look);
+  // Hooks for every raster layer, each loading only if the look has it.
+  const of = (layer: RasterLayer) => (layers.includes(layer) ? tiles : NO_TILES);
+  const images: Record<RasterLayer, Record<string, string>> = {
+    sky: useTileImages(of('sky'), look, 'sky'),
+    body: useTileImages(of('body'), look, 'body'),
+    ground: useTileImages(of('ground'), look, 'ground'),
+    standing: useTileImages(of('standing'), look, 'standing'),
+  };
   const { mid } = placement(board, cell);
   const mm = cell / TILE.cell;
   // A tile's artwork is a whole printed tile, 3 spaces wide, centred on what it draws.
   const size = 3 * cell;
-  // The ground reaches past its tile, by the bleed, so the clip a touch past the hexes is on ground.
-  const art = (url: string | undefined, at: { x: number; y: number }, scale = 1) =>
-    url && <image href={url} x={at.x - (size * scale) / 2} y={at.y - (size * scale) / 2} width={size * scale} height={size * scale} />;
   // Square tiles stand a little apart, with the printed rounded corners; hex tiles meet at a seam.
   const inset = cell * SQUARE_TILE_GAP;
   const outline = (t: TileArt) => {
@@ -125,7 +142,52 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
       />
     );
   };
+  /**
+   * A tile's image of a layer over its area (art `RASTER_AREA`), the tile's middle on the tile's or, for its body,
+   * on its planet. The ground reaches past its tile by the bleed, so the clip a touch past the hexes is on ground.
+   */
+  const image = (t: TileArt, layer: RasterLayer) => {
+    const url = images[layer][t.id];
+    const at = mid(layer === 'body' ? t.body : t);
+    const area = RASTER_AREA[layer];
+    const px = (v: number) => (v * size) / TILE.size;
+    return (
+      url && (
+        <image
+          key={layer}
+          href={url}
+          x={at.x + px(area.x - TILE.size / 2)}
+          y={at.y + px(area.y - TILE.size / 2)}
+          width={px(area.w)}
+          height={px(area.h)}
+        />
+      )
+    );
+  };
+  const stack = mapStack(layers);
+  // The shared base colour goes under the bottom run of images, where a tile's images haven't come yet.
+  const bottom = stack.find(Array.isArray);
   const marks = marksOf(board, tiles);
+  const drawn: Record<BoardLayer, () => ReactNode> = {
+    label: () => <g transform={`scale(${mm})`} dangerouslySetInnerHTML={{ __html: marks.labels }} />,
+    spaces: () => (
+      <>
+        {board.hex && (
+          <path
+            d={hexSeams(board, cell, tiles).map(line).join(' ')}
+            fill="none"
+            stroke="#000"
+            strokeOpacity={0.55}
+            strokeWidth={Math.max(1, cell * 0.03)}
+            strokeLinecap="round"
+          />
+        )}
+        <g transform={`scale(${mm})`} dangerouslySetInnerHTML={{ __html: marks.wells }} />
+      </>
+    ),
+    // Live: they change in play (BoardArt).
+    planet: () => null,
+  };
   return (
     <>
       <defs>
@@ -135,31 +197,22 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
           </clipPath>
         ))}
       </defs>
-      {tiles.map((t) => (
-        <g key={t.tile} clipPath={`url(#map-tile-${t.tile})`}>
-          <rect x={mid(t).x - size / 2} y={mid(t).y - size / 2} width={size} height={size} fill={SPACE_BASE_CSS} />
-          {art(backs[t.id], mid(t), layerScale(look, 'back'))}
-          {!ground && art(bodies[t.id], mid(t.body))}
-        </g>
-      ))}
-      {board.hex && (
-        <path
-          d={hexSeams(board, cell, tiles).map(line).join(' ')}
-          fill="none"
-          stroke="#000"
-          strokeOpacity={0.55}
-          strokeWidth={Math.max(1, cell * 0.03)}
-          strokeLinecap="round"
-        />
+      {stack.map((part) =>
+        Array.isArray(part) ? (
+          <Fragment key={part.join()}>
+            {tiles.map((t) => (
+              <g key={t.tile} clipPath={`url(#map-tile-${t.tile})`}>
+                {part === bottom && (
+                  <rect x={mid(t).x - size / 2} y={mid(t).y - size / 2} width={size} height={size} fill={SPACE_BASE_CSS} />
+                )}
+                {part.map((layer) => image(t, layer))}
+              </g>
+            ))}
+          </Fragment>
+        ) : (
+          <Fragment key={part}>{drawn[part]()}</Fragment>
+        ),
       )}
-      <g transform={`scale(${mm})`} dangerouslySetInnerHTML={{ __html: marks.wells }} />
-      {ground &&
-        tiles.map((t) => (
-          <g key={t.tile} clipPath={`url(#map-tile-${t.tile})`}>
-            {art(standing[t.id], mid(t), layerScale(look, 'standing'))}
-          </g>
-        ))}
-      <g transform={`scale(${mm})`} dangerouslySetInnerHTML={{ __html: marks.labels }} />
     </>
   );
 });

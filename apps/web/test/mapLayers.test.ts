@@ -1,8 +1,8 @@
 /** What the map's live layers mark, worked out from the board (MapTiles): space roles, number corners, labels. */
 import { describe, expect, it } from 'vitest';
 import { MAPS, buildBoard, tileCentres, type MapDef } from '@quantum/engine';
-import { OFF_CENTRE } from '@quantum/art';
-import { labelFits, numberCorner, spaceRoles } from '../src/components/board/layers';
+import { OFF_CENTRE, tileLayerNames } from '@quantum/art';
+import { labelFits, mapStack, numberCorner, spaceRoles } from '../src/components/board/layers';
 
 const board = (id: string) => buildBoard(MAPS.find((m) => m.id === id)!);
 const testMap = (layout: string[][]): MapDef => ({
@@ -126,5 +126,14 @@ describe('map design', () => {
         .map((p) => `${m.id}: ${p.number} at ${p.r},${p.c}`);
     });
     expect(spill).toEqual([]);
+  });
+});
+
+describe('the map stacks a look’s tile layers', () => {
+  it('as printed, each run of images in one group per tile, under and over what it draws from the board', () => {
+    expect(mapStack(tileLayerNames('square'))).toEqual([['sky', 'body'], 'label', 'spaces', 'planet']);
+    expect(mapStack(tileLayerNames('hex'))).toEqual([['sky', 'body'], 'spaces', 'planet']);
+    // On the ground what stands goes again over the wells.
+    expect(mapStack(tileLayerNames('moon'))).toEqual([['ground'], 'spaces', ['standing'], 'planet']);
   });
 });

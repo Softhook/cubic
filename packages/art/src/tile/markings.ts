@@ -92,21 +92,16 @@ export function well(cx: number, cy: number, size: number, rx: number, style: We
 }
 
 /**
- * Print markings: each space a well etched into the tile, the ones beside a planet (where dice go to
- * conquer it) faintly hatched, and wells for the cubes on the planet with its number in the corner
- * `numberCorner` picks. The planet sits at `at` (spaces from the middle). Plain SVG only (hex colours, no
+ * Print markings, the spaces' or the planet's (`part`): each space a well etched into the tile, the ones beside a
+ * planet (where dice go to conquer it) faintly hatched; or wells for the cubes on the planet with its number in
+ * the corner `numberCorner` picks. The planet sits at `at` (spaces from the middle). Plain SVG only (hex colours, no
  * `paint-order` or `dominant-baseline`), so they import into Illustrator as editable vectors.
  */
-export function markings(
-  spec: TileSpec,
-  part: 'all' | 'spaces' | 'planet' = 'all',
-  shape: TileShape = 'square',
-  at: Spot = { x: 0, y: 0 },
-): Fragment {
+export function markings(spec: TileSpec, part: 'spaces' | 'planet', shape: TileShape, at: Spot): Fragment {
   const mm = (p: Spot) => ({ x: MID + p.x * TILE.cell, y: MID + p.y * TILE.cell });
   const hasPlanet = spec.number > 0;
   let body = '';
-  for (const spot of part === 'planet' ? [] : Object.values(TILE_SPOTS[shape])) {
+  for (const spot of part === 'spaces' ? Object.values(TILE_SPOTS[shape]) : []) {
     const away = Math.hypot(spot.x - at.x, spot.y - at.y);
     if (hasPlanet && away < 1e-6) continue;
     const { x, y } = mm(spot);
@@ -118,7 +113,7 @@ export function markings(
     // Ships on the Void gain Research: a faint flask on each space.
     if (spec.number === 0) body += voidFlask(x, y);
   }
-  if (hasPlanet && part !== 'spaces') {
+  if (hasPlanet && part === 'planet') {
     const p = mm(at);
     for (const q of cubePadCentres(spec.number - 6, p.x, p.y)) body += well(q.x, q.y, CUBE_PAD.size, CUBE_PAD.corner, WELL.cube);
     const num = numberPlacement(spec.number, shape);

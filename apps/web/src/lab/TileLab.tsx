@@ -66,13 +66,12 @@ export function TileLab() {
   const item = printable(spec);
 
   /**
-   * Illustrator can't render SVG filters, so the art goes in as a 600 dpi bitmap with vector markings on top.
-   * On a world's ground the buildings stand over the spaces' wells, so all that's beneath the planet's
-   * markings goes in the bitmap, and only those are vectors.
+   * Illustrator can't render SVG filters, so the tile's raster layers go in as a 600 dpi bitmap, with the
+   * layers over them as vectors (art `editableTileSvg`).
    */
   const exportEditable = async () => {
     const { w, h } = pieceSize(piece, bleed);
-    const under = await printedTileSvg(spec, { ...view, only: 'beneath', bleed, markings, fontCss: fonts ?? '' });
+    const under = await printedTileSvg(spec, { ...view, raster: true, bleed, markings, fontCss: fonts ?? '' });
     const art = await blobToDataUrl(await svgToPng(under, w, h, 600));
     const name = fileName(piece, item, { bleed, ext: 'svg' }).replace(/\.svg$/, '-illustrator.svg');
     download(name, new Blob([editableTileSvg(spec, art, { ...view, bleed, markings })], { type: 'image/svg+xml' }));

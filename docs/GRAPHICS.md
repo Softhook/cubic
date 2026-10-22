@@ -13,7 +13,7 @@ at physical size. Nothing is drawn twice, so the printed game and the online gam
 
 | Element | How it's drawn | Printed? |
 |---|---|---|
-| Map tiles, void, planets | `tileSvg` / `planet` / `starfield` in [`packages/art`](../packages/art), in mm and seeded. The game draws a map in layers (see *Tiles*): each tile's sky and body (`skySvg`, `bodySvg`) drawn once to images kept in IndexedDB ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)), the spaces and labels live ([`MapTiles.tsx`](../apps/web/src/components/board/MapTiles.tsx)) | Yes, from the Art Lab (`#lab`) |
+| Map tiles, void, planets | `tileSvg` / `planet` / `starfield` in [`packages/art`](../packages/art), in mm and seeded. The game draws a map in layers (see *Tiles*): each tile's raster layers (`rasterLayerSvg`) drawn once to images kept in IndexedDB ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)), the spaces and labels live ([`MapTiles.tsx`](../apps/web/src/components/board/MapTiles.tsx)) | Yes, from the Art Lab (`#lab`) |
 | Cards | `cardSvg` / `cardBackSvg` ([`card.ts`](../packages/art/src/card.ts)): poker size, SVG text, one illustration per card. The game's card pop-ups show the same drawing as an image ([`cardImages.ts`](../apps/web/src/art/cardImages.ts)); market cards are HTML with a band of the illustration, the same colours and icons, and the printed backs on the decks | Yes, from `#lab/cards` |
 | Player aid | `playerAidSvg` ([`aid.ts`](../packages/art/src/aid.ts)), A6 | Yes, from `#lab/aid` |
 | Warp gates, spaces, planet numbers and cube slots | SVG in [`board/BoardArt.tsx`](../apps/web/src/components/board/BoardArt.tsx), in screen pixels | Gates no (a token in the physical game); numbers and cube slots are in the printed tiles |
@@ -133,9 +133,9 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
 - On screen, the whole map renders in a single SVG, with the interactive HTML layer above, drawn in
   layers ([`MapTiles.tsx`](../apps/web/src/components/board/MapTiles.tsx)) so a planet can sit anywhere
   on its tile (docs/HEX.md, *Off-centre planets*), on square and hex maps alike:
-  1. **Sky:** each tile's starfield and nebula (`skySvg`), bright stars in the gutters between that
+  1. **Sky:** each tile's starfield and nebula (`rasterLayerSvg` `sky`), bright stars in the gutters between that
      shape's spaces, cut to the tile's outline (rounded squares a little apart, or 7-hex flowers).
-  2. **Body:** the planet and moons, or a Void's heart (`bodySvg`), placed on the planet's space and cut
+  2. **Body:** the planet and moons, or a Void's heart (`body`), placed on the planet's space and cut
      off at its own tile's edge. Then the dark seams between hex tiles.
   3. **Spaces:** a well per space, as printed (`well`, `WELL`), from the board rather than the tile:
      hatched where it orbits a planet, cross-hatched where two orbits overlap, a faint flask on a Void's
@@ -152,9 +152,23 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
   [`regolith/`](../packages/art/src/regolith/)), with a building on its planet's space in place of the
   sky and body. Print, the Art Lab and the map all take the same look: a hex map is on its world's ground
   unless the top bar switches it to space ([`mapLook.ts`](../apps/web/src/art/mapLook.ts) `useMapLook`).
-  On the ground the map draws each tile's ground with its building (`regolithSvg`), the spaces' wells, and
-  then what stands on the ground again over the wells (`regolithMaskSvg`). Print draws the lit ground as a
-  bitmap first (`tileGroundSvg`), since its light falls into contour lines at a print's resolution.
+  Print draws the lit ground as a bitmap first (`tileGroundSvg`), since its light falls into contour lines
+  at a print's resolution.
+- **Layers.** Each look stacks its tile in one order (`tileLayerNames`): in space `sky`, `body`, `label`,
+  `spaces`, `planet`; on the ground `ground` (with the building), `spaces`, `standing` (what stands on the
+  ground again, so the wells are etched into the ground and not across the buildings), `planet`. A tile's
+  `tileLayers` are what it has of those. Everything draws from that one order: print joins them (`tileSvg`);
+  the Illustrator export (`editableTileSvg`) puts the layers up to the last one drawn with filters
+  (`isRaster`) in its bitmap (`tileSvg` with `raster`) and the rest over it as vectors; and the map
+  ([`MapTiles.tsx`](../apps/web/src/components/board/MapTiles.tsx)) stacks the same layers in the same
+  order (`mapStack`), each run of filtered ones as one clipped group of images per tile.
+
+  The map shares the order, not the drawings. Its images are each raster layer drawn alone
+  (`rasterLayerSvg`, over its `RASTER_AREA`; what stands is cut out of the ground's image with `standingMaskSvg`),
+  made to serve wherever the map puts the planet: the sky keeps its bright stars
+  between all the spaces (print keeps them off the planet, its number and label), and the body is drawn
+  centred for the map to move. Its spaces and labels come from the board, not the tile, since an orbit can
+  reach onto the next tile, and its numbers and cubes are live (BoardArt).
 - **Where the code is.** [`tile/`](../packages/art/src/tile/): `geometry` (spaces, planet spots, number
   and cube pads, the hex flower and its cut), `look`, `set` (the 30 tiles and their seeds), `markings`
   (wells, hatching), `label`, `space` (sky, planet, moons), `voids` (the Void hearts) and `index`, which

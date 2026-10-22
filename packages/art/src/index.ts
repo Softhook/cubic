@@ -19,7 +19,7 @@ export {
 } from './tokens';
 export { ICONS, icon } from './icons';
 export { starfield, type StarfieldOptions } from './starfield';
-export { REGOLITH_GROUND_PX, regolithMaskSvg, regolithSvg } from './regolith';
+export { REGOLITH_GROUND_PX } from './regolith';
 export { planet, type PlanetOptions } from './planet';
 export {
   BLED,
@@ -41,8 +41,22 @@ export {
 export { lookShape, lookWorld, type TileLook, type World } from './tile/look';
 export { HATCH, hexWell, voidFlask, well } from './tile/markings';
 export { tileFlavour, tileLabel, tileLabelFits } from './tile/label';
-export { bodySvg, skySvg, tileHasRings } from './tile/space';
-export { editableTileSvg, tileGroundSvg, tileSvg, type TileOptions } from './tile';
+export { tileHasRings } from './tile/space';
+export {
+  editableTileSvg,
+  RASTER_AREA,
+  isRaster,
+  rasterLayerSvg,
+  standingMaskSvg,
+  tileGroundSvg,
+  tileLayerNames,
+  tileLayers,
+  tileSvg,
+  type RasterLayer,
+  type TileLayer,
+  type TileLayerName,
+  type TileOptions,
+} from './tile';
 export { SET_COUNTS, TILE_SET, assignTiles, tileSpec, type TileSpec } from './tile/set';
 export {
   CARD,
