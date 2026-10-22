@@ -19,7 +19,7 @@ export {
 } from './tokens';
 export { ICONS, icon } from './icons';
 export { starfield, type StarfieldOptions } from './starfield';
-export { regolithMaskSvg, regolithSvg, regolithTileSvg, type World } from './regolith';
+export { REGOLITH_GROUND_PX, regolithGroundSvg, regolithMaskSvg, regolithSvg, regolithTileSvg, type World } from './regolith';
 export { planet, type PlanetOptions } from './planet';
 export {
   BLED,

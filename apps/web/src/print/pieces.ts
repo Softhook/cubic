@@ -76,7 +76,12 @@ export interface Printable {
   name: string;
   /** The face as an SVG document, at trim size or with the bleed. */
   svg: (bleed: boolean) => string;
+  /** The face as printed, when that takes drawing something first (a tile on a world's ground, its light); `svg` otherwise. */
+  print?: (bleed: boolean) => Promise<string>;
 }
+
+/** A face's SVG document for print (`Printable.print`). */
+export const printSvg = (item: Printable, bleed: boolean): Promise<string> => item.print?.(bleed) ?? Promise.resolve(item.svg(bleed));
 
 /** A piece's size with or without its bleed, mm. */
 export const pieceSize = (p: Format, bleed: boolean) => ({ w: p.w + (bleed ? 2 * p.bleed : 0), h: p.h + (bleed ? 2 * p.bleed : 0) });

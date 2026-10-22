@@ -1,7 +1,19 @@
 import { dieLine } from '@quantum/art';
 import { download, drawBands } from '../files';
 import { cmykPdf, deflate, fullPage, type PdfImage, type PdfOptions } from './pdf';
-import { cmykName, dieAt, fileName, pieceSize, setName, sheetName, sizeNote, type Format, type Piece, type Printable } from './pieces';
+import {
+  cmykName,
+  dieAt,
+  fileName,
+  pieceSize,
+  printSvg,
+  setName,
+  sheetName,
+  sizeNote,
+  type Format,
+  type Piece,
+  type Printable,
+} from './pieces';
 import { PRESS, encodePng, pressTag, toCmyk } from './press';
 import { A4, pressPages, printDocument, sheetsHtml, type Paper } from './sheets';
 import { zip } from './zip';
@@ -40,7 +52,7 @@ export async function svgToPng(svg: string, w: number, h: number, dpi: number): 
 /** One face as a PNG at the format's dpi. */
 export async function exportPng(f: Format, item: Printable, bleed: boolean): Promise<void> {
   const { w, h } = pieceSize(f, bleed);
-  download(fileName(f, item, { bleed, dpi: f.dpi, ext: 'png' }), await svgToPng(item.svg(bleed), w, h, f.dpi));
+  download(fileName(f, item, { bleed, dpi: f.dpi, ext: 'png' }), await svgToPng(await printSvg(item, bleed), w, h, f.dpi));
 }
 
 /** A set as a ZIP: one PNG per face, named and foldered by the face's name, and a README. */
@@ -55,7 +67,7 @@ export async function exportZip(
   for (const [k, item] of items.entries()) {
     progress(`Rendering ${k + 1}/${items.length}`);
     await paint();
-    files.push({ name: `${item.name}.png`, blob: await svgToPng(item.svg(o.bleed), w, h, piece.dpi) });
+    files.push({ name: `${item.name}.png`, blob: await svgToPng(await printSvg(item, o.bleed), w, h, piece.dpi) });
   }
   const readme =
     `Cubic ${piece.plural}, ${sizeNote(piece, o.bleed)}.\n` +
@@ -101,7 +113,7 @@ export async function printSheets(
     for (const [name, item] of unique) {
       progress(`Rendering ${urls.size + 1}/${unique.size}`);
       await paint();
-      urls.set(name, URL.createObjectURL(await svgToPng(item.svg(false), w, h, piece.dpi)));
+      urls.set(name, URL.createObjectURL(await svgToPng(await printSvg(item, false), w, h, piece.dpi)));
     }
     progress('Opening print dialog…');
     await paint();
@@ -116,7 +128,7 @@ export async function printSheets(
 /** A face drawn with its bleed at the format's dpi and converted to the press's CMYK (with the deep black or not), ready for a PDF page. */
 async function cmykImage(f: Format, item: Printable, deep: boolean): Promise<PdfImage> {
   const { w, h } = pieceSize(f, true);
-  const { width, height, bands } = drawForPrint(item.svg(true), w, h, f.dpi);
+  const { width, height, bands } = drawForPrint(await printSvg(item, true), w, h, f.dpi);
   const data = await deflate(
     (async function* () {
       for await (const rgba of bands) yield toCmyk(rgba, deep);

@@ -1,7 +1,7 @@
 import type { Rng } from '../rng';
 import { n, turbulence } from '../svg';
 import type { Box } from '../starfield';
-import { type World, region } from './core';
+import { type World, LIT, region } from './core';
 
 /**
  * The Regolith ground's light: filters that turn a height map into lit, coloured ground (`ground`), and
@@ -62,7 +62,7 @@ export function ground(r: Rng, area: Box, world: World): string {
     '<feComposite in="ridged" in2="ROUGH" operator="in" result="rgm"/>' +
     '<feComposite in="H0" in2="nzm" operator="arithmetic" k2="0.85" k3="0.28" k4="-0.07" result="h1"/>' +
     '<feComposite in="h1" in2="rgm" operator="arithmetic" k2="1" k3="0.12" k4="-0.05" result="H"/>' +
-    `<feDiffuseLighting in="H" kernelUnitLength="0.28" surfaceScale="9" diffuseConstant="1.3" lighting-color="#ffffff" result="L">${light}</feDiffuseLighting>` +
+    `<feDiffuseLighting in="H" kernelUnitLength="${LIT}" surfaceScale="9" diffuseConstant="1.3" lighting-color="#ffffff" result="L">${light}</feDiffuseLighting>` +
     offset(1.2, -0.06, 1) +
     offset(2.5, -0.13, 2) +
     offset(5, -0.26, 3) +
@@ -77,7 +77,7 @@ export function ground(r: Rng, area: Box, world: World): string {
     '<feColorMatrix in="broad" type="matrix" values="0 0 1 0 0  0 0 1 0 0  0 0 1 0 0  0 0 0 0 1" result="anG"/>' +
     '<feComposite in="albG" in2="anG" operator="arithmetic" k2="1" k3="0.45" k4="-0.22" result="albN"/>' +
     '<feComposite in="Ls" in2="albN" operator="arithmetic" k1="2" result="lit"/>' +
-    `<feSpecularLighting in="H" kernelUnitLength="0.28" surfaceScale="9" specularConstant="0.6" specularExponent="40" lighting-color="#e6f6ff" result="spec">${light}</feSpecularLighting>` +
+    `<feSpecularLighting in="H" kernelUnitLength="${LIT}" surfaceScale="9" specularConstant="0.6" specularExponent="40" lighting-color="#e6f6ff" result="spec">${light}</feSpecularLighting>` +
     '<feComposite in="spec" in2="SMOOTH" operator="in" result="specM"/>' +
     '<feComposite in="lit" in2="specM" operator="arithmetic" k2="1" k3="0.7" result="lit2"/>' +
     (world === 'moon' ? MOON_RAMP : MARS_RAMP) +

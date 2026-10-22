@@ -6,7 +6,7 @@ import { fileName, pieceSize } from '../print/pieces';
 import { PrintPanel, Space } from '../print/PrintPanel';
 import { tileFontCss, useFontCss, useSvgUrl } from './cards';
 import { LabHeader } from './LabHeader';
-import { TILE_PRINT, lookShape, printableTile, tileFaceSvg, worldOf, type TileLook } from './pressSheets';
+import { TILE_PRINT, lookShape, printableTile, printedTileFaceSvg, tileFaceSvg, worldOf, type TileLook } from './pressSheets';
 
 /**
  * Art Lab, tiles page (#lab): every tile of the physical set, with controls to explore seeds and
@@ -60,7 +60,11 @@ export function TileLab() {
   const exportEditable = async () => {
     const { w, h } = pieceSize(piece, bleed);
     const beneath = !!worldOf(look);
-    const under = tileFaceSvg(spec, view, beneath ? { only: 'beneath', bleed, markings, fontCss: fonts ?? '' } : { only: 'art', bleed });
+    const under = await printedTileFaceSvg(
+      spec,
+      view,
+      beneath ? { only: 'beneath', bleed, markings, fontCss: fonts ?? '' } : { only: 'art', bleed },
+    );
     const art = await blobToDataUrl(await svgToPng(under, w, h, 600));
     const name = fileName(piece, item, { bleed, ext: 'svg' }).replace(/\.svg$/, '-illustrator.svg');
     download(name, new Blob([editableTileSvg(spec, art, { bleed, markings, shape, planetAt, beneath })], { type: 'image/svg+xml' }));

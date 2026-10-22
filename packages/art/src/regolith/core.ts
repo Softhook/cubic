@@ -14,6 +14,12 @@ export const SCALE = TILE.cell / SPACE;
 export const SIZE = TILE.size / SCALE;
 /** How far past the area shown the ground is drawn, in board units: past the furthest shadow (9) and warp (13). */
 const MARGIN = 20;
+/**
+ * The pixel the ground's light is made for, in board units (its `kernelUnitLength`). Chrome lights a pixel
+ * at a time whatever it's told, from heights in 256 steps: much finer, as in print, each step catches the
+ * light as a ridge, in wiggly contour lines all over the ground, so print lights it at this and scales it up.
+ */
+export const LIT = 0.28;
 
 /** Which world a hex map is on: the grey moon, or Mars. */
 export type World = 'moon' | 'mars';

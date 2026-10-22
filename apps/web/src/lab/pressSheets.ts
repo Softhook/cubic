@@ -1,6 +1,8 @@
 import {
+  REGOLITH_GROUND_PX,
   TILE_SET,
   playerAidSvg,
+  regolithGroundSvg,
   regolithTileSvg,
   tileSvg,
   type AidEdition,
@@ -9,6 +11,7 @@ import {
   type TileSpec,
   type World,
 } from '@quantum/art';
+import { blobToDataUrl, rasterise } from '../files';
 import type { PressSheets } from '../print/exports';
 import { PIECES, type Piece, type Printable } from '../print/pieces';
 import { cardFontCss, measure, tileFontCss } from './cards';
@@ -28,10 +31,28 @@ export interface TileView {
   planetAt?: string;
 }
 
-/** A tile as an SVG document in a look, square by default: in space (`tileSvg`) or on a world's ground. */
-export function tileFaceSvg(t: TileSpec, { look = 'square', planetAt }: TileView, o: Omit<TileOptions, 'shape' | 'planetAt'>) {
+/** How to draw a tile face: art `TileOptions` but its look's, and its lit ground as a bitmap (`printedTileFaceSvg`). */
+type FaceOptions = Omit<TileOptions, 'shape' | 'planetAt' | 'ground'> & { ground?: string };
+
+/**
+ * A tile as an SVG document in a look, square by default: in space (`tileSvg`) or on a world's ground,
+ * its light drawn by its filter or, as `ground`, a bitmap of it (`printedTileFaceSvg`).
+ */
+export function tileFaceSvg(t: TileSpec, { look = 'square', planetAt }: TileView, { ground, ...o }: FaceOptions) {
   const world = worldOf(look);
-  return world ? regolithTileSvg(t, world, { ...o, planetAt }) : tileSvg(t, { ...o, planetAt, shape: lookShape(look) });
+  return world ? regolithTileSvg(t, world, { ...o, planetAt, ground }) : tileSvg(t, { ...o, planetAt, shape: lookShape(look) });
+}
+
+/**
+ * A tile as an SVG document to print: on a world's ground, its light drawn first at the size it's made
+ * for and scaled up (art `regolithGroundSvg`), since drawn at a print's resolution it falls into contour lines.
+ */
+export async function printedTileFaceSvg(t: TileSpec, view: TileView, o: Omit<FaceOptions, 'ground'>) {
+  const world = worldOf(view.look);
+  if (!world) return tileFaceSvg(t, view, o);
+  const px = REGOLITH_GROUND_PX;
+  const ground = await blobToDataUrl(await rasterise(regolithGroundSvg(t, world, view.planetAt), px, px));
+  return tileFaceSvg(t, view, { ...o, ground });
 }
 
 /**
@@ -41,6 +62,7 @@ export function tileFaceSvg(t: TileSpec, { look = 'square', planetAt }: TileView
 export const printableTile = (t: TileSpec, fontCss: string, markings = true, view: TileView = {}): Printable => ({
   name: (view.planetAt && t.number > 0 ? `${t.id}-${view.planetAt}` : t.id) + (worldOf(view.look) ? `-${view.look}` : ''),
   svg: (bleed) => tileFaceSvg(t, view, { markings, bleed, fontCss }),
+  print: (bleed) => printedTileFaceSvg(t, view, { markings, bleed, fontCss }),
 });
 
 /** A player aid as a printable face. */

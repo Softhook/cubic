@@ -27,6 +27,7 @@
     "mobile:shots": "npm run data && vite-node scripts/mobile-shots.ts --",
     "ui:check": "npm run data && vite-node scripts/ui-check.ts --",
     "hex:check": "npm run data && vite-node scripts/hex-check.ts --",
+    "ground:check": "npm run data && vite-node scripts/ground-check.ts --",
     "print:cmyk-table": "vite-node scripts/cmyk-table.ts --",
     "replay:check": "npm run data && vite-node scripts/replay-check.ts --",
     "online:sim": "npm run data && vite-node scripts/online-sim.ts --",

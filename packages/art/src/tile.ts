@@ -126,7 +126,7 @@ export function numberCorner(at: Spot, shape: TileShape = 'square'): Corner {
 }
 
 /** Where a tile's planet sits (`TileOptions.planetAt`), in spaces from its middle. */
-function planetSpot(shape: TileShape, at = ''): Spot {
+export function planetSpot(shape: TileShape, at = ''): Spot {
   const spot = TILE_SPOTS[shape][at];
   if (!spot) throw new Error(`A ${shape} tile's planet can't sit "${at}"`);
   return spot;
