@@ -7,6 +7,7 @@ import {
   type TileOptions,
   type TileShape,
   type TileSpec,
+  type World,
 } from '@quantum/art';
 import type { PressSheets } from '../print/exports';
 import { PIECES, type Piece, type Printable } from '../print/pieces';
@@ -18,26 +19,27 @@ export type TileLook = 'square' | 'hex' | 'moon' | 'mars';
 /** The shape of a look's spaces. */
 export const lookShape = (look: TileLook): TileShape => (look === 'square' ? 'square' : 'hex');
 
+/** The world a look's ground is on, if it's on one. */
+const worldOf = (look: TileLook | undefined): World | undefined => (look === 'moon' || look === 'mars' ? look : undefined);
+
 /** How a tile is shown and printed: its look, and where its planet sits (art `TileOptions`). */
 export interface TileView {
   look?: TileLook;
   planetAt?: string;
 }
 
-/** A tile as an SVG document in a look, square by default: in space (`tileSvg`) or on the moon. */
-export const tileFaceSvg = (t: TileSpec, { look = 'square', planetAt }: TileView, o: Omit<TileOptions, 'shape' | 'planetAt'>) =>
-  look === 'moon' || look === 'mars'
-    ? regolithTileSvg(t, { ...o, planetAt }, look)
-    : tileSvg(t, { ...o, planetAt, shape: lookShape(look) });
+/** A tile as an SVG document in a look, square by default: in space (`tileSvg`) or on a world's ground. */
+export function tileFaceSvg(t: TileSpec, { look = 'square', planetAt }: TileView, o: Omit<TileOptions, 'shape' | 'planetAt'>) {
+  const world = worldOf(look);
+  return world ? regolithTileSvg(t, { ...o, planetAt }, world) : tileSvg(t, { ...o, planetAt, shape: lookShape(look) });
+}
 
 /**
  * A tile as a printable face, named for where its planet sits when that's not the middle, and for the
- * moon when it's on it: `p7-01`, `p7-01-ne`, `p7-01-moon` (a Void has no spot).
+ * world when it's on one: `p7-01`, `p7-01-ne`, `p7-01-moon` (a Void has no spot).
  */
 export const printableTile = (t: TileSpec, fontCss: string, markings = true, view: TileView = {}): Printable => ({
-  name:
-    (view.planetAt && t.number > 0 ? `${t.id}-${view.planetAt}` : t.id) +
-    (view.look === 'moon' || view.look === 'mars' ? `-${view.look}` : ''),
+  name: (view.planetAt && t.number > 0 ? `${t.id}-${view.planetAt}` : t.id) + (worldOf(view.look) ? `-${view.look}` : ''),
   svg: (bleed) => tileFaceSvg(t, view, { markings, bleed, fontCss }),
 });
 

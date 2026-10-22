@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { cellAt, type Board } from '@quantum/engine';
 import { HATCH, HEX_WELL, SPACE_BASE_CSS, TILE, WELL, hexWell, tileLabel, tileSpec, voidFlask, well } from '@quantum/art';
-import { useMoonMaps } from '../../art/mapLook';
+import { useGroundMaps } from '../../art/mapLook';
 import { layerScale, useTileImages } from '../../art/tileImages';
 import type { TileArt } from '../../art/boardTiles';
 import { SQUARE_TILE_GAP, hexCorners, hexFlower, hexSeams, placement } from './geometry';
@@ -89,22 +89,22 @@ const NO_TILES: TileArt[] = [];
 /**
  * A map's tiles in SVG, square or hex, in layers: each tile's sky, its body (planet and moons, or a Void's
  * heart) wherever the planet sits, cut off at the tile's edge, then the seams between hex tiles, the spaces
- * and the labels. The planets' numbers and cubes go on top (BoardArt). A hex map may be on the moon instead
- * (mapLook): moon ground, each tile's building already standing on its planet's space, and drawn again over
+ * and the labels. The planets' numbers and cubes go on top (BoardArt). A hex map may be on its world's
+ * ground instead (mapLook): each tile's building already standing on its planet's space, and drawn again over
  * the spaces, so the wells are etched into the ground and not across the buildings.
  */
 export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: Board; tiles: TileArt[]; cell: number }) {
-  const moon = useMoonMaps() && !!board.hex;
-  const skyLayer = moon ? 'ground' : board.hex ? 'sky-hex' : 'sky-square';
+  const ground = useGroundMaps() && !!board.hex;
+  const skyLayer = ground ? 'ground' : board.hex ? 'sky-hex' : 'sky-square';
   const skies = useTileImages(tiles, skyLayer);
-  // On the moon each tile's ground already has its building, so there are no bodies to load.
-  const bodies = useTileImages(moon ? NO_TILES : tiles, 'body');
-  const standing = useTileImages(moon ? tiles : NO_TILES, 'standing');
+  // On the ground each tile already has its building, so there are no bodies to load.
+  const bodies = useTileImages(ground ? NO_TILES : tiles, 'body');
+  const standing = useTileImages(ground ? tiles : NO_TILES, 'standing');
   const { mid } = placement(board, cell);
   const mm = cell / TILE.cell;
   // A tile's artwork is a whole printed tile, 3 spaces wide, centred on what it draws.
   const size = 3 * cell;
-  // The moon ground reaches past its tile, by the bleed, so the clip a touch past the hexes is on ground.
+  // The ground reaches past its tile, by the bleed, so the clip a touch past the hexes is on ground.
   const art = (url: string | undefined, at: { x: number; y: number }, scale = 1) =>
     url && <image href={url} x={at.x - (size * scale) / 2} y={at.y - (size * scale) / 2} width={size * scale} height={size * scale} />;
   // Square tiles stand a little apart, with the printed rounded corners; hex tiles meet at a seam.
@@ -141,7 +141,7 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
         <g key={t.tile} clipPath={`url(#map-tile-${t.tile})`}>
           <rect x={mid(t).x - size / 2} y={mid(t).y - size / 2} width={size} height={size} fill={SPACE_BASE_CSS} />
           {art(skies[t.id], mid(t), layerScale(skyLayer))}
-          {!moon && art(bodies[t.id], mid(t.body))}
+          {!ground && art(bodies[t.id], mid(t.body))}
         </g>
       ))}
       {board.hex && (
@@ -155,7 +155,7 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
         />
       )}
       <g transform={`scale(${mm})`} dangerouslySetInnerHTML={{ __html: marks.wells }} />
-      {moon &&
+      {ground &&
         tiles.map((t) => (
           <g key={t.tile} clipPath={`url(#map-tile-${t.tile})`}>
             {art(standing[t.id], mid(t), layerScale('standing'))}

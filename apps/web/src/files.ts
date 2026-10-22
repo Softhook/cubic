@@ -26,18 +26,13 @@ async function loadSvg(svg: string): Promise<HTMLImageElement> {
   return img;
 }
 
-/** Draws an SVG document to a `w` × `h` px canvas, over `background` when given (else transparent). */
-async function drawSvg(svg: string, w: number, h: number, background?: string): Promise<HTMLCanvasElement> {
+/** Draws an SVG document to a `w` × `h` px transparent canvas. */
+async function drawSvg(svg: string, w: number, h: number): Promise<HTMLCanvasElement> {
   const img = await loadSvg(svg);
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
-  const ctx = canvas.getContext('2d')!;
-  if (background) {
-    ctx.fillStyle = background;
-    ctx.fillRect(0, 0, w, h);
-  }
-  ctx.drawImage(img, 0, 0, w, h);
+  canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
   return canvas;
 }
 

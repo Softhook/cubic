@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  BLED,
   TILE,
   TILE_SET,
   bodySvg,
@@ -24,11 +25,11 @@ import { idle, storeImage, storedImage } from './imageStore';
 /** Pixel size of a stored tile: the largest on-screen tile (3 × 92 px cells) at 2× device pixels. */
 const SIZE = 576;
 
-/** How much bigger than its tile a layer's image is: the moon ground has the print bleed round it (`regolithSvg`). */
-export const layerScale = (layer: TileLayer) => (layer === 'ground' || layer === 'standing' ? (TILE.size + 2 * TILE.bleed) / TILE.size : 1);
+/** How much bigger than its tile a layer's image is: the ground has the print bleed round it (`regolithSvg`). */
+export const layerScale = (layer: TileLayer) => (onGround(layer) ? BLED.w / TILE.size : 1);
 
 const images = new Map<string, Promise<string>>();
-const moons = new Map<string, Promise<Record<'ground' | 'standing', string>>>();
+const grounds = new Map<string, Promise<Record<GroundLayer, string>>>();
 const decoded = new Map<string, Promise<string>>();
 
 // WebP keeps the stored tiles small; browsers that can't encode it give PNG instead.
@@ -46,11 +47,17 @@ async function load(id: string, svg: string, size: number): Promise<string> {
 /**
  * The layers of a tile the map is drawn from (MapTiles): its sky for square or hex spaces, and its body, the
  * planet and moons or a Void tile's heart, which the map places wherever the planet sits. The spaces,
- * labels and markings are drawn live over them. A hex map in a game is on the moon instead (the Regolith
- * look): each tile is a `ground` layer, with the planet's building standing where the planet sits, and a
- * `standing` one, the same image cut down to the buildings (and ships and rovers), to go over the spaces' wells.
+ * labels and markings are drawn live over them. A hex map in a game may be on its world's ground instead
+ * (the Regolith look, mapLook): each tile is a `ground` layer, with the planet's building standing where the
+ * planet sits, and a `standing` one, the same image cut down to the buildings (and ships and rovers), to go
+ * over the spaces' wells.
  */
-export type TileLayer = 'sky-square' | 'sky-hex' | 'body' | 'ground' | 'standing';
+export type TileLayer = 'sky-square' | 'sky-hex' | 'body' | GroundLayer;
+
+/** A ground tile's two layers, drawn together (`groundImages`). */
+type GroundLayer = 'ground' | 'standing';
+
+const onGround = (layer: TileLayer): layer is GroundLayer => layer === 'ground' || layer === 'standing';
 
 /** A tile to draw: its physical id, and for `ground` where its planet sits, in spaces from its middle, and on which world. */
 interface TileRef {
@@ -59,8 +66,8 @@ interface TileRef {
   world?: World;
 }
 
-/** The layers drawn from an SVG of their own: a moon tile's two are drawn together (`moonImages`). */
-type OwnLayer = Exclude<TileLayer, 'ground' | 'standing'>;
+/** The layers drawn from an SVG of their own. */
+type OwnLayer = Exclude<TileLayer, GroundLayer>;
 
 function layerSvg(id: string, layer: OwnLayer): string {
   switch (layer) {
@@ -74,17 +81,15 @@ function layerSvg(id: string, layer: OwnLayer): string {
 }
 
 const nameOf = ({ id, at, world = 'mars' }: TileRef, layer: TileLayer) =>
-  layer === 'ground' || layer === 'standing'
-    ? `${id}:${layer}:${world}` + (at ? `@${at.x.toFixed(3)},${at.y.toFixed(3)}` : '')
-    : `${id}:${layer}`;
+  onGround(layer) ? `${id}:${layer}:${world}` + (at ? `@${at.x.toFixed(3)},${at.y.toFixed(3)}` : '') : `${id}:${layer}`;
 
 /**
- * A moon tile's `ground` and `standing` images: the ground drawn once, and cut down by its cheap mask
+ * A ground tile's `ground` and `standing` images: the ground drawn once, and cut down by its cheap mask
  * (`regolithMaskSvg`) for what stands, so the two match to the pixel. Stored as a pair, under one key.
  */
-function moonImages(tile: TileRef): Promise<Record<'ground' | 'standing', string>> {
+function groundImages(tile: TileRef): Promise<Record<GroundLayer, string>> {
   const name = nameOf(tile, 'ground');
-  let pair = moons.get(name);
+  let pair = grounds.get(name);
   if (!pair) {
     const svg = regolithSvg(tileSpec(tile.id), tile.at, tile.world);
     const mask = regolithMaskSvg(tileSpec(tile.id), tile.at);
@@ -102,14 +107,14 @@ function moonImages(tile: TileRef): Promise<Record<'ground' | 'standing', string
     })()
       // If drawing fails, the ground as SVG (slower to show, same look), and nothing over the wells.
       .catch(() => ({ ground: dataUrl(svg), standing: '' }));
-    moons.set(name, pair);
+    grounds.set(name, pair);
   }
   return pair;
 }
 
 /** The image URL for a layer of a tile (`p7-01`…), drawing and storing it the first time. */
 function tileImage(tile: TileRef, layer: TileLayer): Promise<string> {
-  if (layer === 'ground' || layer === 'standing') return moonImages(tile).then((pair) => pair[layer]);
+  if (onGround(layer)) return groundImages(tile).then((pair) => pair[layer]);
   const name = nameOf(tile, layer);
   let image = images.get(name);
   if (!image) {

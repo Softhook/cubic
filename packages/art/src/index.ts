@@ -22,6 +22,7 @@ export { starfield, type StarfieldOptions } from './starfield';
 export { regolithMaskSvg, regolithSvg, regolithTileSvg, type World } from './regolith';
 export { planet, type PlanetOptions } from './planet';
 export {
+  BLED,
   HATCH,
   HEX_TILE_CUT,
   HEX_WELL,

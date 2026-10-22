@@ -17,7 +17,7 @@ import { CombatOverlay } from './CombatOverlay';
 import { ConquerChoice, DecisionOverlay, GameOver } from './Overlays';
 import { ErrorToast, PlayedCard, Toasts } from './Toasts';
 import { FullscreenButton } from './FullscreenButton';
-import { MoonButton } from './MoonButton';
+import { WorldButton } from './WorldButton';
 import { MusicButton, SoundButton } from './SoundButton';
 
 /** The map's height over its width, as drawn. */
@@ -105,7 +105,7 @@ export function Game({
           <button className="btn btn-ghost" onClick={onRules}>
             Rules
           </button>
-          {game.board.hex && <MoonButton world={game.board.world ?? 'mars'} />}
+          {game.board.hex && <WorldButton world={game.board.world ?? 'mars'} />}
           <MusicButton />
           <SoundButton />
           <FullscreenButton />
