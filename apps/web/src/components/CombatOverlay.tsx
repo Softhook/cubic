@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import {
-  SHIP_NAMES,
+  shipOf,
   canRespondToCombat,
   card,
   combatOutcome,
@@ -126,7 +126,7 @@ function Battle({
         <div className="combat-dice">
           <div className="combat-die-col">
             <Die3D value={s.ship} size={dieSize} color={p.color} sound={false} />
-            <span>{SHIP_NAMES[s.ship]}</span>
+            <span>{shipOf(game, s.ship).name}</span>
           </div>
           <span className="combat-plus">+</span>
           <div className={`combat-die-col ${s.missile ? 'missiled' : ''}`}>

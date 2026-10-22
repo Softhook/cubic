@@ -3,7 +3,7 @@ import {
   attackLaunches,
   canRespondToCombat,
   createGame,
-  defaultMap,
+  defaultMapFor,
   isEmptySpace,
   legalActions,
   MAPS,
@@ -33,7 +33,7 @@ export function devStartGame(): GameState | null {
   const play = q.get('play')?.toLowerCase();
   if (!play) return null;
   const rules = MODES.find((m) => m.id === play || m.name.toLowerCase() === play);
-  const map = q.get('map') ? MAPS.find((m) => m.id === q.get('map')) : defaultMap(Number(q.get('players') ?? 2));
+  const map = q.get('map') ? MAPS.find((m) => m.id === q.get('map')) : rules && defaultMapFor(rules, Number(q.get('players') ?? 2));
   const players = Number(q.get('players') ?? map?.players);
   const seed = Number(q.get('seed'));
   if (!rules || !map || map.players !== players || !rules.mapGroups.includes(map.group)) {

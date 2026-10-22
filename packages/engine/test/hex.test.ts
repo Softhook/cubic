@@ -29,6 +29,7 @@ import {
   tileCentres,
   type Cell,
   type GameState,
+  type GameMode,
 } from '../src';
 import { allowMapGroups, playAiGame, players, quickStart } from './helpers';
 
@@ -176,15 +177,15 @@ describe('hex maps', () => {
   });
 
   it('leaves Ingenious (conquer from the corners) out of the deck, as hex tiles have no corners', () => {
-    const cards = (mapId: string) => {
-      const s = createGame({ players: players(2), seed: 1, mode: 'prototyping', mapId });
+    const cards = (mapId: string, mode: GameMode = 'prototyping') => {
+      const s = createGame({ players: players(2), seed: 1, mode, mapId });
       expect(checkInvariants(s)).toEqual([]);
       const { skillDeck, skillRow } = s.market;
       const drafts = s.pending.flatMap((x) => (x.kind === 'skillDraft' ? x.options : []));
       return [...skillDeck, ...skillRow, ...drafts].map(effectOf);
     };
     expect(cards('alpha-hex')).not.toContain('ingenious');
-    expect(cards('alpha-sector')).toContain('ingenious');
+    expect(cards('alpha-sector', 'community')).toContain('ingenious');
   });
 
   for (const m of HEX_MAPS)

@@ -1,4 +1,4 @@
-import { defaultMap, type GameMode, type PlayerConfig } from '@quantum/engine';
+import { defaultMapFor, RULESETS, type GameMode, type PlayerConfig } from '@quantum/engine';
 import { PROTOCOL, type Body, type Post } from '../src';
 
 export const seat = (name: string, ai = false): PlayerConfig => ({ name, color: '#fff', ai, aiLevel: 1 });
@@ -14,7 +14,7 @@ export const create = (author: string, players: PlayerConfig[], open: number[], 
   post(author, {
     t: 'create',
     protocol: PROTOCOL,
-    config: { players, mapId: defaultMap(players.length)!.id, mode, seed },
+    config: { players, mapId: defaultMapFor(RULESETS[mode], players.length)!.id, mode, seed },
     creator: 0,
     open,
   });

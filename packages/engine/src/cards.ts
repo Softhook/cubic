@@ -282,10 +282,10 @@ export const cardHandlers = {
     if (a.to) {
       if (!deployTargets(s, head.player).some((p) => same(p, a.to!))) fail('Place it in orbit of one of your planets');
       d.loc = boardLoc(a.to);
-      logTo(s, head.player, `${name(s, head.player)} places their new ${shipName(d)}`, a.to);
+      logTo(s, head.player, `${name(s, head.player)} places their new ${shipName(s, d)}`, a.to);
     } else {
       d.loc = { zone: 'scrapyard' };
-      note(s, `${name(s, head.player)} keeps their new ${shipName(d)} in the scrapyard.`, head.player);
+      note(s, `${name(s, head.player)} keeps their new ${shipName(s, d)} in the scrapyard.`, head.player);
     }
     s.turn.seen[d.id] = [d.value];
     s.pending.shift();
@@ -295,7 +295,7 @@ export const cardHandlers = {
     const d = die(s, a.die);
     if (d.loc.zone !== 'board') fail('Choose a ship on the map');
     s.pending.shift();
-    log(s, `${name(s, head.player)} destroys ${name(s, d.owner)}'s ${shipName(d)}.`, head.player, 'shipDestroyed');
+    log(s, `${name(s, head.player)} destroys ${name(s, d.owner)}'s ${shipName(s, d)}.`, head.player, 'shipDestroyed');
     destroyShip(s, d);
     // The victim loses no dominance: only the attack protocol or card text changes it (RULE-SUGGESTIONS #26).
     if (d.owner === head.player) gainDominance(s, head.player, 1);
@@ -360,9 +360,9 @@ export const cardHandlers = {
     head.rerolled.push(d.id);
     // Reorganization: a re-rolled ship leaves the map and is placed again (or scrapped).
     if (head.reorganize) d.loc = { zone: 'scrapyard' };
-    const was = shipName(d);
+    const was = shipName(s, d);
     rollShip(s, d);
-    note(s, `${name(s, head.player)} re-rolls their ${was}: ${shipName(d)}.`, head.player);
+    note(s, `${name(s, head.player)} re-rolls their ${was}: ${shipName(s, d)}.`, head.player);
   },
   unveilDeploy(s, a) {
     const head = headOf(s, 'unveil', 'Not unveiling');
@@ -371,7 +371,7 @@ export const cardHandlers = {
     if (head.reorganize && !head.rerolled.includes(d.id)) fail('Only re-rolled ships can be placed');
     if (!deployTargets(s, head.player).some((p) => same(p, a.to))) fail('Not a deploy space');
     d.loc = boardLoc(a.to);
-    logTo(s, head.player, `${name(s, head.player)} deploys ${aShip(d)}`, a.to);
+    logTo(s, head.player, `${name(s, head.player)} deploys ${aShip(s, d)}`, a.to);
   },
   unveilDone(s) {
     headOf(s, 'unveil', 'Not unveiling');

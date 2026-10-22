@@ -49,7 +49,7 @@ export const actionHandlers = {
     if (opt.diagonal) markAbility(s, d); // Interceptor manoeuvre
     d.loc = boardLoc(a.to);
     markMoved(s, d);
-    logTo(s, d.owner, `${name(s, d.owner)} moves their ${shipName(d)}`, a.to);
+    logTo(s, d.owner, `${name(s, d.owner)} moves their ${shipName(s, d)}`, a.to);
   },
   attack(s, a) {
     requireActionPhase(s);
@@ -74,16 +74,16 @@ export const actionHandlers = {
     } else if (t.freeDeploys > 0) t.freeDeploys--;
     else spend(s, 1);
     d.loc = boardLoc(a.to);
-    logTo(s, d.owner, `${name(s, d.owner)} deploys ${aShip(d)}`, a.to);
+    logTo(s, d.owner, `${name(s, d.owner)} deploys ${aShip(s, d)}`, a.to);
   },
   reconfigure(s, a) {
     requireActionPhase(s);
     const d = ownShip(s, a.die);
     if (!canReconfigure(s, d)) fail('This ship cannot be reconfigured');
     spend(s, 1);
-    const was = shipName(d);
+    const was = shipName(s, d);
     rerollNew(s, d);
-    note(s, `${name(s, d.owner)} reconfigures their ${was} into ${aShip(d)}.`, d.owner);
+    note(s, `${name(s, d.owner)} reconfigures their ${was} into ${aShip(s, d)}.`, d.owner);
   },
   research(s) {
     const t = requireActionPhase(s);

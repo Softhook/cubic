@@ -199,7 +199,7 @@
     "id": "binary-reach",
     "name": "Binary Reach",
     "players": 2,
-    "group": "drift",
+    "group": "drift-square",
     "cubes": 6,
     "stats": {
       "slack": 6,

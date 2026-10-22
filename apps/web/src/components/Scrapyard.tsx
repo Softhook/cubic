@@ -1,4 +1,4 @@
-import { SHIP_NAMES, scrapyard, shipOf, type Die, type GameState, type PlayerState } from '@quantum/engine';
+import { scrapyard, shipOf, type Die, type GameState, type PlayerState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
 import { Die3D } from './Die3D';
@@ -57,7 +57,7 @@ export function Scrapyard({ game, p, ctl, dispatch }: { game: GameState; p: Play
             tip={
               <>
                 <b>
-                  {SHIP_NAMES[d.value]} ({d.value})
+                  {shipOf(game, d.value).name} ({d.value})
                 </b>
                 <span>{abilityText(game, d.value)}</span>
                 <span className="muted">Waiting in the scrapyard to be deployed.</span>

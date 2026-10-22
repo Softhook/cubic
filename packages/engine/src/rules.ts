@@ -1,4 +1,4 @@
-import { MAPS, type CardDef, type GameMode, type ShipDef, type ShipPower, type ShipTable } from './data';
+import { defaultMap, MAPS, type CardDef, type GameMode, type MapDef, type ShipDef, type ShipPower, type ShipTable } from './data';
 import type { ShipHooks } from './prototype';
 import type { Die, GameState } from './types';
 
@@ -113,6 +113,14 @@ export function modeHasHook(state: GameState, hook: keyof ShipHooks): boolean {
     HOOKS.set(ships, hooks);
   }
   return hooks.has(hook);
+}
+
+/** The map a rule set starts on for a player count: the basic map, or its first map if it doesn't play that one. */
+export function defaultMapFor(rules: RuleSet, players: number): MapDef | undefined {
+  const basic = defaultMap(players);
+  return basic && rules.mapGroups.includes(basic.group)
+    ? basic
+    : MAPS.find((m) => m.players === players && rules.mapGroups.includes(m.group));
 }
 
 /** Player counts a rule set has maps for. */

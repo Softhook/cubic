@@ -121,7 +121,7 @@ packages/art/src/
     inks.ts         paper, night paper, key ink, bone, oxide and ice plates, amber accent (Vocabulary board)
     plates.ts       printing a part in three passes: offset colour plate, key ink, accent; registration offset
     layout.ts       the card face: art window, name, subtitle, rules text, category mark, tag
-    mechs.ts        the six mech classes (Bastion, Herald, Breacher, Warden, Kestrel, Wisp), posable parts
+    mechs.ts        the six mech classes (Bastion, Vanguard, Breacher, Warden, Sniper, Wisp), posable parts
     objectives.ts   Habitat, Refinery, Ice Mine, Reactor, Sinkhole
     props.ts        bunker, comms mast, drop pod, barricade, boulders, ordnance, intel and control readouts
   scenes/
@@ -163,7 +163,7 @@ should agree with it; how far the tiles move towards flat inks is open, below.
 ## 7. Words
 
 The names, words and story are kept in one place, [REGOLITH-WORLD.md](REGOLITH-WORLD.md): the six mechs
-(Bastion, Herald, Breacher, Warden, Kestrel, Wisp), the objectives (Habitat, Refinery, Ice Mine, Reactor,
+(Bastion, Vanguard, Breacher, Warden, Sniper, Wisp), the objectives (Habitat, Refinery, Ice Mine, Reactor,
 Sinkhole), the sides, and how each Quantum term reads in Regolith.
 
 A card takes the new words when it is renamed. Saying them across the game (log, hints, sidebar,
@@ -185,7 +185,10 @@ worth doing before many cards are renamed.
 ## 9. Order of work
 
 1. **Rename and hex only.** Regolith in the lobby, the mode's id and folder, its map groups, every map's
-   world, the tests.
+   world, the tests. *Partly done (22 October 2026):* the lobby and game say Regolith, the mode plays hex
+   maps only (`grid: 'hex'` on its rule set, `playsMap` and `defaultMapFor` in rules.ts), and its ships carry
+   the mech names, which the engine and web app take from the game's rules. Binary Reach is played by no
+   mode for now. Still to do: the id and folder rename, and every map's world written out.
 2. **Own deck.** `data/regolith.yaml` as a copy of Community's, the build step, exports, `regolithMode()`
    dealing it, `DECKS` and the Art Lab listing it, drawn with today's `cardSvg` for now. The game plays
    as before, from its own deck.

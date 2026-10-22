@@ -25,12 +25,21 @@ const problem = (what: string) => {
   console.log(`  ✗ ${what}`);
 };
 
-for (const map of [MAPS.find((m) => m.id === 'alpha-sector')!, ...MAPS.filter((m) => m.grid === 'hex' || m.group === 'drift')]) {
+// The square Alpha Sector with Community's rules; every hex map with Regolith's (Prototyping), the only rules that play them.
+for (const map of [MAPS.find((m) => m.id === 'alpha-sector')!, ...MAPS.filter((m) => m.grid === 'hex')]) {
   console.log(`${map.name}`);
   const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
   page.on('pageerror', (e) => problem(`page error: ${e.message}`));
   page.on('console', (m) => m.type() === 'error' && problem(`console: ${m.text()}`));
-  await page.goto(playUrl(server.base, { play: 'prototyping', players: map.players, map: map.id, seed: 5, scene: 'turn' }));
+  await page.goto(
+    playUrl(server.base, {
+      play: map.grid === 'hex' ? 'prototyping' : 'community',
+      players: map.players,
+      map: map.id,
+      seed: 5,
+      scene: 'turn',
+    }),
+  );
   await page.locator('.board').waitFor();
   await page.waitForTimeout(1500);
   const state = () => page.evaluate(() => window.__quantum.state()) as Promise<GameState>;

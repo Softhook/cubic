@@ -64,10 +64,10 @@ export const skillHandlers = {
     const v = d.value + a.delta;
     if (v < 1 || v > 6) fail('Ship numbers range from 1 to 6');
     oncePerTurn(s, 'flexible');
-    const was = shipName(d);
+    const was = shipName(s, d);
     d.value = v;
     markSeen(s, d);
-    note(s, `${name(s, d.owner)} adjusts their ${was} to ${aShip(d)} (Flexible).`, d.owner);
+    note(s, `${name(s, d.owner)} adjusts their ${was} to ${aShip(s, d)} (Flexible).`, d.owner);
   },
   tyrannical(s) {
     const t = requireActionPhase(s);
@@ -91,7 +91,7 @@ export const skillHandlers = {
     };
     if (a.passenger) {
       // Flagship Transport over the 1 space (forum consensus, BGG thread 1093051).
-      if (!hasPower(s, d, 'transport')) fail('Only a Flagship can transport');
+      if (!hasPower(s, d, 'transport')) fail('Only a ship with Carry & Move can transport');
       if (!a.to || !a.drop) fail('Invalid carry');
       const fly = transport(s, d, a.passenger, a.to, a.drop, 1);
       use();
@@ -100,7 +100,7 @@ export const skillHandlers = {
       logTo(
         s,
         d.owner,
-        `${name(s, d.owner)}'s ${shipName(d)} carries their ${shipName(die(s, a.passenger))} one space`,
+        `${name(s, d.owner)}'s ${shipName(s, d)} carries their ${shipName(s, die(s, a.passenger))} one space`,
         a.to,
         ' (Tactical)',
       );
@@ -120,7 +120,7 @@ export const skillHandlers = {
     use();
     if (opt.diagonal) markAbility(s, d);
     d.loc = boardLoc(opt.cell);
-    logTo(s, d.owner, `${name(s, d.owner)} moves their ${shipName(d)} one space`, opt.cell, ' (Tactical)');
+    logTo(s, d.owner, `${name(s, d.owner)} moves their ${shipName(s, d)} one space`, opt.cell, ' (Tactical)');
   },
   nomadic(s, a) {
     const t = requireActionPhase(s);
@@ -131,7 +131,7 @@ export const skillHandlers = {
     spend(s, 1);
     // A relocation, not a move: the ship may still move this turn (forum consensus, BGG thread 1636855).
     d.loc = boardLoc(a.to);
-    logTo(s, d.owner, `${name(s, d.owner)} relocates their ${shipName(d)}`, a.to, ' (Nomadic)');
+    logTo(s, d.owner, `${name(s, d.owner)} relocates their ${shipName(s, d)}`, a.to, ' (Nomadic)');
   },
   scrappy(s) {
     if (!canScrappy(s)) fail('Nothing to re-roll');
@@ -152,7 +152,11 @@ export const skillHandlers = {
     d.value = a.value;
     markSeen(s, d);
     const skill = head.source === 'calculating' ? 'Calculating' : 'Clever';
-    note(s, `${name(s, head.player)} makes ${d.loc.zone === 'board' ? 'it' : 'their scrapped ship'} ${aShip(d)} (${skill}).`, head.player);
+    note(
+      s,
+      `${name(s, head.player)} makes ${d.loc.zone === 'board' ? 'it' : 'their scrapped ship'} ${aShip(s, d)} (${skill}).`,
+      head.player,
+    );
   },
   brilliant(s, a) {
     const head = headOf(s, 'brilliant', 'No Brilliant research to take');
@@ -165,7 +169,7 @@ export const skillHandlers = {
     requireSkill(s, t.player, 'resourceful');
     const d = ownShip(s, a.die, 'board');
     oncePerTurn(s, 'resourceful');
-    note(s, `${name(s, d.owner)} scraps their ${shipName(d)} for an extra action (Resourceful).`, d.owner);
+    note(s, `${name(s, d.owner)} scraps their ${shipName(s, d)} for an extra action (Resourceful).`, d.owner);
     destroyShip(s, d);
     t.actionsLeft++;
   },

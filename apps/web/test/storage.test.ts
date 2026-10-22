@@ -51,7 +51,7 @@ describe('online games in storage', () => {
       { name: 'A', color: '#fff', ai: false, aiLevel: 1 },
       { name: 'B', color: '#000', ai: true, aiLevel: 1 },
     ];
-    const state = createGame({ players, mapId: defaultMap(2)!.id, mode: 'prototyping', seed: 1 });
+    const state = createGame({ players, mapId: 'alpha-hex', mode: 'prototyping', seed: 1 });
     store.setItem('quantum.savedGame', JSON.stringify({ ...state, mode: 'cubic' }));
 
     expect(loadSavedGame()).toBeNull();

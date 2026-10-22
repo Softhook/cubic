@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { canCurious, SHIP_NAMES, card, die, rulesOf, skillCard, type GameState, type SkillEffect } from '@quantum/engine';
+import { canCurious, shipOf, card, die, rulesOf, skillCard, type GameState, type SkillEffect } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { hintFor } from '../game/hints';
 import type { Dispatch } from '../game/useGame';
@@ -102,7 +102,7 @@ export function TurnPanel({ game, ctl, dispatch, undo }: { game: GameState; ctl:
             <SkillButton
               game={game}
               effect="scrappy"
-              label={`Re-roll ${SHIP_NAMES[die(game, game.turn.scrappy!.die).value]} (Scrappy)`}
+              label={`Re-roll ${shipOf(game, die(game, game.turn.scrappy!.die).value).name} (Scrappy)`}
               disabled={false}
               onClick={() => dispatch({ type: 'scrappy' })}
             />

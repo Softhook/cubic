@@ -39,17 +39,25 @@ import {
   type Action,
   type GameMode,
   type GameState,
+  MAPS,
 } from '../src';
 import { cubeLeft } from '../src/core';
 import { beginPlay } from '../src/turn';
 import { PROTOTYPING_CARDS, PROTOTYPING_CONTESTED_DEPLOY, PROTOTYPING_HOME_SHIPYARD, PROTOTYPING_OVER_CONQUEST } from '../src/prototyping';
 import { picket } from '../src/prototyping/powers/picket';
 import { shoot as shootPower, shootTargets } from '../src/prototyping/powers/shoot';
-import { arrange, quickStart } from './helpers';
+import { allowMapGroups, arrange, quickStart } from './helpers';
 
-/** `hex`: Prototyping on Alpha Sector (hex), with axial cells (docs/HEX.md): a space's sides are a row or column away, or (-1, +1) and (+1, -1). */
+// Most of these rules were first written and pinned on the square Alpha Sector, which Regolith no longer plays
+// (it is hex only, docs/REGOLITH.md): this file lets it, as hex.test.ts lets Basic play the hex maps.
+allowMapGroups('prototyping', 'basic');
+
+/**
+ * `prototyping`: the mode on the square Alpha Sector. `hex`: Prototyping on Alpha Sector (hex), with axial cells
+ * (docs/HEX.md): a space's sides are a row or column away, or (-1, +1) and (+1, -1).
+ */
 const BASE: Record<'prototyping' | 'community' | 'hex', GameState> = {
-  prototyping: quickStart(2, 1, 'prototyping'),
+  prototyping: quickStart(2, 1, 'prototyping', 'alpha-sector'),
   community: quickStart(2, 1, 'community'),
   hex: quickStart(2, 1, 'prototyping', 'alpha-hex'),
 };
@@ -87,9 +95,12 @@ describe('Prototyping mode', () => {
     expect(MODES.map((m) => m.id)).toEqual(['basic', 'original', 'community', 'prototyping'] satisfies GameMode[]);
     const prototyping = rulesOf(BASE.prototyping);
     const community = rulesOf(BASE.community);
-    expect(prototyping.name).toBe('Prototyping');
+    expect(prototyping.name).toBe('Regolith');
     expect(prototyping.cards).toBe(PROTOTYPING_CARDS ? community.cards : null);
-    expect(prototyping.mapGroups).toEqual([...community.mapGroups, 'hex', 'drift']);
+    expect(prototyping.mapGroups).toEqual(['hex', 'drift', 'basic']); // 'basic' only in this file: see BASE
+    const played = MAPS.filter((m) => ['hex', 'drift'].includes(m.group));
+    expect(played.every((m) => m.grid === 'hex')).toBe(true);
+    expect(played.map((m) => m.id)).toContain('twin-drift');
     expect(prototyping.startingMissiles).toBe(1);
     expect(prototyping.maxMovement).toBe(3);
     expect(prototyping.overConquest).toBe(PROTOTYPING_OVER_CONQUEST);
@@ -98,8 +109,15 @@ describe('Prototyping mode', () => {
     expect(prototyping.homeShipyard).toBe(PROTOTYPING_HOME_SHIPYARD);
     expect(prototyping.ships[5].hooks).toEqual({ ...shootPower.hooks, ...picket.hooks });
     expect(prototyping.ships[5].power).toBeUndefined();
-    const withoutHooks = (v: number) => ({ ...prototyping.ships[v], hooks: undefined });
-    expect([1, 2, 3, 4, 6].map(withoutHooks)).toEqual([1, 2, 3, 4, 6].map((v) => ({ ...community.ships[v], hooks: undefined })));
+    expect([1, 2, 3, 4, 6].map((v) => prototyping.ships[v].power)).toEqual([1, 2, 3, 4, 6].map((v) => community.ships[v].power));
+    expect([1, 2, 3, 4, 5, 6].map((v) => prototyping.ships[v].name)).toEqual([
+      'Bastion',
+      'Vanguard',
+      'Breacher',
+      'Warden',
+      'Sniper',
+      'Wisp',
+    ]);
     for (const v of [1, 2, 3, 4, 5, 6]) expect(prototyping.ships[v].hooks?.stopsEnemies, `ship ${v}`).toBe(picket.hooks.stopsEnemies);
   });
 
@@ -588,7 +606,8 @@ describe('contested orbit', () => {
   });
 
   it('on off-centre maps, an enemy on a space two orbits share blocks both planets', () => {
-    for (const map of ['twin-drift', 'binary-reach']) {
+    // Twin Drift only: Binary Reach, the square one, isn't played since Regolith went hex only.
+    for (const map of ['twin-drift']) {
       const base = quickStart(2, 1, 'prototyping', map);
       const shared = base.board.planets.flatMap((p) => orbitals(base.board, p)).find((c) => orbitedPlanets(base.board, c).length > 1)!;
       const planets = orbitedPlanets(base.board, shared);

@@ -83,27 +83,27 @@ exports[`golden master > original, 4 players, seed 13 1`] = `
 
 exports[`golden master > prototyping, 2 players, seed 11 1`] = `
 {
-  "actions": "0afe49184a19f72f",
-  "state": "c627819c91ac3396",
-  "steps": 132,
+  "actions": "ac0e31fbfb6aecab",
+  "state": "50a6dc53cb2bb5e8",
+  "steps": 115,
   "winner": 0,
 }
 `;
 
 exports[`golden master > prototyping, 3 players, seed 12 1`] = `
 {
-  "actions": "a8bc06029a5a186c",
-  "state": "c3a8cc39db66dac5",
-  "steps": 367,
+  "actions": "b621701f9dbd09eb",
+  "state": "12dcff0b607b614e",
+  "steps": 211,
   "winner": 1,
 }
 `;
 
 exports[`golden master > prototyping, 4 players, seed 13 1`] = `
 {
-  "actions": "3748c4c5c0ebcb3f",
-  "state": "fc819a353cd28761",
-  "steps": 384,
-  "winner": 2,
+  "actions": "79c913d4a5fb5aa4",
+  "state": "5b760b50200b5134",
+  "steps": 293,
+  "winner": 3,
 }
 `;

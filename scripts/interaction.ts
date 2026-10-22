@@ -4,8 +4,8 @@
  *   npm run interaction -- [games=200] [levels=4,4] [setups=...] [jobs=1]
  *
  * A setup is mode@map, the mode with `-nocards` for its rules without cards: the default compares
- * basic, original, community and prototyping on Alpha Sector, prototyping on Alpha Sector (hex), and
- * prototyping with no cards on both. Seats alternate between games and each pair of games shares a map
+ * basic, original and community on Alpha Sector, and prototyping (Regolith, hex maps only) with and
+ * without cards on Alpha Sector (hex). Seats alternate between games and each pair of games shares a map
  * seed. Prints one markdown table of averages, a column per setup.
  *
  * Each player's value is the AI's evaluation of their own position (valueOf in evaluate.ts, in cube
@@ -37,8 +37,6 @@ const SETUPS = [
   'basic@alpha-sector',
   'original@alpha-sector',
   'community@alpha-sector',
-  'prototyping-nocards@alpha-sector',
-  'prototyping@alpha-sector',
   'prototyping-nocards@alpha-hex',
   'prototyping@alpha-hex',
 ];

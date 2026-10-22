@@ -32,7 +32,11 @@ export function startCombat(s: GameState, attacker: Die, defender: Die, from: Ce
   if (attacker.owner === s.turn.player) payForAttack(s);
   attacker.loc = boardLoc(from);
   s.turn.attacked = true;
-  log(s, `${name(s, attacker.owner)}'s ${shipName(attacker)} attacks ${name(s, defender.owner)}'s ${shipName(defender)}.`, attacker.owner);
+  log(
+    s,
+    `${name(s, attacker.owner)}'s ${shipName(s, attacker)} attacks ${name(s, defender.owner)}'s ${shipName(s, defender)}.`,
+    attacker.owner,
+  );
   if (anySkill(s, defender.owner, (r) => r.combat?.destroyBoth)) {
     s.pending.unshift({
       kind: 'dangerous',
@@ -147,7 +151,7 @@ export const combatHandlers = {
     const d = die(s, head.die);
     if (a.move && !dieAt(s, head.to)) {
       d.loc = boardLoc(head.to);
-      logTo(s, head.player, `${name(s, head.player)}'s ${shipName(d)} advances`, head.to);
+      logTo(s, head.player, `${name(s, head.player)}'s ${shipName(s, d)} advances`, head.to);
     }
   },
   infamy(s, a) {

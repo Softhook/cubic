@@ -121,6 +121,3 @@ export const CLASSIC_SHIPS: ShipTable = {
   },
   6: { name: 'Scout', power: 'freeReconfigure', ability: { name: 'Free Reconfigure', text: 'Re-roll this ship for free.' } },
 };
-
-/** The ships' names in every mode. */
-export const SHIP_NAMES: Record<number, string> = Object.fromEntries(Object.entries(CLASSIC_SHIPS).map(([v, s]) => [v, s.name]));

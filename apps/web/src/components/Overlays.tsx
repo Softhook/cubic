@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { CARD_CATEGORIES } from '@quantum/art';
-import { SHIP_NAMES, card, die, rulesOf, scrapyard, type Action, type ActionOf, type GameState } from '@quantum/engine';
+import { shipOf, card, die, rulesOf, scrapyard, type Action, type ActionOf, type GameState } from '@quantum/engine';
 import { SHORT, useMediaQuery } from '../game/useMediaQuery';
 import type { Dispatch } from '../game/useGame';
 import { CardView, CategoryIcon, categoryStyle } from './Card';
@@ -83,7 +83,7 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
       return (
         <Modal
           title="Dangerous"
-          subtitle={`${game.players[att.owner].name}'s ${SHIP_NAMES[att.value]} attacks your ${SHIP_NAMES[def.value]}. Before the dice are rolled, you may destroy both ships (no dominance change).`}
+          subtitle={`${game.players[att.owner].name}'s ${shipOf(game, att.value).name} attacks your ${shipOf(game, def.value).name}. Before the dice are rolled, you may destroy both ships (no dominance change).`}
           pc={p.color}
         >
           <div className="modal-actions">
@@ -138,7 +138,7 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
                 onClick={() => dispatch({ type: 'clever', value })}
               >
                 <Die3D value={value} size={54} color={p.color} sound={false} />
-                <span className="show">{SHIP_NAMES[value]}</span>
+                <span className="show">{shipOf(game, value).name}</span>
               </button>
             ))}
           </div>
@@ -248,7 +248,7 @@ function SetupRoll({ game, dispatch, player, rerolled }: { game: GameState; disp
         {dice.map((d, i) => (
           <div key={d.id} className="fleet-die">
             <Die3D value={d.value} rolls={d.rolls} size={dieSize} color={p.color} tumbleOnMount delay={i * 0.12} sound={i === 0} />
-            <span className={landed ? 'show' : ''}>{SHIP_NAMES[d.value]}</span>
+            <span className={landed ? 'show' : ''}>{shipOf(game, d.value).name}</span>
           </div>
         ))}
       </div>

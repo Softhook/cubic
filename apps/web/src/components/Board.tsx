@@ -1,18 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-import {
-  SHIP_NAMES,
-  cellAtPoint,
-  die,
-  dieAt,
-  drawing,
-  key,
-  moveOptions,
-  orbitals,
-  rulesOf,
-  same,
-  shipOf,
-  type GameState,
-} from '@quantum/engine';
+import { cellAtPoint, die, dieAt, drawing, key, moveOptions, orbitals, rulesOf, same, shipOf, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { ActionEffects } from './board/ActionEffects';
@@ -284,8 +271,8 @@ function Ships({
     // An attack target shows the chance to win on the map itself: no hover on a touch screen, and
     // a tap attacks. The cards behind it are in the title and the ship panel.
     const attack = ctl.attacks.get(d.id);
-    const { ability } = shipOf(game, d.value);
-    const who = `${game.players[d.owner].name} · ${SHIP_NAMES[d.value]} (${d.value})`;
+    const { ability, name } = shipOf(game, d.value);
+    const who = `${game.players[d.owner].name} · ${name} (${d.value})`;
     // In percent of its own size (one space), so a zoom or resize doesn't count as a move and glide.
     const place = { transform: `translate(${c * 100}%, ${r * 100}%)`, width: cell, height: cell };
     const late = staging.late.get(d.id);
@@ -310,7 +297,7 @@ function Ships({
           onClick={() => ctl.onDie(d.id) === false && onInfo(d.id)}
           onPointerDown={yours(d.owner) ? undefined : (e) => onPress(d.id, e.pointerType !== 'mouse')}
           onContextMenu={(e) => e.preventDefault()}
-          aria-label={`${game.players[d.owner].name}'s ${SHIP_NAMES[d.value]} (${d.value})${attack ? `, ${percent(attack.chance)} chance to win an attack` : ''}`}
+          aria-label={`${game.players[d.owner].name}'s ${name} (${d.value})${attack ? `, ${percent(attack.chance)} chance to win an attack` : ''}`}
           title={
             attack
               ? [
@@ -372,12 +359,12 @@ function BoardInfo({
 /** What a ship is: whose, which, and its ability. */
 function ShipInfo({ game, id }: { game: GameState; id: string }) {
   const d = die(game, id);
-  const ability = shipOf(game, d.value).ability;
+  const { ability, name } = shipOf(game, d.value);
   const p = game.players[d.owner];
   return (
     <>
       <div className="info-title" style={{ '--pc': p.color } as CSSProperties}>
-        <span className="info-swatch" /> {p.name}'s {SHIP_NAMES[d.value]} <span className="muted">({d.value})</span>
+        <span className="info-swatch" /> {p.name}'s {name} <span className="muted">({d.value})</span>
       </div>
       <div>
         <b>{ability.name}:</b> {ability.text}

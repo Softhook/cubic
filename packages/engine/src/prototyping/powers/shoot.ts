@@ -32,8 +32,8 @@ export function shootTargets(s: GameState, d: Die): Die[] {
 export const shoot: PrototypePower = {
   ability: {
     name: 'Shoot',
-    text: 'Instead of moving, attack the first ship in any straight line out of a side of its space (not diagonally), as far as it is clear (planets, the edge of the board and ships, friendly or enemy, block the line; the void does not). It stays where it is. Like a move or an attack, it is the ship’s one action of the turn.',
-    hint: 'Shoot: choose an enemy in a clear straight line, not diagonally, at any distance. Your Interceptor stays put. It uses the ship’s action for the turn.',
+    text: 'Instead of moving, attack the first mech in any straight line out of a side of its space (not diagonally), as far as it is clear (planets, the edge of the board and mechs, friendly or enemy, block the line; the void does not). It stays where it is. Like a move or an attack, it is the mech’s one action of the turn.',
+    hint: 'Shoot: choose an enemy in a clear straight line, not diagonally, at any distance. Your Sniper stays put. It uses the mech’s action for the turn.',
   },
   hooks: {
     threatens: shootTargets,

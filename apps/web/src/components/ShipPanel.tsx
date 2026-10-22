@@ -160,7 +160,7 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
           <button
             className="btn"
             onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id, tactical: true })}
-            title={`${card(tacticalId).text} The Flagship may transport a ship over that 1 space.`}
+            title={`${card(tacticalId).text} The ${ship.name} may transport a ship over that 1 space.`}
             aria-label="Tactical carry"
           >
             <Label long="Tactical carry" short="Tac. carry" />

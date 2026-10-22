@@ -1,5 +1,4 @@
 import {
-  SHIP_NAMES,
   canProfiteer,
   conquerCheck,
   deployTargets,
@@ -11,6 +10,9 @@ import {
   type GameState,
 } from '@quantum/engine';
 import type { Sel } from './controller';
+
+/** The carrying ship's name in this game's rules, as a common noun: "flagship", or "vanguard" in Regolith. */
+const carrier = (game: GameState, id: string) => shipOf(game, die(game, id).value).name.toLowerCase();
 
 /** One-line guidance for the current human decision. */
 export function hintFor(game: GameState, sel: Sel): string {
@@ -40,7 +42,7 @@ export function hintFor(game: GameState, sel: Sel): string {
       case 'discardSkill':
         return head.reason === 'sabotage' ? 'Sabotage! Choose a card to discard.' : 'Choose a card to discard.';
       case 'advance':
-        return `Victory! Advance your ${SHIP_NAMES[die(game, head.die).value]} into the destroyed ship’s space, or hold your position.`;
+        return `Victory! Advance your ${shipOf(game, die(game, head.die).value).name} into the destroyed ship’s space, or hold your position.`;
       case 'relocation':
         return sel.kind === 'relocate'
           ? 'Relocation: choose the planet to move the cube to (click its planet again for another player’s cube there).'
@@ -83,11 +85,11 @@ export function hintFor(game: GameState, sel: Sel): string {
     case 'nomadic':
       return 'Nomadic: choose an orbital position of a neighbouring planet.';
     case 'carryPassenger':
-      return 'Choose a ship next to your flagship to carry.';
+      return `Choose a ship next to your ${carrier(game, sel.die)} to carry.`;
     case 'carryDest':
       return sel.tactical
-        ? 'Tactical: choose the space the flagship moves to.'
-        : 'Choose where the flagship flies (its own space means out and back).';
+        ? `Tactical: choose the space the ${carrier(game, sel.die)} moves to.`
+        : `Choose where the ${carrier(game, sel.die)} flies (its own space means out and back).`;
     case 'carryDrop':
       return 'Choose where to drop the passenger.';
   }

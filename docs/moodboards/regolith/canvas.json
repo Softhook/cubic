@@ -65,6 +65,13 @@
       "x": 1280,
       "y": 1060
     },
+    "Roster.dc.html": {
+      "h": 2000,
+      "title": "Mech roster",
+      "w": 1320,
+      "x": 1400,
+      "y": 8290
+    },
     "Surface.dc.html": {
       "h": 1080,
       "title": "Surface study",
@@ -87,18 +94,11 @@
       "y": 6290
     },
     "World.dc.html": {
-      "x": 0,
-      "y": 8290,
-      "w": 1320,
       "h": 2240,
-      "title": "Regolith: the world"
-    },
-    "Roster.dc.html": {
-      "x": 1400,
-      "y": 8290,
+      "title": "Regolith: the world",
       "w": 1320,
-      "h": 2000,
-      "title": "Mech roster"
+      "x": 0,
+      "y": 8290
     }
   },
   "createdOnFiles": {
@@ -119,11 +119,12 @@
       "y": -300
     },
     "world": {
-      "x": 0,
-      "y": 7990,
-      "text": "The world and the mechs",
       "kind": "title1",
-      "maxW": 2720
+      "maxW": 2720,
+      "text": "The world and the mechs",
+      "w": 240,
+      "x": 0,
+      "y": 7990
     }
   },
   "order": [

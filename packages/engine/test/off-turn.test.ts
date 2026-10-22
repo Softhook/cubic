@@ -109,7 +109,7 @@ describe('card edge cases', () => {
     const s = createGame({ players: players(5), seed: 1 });
     expect(s.players).toHaveLength(5);
     expect(s.board.mapName).toBeTruthy();
-    expect(() => createGame({ players: players(5), seed: 1, mode: 'basic' })).toThrow(/isn't played with/);
+    expect(() => createGame({ players: players(5), seed: 1, mode: 'basic' })).toThrow(/No map for 5 players/);
     expect(() => createGame({ players: players(6), seed: 1 })).toThrow(/2–5 players/);
   });
 });

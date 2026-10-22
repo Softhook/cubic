@@ -72,7 +72,7 @@ export const abilityHandlers = {
     useAbility(s, d, 'transport');
     fly();
     markMoved(s, d);
-    logTo(s, d.owner, `${name(s, d.owner)}'s ${shipName(d)} carries their ${shipName(die(s, a.passenger))}`, a.to);
+    logTo(s, d.owner, `${name(s, d.owner)}'s ${shipName(s, d)} carries their ${shipName(s, die(s, a.passenger))}`, a.to);
   },
   /** 3 Destroyer — Warp: swap places with another of your ships on the map; not its move. */
   swap(s, a) {
@@ -82,26 +82,26 @@ export const abilityHandlers = {
     if (o.id === d.id) fail('Choose another ship');
     useAbility(s, d, 'warp');
     [d.loc, o.loc] = [o.loc, d.loc];
-    note(s, `${name(s, d.owner)}'s ${shipName(d)} swaps places with their ${shipName(o)}.`, d.owner);
+    note(s, `${name(s, d.owner)}'s ${shipName(s, d)} swaps places with their ${shipName(s, o)}.`, d.owner);
   },
   /** 4 Frigate — Modify: become a 3 or a 5 (and so can't use the new ship's ability this turn). */
   change(s, a) {
     requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     useAbility(s, d, 'modify');
-    const was = shipName(d);
+    const was = shipName(s, d);
     d.value = a.value;
     markSeen(s, d);
-    note(s, `${name(s, d.owner)} changes their ${was} into ${aShip(d)}.`, d.owner);
+    note(s, `${name(s, d.owner)} changes their ${was} into ${aShip(s, d)}.`, d.owner);
   },
   /** 6 Scout — Free Reconfigure. */
   freeReconfigure(s, a) {
     requireActionPhase(s);
     const d = ownShip(s, a.die, 'board');
     useAbility(s, d, 'freeReconfigure');
-    const was = shipName(d);
+    const was = shipName(s, d);
     rerollNew(s, d);
-    note(s, `${name(s, d.owner)}'s ${was} reconfigures itself into ${aShip(d)}.`, d.owner);
+    note(s, `${name(s, d.owner)}'s ${was} reconfigures itself into ${aShip(s, d)}.`, d.owner);
   },
   /** A prototype power's action (ShipHooks.action): legal exactly when its hooks offer it. */
   power(s, a) {

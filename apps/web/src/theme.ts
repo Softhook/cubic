@@ -4,7 +4,7 @@
  */
 
 /** Default player colours, in seat order. */
-export const PLAYER_COLORS = ['#4cc9f0', '#f72585', '#ffb703', '#80ed99', '#b388ff'];
+export const PLAYER_COLORS = ['#3d8bff', '#d62839', '#ffb703', '#80ed99', '#b388ff'];
 
 /** A Warp Gate's colour, on the map (board/BoardArt) and in its effects (board/CardEffects). */
 export const GATE_COLOR = '#5ef0b0';

@@ -1,5 +1,5 @@
 import { useRef, useState, type CSSProperties } from 'react';
-import { defaultMap, MAPS, MODES, playerCounts, RULESETS, type GameMode, type GameState, type PlayerConfig } from '@quantum/engine';
+import { defaultMapFor, MAPS, MODES, playerCounts, RULESETS, type GameMode, type GameState, type PlayerConfig } from '@quantum/engine';
 import { Segmented } from '../Segmented';
 import { Confirm } from '../Dialog';
 import { FullscreenButton } from '../FullscreenButton';
@@ -60,8 +60,8 @@ export function Lobby({
   const seats = seatSets[where];
   const [mapIds, setMapIds] = useState<Record<number, string>>(() => Object.fromEntries(PLAYER_COUNTS.map((n) => [n, storedMap(n)])));
   const choices = MAPS.filter((m) => m.players === count && RULESETS[mode].mapGroups.includes(m.group));
-  // A remembered map the chosen rules don't use falls back to the basic map (it stays remembered).
-  const map = choices.find((m) => m.id === mapIds[count]) ?? defaultMap(count)!;
+  // A remembered map the chosen rules don't use falls back to their default map (it stays remembered).
+  const map = choices.find((m) => m.id === mapIds[count]) ?? defaultMapFor(RULESETS[mode], count)!;
 
   const chooseMode = (id: GameMode) => {
     setMode(id);

@@ -3,12 +3,12 @@
  * dominance / research / cube bookkeeping that many rules touch.
  */
 import { diagonals, orbitedPlanets, same } from './board';
-import { card, cardWithEffect, SHIP_NAMES } from './data';
+import { card, cardWithEffect } from './data';
 import type { SkillEffect } from './effects';
 import { die } from './lookups';
 import { actionsClosed, canCurious, canGainResearch, canUseAbility, infamyAt, usedThisTurn } from './queries';
 import { d6 } from './rng';
-import { rulesOf } from './rules';
+import { rulesOf, shipOf } from './rules';
 import { activeSkills, anySkill, hasSkill, skillRules, stealableSkill } from './skillRules';
 import {
   RuleError,
@@ -84,9 +84,13 @@ export function logTo(s: GameState, player: PlayerId, text: string, to: Cell, af
 }
 
 export const name = (s: GameState, p: PlayerId) => s.players[p].name;
-export const shipName = (d: Die) => `${SHIP_NAMES[d.value]} (${d.value})`;
+/** A ship's name in this game's rules, with its value: "Interceptor (5)". */
+export const shipName = (s: GameState, d: Die) => `${shipOf(s, d.value).name} (${d.value})`;
 /** A ship's name with its article: "an Interceptor (5)". */
-export const aShip = (d: Die) => `${/^[AEIOU]/.test(SHIP_NAMES[d.value]) ? 'an' : 'a'} ${shipName(d)}`;
+export function aShip(s: GameState, d: Die): string {
+  const { name } = shipOf(s, d.value);
+  return `${/^[AEIOU]/.test(name) ? 'an' : 'a'} ${name} (${d.value})`;
+}
 
 /** The pending decision at the head of the queue, if it is of the given kind. */
 export function headOf<K extends Pending['kind']>(s: GameState, kind: K, message: string): PendingOf<K> {

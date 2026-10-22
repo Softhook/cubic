@@ -140,7 +140,8 @@ maps:
   - id: binary-reach
     name: Binary Reach
     players: 2
-    group: drift
+    # Its own group, which no mode plays for now: Regolith (Prototyping), which plays the drift group, is hex only.
+    group: drift-square
     cubes: 6
     stats: { slack: 6, shared: 2, planets: 10 }
     # The two middle 7s each lean toward a 7 on the next tile, sharing two orbital spaces: a ship

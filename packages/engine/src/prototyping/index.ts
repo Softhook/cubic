@@ -39,10 +39,25 @@ export const PROTOTYPING_HOME_SHIPYARD = true;
 /** The most a ship's die value counts for movement; skill bonuses add to it (ruling 2026-10-08). */
 const MAX_MOVEMENT = 3;
 
-/** Only the 5 has a new power (strikes at range); the other ships keep their official powers. */
+/**
+ * Regolith's mechs (docs/REGOLITH-WORLD.md, *The six mechs*): the official powers under the mechs' names, except
+ * the 5's, which strikes at range.
+ */
 const SHIPS: ShipTable = {
-  ...CLASSIC_SHIPS,
-  5: { name: 'Interceptor', ...shoot },
+  1: {
+    ...CLASSIC_SHIPS[1],
+    name: 'Bastion',
+    ability: { name: 'Free Attack', text: 'Attack an adjacent enemy without using this mech’s move.' },
+  },
+  2: {
+    ...CLASSIC_SHIPS[2],
+    name: 'Vanguard',
+    ability: { name: 'Carry & Move', text: 'Carry one of your nearby mechs as part of a move, then drop it next to you.' },
+  },
+  3: { ...CLASSIC_SHIPS[3], name: 'Breacher', ability: { name: 'Swap', text: 'Swap places with any of your other mechs.' } },
+  4: { ...CLASSIC_SHIPS[4], name: 'Warden', ability: { name: 'Change to 3 or 5', text: 'Refit as a Breacher or a Sniper.' } },
+  5: { name: 'Sniper', ...shoot },
+  6: { ...CLASSIC_SHIPS[6], name: 'Wisp', ability: { name: 'Free Refit', text: 'Re-roll this mech for free.' } },
 };
 
 /**
@@ -54,18 +69,19 @@ const PROTOTYPING_SHIPS: ShipTable = Object.fromEntries(
 );
 
 /**
- * Prototyping is built on `base` (Community Edition, see rulesets.ts): its missiles and maps are kept, with the hex
- * and off-centre (drift) maps added, and its cards as PROTOTYPING_CARDS says.
+ * Prototyping, shown as Regolith (docs/REGOLITH.md), is built on `base` (Community Edition, see rulesets.ts): its
+ * missiles are kept and its cards as PROTOTYPING_CARDS says. It plays the hex maps only, the hex and off-centre
+ * (drift) ones, on the moon's and Mars's ground.
  */
 export function prototypingMode(base: RuleSet): RuleSet {
   return {
     ...base,
     id: 'prototyping',
-    name: 'Prototyping',
-    title: 'Prototyping',
-    summary: `Community Edition${PROTOTYPING_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a ship moving next to an enemy ship, not diagonally, stops there), a ranged Interceptor and contested orbits (no conquering${PROTOTYPING_CONTESTED_DEPLOY ? ` or deploying${PROTOTYPING_HOME_SHIPYARD ? ', except to your home planet,' : ''}` : ''} while an enemy ship is in orbit)${PROTOTYPING_OVER_CONQUEST ? ' and over-conquest, displacing an opponent cube' : ''}.`,
+    name: 'Regolith',
+    title: 'Regolith',
+    summary: `Mechs fight over the ice of Mars and the moon, on hex maps. Community Edition${PROTOTYPING_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a mech moving next to an enemy mech, not diagonally, stops there), a ranged Sniper and contested orbits (no conquering${PROTOTYPING_CONTESTED_DEPLOY ? ` or deploying${PROTOTYPING_HOME_SHIPYARD ? ', except to your home planet,' : ''}` : ''} while an enemy mech is in orbit)${PROTOTYPING_OVER_CONQUEST ? ' and over-conquest, displacing an opponent cube' : ''}.`,
     cards: PROTOTYPING_CARDS ? base.cards : null,
-    mapGroups: [...base.mapGroups, 'hex', 'drift'],
+    mapGroups: ['hex', 'drift'],
     ships: PROTOTYPING_SHIPS,
     maxMovement: MAX_MOVEMENT,
     overConquest: PROTOTYPING_OVER_CONQUEST,
