@@ -41,7 +41,8 @@
     "circular": "madge --circular --extensions ts,tsx packages/engine/src packages/ai/src packages/art/src packages/online/src apps/web/src",
     "knip": "knip",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "regolith:picks": "npm run data && vite-node scripts/regolith-card-picks.ts --"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

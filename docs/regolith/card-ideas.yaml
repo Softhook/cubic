@@ -1,0 +1,415 @@
+# Regolith card ideas: names and art briefs to choose from (docs/regolith/REGOLITH.md §3, §5).
+#
+# Three name candidates and three art briefs for every Community card in Regolith's deck (Ingenious is left
+# out: hexes have no corners). `npm run regolith:picks` turns this file into the Regolith Card Picks page,
+# where each card can keep its Community name, take a candidate or a name of your own, and pick an art brief.
+# Settled names go into data/regolith.yaml when it exists; this file is only the menu.
+#
+# Names follow the CardStyles board: Skills are crews, kit and habits (Servo Tuning, Hot Loads), Tactics are
+# operations (Railgun Strike, Ice Tunnel). Words and setting come from REGOLITH-WORLD.md: mechs, objectives,
+# perimeters, claiming, power, research, salvage yard, refit, drop, orbital strike. No space, no aliens.
+#
+# Art briefs are for the screenprint renderer (REGOLITH.md §5): three flat inks, bold shapes, one subject
+# from the kit (the six mechs, the five objectives, the props) or the crews who work them.
+
+skills:
+  agile:
+    names:
+      - { name: Servo Tuning, why: 'From the CardStyles board: the legs are tuned, not the pilot' }
+      - { name: Long Stride, why: 'Says what it does: every mech steps one hex further' }
+      - { name: Overdrive Actuators, why: 'Hardware, pushed past its rating' }
+    art:
+      - { title: Servo bay, brief: "A mechanic's wrench on the open knee joint of a Wisp; sparks printed in the amber plate." }
+      - { title: Fourth footprint, brief: "Top view: a mech's footprints across four hexes, the last one in amber." }
+      - { title: Field manual figure, brief: 'A stencilled leg diagram with its stride arc, marked +1, like a page from a field manual.' }
+  ambitious:
+    names:
+      - { name: Double Shift, why: 'Extra work now, paid for three times, then the crew is spent' }
+      - { name: Overtime, why: 'Short and familiar; the tokens are the hours' }
+      - { name: Night Shift, why: "Work that keeps going after dark, until it can't" }
+    art:
+      - { title: Punch clock, brief: 'A shift clock and three time cards, two of them punched.' }
+      - { title: Floodlights, brief: 'A crew working a refinery under floodlights, the sky black above.' }
+      - { title: Work order, brief: 'A work order pad with three tick boxes, two ticked in amber.' }
+  brilliant:
+    names:
+      - { name: Survey Office, why: 'A standing team that brings in research every turn' }
+      - { name: Core Samples, why: 'Research as ice cores pulled from the ground' }
+      - { name: Deep Radar, why: 'Equipment that keeps reading the ground for you' }
+    art:
+      - { title: Core rack, brief: 'A geologist sliding an ice core into a rack of sample tubes.' }
+      - { title: Survey mast, brief: 'A comms mast on a crater rim sending survey rings out over the ground.' }
+      - { title: Readout, brief: 'A stencilled instrument readout: +2 RESEARCH, needle in the amber band.' }
+  brutal:
+    names:
+      - { name: Twin Mounts, why: 'Two guns, keep the better shot' }
+      - { name: Double Tap, why: 'Fire twice, count the best hit' }
+      - { name: Paired Cannons, why: 'Plain and heavy, like the Breacher it suits' }
+    art:
+      - { title: Two barrels, brief: 'A Breacher firing both arm cannons at once, two muzzle flashes.' }
+      - { title: Two dice, brief: 'Two combat dice side by side, the higher one struck through in key ink.' }
+      - { title: Silhouette, brief: 'A black mech silhouette against an amber sky, two tracers leaving it.' }
+  calculating:
+    names:
+      - { name: Salvage Foreman, why: 'Someone in the yard decides what each wreck comes back as' }
+      - { name: Parts Ledger, why: 'Every part counted, so you choose the build' }
+      - { name: Scrap Sorting, why: 'The salvage yard, organised' }
+    art:
+      - { title: Foreman, brief: 'A foreman with a clipboard in the salvage yard, pointing a crane at one chassis.' }
+      - { title: Numbered bins, brief: 'Six bins stencilled 1 to 6, a crane lowering a wreck into one.' }
+      - { title: Ledger page, brief: 'A ruled ledger page of part numbers, one line circled in oxide.' }
+  clever:
+    names:
+      - { name: Field Fitter, why: 'A fitter who adjusts each refit by one' }
+      - { name: Spare Arms, why: 'The rack of arms that turns one fit into its neighbour' }
+      - { name: Quick Swap, why: 'Fast, small changes after a refit' }
+    art:
+      - { title: Gantry, brief: 'A Chameleon on a gantry with one arm half swapped, the old arm hanging from a hoist.' }
+      - { title: Tool board, brief: 'A workshop wall of arms and tools, each painted outline holding its part.' }
+      - { title: Plus or minus, brief: "A gloved hand stamping a mech's die plate, ±1 printed large." }
+  composed:
+    names:
+      - { name: Stand Down, why: 'Give up some power, learn something instead' }
+      - { name: Truce Talks, why: 'Lose face, gain knowledge' }
+      - { name: Cold Study, why: 'Calm, deliberate, out of the fight' }
+    art:
+      - { title: Lowered flag, brief: 'A settlement flag half lowered beside a field lab tent.' }
+      - { title: Kneeling mech, brief: 'A mech kneeling with its gun lowered while its crew takes samples.' }
+      - { title: Table, brief: 'Two foremen at a folding table on the ice, maps between them.' }
+  cunning:
+    names:
+      - { name: Override Codes, why: "Run a mech's power past its safety limit, once more" }
+      - { name: Second Charge, why: 'The capacitors hold enough for one more go' }
+      - { name: Hot Restart, why: 'Reset the system and use it again' }
+    art:
+      - { title: Override switch, brief: 'A hand flipping a guarded red switch on a cockpit panel.' }
+      - { title: Capacitors, brief: 'A capacitor bank with two charge bars, both lit in amber.' }
+      - { title: Sniper twice, brief: "A Sniper's gun with two shots leaving it, one after the other." }
+  curious:
+    names:
+      - { name: Survey Party, why: 'A peaceful turn earns an extra move or research' }
+      - { name: Prospectors, why: "Folk who'd rather look than fight" }
+      - { name: Quiet Shift, why: 'No fighting today, so more gets done' }
+    art:
+      - { title: Crater rim, brief: 'A Wisp on a crater rim planting a survey flag, nobody else in sight.' }
+      - { title: Sample drill, brief: 'Two prospectors with a hand drill over cracked ice.' }
+      - { title: Quiet camp, brief: 'Mechs parked in a row, the crew drinking from flasks, one walking off with a map.' }
+  dangerous:
+    names:
+      - { name: Dead Man's Switch, why: 'If I go, you go with me' }
+      - { name: Scuttle Charge, why: 'Blow the mech rather than lose the fight' }
+      - { name: Reactor Breach, why: 'Takes both mechs out in one blast' }
+    art:
+      - { title: Plunger, brief: 'A hand on a detonator plunger, the wire running off the card.' }
+      - { title: Strapped charge, brief: 'A Breacher with charges strapped across its chest, stencilled DANGER.' }
+      - { title: One blast, brief: 'Two mech silhouettes inside one amber blast ring.' }
+  devious:
+    names:
+      - { name: Underpass, why: 'Your mechs slip under enemy lines' }
+      - { name: Crawlway, why: "Hidden routes through the enemy's ground" }
+      - { name: Gap Runner, why: 'A crew that finds the way through' }
+    art:
+      - { title: Between the legs, brief: "A small mech ducking between two enemy mechs' legs." }
+      - { title: Cross-section, brief: 'A cut-away of the ground: enemy mechs above, a lava tube below with your mech in it.' }
+      - { title: Weaving tracks, brief: 'Top view: footprints weaving between enemy zones, which are printed in oxide.' }
+  ferocious:
+    names:
+      - { name: Hot Loads, why: 'From the CardStyles board: rounds loaded past spec' }
+      - { name: Hardened Shells, why: 'Better ammunition, every fight' }
+      - { name: Overcharged Rounds, why: 'Every shot hits harder' }
+    art:
+      - { title: Shell rack, brief: 'A rack of shells, their tips glowing in the amber plate.' }
+      - { title: Red barrel, brief: "A Breacher's cannon barrel close up, heat shimmer printed as halftone." }
+      - { title: Minus one, brief: 'A stencilled −1 across a combat die, like a crate marking.' }
+  flexible:
+    names:
+      - { name: Trim Tabs, why: "A small adjustment, any time it's needed" }
+      - { name: Field Adjust, why: "Move a mech's fit up or down by one" }
+      - { name: Torque Wrench, why: 'The tool for it, by name' }
+    art:
+      - { title: Wrench, brief: "A giant torque wrench on a mech's hip joint, a mechanic hanging off the handle." }
+      - { title: Dial, brief: 'A rotary dial turned one notch, the notches numbered 1 to 6.' }
+      - { title: Ladder, brief: "A mechanic on a ladder against a mech's leg, adjusting a joint." }
+  hostile:
+    names:
+      - { name: Follow Through, why: 'Win a fight, keep moving' }
+      - { name: Press the Attack, why: 'The first kill buys another action' }
+      - { name: Breakthrough, why: 'Once the line breaks, push' }
+    art:
+      - { title: Stepping over, brief: 'A mech stepping over a smoking wreck, already turning to the next target.' }
+      - { title: Arrows, brief: 'Two field-plan arrows, the second springing from where the first one ended.' }
+      - { title: Smoke column, brief: "A wreck's smoke column, a mech marching past it out of frame." }
+  industrious:
+    names:
+      - { name: Second Pad, why: 'Another landing pad, another drop every turn' }
+      - { name: Drop Crew, why: 'The crew that gets mechs on the ground faster' }
+      - { name: Fast Assembly, why: 'Mechs out of the workshop sooner' }
+    art:
+      - { title: Two pods, brief: 'Two drop pods coming down side by side, retro rockets in amber.' }
+      - { title: Assembly line, brief: 'A workshop gantry with two mechs being built at once.' }
+      - { title: Unloading, brief: 'A crew unloading a drop pod, its hatch open, a mech stepping out.' }
+  intelligent:
+    names:
+      - { name: Survey Margin, why: 'Claim when the numbers are one off' }
+      - { name: Close Enough, why: 'Plain speech for ±1' }
+      - { name: Loose Tolerance, why: "An engineer's word for good enough" }
+    art:
+      - { title: Theodolite, brief: 'A surveyor at a theodolite, the objective ahead of them on the horizon.' }
+      - { title: Stencil 8, brief: "An objective's big 8, with 7 and 9 printed faintly on either side." }
+      - { title: Blueprint, brief: 'An engineer holding a blueprint against the wind, a ±1 note scrawled on it.' }
+  patient:
+    names:
+      - { name: Sealed Orders, why: 'Tactics kept for later' }
+      - { name: Reserve Orders, why: 'A held reserve of plans' }
+      - { name: Strongbox, why: "Where you keep the plans until they're needed" }
+    art:
+      - { title: Envelopes, brief: 'A stack of sealed envelopes tied with string, a settlement seal on top.' }
+      - { title: Lockbox, brief: 'A battered metal strongbox, its lid open a crack.' }
+      - { title: Dispatcher, brief: 'A dispatcher pinning orders to a board, some face down.' }
+  pioneering:
+    names:
+      - { name: Paper Claim, why: 'Your research stands in for a mech when claiming' }
+      - { name: Survey Claim, why: 'A claim made on knowledge, not force' }
+      - { name: First Survey, why: 'Whoever mapped it first gets a say' }
+    art:
+      - { title: Claim stake, brief: 'A surveyor hammering a claim stake into the ground, map under one arm.' }
+      - { title: Paper mech, brief: 'A mech made of folded survey maps, standing in a perimeter.' }
+      - { title: Flag and number, brief: 'A survey flag with a stencilled research number flying over an objective.' }
+  plundering:
+    names:
+      - { name: Black Box, why: 'Every wreck holds something worth reading' }
+      - { name: Wreck Survey, why: 'Kills turn into research' }
+      - { name: Scrap Analysis, why: 'Learn from what you destroy' }
+    art:
+      - { title: Black box, brief: 'A crew member pulling an orange black box out of a wreck.' }
+      - { title: Data spool, brief: "An engineer reading tape from a wrecked mech's head, sat on the wreck." }
+      - { title: Salvage drone, brief: 'A small drone hovering over a wreck, scanning it in amber lines.' }
+  precocious:
+    names:
+      - { name: Fast Track, why: 'Research pays out sooner' }
+      - { name: Crash Course, why: 'Learn quickly, use it quickly' }
+      - { name: Rush Survey, why: 'A survey cut short, results now' }
+    art:
+      - { title: Short track, brief: 'The research track as a ruler snapped off at 4.' }
+      - { title: Chalkboard, brief: 'A chalkboard of formulas with half of it rubbed out and an arrow to the answer.' }
+      - { title: Running crew, brief: 'Two surveyors running back to camp with a sample case.' }
+  prideful:
+    names:
+      - { name: Old Colours, why: "The settlement's flag: power comes faster, and can be taken" }
+      - { name: Banner Crew, why: 'The crew that carries the flag, and can lose it' }
+      - { name: Proud Flag, why: 'Plain and clear' }
+    art:
+      - { title: Flag on a mech, brief: "A mech with the side's old flag on a pole on its back." }
+      - { title: Grabbed flag, brief: 'An enemy hand pulling the flag off a wrecked mech.' }
+      - { title: Poster, brief: 'A settlement propaganda poster: the flag over an objective, in two inks.' }
+  profiteering:
+    names:
+      - { name: Arms Deal, why: "Trade a claim's card for an orbital strike" }
+      - { name: Strike Credits, why: 'Claims buy firepower' }
+      - { name: Bounty Contract, why: 'The Free Port pays in ordnance' }
+    art:
+      - { title: Crates, brief: 'An ordnance crate traded across a counter for a stamped deed.' }
+      - { title: Beacon, brief: 'A strike beacon in its case, a price tag on the handle.' }
+      - { title: Contract, brief: 'A contract with a stamp shaped like an orbital strike.' }
+  rational:
+    names:
+      - { name: By the Book, why: 'Every fight goes the same way: a steady 3' }
+      - { name: Steady Hands, why: 'No luck, no panic' }
+      - { name: Drill Sergeant, why: "Drilled until it's the same every time" }
+    art:
+      - { title: Field manual, brief: 'An open field manual, a diagram of a gunner, page 3.' }
+      - { title: Steel die, brief: 'A die showing 3, cast in steel and bolted down.' }
+      - { title: Spirit level, brief: 'A spirit level resting on a gun barrel, bubble dead centre.' }
+  ravenous:
+    names:
+      - { name: Kill Marks, why: 'Every first kill a turn adds power' }
+      - { name: Trophy Hunters, why: 'A crew that hangs up what it takes' }
+      - { name: War Paint, why: 'Fierce, without gore' }
+    art:
+      - { title: Tally, brief: "Stencilled kill marks on a mech's hull, a painter adding one more." }
+      - { title: Trophy, brief: "An enemy mech's head hung from a comms mast like a trophy." }
+      - { title: Painted face, brief: "A mech's visor painted with teeth in oxide ink." }
+  resourceful:
+    names:
+      - { name: Strip for Parts, why: 'Break up your own mech for an action' }
+      - { name: Cannibalise, why: 'The make-do theme at its plainest' }
+      - { name: Scrap It, why: 'Short and harsh' }
+    art:
+      - { title: Kneeling frame, brief: 'Crew stripping a kneeling mech, its parts laid out on a tarp.' }
+      - { title: Crane, brief: "A crane lifting a mech's reactor out of its chest." }
+      - { title: Parts bin, brief: "A parts bin full of servos and plates, a mech's empty frame behind." }
+  righteous:
+    names:
+      - { name: Hardliners, why: 'Never lose power, never learn' }
+      - { name: No Retreat, why: 'Says the rule as a slogan' }
+      - { name: True Believers, why: 'Faith over study' }
+    art:
+      - { title: Slogan, brief: 'A wall stencilled NO RETREAT, a mech standing in front of it.' }
+      - { title: Banner crowd, brief: 'A crowd of crew with banners, seen from behind.' }
+      - { title: Closed book, brief: "A book chained shut, lying at a mech's feet." }
+  ruthless:
+    names:
+      - { name: Signal Jammer, why: 'Take out an enemy skill for a round' }
+      - { name: Cut Cables, why: 'Sabotage after a kill' }
+      - { name: Blackout, why: 'The enemy loses something until your next turn' }
+    art:
+      - { title: Jammer pod, brief: "A jammer pod on a mech's shoulder, static rings in oxide." }
+      - { title: Cut cable, brief: 'Bolt cutters through a thick cable, sparks from the cut.' }
+      - { title: Dark mast, brief: 'An enemy comms mast with its lights out, the sky behind it amber.' }
+  steadfast:
+    names:
+      - { name: Forced March, why: 'Mechs keep walking, action after action' }
+      - { name: Double Time, why: 'Move again and again' }
+      - { name: Long Haul, why: 'Slow mechs that never stop' }
+    art:
+      - { title: Column, brief: 'A column of mechs trudging through a dust storm, heads down.' }
+      - { title: Looping tracks, brief: "Top view: one mech's footprints looping out and back again." }
+      - { title: Clock, brief: 'A shift clock with its hand gone round twice.' }
+  stealthy:
+    names:
+      - { name: Blind Drop, why: 'Drop anywhere no mech can see' }
+      - { name: Dust Drop, why: 'Come down hidden in a dust storm' }
+      - { name: Night Drop, why: 'Quiet and far from anyone' }
+    art:
+      - { title: Pod in the dust, brief: 'A drop pod falling into a dust storm, alone on the map.' }
+      - { title: Lone crater, brief: "A pod's impact crater far from everything, one set of footprints leading away." }
+      - { title: Chute, brief: 'A drogue chute against a night sky, no lights below.' }
+  strategic:
+    names:
+      - { name: Fire Team, why: 'Fight better beside a friend' }
+      - { name: Crossfire, why: 'Two guns covering one target' }
+      - { name: Shoulder to Shoulder, why: 'The rule as a picture' }
+    art:
+      - { title: Back to back, brief: 'Three mechs back to back, guns out in three directions.' }
+      - { title: Fire lines, brief: 'Two firing lines crossing on one enemy mech.' }
+      - { title: Squad diagram, brief: 'A field manual squad diagram: hexes, mechs and arrows.' }
+  stubborn:
+    names:
+      - { name: Dug In, why: 'Hard to shift, and dangerous to try' }
+      - { name: Hold the Line, why: 'Ties go to the defender' }
+      - { name: Entrenched, why: 'Weight and ground, the Regolith themes' }
+    art:
+      - { title: Trench, brief: 'A Breacher in a trench behind a barricade of boulders.' }
+      - { title: Planted feet, brief: "A mech's feet sunk into the regolith, close up." }
+      - { title: Barricade, brief: 'A barricade of salvage plates, an enemy wreck in front of it.' }
+  tactical:
+    names:
+      - { name: Sidestep, why: 'One more short step after moving' }
+      - { name: Lunge, why: 'A short attack from where you stopped' }
+      - { name: Quick Step, why: 'A small move, not a march' }
+    art:
+      - { title: Mid-step, brief: 'A mech caught mid-sidestep, dust kicked up behind its foot.' }
+      - { title: One hex, brief: 'A single hex arrow from one hex to the next, printed big.' }
+      - { title: Lunge, brief: 'A Breacher lunging forward one hex, its arm cannon level.' }
+  talented:
+    names:
+      - { name: Old Hands, why: 'Veterans who can hold more skills' }
+      - { name: Veteran Crew, why: 'Experience, and room for more of it' }
+      - { name: Full Roster, why: 'Five skills on the books' }
+    art:
+      - { title: Crew photo, brief: 'A crew photo, five people, each with a different badge.' }
+      - { title: Tool belt, brief: 'A tool belt with five tools in its loops.' }
+      - { title: Jacket patches, brief: "A work jacket's sleeve with five stitched patches." }
+  tyrannical:
+    names:
+      - { name: Iron Grip, why: 'Your power claims for you' }
+      - { name: Show the Flag, why: 'Power as presence' }
+      - { name: Martial Law, why: 'Rule by force' }
+    art:
+      - { title: Banner, brief: "A huge banner hung over an objective, the side's colour filling the card." }
+      - { title: Fist poster, brief: 'A two-ink poster of a fist gripping an objective.' }
+      - { title: Loudspeaker, brief: 'A loudspeaker on a mast over a habitat, sound rings in oxide.' }
+
+tactics:
+  aggression:
+    names:
+      - { name: Call to Arms, why: 'A rush of power' }
+      - { name: War Footing, why: 'The settlement turns to war' }
+      - { name: Rally, why: 'Short: everyone behind the flag' }
+    art:
+      - { title: Siren, brief: 'A siren on a habitat dome wailing, its rings in amber.' }
+      - { title: Poster, brief: 'A two-ink recruitment poster of raised fists and a mech.' }
+      - { title: Muster, brief: 'Crews running to their mechs at a muster point.' }
+  black-market:
+    names:
+      - { name: Contraband, why: 'Two orbital strikes, no questions asked' }
+      - { name: Back Channel, why: 'Ordnance through the Free Port' }
+      - { name: Smugglers, why: 'The people who bring it' }
+    art:
+      - { title: Crates, brief: 'Ordnance crates being swapped between two trucks in the dark.' }
+      - { title: Dealer, brief: 'A trader in a hood lifting the lid on a case of strike beacons.' }
+      - { title: Stencil, brief: 'A crate with its markings painted over, MEDICAL stencilled on top.' }
+  change-of-heart:
+    names:
+      - { name: Defector, why: 'Someone crosses over with the skill you want' }
+      - { name: Headhunter, why: 'You go and get the skill you need' }
+      - { name: Recruitment, why: 'Choose who joins you' }
+    art:
+      - { title: Crossing over, brief: "An engineer walking from one side's flag to another's." }
+      - { title: Files, brief: 'A hand pulling one personnel file from a drawer of them.' }
+      - { title: Job poster, brief: 'A wanted poster for a skilled fitter, pinned to a mast.' }
+  momentum:
+    names:
+      - { name: Push On, why: 'Another turn, a short one' }
+      - { name: Second Wind, why: 'Keep going when you should stop' }
+      - { name: Forced Advance, why: 'Advance again before anyone answers' }
+    art:
+      - { title: Dawn advance, brief: 'Mechs advancing at dawn, long shadows ahead of them.' }
+      - { title: Two clocks, brief: 'A shift clock and a second smaller one, two hours marked.' }
+      - { title: Footprints, brief: 'Footprints that go on past where they should have stopped.' }
+  plan-ahead:
+    names:
+      - { name: Fire Plan, why: 'Every fight is planned until your next turn ends' }
+      - { name: Zeroed In, why: 'Every shot lands' }
+      - { name: Range Cards, why: "Gunners' kit for knowing the ground" }
+    art:
+      - { title: Range card, brief: "A gunner's range card, hexes and distances inked in." }
+      - { title: Plotting board, brief: 'A gunner at a plotting board, pins in the targets.' }
+      - { title: Crosshair, brief: "A Sniper's scope crosshair centred on an enemy mech." }
+  sabotage:
+    names:
+      - { name: Sand in the Gears, why: 'Everyone else loses an action' }
+      - { name: Power Cut, why: 'Cut the grid and slow them all' }
+      - { name: Sabotage, why: 'Keep the Community name' }
+    art:
+      - { title: Grit, brief: 'A hand pouring regolith into an open gearbox.' }
+      - { title: Dark reactor, brief: 'A reactor with its lights out, crews with torches.' }
+      - { title: Cut line, brief: 'Bolt cutters on a power line running to a habitat.' }
+  show-of-force:
+    names:
+      - { name: Railgun Strike, why: 'From the CardStyles board: any mech, anywhere' }
+      - { name: Called Shot, why: "Name a target and it's gone" }
+      - { name: Long Gun, why: 'One shot from far off' }
+    art:
+      - { title: Railgun, brief: 'A railgun on a ridge, its slug a single line across the card.' }
+      - { title: Impact, brief: 'An enemy mech hit from above, an amber column of light.' }
+      - { title: Target marker, brief: 'A target marker around one mech among many.' }
+  unveil-the-fleet:
+    names:
+      - { name: Full Refit, why: 'Tear down everything and rebuild' }
+      - { name: Teardown, why: 'All your mechs to the yard, then back out' }
+      - { name: Rebuild, why: 'Start the army over' }
+    art:
+      - { title: Workshop, brief: 'A workshop with every mech on a gantry at once.' }
+      - { title: Pods raining, brief: 'Drop pods coming down all over the map.' }
+      - { title: Yard to field, brief: 'The salvage yard on one side, new mechs walking out the other.' }
+  warp-gate:
+    names:
+      - { name: Ice Tunnel, why: "Already decided in REGOLITH-WORLD.md's words" }
+      - { name: Lava Tube, why: 'A real Martian feature, an older tunnel' }
+      - { name: Crawlway, why: 'A dug tunnel between two hexes' }
+    art:
+      - { title: Two mouths, brief: 'Two tunnel mouths in the ice, frost around each.' }
+      - { title: Cross-section, brief: 'A cut-away of the ground: a tunnel joining two hexes underneath.' }
+      - { title: Markers, brief: 'Two tunnel markers on the map, a dotted line between them.' }
+
+expansion:
+  expansion:
+    names:
+      - { name: Reinforcements, why: 'A new mech, rolled and placed' }
+      - { name: Fresh Chassis, why: 'A new frame from the workshop' }
+      - { name: Drop Pod, why: 'How the new mech arrives' }
+    art:
+      - { title: Pod at a habitat, brief: 'A drop pod landing beside your habitat, its door opening.' }
+      - { title: Rollout, brief: "A new mech walking out of a workshop's doors." }
+      - { title: Crate, brief: 'A mech still in its shipping frame, crew cutting the straps.' }

@@ -84,6 +84,12 @@ packages/engine/src/data/
   regolith.json       built by scripts/build-data.mjs, as cards.json is
 ```
 
+**Choosing names and art.** [card-ideas.yaml](card-ideas.yaml) holds three name candidates and three
+screenprint art briefs for every card; `npm run regolith:picks` builds them into the
+[Regolith Card Picks](https://claude.ai/artifact/TMRLCRjR8BTSeGU8NrDWA1) page, where each card keeps its
+name, takes a candidate or a name typed in, and gets an art brief and a note. The picks are saved with the
+page; settled ones go into `regolith.yaml` as `renamed` cards.
+
 **The first version is a copy.** Every Community card appears once, with the same name, text, category
 and count, and `effect` pointing at the Community card's rule (`effect: agile`). The game then plays
 exactly as Prototyping does today, but from its own deck. Ingenious ("conquer from the corners") is left
