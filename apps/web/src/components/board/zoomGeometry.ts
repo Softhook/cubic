@@ -1,9 +1,14 @@
 /** The board zoom's geometry (useBoardZoom): where the board may be, for a wrap of a given size. Pure, so it's tested. */
 
-/** Zoomed in, a space is at most this big, or `MAX_ZOOM` times its fitted size where that is bigger. */
-const MAX_CELL = 80;
-/** How far in a big screen zooms, where the fitted spaces are near `MAX_CELL` or past it already. */
-const MAX_ZOOM = 1.8;
+/** Zoomed in, a space is at most this many times its fitted size, where the tile images allow it. */
+const MAX_ZOOM = 4;
+/** However coarse the tile images, zooming goes at least this far. */
+const MIN_ZOOM = 1.8;
+/**
+ * How far past their sharp size the tile images may be stretched: they're soft noise, so a little is hard to see,
+ * and what's drawn over them (ships, dice, labels) is vector and sharp at any size.
+ */
+const STRETCH = 1.5;
 
 export interface View {
   /** The space's size in pixels. */
@@ -25,9 +30,14 @@ export interface Frame {
   max: number;
 }
 
-export function frame(w: number, h: number, rows: number, cols: number): Frame {
+/**
+ * The frame, zooming in to `STRETCH` times `sharp` px spaces, the largest the tile images stay sharp at on this
+ * screen (tileImages `SHARP_CELL` over its device pixel ratio), and between `MIN_ZOOM` and `MAX_ZOOM` times the
+ * fitted size whatever that is.
+ */
+export function frame(w: number, h: number, rows: number, cols: number, sharp: number): Frame {
   const fit = Math.max(8, Math.min(140, Math.floor(Math.min(w / cols, h / rows))));
-  return { rows, cols, w, h, fit, max: Math.max(MAX_CELL, Math.round(fit * MAX_ZOOM)) };
+  return { rows, cols, w, h, fit, max: Math.round(Math.max(fit * MIN_ZOOM, Math.min(fit * MAX_ZOOM, sharp * STRETCH))) };
 }
 
 /** Whether zooming does anything here. */

@@ -2,21 +2,26 @@
 import { describe, expect, it } from 'vitest';
 import { canZoom, centredOn, fitted, frame, place, rubber, softCell, zoomAround } from '../src/components/board/zoomGeometry';
 
-// A Moto G55 upright: a 9×9 map in the space above the bottom sheet.
-const phone = frame(404, 560, 9, 9);
+// A Moto G55 upright: a 9×9 map in the space above the bottom sheet, its tiles sharp to 72px spaces (192 / 2.67).
+const phone = frame(404, 560, 9, 9, 72);
 
 describe('frame', () => {
-  it('fits the whole board, and zooms in to 80px spaces', () => {
+  it('fits the whole board, and zooms in to 1.5× the size the tiles stay sharp at', () => {
     expect(phone.fit).toBe(44);
-    expect(phone.max).toBe(80);
+    expect(phone.max).toBe(108);
     expect(canZoom(phone)).toBe(true);
   });
 
-  it('zooms a big screen’s spaces to 1.8× their fitted size', () => {
-    const desk = frame(700, 700, 9, 9); // 77px spaces
-    expect(desk.max).toBe(139);
-    expect(canZoom(desk)).toBe(true);
-    expect(zoomAround(desk, fitted(desk), 10, 350, 350).cell).toBe(139);
+  it('zooms in no further than 4× the fitted size', () => {
+    const desk = frame(700, 700, 9, 9, 400); // 77px spaces
+    expect(desk.max).toBe(308);
+    expect(zoomAround(desk, fitted(desk), 10, 350, 350).cell).toBe(308);
+  });
+
+  it('zooms in to 1.8× the fitted size however coarse the tiles', () => {
+    const retina = frame(1000, 1000, 9, 9, 96); // 111px spaces, sharp to 96
+    expect(retina.max).toBe(200);
+    expect(canZoom(retina)).toBe(true);
   });
 });
 
@@ -52,15 +57,15 @@ describe('zooming', () => {
     expect((250 - to.y) / to.cell).toBeCloseTo((250 - from.y) / from.cell);
   });
 
-  it('stops at the fitted size and at 80px spaces', () => {
+  it('stops at the fitted size and at the closest', () => {
     expect(zoomAround(phone, fitted(phone), 0.5, 200, 200)).toEqual(fitted(phone));
-    expect(zoomAround(phone, fitted(phone), 10, 200, 200).cell).toBe(80);
+    expect(zoomAround(phone, fitted(phone), 10, 200, 200).cell).toBe(108);
   });
 
   it('pinched past the limits, gives less and less', () => {
     expect(softCell(phone, 60)).toBe(60);
-    expect(softCell(phone, 160)).toBeGreaterThan(80);
-    expect(softCell(phone, 160)).toBeLessThan(100);
+    expect(softCell(phone, 160)).toBeGreaterThan(108);
+    expect(softCell(phone, 160)).toBeLessThan(130);
     expect(softCell(phone, 22)).toBeLessThan(44);
     expect(softCell(phone, 22)).toBeGreaterThan(35);
   });

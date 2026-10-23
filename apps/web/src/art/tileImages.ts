@@ -16,6 +16,7 @@ import {
   type World,
 } from '@quantum/art';
 import { rasterise, rasteriseWithCutout } from '../files';
+import { COARSE } from '../game/useMediaQuery';
 import { idle, storeImage, storedImage } from './imageStore';
 
 /**
@@ -29,8 +30,14 @@ import { idle, storeImage, storedImage } from './imageStore';
  * so changing the artwork redraws it.
  */
 
-/** Pixel size of a stored tile: the largest on-screen tile (3 × 92 px cells) at 2× device pixels. */
-const SIZE = 576;
+/**
+ * Pixel size of a stored tile: bigger on a computer, so a high-density screen zooms further in sharp, but not on
+ * a touch screen (phones, tablets), where it would cost the memory of every tile on the map.
+ */
+const SIZE = typeof matchMedia === 'function' && !matchMedia(COARSE).matches ? 768 : 576;
+
+/** Device pixels a space of a stored tile has, which sets how far the map zooms in (zoomGeometry `frame`). */
+export const SHARP_CELL = (SIZE * TILE.cell) / TILE.size;
 
 /** A layer's image size, px: its area (art `RASTER_AREA`) at the tile's. */
 const pixels = (layer: RasterLayer) => Math.round((SIZE * RASTER_AREA[layer].w) / TILE.size);

@@ -174,8 +174,8 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
   (wells, hatching), `label`, `space` (sky, planet, moons), `voids` (the Void hearts) and `index`, which
   puts a tile together in its look. The ground's own parts are in `regolith/` (its `index.ts` lists them).
 - **Loading.** Drawing a tile's noise filters takes ~45 ms, so the game draws each tile's sky (one per
-  shape) and body once to 576 px images and keeps them in the browser's IndexedDB
-  ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)), whatever the map and wherever its planet sits.
+  shape) and body once to images 768 px across (576 px on touch screens, to save memory) and keeps them
+  in the browser's IndexedDB ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)), whatever the map and wherever its planet sits.
   Bodies and square skies are drawn in the background while the lobby is open; later games and window
   resizes reuse the stored images. Each stored image carries a hash of its SVG, so changing the artwork
   redraws only what changed.

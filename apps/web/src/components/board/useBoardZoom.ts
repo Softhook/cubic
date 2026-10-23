@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { SHARP_CELL } from '../../art/tileImages';
 import { REDUCED_MOTION } from '../../game/useMediaQuery';
 import { canZoom as zoomable, centredOn, clampCell, fitted, frame, place, softCell, zoomAround, type View } from './zoomGeometry';
 
@@ -85,7 +86,7 @@ export function useBoardZoom(wrap: RefObject<HTMLDivElement>, board: RefObject<H
     return () => ro.disconnect();
   }, [wrap]);
 
-  const f = frame(size.w, size.h, rows, cols);
+  const f = frame(size.w, size.h, rows, cols, SHARP_CELL / (window.devicePixelRatio || 1));
   const canZoom = zoomable(f);
   const zoomed = canZoom && view.map === map && view.zoom > 1.001;
   const current = zoomed ? place(f, clampCell(f, f.fit * view.zoom), view.x, view.y) : fitted(f);
