@@ -6,9 +6,6 @@ import { H, type Part, placed, merged, disc, square, box, graded, glow, lamp } f
 
 /** Ships, rovers and the small things round a base: landing pads and what stands on them, crates, beacons, an old probe. */
 
-/** A ship's legs: they stand on a pad's deck, so above it. */
-const SHIP_LEGS = 'rgb(206,120,200)';
-
 /** Four landing legs splayed out to `reach`, each on a foot, `height` high. */
 const legs = (reach: number, angles = [45, 135, 225, 315], height = H.pipe) =>
   angles
@@ -18,15 +15,16 @@ const legs = (reach: number, angles = [45, 135, 225, 315], height = H.pipe) =>
     })
     .join('');
 
+/** A ship's legs: they stand on a pad's deck, so above it. */
+const shipLegs = (reach: number) => legs(reach, undefined, 'rgb(206,120,200)');
+
 /** A rocket stood on its tail, seen from above: the nose high in the middle, four fins and four legs, banded. */
 const rocket = (r: Rng): Part => {
   const band = r.pick(['#e8322a', '#2a2d30', '#2f6fd0']);
   const fins = [0, 90, 180, 270].map((a) => `<path d="M0,0 L9,0" transform="rotate(${a})"`);
   return {
     heights:
-      legs(9.5, undefined, SHIP_LEGS) +
-      fins.map((f) => `${f} stroke="rgb(218,160,200)" stroke-width="1.8"/>`).join('') +
-      disc(0, 0, 5.4, 'url(#rg-nose)'),
+      shipLegs(9.5) + fins.map((f) => `${f} stroke="rgb(218,160,200)" stroke-width="1.8"/>`).join('') + disc(0, 0, 5.4, 'url(#rg-nose)'),
     tint: fins.map((f) => `${f} stroke="${band}" stroke-width="2.2"/>`).join('') + disc(0, 0, 5.6, '#f2f2ee'),
     paint:
       `<circle r="3.9" fill="none" stroke="${band}" stroke-width="0.9" opacity="0.85"/>` +
@@ -56,7 +54,7 @@ const spaceplane = (): Part => {
 const lander = (): Part => {
   const hex = [0, 60, 120, 180, 240, 300].map((a) => `${n(polar(a, 5).x)},${n(polar(a, 5).y)}`).join(' ');
   return {
-    heights: legs(9, undefined, SHIP_LEGS) + `<polygon points="${hex}" fill="rgb(225,90,190)"/>` + disc(1.5, -1, 1.8, 'rgb(244,150,215)'),
+    heights: shipLegs(9) + `<polygon points="${hex}" fill="rgb(225,90,190)"/>` + disc(1.5, -1, 1.8, 'rgb(244,150,215)'),
     tint: `<polygon points="${hex}" fill="#d9a531" stroke="#d9a531" stroke-width="0.6"/>` + disc(1.5, -1, 2, '#e9ecee'),
     paint:
       `<polygon points="${hex}" fill="none" stroke="#5b3a08" stroke-width="0.4" opacity="0.6"/>` +

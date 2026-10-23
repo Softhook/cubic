@@ -38,7 +38,9 @@ export function printedTileSvgNow(t: TileSpec, o: Omit<TileOptions, 'ground'>): 
  * a tile's ground is the same whatever's printed over it (markings, bleed, fonts), so its thumbnail, detail and
  * exports share it. Each is some 2.3 MB, so only the latest `KEEP_GROUNDS` are kept: a set of tiles on one world.
  */
-const grounds = new Map<string, { url: Promise<string>; drawn?: string }>();
+const grounds = new Map<string, Ground>();
+/** A ground being drawn, and once it is, the drawing. */
+type Ground = { url: Promise<string>; drawn?: string };
 const KEEP_GROUNDS = 32;
 
 /** Whether a tile's ground is drawn, so `printedTileSvgNow` has it. */
@@ -54,10 +56,9 @@ export function litGround(t: TileSpec, o: TileView): Promise<string> {
   if (ground) grounds.delete(key);
   else {
     const px = REGOLITH_GROUND_PX;
-    const url = rasterise(tileGroundSvg(t, o)!, px, px).then(blobToDataUrl);
-    const entry: { url: Promise<string>; drawn?: string } = { url };
-    url.then((u) => (entry.drawn = u)).catch(() => grounds.delete(key));
-    ground = entry;
+    const drawing: Ground = { url: rasterise(tileGroundSvg(t, o)!, px, px).then(blobToDataUrl) };
+    drawing.url.then((u) => (drawing.drawn = u)).catch(() => grounds.delete(key));
+    ground = drawing;
   }
   // Last in the map is the latest used, so the first is the one to let go.
   grounds.set(key, ground);
@@ -69,6 +70,7 @@ export function litGround(t: TileSpec, o: TileView): Promise<string> {
 const thumbnails = new Map<string, Promise<string>>();
 /** A tile's latest thumbnail in each look, to show while its next is drawn (a reroll, markings on or off). */
 const latestThumbnails = new Map<string, string>();
+const latestKey = (t: TileSpec, look: TileOptions['look']) => `${t.id}:${look}`;
 
 /**
  * A tile as it prints, drawn small (`px` across) for a thumbnail: on a world's ground, its own ground drawn
@@ -81,14 +83,14 @@ export function thumbnail(t: TileSpec, o: Omit<TileOptions, 'ground'>, px: numbe
     url = printedTileSvg(t, o)
       .then((svg) => rasterise(svg, px, px))
       .then((blob) => URL.createObjectURL(blob));
-    url.then((u) => latestThumbnails.set(`${t.id}:${o.look}`, u)).catch(() => thumbnails.delete(key));
+    url.then((u) => latestThumbnails.set(latestKey(t, o.look), u)).catch(() => thumbnails.delete(key));
     thumbnails.set(key, url);
   }
   return url;
 }
 
 /** The latest thumbnail drawn of a tile in a look (`thumbnail`), if any. */
-export const latestThumbnail = (t: TileSpec, look: TileOptions['look']) => latestThumbnails.get(`${t.id}:${look}`);
+export const latestThumbnail = (t: TileSpec, look: TileOptions['look']) => latestThumbnails.get(latestKey(t, look));
 
 /**
  * A tile as a printable face, named for where its planet sits when that's not the middle, and for the

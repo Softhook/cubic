@@ -46,15 +46,27 @@ const MARS_RAMP =
  */
 const relief = (scale: number) => n((scale * 0.28) / LIT);
 
+/**
+ * Shadow (`SHD`) where the height map `height` stands higher towards the light (top left), `d` away, by more
+ * than `-k`, for each `[d, k]` step: hard-edged, a steep ramp from lit to shadow softened by `blur`.
+ */
+const shadow = (height: string, steps: [d: number, k: number][], blur: number, colour: string, opacity: number) =>
+  steps
+    .map(
+      ([d, k], i) =>
+        `<feOffset in="${height}" dx="${d}" dy="${d}" result="o${i}"/>` +
+        `<feComposite in="o${i}" in2="${height}" operator="arithmetic" k2="1" k3="-1" k4="${n(k)}" result="d${i}"/>`,
+    )
+    .join('') +
+  `<feMerge result="sh">${steps.map((_, i) => `<feMergeNode in="d${i}"/>`).join('')}</feMerge>` +
+  '<feComponentTransfer in="sh" result="shA"><feFuncA type="linear" slope="14"/></feComponentTransfer>' +
+  `<feGaussianBlur in="shA" stdDeviation="${blur}" result="shB"/>` +
+  `<feFlood flood-color="${colour}" flood-opacity="${opacity}"/>` +
+  '<feComposite in2="shB" operator="in" result="SHD"/>';
+
 /** The light: the height map gains fine noise where it isn't smooth, is lit from the top left, shadowed, tinted for its world and grained. Over `area`, in board units. */
 export function ground(r: Rng, area: Box, world: World): string {
   const s = () => r.noiseSeed();
-  // A point is in shadow where the ground towards the light, `d` away, stands higher than it: read from the
-  // height map before its fine noise, as moving the noisy one makes Chrome work it all out again for each
-  // shadow (~65 ms a time), and the noise's own shadows are too small to see.
-  const offset = (d: number, k: number, i: number) =>
-    `<feOffset in="H0" dx="${d}" dy="${d}" result="o${i}"/>` +
-    `<feComposite in="o${i}" in2="H0" operator="arithmetic" k2="1" k3="-1" k4="${k}" result="d${i}"/>`;
   const light = '<feDistantLight azimuth="225" elevation="22"/>';
   return (
     `<filter id="rg-ground" filterUnits="userSpaceOnUse" ${region(area)} color-interpolation-filters="sRGB">` +
@@ -85,16 +97,21 @@ export function ground(r: Rng, area: Box, world: World): string {
     '<feComposite in="nzm" in2="rgm" operator="arithmetic" k2="0.7" k3="0.3" result="HN"/>' +
     `<feDiffuseLighting in="HN" kernelUnitLength="${LIT}" surfaceScale="${relief(4.3)}" diffuseConstant="1.3" lighting-color="#ffffff" result="LN">${light}</feDiffuseLighting>` +
     '<feComposite in="LS" in2="LN" operator="arithmetic" k2="1" k3="1" k4="-0.487" result="L"/>' +
-    offset(1.2, -0.06, 1) +
-    offset(2.5, -0.13, 2) +
-    offset(5, -0.26, 3) +
-    offset(9, -0.47, 4) +
-    '<feMerge result="sh"><feMergeNode in="d1"/><feMergeNode in="d2"/><feMergeNode in="d3"/><feMergeNode in="d4"/></feMerge>' +
-    // Hard-edged, as the mechs' shadows: a steep ramp from lit to shadow, barely softened.
-    '<feComponentTransfer in="sh" result="shA"><feFuncA type="linear" slope="14"/></feComponentTransfer>' +
-    '<feGaussianBlur in="shA" stdDeviation="0.12" result="shB"/>' +
-    '<feFlood flood-color="#1E1C1A" flood-opacity="0.85"/>' +
-    '<feComposite in2="shB" operator="in" result="SHD"/>' +
+    // Shadowed as read from the height map before its fine noise, as moving the noisy one makes Chrome work
+    // it all out again for each shadow (~65 ms a time), and the noise's own shadows are too small to see.
+    // Hard-edged, as the mechs' shadows, barely softened.
+    shadow(
+      'H0',
+      [
+        [1.2, -0.06],
+        [2.5, -0.13],
+        [5, -0.26],
+        [9, -0.47],
+      ],
+      0.12,
+      '#1E1C1A',
+      0.85,
+    ) +
     '<feMerge result="Ls"><feMergeNode in="L"/><feMergeNode in="SHD"/></feMerge>' +
     '<feColorMatrix in="ALB" type="matrix" values="0 0 0 1 0  0 0 0 1 0  0 0 0 1 0  0 0 0 0 1" result="albG"/>' +
     '<feColorMatrix in="broad" type="matrix" values="0 0 1 0 0  0 0 1 0 0  0 0 1 0 0  0 0 0 0 1" result="anG"/>' +
@@ -137,18 +154,13 @@ export function built(r: Rng, area: Box): string {
     '<feComposite in="lit" in2="specM" operator="arithmetic" k2="1" k3="0.6" result="lit2"/>' +
     // Shadowed where something taller stands towards the light, as long as the ground's cast ones (a height
     // of 1 throws 42), so a ship's falls across its pad and a tank's across its deck.
-    [1, 2, 3.5, 5, 7, 9.5, 12.5, 16]
-      .map(
-        (d, i) =>
-          `<feOffset in="H" dx="${d}" dy="${d}" result="o${i}"/>` +
-          `<feComposite in="o${i}" in2="H" operator="arithmetic" k2="1" k3="-1" k4="${n(-d / 42)}" result="d${i}"/>`,
-      )
-      .join('') +
-    `<feMerge result="sh">${[0, 1, 2, 3, 4, 5, 6, 7].map((i) => `<feMergeNode in="d${i}"/>`).join('')}</feMerge>` +
-    '<feComponentTransfer in="sh" result="shA"><feFuncA type="linear" slope="14"/></feComponentTransfer>' +
-    '<feGaussianBlur in="shA" stdDeviation="0.3" result="shB"/>' +
-    '<feFlood flood-color="#000" flood-opacity="0.75"/>' +
-    '<feComposite in2="shB" operator="in" result="SHD"/>' +
+    shadow(
+      'H',
+      [1, 2, 3.5, 5, 7, 9.5, 12.5, 16].map((d) => [d, -d / 42]),
+      0.3,
+      '#000',
+      0.75,
+    ) +
     '<feMerge result="lit3"><feMergeNode in="lit2"/><feMergeNode in="SHD"/></feMerge>' +
     // Warm steel, key ink to bone, as the ground.
     `<feComponentTransfer in="lit3"><feFuncR ${ramp('0.118 0.24 0.45 0.66 0.84 0.93')}/><feFuncG ${ramp('0.11 0.22 0.42 0.62 0.8 0.89')}/><feFuncB ${ramp('0.102 0.2 0.37 0.55 0.72 0.8')}/></feComponentTransfer>` +

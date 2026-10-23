@@ -59,18 +59,19 @@ export function TileLab() {
   // The number and label fonts, embedded in the detail view and the print files (thumbnails use the system's).
   const fonts = useFontCss(tileFontCss);
 
+  const world = lookWorld(look);
+
   const specs = useMemo(() => TILE_SET.map((t) => ({ ...t, ...overrides[t.id] })), [overrides]);
   // Drawn live where there's no thumbnail as it prints yet (below): in space, and on a world till it's drawn.
   const thumbs = useMemo(
     () =>
       specs.map((t) => ({
         spec: t,
-        url: lookWorld(view.look) && latestThumbnail(t, view.look) ? '' : dataUrl(tileSvg(t, { ...view, markings, rounded: true })),
+        url: world && latestThumbnail(t, look) ? '' : dataUrl(tileSvg(t, { ...view, markings, rounded: true })),
       })),
-    [specs, markings, view],
+    [specs, markings, view, world, look],
   );
   const spec = specs.find((t) => t.id === selected)!;
-  const world = lookWorld(look);
 
   // On a world's ground the light depends on the size it's drawn at (Chrome ignores `kernelUnitLength`), so a
   // tile drawn live at a thumbnail's or the detail's size isn't what prints. Each is shown as it prints, as the
