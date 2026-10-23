@@ -44,6 +44,8 @@ const DECK: Record<CardDeck, { name: string; kind: string; dark: boolean }> = {
 const BOLD = new Set([
   'Research',
   'Power',
+  'Atomic',
+  'Atomics',
   'Combat',
   'Claim',
   'Claiming',

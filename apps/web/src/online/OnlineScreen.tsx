@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { say } from '@quantum/engine';
 import { unclaimedSeats, type AskMode, type Replay } from '@quantum/online';
 import { Dialog, Modal } from '../components/Dialog';
 import { Game } from '../components/GameScreen';
@@ -150,6 +151,8 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
   const r = g.replay!;
   const open = unclaimedSeats(r).length;
   const ask = g.mySeats.length ? r.seats[g.mySeats[0]].ask : null;
+  const askTipText = "When to wait for you to fire a missile or re-roll in a battle. Battles you're not asked about resolve without you.";
+  const askTip = g.view ? say(g.view.game, askTipText) : askTipText;
   const copy = async () => {
     const url = inviteLink(secret);
     try {
@@ -217,7 +220,7 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
           className="ask-select"
           value={ask}
           aria-label="Battles to be asked about"
-          title="When to wait for you to fire a missile or re-roll in a battle. Battles you're not asked about resolve without you."
+          title={askTip}
           onChange={(e) => g.setAsk(e.target.value as AskMode)}
         >
           {(Object.keys(ASK_LABELS) as AskMode[]).map((m) => (
