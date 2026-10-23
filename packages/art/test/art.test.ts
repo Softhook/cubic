@@ -360,7 +360,7 @@ describe('screenprint cards', () => {
     expect(new Set(scenes).size).toBe(scenes.length);
   });
 
-  it('poses every mech front on and turned, both ways, standing on the ground', () => {
+  it('poses every mech front on and turned both ways, in 3D, without bad numbers', () => {
     for (const kind of Object.keys(RIGS) as MechKind[])
       for (const yaw of [0, 35, -35]) {
         const svg = mech(kind, {
@@ -369,7 +369,6 @@ describe('screenprint cards', () => {
           size: 1,
           pose: { yaw, legs: { plus: [-20, 30], minus: [15, 0] } },
           ink: ON_PAPER,
-          paper: INKS.paper,
         });
         expect(svg, `${kind} ${yaw}`).not.toMatch(/NaN|undefined|Infinity/);
       }

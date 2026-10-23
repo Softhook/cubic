@@ -378,7 +378,6 @@ export function mech(
     pose,
     flip: o.flip,
     ink: o.ink ?? s.ink,
-    paper: s.paper,
     plate: o.plate === false ? undefined : { colour: o.plate ?? s.plate, dx: OFFSET.dx * (size / 0.15), dy: OFFSET.dy * (size / 0.15) },
   });
 }

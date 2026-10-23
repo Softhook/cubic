@@ -141,18 +141,19 @@ palette and type differ throughout, and `cardSvg` stays as it is for Community a
 ```
 packages/art/src/screenprint/
   inks.ts     paper, night paper, key ink, bone; oxide, ice and dust plates; amber; habitat green, crystal violet
-  mechs.ts    the six mechs as rigs: the Silhouettes board's parts, cut at their joints
-  pose.ts     a mech posed (joint angles, lean, aim), stood on its lowest foot, turned to three-quarters, plated
+  mechs.ts    the six mechs as rigs: the Silhouettes board's parts, cut at their joints, with their depths
+  pose.ts     a mech posed (joint angles, lean, aim), stood on its lowest foot, turned in 3D, plated
   kit.ts      the stage (sky, each world's ground), the tiles' buildings and small things, crews, effects
   card.ts     screenprintCardSvg(face), screenprintBackSvg(deck): the face and back layouts
   scenes.ts   one scene per Regolith card, keyed by card id, drawn from its art brief, with its caption
 ```
 
 - **The real mechs.** Every mech on a card is one of the six from the Silhouettes board, part for part,
-  rigged: each limb turns at its joints, a mech leans or aims, and stands on its lowest foot. Turned to
-  three-quarters its front narrows, its hull gets a side face in a second ink, and its far limbs fall
-  back in the far ink, as the board draws them. The same rig at large scale, cropped by the art window,
-  makes the close-ups (a knee joint, a hull, a gun).
+  rigged: each limb turns at its joints, a mech leans or aims, and stands on its lowest foot. Turned, it
+  is drawn in 3D: every part is its outline pushed back through its depth (the hull's, or its limb's
+  thickness), the mech turned about its upright axis, each limb and the hull drawn far to near; the
+  parts' sides print one step lighter than the key ink, edged where a corner runs back. The same rig at
+  large scale, cropped by the art window, makes the close-ups (a knee joint, a hull, a gun).
 - **The map's buildings and ground.** The kit draws, side on, what the tiles have from above
   (regolith/base.ts): the habitat's great dome, greenhouses and solar panels; the refinery's tanks, flare
   stacks and pipework; the ice mine's rig, shed, silos and ice heap; the reactor's cooling tower and

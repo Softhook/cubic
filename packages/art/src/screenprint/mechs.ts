@@ -7,8 +7,8 @@
 
 /** How a part is printed: key ink and seams (`k`), a joint (`j`), a recess (`r`), a seam line (`l`), a hydraulic rod (`rod`), a light or slit in the paper's colour (`p` stroked, `pf` filled), a thin key stroke (`w`), the rifle's lighter metal (`gun`). */
 type Kind = 'k' | 'j' | 'r' | 'l' | 'rod' | 'p' | 'pf' | 'w' | 'gun';
-/** A part: how it's printed, its path, and a stroke width where it's stroked. */
-type Part = readonly [Kind, string, number?];
+/** A part: how it's printed, its path, a stroke width where it's stroked, and how far in front of (+) or behind (−) its limb or hull's middle it stands, in depth. */
+type Part = readonly [Kind, string, number?, number?];
 
 /** One segment of a limb: it turns about `pivot` (rest coordinates), carrying the segments after it. */
 interface Seg {
@@ -19,8 +19,10 @@ interface Seg {
 export interface Rig {
   /** Height to the top, for framing. */
   height: number;
-  /** How deep the hull is, for its side face in three-quarter view. */
+  /** How deep the hull is, front to back: it shows in three-quarter view. */
   depth: number;
+  /** How thick the limbs are, front to back (default: half the hull's depth). */
+  limb?: number;
   /** Thigh, shin, foot of the leg at x > 0. */
   leg: readonly Seg[];
   /** Upper arm, forearm (and hand) of the arm at x > 0. */
@@ -196,7 +198,14 @@ export const RIGS: Record<MechKind, Rig> = {
           ['k', 'M32,-92 L56,-90 L60,-66 L40,-60 Z'],
         ],
       },
-      { pivot: [40, -25], parts: [['k', 'M18,-26 L58,-26 L64,-8 L70,0 L46,0 L38,-10 L30,0 L10,0 L16,-8 Z']] },
+      // A flat, splayed foot, as the others'.
+      {
+        pivot: [40, -25],
+        parts: [
+          ['k', 'M16,-26 L60,-26 L68,-10 L74,0 L8,0 L12,-10 Z'],
+          ['l', 'M28,-8 L28,0 M44,-8 L44,0 M60,-8 L60,0'],
+        ],
+      },
     ],
     arm: [
       {
@@ -376,26 +385,29 @@ export const RIGS: Record<MechKind, Rig> = {
   wisp: {
     height: 138,
     depth: 60,
+    limb: 10,
     scale: 1.2,
     leg: [
       {
         pivot: [27, -76],
         parts: [
-          ['j', 'M26,-90 L74,-118 L79,-110 L32,-82 Z'],
-          ['j', circ(76, -114, 5)],
-          ['j', 'M71,-112 L80,-112 L90,0 L81,0 Z'],
-          ['k', 'M24,-80 L54,-106 L61,-98 L30,-72 Z'],
+          // The back leg, behind the front one, on the same foot.
+          ['j', 'M26,-90 L74,-118 L79,-110 L32,-82 Z', undefined, -24],
+          ['j', circ(76, -114, 5), undefined, -24],
+          ['j', 'M71,-112 L80,-112 L87,-10 L80,-10 Z', undefined, -24],
+          ['j', 'M70,-10 L96,-10 L100,0 L66,0 Z', undefined, -24],
+          ['k', 'M24,-80 L54,-106 L61,-98 L30,-72 Z', undefined, 16],
         ],
       },
       {
         pivot: [57, -102],
         parts: [
-          ['k', circ(57, -102, 6)],
-          ['k', 'M52,-100 L63,-100 L61,-8 L53,-8 Z'],
-          ['l', 'M52,-60 L62,-60'],
+          ['k', circ(57, -102, 6), undefined, 16],
+          ['k', 'M52,-100 L63,-100 L61,-8 L53,-8 Z', undefined, 16],
+          ['l', 'M52,-60 L62,-60', undefined, 16],
         ],
       },
-      { pivot: [57, -9], parts: [['k', 'M44,-10 L70,-10 L74,0 L40,0 Z']] },
+      { pivot: [57, -9], parts: [['k', 'M44,-10 L70,-10 L74,0 L40,0 Z', undefined, 16]] },
     ],
     arm: [],
     hull: [
