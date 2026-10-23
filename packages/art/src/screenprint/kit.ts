@@ -351,13 +351,16 @@ export interface PartPlacing {
 /** The plate's offset in mm, the same for every part on a card. */
 const OFFSET = { dx: 0.55, dy: -0.35 };
 
+/** Whether parts print their colour plate off register under them (the coloured shadow); off for now. */
+export const OFF_REGISTER = false;
+
 /** A part printed in its passes at `x`, `y`. */
 export function print(s: Stage, name: PartName, x: number, y: number, o: PartPlacing): string {
   const p: Print = PARTS[name];
   const t = (dx: number, dy: number) =>
     ` transform="translate(${n(x + dx)},${n(y + dy)}) scale(${n(o.flip ? -o.size : o.size)},${n(o.size)})"`;
   const pass = (body: string, ink: string, dx = 0, dy = 0) => `<g${t(dx, dy)} style="color:${ink};fill:${ink}">${body}</g>`;
-  const plate = o.plate === false ? '' : pass(p.key + (p.spot ?? ''), o.plate ?? s.plate, OFFSET.dx, OFFSET.dy);
+  const plate = o.plate === false || !OFF_REGISTER ? '' : pass(p.key + (p.spot ?? ''), o.plate ?? s.plate, OFFSET.dx, OFFSET.dy);
   const spotInk = o.spot === false ? s.key : (o.spot ?? p.spotInk ?? s.plate);
   return plate + pass(p.key, s.key) + (p.spot ? pass(p.spot, spotInk) : '') + (p.acc ? pass(p.acc, INKS.amber) : '');
 }
@@ -379,7 +382,10 @@ export function mech(
     pose,
     flip: o.flip,
     ink: o.ink ?? s.ink,
-    plate: o.plate === false ? undefined : { colour: o.plate ?? s.plate, dx: OFFSET.dx * (size / 0.15), dy: OFFSET.dy * (size / 0.15) },
+    plate:
+      o.plate === false || !OFF_REGISTER
+        ? undefined
+        : { colour: o.plate ?? s.plate, dx: OFFSET.dx * (size / 0.15), dy: OFFSET.dy * (size / 0.15) },
   });
 }
 

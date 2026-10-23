@@ -238,9 +238,7 @@ export function screenprintBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure
     mech(s, 'chameleon', W * 0.36, H * 0.72, 0.17, { yaw: 30 }) +
     (o.plain
       ? ''
-      : stencil('REGOLITH', W / 2 + 0.6, H * 0.88 + 0.4, 9, s.plate) +
-        stencil('REGOLITH', W / 2, H * 0.88, 9, s.key) +
-        label(DECK[deck].name.toUpperCase(), W / 2, H * 0.88 + 4.4, 2, s.key)) +
+      : stencil('REGOLITH', W / 2, H * 0.88, 9, s.key) + label(DECK[deck].name.toUpperCase(), W / 2, H * 0.88 + 4.4, 2, s.key)) +
     `<rect x="3" y="3" width="${W - 6}" height="${H - 6}" fill="none" stroke="${s.key}" stroke-width="0.5"/>`;
   return finish({ defs: screens(s) + s.defs.join(''), body: rect(area, s.paper) + body }, area, id, o);
 }

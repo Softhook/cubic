@@ -4,6 +4,7 @@ import { INKS, ON_PAPER } from './inks';
 import {
   GROUND,
   flash,
+  OFF_REGISTER,
   ht,
   label,
   land,
@@ -46,7 +47,7 @@ const stroke = (d: string, ink: string, w: number, extra = '') =>
   `<path d="${d}" fill="none" stroke="${ink}" stroke-width="${n(w)}" stroke-linecap="round" stroke-linejoin="round"${extra}/>`;
 /** A shape printed with its plate a little off register under it. */
 const plated = (s: Stage, body: (ink: string) => string, plate = s.plate) =>
-  `<g transform="translate(0.55,-0.35)">${body(plate)}</g>` + body(s.key);
+  (OFF_REGISTER ? `<g transform="translate(0.55,-0.35)">${body(plate)}</g>` : '') + body(s.key);
 
 /** A gloved hand: a mitten from the wrist at `x`, `y`, turned `deg`, `size` mm long. */
 const glove = (x: number, y: number, size: number, deg: number, ink: string) =>
