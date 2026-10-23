@@ -8,25 +8,30 @@ import { LIT } from './core';
  * the buildings' own harder light, their cast shadows and Mars's dust on them.
  */
 
-/** The moon: cool grey dust, a touch blue in the shadows. */
+/**
+ * The ground's colours are the mechs' inks (mood board GroundMechs, look 1): from key ink (#1E1C1A),
+ * never black, up to bone on the moon, and through oxide (#E0703A) to Jupiter (#D9A066) on Mars.
+ */
+
+/** The moon: warm grey dust, key ink in the shadows and bone (#E6DDC8) in the light. */
 const MOON_RAMP =
   '<feComponentTransfer in="lit2" result="ramp">' +
-  '<feFuncR type="table" tableValues="0.02 0.08 0.2 0.37 0.55 0.72 0.86"/>' +
-  '<feFuncG type="table" tableValues="0.025 0.085 0.2 0.36 0.53 0.69 0.83"/>' +
-  '<feFuncB type="table" tableValues="0.035 0.095 0.205 0.35 0.5 0.65 0.79"/>' +
+  '<feFuncR type="table" tableValues="0.118 0.18 0.29 0.435 0.604 0.769 0.902"/>' +
+  '<feFuncG type="table" tableValues="0.11 0.169 0.275 0.416 0.573 0.733 0.867"/>' +
+  '<feFuncB type="table" tableValues="0.102 0.157 0.251 0.376 0.51 0.651 0.784"/>' +
   '</feComponentTransfer>';
 
-/** Mars: rust and ochre dust, and patches of dark basalt where the wind swept it bare (the broad noise's alpha lays them). */
+/** Mars: oxide and ochre dust, and patches of dark basalt where the wind swept it bare (the broad noise's alpha lays them). */
 const MARS_RAMP =
   '<feComponentTransfer in="lit2" result="dust">' +
-  '<feFuncR type="table" tableValues="0.03 0.13 0.33 0.55 0.74 0.88 0.96"/>' +
-  '<feFuncG type="table" tableValues="0.015 0.05 0.13 0.25 0.38 0.52 0.66"/>' +
-  '<feFuncB type="table" tableValues="0.01 0.03 0.07 0.13 0.21 0.31 0.43"/>' +
+  '<feFuncR type="table" tableValues="0.118 0.227 0.412 0.627 0.824 0.871 0.91"/>' +
+  '<feFuncG type="table" tableValues="0.11 0.122 0.192 0.29 0.408 0.584 0.78"/>' +
+  '<feFuncB type="table" tableValues="0.102 0.0863 0.122 0.165 0.227 0.376 0.612"/>' +
   '</feComponentTransfer>' +
   '<feComponentTransfer in="lit2" result="rock">' +
-  '<feFuncR type="table" tableValues="0.02 0.06 0.13 0.22 0.32 0.42 0.5"/>' +
-  '<feFuncG type="table" tableValues="0.015 0.045 0.1 0.16 0.23 0.31 0.39"/>' +
-  '<feFuncB type="table" tableValues="0.015 0.045 0.1 0.15 0.21 0.28 0.35"/>' +
+  '<feFuncR type="table" tableValues="0.118 0.149 0.227 0.322 0.431 0.549 0.659"/>' +
+  '<feFuncG type="table" tableValues="0.11 0.137 0.208 0.294 0.396 0.51 0.616"/>' +
+  '<feFuncB type="table" tableValues="0.102 0.125 0.188 0.263 0.353 0.455 0.549"/>' +
   '</feComponentTransfer>' +
   '<feColorMatrix in="broad" type="matrix" values="0 0 0 1 0  0 0 0 1 0  0 0 0 1 0  0 0 0 0 1" result="pg"/>' +
   '<feComponentTransfer in="pg" result="mD"><feFuncR type="table" tableValues="0 0 0.1 0.9 1 1"/><feFuncG type="table" tableValues="0 0 0.1 0.9 1 1"/><feFuncB type="table" tableValues="0 0 0.1 0.9 1 1"/></feComponentTransfer>' +
@@ -70,7 +75,7 @@ export function ground(r: Rng, area: Box, world: World): string {
     '<feMerge result="sh"><feMergeNode in="d1"/><feMergeNode in="d2"/><feMergeNode in="d3"/><feMergeNode in="d4"/></feMerge>' +
     '<feComponentTransfer in="sh" result="shA"><feFuncA type="linear" slope="9"/></feComponentTransfer>' +
     '<feGaussianBlur in="shA" stdDeviation="0.25" result="shB"/>' +
-    '<feFlood flood-color="#000000" flood-opacity="0.82"/>' +
+    '<feFlood flood-color="#1E1C1A" flood-opacity="0.85"/>' +
     '<feComposite in2="shB" operator="in" result="SHD"/>' +
     '<feMerge result="Ls"><feMergeNode in="L"/><feMergeNode in="SHD"/></feMerge>' +
     '<feColorMatrix in="ALB" type="matrix" values="0 0 0 1 0  0 0 0 1 0  0 0 0 1 0  0 0 0 0 1" result="albG"/>' +
@@ -112,7 +117,8 @@ export function built(r: Rng, area: Box): string {
     `<feSpecularLighting in="H" surfaceScale="7" specularConstant="0.35" specularExponent="18" lighting-color="#ffffff" result="spec">${light}</feSpecularLighting>` +
     '<feComposite in="spec" in2="SMOOTH" operator="in" result="specM"/>' +
     '<feComposite in="lit" in2="specM" operator="arithmetic" k2="1" k3="0.6" result="lit2"/>' +
-    `<feComponentTransfer in="lit2"><feFuncR ${ramp('0.03 0.17 0.39 0.61 0.81 0.95')}/><feFuncG ${ramp('0.035 0.18 0.4 0.62 0.82 0.96')}/><feFuncB ${ramp('0.045 0.2 0.42 0.64 0.84 0.97')}/></feComponentTransfer>` +
+    // Warm steel, key ink to bone, as the ground.
+    `<feComponentTransfer in="lit2"><feFuncR ${ramp('0.118 0.24 0.45 0.66 0.84 0.93')}/><feFuncG ${ramp('0.11 0.22 0.42 0.62 0.8 0.89')}/><feFuncB ${ramp('0.102 0.2 0.37 0.55 0.72 0.8')}/></feComponentTransfer>` +
     '<feComposite in2="SourceAlpha" operator="in"/>' +
     '</filter>'
   );
