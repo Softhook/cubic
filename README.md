@@ -98,7 +98,9 @@ More tools, all headless:
 | [MULTIPLAYER.md](docs/MULTIPLAYER.md) | How serverless online play works, its limits, and the server options |
 | [MOBILE.md](docs/MOBILE.md) | Phone and tablet support: plan, progress and device checks |
 | [GRAPHICS.md](docs/GRAPHICS.md) | The art package, Art Lab and print pipeline |
-| [PROTOTYPING.md](docs/regolith/PROTOTYPING.md) | Ideas for a fourth rule set of our own |
+| [REGOLITH.md](docs/regolith/REGOLITH.md) | Regolith, our own hex-only game: its structure and order of work |
+| [PROTOTYPING.md](docs/regolith/PROTOTYPING.md) | Regolith's rules: the design log, playtests and experiments |
+| [REGOLITH-WORLD.md](docs/regolith/REGOLITH-WORLD.md) | Regolith's names, words and story |
 | [HEX.md](docs/HEX.md) | The Basic game on hex tiles: how the rules read on hexes, the maps, the code |
 | [ROADMAP.md](docs/ROADMAP.md) | Milestones, what's done and the backlog |
 | [VISUAL-IDEAS.md](docs/VISUAL-IDEAS.md) | Ideas for making the game look better and appeal to new players: card art in play, battles, game over, lobby |

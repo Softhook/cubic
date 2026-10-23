@@ -95,7 +95,10 @@ describe('Regolith mode', () => {
     expect(regolith.cards).toBe(REGOLITH_CARDS ? community.cards : null);
     expect(regolith.mapGroups).toEqual(['hex', 'open', 'drift', 'basic']); // 'basic' only in this file: see BASE
     const played = MAPS.filter((m) => ['hex', 'open', 'drift'].includes(m.group));
-    expect(played.every((m) => m.grid === 'hex')).toBe(true);
+    for (const m of played) {
+      expect(m.grid, m.id).toBe('hex');
+      expect(m.world, m.id).toBeDefined();
+    }
     expect(played.map((m) => m.id)).toContain('twin-drift');
     expect(regolith.startingMissiles).toBe(1);
     expect(regolith.maxMovement).toBe(3);

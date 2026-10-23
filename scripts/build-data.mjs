@@ -23,8 +23,8 @@ for (const m of maps)
 for (const m of maps) {
   if (m.grid !== undefined && m.grid !== 'hex') throw new Error(`data/maps.yaml: ${m.id} has grid ${m.grid}`);
   if (m.grid && m.wrap) throw new Error(`data/maps.yaml: ${m.id}: hex maps don't wrap`);
-  if (m.world !== undefined && !(m.grid && ['phobos', 'deimos', 'mars'].includes(m.world)))
-    throw new Error(`data/maps.yaml: ${m.id} has world ${m.world}: only hex maps have one, Phobos, Deimos or Mars`);
+  if ((m.grid || m.world !== undefined) && !(m.grid && ['phobos', 'deimos', 'mars'].includes(m.world)))
+    throw new Error(`data/maps.yaml: ${m.id} has world ${m.world}: every hex map has one, Phobos, Deimos or Mars, and only they do`);
 }
 const parsed = maps.map((m) => ({
   id: m.id,

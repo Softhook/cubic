@@ -1,6 +1,6 @@
 # Regolith
 
-**Regolith** is our own game, and it replaces Prototyping in the lobby. It is played on hex tiles only,
+**Regolith** is our own game, and it took Prototyping's place in the lobby. It is played on hex tiles only,
 on Phobos's, Deimos's and Mars's ground (the Regolith tiles), and has its own cards in the **screenprint** style.
 It starts from the Community Edition cards and moves away from them, card by card, in name, design and
 action. This doc sets out the structure for that: where each part lives, what it reuses, and the order to
@@ -10,8 +10,8 @@ The look comes from the [Regolith mood board](../moodboards/regolith/README.md):
 Vocabulary boards for the cards (flat inks on paper, three passes per part: colour plate, key ink, accent;
 mechs and objectives built from one kit), HexSurface for the ground.
 
-The rules themselves are Prototyping's as they stand ([PROTOTYPING.md](PROTOTYPING.md)) and go on changing
-there: this is a rename and a new identity, not new rules.
+The rules themselves are the ones [PROTOTYPING.md](PROTOTYPING.md) designed, and they go on changing
+there: Regolith is a rename and a new identity, not new rules.
 
 ## Decided (2026-10-22)
 
@@ -24,15 +24,15 @@ there: this is a rename and a new identity, not new rules.
 
 ## What changes, at a glance
 
-| | Prototyping today | Regolith |
+| | Prototyping, before | Regolith |
 |---|---|---|
-| Lobby | "Prototyping" | "Regolith" |
-| Maps | Community's square maps, plus the hex and drift groups | Hex maps only, each on Phobos, Deimos or Mars |
+| Lobby | "Prototyping" | "Regolith" (done) |
+| Maps | Community's square maps, plus the hex and drift groups | Hex maps only, each on Phobos, Deimos or Mars (done) |
 | Tiles | Ground on by default (top-bar switch to space) | The same; ground is the game's look |
 | Rules | Community + cap 3, zones of control, Shoot, contested orbit and deploy | The same, and still changing |
 | Cards | Community's Skills and Tactics (no Ingenious on hexes) | Regolith's own decks, starting as copies of Community's |
 | Card art | `cardSvg`, the holo-grid scenes | A screenprint card renderer and its own scenes |
-| Words | Ship, planet, dominance, research | Mech, objective, control, intel, as the cards adopt them (Vocabulary board) |
+| Words | Ship, planet, dominance, research | Mech, objective, control, intel (Vocabulary board; done in the UI, §7) |
 
 ## 1. The rename
 
@@ -57,12 +57,15 @@ changing the label:
 
 ## 2. Maps: hex only
 
-- `regolithMode()` stops adding to `base.mapGroups` and sets its own: the hex group and the hex drift
-  maps. Binary Reach (square, drift group) leaves the mode; it moves to a square group, or the drift group
-  splits by grid.
-- Every hex map names its world in [data/maps.yaml](../../data/maps.yaml). Today Alpha and Gamma Sector, Circular
-  Logic, Critical Density and Nexus (hex), Stickney Crater and Limtoc are `phobos`, Beta Sector, The Great
-  Plan and Tesseract (hex) and Twin Drift are `deimos`, and the rest fall back to Mars; write them out so a map's world is a choice, not a default.
+Done (23 October 2026).
+
+- `regolithMode()` sets its own `mapGroups` rather than adding to Community's: `hex`, `open` and `drift`,
+  all hex. Binary Reach, the one square drift map, moved to `drift-square`, which no mode plays for now.
+- Every hex map names its world in [data/maps.yaml](../../data/maps.yaml), and
+  [build-data.mjs](../../scripts/build-data.mjs) refuses one that doesn't, so a map's world is a choice, not a
+  default. Alpha and Gamma Sector, Circular Logic, Critical Density and Nexus (hex), Stickney Crater and
+  Limtoc are `phobos`; Beta Sector, The Great Plan and Tesseract (hex) and Twin Drift are `deimos`; the rest
+  are `mars`. (The engine still draws a test's ad-hoc hex map, which has no world, on Mars.)
 - More hex maps (HEX.md *Not yet*: advanced, add-on, BGA layouts) go in the same group as they are made. Seven
   advanced maps are in the hex group now, and the open group (HEX.md *Open ground*) spreads its planets
   out with blank tiles; Regolith plays both.
@@ -157,7 +160,7 @@ should agree with it; how far the tiles move towards flat inks is open, below.
 
 ## 6. Web
 
-- The lobby's mode menu lists Regolith where Prototyping was (it comes from `MODES`), with the hex maps.
+- The lobby's mode menu lists Regolith where Prototyping was (it comes from `MODES`), with the hex maps. Done.
 - [apps/web/src/art/cards.ts](../../apps/web/src/art/cards.ts): `DECKS` gains Regolith's decks with
   `edition: 'regolith'`; `faceOf` finds their faces. The game shows the cards of the mode it plays.
 - On-screen cards (`cardImages`, `cardPalette`) render through the deck's renderer, so a Regolith game's
@@ -195,11 +198,9 @@ A card renamed in its own deck can say the words itself; the rewording leaves th
 
 ## 9. Order of work
 
-1. **Rename and hex only.** Regolith in the lobby, the mode's id and folder, its map groups, every map's
-   world, the tests. *Partly done (22–23 October 2026):* the lobby and game say Regolith, the mode plays hex
-   maps only (`grid: 'hex'` on its rule set, `playsMap` and `defaultMapFor` in rules.ts), and its ships carry
-   the mech names, which the engine and web app take from the game's rules. Binary Reach is played by no
-   mode for now. The id and folder are renamed (§1). Still to do: every map's world written out.
+1. **Rename and hex only.** *Done (22–23 October 2026):* the lobby and game say Regolith, the id and
+   folder are renamed (§1), the mode plays hex maps only, each with its world (§2), and its ships carry the
+   mech names, which the engine and web app take from the game's rules.
 2. **Own deck.** `data/regolith.yaml` as a copy of Community's, the build step, exports, `regolithMode()`
    dealing it, `DECKS` and the Art Lab listing it, drawn with today's `cardSvg` for now. The game plays
    as before, from its own deck.
@@ -218,4 +219,4 @@ Steps 1–4 need no card designed.
 - **Deck size:** Community's (35 Skills, 9 Tactics), or smaller as cards are reworked.
 - **One look for map and cards:** keep the photographic ground with flat-ink cards, or move tiles and
   dice towards the screenprint inks (CardScale's warning).
-- **Binary Reach:** where the one square drift map goes.
+- **Binary Reach:** the one square drift map, in `drift-square` and played by no mode: give it to Community, or drop it.

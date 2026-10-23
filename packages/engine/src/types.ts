@@ -40,7 +40,7 @@ export interface Board {
   wrap?: { rows: boolean; cols: boolean };
   /** A hex board: cells are flat-topped hexes in axial coordinates (board.ts). Absent on square boards. */
   hex?: boolean;
-  /** The world a hex board is on, which its artwork shows (MapDef.world, Mars when the map doesn't say). Absent on square boards. */
+  /** The world a hex board is on, which its artwork shows (MapDef.world). Absent on square boards. */
   world?: World;
   cells: BoardCell[][];
   planets: Planet[];

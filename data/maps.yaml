@@ -29,8 +29,8 @@
 #   a tile touches the two tiles beside it and two in each neighbouring row (docs/HEX.md). Hex maps
 #   don't wrap.
 #
-# world (optional, hex maps only): phobos | deimos | mars. The surface the map lies on, which its tiles show;
-#   Mars when absent. Phobos is grey and cratered; Deimos, the outer moon, redder and smoother, its craters
+# world (hex maps only, and every hex map has one): phobos | deimos | mars. The surface the map lies on,
+#   which its tiles show. Phobos is grey and cratered; Deimos, the outer moon, redder and smoother, its craters
 #   buried under dust; Mars has dunes and dust devils' tracks.
 #
 # wrap (optional): horizontal | vertical | both. The booklet marks these edges with arrows.
@@ -144,6 +144,7 @@ maps:
     players: 2
     group: hex
     grid: hex
+    world: mars
     cubes: 7
     stats: { slack: 0, shared: 6, planets: 6 }
     # A band of six 8s, a start at each end touching two of them.
@@ -201,6 +202,7 @@ maps:
     players: 3
     group: hex
     grid: hex
+    world: mars
     cubes: 7
     stats: { slack: 6, shared: 3, planets: 12 }
     # A void ringed by 9s and 8s; each start, out at a point, touches a 9, an 8 and a 7.
@@ -292,6 +294,7 @@ maps:
     players: 2
     group: open
     grid: hex
+    world: mars
     cubes: 6
     stats: { slack: 2, shared: 4, planets: 8 }
     # A hexagon of 19 tiles round a void; each start sits in a corner, on open ground beside a 7.
@@ -307,6 +310,7 @@ maps:
     players: 2
     group: open
     grid: hex
+    world: mars
     cubes: 7
     stats: { slack: 6, shared: 4, planets: 10 }
     # A long canyon, the starts at either end, 7 tiles apart, with the 10s in its middle.
@@ -337,6 +341,7 @@ maps:
     players: 3
     group: open
     grid: hex
+    world: mars
     cubes: 6
     stats: { slack: 4, shared: 4, planets: 10 }
     # A 10 on a rise of open ground; each start stands on the slope beside a void and a 7, four tiles from the others.
@@ -353,6 +358,7 @@ maps:
     players: 4
     group: open
     grid: hex
+    world: mars
     cubes: 6
     stats: { slack: 6, shared: 4, planets: 14 }
     # A void with two 10s across it, on an open plain; the four starts stand out at its edge, each touching a 7
