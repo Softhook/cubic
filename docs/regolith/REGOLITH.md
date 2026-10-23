@@ -168,7 +168,7 @@ packages/art/src/screenprint/
   Size, bleed, safe zone and corner are the poker card's (GRAPHICS.md *Cards*).
 - **Decks tell apart as the Vocabulary board does:** the permanent deck on paper in key ink, the one-shot
   decks on night paper in bone. The category sets the colour plate (rule, name shadow, mech plates).
-- **The footer** shows only the card's place in its deck. The label bar shows the category (`ship` reads UNIT) and the copies (`×2`); the paper tells the deck.
+- **The footer** shows the copies (`×2`) on the left and the card's place in its deck on the right. The colour band under the scene shows the category; the paper tells the deck.
 - **Tests** (art.test.ts): every Regolith card has a scene and no scene lacks a card, every card and back
   draws without bad numbers or broken references, no two scenes are the same, every mech poses both ways.
 - Still to do: rules readouts (action chips, combat dice) redrawn as flat inks, where a card shows one.

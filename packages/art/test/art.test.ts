@@ -336,6 +336,15 @@ describe('screenprint cards', () => {
     expect(Object.keys(SCENES).sort()).toEqual(faces.map((f) => f.id).sort());
   });
 
+  it('ends no card’s rules on a line of one word', () => {
+    for (const f of faces) {
+      const lines = [...cardSvg(f).matchAll(/<text[^>]*Barlow Condensed[^>]*>(.*?)<\/text>/g)].map((m) =>
+        m[1].replace(/<[^>]+>/g, '').trim(),
+      );
+      if (lines.length > 1) expect(lines[lines.length - 1], f.id).toContain(' ');
+    }
+  });
+
   it('draws every card and back without bad numbers or broken references, the same every time', () => {
     const fronts = faces.map((f) => cardSvg(f, { bleed: true, rounded: true }));
     fronts.forEach((svg, i) => checkSvg(svg, faces[i].id));

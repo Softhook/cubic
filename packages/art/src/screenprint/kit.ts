@@ -51,12 +51,11 @@ export const GROUND: Record<World, { ground: string; shade: string; light: strin
   mars: { ground: INKS.oxide, shade: '#9C4A26', light: INKS.dust },
 };
 
-/** The halftone screens, once per card: the paper's soft one, the key ink's, bone's, and the ground shade's. */
+/** The halftone screens, once per card: the key ink's, bone's, and the ground shade's. */
 export function screens(s: Stage): string {
   const dot = (id: string, size: number, r: number, fill: string, angle = 30) =>
     `<pattern id="${s.id}-${id}" width="${n(size)}" height="${n(size)}" patternUnits="userSpaceOnUse" patternTransform="rotate(${angle})"><circle cx="${n(size / 2)}" cy="${n(size / 2)}" r="${n(r)}" fill="${fill}"/></pattern>`;
   return (
-    dot('soft', 0.9, 0.12, s.dark ? '#5a5650' : '#8a7f6c') +
     dot('key', 1, 0.3, s.key) +
     dot('fine', 0.7, 0.2, s.key) +
     dot('bone', 1, 0.28, INKS.bone) +
@@ -66,14 +65,14 @@ export function screens(s: Stage): string {
 }
 
 /** A halftone fill by name. */
-export const ht = (s: Stage, which: 'soft' | 'key' | 'fine' | 'bone' | 'shade' | 'plate') => `url(#${s.id}-${which})`;
+export const ht = (s: Stage, which: 'key' | 'fine' | 'bone' | 'shade' | 'plate') => `url(#${s.id}-${which})`;
 
 const rect = (x: number, y: number, w: number, h: number, fill: string, extra = '') =>
   `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" fill="${fill}"${extra}/>`;
 
-/** The paper over the whole art window and its bleed, with its soft screen. */
+/** The paper over the whole art window and its bleed. */
 export function paperGround(s: Stage): string {
-  return rect(-B, -B, s.w + 2 * B, s.h + 2 * B, s.paper) + rect(-B, -B, s.w + 2 * B, s.h + 2 * B, ht(s, 'soft'), ' opacity="0.45"');
+  return rect(-B, -B, s.w + 2 * B, s.h + 2 * B, s.paper);
 }
 
 /**

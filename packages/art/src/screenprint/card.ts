@@ -7,8 +7,8 @@ import { SCENES } from './scenes';
 
 /**
  * The screenprint cards (docs/regolith/REGOLITH.md §5), after the CardStyles board's screenprint row: the scene
- * at the top in flat inks, a rule in the card's colour plate, the name stencilled in the paper's ink, a
- * reversed label bar, the rules in condensed type, and a footer. Permanent cards are on paper in key ink;
+ * at the top in flat inks under a soft shade, a band in the card's colour plate, the name stencilled in the
+ * paper's ink, the rules in condensed type, and a footer. Permanent cards are on paper in key ink;
  * one-shot cards on night paper in bone. Same size, bleed and safe area as the holo cards (card.ts).
  */
 
@@ -30,9 +30,6 @@ const PLATE: Record<string, string> = {
   conquer: INKS.dust,
   card: INKS.dust,
 };
-
-/** A category's name on the label bar, where Regolith's word differs from the category's. */
-const CATEGORY_NAME: Record<string, string> = { ship: 'unit' };
 
 /** The deck's name on its back, and whether it prints on night paper (one-shot and face-up decks). */
 const DECK: Record<CardDeck, { name: string; dark: boolean }> = {
@@ -103,14 +100,21 @@ function stage(face: CardFace, id: string): Stage & { world: Stage['world'] } {
   };
 }
 
-/** The scene, clipped to the art window and its bleed. */
+/** The scene, clipped to the art window and its bleed, under a shade fading down from the top. */
 function art(face: CardFace, s: Stage): Fragment {
   const scene = SCENES[face.id];
   const body = scene ? scene.draw(s) : paperGround(s) + sky(s) + land(s, 33);
   const win: Box = { x: -BLEED, y: -BLEED, w: W + 2 * BLEED, h: ART_BOTTOM + BLEED };
+  const shade = s.dark ? '#000' : s.key;
+  const fade =
+    `<linearGradient id="${s.id}-fade" x1="0" y1="0" x2="0" y2="1">` +
+    `<stop offset="0" stop-color="${shade}" stop-opacity="${s.dark ? 0.55 : 0.32}"/><stop offset="1" stop-color="${shade}" stop-opacity="0"/></linearGradient>`;
   return {
-    defs: screens(s) + s.defs.join('') + `<clipPath id="${s.id}-win">${rect(win, '#000')}</clipPath>`,
-    body: `<g clip-path="url(#${s.id}-win)">${body}</g>`,
+    defs: screens(s) + s.defs.join('') + fade + `<clipPath id="${s.id}-win">${rect(win, '#000')}</clipPath>`,
+    body:
+      `<g clip-path="url(#${s.id}-win)">${body}` +
+      rect({ x: -BLEED, y: -BLEED, w: W + 2 * BLEED, h: BLEED + ART_BOTTOM * 0.45 }, `url(#${s.id}-fade)`) +
+      `</g>`,
   };
 }
 
@@ -119,72 +123,94 @@ interface Word {
   bold: boolean;
 }
 
-function wrap(text: string, size: number, width: number, measure: Measure): Word[][] {
-  const words = text.split(/\s+/).map((w) => ({ text: w, bold: BOLD.has(w.replace(/[^A-Za-z]/g, '')) }));
-  const space = measure(' ', size, 'condensed');
+/** The rules' typography: curly apostrophes, and true minus signs on modifiers like −1. */
+const typeset = (text: string) => text.replace(/'/g, '\u2019').replace(/(^|[\s(])-(?=\d)/g, '$1\u2212');
+
+/** Greedy lines no wider than `width`. */
+function fill(words: Word[], widths: number[], space: number, width: number): Word[][] {
   const lines: Word[][] = [[]];
   let used = 0;
-  for (const w of words) {
-    const wd = measure(w.text, size, w.bold ? 'condensedBold' : 'condensed');
+  words.forEach((w, i) => {
     const cur = lines[lines.length - 1];
-    if (cur.length && used + space + wd > width) {
+    if (cur.length && used + space + widths[i] > width) {
       lines.push([w]);
-      used = wd;
+      used = widths[i];
     } else {
-      used += (cur.length ? space : 0) + wd;
+      used += (cur.length ? space : 0) + widths[i];
       cur.push(w);
     }
-  }
+  });
   return lines;
 }
 
-/** The panel under the scene: the rule, name, label bar, rules text and footer. */
+/**
+ * The rules in lines: as few as fit `width`, then balanced (the narrowest measure that keeps that many lines),
+ * so the rag is even and the last line isn't left short. A last line of one word takes another from the line above.
+ */
+function wrap(text: string, size: number, width: number, measure: Measure): Word[][] {
+  const words = typeset(text)
+    .split(/\s+/)
+    .map((w) => ({ text: w, bold: BOLD.has(w.replace(/[^A-Za-z]/g, '')) }));
+  const widths = words.map((w) => measure(w.text, size, w.bold ? 'condensedBold' : 'condensed'));
+  const space = measure(' ', size, 'condensed');
+  let lines = fill(words, widths, space, width);
+  if (lines.length > 1) {
+    let lo = Math.max(...widths);
+    let hi = width;
+    while (hi - lo > 0.05) {
+      const mid = (lo + hi) / 2;
+      if (fill(words, widths, space, mid).length > lines.length) lo = mid;
+      else hi = mid;
+    }
+    lines = fill(words, widths, space, hi);
+  }
+  const last = lines[lines.length - 1];
+  const prev = lines[lines.length - 2];
+  const wd = (w: Word) => widths[words.indexOf(w)];
+  if (last.length === 1 && prev && prev.length > 2 && wd(prev[prev.length - 1]) + space + wd(last[0]) <= width) last.unshift(prev.pop()!);
+  return lines;
+}
+
+/** The band in the card's colour plate between the scene and the panel. */
+const BAND = 2.4;
+
+/** The panel under the scene: the band, name, rules text and footer. */
 function panel(face: CardFace, s: Stage, area: Box, measure: Measure): string {
   const ink = s.key;
   let out = rect({ x: area.x, y: ART_BOTTOM, w: area.w, h: area.y + area.h - ART_BOTTOM }, s.paper);
-  out += rect({ x: area.x, y: ART_BOTTOM, w: area.w, h: area.y + area.h - ART_BOTTOM }, `url(#${s.id}-soft)`, ' opacity="0.5"');
-  out += rect({ x: area.x, y: ART_BOTTOM - 0.1, w: area.w, h: 1 }, s.plate);
+  out += rect({ x: area.x, y: ART_BOTTOM - 0.1, w: area.w, h: BAND }, s.plate);
 
   // The name, as large as fits.
   const textW = W - 2 * SAFE;
   const name = face.name.toUpperCase();
   const size = Math.min(5.8, textW / (measure(name, 1, 'display') * 1.04));
-  const nameY = ART_BOTTOM + 3.2 + size * 0.95;
+  const nameY = ART_BOTTOM + BAND + 2.6 + size * 0.95;
   out += `<text x="${n(SAFE)}" y="${n(nameY)}" font-family="${SP_FONTS.display}" font-weight="900" font-size="${n(size)}" fill="${ink}">${esc(name)}</text>`;
 
-  // The label bar: category and copies, reversed out of the key ink. The paper tells the deck and its kind.
-  const tag = [
-    ...(face.category === face.deck ? [] : [(CATEGORY_NAME[face.category] ?? face.category).toUpperCase()]),
-    ...(face.copies && face.copies > 1 ? [`×${face.copies}`] : []),
-  ].join(' · ');
-  const tagSize = 1.6;
-  const barY = nameY + 1.6;
-  // Its letter spacing on top of the measured width.
-  const barW = measure(tag, tagSize, 'mono') + tag.length * tagSize * 0.12 + 2.4;
-  out += rect({ x: SAFE, y: barY, w: barW, h: 2.8 }, ink);
-  out += `<text x="${n(SAFE + 1.2)}" y="${n(barY + 2)}" font-family="${SP_FONTS.mono}" font-weight="600" font-size="${tagSize}" letter-spacing="${n(tagSize * 0.12)}" fill="${s.paper}">${esc(tag)}</text>`;
-
-  // The rules: the largest size that fits between the bar and the footer.
-  const top = barY + 5.2;
-  const bottom = H - SAFE - 3;
-  let tsize = 3.9;
+  // The rules: the largest size that fits between the name and the footer, set a little above the middle of
+  // that space so short rules don't leave it all empty below them.
+  const top = nameY + 3.4;
+  const bottom = H - SAFE - 2.4;
+  let tsize = 5.8;
   let lines = wrap(face.text, tsize, textW, measure);
   while (tsize > 2.4 && lines.length * tsize * 1.22 > bottom - top) {
     tsize -= 0.1;
     lines = wrap(face.text, tsize, textW, measure);
   }
   const lead = tsize * 1.22;
+  const y0 = top + (bottom - top - lines.length * lead) * 0.4;
   out += lines
     .map(
       (l, i) =>
-        `<text x="${n(SAFE)}" y="${n(top + tsize * 0.8 + i * lead)}" font-family="${SP_FONTS.condensed}" font-weight="500" font-size="${n(tsize)}" fill="${ink}">` +
+        `<text x="${n(SAFE)}" y="${n(y0 + tsize * 0.8 + i * lead)}" font-family="${SP_FONTS.condensed}" font-weight="500" font-size="${n(tsize)}" fill="${ink}">` +
         l.map((w, j) => `<tspan${w.bold ? ' font-weight="700"' : ''}>${esc(w.text)}${j < l.length - 1 ? ' ' : ''}</tspan>`).join('') +
         `</text>`,
     )
     .join('');
 
-  // The footer: the card's place in its deck.
+  // The footer: the card's copies and its place in its deck.
   const muted = s.dark ? '#8F877B' : '#8a7f6c';
+  if (face.copies && face.copies > 1) out += label(`×${face.copies}`, SAFE, H - SAFE + 0.3, 1.3, muted, 'start');
   if (face.index !== undefined && face.deckSize)
     out += label(
       `${String(face.index).padStart(2, '0')}/${String(face.deckSize).padStart(2, '0')}`,
