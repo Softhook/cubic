@@ -38,6 +38,8 @@ export interface CardFace {
   deck: CardDeck;
   /** Movement, action, combat, … (CARD_CATEGORIES): sets the accent colour and icon. */
   category: string;
+  /** Whose illustration to draw, when not its own: a mode's card shows the card it started as until it has art. */
+  scene?: string;
   /** How many copies the deck has. */
   copies?: number;
   /** Position in its deck, for the "7/35 C" footer. */
@@ -66,7 +68,7 @@ export const estimateWidth: Measure = (text, size, font) => size * text.length *
 
 /** What an illustration shows, for art direction (the Art Lab prints it under the card). */
 export function cardIllustration(f: CardFace): string {
-  return ILLUSTRATIONS[f.id]?.caption ?? 'no illustration yet';
+  return ILLUSTRATIONS[f.scene ?? f.id]?.caption ?? 'no illustration yet';
 }
 
 const DECK_INFO: Record<CardDeck, { label: string; kind: string; light: boolean; edition: string; backHue: number }> = {
@@ -196,7 +198,7 @@ function art(face: CardFace, id: string, hue: number, r: Rng): Fragment {
     hues: [hue + r.range(-15, 15), hue + r.range(30, 60)],
     nebula: r.range(0.45, 0.6),
   });
-  const scene = join(...(ILLUSTRATIONS[face.id]?.draw({ id: `${id}-m`, r: r.fork('motif'), hue, box: view, p1, p2 }) ?? []));
+  const scene = join(...(ILLUSTRATIONS[face.scene ?? face.id]?.draw({ id: `${id}-m`, r: r.fork('motif'), hue, box: view, p1, p2 }) ?? []));
   // Darken the art towards the panel so the emblem and title sit on calm ground. Fade from transparent
   // INK, not paper: a light card's paper would tint the fade into a pale haze.
   const shade = `<linearGradient id="${id}-shade" x1="0" y1="0" x2="0" y2="1"><stop offset=".6" stop-color="${INK}" stop-opacity="0"/><stop offset="1" stop-color="${INK}" stop-opacity=".85"/></linearGradient>`;

@@ -10,17 +10,23 @@
  * To try a change: a setting, edit this file; how a power works or its text, its file in powers/; a
  * power on another ship, move it in REGOLITH_SHIPS; a new power, copy a file in powers/.
  */
-import { CLASSIC_SHIPS, reword, type RuleSet, type ShipTable } from '../prototype';
+import { CLASSIC_SHIPS, reword, type CardDef, type RuleSet, type ShipTable } from '../prototype';
+import cardsJson from './cards.json';
 import { picket } from './powers/picket';
 import { shoot } from './powers/shoot';
 import { REGOLITH_WORDS } from './words';
 
 /**
- * Whether Regolith plays with Community's cards (Skills, Tactics, research). Flip it to try the mode
- * without them, and refresh the golden games after (`npx vitest run golden -u`). On hexes, Ingenious ("conquer
- * from the corners") is left out of the deck (effects.ts `dealt`).
+ * Whether Regolith plays with cards (Skills, Tactics, research). Flip it to try the mode without them, and
+ * refresh the golden games after (`npx vitest run golden -u`).
  */
 export const REGOLITH_CARDS = true;
+
+/**
+ * Regolith's own decks (data/regolith.yaml, built into cards.json): each card started as a Community card
+ * (`from`) and plays by its rules (`effect`) until it is reworked. Ingenious isn't among them: hexes have no corners.
+ */
+export const REGOLITH_DECKS: { skills: CardDef[]; tactics: CardDef[]; expansion: CardDef[] } = cardsJson;
 
 /**
  * Over-conquest (PROTOTYPING.md §6.10): an orbit of exactly 12 displaces an opponent's cube. Off since
@@ -71,7 +77,7 @@ const REGOLITH_SHIPS: ShipTable = Object.fromEntries(
 
 /**
  * Regolith (docs/regolith/REGOLITH.md) is built on `base` (Community Edition, see rulesets.ts): its
- * missiles are kept and its cards as REGOLITH_CARDS says. It plays the hex maps only, the hex, open-ground and
+ * missiles and card market are kept, dealing its own decks (REGOLITH_DECKS) as REGOLITH_CARDS says. It plays the hex maps only, the hex, open-ground and
  * off-centre (drift) ones, on Phobos's, Deimos's and Mars's ground.
  */
 export function regolithMode(base: RuleSet): RuleSet {
@@ -82,9 +88,12 @@ export function regolithMode(base: RuleSet): RuleSet {
     title: 'Regolith',
     summary: reword(
       REGOLITH_WORDS,
-      `Mechs fight over the ice of Mars and its moons, on hex maps. Community Edition${REGOLITH_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a mech moving next to an enemy mech, not diagonally, stops there), a ranged Sniper and contested orbits (no conquering${REGOLITH_CONTESTED_DEPLOY ? ` or deploying${REGOLITH_HOME_SHIPYARD ? ', except to your home planet,' : ''}` : ''} while an enemy mech is in orbit)${REGOLITH_OVER_CONQUEST ? ' and over-conquest, displacing an opponent cube' : ''}.`,
+      `Mechs fight over the ice of Mars and its moons, on hex maps. Community Edition${REGOLITH_CARDS ? ' with its own deck,' : ' without cards,'} with moves capped at 3, zones of control (a mech moving next to an enemy mech, not diagonally, stops there), a ranged Sniper and contested orbits (no conquering${REGOLITH_CONTESTED_DEPLOY ? ` or deploying${REGOLITH_HOME_SHIPYARD ? ', except to your home planet,' : ''}` : ''} while an enemy mech is in orbit)${REGOLITH_OVER_CONQUEST ? ' and over-conquest, displacing an opponent cube' : ''}.`,
     ),
-    cards: REGOLITH_CARDS ? base.cards : null,
+    cards:
+      REGOLITH_CARDS && base.cards
+        ? { ...base.cards, skills: REGOLITH_DECKS.skills, tactics: REGOLITH_DECKS.tactics, expansion: REGOLITH_DECKS.expansion[0] }
+        : null,
     mapGroups: ['hex', 'open', 'drift'],
     ships: REGOLITH_SHIPS,
     maxMovement: MAX_MOVEMENT,

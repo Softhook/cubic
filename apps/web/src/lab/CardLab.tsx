@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CARD_CATEGORIES, cardBackSvg, cardIllustration, cardSvg, deckInfo, type CardDeck, type CardFace } from '@quantum/art';
-import { DECKS, LINEAGE, cardFontCss, cardsOf, lineageNote, measure, useFontCss, useSvgUrl, type Deck, type Redesign } from './cards';
+import {
+  DECKS,
+  EDITIONS as ALL_EDITIONS,
+  LINEAGE,
+  cardFontCss,
+  cardsOf,
+  lineageNote,
+  measure,
+  useFontCss,
+  useSvgUrl,
+  type Deck,
+  type Redesign,
+} from './cards';
 import { PIECES, type Printable } from '../print/pieces';
 import { PrintPanel } from '../print/PrintPanel';
 import { LabHeader } from './LabHeader';
@@ -18,9 +30,9 @@ type Edition = Deck['edition'];
 type View = 'all' | 'redesigns' | 'community-only' | 'classic-only' | Edition;
 type Sort = 'deck' | 'name' | 'category';
 
-const EDITION_LABEL: Record<Edition, string> = { community: 'Community', original: 'Classic' };
-const EDITION_TITLE: Record<Edition, string> = { community: 'Community Edition', original: 'Classic' };
-const isEdition = (v: View): v is Edition => v in EDITION_LABEL;
+const EDITION_LABEL: Record<Edition, string> = Object.fromEntries(ALL_EDITIONS.map((e) => [e.id, e.label]));
+const EDITION_TITLE: Record<Edition, string> = Object.fromEntries(ALL_EDITIONS.map((e) => [e.id, e.title]));
+const isEdition = (v: View): v is Edition => Object.hasOwn(EDITION_LABEL, v);
 const VIEWS: [View, string][] = [
   ['all', 'All'],
   ['redesigns', 'Redesigns'],
@@ -45,10 +57,12 @@ interface Item {
 const itemOf = (c: CardFace): Item => ({ key: `${c.deck}:${c.id}`, deck: c.deck, face: c });
 const backOf = (d: CardDeck): Item => ({ key: `${d}:back`, deck: d });
 const itemsOf = (d: Deck): Item[] => [backOf(d.id), ...d.cards.map(itemOf)];
+/** Items once each: decks of different editions share a back. */
+const unique = (items: Item[]) => [...new Map(items.map((i) => [i.key, i])).values()];
 
 /** Cards split by deck, in deck order, for one heading each. */
 const byDeck = (cards: CardFace[]) =>
-  DECKS.map((d) => ({ deck: d, cards: cards.filter((c) => c.deck === d.id) })).filter((g) => g.cards.length > 0);
+  DECKS.map((d) => ({ deck: d, cards: cards.filter((c) => d.cards.includes(c)) })).filter((g) => g.cards.length > 0);
 
 const CATEGORY_ORDER = Object.keys(CARD_CATEGORIES);
 const categoryRank = (c: CardFace) => {
@@ -78,7 +92,7 @@ export function CardLab() {
   const fonts = useFontCss(cardFontCss);
 
   const decks = DECKS.filter((d) => edition === 'all' || d.edition === edition);
-  const all = useMemo(() => DECKS.flatMap(itemsOf), []);
+  const all = useMemo(() => unique(DECKS.flatMap(itemsOf)), []);
   const item = all.find((i) => i.key === selected) ?? all[0];
 
   const svgOf = useCallback(
@@ -156,7 +170,7 @@ export function CardLab() {
   );
   const singles = (title: string, cards: CardFace[]) =>
     byDeck(cards).map(({ deck, cards }) => (
-      <section key={`${title}:${deck.id}`} className="lab-deck">
+      <section key={`${title}:${deck.name}`} className="lab-deck">
         <h2>
           {title}{' '}
           <span className="muted">
@@ -200,7 +214,7 @@ export function CardLab() {
                 Backs <span className="muted">· one per deck</span>
               </h2>
               <div className="lab-grid cards">
-                {DECKS.filter((d) => !shownEdition || d.edition === shownEdition).map((d) => thumb(backOf(d.id)))}
+                {unique(DECKS.filter((d) => !shownEdition || d.edition === shownEdition).map((d) => backOf(d.id))).map(thumb)}
               </div>
             </section>
           )}
@@ -232,7 +246,7 @@ export function CardLab() {
             item={printable(item)}
             bleed={bleed}
             onBleed={setBleed}
-            set={decks.flatMap(itemsOf).map(printable)}
+            set={unique(decks.flatMap(itemsOf)).map(printable)}
             part={edition === 'all' ? undefined : EDITION_LABEL[edition]}
             notes={`Copies per card: the ×N mark on the card.\nEach folder's back.png is the back for every card in it.\n`}
             sheets={sheets}

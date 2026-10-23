@@ -1,0 +1,668 @@
+{
+  "skills": [
+    {
+      "id": "r-agile",
+      "name": "Servo Tuning",
+      "subtitle": "Movement bonus",
+      "text": "All of your mechs have +1 movement.",
+      "category": "movement",
+      "count": 1,
+      "from": "agile",
+      "status": "renamed",
+      "effect": "agile",
+      "art": {
+        "title": "Servo bay",
+        "brief": "A mechanic's wrench on the open knee joint of a Wisp; sparks printed in the amber plate."
+      }
+    },
+    {
+      "id": "r-ambitious",
+      "name": "Final Push",
+      "subtitle": "3 extra actions",
+      "text": "Once per turn you may take an additional action, then put a token on this card. If this card has three tokens on it, discard it.",
+      "category": "action",
+      "count": 1,
+      "from": "ambitious",
+      "status": "renamed",
+      "effect": "ambitious",
+      "art": {
+        "title": "Overheating",
+        "brief": "A mech pushed past its limit: motor housing glowing, heat haze and sparks, a crew member waving it on."
+      }
+    },
+    {
+      "id": "r-brilliant",
+      "name": "Core Samples",
+      "subtitle": "Research bonus",
+      "text": "At the start of your turn, you may gain 2 Research.",
+      "category": "research",
+      "count": 1,
+      "from": "brilliant",
+      "status": "renamed",
+      "effect": "brilliant",
+      "art": {
+        "title": "Core rack",
+        "brief": "A geologist sliding an ice core into a rack of sample tubes."
+      }
+    },
+    {
+      "id": "r-brutal",
+      "name": "Paired Cannons",
+      "subtitle": "Combat with advantage",
+      "text": "For Combat rolls, roll twice and use the lower number.",
+      "category": "combat",
+      "count": 1,
+      "from": "brutal",
+      "status": "renamed",
+      "effect": "brutal",
+      "art": {
+        "title": "Two barrels",
+        "brief": "A Breacher firing both arm cannons at once, two muzzle flashes."
+      }
+    },
+    {
+      "id": "r-calculating",
+      "name": "Mech Pick",
+      "subtitle": "Controlled scrapping",
+      "text": "When a mech is placed in your salvage yard, choose its mech type.",
+      "category": "ship",
+      "count": 1,
+      "from": "calculating",
+      "status": "renamed",
+      "effect": "calculating",
+      "art": {
+        "title": "Foreman",
+        "brief": "A foreman with a clipboard in the salvage yard, pointing a crane at one chassis."
+      }
+    },
+    {
+      "id": "r-clever",
+      "name": "Field Fitter",
+      "subtitle": "Flexible modification",
+      "text": "After refitting, you may increase or decrease the mech number by 1.",
+      "category": "ship",
+      "count": 1,
+      "from": "clever",
+      "status": "renamed",
+      "effect": "clever",
+      "art": {
+        "title": "Gantry",
+        "brief": "A Chameleon on a gantry with one arm half swapped, the old arm hanging from a hoist."
+      }
+    },
+    {
+      "id": "r-composed",
+      "name": "Truce Talks",
+      "subtitle": "Reduce power for research",
+      "text": "Once per turn, you may lose 1 Power and gain 3 Research.",
+      "category": "research",
+      "count": 1,
+      "from": "composed",
+      "status": "renamed",
+      "effect": "composed",
+      "art": {
+        "title": "Table",
+        "brief": "Two foremen at a folding table on the ice, maps between them."
+      }
+    },
+    {
+      "id": "r-cunning",
+      "name": "Second Charge",
+      "subtitle": "Extra mech ability",
+      "text": "Once per turn, you may use one mech ability a second time.",
+      "category": "action",
+      "count": 1,
+      "from": "cunning",
+      "status": "renamed",
+      "effect": "cunning",
+      "art": {
+        "title": "Override switch",
+        "brief": "A hand flipping a guarded red switch on a cockpit panel."
+      }
+    },
+    {
+      "id": "r-curious",
+      "name": "Prospectors",
+      "subtitle": "Bonus peaceful move",
+      "text": "At the end of your turn, if you did not Attack or Claim, gain an additional Move or Research action.",
+      "category": "action",
+      "count": 1,
+      "from": "curious",
+      "status": "renamed",
+      "effect": "curious",
+      "art": {
+        "title": "Sample drill",
+        "brief": "Two prospectors with a hand drill over cracked ice."
+      }
+    },
+    {
+      "id": "r-dangerous",
+      "name": "Reactor Breach",
+      "subtitle": "Destroy your attacker",
+      "text": "When you defend, before players roll combat dice, you can decide to destroy both mechs (there is no power effect).",
+      "category": "combat",
+      "count": 1,
+      "from": "dangerous",
+      "status": "renamed",
+      "effect": "dangerous",
+      "art": {
+        "title": "Strapped charge",
+        "brief": "A Breacher with charges strapped across its chest, stencilled DANGER."
+      }
+    },
+    {
+      "id": "r-devious",
+      "name": "Crawlway",
+      "subtitle": "Slingshot past enemies",
+      "text": "You may move your mechs through enemy mechs. These spaces do not count towards your movement.",
+      "category": "movement",
+      "count": 1,
+      "from": "devious",
+      "status": "renamed",
+      "effect": "devious",
+      "art": {
+        "title": "Between the legs",
+        "brief": "A small mech ducking between two enemy mechs' legs."
+      }
+    },
+    {
+      "id": "r-ferocious",
+      "name": "Armour Piercing",
+      "subtitle": "Combat bonus",
+      "text": "-1 to your Combat rolls.",
+      "category": "combat",
+      "count": 1,
+      "from": "ferocious",
+      "status": "renamed",
+      "effect": "ferocious",
+      "art": {
+        "title": "Red barrel",
+        "brief": "A Breacher's cannon barrel close up, heat shimmer printed as halftone."
+      }
+    },
+    {
+      "id": "r-flexible",
+      "name": "Field Refit",
+      "subtitle": "Adjust a mech",
+      "text": "Once per turn, you may increase or decrease one of your mech numbers by 1.",
+      "category": "ship",
+      "count": 1,
+      "from": "flexible",
+      "status": "renamed",
+      "effect": "flexible",
+      "art": {
+        "title": "Wrench",
+        "brief": "A giant torque wrench on a mech's hip joint, a mechanic hanging off the handle."
+      }
+    },
+    {
+      "id": "r-hostile",
+      "name": "Breakthrough",
+      "subtitle": "Extra action for destruction",
+      "text": "The first time you destroy an enemy mech each turn, gain 1 action.",
+      "category": "action",
+      "count": 1,
+      "from": "hostile",
+      "status": "renamed",
+      "effect": "hostile",
+      "art": {
+        "title": "Stepping over",
+        "brief": "A mech stepping over a smoking wreck, already turning to the next target."
+      }
+    },
+    {
+      "id": "r-industrious",
+      "name": "Drop Crew",
+      "subtitle": "Extra drop",
+      "text": "Gain an additional Drop action each turn.",
+      "category": "action",
+      "count": 1,
+      "from": "industrious",
+      "status": "renamed",
+      "effect": "industrious",
+      "art": {
+        "title": "Two pods",
+        "brief": "Two drop pods coming down side by side, retro rockets in amber."
+      }
+    },
+    {
+      "id": "r-intelligent",
+      "name": "Hacking",
+      "subtitle": "Flexible claiming",
+      "text": "When Claiming, you may add or subtract 1 from the objective number.",
+      "category": "conquer",
+      "count": 1,
+      "from": "intelligent",
+      "status": "renamed",
+      "effect": "intelligent",
+      "art": {
+        "title": "Spliced panel",
+        "brief": "A hacker's hand terminal spliced into an objective's control panel, the 8 on its readout flickering to 7 and 9."
+      }
+    },
+    {
+      "id": "r-patient",
+      "name": "Reserve Orders",
+      "subtitle": "Delayed tactics",
+      "text": "Whenever you take a Tactic, you may instead store it. At the end of each of your turns, you may play a stored Tactic. When you take this Skill, you may take and store a Tactic.",
+      "category": "card",
+      "count": 1,
+      "from": "patient",
+      "status": "renamed",
+      "effect": "patient",
+      "art": {
+        "title": "Lockbox",
+        "brief": "A battered metal strongbox, its lid open a crack."
+      }
+    },
+    {
+      "id": "r-pioneering",
+      "name": "First Survey",
+      "subtitle": "Claim with research",
+      "text": "You may use your Research number in place of one of your mech numbers when Claiming.",
+      "category": "conquer",
+      "count": 1,
+      "from": "pioneering",
+      "status": "renamed",
+      "effect": "pioneering",
+      "art": {
+        "title": "Flag and number",
+        "brief": "A survey flag with a stencilled research number flying over an objective."
+      }
+    },
+    {
+      "id": "r-plundering",
+      "name": "Wreck Survey",
+      "subtitle": "Destruction is research",
+      "text": "The first time you destroy an enemy mech each turn, gain 3 Research.",
+      "category": "research",
+      "count": 1,
+      "from": "plundering",
+      "status": "renamed",
+      "effect": "plundering",
+      "art": {
+        "title": "Salvage drone",
+        "brief": "A small drone hovering over a wreck, scanning it in amber lines."
+      }
+    },
+    {
+      "id": "r-precocious",
+      "name": "Rush Research",
+      "subtitle": "Accelerated breakthrough",
+      "text": "Your Research resets at 4, 5, or 6.",
+      "category": "research",
+      "count": 1,
+      "from": "precocious",
+      "status": "renamed",
+      "effect": "precocious",
+      "art": {
+        "title": "Running crew",
+        "brief": "Two surveyors running back to camp with a sample case."
+      }
+    },
+    {
+      "id": "r-prideful",
+      "name": "Stolen Flag",
+      "subtitle": "Accelerated domination",
+      "text": "Your Power resets at 4, 5, or 6. When a player destroys one of your mechs, they may take this card from you.",
+      "category": "conquer",
+      "count": 1,
+      "from": "prideful",
+      "status": "renamed",
+      "effect": "prideful",
+      "art": {
+        "title": "Grabbed flag",
+        "brief": "An enemy hand pulling the flag off a wrecked mech."
+      }
+    },
+    {
+      "id": "r-profiteering",
+      "name": "Arms Deal",
+      "subtitle": "Orbital strikes from claiming",
+      "text": "When you take a card for Claiming, you may instead gain 1 Orbital strike.",
+      "category": "combat",
+      "count": 1,
+      "from": "profiteering",
+      "status": "renamed",
+      "effect": "profiteering",
+      "art": {
+        "title": "Beacon",
+        "brief": "A strike beacon in its case, a price tag on the handle."
+      }
+    },
+    {
+      "id": "r-rational",
+      "name": "Drill Sergeant",
+      "subtitle": "Fixed combat",
+      "text": "Your Combat rolls are 3.",
+      "category": "combat",
+      "count": 1,
+      "from": "rational",
+      "status": "renamed",
+      "effect": "rational",
+      "art": {
+        "title": "Spirit level",
+        "brief": "A spirit level resting on a gun barrel, bubble dead centre."
+      }
+    },
+    {
+      "id": "r-ravenous",
+      "name": "Trophy Hunters",
+      "subtitle": "Power amplification",
+      "text": "The first time you destroy an enemy mech each turn, gain 1 additional Power.",
+      "category": "combat",
+      "count": 1,
+      "from": "ravenous",
+      "status": "renamed",
+      "effect": "ravenous",
+      "art": {
+        "title": "Tally",
+        "brief": "Stencilled kill marks on a mech's hull, a painter adding one more."
+      }
+    },
+    {
+      "id": "r-resourceful",
+      "name": "Strip for Parts",
+      "subtitle": "Sacrifice for action",
+      "text": "Once per turn, you may destroy one of your mechs and gain 1 Action.",
+      "category": "action",
+      "count": 1,
+      "from": "resourceful",
+      "status": "renamed",
+      "effect": "resourceful",
+      "art": {
+        "title": "Crane",
+        "brief": "A crane lifting a mech's reactor out of its chest."
+      }
+    },
+    {
+      "id": "r-righteous",
+      "name": "True Believers",
+      "subtitle": "Irreducible power",
+      "text": "You cannot lose Power. You cannot gain Research.",
+      "category": "conquer",
+      "count": 1,
+      "from": "righteous",
+      "status": "renamed",
+      "effect": "righteous",
+      "art": {
+        "title": "Slogan",
+        "brief": "A wall stencilled NO RETREAT, a mech standing in front of it."
+      }
+    },
+    {
+      "id": "r-ruthless",
+      "name": "Signal Jammer",
+      "subtitle": "Weaken your enemies",
+      "text": "The first time you destroy an enemy mech each turn, you may disable one of the enemy's Skills until the start of your next turn.",
+      "category": "card",
+      "count": 1,
+      "from": "ruthless",
+      "status": "renamed",
+      "effect": "ruthless",
+      "art": {
+        "title": "Jammer pod",
+        "brief": "A jammer pod on a mech's shoulder, static rings in oxide."
+      }
+    },
+    {
+      "id": "r-steadfast",
+      "name": "Double Time",
+      "subtitle": "Move more than once",
+      "text": "Your mechs can move or move/attack more than once per turn (each move counts as an action).",
+      "category": "movement",
+      "count": 1,
+      "from": "steadfast",
+      "status": "renamed",
+      "effect": "steadfast",
+      "art": {
+        "title": "Column",
+        "brief": "A column of mechs trudging through a dust storm, heads down."
+      }
+    },
+    {
+      "id": "r-stealthy",
+      "name": "Drop Ships",
+      "subtitle": "Isolated drop",
+      "text": "You may drop to any space that is not adjacent to a mech.",
+      "category": "ship",
+      "count": 1,
+      "from": "stealthy",
+      "status": "renamed",
+      "effect": "stealthy",
+      "art": {
+        "title": "Pod in the dust",
+        "brief": "A drop pod falling into a dust storm, alone on the map."
+      }
+    },
+    {
+      "id": "r-strategic",
+      "name": "Shoulder to Shoulder",
+      "subtitle": "Combat support bonus",
+      "text": "During combat, if your mech is adjacent to one or more friendly mechs, -2 to your Combat roll.",
+      "category": "combat",
+      "count": 1,
+      "from": "strategic",
+      "status": "renamed",
+      "effect": "strategic",
+      "art": {
+        "title": "Back to back",
+        "brief": "Three mechs back to back, guns out in three directions."
+      }
+    },
+    {
+      "id": "r-stubborn",
+      "name": "Entrenched",
+      "subtitle": "Strong defence",
+      "text": "When you are attacked, ties go in your favour and you destroy your attacker if you win (and gain power).",
+      "category": "combat",
+      "count": 1,
+      "from": "stubborn",
+      "status": "renamed",
+      "effect": "stubborn",
+      "art": {
+        "title": "Trench",
+        "brief": "A Breacher in a trench behind a barricade of boulders."
+      }
+    },
+    {
+      "id": "r-tactical",
+      "name": "Lunge",
+      "subtitle": "Bonus short move",
+      "text": "Once per turn, you may move/attack 1 space with a mech even if it's already moved.",
+      "category": "action",
+      "count": 1,
+      "from": "tactical",
+      "status": "renamed",
+      "effect": "tactical",
+      "art": {
+        "title": "Lunge",
+        "brief": "A Breacher lunging forward one hex, its arm cannon level."
+      }
+    },
+    {
+      "id": "r-talented",
+      "name": "Veteran Crew",
+      "subtitle": "Get more skills",
+      "text": "You can have up to 5 Skills.",
+      "category": "card",
+      "count": 1,
+      "from": "talented",
+      "status": "renamed",
+      "effect": "talented",
+      "art": {
+        "title": "Crew photo",
+        "brief": "A crew photo, five people, each with a different badge."
+      }
+    },
+    {
+      "id": "r-tyrannical",
+      "name": "Martial Law",
+      "subtitle": "Claim with power",
+      "text": "You may use your Power number as an additional mech number when Claiming.",
+      "category": "conquer",
+      "count": 1,
+      "from": "tyrannical",
+      "status": "renamed",
+      "effect": "tyrannical",
+      "art": {
+        "title": "Loudspeaker",
+        "brief": "A loudspeaker on a mast over a habitat, sound rings in oxide."
+      }
+    }
+  ],
+  "tactics": [
+    {
+      "id": "r-aggression",
+      "name": "Power Grab",
+      "subtitle": "Add power",
+      "text": "Immediately add 2 to power.",
+      "category": "combat",
+      "count": 2,
+      "from": "aggression",
+      "status": "renamed",
+      "effect": "aggression",
+      "art": {
+        "title": "Poster",
+        "brief": "A two-ink recruitment poster of raised fists and a mech."
+      }
+    },
+    {
+      "id": "r-black-market",
+      "name": "Contraband",
+      "subtitle": "Gain orbital strikes",
+      "text": "Gain 2 Orbital strikes.",
+      "category": "combat",
+      "count": 2,
+      "from": "black-market",
+      "status": "renamed",
+      "effect": "black-market",
+      "art": {
+        "title": "Dealer",
+        "brief": "A trader in a hood lifting the lid on a case of strike beacons."
+      }
+    },
+    {
+      "id": "r-change-of-heart",
+      "name": "Headhunter",
+      "subtitle": "Choose a skill",
+      "text": "Search the Skill deck and take a card of your choosing, then shuffle the deck.",
+      "category": "card",
+      "count": 2,
+      "from": "change-of-heart",
+      "status": "renamed",
+      "effect": "change-of-heart",
+      "art": {
+        "title": "Crossing over",
+        "brief": "An engineer walking from one side's flag to another's."
+      }
+    },
+    {
+      "id": "r-momentum",
+      "name": "Forced Advance",
+      "subtitle": "Take a bonus turn",
+      "text": "Immediately take another turn, but with 2 actions instead of 3 (treat it as a brand-new turn).",
+      "category": "action",
+      "count": 2,
+      "from": "momentum",
+      "status": "renamed",
+      "effect": "momentum",
+      "art": {
+        "title": "Dawn advance",
+        "brief": "Mechs advancing at dawn, long shadows ahead of them."
+      }
+    },
+    {
+      "id": "r-plan-ahead",
+      "name": "Kill Zone",
+      "subtitle": "Become the orbital strike",
+      "text": "Until the end of your next turn, all your combat rolls are 1.",
+      "category": "combat",
+      "count": 2,
+      "from": "plan-ahead",
+      "status": "renamed",
+      "effect": "plan-ahead",
+      "art": {
+        "title": "Range card",
+        "brief": "A gunner's range card, hexes and distances inked in."
+      }
+    },
+    {
+      "id": "r-sabotage",
+      "name": "Sabotage",
+      "subtitle": "Limit enemy action",
+      "text": "Every opponent's next turn has 1 fewer action.",
+      "category": "action",
+      "count": 2,
+      "from": "sabotage",
+      "status": "community",
+      "effect": "sabotage",
+      "art": {
+        "title": "Grit",
+        "brief": "A hand pouring regolith into an open gearbox."
+      }
+    },
+    {
+      "id": "r-show-of-force",
+      "name": "Orbital Cannon",
+      "subtitle": "Target destroyed",
+      "text": "Destroy any one mech. Gain 1 Power.",
+      "category": "combat",
+      "count": 2,
+      "from": "show-of-force",
+      "status": "renamed",
+      "effect": "show-of-force",
+      "art": {
+        "title": "Impact",
+        "brief": "An enemy mech hit from above, an amber column of light."
+      }
+    },
+    {
+      "id": "r-unveil-the-fleet",
+      "name": "Full Refit",
+      "subtitle": "Destroy & reroll mechs",
+      "text": "Destroy all your mechs. You may reroll any mechs in your salvage yard once. Drop any number of mechs.",
+      "category": "ship",
+      "count": 2,
+      "from": "unveil-the-fleet",
+      "status": "renamed",
+      "effect": "unveil-the-fleet",
+      "art": {
+        "title": "Pods raining",
+        "brief": "Drop pods coming down all over the map."
+      }
+    },
+    {
+      "id": "r-warp-gate",
+      "name": "Ice Tunnel",
+      "subtitle": "Teleportation system",
+      "text": "Place the Ice Tunnel tokens on two different spaces on the board. Any player may consider those spaces adjacent.",
+      "category": "movement",
+      "count": 2,
+      "from": "warp-gate",
+      "status": "renamed",
+      "effect": "warp-gate",
+      "art": {
+        "title": "Cross-section",
+        "brief": "A cut-away of the ground: a tunnel joining two hexes underneath."
+      }
+    }
+  ],
+  "expansion": [
+    {
+      "id": "r-expansion",
+      "name": "Reinforcements",
+      "subtitle": "Expand your fleet",
+      "text": "Immediately roll a reserve mech and put it in perimeter space on an objective with one of your cubes or in your salvage yard.",
+      "category": "expansion",
+      "count": 6,
+      "from": "expansion",
+      "status": "renamed",
+      "effect": "expansion",
+      "art": {
+        "title": "Rollout",
+        "brief": "A new mech walking out of a workshop's doors."
+      }
+    }
+  ]
+}

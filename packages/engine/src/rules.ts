@@ -1,4 +1,15 @@
-import { defaultMap, MAPS, type CardDef, type GameMode, type MapDef, type ShipDef, type ShipPower, type ShipTable } from './data';
+import {
+  addCards,
+  defaultMap,
+  EXPANSION,
+  MAPS,
+  type CardDef,
+  type GameMode,
+  type MapDef,
+  type ShipDef,
+  type ShipPower,
+  type ShipTable,
+} from './data';
 import type { ShipHooks } from './prototype';
 import type { Die, GameState } from './types';
 import { reword, type Words } from './words';
@@ -59,6 +70,8 @@ export interface CardRules {
   peek: boolean;
   /** Expansion cards form a separate face-up pile of players + 1 (otherwise they are Gambit cards). */
   expansionPile: boolean;
+  /** The card that pile is, when the mode has its own (default: the Community Expansion card); see expansionCard. */
+  expansion?: CardDef;
   /** A card pick may be spent to discard every face-up card and deal new ones (2013 rulebook p.9). */
   refresh: boolean;
   terms: {
@@ -80,6 +93,18 @@ let ruleSets: Record<GameMode, RuleSet> | undefined;
 
 export function defineRuleSets(table: Record<GameMode, RuleSet>) {
   ruleSets = table;
+  // A mode's own decks become cards the engine knows, by id, like the editions' cards.
+  for (const { cards } of Object.values(table)) {
+    if (!cards) continue;
+    addCards(cards.skills, 'skill');
+    addCards(cards.tactics, 'tactic');
+    if (cards.expansion) addCards([cards.expansion], 'expansion');
+  }
+}
+
+/** The Expansion card of this game's rules: the mode's own, or the Community Edition's. */
+export function expansionCard(state: GameState): CardDef {
+  return rulesOf(state).cards?.expansion ?? EXPANSION;
 }
 
 /** The rule set a game is played with. */

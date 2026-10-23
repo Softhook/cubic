@@ -1,6 +1,6 @@
 import { Component, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import { EXPANSION, type GameState } from '@quantum/engine';
+import { expansionCard, type GameState } from '@quantum/engine';
 import { reducedMotion } from '../game/useMediaQuery';
 import { lastLogId, useTransient } from '../game/useTransient';
 import { leftRow } from '../game/marketRow';
@@ -64,7 +64,7 @@ function leaving(was: GameState, game: GameState) {
   return game.log.flatMap((e) => {
     if (e.id <= before || e.player === undefined) return [];
     if (e.event === 'expansion' && was.market.expansions > game.market.expansions) {
-      return [{ id: e.id, card: EXPANSION.id, player: e.player, index: undefined as number | undefined }];
+      return [{ id: e.id, card: expansionCard(game).id, player: e.player, index: undefined as number | undefined }];
     }
     if ((e.event !== 'cardTaken' && e.event !== 'cardPlayed') || !e.card) return [];
     const k = gone.findIndex((g) => g.card === e.card);

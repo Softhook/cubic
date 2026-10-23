@@ -27,6 +27,7 @@ import {
   combatTotal,
   createGame,
   effectOf,
+  expansionCard,
   EXPANSION,
   infamyTargets,
   legalActions,
@@ -35,6 +36,7 @@ import {
   relocationOptions,
   reserve,
   RuleError,
+  RULESETS,
   shipsOnBoard,
   SKILLS,
   TACTICS,
@@ -138,7 +140,9 @@ export const CHECKED_EFFECTS = new Set([
 
 /** Every card of a card mode. */
 export function modeCards(mode: GameMode): CardDef[] {
-  return mode === 'original' ? [...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT] : [...SKILLS, ...TACTICS, EXPANSION];
+  if (mode === 'original') return [...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT];
+  const cards = RULESETS[mode].cards;
+  return cards ? [...cards.skills, ...cards.tactics, cards.expansion ?? EXPANSION] : [...SKILLS, ...TACTICS, EXPANSION];
 }
 
 /** The skills a game deals from, in a fixed order. */
@@ -316,7 +320,8 @@ function destroyed(c: Step, w: PlayerId, v: PlayerId, inCombat: boolean) {
 export function cardTaken(before: GameState, action: Action, after: GameState): { id: string; p: PlayerId; played: boolean } | undefined {
   const head = before.pending[0];
   if (action.type === 'takeCard' && head?.kind === 'takeCard') {
-    if (action.deck === 'expansion') return { id: before.mode === 'original' ? 'o-expansion' : EXPANSION.id, p: head.player, played: true };
+    if (action.deck === 'expansion')
+      return { id: before.mode === 'original' ? 'o-expansion' : expansionCard(before).id, p: head.player, played: true };
     // Taking the oldest card may only open a peek at the deck; the card is taken by the peekChoice.
     if (after.pending[0]?.kind === 'peek' && after.pending[0].player === head.player) return;
     const row = action.deck === 'skill' ? before.market.skillRow : before.market.tacticRow;

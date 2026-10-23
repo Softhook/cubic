@@ -1,6 +1,18 @@
 export * from './types';
 export * from './data';
-export { defaultMapFor, hasPower, hooksOf, modeHasHook, playerCounts, rulesOf, say, shipOf, type CardRules, type RuleSet } from './rules';
+export {
+  defaultMapFor,
+  expansionCard,
+  hasPower,
+  hooksOf,
+  modeHasHook,
+  playerCounts,
+  rulesOf,
+  say,
+  shipOf,
+  type CardRules,
+  type RuleSet,
+} from './rules';
 export { MODES, RULESETS } from './rulesets';
 export { reword, type Words } from './words';
 export type { ActionOf } from './core';

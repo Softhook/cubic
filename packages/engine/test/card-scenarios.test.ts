@@ -10,12 +10,14 @@ import { describe, expect, it } from 'vitest';
 import { chooseAction } from '../../ai/src';
 import {
   apply as applyAction,
+  card,
   checkInvariants,
   combatOutcome,
   conquerCheck,
   deployTargets,
   deploysFree,
   die,
+  effectOf,
   EXPANSION,
   legalActions,
   nomadicTargets,
@@ -734,6 +736,12 @@ describe('passive skills and rule hooks', () => {
   });
 });
 
+// A mode's card with the rules of the card it started as (same effect) is covered by that card's scenario.
+const coveredByFrom = (id: string) => {
+  const from = card(id).from;
+  return !!from && effectOf(id) === effectOf(from) && covered.has(from);
+};
+
 it('has a scenario for every card', () => {
-  expect(CARD_IDS.filter((id) => !covered.has(id))).toEqual([]);
+  expect(CARD_IDS.filter((id) => !covered.has(id) && !coveredByFrom(id))).toEqual([]);
 });

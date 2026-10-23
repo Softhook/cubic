@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
-import { EXPANSION, card, cardKind, effectOf, rulesOf, say, type DeckKind, type GameState } from '@quantum/engine';
+import { card, cardKind, effectOf, expansionCard, rulesOf, say, type DeckKind, type GameState } from '@quantum/engine';
 import type { Legal } from '../game/legal';
 import type { Dispatch } from '../game/useGame';
 import { FOLD_MARKET, useMediaQuery } from '../game/useMediaQuery';
@@ -47,6 +47,7 @@ export function Market({
   };
   const canExpand = canTake('expansion', 0);
   const cardRules = rulesOf(game).cards!;
+  const expansion = expansionCard(game);
   const peek = cardRules.peek;
   const [viewing, setViewing] = useState<DeckKind | null>(null);
   const [viewingCard, setViewingCard] = useState<string | null>(null);
@@ -215,11 +216,11 @@ export function Market({
       {cardRules.expansionPile && (
         <div className="market-row market-expansion" style={{ '--cards': 1 } as CSSProperties}>
           <CardView
-            id={EXPANSION.id}
+            id={expansion.id}
             size="sm"
             badge={`×${m.expansions}`}
             art={!list}
-            onClick={canExpand ? () => dispatch({ type: 'takeCard', deck: 'expansion', index: 0 }) : () => setViewingCard(EXPANSION.id)}
+            onClick={canExpand ? () => dispatch({ type: 'takeCard', deck: 'expansion', index: 0 }) : () => setViewingCard(expansion.id)}
             className={`market-card ${m.expansions ? '' : 'empty'} ${canExpand ? 'takeable' : ''}`}
           />
         </div>
@@ -266,11 +267,11 @@ export function Market({
             <button
               type="button"
               className={`market-chip market-chip-expansion ${canExpand ? 'takeable' : ''}`}
-              title={`${m.expansions} Expansion cards left`}
-              data-card={EXPANSION.id}
-              onClick={() => setViewingCard(EXPANSION.id)}
+              title={`${m.expansions} ${expansion.name} cards left`}
+              data-card={expansion.id}
+              onClick={() => setViewingCard(expansion.id)}
             >
-              {EXPANSION.name} ×{m.expansions}
+              {expansion.name} ×{m.expansions}
             </button>
           </div>
         )}
@@ -361,7 +362,7 @@ function useWarmCards(game: GameState) {
   const ids = [
     ...m.skillRow,
     ...m.tacticRow,
-    ...(rulesOf(game).cards?.expansionPile ? [EXPANSION.id] : []),
+    ...(rulesOf(game).cards?.expansionPile ? [expansionCard(game).id] : []),
     ...game.players.flatMap((p) => [...p.skills.map((s) => s.id), ...(p.storedTactics ?? [])]),
     ...m.skillDeck,
     ...m.tacticDeck,

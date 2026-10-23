@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CardFace } from '@quantum/art';
 import { card, effectOf, isOriginalCard } from '@quantum/engine';
-import { DECKS, cardFontCss, faceOf, measure, tileFontCss, type Deck } from '../art/cards';
+import { DECKS, EDITIONS, cardFontCss, faceOf, measure, tileFontCss, type Deck } from '../art/cards';
 
-export { DECKS, cardFontCss, measure, tileFontCss, type Deck };
+export { DECKS, EDITIONS, cardFontCss, measure, tileFontCss, type Deck };
 
 /** A Community card that redesigns a 2013 card (its `classic` in data/cards.yaml). */
 export interface Redesign {
@@ -43,6 +43,13 @@ export function lineageNote(face: CardFace): string {
   const how = (r: Redesign) => `${r.renamed ? 'renamed, ' : ''}${r.sameRules ? 'same rules' : 'rules changed'}`;
   const from = LINEAGE.redesigns.find((r) => r.community.id === face.id);
   if (from) return `Redesign of classic ${from.classic.name} (${how(from)})`;
+  const def = card(face.id);
+  if (def.from) {
+    const was = faceOf(def.from).name;
+    return def.status === 'community'
+      ? `Copy of Community ${was}`
+      : `From Community ${was} (${def.status})${def.art ? ` · art: ${def.art.title}` : ''}`;
+  }
   const heirs = LINEAGE.redesigns.filter((r) => r.classic.id === face.id);
   if (heirs.length) return `Redesigned as ${heirs.map((r) => `${r.community.name} (${how(r)})`).join(' and ')}`;
   return isOriginalCard(face.id) ? 'Classic only: not in the Community Edition' : 'Community original: new in the Community Edition';

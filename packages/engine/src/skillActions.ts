@@ -26,6 +26,7 @@ import {
   spend,
   type Handlers,
 } from './core';
+import { card } from './data';
 import { boardLoc, cellOf, die } from './lookups';
 import { canGainResearch, canMoveDie, canScrappy, combatReroll, nomadicTargets, tacticalOptions } from './queries';
 import { hasPower } from './rules';
@@ -51,10 +52,12 @@ export const skillHandlers = {
     t.actionsLeft++;
     pl.ambitionTokens++;
     if (pl.ambitionTokens >= 3) {
-      pl.skills = pl.skills.filter((x) => x.id !== 'ambitious');
+      // The card held, which another edition's or mode's deck may name differently.
+      const id = skillCard(s, t.player, 'ambitious')!;
+      pl.skills = pl.skills.filter((x) => x.id !== id);
       pl.ambitionTokens = 0;
-      s.market.skillDiscard.push('ambitious');
-      log(s, `${pl.name}'s Ambitious skill is exhausted.`, t.player);
+      s.market.skillDiscard.push(id);
+      log(s, `${pl.name}'s ${card(id).name} skill is exhausted.`, t.player);
     }
   },
   flexible(s, a) {

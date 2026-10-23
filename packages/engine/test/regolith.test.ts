@@ -24,6 +24,11 @@ import {
   orbitedPlanets,
   grid,
   attackLaunches,
+  card,
+  cardKind,
+  effectOf,
+  EXPANSION,
+  expansionCard,
   legalActions,
   MODES,
   moveIndexes,
@@ -37,13 +42,14 @@ import {
   stopZone,
   tryApply,
   type Action,
+  type CardDef,
   type GameMode,
   type GameState,
   MAPS,
 } from '../src';
 import { cubeLeft } from '../src/core';
 import { beginPlay } from '../src/turn';
-import { REGOLITH_CARDS, REGOLITH_CONTESTED_DEPLOY, REGOLITH_HOME_SHIPYARD, REGOLITH_OVER_CONQUEST } from '../src/regolith';
+import { REGOLITH_CARDS, REGOLITH_DECKS, REGOLITH_CONTESTED_DEPLOY, REGOLITH_HOME_SHIPYARD, REGOLITH_OVER_CONQUEST } from '../src/regolith';
 import { picket } from '../src/regolith/powers/picket';
 import { shoot as shootPower, shootTargets } from '../src/regolith/powers/shoot';
 import { allowMapGroups, arrange, quickStart } from './helpers';
@@ -92,7 +98,24 @@ describe('Regolith mode', () => {
     const regolith = rulesOf(BASE.regolith);
     const community = rulesOf(BASE.community);
     expect(regolith.name).toBe('Regolith');
-    expect(regolith.cards).toBe(REGOLITH_CARDS ? community.cards : null);
+    // Its own decks: each card a Community card's rules (`effect`) under its own id and name, Ingenious left out.
+    if (REGOLITH_CARDS) {
+      const own = regolith.cards!;
+      expect(own.skills).toBe(REGOLITH_DECKS.skills);
+      expect(own.tactics).toBe(REGOLITH_DECKS.tactics);
+      expect(own.expansion).toBe(REGOLITH_DECKS.expansion[0]);
+      const from = (c: CardDef) => card(c.from!);
+      expect(own.skills.map((c) => c.from)).toEqual(community.cards!.skills.filter((c) => c.id !== 'ingenious').map((c) => c.id));
+      expect(own.tactics.map((c) => c.from)).toEqual(community.cards!.tactics.map((c) => c.id));
+      for (const c of [...own.skills, ...own.tactics, own.expansion!]) {
+        expect(c.id, c.id).toBe(`r-${c.from}`);
+        expect(effectOf(c.id), c.id).toBe(effectOf(c.from!));
+        expect([c.count, c.category], c.id).toEqual([from(c).count, from(c).category]);
+        expect(cardKind(c.id), c.id).toBe(cardKind(c.from!));
+      }
+      expect(expansionCard(BASE.regolith)).toBe(own.expansion);
+      expect(expansionCard(BASE.community)).toBe(EXPANSION);
+    } else expect(regolith.cards).toBeNull();
     expect(regolith.mapGroups).toEqual(['hex', 'open', 'drift', 'basic']); // 'basic' only in this file: see BASE
     const played = MAPS.filter((m) => ['hex', 'open', 'drift'].includes(m.group));
     for (const m of played) {

@@ -73,30 +73,30 @@ Done (23 October 2026).
 
 ## 3. Cards: data
 
-Regolith's cards get their own data file from the start, so the deck can move away from Community one
-card at a time and `data/cards.yaml` stays the Community Edition record.
+Done (23 October 2026). Regolith's cards have their own data file, so the deck can move away from Community
+one card at a time and `data/cards.yaml` stays the Community Edition record.
 
 ```
 data/
   cards.yaml          Community and Classic, as now
-  regolith.yaml       Regolith's decks: permanent, one-shot, and the Expansion card
-packages/engine/src/data/
-  regolith.json       built by scripts/build-data.mjs, as cards.json is
+  regolith.yaml       Regolith's decks: Skills, Tactics, and the Expansion card (Reinforcements)
+packages/engine/src/regolith/
+  cards.json          built by scripts/build-data.mjs, in the mode's folder so it stays the mode's own
 ```
 
 **Choosing names and art.** [card-ideas.yaml](card-ideas.yaml) holds three name candidates and three
 screenprint art briefs for every card; `npm run regolith:picks` builds them into the
 [Regolith Card Picks](https://claude.ai/artifact/TMRLCRjR8BTSeGU8NrDWA1) page, where each card keeps its
 name, takes a candidate or a name typed in, and gets an art brief and a note. The picks are saved with the
-page; settled ones go into `regolith.yaml` as `renamed` cards.
+page; settled ones go into `regolith.yaml`.
 
-**The first version is a copy.** Every Community card appears once, with the same name, text, category
-and count, and `effect` pointing at the Community card's rule (`effect: agile`). The game then plays
-exactly as Prototyping does today, but from its own deck. Ingenious ("conquer from the corners") is left
-out, as hex tiles have no corners.
+**The first version is renamed copies.** Every Community card appears once, under the name picked on that
+page (all but Sabotage were renamed), with the same category and count, its text in Regolith's words, and
+`effect` pointing at the Community card's rule (`effect: agile`). The game plays exactly as before, from
+its own deck. Ingenious ("conquer from the corners") is left out, as hex tiles have no corners.
 
 Each card is a `CardDef` with the fields cards already have (`id`, `name`, `subtitle`, `text`,
-`category`, `count`, `notes`, `effect`), plus:
+`category`, `count`, `notes`, `effect`), plus `art` (the brief its screenprint card is drawn from) and:
 
 - **`from`**: the Community card it started as. It stays when the card changes, so the Art Lab can show
   the lineage (as `classic` does for Community cards) and it is clear how far each card has moved.
@@ -105,16 +105,22 @@ Each card is a `CardDef` with the fields cards already have (`id`, `name`, `subt
   a new `effect`), `new` (no Community ancestor, no `from`).
 
 Ids are prefixed (`r-`) so they never collide with Community's or Classic's (`o-`).
-[build-data.mjs](../../scripts/build-data.mjs) checks what it checks for `cards.yaml`, plus that every
-`effect` is one the engine knows and that `status` agrees with `from` and `effect`.
+[build-data.mjs](../../scripts/build-data.mjs) checks the ids, that `from` is a Community card, that
+`status` agrees with `from`, `name` and `effect`, and that a card with its ancestor's action keeps its
+category; `data.test.ts` checks every `effect` is one the engine has.
 
-[data.ts](../../packages/engine/src/data.ts) exports `REGOLITH_PERMANENT`, `REGOLITH_ONESHOT` and
-`REGOLITH_EXPANSION` and adds them to `ALL_CARDS`; the prototype kit re-exports them for the mode.
+The mode's folder imports its `cards.json` (`REGOLITH_DECKS`); nothing else in the engine names it. The
+engine learns its cards from the rule set: `defineRuleSets` (rules.ts) adds each mode's own decks to the
+cards `card()` and `ALL_CARDS` know (`addCards`, data.ts), and `CardRules.expansion` names the mode's own
+Expansion card (`expansionCard(state)`, which the market and card flights ask).
 
 ## 4. Cards: rules
 
 - `regolithMode()` sets `cards` to Regolith's decks, with Community's market settings (starting draft,
   peek, expansion pile, no refresh). `REGOLITH_CARDS` still switches cards off. `terms` names the decks.
+  Done (23 October 2026).
+- **No card is named by id in the rules.** Effects are found by `effectOf`, and the card held by
+  `skillCard` (Ambitious discarded itself by the literal id `'ambitious'` until the Regolith deck showed it).
 - **Renamed cards** need no rules work: the engine resolves a card through `effectOf`, and the AI values
   cards by effect ([cardValues.ts](../../packages/ai/src/cardValues.ts)).
 - **Reworked and new cards** need new rules. Where an effect can be written as a hook, it goes in
@@ -167,12 +173,15 @@ should agree with it; how far the tiles move towards flat inks is open, below.
 ## 6. Web
 
 - The lobby's mode menu lists Regolith where Prototyping was (it comes from `MODES`), with the hex maps. Done.
-- [apps/web/src/art/cards.ts](../../apps/web/src/art/cards.ts): `DECKS` gains Regolith's decks with
-  `edition: 'regolith'`; `faceOf` finds their faces. The game shows the cards of the mode it plays.
+- [apps/web/src/art/cards.ts](../../apps/web/src/art/cards.ts): `DECKS` gains each mode's own decks from
+  its rule set (`edition` is the mode's id), and `faceOf` finds their faces. A card draws the picture of
+  the card it is `from` (`CardFace.scene`) until it has its own. The game shows the cards of the mode it
+  plays. Done (23 October 2026).
 - On-screen cards (`cardImages`, `cardPalette`) render through the deck's renderer, so a Regolith game's
   market and hand show screenprint cards.
-- Art Lab (`#lab/cards`): a Regolith group, each card beside the Community card it is `from`, with its
-  `status`; print exports pick it by edition, so a print run is a whole Regolith deck.
+- Art Lab (`#lab/cards`): a Regolith edition (done), each card's note naming the Community card it is
+  `from`, its `status` and its art brief; print exports pick it by edition, so a print run is a whole
+  Regolith deck. Still to do: each card beside its Community card, as the Redesigns view pairs them.
 - The rulebook and in-game help name the mode's cards as `terms` says. The field-manual style
   (CardStyles D) suits the help and reference cards rather than the deck faces.
 - The player aid gets a Regolith version later: the mech die faces and the mode's rules on one sheet.
@@ -207,9 +216,9 @@ A card renamed in its own deck can say the words itself; the rewording leaves th
 1. **Rename and hex only.** *Done (22–23 October 2026):* the lobby and game say Regolith, the id and
    folder are renamed (§1), the mode plays hex maps only, each with its world (§2), and its ships carry the
    mech names, which the engine and web app take from the game's rules.
-2. **Own deck.** `data/regolith.yaml` as a copy of Community's, the build step, exports, `regolithMode()`
-   dealing it, `DECKS` and the Art Lab listing it, drawn with today's `cardSvg` for now. The game plays
-   as before, from its own deck.
+2. **Own deck.** *Done (23 October 2026):* `data/regolith.yaml` with the names picked on the Card Picks
+   page, the build step, `regolithMode()` dealing it, `DECKS` and the Art Lab listing it, drawn with
+   today's `cardSvg` and the Community pictures for now. The game plays as before, from its own deck.
 3. **Screenprint renderer.** Inks, plates, the card layout and backs, with plain art windows. Market,
    viewer and print exports switch to it.
 4. **Screenprint kit.** Mechs, objectives, props; the category art for copied cards.
