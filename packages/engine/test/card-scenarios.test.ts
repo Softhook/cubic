@@ -149,6 +149,15 @@ describe('tactics, gambits and expansion', () => {
     }),
   );
 
+  cardCase(['r-sabotage'], 'Sabotage (Regolith)', () => {
+    let s = quickStart(2, 198, 'regolith', 'alpha-hex');
+    const foe = 1 - s.turn.player;
+    setSkills(s, s.turn.player, []);
+    const before = s.players[foe].actionPenalty;
+    s = resolveWithAi(takeTactic(s, 'r-sabotage'), seededRandom(7)).s;
+    expect(s.players[foe].actionPenalty).toBe(before + 2);
+  });
+
   cardCase([EXPANSION.id], 'Expansion', () => {
     let s = quickStart(2, 199, 'community');
     const p = s.turn.player;

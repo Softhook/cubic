@@ -7,7 +7,7 @@
 #
 # Names follow the CardStyles board: Skills are crews, kit and habits (Servo Tuning, Hot Loads), Tactics are
 # operations (Railgun Strike, Ice Tunnel). Words and setting come from REGOLITH-WORLD.md: mechs, objectives,
-# perimeters, claiming, power, research, salvage yard, refit, drop, orbital strike. No space, no aliens.
+# perimeters, claiming, power, research, salvage yard, refit, drop, atomic. No space, no aliens.
 #
 # Art briefs are for the screenprint renderer (REGOLITH.md §5): three flat inks, bold shapes, one subject
 # from the kit (the six mechs, the five objectives, the props) or the crews who work them.
@@ -204,13 +204,13 @@ skills:
       - { title: Poster, brief: 'A settlement propaganda poster: the flag over an objective, in two inks.' }
   profiteering:
     names:
-      - { name: Arms Deal, why: "Trade a claim's card for an orbital strike" }
+      - { name: Arms Deal, why: "Trade a claim's card for an atomic" }
       - { name: Strike Credits, why: 'Claims buy firepower' }
       - { name: Bounty Contract, why: 'The Free Port pays in ordnance' }
     art:
       - { title: Crates, brief: 'An ordnance crate traded across a counter for a stamped deed.' }
       - { title: Beacon, brief: 'A strike beacon in its case, a price tag on the handle.' }
-      - { title: Contract, brief: 'A contract with a stamp shaped like an orbital strike.' }
+      - { title: Contract, brief: 'A contract with a stamp shaped like an atomic.' }
   rational:
     names:
       - { name: By the Book, why: 'Every fight goes the same way: a steady 3' }
@@ -332,7 +332,7 @@ tactics:
       - { title: Muster, brief: 'Crews running to their mechs at a muster point.' }
   black-market:
     names:
-      - { name: Contraband, why: 'Two orbital strikes, no questions asked' }
+      - { name: Contraband, why: 'Two atomics, no questions asked' }
       - { name: Back Channel, why: 'Ordnance through the Free Port' }
       - { name: Smugglers, why: 'The people who bring it' }
     art:

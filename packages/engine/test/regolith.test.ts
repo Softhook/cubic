@@ -98,7 +98,8 @@ describe('Regolith mode', () => {
     const regolith = rulesOf(BASE.regolith);
     const community = rulesOf(BASE.community);
     expect(regolith.name).toBe('Regolith');
-    // Its own decks: each card a Community card's rules (`effect`) under its own id and name, Ingenious left out.
+    // Its own decks: each card a Community card's rules (`effect`) under its own id and name, unless reworked;
+    // Ingenious left out.
     if (REGOLITH_CARDS) {
       const own = regolith.cards!;
       expect(own.skills).toBe(REGOLITH_DECKS.skills);
@@ -109,7 +110,7 @@ describe('Regolith mode', () => {
       expect(own.tactics.map((c) => c.from)).toEqual(community.cards!.tactics.map((c) => c.id));
       for (const c of [...own.skills, ...own.tactics, own.expansion!]) {
         expect(c.id, c.id).toBe(`r-${c.from}`);
-        expect(effectOf(c.id), c.id).toBe(effectOf(c.from!));
+        if (c.status !== 'reworked') expect(effectOf(c.id), c.id).toBe(effectOf(c.from!));
         expect([c.count, c.category], c.id).toEqual([from(c).count, from(c).category]);
         expect(cardKind(c.id), c.id).toBe(cardKind(c.from!));
       }

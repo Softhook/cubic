@@ -103,6 +103,7 @@ export const CHECKED_EFFECTS = new Set([
   'plan-ahead',
   'sabotage',
   'sabotage-original',
+  'sabotage-double',
   'show-of-force',
   'warp-gate',
   'change-of-heart',
@@ -415,7 +416,8 @@ const ORACLES: ((c: Step) => void)[] = [
     const p = after.turn.player;
     // A Sabotage played in this same step, by another player, already applies to this turn.
     const played = playedCard(c);
-    const penalty = before.players[p].actionPenalty + (played && effectOf(played.id) === 'sabotage' && played.p !== p ? 1 : 0);
+    const sabotage = played && played.p !== p ? ({ sabotage: 1, 'sabotage-double': 2 } as Record<string, number>)[effectOf(played.id)] : 0;
+    const penalty = before.players[p].actionPenalty + (sabotage ?? 0);
     const base = after.turn.bonus ? 2 : Math.max(0, 3 - penalty);
     const mine = shipsOnBoard(after, p);
     const arrogant =
@@ -490,10 +492,12 @@ const ORACLES: ((c: Step) => void)[] = [
         if (now.planAhead < 1) bad('Plan Ahead not in effect');
         break;
       case 'sabotage':
+      case 'sabotage-double':
         for (const o of after.players) {
           if (o.id === p) continue;
           const started = turnChanged(c) && after.turn.player === o.id;
-          if (o.actionPenalty !== before.players[o.id].actionPenalty + 1 && !started) bad(`${o.name} not sabotaged`);
+          const lost = effectOf(id) === 'sabotage' ? 1 : 2;
+          if (o.actionPenalty !== before.players[o.id].actionPenalty + lost && !started) bad(`${o.name} not sabotaged`);
         }
         break;
       case 'sabotage-original':

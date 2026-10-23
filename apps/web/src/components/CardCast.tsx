@@ -144,7 +144,7 @@ function stepTargets(before: GameState, game: GameState, player: number): Target
   if (
     game.turn.number !== before.turn.number &&
     game.turn.player !== player &&
-    game.log.some((e) => e.id > last && e.card && effectOf(e.card) === 'sabotage')
+    game.log.some((e) => e.id > last && e.card && ['sabotage', 'sabotage-double'].includes(effectOf(e.card)))
   ) {
     out.push(actionsTarget(game, game.turn.player));
   }

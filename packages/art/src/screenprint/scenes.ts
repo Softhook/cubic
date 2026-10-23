@@ -1,6 +1,6 @@
 import { n } from '../svg';
 import type { World } from '../tile/look';
-import { INKS } from './inks';
+import { INKS, ON_PAPER } from './inks';
 import {
   GROUND,
   flash,
@@ -391,7 +391,7 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-profiteering': {
     world: 'mars',
-    caption: 'a strike beacon planted by a claim flag, the orbital strike it bought landing on the horizon',
+    caption: 'a strike beacon planted by a claim flag, the atomic it bought landing on the horizon',
     draw: (s) =>
       outdoors(s, 26, { planet: false }) +
       // the strike: a beam from orbit, its flash and smoke on the horizon
@@ -565,7 +565,7 @@ export const SCENES: Record<string, SpScene> = {
   // ---------------------------------------------------------------------------------------------- Tactics
   'r-aggression': {
     world: 'mars',
-    caption: 'a two-ink recruitment poster: raised fists and a Chameleon',
+    caption: 'a two-ink recruitment poster: raised fists and a Chameleon standing on the red ground',
     draw: (s) => {
       const fist = (x: number, h: number, t: number) =>
         `<g transform="rotate(${t} ${x} 44)"><rect x="${x - 2.6}" y="${44 - h}" width="5.2" height="${h}" fill="${INKS.oxide}"/><rect x="${x - 3.6}" y="${44 - h - 5}" width="7.2" height="6" rx="1.6" fill="${INKS.oxide}"/></g>`;
@@ -573,26 +573,59 @@ export const SCENES: Record<string, SpScene> = {
         paperGround(s) +
         rays(s, 32, 18, 28, INKS.oxide, 180, 360) +
         `<circle cx="32" cy="18" r="8" fill="${s.paper}"/>` +
-        mech(s, 'chameleon', 32, 38, 0.13, { yaw: 0, arms: { plus: [-140, 0] } }, { plate: INKS.oxide }) +
+        mech(s, 'chameleon', 32, 42, 0.12, { yaw: 0, arms: { plus: [-140, 0] } }, { plate: INKS.oxide }) +
         [6, 14, 50, 58].map((x, i) => fist(x, 12 + (i % 2) * 6, (i < 2 ? -1 : 1) * 6)).join('')
       );
     },
   },
   'r-black-market': {
     world: 'mars',
-    caption: 'a trader lifting the lid on a case of strike beacons',
-    draw: (s) =>
-      paperGround(s) +
-      sky(s, { planet: { x: 52, y: 8, r: 9 } }) +
-      land(s, 30) +
-      `<circle cx="34" cy="28" r="14" fill="${INKS.amber}" opacity="0.18"/>` +
-      r2(22, 30, 26, 9, s.key) +
-      `<g transform="rotate(-50 22 30)">${r2(22, 25, 26, 5, s.key)}</g>` +
-      r2(23.4, 31, 23, 4, s.ink.recess) +
-      [26, 30.5, 35, 39.5, 44]
-        .map((x) => r2(x - 1, 27.6, 2, 6, INKS.bone) + `<circle cx="${x}" cy="27.4" r="0.9" fill="${INKS.amber}"/>`)
-        .join('') +
-      person(52, 41, 0.3, { facing: -1, arms: [110, 70], elbows: [-30, 20], lean: -14 }, s.key, s.paper),
+    caption: 'two atomic rockets in an open crate, warning stencils on them',
+    draw: (s) => {
+      // An atomic: bone body, oxide nose and fins, an amber trefoil on a key band. Its foot (x, y) is in the crate.
+      const atomic = (x: number, y: number, h: number) => {
+        const top = y - h;
+        const t = top + h * 0.38;
+        const blade = (a: number) => {
+          const p = (r: number, d: number) =>
+            `${n(x + r * Math.cos(((a + d) * Math.PI) / 180))},${n(t + r * Math.sin(((a + d) * Math.PI) / 180))}`;
+          return path(
+            `M${p(0.45, -30)} L${p(1.5, -30)} A1.5,1.5 0 0 1 ${p(1.5, 30)} L${p(0.45, 30)} A0.45,0.45 0 0 0 ${p(0.45, -30)} Z`,
+            INKS.key,
+          );
+        };
+        return (
+          path(`M${n(x - 2.4)},${n(y - 7)} L${n(x - 5)},${n(y - 1)} L${n(x - 2.4)},${n(y - 2)} Z`, INKS.oxide) +
+          path(`M${n(x + 2.4)},${n(y - 7)} L${n(x + 5)},${n(y - 1)} L${n(x + 2.4)},${n(y - 2)} Z`, INKS.oxide) +
+          r2(x - 2.4, top, 4.8, h, INKS.bone) +
+          r2(x + 1.2, top, 1.2, h, s.ink.seam) +
+          path(
+            `M${n(x - 2.4)},${n(top)} Q${n(x - 2.4)},${n(top - 4)} ${n(x)},${n(top - 7.5)} Q${n(x + 2.4)},${n(top - 4)} ${n(x + 2.4)},${n(top)} Z`,
+            INKS.oxide,
+          ) +
+          r2(x - 2.4, t - 2.2, 4.8, 4.4, INKS.amber) +
+          blade(-90) +
+          blade(30) +
+          blade(150) +
+          `<circle cx="${n(x)}" cy="${n(t)}" r="0.3" fill="${INKS.key}"/>`
+        );
+      };
+      return (
+        paperGround(s) +
+        sky(s, { planet: false }) +
+        land(s, 30) +
+        `<circle cx="31" cy="22" r="17" fill="${INKS.amber}" opacity="0.16"/>` +
+        atomic(25, 34, 18) +
+        atomic(37, 34, 18) +
+        // the crate: its front, slats and a hazard band; the lid against its side
+        `<g transform="rotate(14 50 39)">${r2(47, 22, 4, 17, INKS.key)}${r2(47, 22, 4, 1, ON_PAPER.recess)}</g>` +
+        r2(17, 30, 28, 10, INKS.key) +
+        r2(17, 30, 28, 1.2, ON_PAPER.recess) +
+        [24, 31, 38].map((x) => r2(x, 31.2, 0.5, 8.8, ON_PAPER.recess)).join('') +
+        `<clipPath id="${s.id}-band"><rect x="17" y="35" width="28" height="2.4"/></clipPath>` +
+        `<g clip-path="url(#${s.id}-band)">${r2(17, 35, 28, 2.4, INKS.amber)}${[...Array(10)].map((_, i) => path(`M${17 + i * 3},37.4 l1.4,0 l2.4,-2.4 l-1.4,0 Z`, INKS.key)).join('')}</g>`
+      );
+    },
   },
   'r-change-of-heart': {
     world: 'phobos',

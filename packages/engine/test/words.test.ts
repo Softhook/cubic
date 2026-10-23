@@ -16,10 +16,10 @@ describe("a mode's words", () => {
     );
     expect(reword(words, 'A reconfigured ship must change its number')).toBe('A refitted mech must change its number');
     expect(reword(words, 'Take a missile instead of a card earned by conquering.')).toBe(
-      'Take an orbital strike instead of a card earned by claiming.',
+      'Take an atomic instead of a card earned by claiming.',
     );
     expect(reword(words, 'Missiles: 1. Dominance: 2. Free Reconfigure. Place Warp Gate 1 of 2.')).toBe(
-      'Orbital strikes: 1. Power: 2. Free Refit. Place Ice Tunnel 1 of 2.',
+      'Atomics: 1. Power: 2. Free Refit. Place Ice Tunnel 1 of 2.',
     );
     expect(reword(words, 'an orbital position; Conquer planet 3; deployed')).toBe('a perimeter space; Claim objective 3; dropped');
   });

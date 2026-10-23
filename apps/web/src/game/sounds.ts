@@ -34,6 +34,7 @@ const TACTIC_SOUNDS: Record<string, Sound> = {
   'plan-ahead': 'lockOn',
   sabotage: 'powerDown',
   'sabotage-original': 'powerDown',
+  'sabotage-double': 'powerDown',
   'show-of-force': 'alarm',
   'unveil-the-fleet': 'unveil',
   reorganization: 'unveil',

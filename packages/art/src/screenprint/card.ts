@@ -7,7 +7,7 @@ import { SCENES } from './scenes';
 
 /**
  * The screenprint cards (docs/regolith/REGOLITH.md §5), after the CardStyles board's screenprint row: the scene
- * at the top in flat inks, a rule in the card's colour plate, the name stencilled over the plate's shadow, a
+ * at the top in flat inks, a rule in the card's colour plate, the name stencilled in the paper's ink, a
  * reversed label bar, the rules in condensed type, and a footer. Permanent cards are on paper in key ink;
  * one-shot cards on night paper in bone. Same size, bleed and safe area as the holo cards (card.ts).
  */
@@ -131,14 +131,12 @@ function panel(face: CardFace, s: Stage, area: Box, measure: Measure): string {
   out += rect({ x: area.x, y: ART_BOTTOM, w: area.w, h: area.y + area.h - ART_BOTTOM }, `url(#${s.id}-soft)`, ' opacity="0.5"');
   out += rect({ x: area.x, y: ART_BOTTOM - 0.1, w: area.w, h: 1 }, s.plate);
 
-  // The name, stencilled over its plate's shadow, as large as fits.
+  // The name, as large as fits.
   const textW = W - 2 * SAFE;
   const name = face.name.toUpperCase();
   const size = Math.min(5.8, textW / (measure(name, 1, 'stencil') * 1.04));
   const nameY = ART_BOTTOM + 3.2 + size * 0.95;
-  const nameAt = (dx: number, dy: number, fill: string) =>
-    `<text x="${n(SAFE + dx)}" y="${n(nameY + dy)}" font-family="${SP_FONTS.stencil}" font-size="${n(size)}" letter-spacing="${n(size * 0.02)}" fill="${fill}">${esc(name)}</text>`;
-  out += nameAt(0.5, 0.35, s.plate) + nameAt(0, 0, ink);
+  out += `<text x="${n(SAFE)}" y="${n(nameY)}" font-family="${SP_FONTS.stencil}" font-size="${n(size)}" letter-spacing="${n(size * 0.02)}" fill="${ink}">${esc(name)}</text>`;
 
   // The label bar: deck, category, kind, reversed out of the key ink.
   const tag =

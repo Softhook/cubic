@@ -80,6 +80,10 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
   sabotage: (s, p) => {
     for (const o of s.players) if (o.id !== p) o.actionPenalty++;
   },
+  // Regolith's Sabotage: two actions instead of one.
+  'sabotage-double': (s, p) => {
+    for (const o of s.players) if (o.id !== p) o.actionPenalty += 2;
+  },
   'show-of-force': (s, p) => {
     if (shipsOnBoard(s).length) s.pending.unshift({ kind: 'showOfForce', player: p });
   },

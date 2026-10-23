@@ -34,8 +34,8 @@ export const REGOLITH_WORDS: Words = {
   deployed: 'dropped',
   deploying: 'dropping',
   deployment: 'drop',
-  missile: 'orbital strike',
-  missiles: 'orbital strikes',
+  missile: 'atomic',
+  missiles: 'atomics',
   'warp gate': 'ice tunnel',
   'warp gates': 'ice tunnels',
 };

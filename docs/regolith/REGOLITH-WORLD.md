@@ -131,7 +131,7 @@ decided, not forgotten.
 | Scrapyard | **Salvage yard** |
 | Reconfigure | **Refit** |
 | Deploy | **Drop** |
-| Missile | **Orbital Strike** |
+| Missile | **Atomic** |
 | Warp Gate | **Ice Tunnel** |
 | Skill / Tactic | **Skill / Tactic** |
 | Sector (map names) | **Region**: Utopia Planitia, Hellas Basin, Shackleton |

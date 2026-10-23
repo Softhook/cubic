@@ -124,7 +124,7 @@ function PlayerCard({
         )}
         {p.actionPenalty > 0 && (
           <Tip className="stat bad" data-fx="penalty" tip="Sabotaged: fewer actions next turn">
-            −{p.actionPenalty} action
+            −{p.actionPenalty} action{p.actionPenalty > 1 ? 's' : ''}
             <Flash e={effectAt(fx, 'penalty')} />
           </Tip>
         )}
