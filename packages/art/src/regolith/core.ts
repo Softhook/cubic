@@ -17,8 +17,9 @@ const MARGIN = 20;
  * The pixel the ground's light is made for, in board units (its `kernelUnitLength`). Chrome lights a pixel
  * at a time whatever it's told, from heights in 256 steps: much finer, as in print, each step catches the
  * light as a ridge, in wiggly contour lines all over the ground, so print lights it at this and scales it up.
+ * As fine as the ground keeps clear of them (npm run ground:check): at 0.2 they start to show.
  */
-export const LIT = 0.28;
+export const LIT = 0.24;
 
 /** The point `d` from the origin at `angle` degrees (0 right, y down). */
 export const polar = (angle: number, d: number): Spot => ({

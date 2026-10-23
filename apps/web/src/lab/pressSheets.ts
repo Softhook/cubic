@@ -23,11 +23,72 @@ export type TileView = Pick<TileOptions, 'look' | 'planetAt'>;
  * it's made for and scaled up (art `tileGroundSvg`), since drawn at a print's resolution it falls into contour lines.
  */
 export async function printedTileSvg(t: TileSpec, o: Omit<TileOptions, 'ground'>): Promise<string> {
-  const lit = tileGroundSvg(t, o);
-  if (!lit) return tileSvg(t, o);
-  const px = REGOLITH_GROUND_PX;
-  return tileSvg(t, { ...o, ground: await blobToDataUrl(await rasterise(lit, px, px)) });
+  return lookWorld(o.look) ? tileSvg(t, { ...o, ground: await litGround(t, o) }) : tileSvg(t, o);
 }
+
+/** `printedTileSvg` straight away, once the tile's ground is drawn (`litGround`): undefined until then. */
+export function printedTileSvgNow(t: TileSpec, o: Omit<TileOptions, 'ground'>): string | undefined {
+  if (!lookWorld(o.look)) return tileSvg(t, o);
+  const ground = grounds.get(groundKey(t, o))?.drawn;
+  return ground && tileSvg(t, { ...o, ground });
+}
+
+/**
+ * Lit grounds, as PNG data URLs, by the tile and where it's drawn (`groundKey`). Drawing one takes ~75 ms, and
+ * a tile's ground is the same whatever's printed over it (markings, bleed, fonts), so its thumbnail, detail and
+ * exports share it. Each is some 2.3 MB, so only the latest `KEEP_GROUNDS` are kept: a set of tiles on one world.
+ */
+const grounds = new Map<string, { url: Promise<string>; drawn?: string }>();
+const KEEP_GROUNDS = 32;
+
+/** Whether a tile's ground is drawn, so `printedTileSvgNow` has it. */
+export const groundDrawn = (t: TileSpec, o: TileView) => !!grounds.get(groundKey(t, o))?.drawn;
+
+/** What a tile's ground is drawn from: the tile (its seed, type and rings) and its look and planet's spot. */
+const groundKey = (t: TileSpec, o: TileView) => JSON.stringify([t, o.look, o.planetAt ?? '']);
+
+/** A tile's lit ground on its world (art `tileGroundSvg`), drawn at the size its light is made for, once. */
+export function litGround(t: TileSpec, o: TileView): Promise<string> {
+  const key = groundKey(t, o);
+  let ground = grounds.get(key);
+  if (ground) grounds.delete(key);
+  else {
+    const px = REGOLITH_GROUND_PX;
+    const url = rasterise(tileGroundSvg(t, o)!, px, px).then(blobToDataUrl);
+    const entry: { url: Promise<string>; drawn?: string } = { url };
+    url.then((u) => (entry.drawn = u)).catch(() => grounds.delete(key));
+    ground = entry;
+  }
+  // Last in the map is the latest used, so the first is the one to let go.
+  grounds.set(key, ground);
+  if (grounds.size > KEEP_GROUNDS) grounds.delete(grounds.keys().next().value!);
+  return ground.url;
+}
+
+/** Thumbnails of tiles as they print, as image URLs, by the tile and how it's shown (`thumbnail`). */
+const thumbnails = new Map<string, Promise<string>>();
+/** A tile's latest thumbnail in each look, to show while its next is drawn (a reroll, markings on or off). */
+const latestThumbnails = new Map<string, string>();
+
+/**
+ * A tile as it prints, drawn small (`px` across) for a thumbnail: on a world's ground, its own ground drawn
+ * once at full size (`litGround`) and the tile drawn down from it. Kept, so each is drawn once.
+ */
+export function thumbnail(t: TileSpec, o: Omit<TileOptions, 'ground'>, px: number): Promise<string> {
+  const key = JSON.stringify([t, o, px]);
+  let url = thumbnails.get(key);
+  if (!url) {
+    url = printedTileSvg(t, o)
+      .then((svg) => rasterise(svg, px, px))
+      .then((blob) => URL.createObjectURL(blob));
+    url.then((u) => latestThumbnails.set(`${t.id}:${o.look}`, u)).catch(() => thumbnails.delete(key));
+    thumbnails.set(key, url);
+  }
+  return url;
+}
+
+/** The latest thumbnail drawn of a tile in a look (`thumbnail`), if any. */
+export const latestThumbnail = (t: TileSpec, look: TileOptions['look']) => latestThumbnails.get(`${t.id}:${look}`);
 
 /**
  * A tile as a printable face, named for where its planet sits when that's not the middle, and for the

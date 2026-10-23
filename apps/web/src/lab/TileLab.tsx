@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   OFF_CENTRE,
   TILE_SET,
@@ -6,6 +6,7 @@ import {
   dataUrl,
   editableTileSvg,
   lookShape,
+  lookWorld,
   tileSvg,
   type PlanetType,
   type TileLook,
@@ -17,7 +18,16 @@ import { fileName, pieceSize } from '../print/pieces';
 import { PrintPanel, Space } from '../print/PrintPanel';
 import { tileFontCss, useFontCss, useSvgUrl } from './cards';
 import { LabHeader } from './LabHeader';
-import { TILE_PRINT, printableTile, printedTileSvg } from './pressSheets';
+import {
+  TILE_PRINT,
+  groundDrawn,
+  latestThumbnail,
+  litGround,
+  printableTile,
+  printedTileSvg,
+  printedTileSvgNow,
+  thumbnail,
+} from './pressSheets';
 
 /**
  * Art Lab, tiles page (#lab): every tile of the physical set, with controls to explore seeds and
@@ -26,6 +36,9 @@ import { TILE_PRINT, printableTile, printedTileSvg } from './pressSheets';
  * exported as hex tiles too (die-cut along the flower), in space or on the moon (the Regolith look), and with
  * its planets moved off the middle, as maps place them (docs/HEX.md).
  */
+
+/** A thumbnail's size, px: its tile shown up to ~200 px across, at 2× device pixels. */
+const THUMB_PX = 400;
 
 const TYPES: PlanetType[] = ['gas', 'rocky', 'ice', 'lava', 'ocean'];
 
@@ -47,17 +60,59 @@ export function TileLab() {
   const fonts = useFontCss(tileFontCss);
 
   const specs = useMemo(() => TILE_SET.map((t) => ({ ...t, ...overrides[t.id] })), [overrides]);
+  // Drawn live where there's no thumbnail as it prints yet (below): in space, and on a world till it's drawn.
   const thumbs = useMemo(
-    () => specs.map((t) => ({ spec: t, url: dataUrl(tileSvg(t, { ...view, markings, rounded: true })) })),
+    () =>
+      specs.map((t) => ({
+        spec: t,
+        url: lookWorld(view.look) && latestThumbnail(t, view.look) ? '' : dataUrl(tileSvg(t, { ...view, markings, rounded: true })),
+      })),
     [specs, markings, view],
   );
   const spec = specs.find((t) => t.id === selected)!;
+  const world = lookWorld(look);
+
+  // On a world's ground the light depends on the size it's drawn at (Chrome ignores `kernelUnitLength`), so a
+  // tile drawn live at a thumbnail's or the detail's size isn't what prints. Each is shown as it prints, as the
+  // PNGs are, from its ground drawn once (pressSheets `litGround`): the selected tile's first, then the rest's.
+  // Counting them in redraws the page as each is ready.
+  const [, setDrawn] = useState(0);
+  useEffect(() => {
+    if (!world) return;
+    let live = true;
+    (async () => {
+      // The detail's own ground, which the thumbnails may have drawn and let go since.
+      await litGround(spec, view).catch(() => {});
+      if (!live) return;
+      setDrawn((n) => n + 1);
+      for (const t of [spec, ...specs.filter((t) => t !== spec)]) {
+        await thumbnail(t, { ...view, markings, rounded: true }, THUMB_PX).catch(() => {});
+        if (!live) return;
+        setDrawn((n) => n + 1);
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [world, spec, specs, view, markings]);
+
   // A hex tile is shown cut to its flower; a square one as printed, with its bleed.
-  const svg = useMemo(
-    () => tileSvg(spec, { ...view, markings, bleed, fontCss: fonts ?? '', rounded: shape === 'hex' }),
-    [spec, markings, bleed, fonts, view, shape],
-  );
-  const detail = useSvgUrl(svg);
+  const detailOptions = { ...view, markings, bleed, fontCss: fonts ?? '', rounded: shape === 'hex' };
+  // As it prints once its ground is drawn. Until then, so it doesn't flash the live drawing: the last drawing
+  // of this tile in this look (a reroll, markings on or off), else its thumbnail (its ground let go since);
+  // drawn live only before either is.
+  const latest = useRef<{ id: string; look: TileLook; svg: string }>(undefined);
+  const ready = world && groundDrawn(spec, view);
+  const { svg, live } = useMemo(() => {
+    const printed = printedTileSvgNow(spec, detailOptions);
+    if (printed) latest.current = { id: spec.id, look, svg: printed };
+    else if (latest.current?.id === spec.id && latest.current.look === look) return { svg: latest.current.svg, live: false };
+    return { svg: printed ?? tileSvg(spec, detailOptions), live: !printed };
+    // `ready` stands for the drawn ground, which `printedTileSvgNow` reads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spec, markings, bleed, fonts, view, shape, ready]);
+  const drawnDetail = useSvgUrl(svg);
+  const detail = (live && latestThumbnail(spec, look)) || drawnDetail;
   const set = (o: Override) => setOverrides((all) => ({ ...all, [spec.id]: { ...all[spec.id], ...o } }));
 
   // Prints the set as shown: seeds and types being explored, the markings setting, the shape and planet spot included.
@@ -115,7 +170,7 @@ export function TileLab() {
         <div className="lab-grid">
           {thumbs.map(({ spec: t, url }) => (
             <button key={t.id} className={`lab-thumb ${t.id === selected ? 'on' : ''}`} onClick={() => setSelected(t.id)}>
-              <img src={url} alt={t.id} />
+              <img src={(world && latestThumbnail(t, look)) || url} alt={t.id} />
               <span>
                 {t.id}
                 {t.type ? ` · ${t.type}` : ''}

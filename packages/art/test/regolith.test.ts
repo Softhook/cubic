@@ -21,6 +21,11 @@ describe('regolith ground in print', () => {
     expect(groundOf('moon')).toContain(`kernelUnitLength="${LIT}"`);
   });
 
+  it.each(['moon', 'mars'] as const)('has a space between its attributes, as an image must be XML (%s)', (world) => {
+    // A browser draws a run-on attribute inline but can't decode it as an image, so the tile fails to print.
+    expect(groundOf(world).match(/="[^"]*"[^\s/>]/g)).toBeNull();
+  });
+
   it.each(['moon', 'mars'] as const)('is the lit ground alone, with nothing standing on it (%s)', (world) => {
     const used = filters(groundOf(world));
     expect(used.has('rg-ground')).toBe(true);

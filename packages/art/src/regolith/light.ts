@@ -40,6 +40,12 @@ const MARS_RAMP =
   '<feComposite in="rock" in2="mR" operator="arithmetic" k1="1" result="rockM"/>' +
   '<feComposite in="dustM" in2="rockM" operator="arithmetic" k2="1" k3="1" result="ramp"/>';
 
+/**
+ * A relief's surfaceScale, tuned for a pixel 0.28 across, at the pixel the light is made for (`LIT`): Chrome
+ * finds a slope from one pixel to the next, so a smaller pixel needs more relief for the same slope.
+ */
+const relief = (scale: number) => n((scale * 0.28) / LIT);
+
 /** The light: the height map gains fine noise where it isn't smooth, is lit from the top left, shadowed, tinted for its world and grained. Over `area`, in board units. */
 export function ground(r: Rng, area: Box, world: World): string {
   const s = () => r.noiseSeed();
@@ -59,22 +65,34 @@ export function ground(r: Rng, area: Box, world: World): string {
     turbulence(0.01, 3, s(), 'broad') +
     turbulence(0.03, 7, s(), 'nz') +
     turbulence(0.018, 3, s(), 'rg', 'turbulence') +
-    '<feDisplacementMap in="nz" in2="broad" scale="26" xChannelSelector="R" yChannelSelector="G" result="nzw"/>' +
-    '<feDisplacementMap in="rg" in2="broad" scale="26" xChannelSelector="R" yChannelSelector="G" result="rgw"/>' +
+    // The warp is in 256 steps too: each step shifts the noise by a third of a pixel, a seam the light
+    // shows as fingerprint lines along the broad noise's contours. Half a pixel's blur closes the seams.
+    '<feDisplacementMap in="nz" in2="broad" scale="26" xChannelSelector="R" yChannelSelector="G" result="nzs"/>' +
+    '<feGaussianBlur in="nzs" stdDeviation="0.15" result="nzw"/>' +
+    '<feDisplacementMap in="rg" in2="broad" scale="26" xChannelSelector="R" yChannelSelector="G" result="rgs"/>' +
+    '<feGaussianBlur in="rgs" stdDeviation="0.15" result="rgw"/>' +
     '<feComponentTransfer in="rgw" result="ridged"><feFuncA type="table" tableValues="1 0.55 0.3 0.15 0"/></feComponentTransfer>' +
     '<feComponentTransfer in="SMOOTH" result="ROUGH"><feFuncA type="table" tableValues="1 0.02"/></feComponentTransfer>' +
     '<feComposite in="nzw" in2="ROUGH" operator="in" result="nzm"/>' +
     '<feComposite in="ridged" in2="ROUGH" operator="in" result="rgm"/>' +
     '<feComposite in="H0" in2="nzm" operator="arithmetic" k2="0.85" k3="0.28" k4="-0.07" result="h1"/>' +
     '<feComposite in="h1" in2="rgm" operator="arithmetic" k2="1" k3="0.12" k4="-0.05" result="H"/>' +
-    `<feDiffuseLighting in="H" kernelUnitLength="${LIT}" surfaceScale="9" diffuseConstant="1.3" lighting-color="#ffffff" result="L">${light}</feDiffuseLighting>` +
+    // Lit in two parts, the drawn ground and the noise on it, each at its full 256 levels and given its share
+    // of the relief by its surfaceScale: scaled down to its share first (0.28 of the height), the noise
+    // would have only some 70 levels, its gentle slopes terraced. The noise's light is less the light on
+    // flat ground (1.3 · sin 22°), so it only adds its relief. `H`, all in one, still makes the shine.
+    `<feDiffuseLighting in="H0" kernelUnitLength="${LIT}" surfaceScale="${relief(7.65)}" diffuseConstant="1.3" lighting-color="#ffffff" result="LS">${light}</feDiffuseLighting>` +
+    '<feComposite in="nzm" in2="rgm" operator="arithmetic" k2="0.7" k3="0.3" result="HN"/>' +
+    `<feDiffuseLighting in="HN" kernelUnitLength="${LIT}" surfaceScale="${relief(4.3)}" diffuseConstant="1.3" lighting-color="#ffffff" result="LN">${light}</feDiffuseLighting>` +
+    '<feComposite in="LS" in2="LN" operator="arithmetic" k2="1" k3="1" k4="-0.487" result="L"/>' +
     offset(1.2, -0.06, 1) +
     offset(2.5, -0.13, 2) +
     offset(5, -0.26, 3) +
     offset(9, -0.47, 4) +
     '<feMerge result="sh"><feMergeNode in="d1"/><feMergeNode in="d2"/><feMergeNode in="d3"/><feMergeNode in="d4"/></feMerge>' +
-    '<feComponentTransfer in="sh" result="shA"><feFuncA type="linear" slope="9"/></feComponentTransfer>' +
-    '<feGaussianBlur in="shA" stdDeviation="0.25" result="shB"/>' +
+    // Hard-edged, as the mechs' shadows: a steep ramp from lit to shadow, barely softened.
+    '<feComponentTransfer in="sh" result="shA"><feFuncA type="linear" slope="14"/></feComponentTransfer>' +
+    '<feGaussianBlur in="shA" stdDeviation="0.12" result="shB"/>' +
     '<feFlood flood-color="#1E1C1A" flood-opacity="0.85"/>' +
     '<feComposite in2="shB" operator="in" result="SHD"/>' +
     '<feMerge result="Ls"><feMergeNode in="L"/><feMergeNode in="SHD"/></feMerge>' +
@@ -82,7 +100,7 @@ export function ground(r: Rng, area: Box, world: World): string {
     '<feColorMatrix in="broad" type="matrix" values="0 0 1 0 0  0 0 1 0 0  0 0 1 0 0  0 0 0 0 1" result="anG"/>' +
     '<feComposite in="albG" in2="anG" operator="arithmetic" k2="1" k3="0.45" k4="-0.22" result="albN"/>' +
     '<feComposite in="Ls" in2="albN" operator="arithmetic" k1="2" result="lit"/>' +
-    `<feSpecularLighting in="H" kernelUnitLength="${LIT}" surfaceScale="9" specularConstant="0.6" specularExponent="40" lighting-color="#e6f6ff" result="spec">${light}</feSpecularLighting>` +
+    `<feSpecularLighting in="H" kernelUnitLength="${LIT}" surfaceScale="${relief(9)}" specularConstant="0.6" specularExponent="40" lighting-color="#e6f6ff" result="spec">${light}</feSpecularLighting>` +
     '<feComposite in="spec" in2="SMOOTH" operator="in" result="specM"/>' +
     '<feComposite in="lit" in2="specM" operator="arithmetic" k2="1" k3="0.7" result="lit2"/>' +
     (world === 'moon' ? MOON_RAMP : MARS_RAMP) +
@@ -130,7 +148,8 @@ export function built(r: Rng, area: Box): string {
  * or a tank throws a long one and a deck or a pipe a short one. Over `area`.
  */
 export function cast(area: Box): string {
-  const levels = Array.from({ length: 12 }, (_, i) => 0.52 + i * 0.04);
+  // Close enough that each height's shadow is 0.84 on from the last, so a little blur joins them.
+  const levels = Array.from({ length: 23 }, (_, i) => 0.52 + i * 0.02);
   return (
     `<filter id="rg-cast" filterUnits="userSpaceOnUse" ${region(area)} color-interpolation-filters="sRGB">` +
     levels
@@ -143,7 +162,8 @@ export function cast(area: Box): string {
       })
       .join('') +
     `<feMerge>${levels.map((_, i) => `<feMergeNode in="s${i}"/>`).join('')}</feMerge>` +
-    '<feGaussianBlur stdDeviation="0.9"/>' +
+    // Just enough blur to join its steps, so its edge stays crisp.
+    '<feGaussianBlur stdDeviation="0.45"/>' +
     '<feComponentTransfer><feFuncA type="linear" slope="0.85"/></feComponentTransfer>' +
     '</filter>'
   );
