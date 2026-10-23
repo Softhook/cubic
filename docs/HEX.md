@@ -17,8 +17,9 @@ plane with no gaps, and the planets of touching tiles are 3 spaces apart, as on 
 | Spaces that are no planet's orbit | the 4 corners | none |
 | Tiles a tile touches | up to 4 (and 4 at a corner) | up to 6 |
 
-Every space on a hex map is in some planet's orbit, and each space orbits one planet only, while the
-planets sit in the middle of their tiles (see *Off-centre planets*).
+On a hex map every space of a planet's tile is in its orbit, and each space orbits one planet only, while the
+planets sit in the middle of their tiles (see *Off-centre planets*). Only a Void's or a blank's spaces orbit
+no planet.
 
 ## How the rules read on hexes
 
@@ -52,7 +53,8 @@ so it would add six more spaces to every orbit. It is left out of the decks on a
 
 ## The maps
 
-Hex versions of the three basic maps, with the same cubes per player. A layout in
+Hex versions of the three basic maps, with the same cubes per player (and, below, of some advanced maps, and
+maps on open ground). A layout in
 [`data/maps.yaml`](../data/maps.yaml) with `grid: hex` reads as rows of tiles where each odd row sits half
 a tile to the right.
 
@@ -70,6 +72,29 @@ so its seats match.
 
 No hex map can be the same in a mirror: the flowers' lattice is turned about 11° from the hexes (see
 *Drawing*), and a mirror turns it the other way. A map's seats can only match by turning it.
+
+### Advanced maps on hex tiles
+
+Seven advanced maps adapted to hex tiles (the hex group), each keeping its square map's idea and cubes, and
+the same after a half turn (a third of a turn for 3 players) where the square map is the same in a mirror:
+
+| Map | Players | The idea kept |
+|---|---|---|
+| Terra Minor (hex) | 2 | a band of six 8s, a start at each end |
+| Circular Logic (hex) | 2 | a ring of eight round a hole (two tiles on hexes), the starts across it |
+| The Great Plan (hex) | 2 | a void ringed by 8s and 7s, the starts out among 7s |
+| Critical Density (hex) | 3 | the starts crowded two spaces apart round the middle, 8s between |
+| Edge of Oblivion (hex) | 3 | a void ringed by 9s and 8s, the starts at the points |
+| Nexus (hex) | 4 | two 10s in the middle, 7s and 8s round them, the starts round those |
+| Tesseract (hex) | 4 | a 10 in the middle and four arms out to the starts |
+
+### Open ground
+
+Blank tiles (`-` in a layout) are open ground: seven spaces with no planet, which, unlike a Void's, give no
+research. The open group spreads its planets out with them, among a few voids, so mechs cross open country
+between sites: Arcadia Planitia and Valles Marineris (2 players), Stickney Crater and Tharsis Rise (3),
+Utopia Planitia and Limtoc (4). Each is the same turned. On a world's ground a blank tile is bare ground,
+no base; in space, sky alone.
 
 ## First AI results
 
@@ -269,7 +294,7 @@ and neither AI went for it.
 ## Not yet
 
 - A hex form of Ingenious, if it's worth having back (see *Cards*).
-- Hex versions of the advanced, add-on and BGA maps; wrapping maps.
+- Hex versions of more advanced maps, and of the add-on and BGA ones; wrapping maps.
 - Turning a tall map on its side to fit a wide screen.
 - Packing hex tiles closer on a sheet: they print in the square tiles' 2 × 2 grid, though flowers nest.
 - Off-centre planets in the lobby's small map previews (they show each tile's number only).

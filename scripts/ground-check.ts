@@ -1,5 +1,5 @@
 /**
- * Checks, in Chrome, that hex tiles on the moon and Mars print with smooth ground: no wiggly contour
+ * Checks, in Chrome, that hex tiles on Phobos and Mars print with smooth ground: no wiggly contour
  * lines or pixel noise in it (art regolith/core.ts `LIT`). Prints tiles through the app's own print path
  * (lab/pressSheets.ts `printableTile`, print/exports.ts `svgToPng`), at the hex tiles' dpi with their
  * bleed, and without markings so only ground and what stands on it is drawn. Measures the ground's fine
@@ -88,7 +88,7 @@ try {
     // A tile of each number, a Void among them, on each world.
     const tiles = [7, 8, 9, 10, 0].map((num) => TILE_SET.find((t) => t.number === num)!);
     const results = [];
-    for (const look of ['moon', 'mars'] as const)
+    for (const look of ['phobos', 'mars'] as const)
       for (const t of tiles) {
         const item = printableTile(t, '', false, { look });
         const printed = await svgToPng(await item.print!(true), w, h, piece.dpi);

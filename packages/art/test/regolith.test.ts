@@ -18,15 +18,15 @@ const filters = (svg: string) => new Set([...svg.matchAll(/filter="url\(#([\w-]+
 describe('regolith ground in print', () => {
   it('is drawn at the pixel its light is made for', () => {
     expect(BLED.w / SCALE / REGOLITH_GROUND_PX).toBeCloseTo(LIT, 3);
-    expect(groundOf('moon')).toContain(`kernelUnitLength="${LIT}"`);
+    expect(groundOf('phobos')).toContain(`kernelUnitLength="${LIT}"`);
   });
 
-  it.each(['moon', 'mars'] as const)('has a space between its attributes, as an image must be XML (%s)', (world) => {
+  it.each(['phobos', 'mars'] as const)('has a space between its attributes, as an image must be XML (%s)', (world) => {
     // A browser draws a run-on attribute inline but can't decode it as an image, so the tile fails to print.
     expect(groundOf(world).match(/="[^"]*"[^\s/>]/g)).toBeNull();
   });
 
-  it.each(['moon', 'mars'] as const)('is the lit ground alone, with nothing standing on it (%s)', (world) => {
+  it.each(['phobos', 'mars'] as const)('is the lit ground alone, with nothing standing on it (%s)', (world) => {
     const used = filters(groundOf(world));
     expect(used.has('rg-ground')).toBe(true);
     for (const standing of ['rg-built', 'rg-cast', 'rg-dust']) expect(used.has(standing)).toBe(false);
@@ -40,7 +40,7 @@ describe('regolith ground in print', () => {
     if (at) expect(ground).not.toBe(groundOf('mars'));
   });
 
-  it.each(['moon', 'mars'] as const)('goes in a tile as a bitmap, over its trim and bleed, under what stands (%s)', (world) => {
+  it.each(['phobos', 'mars'] as const)('goes in a tile as a bitmap, over its trim and bleed, under what stands (%s)', (world) => {
     const svg = tileSvg(spec, { look: world, bleed: true, markings: true, ground: IMAGE });
     expect(filters(svg).has('rg-ground')).toBe(false);
     expect(filters(svg).has('rg-built')).toBe(true);
@@ -52,7 +52,7 @@ describe('regolith ground in print', () => {
   });
 
   it('is lit by its filter when no bitmap is given', () => {
-    expect(filters(tileSvg(spec, { look: 'moon', bleed: true })).has('rg-ground')).toBe(true);
+    expect(filters(tileSvg(spec, { look: 'phobos', bleed: true })).has('rg-ground')).toBe(true);
   });
 
   it('is nothing in space', () => {

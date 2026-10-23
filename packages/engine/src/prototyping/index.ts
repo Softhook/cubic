@@ -71,8 +71,8 @@ const PROTOTYPING_SHIPS: ShipTable = Object.fromEntries(
 
 /**
  * Prototyping, shown as Regolith (docs/REGOLITH.md), is built on `base` (Community Edition, see rulesets.ts): its
- * missiles are kept and its cards as PROTOTYPING_CARDS says. It plays the hex maps only, the hex and off-centre
- * (drift) ones, on the moon's and Mars's ground.
+ * missiles are kept and its cards as PROTOTYPING_CARDS says. It plays the hex maps only, the hex, open-ground and
+ * off-centre (drift) ones, on Phobos's and Mars's ground.
  */
 export function prototypingMode(base: RuleSet): RuleSet {
   return {
@@ -82,10 +82,10 @@ export function prototypingMode(base: RuleSet): RuleSet {
     title: 'Regolith',
     summary: reword(
       REGOLITH_WORDS,
-      `Mechs fight over the ice of Mars and the moon, on hex maps. Community Edition${PROTOTYPING_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a mech moving next to an enemy mech, not diagonally, stops there), a ranged Sniper and contested orbits (no conquering${PROTOTYPING_CONTESTED_DEPLOY ? ` or deploying${PROTOTYPING_HOME_SHIPYARD ? ', except to your home planet,' : ''}` : ''} while an enemy mech is in orbit)${PROTOTYPING_OVER_CONQUEST ? ' and over-conquest, displacing an opponent cube' : ''}.`,
+      `Mechs fight over the ice of Mars and Phobos, on hex maps. Community Edition${PROTOTYPING_CARDS ? '' : ' without cards,'} with moves capped at 3, zones of control (a mech moving next to an enemy mech, not diagonally, stops there), a ranged Sniper and contested orbits (no conquering${PROTOTYPING_CONTESTED_DEPLOY ? ` or deploying${PROTOTYPING_HOME_SHIPYARD ? ', except to your home planet,' : ''}` : ''} while an enemy mech is in orbit)${PROTOTYPING_OVER_CONQUEST ? ' and over-conquest, displacing an opponent cube' : ''}.`,
     ),
     cards: PROTOTYPING_CARDS ? base.cards : null,
-    mapGroups: ['hex', 'drift'],
+    mapGroups: ['hex', 'open', 'drift'],
     ships: PROTOTYPING_SHIPS,
     maxMovement: MAX_MOVEMENT,
     overConquest: PROTOTYPING_OVER_CONQUEST,

@@ -1,7 +1,7 @@
 # Regolith
 
 **Regolith** is our own game, and it replaces Prototyping in the lobby. It is played on hex tiles only,
-on the moon's and Mars's ground (the Regolith tiles), and has its own cards in the **screenprint** style.
+on Phobos's and Mars's ground (the Regolith tiles), and has its own cards in the **screenprint** style.
 It starts from the Community Edition cards and moves away from them, card by card, in name, design and
 action. This doc sets out the structure for that: where each part lives, what it reuses, and the order to
 build it in. It does not design the cards.
@@ -18,7 +18,7 @@ there: this is a rename and a new identity, not new rules.
 | | |
 |---|---|
 | Name | **Regolith**, in place of Prototyping in the lobby's mode menu |
-| Maps | Hex only, each on the moon or Mars |
+| Maps | Hex only, each on Phobos or Mars |
 | Cards | Start as the Community cards, in Regolith's own deck; names, design and actions move away from Community over time |
 | Card style | Screenprint |
 
@@ -27,7 +27,7 @@ there: this is a rename and a new identity, not new rules.
 | | Prototyping today | Regolith |
 |---|---|---|
 | Lobby | "Prototyping" | "Regolith" |
-| Maps | Community's square maps, plus the hex and drift groups | Hex maps only, each on the moon or Mars |
+| Maps | Community's square maps, plus the hex and drift groups | Hex maps only, each on Phobos or Mars |
 | Tiles | Ground on by default (top-bar switch to space) | The same; ground is the game's look |
 | Rules | Community + cap 3, zones of control, Shoot, contested orbit and deploy | The same, and still changing |
 | Cards | Community's Skills and Tactics (no Ingenious on hexes) | Regolith's own decks, starting as copies of Community's |
@@ -55,9 +55,12 @@ rather than only changing the label:
 - `regolithMode()` stops adding to `base.mapGroups` and sets its own: the hex group and the hex drift
   maps. Binary Reach (square, drift group) leaves the mode; it moves to a square group, or the drift group
   splits by grid.
-- Every hex map names its world in [data/maps.yaml](../data/maps.yaml). Today Alpha and Gamma are `moon`
-  and Beta Sector and Twin Drift fall back to Mars; write them out so a map's world is a choice, not a default.
-- More hex maps (HEX.md *Not yet*: advanced, add-on, BGA layouts) go in the same group as they are made.
+- Every hex map names its world in [data/maps.yaml](../data/maps.yaml). Today Alpha and Gamma Sector, Circular
+  Logic, Critical Density and Nexus (hex), Stickney Crater and Limtoc are `phobos`, and the rest fall back to
+  Mars; write them out so a map's world is a choice, not a default.
+- More hex maps (HEX.md *Not yet*: advanced, add-on, BGA layouts) go in the same group as they are made. Seven
+  advanced maps are in the hex group now, and the open group (HEX.md *Open ground*) spreads its planets
+  out with blank tiles; Regolith plays both.
 - `regolith.test.ts` pins it: every Regolith map is hex and has a world.
 
 ## 3. Cards: data

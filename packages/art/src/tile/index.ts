@@ -1,12 +1,12 @@
 import { TILE } from '../tokens';
 import { document, dieCut, join, n, type Box, type Fragment } from '../svg';
 import { groundArt, regolithGroundSvg, regolithMaskSvg, regolithSvg } from '../regolith';
-import { BLED, HEX_TILE_CUT, MID, TRIM, dieLine, flowerPath, numberCorner, planetSpot, type Spot } from './geometry';
+import { BLED, HEX_TILE_CUT, MID, TRIM, betweenSpaces, dieLine, flowerPath, numberCorner, planetSpot, type Spot } from './geometry';
 import { lookShape, lookWorld, type TileLook } from './look';
 import { markings } from './markings';
 import { inLabel, label, tileLabelFits } from './label';
 import { bodyArt, bodySvg, inGutter, skyArt, skySvg } from './space';
-import type { TileSpec } from './set';
+import { BLANK, type TileSpec } from './set';
 
 /**
  * One map tile, trim 96 × 96 mm, in any look (look.ts), as layers (`tileLayers`): in space, its sky and planet
@@ -65,7 +65,7 @@ const ON_GROUND: readonly TileLayerName[] = ['ground', 'spaces', 'standing', 'pl
 const LAYERS: Record<TileLook, readonly TileLayerName[]> = {
   square: ['sky', 'body', 'label', 'spaces', 'planet'],
   hex: ['sky', 'body', 'spaces', 'planet'],
-  moon: ON_GROUND,
+  phobos: ON_GROUND,
   mars: ON_GROUND,
 };
 
@@ -127,8 +127,11 @@ export function tileLayers(spec: TileSpec, o: TileOptions = {}): TileLayer[] {
         spec,
         id,
         BLED,
-        // A Void keeps the planet's strips clear too, as printed.
-        (x, y) => inGutter(t.shape, t.p, numberCorner(t.at, t.shape), tileLabelFits(t.shape, t.at), x, y),
+        // A Void keeps the planet's strips clear too, as printed; a blank, with nothing to keep them for, only the spaces.
+        (x, y) =>
+          spec.number === BLANK
+            ? betweenSpaces(t.shape, x, y)
+            : inGutter(t.shape, t.p, numberCorner(t.at, t.shape), tileLabelFits(t.shape, t.at), x, y),
         t.labelled ? (x: number, y: number) => !inLabel(t.p, x, y) : undefined,
       ),
     body: () => t.shift(bodyArt(spec, id)),

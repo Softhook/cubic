@@ -10,11 +10,11 @@ import { LIT } from './core';
 
 /**
  * The ground's colours are the mechs' inks (mood board GroundMechs, look 1): from key ink (#1E1C1A),
- * never black, up to bone on the moon, and through oxide (#E0703A) to Jupiter (#D9A066) on Mars.
+ * never black, up to bone on Phobos, and through oxide (#E0703A) to Jupiter (#D9A066) on Mars.
  */
 
-/** The moon: warm grey dust, key ink in the shadows and bone (#E6DDC8) in the light. */
-const MOON_RAMP =
+/** Phobos: warm grey dust, key ink in the shadows and bone (#E6DDC8) in the light. */
+const PHOBOS_RAMP =
   '<feComponentTransfer in="lit2" result="ramp">' +
   '<feFuncR type="table" tableValues="0.118 0.18 0.29 0.435 0.604 0.769 0.902"/>' +
   '<feFuncG type="table" tableValues="0.11 0.169 0.275 0.416 0.573 0.733 0.867"/>' +
@@ -120,7 +120,7 @@ export function ground(r: Rng, area: Box, world: World): string {
     `<feSpecularLighting in="H" kernelUnitLength="${LIT}" surfaceScale="${relief(9)}" specularConstant="0.6" specularExponent="40" lighting-color="#e6f6ff" result="spec">${light}</feSpecularLighting>` +
     '<feComposite in="spec" in2="SMOOTH" operator="in" result="specM"/>' +
     '<feComposite in="lit" in2="specM" operator="arithmetic" k2="1" k3="0.7" result="lit2"/>' +
-    (world === 'moon' ? MOON_RAMP : MARS_RAMP) +
+    (world === 'phobos' ? PHOBOS_RAMP : MARS_RAMP) +
     turbulence(1.4, 1, s(), 'grain') +
     '<feComposite in="ramp" in2="grain" operator="arithmetic" k2="1" k3="0.09" k4="-0.045"/>' +
     '</filter>'

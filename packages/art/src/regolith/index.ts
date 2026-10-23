@@ -10,7 +10,7 @@ import { BUILDING_GRADIENTS } from './parts';
 import { base } from './base';
 
 /**
- * Moon or Mars ground for a hex tile, after the Regolith mood board (docs/moodboards/regolith/HexSurface.dc.html):
+ * Phobos or Mars ground for a hex tile, after the Regolith mood board (docs/moodboards/regolith/HexSurface.dc.html):
  * a height map painted in colour (red is height, 128 the ground; green marks smooth areas; blue is
  * brightness), then lit once by one filter. Drawn in the board's own units, where a space is 69.3 tall,
  * so its numbers carry over; the tile is scaled to millimetres at the end. Each tile's craters, pits and

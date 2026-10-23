@@ -1,7 +1,7 @@
 import type { TileShape } from './geometry';
 
-/** Which world a hex map is on: the grey moon, or Mars. */
-export type World = 'moon' | 'mars';
+/** Which world a hex map is on: grey Phobos, or Mars. */
+export type World = 'phobos' | 'mars';
 
 /**
  * How a tile looks: 3 × 3 squares or a 7-hex flower in space (its sky, and its planet or a Void's heart), or
@@ -13,4 +13,4 @@ export type TileLook = TileShape | World;
 export const lookShape = (look: TileLook = 'square'): TileShape => (look === 'square' ? 'square' : 'hex');
 
 /** The world a look's ground is on, if it's on one. */
-export const lookWorld = (look: TileLook = 'square'): World | undefined => (look === 'moon' || look === 'mars' ? look : undefined);
+export const lookWorld = (look: TileLook = 'square'): World | undefined => (look === 'phobos' || look === 'mars' ? look : undefined);

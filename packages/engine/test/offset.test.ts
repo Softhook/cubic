@@ -68,10 +68,18 @@ describe('tile tokens', () => {
     expect(parseToken('7ne')).toEqual({ number: 7, start: false, dir: 'ne' });
     expect(parseToken('10s*')).toEqual({ number: 10, start: true, dir: 's' });
     expect(parseToken('0')).toEqual({ number: 0, start: false });
+    expect(parseToken('-')).toEqual({ number: 0, start: false, blank: true });
   });
 
   it('refuse anything else', () => {
-    for (const t of ['x', '6', '8*n', '8en', '8nn', '0n', '0*', '']) expect(() => parseToken(t), t).toThrow();
+    for (const t of ['x', '6', '8*n', '8en', '8nn', '0n', '0*', '-*', '-n', '--', '']) expect(() => parseToken(t), t).toThrow();
+  });
+
+  it('make a blank tile open ground: spaces, but not void ones', () => {
+    const b = buildBoard({ ...ALPHA_HEX, layout: ALPHA_HEX.layout.map((row) => row.map((t) => (t === '8' ? '-' : t))) });
+    expect(b.planets.map((p) => p.number)).not.toContain(8);
+    expect(spaces(b)).toHaveLength(b.planets.length * 6 + 7);
+    expect(spaces(b).some((p) => b.cells[p.r][p.c].void)).toBe(false);
   });
 
   it('put the planet that way from the middle as the map is drawn, north up', () => {

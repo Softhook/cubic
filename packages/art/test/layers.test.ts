@@ -17,18 +17,19 @@ import {
  */
 
 const seven = tileSpec('p7-01');
+const blank = tileSpec('blank-01');
 const names = (look: TileLook, o: Parameters<typeof tileLayers>[1] = {}) => tileLayers(seven, { look, ...o }).map((l) => l.name);
 
 describe('tile layers', () => {
   it('stack in space as printed, and on the ground with what stands over the wells', () => {
     expect(names('square', { markings: true })).toEqual(['sky', 'body', 'label', 'spaces', 'planet']);
     expect(names('hex', { markings: true })).toEqual(['sky', 'body', 'spaces', 'planet']);
-    for (const world of ['moon', 'mars'] as const) expect(names(world, { markings: true })).toEqual(tileLayerNames(world));
+    for (const world of ['phobos', 'mars'] as const) expect(names(world, { markings: true })).toEqual(tileLayerNames(world));
   });
 
   it('carry markings only when asked, and what stands again only over the wells', () => {
-    expect(names('moon')).toEqual(['ground']);
-    expect(names('moon', { markings: 'spaces' })).toEqual(['ground', 'spaces', 'standing']);
+    expect(names('phobos')).toEqual(['ground']);
+    expect(names('phobos', { markings: 'spaces' })).toEqual(['ground', 'spaces', 'standing']);
     expect(names('square', { markings: 'spaces' })).toEqual(['sky', 'body', 'label', 'spaces']);
     // The label only where it fits: not with the planet at the tile's top left.
     expect(names('square', { planetAt: 'nw' })).toEqual(['sky', 'body']);
@@ -45,7 +46,7 @@ describe('tile layers', () => {
     ['square', ['label', 'spaces', 'planet']],
     ['hex', ['spaces', 'planet']],
     // On the ground the wells are under what stands, so drawn with it.
-    ['moon', ['planet']],
+    ['phobos', ['planet']],
     ['mars', ['planet']],
   ] as const)('leave out of their raster part only what an editor keeps as vectors (%s)', (look, vectors) => {
     const o = { look, markings: true, bleed: true };
@@ -57,13 +58,13 @@ describe('tile layers', () => {
     expect(editable('square')).toContain(
       `<g id="label">${body('square', 'label')}</g><g id="markings">${body('square', 'spaces', 'planet')}</g>`,
     );
-    expect(editable('moon')).toContain(`<g id="label"></g><g id="markings">${body('moon', 'planet')}</g>`);
+    expect(editable('phobos')).toContain(`<g id="label"></g><g id="markings">${body('phobos', 'planet')}</g>`);
   });
 });
 
 describe('raster layers alone, for the map', () => {
   it('are the look’s own', () => {
-    for (const look of ['square', 'hex', 'moon', 'mars'] as const)
+    for (const look of ['square', 'hex', 'phobos', 'mars'] as const)
       for (const layer of ['sky', 'body', 'ground'] as const) {
         const draw = () => rasterLayerSvg(seven, look, layer);
         if (tileLayerNames(look).includes(layer)) expect(draw()).toMatch(/^<svg /);
@@ -76,12 +77,33 @@ describe('raster layers alone, for the map', () => {
     const box = ({ x, y, w, h }: { x: number; y: number; w: number; h: number }) => `${x} ${y} ${w} ${h}`;
     expect(viewBox(rasterLayerSvg(seven, 'square', 'sky'))).toBe(box(RASTER_AREA.sky));
     expect(viewBox(rasterLayerSvg(seven, 'square', 'body'))).toBe(box(RASTER_AREA.body));
-    expect(viewBox(rasterLayerSvg(seven, 'moon', 'ground'))).toBe(box(RASTER_AREA.ground));
+    expect(viewBox(rasterLayerSvg(seven, 'phobos', 'ground'))).toBe(box(RASTER_AREA.ground));
     expect(viewBox(standingMaskSvg(seven))).toBe(box(RASTER_AREA.standing));
   });
 
   it('have the same sky wherever the planet sits, and the ground built where it does', () => {
     expect(rasterLayerSvg(seven, 'hex', 'sky', { x: 0, y: -1 })).toBe(rasterLayerSvg(seven, 'hex', 'sky'));
-    expect(rasterLayerSvg(seven, 'moon', 'ground', { x: 0, y: -1 })).not.toBe(rasterLayerSvg(seven, 'moon', 'ground'));
+    expect(rasterLayerSvg(seven, 'phobos', 'ground', { x: 0, y: -1 })).not.toBe(rasterLayerSvg(seven, 'phobos', 'ground'));
+  });
+});
+
+describe('a blank tile', () => {
+  const layer = (spec: typeof seven, look: TileLook, name: string) =>
+    tileLayers(spec, { look, markings: true }).find((l) => l.name === name)?.art.body;
+
+  it('is open ground: seven wells, without a Void’s research flask, and nothing on it', () => {
+    expect(layer(blank, 'hex', 'body')).toBe('');
+    expect(layer(blank, 'hex', 'planet')).toBe('');
+    expect(layer(blank, 'hex', 'spaces')!.match(/<polygon/g)).toHaveLength(7);
+    // The flask's faint stroke, which a Void's spaces have.
+    expect(layer(tileSpec('void'), 'hex', 'spaces')).toContain('stroke-opacity=".15"');
+    expect(layer(blank, 'hex', 'spaces')).not.toContain('stroke-opacity=".15"');
+  });
+
+  it('has bare ground on a world, with nothing standing on it', () => {
+    for (const world of ['phobos', 'mars'] as const) {
+      expect(layer(blank, world, 'ground')).toBeTruthy();
+      expect(layer(blank, world, 'standing')).toBeUndefined();
+    }
   });
 });

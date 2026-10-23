@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BLANK,
+  HEX_TILE_SET,
   PLANET_DIAMETER,
   SET_COUNTS,
   TILE_SET,
@@ -83,23 +85,25 @@ describe('tile art', () => {
 
 describe('tile set', () => {
   it('has unique ids and the counts the set needs', () => {
-    expect(new Set(TILE_SET.map((t) => t.id)).size).toBe(TILE_SET.length);
-    expect(TILE_SET.length).toBe(Object.values(SET_COUNTS).reduce((a, b) => a + b, 0));
+    expect(new Set(HEX_TILE_SET.map((t) => t.id)).size).toBe(HEX_TILE_SET.length);
+    expect(HEX_TILE_SET.length).toBe(Object.values(SET_COUNTS).reduce((a, b) => a + b, 0));
+    // Square maps have no blanks, so their set has none.
+    expect(TILE_SET).toEqual(HEX_TILE_SET.filter((t) => t.number !== BLANK));
   });
 
   it('rejects unknown or malformed tile ids', () => {
-    for (const bad of ['p6-01', 'p11-01', 'p7-00', 'void-0', 'void-abc', 'foo']) {
+    for (const bad of ['p6-01', 'p11-01', 'p7-00', 'void-0', 'void-abc', 'blank-00', 'blank', 'foo']) {
       expect(() => tileSpec(bad), bad).toThrow(/Unknown tile id/);
     }
   });
 
   it('covers every map without running out of tiles', () => {
-    const ids = new Set(TILE_SET.map((t) => t.id));
     for (const map of maps) {
+      const ids = new Set(('grid' in map ? HEX_TILE_SET : TILE_SET).map((t) => t.id));
       const tiles = map.layout
         .flat()
         .filter((x) => x !== '.')
-        .map((x, index) => ({ index, number: parseToken(x).number }));
+        .map((x, index) => ({ index, number: parseToken(x).blank ? BLANK : parseToken(x).number }));
       for (const id of assignTiles(tiles).values()) expect(ids, `${map.id}: ${id}`).toContain(id);
     }
   });

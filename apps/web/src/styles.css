@@ -1796,6 +1796,7 @@ svg.zones polygon {
 .mini-tile.n7 { color: #7ef0d0; } .mini-tile.n8 { color: #7fb2ff; } .mini-tile.n9 { color: #c59bff; } .mini-tile.n10 { color: #ffb27a; }
 .mini-tile.gap { background: transparent; border-color: transparent; }
 .mini-tile.n0 { background: repeating-linear-gradient(45deg, #18223f 0 3px, #0d1428 3px 6px); }
+.mini-tile.blank { background: #111a33; }
 .mini-tile.start { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.7); }
 /* Hex maps' preview: a hex for each tile, placed, sized and clipped by NewGameFields' HexMiniMap. A start shows as a brighter hex (no inset ring on a clip). */
 .mini-map.hex { display: block; position: relative; }

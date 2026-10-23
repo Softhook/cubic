@@ -89,16 +89,19 @@ const SQUARE_OFFSETS = named(['n', 's', 'w', 'e', 'nw', 'ne', 'sw', 'se'], [...O
 const HEX_OFFSETS = named(['n', 's', 'nw', 'se', 'ne', 'sw'], HEX_SIDES);
 const MIDDLE: Cell = { r: 0, c: 0 };
 
-/** A layout token (data/maps.yaml), other than a gap: the planet's number (0 for void), whether it's a start, and where on the tile it sits. */
+/** A layout token (data/maps.yaml), other than a gap: the planet's number (0 for void or blank), whether it's a start, and where on the tile it sits. */
 export interface TileToken {
   number: number;
   start: boolean;
+  /** A blank tile (`-`): open ground, no planet and, unlike a void, no research. */
+  blank?: true;
   /** The planet's compass direction from the tile's middle space; absent when it sits in the middle. */
   dir?: string;
 }
 
-/** Reads a layout token such as `8`, `9*`, `7ne` or `8s*`; throws on anything else. */
+/** Reads a layout token such as `8`, `9*`, `7ne`, `8s*` or `-`; throws on anything else. */
 export function parseToken(token: string): TileToken {
+  if (token === '-') return { number: 0, start: false, blank: true };
   const m = /^(\d+)([nsew]{1,2})?(\*)?$/.exec(token);
   const number = Number(m?.[1]);
   if (!m || !(number === 0 || number in CAPACITY) || (m[2] && !(m[2] in SQUARE_OFFSETS))) throw new Error(`Bad tile token "${token}"`);
@@ -154,7 +157,7 @@ function buildSquareBoard(map: MapDef): Board {
       for (let dr = 0; dr < 3; dr++) {
         for (let dc = 0; dc < 3; dc++) {
           const cell: BoardCell = { kind: 'space', tile };
-          if (number === 0) cell.void = true;
+          if (number === 0 && !t.blank) cell.void = true;
           cells[tr * 3 + dr][tc * 3 + dc] = cell;
         }
       }
@@ -214,7 +217,7 @@ function buildHexBoard(map: MapDef): Board {
     for (const d of flower) if (cells[r + d.r][c + d.c].kind !== 'off') throw new Error(`${map.id}: hex tiles overlap`);
     for (const d of flower) {
       const cell: BoardCell = { kind: 'space', tile: t.tile };
-      if (number === 0) cell.void = true;
+      if (number === 0 && !token.blank) cell.void = true;
       cells[r + d.r][c + d.c] = cell;
     }
     if (number > 0) {

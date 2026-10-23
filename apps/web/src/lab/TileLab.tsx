@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   OFF_CENTRE,
+  HEX_TILE_SET,
   TILE_SET,
   TILE_SPOTS,
   dataUrl,
@@ -33,7 +34,7 @@ import {
  * Art Lab, tiles page (#lab): every tile of the physical set, with controls to explore seeds and
  * planet types and to export print files: single tiles, the whole set, print sheets, and the CMYK press
  * sheets the tiles share with the player aids. See docs/GRAPHICS.md §3–4. The set can be shown and
- * exported as hex tiles too (die-cut along the flower), in space or on the moon (the Regolith look), and with
+ * exported as hex tiles too (die-cut along the flower), in space or on Phobos (the Regolith look), and with
  * its planets moved off the middle, as maps place them (docs/HEX.md).
  */
 
@@ -42,7 +43,7 @@ const THUMB_PX = 400;
 
 const TYPES: PlanetType[] = ['gas', 'rocky', 'ice', 'lava', 'ocean'];
 
-const LOOKS: Record<TileLook, string> = { square: 'Square', hex: 'Hex', moon: 'Hex, on the moon', mars: 'Hex, on Mars' };
+const LOOKS: Record<TileLook, string> = { square: 'Square', hex: 'Hex', phobos: 'Hex, on Phobos', mars: 'Hex, on Mars' };
 
 type Override = Partial<Pick<TileSpec, 'seed' | 'type' | 'rings'>>;
 
@@ -61,7 +62,8 @@ export function TileLab() {
 
   const world = lookWorld(look);
 
-  const specs = useMemo(() => TILE_SET.map((t) => ({ ...t, ...overrides[t.id] })), [overrides]);
+  // Hex tiles take the open-ground maps' blanks too; no square map has one.
+  const specs = useMemo(() => (shape === 'hex' ? HEX_TILE_SET : TILE_SET).map((t) => ({ ...t, ...overrides[t.id] })), [overrides, shape]);
   // Drawn live where there's no thumbnail as it prints yet (below): in space, and on a world till it's drawn.
   const thumbs = useMemo(
     () =>
@@ -71,7 +73,8 @@ export function TileLab() {
       })),
     [specs, markings, view, world, look],
   );
-  const spec = specs.find((t) => t.id === selected)!;
+  // A blank picked on a hex look isn't in the square set: show the first tile instead.
+  const spec = specs.find((t) => t.id === selected) ?? specs[0];
 
   // On a world's ground the light depends on the size it's drawn at (Chrome ignores `kernelUnitLength`), so a
   // tile drawn live at a thumbnail's or the detail's size isn't what prints. Each is shown as it prints, as the

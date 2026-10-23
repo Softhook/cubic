@@ -148,7 +148,7 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
   A printed tile (`tileSvg`) is the same layers in one piece, so the screen and the table look alike.
   The Art Lab shows the set as hex tiles too, and with each planet on any space (`look`, `planetAt`).
 - **Looks.** A tile has one of four looks (`TileLook`, [`tile/look.ts`](../packages/art/src/tile/look.ts)):
-  `square` or `hex` in space, or a hex tile on a world's ground, `moon` or `mars` (the Regolith look,
+  `square` or `hex` in space, or a hex tile on a world's ground, `phobos` or `mars` (the Regolith look,
   [`regolith/`](../packages/art/src/regolith/)), with a building on its planet's space in place of the
   sky and body. Print, the Art Lab and the map all take the same look: a hex map is on its world's ground
   unless the top bar switches it to space ([`mapLook.ts`](../apps/web/src/art/mapLook.ts) `useMapLook`).
@@ -170,7 +170,7 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
   centred for the map to move. Its spaces and labels come from the board, not the tile, since an orbit can
   reach onto the next tile, and its numbers and cubes are live (BoardArt).
 - **Where the code is.** [`tile/`](../packages/art/src/tile/): `geometry` (spaces, planet spots, number
-  and cube pads, the hex flower and its cut), `look`, `set` (the 30 tiles and their seeds), `markings`
+  and cube pads, the hex flower and its cut), `look`, `set` (the 30 tiles and the hex set's 10 blanks, and their seeds), `markings`
   (wells, hatching), `label`, `space` (sky, planet, moons), `voids` (the Void hearts) and `index`, which
   puts a tile together in its look. The ground's own parts are in `regolith/` (its `index.ts` lists them).
 - **Loading.** Drawing a tile's noise filters takes ~45 ms, so the game draws each tile's sky (one per
@@ -294,6 +294,11 @@ setup. This keeps the set at 30 tiles.
 The 2–4 player maps need only four 9s and four 10s; Anecdotal (six 9s) and False Dilemma (five 10s)
 need the rest; the "Everything" map uses 25. Empty tile slots (`.` in the layouts) are gaps in the map, not
 tiles.
+
+The hex set (`HEX_TILE_SET`) adds 10 **blank** tiles, `blank-01` … `blank-10`: open ground, with no planet
+and no Void, which only the open-ground hex maps use (Arcadia Planitia and Valles Marineris have 10 each).
+No square map has one, so the square set stays at 30. On a world's ground a blank is bare ground with nothing
+built on it; in space, sky alone.
 
 **Sheets.** A 102 mm tile with bleed fits **2 × 2 per A4 page** (204 mm of 210 mm
 width), so print-and-play is 8 pages of faces. Print-on-demand vendors get one 102 × 102 mm file per

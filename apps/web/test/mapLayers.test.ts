@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { MAPS, buildBoard, tileCentres, type MapDef } from '@quantum/engine';
 import { OFF_CENTRE, tileLayerNames } from '@quantum/art';
 import { labelFits, mapStack, numberCorner, spaceRoles } from '../src/components/board/layers';
+import { tileArt } from '../src/art/boardTiles';
 
 const board = (id: string) => buildBoard(MAPS.find((m) => m.id === id)!);
 const testMap = (layout: string[][]): MapDef => ({
@@ -30,6 +31,11 @@ describe('space roles', () => {
   it('marks the spaces where off-centre planets share an orbit', () => {
     expect(spaceRoles(board('binary-reach')).filter((s) => s.orbits > 1)).toHaveLength(4);
     expect(spaceRoles(board('twin-drift')).filter((s) => s.orbits > 1)).toHaveLength(6);
+  });
+
+  it('marks a blank tile’s spaces as open ground: no orbit, no Void', () => {
+    const roles = spaceRoles(buildBoard({ ...testMap([['7*', '-', '7*']]), grid: 'hex' }));
+    expect(roles.filter((s) => s.orbits === 0 && !s.void)).toHaveLength(7);
   });
 
   it('marks an orbit reaching onto a Void, which keeps its flask', () => {
@@ -134,6 +140,13 @@ describe('the map stacks a look’s tile layers', () => {
     expect(mapStack(tileLayerNames('square'))).toEqual([['sky', 'body'], 'label', 'spaces', 'planet']);
     expect(mapStack(tileLayerNames('hex'))).toEqual([['sky', 'body'], 'spaces', 'planet']);
     // On the ground what stands goes again over the wells.
-    expect(mapStack(tileLayerNames('moon'))).toEqual([['ground'], 'spaces', ['standing'], 'planet']);
+    expect(mapStack(tileLayerNames('phobos'))).toEqual([['ground'], 'spaces', ['standing'], 'planet']);
+  });
+});
+
+describe('tile art', () => {
+  it('gives a blank tile a blank’s artwork and a Void a Void’s, in the map’s order', () => {
+    const b = buildBoard({ ...testMap([['7*', '-', '0', '-', '7*']]), grid: 'hex' });
+    expect(tileArt(b).map((t) => t.id)).toEqual(['p7-01', 'blank-01', 'void', 'blank-02', 'p7-02']);
   });
 });

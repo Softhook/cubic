@@ -28,8 +28,8 @@ export interface Planet {
   c: number;
 }
 
-/** The surface a hex map lies on: the moon or Mars. */
-export type World = 'moon' | 'mars';
+/** The surface a hex map lies on: Phobos or Mars. */
+export type World = 'phobos' | 'mars';
 
 export interface Board {
   mapId: string;

@@ -35,6 +35,8 @@ import { allowMapGroups, playAiGame, players, quickStart } from './helpers';
 
 // The basic maps on hex tiles; the drift maps (offset.test.ts) put their planets off the middle.
 const HEX_MAPS = MAPS.filter((m) => m.group === 'hex');
+/** The basic maps on hex tiles (the hex group's others adapt advanced maps). */
+const BASIC_HEX = HEX_MAPS.filter((m) => ['alpha-hex', 'beta-hex', 'gamma-hex'].includes(m.id));
 allowMapGroups('basic', 'hex');
 const BASE = quickStart(2, 1, 'basic', 'alpha-hex');
 /** Alpha Sector (hex)'s middle planet, the 8: every other tile is next to it but the two starts. */
@@ -56,13 +58,13 @@ function scenario(dice: Record<string, [Cell, number]>): GameState {
 
 describe('hex maps', () => {
   it('are the basic maps for 2, 3 and 4 players, in Prototyping', () => {
-    expect(HEX_MAPS.map((m) => m.players)).toEqual([2, 3, 4]);
+    expect(BASIC_HEX.map((m) => m.players)).toEqual([2, 3, 4]);
     expect(RULESETS.prototyping.mapGroups).toContain('hex');
-    for (const m of HEX_MAPS) expect(mapStats(m)).toEqual(m.stats);
+    for (const m of BASIC_HEX) expect(mapStats(m)).toEqual(m.stats);
   });
 
   it('are built of 7-hex tiles: each planet with its 6 orbital spaces, the planets of touching tiles 3 apart', () => {
-    for (const m of HEX_MAPS) {
+    for (const m of MAPS.filter((x) => x.grid === 'hex' && x.group !== 'drift')) {
       const b = buildBoard(m);
       expect(b.hex).toBe(true);
       for (const p of b.planets) {
@@ -70,7 +72,9 @@ describe('hex maps', () => {
         // Each orbital space is next to its own planet only.
         for (const q of orbitals(b, p)) expect(b.planets.filter((x) => distance(x, q, b) === 1)).toEqual([p]);
       }
-      expect(spaces(b)).toHaveLength(b.planets.length * 6);
+      // A void or blank tile is 7 spaces and no planet.
+      const empty = m.layout.flat().filter((t) => t === '0' || t === '-').length;
+      expect(spaces(b)).toHaveLength(b.planets.length * 6 + empty * 7);
     }
     const b = BASE.board;
     expect(b.planets.filter((p) => distance(p, CENTRE, b) === 3)).toHaveLength(6);

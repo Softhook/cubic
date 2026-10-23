@@ -26,15 +26,16 @@ const MAP_GROUPS: { id: string; name: string }[] = [
   { id: 'bga', name: 'Board Game Arena' },
   { id: 'ce', name: 'Community Edition' },
   { id: 'hex', name: 'Hex tiles' },
+  { id: 'open', name: 'Open ground' },
   { id: 'drift', name: 'Off-centre planets' },
 ];
 
 /** A tile of the preview: its number, a start's ring, or nothing for a gap. */
 function MiniTile({ token, style }: { token: string; style?: CSSProperties }) {
   if (token === '.') return <span className="mini-tile gap" style={style} />;
-  const { number: n, start } = parseToken(token);
+  const { number: n, start, blank } = parseToken(token);
   return (
-    <span className={`mini-tile n${n} ${start ? 'start' : ''}`} style={style}>
+    <span className={`mini-tile ${blank ? 'blank' : `n${n}`} ${start ? 'start' : ''}`} style={style}>
       {n === 0 ? '' : n}
     </span>
   );

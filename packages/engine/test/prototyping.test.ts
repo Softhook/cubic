@@ -97,8 +97,8 @@ describe('Prototyping mode', () => {
     const community = rulesOf(BASE.community);
     expect(prototyping.name).toBe('Regolith');
     expect(prototyping.cards).toBe(PROTOTYPING_CARDS ? community.cards : null);
-    expect(prototyping.mapGroups).toEqual(['hex', 'drift', 'basic']); // 'basic' only in this file: see BASE
-    const played = MAPS.filter((m) => ['hex', 'drift'].includes(m.group));
+    expect(prototyping.mapGroups).toEqual(['hex', 'open', 'drift', 'basic']); // 'basic' only in this file: see BASE
+    const played = MAPS.filter((m) => ['hex', 'open', 'drift'].includes(m.group));
     expect(played.every((m) => m.grid === 'hex')).toBe(true);
     expect(played.map((m) => m.id)).toContain('twin-drift');
     expect(prototyping.startingMissiles).toBe(1);

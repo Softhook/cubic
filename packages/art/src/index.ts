@@ -57,7 +57,7 @@ export {
   type TileLayerName,
   type TileOptions,
 } from './tile';
-export { SET_COUNTS, TILE_SET, assignTiles, tileSpec, type TileSpec } from './tile/set';
+export { BLANK, HEX_TILE_SET, SET_COUNTS, TILE_SET, assignTiles, tileSpec, type TileSpec } from './tile/set';
 export {
   CARD,
   cardBackSvg,

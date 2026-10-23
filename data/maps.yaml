@@ -6,6 +6,7 @@
 # Layout tokens (space-separated, one string per tile row):
 #   7 | 8 | 9 | 10   planet tile; number = conquer target and cube locations (7→1, 8→2, 9→3, 10→4)
 #   0                void tile: no planet; +1 research per own ship on it at start of turn
+#   -                blank tile: open ground, no planet and no research
 #   .                no tile (empty gap, not part of the board)
 #   suffix n ne e se s sw w nw
 #                    the planet sits off the middle of its tile, on that space (north is up as drawn)
@@ -19,7 +20,8 @@
 # Groups: basic (the box's basic maps), advanced (the 2013 rulebook's advanced maps),
 #         addon (the add-on pack), bga (maps Board Game Arena added),
 #         ce (the CE print booklet's 5-player maps, pages 14–15),
-#         hex (the basic maps on hex tiles), drift (planets off the middle of their tiles).
+#         hex (square maps adapted to hex tiles), open (hex maps spread out with blank tiles),
+#         drift (planets off the middle of their tiles).
 #
 # grid (optional): hex. The tiles are 7-hex flowers (the planet and the six spaces around it), so all
 #   six spaces of a tile are its planet's orbit. A hex layout is read as rows of tiles where each odd
@@ -27,7 +29,7 @@
 #   a tile touches the two tiles beside it and two in each neighbouring row (docs/HEX.md). Hex maps
 #   don't wrap.
 #
-# world (optional, hex maps only): moon | mars. The surface the map lies on, which its tiles show; Mars
+# world (optional, hex maps only): phobos | mars. The surface the map lies on, which its tiles show; Mars
 #   when absent.
 #
 # wrap (optional): horizontal | vertical | both. The booklet marks these edges with arrows.
@@ -93,7 +95,7 @@ maps:
     players: 2
     group: hex
     grid: hex
-    world: moon
+    world: phobos
     cubes: 5
     stats: { slack: 0, shared: 1, planets: 7 }
     layout:
@@ -121,7 +123,7 @@ maps:
     players: 4
     group: hex
     grid: hex
-    world: moon
+    world: phobos
     cubes: 5
     stats: { slack: 4, shared: 5, planets: 9 }
     layout:
@@ -130,6 +132,114 @@ maps:
       - "8* 10 8*"
       - "8  9"
       - ".  9*"
+
+  # Hex: advanced square maps adapted to hex tiles, keeping each one's idea (where the starts sit, what they
+  # touch, a void or a gap in the middle) and its cubes. A square map's mirror becomes a half turn (a third of a
+  # turn for 3 players), as hex maps can only match their seats by turning.
+
+  - id: terra-minor-hex
+    name: Terra Minor (hex)
+    players: 2
+    group: hex
+    grid: hex
+    cubes: 7
+    stats: { slack: 0, shared: 6, planets: 6 }
+    # A band of six 8s, a start at each end touching two of them.
+    layout:
+      - "8  8"
+      - "7* 8  8  7*"
+      - ".  8  8"
+
+  - id: circular-logic-hex
+    name: Circular Logic (hex)
+    players: 2
+    group: hex
+    grid: hex
+    world: phobos
+    cubes: 6
+    stats: { slack: 2, shared: 4, planets: 6 }
+    # A ring of eight round a two-tile hole, the starts across it.
+    layout:
+      - "7* 8  8"
+      - "8  .  .  8"
+      - "8  8  7*"
+
+  - id: the-great-plan-hex
+    name: The Great Plan (hex)
+    players: 2
+    group: hex
+    grid: hex
+    cubes: 7
+    stats: { slack: 2, shared: 2, planets: 10 }
+    # A void ringed by 8s and 7s; each start sits among three 7s at an end.
+    layout:
+      - "7  7* 7"
+      - "8  7"
+      - "8  0  8"
+      - "7  8"
+      - "7  7* 7"
+
+  - id: critical-density-hex
+    name: Critical Density (hex)
+    players: 3
+    group: hex
+    grid: hex
+    world: phobos
+    cubes: 5
+    stats: { slack: 2, shared: 5, planets: 7 }
+    # Seven tiles: the starts round an 8, two spaces apart, with 8s between them.
+    layout:
+      - "9* 8"
+      - "8  8  9*"
+      - "9* 8"
+
+  - id: edge-of-oblivion-hex
+    name: Edge of Oblivion (hex)
+    players: 3
+    group: hex
+    grid: hex
+    cubes: 7
+    stats: { slack: 6, shared: 3, planets: 12 }
+    # A void ringed by 9s and 8s; each start, out at a point, touches a 9, an 8 and a 7.
+    layout:
+      - ".  7* 8"
+      - "7  9  8  7"
+      - ".  8  0  9  7*"
+      - "8  9  8  8"
+      - ".  7* 7"
+
+  - id: nexus-hex
+    name: Nexus (hex)
+    players: 4
+    group: hex
+    grid: hex
+    world: phobos
+    cubes: 6
+    stats: { slack: 6, shared: 5, planets: 12 }
+    # Two 10s in the middle with the 7s and 8s round them; two starts touch a 10, two sit further out.
+    layout:
+      - ".  9*"
+      - "8  7  9*"
+      - "8  10 10 8"
+      - "9* 7  8"
+      - ".  .  9*"
+
+  - id: tesseract-hex
+    name: Tesseract (hex)
+    players: 4
+    group: hex
+    grid: hex
+    cubes: 6
+    stats: { slack: 4, shared: 5, planets: 9 }
+    # A 10 in the middle, four arms of 8s out to the starts.
+    layout:
+      - ".  7*"
+      - ".  .  8"
+      - ".  9  9"
+      - "7* 8  10 8  7*"
+      - ".  9  9"
+      - ".  .  8"
+      - ".  .  7*"
 
   # Drift: maps whose planets sit off the middle of their tiles (docs/HEX.md, Off-centre planets), so
   # orbits cross tiles, shrink at the edge and overlap. Each is the same turned half a turn about its
@@ -167,6 +277,105 @@ maps:
       - ".   8    8    ."
       - "7s  0    9"
       - ".   .    8*   7nw"
+
+  # Open ground: hex maps spread out with blank tiles (-), open ground with no planet and no research, among
+  # their voids, so the planets stand apart and mechs cross open country between them. Each is the same
+  # turned (a half turn, or a third for 3 players).
+
+  - id: arcadia-planitia
+    name: Arcadia Planitia
+    players: 2
+    group: open
+    grid: hex
+    cubes: 6
+    stats: { slack: 2, shared: 4, planets: 8 }
+    # A hexagon of 19 tiles round a void; each start sits in a corner, on open ground beside a 7.
+    layout:
+      - ".  7  -  8*"
+      - "-  -  7  -"
+      - "9  -  0  -  9"
+      - "-  7  -  -"
+      - ".  8* -  7"
+
+  - id: valles-marineris
+    name: Valles Marineris
+    players: 2
+    group: open
+    grid: hex
+    cubes: 7
+    stats: { slack: 6, shared: 4, planets: 10 }
+    # A long canyon, the starts at either end, 7 tiles apart, with the 10s in its middle.
+    layout:
+      - ".  -  8  -  10 -  7"
+      - "8* -  7  -  -  7  -  8*"
+      - ".  .  7  -  10 -  8  -"
+
+  - id: stickney-crater
+    name: Stickney Crater
+    players: 3
+    group: open
+    grid: hex
+    world: phobos
+    cubes: 6
+    stats: { slack: 3, shared: 3, planets: 9 }
+    # A crater floor of blanks and three voids, ringed by 9s and 8s; the starts on the rim, touching a 7 and an 8.
+    layout:
+      - ".  .  9  -  7  7*"
+      - "7* 8  0  -  8"
+      - ".  7  -  -  0  9"
+      - ".  -  0  -  -"
+      - ".  .  9  8  7"
+      - ".  .  .  7*"
+
+  - id: tharsis-rise
+    name: Tharsis Rise
+    players: 3
+    group: open
+    grid: hex
+    cubes: 6
+    stats: { slack: 4, shared: 4, planets: 10 }
+    # A 10 on a rise of open ground; each start stands on the slope beside a void and a 7, four tiles from the others.
+    layout:
+      - ".  .  .  7"
+      - ".  8  0  9*"
+      - ".  -  -  -  -"
+      - "9* -  10 -  8"
+      - "7  0  -  -  0"
+      - ".  8  -  9* 7"
+
+  - id: utopia-planitia
+    name: Utopia Planitia
+    players: 4
+    group: open
+    grid: hex
+    cubes: 6
+    stats: { slack: 6, shared: 4, planets: 14 }
+    # A void with two 10s across it, on an open plain; the four starts stand out at its edge, each touching a 7
+    # and a blank, 4 tiles from two starts and 6 from the one across. The two pairs see different planets nearby.
+    layout:
+      - ".  .  8*"
+      - ".  7  -  9"
+      - ".  8  10 -  -  8*"
+      - "7  -  0  -  7"
+      - "8* -  -  10 8"
+      - ".  9  -  7"
+      - ".  .  .  8*"
+
+  - id: limtoc
+    name: Limtoc
+    players: 4
+    group: open
+    grid: hex
+    world: phobos
+    cubes: 6
+    stats: { slack: 6, shared: 4, planets: 14 }
+    # Two voids side by side across open ground; two starts by a 10, two by a 9 and an 8.
+    layout:
+      - ".  8* 8  -  7"
+      - "7  9  -  10 8*"
+      - "-  -  0  0  -  -"
+      - "8* 10 -  9  7"
+      - ".  7  -  8  8*"
 
   # 2 players
 

@@ -1,4 +1,5 @@
 import {
+  HEX_TILE_SET,
   REGOLITH_GROUND_PX,
   TILE_SET,
   lookWorld,
@@ -94,7 +95,7 @@ export const latestThumbnail = (t: TileSpec, look: TileOptions['look']) => lates
 
 /**
  * A tile as a printable face, named for where its planet sits when that's not the middle, and for the
- * world when it's on one: `p7-01`, `p7-01-ne`, `p7-01-moon` (a Void has no spot).
+ * world when it's on one: `p7-01`, `p7-01-ne`, `p7-01-phobos` (a Void has no spot).
  */
 export const printableTile = (t: TileSpec, fontCss: string, markings = true, view: TileView = {}): Printable => ({
   name: (view.planetAt && t.number > 0 ? `${t.id}-${view.planetAt}` : t.id) + (lookWorld(view.look) ? `-${view.look}` : ''),
@@ -131,17 +132,17 @@ export const TILES_AND_AIDS: PressSheets = {
   },
 };
 
-/** The set as hex tiles, in space or on the moon or Mars, planets in the middle, on press sheets of their own with each tile's die-cut line. */
+/** The set as hex tiles, blanks too, in space or on Phobos or Mars, planets in the middle, on press sheets of their own with each tile's die-cut line. */
 const hexTiles = (look: Exclude<TileLook, 'square'>): PressSheets => {
-  const on = { hex: '', moon: ' on the moon', mars: ' on Mars' }[look];
+  const on = { hex: '', phobos: ' on Phobos', mars: ' on Mars' }[look];
   return {
     name: look === 'hex' ? 'hex-tiles' : `hex-tiles-${look}`,
-    label: { hex: 'Hex tiles', moon: 'Moon hex tiles', mars: 'Mars hex tiles' }[look],
-    contents: `all ${TILE_SET.length} tiles as hex tiles${on} (${PIECES.hexTile.cols * PIECES.hexTile.rows} a page), each with its die-cut line in a CutContour spot colour`,
+    label: { hex: 'Hex tiles', phobos: 'Phobos hex tiles', mars: 'Mars hex tiles' }[look],
+    contents: `all ${HEX_TILE_SET.length} tiles as hex tiles${on} (${PIECES.hexTile.cols * PIECES.hexTile.rows} a page), each with its die-cut line in a CutContour spot colour`,
     async groups() {
       const tile = await tileFontCss();
       if (!tile) throw new Error('the fonts didn’t load');
-      return [{ piece: PIECES.hexTile, faces: TILE_SET.map((t) => printableTile(t, tile, true, { look })) }];
+      return [{ piece: PIECES.hexTile, faces: HEX_TILE_SET.map((t) => printableTile(t, tile, true, { look })) }];
     },
   };
 };
@@ -150,6 +151,6 @@ const hexTiles = (look: Exclude<TileLook, 'square'>): PressSheets => {
 export const TILE_PRINT: Record<TileLook, { piece: Piece; cmyk: PressSheets }> = {
   square: { piece: PIECES.tile, cmyk: TILES_AND_AIDS },
   hex: { piece: PIECES.hexTile, cmyk: hexTiles('hex') },
-  moon: { piece: PIECES.hexTile, cmyk: hexTiles('moon') },
+  phobos: { piece: PIECES.hexTile, cmyk: hexTiles('phobos') },
   mars: { piece: PIECES.hexTile, cmyk: hexTiles('mars') },
 };

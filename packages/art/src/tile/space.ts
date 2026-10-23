@@ -4,7 +4,7 @@ import { starfield } from '../starfield';
 import { PLANET_DIAMETER, PLANET_FAMILY, TILE, VOID_NEBULA_HUES, type PlanetType } from '../tokens';
 import { document, hsl, join, n, type Box, type Fragment } from '../svg';
 import { CORNER, MEET, MID, TRIM, betweenSpaces, type Corner, type Spot, type TileShape } from './geometry';
-import { planetType, type TileSpec } from './set';
+import { BLANK, planetType, type TileSpec } from './set';
 import { VOID_HEARTS } from './voids';
 
 /**
@@ -91,6 +91,7 @@ export function skyArt(
 
 /** A tile's body, centred on it: its planet and moons, or a Void tile's heart. */
 export function bodyArt(spec: TileSpec, id: string): Fragment {
+  if (spec.number === BLANK) return { defs: '', body: '' };
   if (spec.number === 0) return VOID_HEARTS[spec.heart ?? 'blackHole'](id);
   const art = rng(spec.seed);
   const r = PLANET_DIAMETER[spec.number] / 2;
@@ -124,7 +125,7 @@ export function bodySvg(spec: TileSpec): string {
 
 /** Whether a tile's planet has rings (picked from its seed, when its spec doesn't say). */
 export function tileHasRings(spec: TileSpec): boolean {
-  if (spec.rings !== undefined || spec.number === 0) return !!spec.rings;
+  if (spec.rings !== undefined || spec.number <= 0) return !!spec.rings;
   return planetRings({
     rng: rng(spec.seed).fork('planet'),
     number: spec.number,
