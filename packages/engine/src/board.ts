@@ -134,6 +134,34 @@ function checkStarts(board: Board) {
   }
 }
 
+/** A board's cells, all off it till tiles are laid. */
+const offCells = (rows: number, cols: number): BoardCell[][] =>
+  Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ kind: 'off' as const, tile: -1 })));
+
+/** Lays tile `tile` on the board: its `spaces` (a Void's all void), and its planet, if it has one, `t.dir` from `middle`. */
+function layTile(
+  cells: BoardCell[][],
+  planets: Planet[],
+  t: TileToken,
+  tile: number,
+  spaces: Cell[],
+  middle: Cell,
+  hex: boolean,
+  mapId: string,
+) {
+  for (const p of spaces) {
+    const cell: BoardCell = { kind: 'space', tile };
+    if (t.number === 0 && !t.blank) cell.void = true;
+    cells[p.r][p.c] = cell;
+  }
+  if (t.number === 0) return;
+  const d = planetOffset(t, hex, mapId);
+  const [r, c] = [middle.r + d.r, middle.c + d.c];
+  const id = planets.length;
+  planets.push({ id, number: t.number, capacity: CAPACITY[t.number], cubes: [], start: t.start, r, c });
+  cells[r][c] = { kind: 'planet', tile, planet: id };
+}
+
 export function buildBoard(map: MapDef): Board {
   const board = map.grid === 'hex' ? buildHexBoard(map) : buildSquareBoard(map);
   checkStarts(board);
@@ -145,30 +173,14 @@ function buildSquareBoard(map: MapDef): Board {
   const tileCols = Math.max(...map.layout.map((r) => r.length));
   const rows = tileRows * 3;
   const cols = tileCols * 3;
-  const cells: BoardCell[][] = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ kind: 'off' as const, tile: -1 })));
+  const cells = offCells(rows, cols);
   const planets: Planet[] = [];
 
   map.layout.forEach((row, tr) => {
     row.forEach((token, tc) => {
       if (token === '.') return;
-      const tile = tr * tileCols + tc;
-      const t = parseToken(token);
-      const { number, start } = t;
-      for (let dr = 0; dr < 3; dr++) {
-        for (let dc = 0; dc < 3; dc++) {
-          const cell: BoardCell = { kind: 'space', tile };
-          if (number === 0 && !t.blank) cell.void = true;
-          cells[tr * 3 + dr][tc * 3 + dc] = cell;
-        }
-      }
-      if (number > 0) {
-        const d = planetOffset(t, false, map.id);
-        const r = tr * 3 + 1 + d.r;
-        const c = tc * 3 + 1 + d.c;
-        const id = planets.length;
-        planets.push({ id, number, capacity: CAPACITY[number], cubes: [], start, r, c });
-        cells[r][c] = { kind: 'planet', tile, planet: id };
-      }
+      const spaces = [0, 1, 2].flatMap((dr) => [0, 1, 2].map((dc) => ({ r: tr * 3 + dr, c: tc * 3 + dc })));
+      layTile(cells, planets, parseToken(token), tr * tileCols + tc, spaces, spaces[4], false, map.id);
     });
   });
 
@@ -207,25 +219,12 @@ function buildHexBoard(map: MapDef): Board {
   const c0 = Math.min(...all.map((p) => p.c));
   const rows = Math.max(...all.map((p) => p.r)) - r0 + 1;
   const cols = Math.max(...all.map((p) => p.c)) - c0 + 1;
-  const cells: BoardCell[][] = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ kind: 'off' as const, tile: -1 })));
+  const cells = offCells(rows, cols);
   const planets: Planet[] = [];
   for (const t of tiles) {
-    const token = parseToken(t.token);
-    const { number, start } = token;
-    const r = t.r - r0;
-    const c = t.c - c0;
-    for (const d of flower) if (cells[r + d.r][c + d.c].kind !== 'off') throw new Error(`${map.id}: hex tiles overlap`);
-    for (const d of flower) {
-      const cell: BoardCell = { kind: 'space', tile: t.tile };
-      if (number === 0 && !token.blank) cell.void = true;
-      cells[r + d.r][c + d.c] = cell;
-    }
-    if (number > 0) {
-      const d = planetOffset(token, true, map.id);
-      const id = planets.length;
-      planets.push({ id, number, capacity: CAPACITY[number], cubes: [], start, r: r + d.r, c: c + d.c });
-      cells[r + d.r][c + d.c] = { kind: 'planet', tile: t.tile, planet: id };
-    }
+    const spaces = flower.map((d) => ({ r: t.r - r0 + d.r, c: t.c - c0 + d.c }));
+    if (spaces.some((p) => cells[p.r][p.c].kind !== 'off')) throw new Error(`${map.id}: hex tiles overlap`);
+    layTile(cells, planets, parseToken(t.token), t.tile, spaces, spaces[0], true, map.id);
   }
   return { mapId: map.id, mapName: map.name, rows, cols, cells, planets, hex: true, world: map.world ?? 'mars' };
 }

@@ -2,6 +2,7 @@ import {
   HEX_TILE_SET,
   REGOLITH_GROUND_PX,
   TILE_SET,
+  WORLD_NAMES,
   lookWorld,
   playerAidSvg,
   tileGroundSvg,
@@ -134,10 +135,11 @@ export const TILES_AND_AIDS: PressSheets = {
 
 /** The set as hex tiles, blanks too, in space or on Phobos, Deimos or Mars, planets in the middle, on press sheets of their own with each tile's die-cut line. */
 const hexTiles = (look: Exclude<TileLook, 'square'>): PressSheets => {
-  const on = { hex: '', phobos: ' on Phobos', deimos: ' on Deimos', mars: ' on Mars' }[look];
+  const world = lookWorld(look);
+  const on = world ? ` on ${WORLD_NAMES[world]}` : '';
   return {
-    name: look === 'hex' ? 'hex-tiles' : `hex-tiles-${look}`,
-    label: { hex: 'Hex tiles', phobos: 'Phobos hex tiles', deimos: 'Deimos hex tiles', mars: 'Mars hex tiles' }[look],
+    name: world ? `hex-tiles-${world}` : 'hex-tiles',
+    label: world ? `${WORLD_NAMES[world]} hex tiles` : 'Hex tiles',
     contents: `all ${HEX_TILE_SET.length} tiles as hex tiles${on} (${PIECES.hexTile.cols * PIECES.hexTile.rows} a page), each with its die-cut line in a CutContour spot colour`,
     async groups() {
       const tile = await tileFontCss();

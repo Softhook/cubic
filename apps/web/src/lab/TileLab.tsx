@@ -4,6 +4,7 @@ import {
   HEX_TILE_SET,
   TILE_SET,
   TILE_SPOTS,
+  WORLD_NAMES,
   dataUrl,
   editableTileSvg,
   lookShape,
@@ -46,9 +47,9 @@ const TYPES: PlanetType[] = ['gas', 'rocky', 'ice', 'lava', 'ocean'];
 const LOOKS: Record<TileLook, string> = {
   square: 'Square',
   hex: 'Hex',
-  phobos: 'Hex, on Phobos',
-  deimos: 'Hex, on Deimos',
-  mars: 'Hex, on Mars',
+  phobos: `Hex, on ${WORLD_NAMES.phobos}`,
+  deimos: `Hex, on ${WORLD_NAMES.deimos}`,
+  mars: `Hex, on ${WORLD_NAMES.mars}`,
 };
 
 type Override = Partial<Pick<TileSpec, 'seed' | 'type' | 'rings'>>;
