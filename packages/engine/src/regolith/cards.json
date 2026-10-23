@@ -27,12 +27,12 @@
       "effect": "ambitious",
       "art": {
         "title": "Overheating",
-        "brief": "A mech pushed past its limit: motor housing glowing, heat haze and sparks, a crew member waving it on."
+        "brief": "A mech pushed past its limit: motor housing glowing, heat haze and sparks."
       }
     },
     {
       "id": "r-brilliant",
-      "name": "Core Samples",
+      "name": "Deep Radar",
       "subtitle": "Research bonus",
       "text": "At the start of your turn, you may gain 2 Research.",
       "category": "research",
@@ -41,8 +41,8 @@
       "status": "renamed",
       "effect": "brilliant",
       "art": {
-        "title": "Core rack",
-        "brief": "A geologist sliding an ice core into a rack of sample tubes."
+        "title": "Deep radar",
+        "brief": "A radar station on the surface, its dish on the roof, its pulses going down through the strata."
       }
     },
     {
@@ -57,7 +57,7 @@
       "effect": "brutal",
       "art": {
         "title": "Two barrels",
-        "brief": "A Breacher firing both arm cannons at once, two muzzle flashes."
+        "brief": "A Breacher front on, firing both arm cannons at the viewer, two muzzle flashes."
       }
     },
     {
@@ -87,12 +87,12 @@
       "effect": "clever",
       "art": {
         "title": "Gantry",
-        "brief": "A Chameleon on a gantry with one arm half swapped, the old arm hanging from a hoist."
+        "brief": "A Chameleon in a gantry with one arm off, the arm hanging from the hoist beside its open shoulder."
       }
     },
     {
       "id": "r-composed",
-      "name": "Truce Talks",
+      "name": "Stand Down",
       "subtitle": "Reduce power for research",
       "text": "Once per turn, you may lose 1 Power and gain 3 Research.",
       "category": "research",
@@ -101,8 +101,8 @@
       "status": "renamed",
       "effect": "composed",
       "art": {
-        "title": "Table",
-        "brief": "Two foremen at a folding table on the ice, maps between them."
+        "title": "Powered down",
+        "brief": "A Chameleon powered down in a low crouch, venting heat."
       }
     },
     {
@@ -132,7 +132,7 @@
       "effect": "curious",
       "art": {
         "title": "Sample drill",
-        "brief": "Two prospectors with a hand drill over cracked ice."
+        "brief": "A Wisp working a core drill on its tripod over cracked ice."
       }
     },
     {
@@ -147,7 +147,7 @@
       "effect": "dangerous",
       "art": {
         "title": "Strapped charge",
-        "brief": "A Breacher with charges strapped across its chest, stencilled DANGER."
+        "brief": "A Breacher with charges strapped across its chest."
       }
     },
     {
@@ -191,8 +191,8 @@
       "status": "renamed",
       "effect": "flexible",
       "art": {
-        "title": "Wrench",
-        "brief": "A giant torque wrench on a mech's hip joint, a mechanic hanging off the handle."
+        "title": "Repair arm",
+        "brief": "A repair arm on its floor mount welding at a Tactician's hip joint."
       }
     },
     {
@@ -311,8 +311,8 @@
       "status": "renamed",
       "effect": "prideful",
       "art": {
-        "title": "Grabbed flag",
-        "brief": "An enemy hand pulling the flag off a wrecked mech."
+        "title": "Flag raised",
+        "brief": "A victorious Chameleon holding up a flag over a downed mech."
       }
     },
     {
@@ -326,8 +326,8 @@
       "status": "renamed",
       "effect": "profiteering",
       "art": {
-        "title": "Beacon",
-        "brief": "A strike beacon in its case, a price tag on the handle."
+        "title": "Called in",
+        "brief": "A strike beacon planted by a claim flag, the orbital strike it bought landing on the horizon."
       }
     },
     {
@@ -341,8 +341,8 @@
       "status": "renamed",
       "effect": "rational",
       "art": {
-        "title": "Spirit level",
-        "brief": "A spirit level resting on a gun barrel, bubble dead centre."
+        "title": "Drill ground",
+        "brief": "Three Snipers lined up in step on a marked drill ground."
       }
     },
     {
@@ -387,7 +387,7 @@
       "effect": "righteous",
       "art": {
         "title": "Slogan",
-        "brief": "A wall stencilled NO RETREAT, a mech standing in front of it."
+        "brief": "A wall stencilled NO RETREAT, its flag on the roof, a mech standing in front of it."
       }
     },
     {
@@ -437,7 +437,7 @@
     },
     {
       "id": "r-strategic",
-      "name": "Shoulder to Shoulder",
+      "name": "Close Protection",
       "subtitle": "Combat support bonus",
       "text": "During combat, if your mech is adjacent to one or more friendly mechs, -2 to your Combat roll.",
       "category": "combat",
@@ -492,7 +492,7 @@
       "effect": "talented",
       "art": {
         "title": "Crew photo",
-        "brief": "A crew photo, five people, each with a different badge."
+        "brief": "A crew photo, five people, each printed in a different ink."
       }
     },
     {
@@ -524,7 +524,7 @@
       "effect": "aggression",
       "art": {
         "title": "Poster",
-        "brief": "A two-ink recruitment poster of raised fists and a mech."
+        "brief": "A two-ink poster of raised fists and a mech, no words."
       }
     },
     {
@@ -554,7 +554,7 @@
       "effect": "change-of-heart",
       "art": {
         "title": "Crossing over",
-        "brief": "An engineer walking from one side's flag to another's."
+        "brief": "A mech walking away from one side's flag to another's, where a Tactician waits for it."
       }
     },
     {
@@ -583,8 +583,8 @@
       "status": "renamed",
       "effect": "plan-ahead",
       "art": {
-        "title": "Range card",
-        "brief": "A gunner's range card, hexes and distances inked in."
+        "title": "Crossfire",
+        "brief": "An enemy mech caught in a marked kill zone, crossfire coming in from both sides."
       }
     },
     {
@@ -661,7 +661,7 @@
       "effect": "expansion",
       "art": {
         "title": "Rollout",
-        "brief": "A new mech walking out of a workshop's doors."
+        "brief": "A new mech walking out of a dark workshop's doors."
       }
     }
   ]

@@ -91,6 +91,13 @@
       "w": 1320,
       "x": -556,
       "y": 5850
+    },
+    "RegolithCards.dc.html": {
+      "h": 6291,
+      "title": "Regolith cards",
+      "w": 1478,
+      "x": 4120,
+      "y": 2540
     }
   },
   "createdOnFiles": {
@@ -132,7 +139,8 @@
     "CardStyles.dc.html",
     "World.dc.html",
     "Roster.dc.html",
-    "Silhouettes.dc.html"
+    "Silhouettes.dc.html",
+    "RegolithCards.dc.html"
   ],
   "pages": [],
   "title": "Moon Mech Mood Board",

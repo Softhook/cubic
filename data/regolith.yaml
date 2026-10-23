@@ -30,9 +30,9 @@ skills:
     from: ambitious
     status: renamed
     effect: ambitious
-    art: { title: "Overheating", brief: "A mech pushed past its limit: motor housing glowing, heat haze and sparks, a crew member waving it on." }
+    art: { title: "Overheating", brief: "A mech pushed past its limit: motor housing glowing, heat haze and sparks." }
   - id: r-brilliant
-    name: "Core Samples"
+    name: "Deep Radar"
     subtitle: "Research bonus"
     text: "At the start of your turn, you may gain 2 Research."
     category: research
@@ -40,7 +40,7 @@ skills:
     from: brilliant
     status: renamed
     effect: brilliant
-    art: { title: "Core rack", brief: "A geologist sliding an ice core into a rack of sample tubes." }
+    art: { title: "Deep radar", brief: "A radar station on the surface, its dish on the roof, its pulses going down through the strata." }
   - id: r-brutal
     name: "Paired Cannons"
     subtitle: "Combat with advantage"
@@ -50,7 +50,7 @@ skills:
     from: brutal
     status: renamed
     effect: brutal
-    art: { title: "Two barrels", brief: "A Breacher firing both arm cannons at once, two muzzle flashes." }
+    art: { title: "Two barrels", brief: "A Breacher front on, firing both arm cannons at the viewer, two muzzle flashes." }
   - id: r-calculating
     name: "Mech Pick"
     subtitle: "Controlled scrapping"
@@ -70,9 +70,9 @@ skills:
     from: clever
     status: renamed
     effect: clever
-    art: { title: "Gantry", brief: "A Chameleon on a gantry with one arm half swapped, the old arm hanging from a hoist." }
+    art: { title: "Gantry", brief: "A Chameleon in a gantry with one arm off, the arm hanging from the hoist beside its open shoulder." }
   - id: r-composed
-    name: "Truce Talks"
+    name: "Stand Down"
     subtitle: "Reduce power for research"
     text: "Once per turn, you may lose 1 Power and gain 3 Research."
     category: research
@@ -80,7 +80,7 @@ skills:
     from: composed
     status: renamed
     effect: composed
-    art: { title: "Table", brief: "Two foremen at a folding table on the ice, maps between them." }
+    art: { title: "Powered down", brief: "A Chameleon powered down in a low crouch, venting heat." }
   - id: r-cunning
     name: "Second Charge"
     subtitle: "Extra mech ability"
@@ -100,7 +100,7 @@ skills:
     from: curious
     status: renamed
     effect: curious
-    art: { title: "Sample drill", brief: "Two prospectors with a hand drill over cracked ice." }
+    art: { title: "Sample drill", brief: "A Wisp working a core drill on its tripod over cracked ice." }
   - id: r-dangerous
     name: "Reactor Breach"
     subtitle: "Destroy your attacker"
@@ -110,7 +110,7 @@ skills:
     from: dangerous
     status: renamed
     effect: dangerous
-    art: { title: "Strapped charge", brief: "A Breacher with charges strapped across its chest, stencilled DANGER." }
+    art: { title: "Strapped charge", brief: "A Breacher with charges strapped across its chest." }
   - id: r-devious
     name: "Crawlway"
     subtitle: "Slingshot past enemies"
@@ -140,7 +140,7 @@ skills:
     from: flexible
     status: renamed
     effect: flexible
-    art: { title: "Wrench", brief: "A giant torque wrench on a mech's hip joint, a mechanic hanging off the handle." }
+    art: { title: "Repair arm", brief: "A repair arm on its floor mount welding at a Tactician's hip joint." }
   - id: r-hostile
     name: "Breakthrough"
     subtitle: "Extra action for destruction"
@@ -220,7 +220,7 @@ skills:
     from: prideful
     status: renamed
     effect: prideful
-    art: { title: "Grabbed flag", brief: "An enemy hand pulling the flag off a wrecked mech." }
+    art: { title: "Flag raised", brief: "A victorious Chameleon holding up a flag over a downed mech." }
   - id: r-profiteering
     name: "Arms Deal"
     subtitle: "Orbital strikes from claiming"
@@ -230,7 +230,7 @@ skills:
     from: profiteering
     status: renamed
     effect: profiteering
-    art: { title: "Beacon", brief: "A strike beacon in its case, a price tag on the handle." }
+    art: { title: "Called in", brief: "A strike beacon planted by a claim flag, the orbital strike it bought landing on the horizon." }
   - id: r-rational
     name: "Drill Sergeant"
     subtitle: "Fixed combat"
@@ -240,7 +240,7 @@ skills:
     from: rational
     status: renamed
     effect: rational
-    art: { title: "Spirit level", brief: "A spirit level resting on a gun barrel, bubble dead centre." }
+    art: { title: "Drill ground", brief: "Three Snipers lined up in step on a marked drill ground." }
   - id: r-ravenous
     name: "Trophy Hunters"
     subtitle: "Power amplification"
@@ -270,7 +270,7 @@ skills:
     from: righteous
     status: renamed
     effect: righteous
-    art: { title: "Slogan", brief: "A wall stencilled NO RETREAT, a mech standing in front of it." }
+    art: { title: "Slogan", brief: "A wall stencilled NO RETREAT, its flag on the roof, a mech standing in front of it." }
   - id: r-ruthless
     name: "Signal Jammer"
     subtitle: "Weaken your enemies"
@@ -302,7 +302,7 @@ skills:
     effect: stealthy
     art: { title: "Pod in the dust", brief: "A drop pod falling into a dust storm, alone on the map." }
   - id: r-strategic
-    name: "Shoulder to Shoulder"
+    name: "Close Protection"
     subtitle: "Combat support bonus"
     text: "During combat, if your mech is adjacent to one or more friendly mechs, -2 to your Combat roll."
     category: combat
@@ -340,7 +340,7 @@ skills:
     from: talented
     status: renamed
     effect: talented
-    art: { title: "Crew photo", brief: "A crew photo, five people, each with a different badge." }
+    art: { title: "Crew photo", brief: "A crew photo, five people, each printed in a different ink." }
   - id: r-tyrannical
     name: "Martial Law"
     subtitle: "Claim with power"
@@ -362,7 +362,7 @@ tactics:
     from: aggression
     status: renamed
     effect: aggression
-    art: { title: "Poster", brief: "A two-ink recruitment poster of raised fists and a mech." }
+    art: { title: "Poster", brief: "A two-ink poster of raised fists and a mech, no words." }
   - id: r-black-market
     name: "Contraband"
     subtitle: "Gain orbital strikes"
@@ -382,7 +382,7 @@ tactics:
     from: change-of-heart
     status: renamed
     effect: change-of-heart
-    art: { title: "Crossing over", brief: "An engineer walking from one side's flag to another's." }
+    art: { title: "Crossing over", brief: "A mech walking away from one side's flag to another's, where a Tactician waits for it." }
   - id: r-momentum
     name: "Forced Advance"
     subtitle: "Take a bonus turn"
@@ -402,7 +402,7 @@ tactics:
     from: plan-ahead
     status: renamed
     effect: plan-ahead
-    art: { title: "Range card", brief: "A gunner's range card, hexes and distances inked in." }
+    art: { title: "Crossfire", brief: "An enemy mech caught in a marked kill zone, crossfire coming in from both sides." }
   - id: r-sabotage
     name: "Sabotage"
     subtitle: "Limit enemy action"
@@ -454,4 +454,4 @@ expansion:
     from: expansion
     status: renamed
     effect: expansion
-    art: { title: "Rollout", brief: "A new mech walking out of a workshop's doors." }
+    art: { title: "Rollout", brief: "A new mech walking out of a dark workshop's doors." }

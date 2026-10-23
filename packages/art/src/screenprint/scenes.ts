@@ -97,7 +97,7 @@ export const SCENES: Record<string, SpScene> = {
 
   'r-ambitious': {
     world: 'mars',
-    caption: 'a Breacher pushed past its limit, its motor glowing, a crew member waving it on',
+    caption: 'a Breacher pushed past its limit, its motor glowing',
     draw: (s) =>
       paperGround(s) +
       rays(s, 30, 14, 30, s.plate, 180, 360) +
@@ -110,39 +110,45 @@ export const SCENES: Record<string, SpScene> = {
         arms: { plus: [-30, -20], minus: [26, 10] },
       }) +
       flash(25, 11.5, 2.4, 7) +
-      sparks(s.r, 25, 12, 14, 8, 180, 330) +
-      person(55, 36, 0.2, { facing: -1, arms: [168, 20], elbows: [0, 10] }, s.key, s.paper),
+      sparks(s.r, 25, 12, 14, 8, 180, 330),
   },
   'r-brilliant': {
     world: 'phobos',
-    caption: 'a geologist sliding an ice core into a rack of sample tubes',
+    caption: 'a radar station on the surface, its dish on the roof, its pulses going down through the strata',
     draw: (s) => {
-      let rack = r2(30, 12, 28, 2, s.key) + r2(30, 30, 28, 2, s.key) + r2(30, 12, 1.6, 22, s.key) + r2(56.4, 12, 1.6, 22, s.key);
-      for (let i = 0; i < 6; i++) {
-        const x = 33 + i * 4;
-        rack += r2(x, 14.4, 2.4, 15.6, s.key) + (i !== 4 ? r2(x + 0.5, 16 + (i % 2) * 2, 1.4, 12 - (i % 2) * 2, INKS.ice) : '');
+      const g = GROUND[s.world];
+      // the ground cut away under the station: strata, and the pulses going down through them
+      let strata = '';
+      for (let i = 0; i < 4; i++) {
+        const y = 21 + i * 5;
+        strata += stroke(`M-3,${n(y)} q8,${n(-1 + (i % 2) * 2)} 16,0 t16,0 t16,0 t16,0 t16,0`, g.shade, 0.5, ' opacity="0.8"');
       }
       return (
-        outdoors(s, 36, { planet: { x: 12, y: 8, r: 8 } }) +
-        print(s, 'icemine', 10, 36, { size: 0.13 }) +
-        rack +
-        `<g transform="rotate(-8 49 11)">${r2(40, 9.6, 14, 2.2, s.key)}${r2(42, 10.1, 9, 1.2, INKS.ice)}</g>` +
-        person(25, 42, 0.42, { facing: 1, arms: [118, 100], elbows: [-20, -10], lean: 6 }, s.key, s.paper)
+        paperGround(s) +
+        sky(s, { planet: { x: 54, y: 6, r: 6 } }) +
+        land(s, 16, { marks: false }) +
+        r2(-3, 17.5, 70, 28, ht(s, 'shade'), ' opacity="0.6"') +
+        strata +
+        rings(26, 16.5, 3, 4, 6, INKS.amber, 0.6, 20, 160) +
+        print(s, 'containers', 9, 16.5, { size: 0.08 }) +
+        print(s, 'workshop', 26, 16.5, { size: 0.12 }) +
+        print(s, 'dish', 21, 9.4, { size: 0.08 }) +
+        print(s, 'mast', 41, 16.5, { size: 0.1 })
       );
     },
   },
   'r-brutal': {
     world: 'deimos',
-    caption: 'a Breacher firing both fists at once, two muzzle flashes',
+    caption: 'a Breacher front on, firing both fists at the viewer, two muzzle flashes',
     draw: (s) =>
       paperGround(s) +
       rays(s, 32, 20, 32, s.plate) +
       land(s, 36, { rims: false }) +
-      mech(s, 'breacher', 32, 40, 0.13, { yaw: -22, arms: { plus: [-74, -16], minus: [-74, -16] } }) +
-      flash(15.6, 15, 3.4, 10) +
-      flash(50, 13.4, 3.4, 10, 12) +
-      sparks(s.r, 15.6, 15, 10, 8) +
-      sparks(s.r, 50, 13.4, 10, 8),
+      mech(s, 'breacher', 32, 40, 0.13, { arms: { plus: [-16, -10], minus: [16, 10] } }) +
+      flash(14, 31.5, 4.2, 10) +
+      flash(51, 32, 4.2, 10, 12) +
+      sparks(s.r, 14, 31.5, 12, 10) +
+      sparks(s.r, 51, 32, 12, 10),
   },
   'r-calculating': {
     world: 'phobos',
@@ -160,31 +166,22 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-clever': {
     world: 'mars',
-    caption: 'a Chameleon in a gantry, one arm half swapped, the old arm hanging from a hoist',
+    caption: 'a Chameleon in a gantry, one arm off and hanging from the hoist beside its open shoulder',
     draw: (s) =>
-      outdoors(s, 36, { planet: { x: 52, y: 8, r: 9 } }) +
+      outdoors(s, 36, { planet: { x: 54, y: 8, r: 8 } }) +
       print(s, 'gantry', 32, 38, { size: 0.24 }) +
-      mech(s, 'chameleon', 30, 38, 0.115, { yaw: 22, arms: { plus: [-52, 10] } }) +
-      stroke('M44,5.6 L44,16', s.key, 0.35, ' stroke-dasharray="0.6 0.4"') +
-      `<g transform="rotate(8 44 16)">${r2(42.6, 16, 3, 9, s.key)}${r2(42, 25, 4, 2.2, s.key)}${r2(43.2, 17.4, 1.8, 6, s.ink.seam)}</g>` +
-      person(52, 38, 0.18, { facing: -1, arms: [140, 10] }, s.key, s.paper) +
-      sparks(s.r, 38.5, 14.5, 8, 5),
+      mech(s, 'chameleon', 28, 38, 0.115, { detach: { arm: 'plus', show: 'mech' } }) +
+      stroke('M42.4,5.6 L42.4,13.4', s.key, 0.35, ' stroke-dasharray="0.6 0.4"') +
+      mech(s, 'chameleon', 33.5, 39, 0.115, { detach: { arm: 'plus', show: 'arm' } }) +
+      sparks(s.r, 35.2, 13.4, 10, 5),
   },
   'r-composed': {
     world: 'phobos',
-    caption: 'two foremen at a folding table on the ice, maps between them',
+    caption: 'a Chameleon powered down in a low crouch, venting heat',
     draw: (s) =>
-      outdoors(s, 28, { planet: { x: 32, y: 9, r: 7 } }) +
-      mech(s, 'chameleon', 8, 28, 0.05, { yaw: 30, legs: { plus: [-10, 60], minus: [-10, 60] }, lean: 10 }, { plate: INKS.ice }) +
-      mech(s, 'tactician', 56, 28, 0.045, { yaw: -30, legs: { plus: [10, -60], minus: [10, -60] } }, { plate: INKS.oxide }) +
-      `<ellipse cx="32" cy="40" rx="26" ry="4" fill="${INKS.ice}" opacity="0.7"/>` +
-      flag(s, 6, 40, 16, INKS.ice) +
-      flag(s, 58, 40, 16, INKS.oxide, '', -1) +
-      r2(20, 31, 24, 1.4, s.key) +
-      stroke('M22,32.4 L26,40 M26,32.4 L22,40 M38,32.4 L42,40 M42,32.4 L38,40', s.key, 0.6) +
-      `<g transform="rotate(-3 32 30)">${r2(25, 29.4, 14, 1.6, INKS.bone)}${stroke('M27,30.2 l3,0 m2,0 l5,0', s.key, 0.2)}</g>` +
-      person(16, 41, 0.22, { facing: 1, arms: [80, 10], elbows: [10, 10] }, s.key, s.paper) +
-      person(48, 41, 0.22, { facing: -1, arms: [86, -10], elbows: [10, 0] }, s.key, s.paper),
+      outdoors(s, 32, { planet: { x: 50, y: 9, r: 7 } }) +
+      smoke(s, 30, 14, 10, GROUND.phobos.light) +
+      mech(s, 'chameleon', 30, 40, 0.13, { legs: { plus: [-34, 62], minus: [34, -62] }, arms: { plus: [4, 0], minus: [-4, 0] } }),
   },
   'r-cunning': {
     world: 'deimos',
@@ -214,21 +211,22 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-curious': {
     world: 'phobos',
-    caption: 'two prospectors with a hand drill over cracked ice, a Wisp watching',
+    caption: 'a Wisp working a core drill on its tripod over cracked ice',
     draw: (s) =>
       outdoors(s, 30) +
-      mech(s, 'wisp', 52, 30, 0.07, { yaw: -20 }) +
-      `<ellipse cx="30" cy="38" rx="22" ry="3.4" fill="${INKS.ice}"/>` +
-      stroke('M30,38 l-6,1.5 l-5,-0.6 M30,38 l4,2 l7,0.4 M30,38 l2,-1.6 l8,-0.8', s.key, 0.35) +
-      r2(29.4, 22, 1.2, 16, s.key) +
-      r2(24, 21, 12, 1.4, s.key) +
-      `<circle cx="30" cy="21.7" r="1.4" fill="${INKS.amber}"/>` +
-      person(20, 39, 0.27, { facing: 1, arms: [118, 100], elbows: [-30, -20], lean: 8, legs: [10, -12] }, s.key, s.paper) +
-      person(41, 39, 0.27, { facing: -1, arms: [112, 96], elbows: [-30, -20], lean: 8, legs: [10, -12] }, s.key, s.paper),
+      `<ellipse cx="26" cy="38" rx="22" ry="3.4" fill="${INKS.ice}"/>` +
+      stroke('M26,38 l-6,1.5 l-5,-0.6 M26,38 l4,2 l7,0.4 M26,38 l2,-1.6 l8,-0.8', s.key, 0.35) +
+      // the tripod, its drill string and motor, a core coming up
+      stroke('M26,14 L17,39 M26,14 L35,39 M26,14 L27,40', s.key, 0.8) +
+      r2(25.3, 14, 1.4, 24, s.key) +
+      r2(22.6, 18, 6.8, 4.4, s.plate, ` stroke="${s.key}" stroke-width="0.5"`) +
+      `<circle cx="26" cy="13.6" r="1.4" fill="${INKS.amber}"/>` +
+      r2(9, 34.6, 8, 1.6, INKS.ice, ` stroke="${s.key}" stroke-width="0.35"`) +
+      mech(s, 'wisp', 49, 40, 0.13, { yaw: -24 }),
   },
   'r-dangerous': {
     world: 'mars',
-    caption: 'a Breacher with charges strapped across its chest, stencilled DANGER',
+    caption: 'a Breacher with charges strapped across its chest',
     draw: (s) => {
       const charges = [-30, -10, 10, 30]
         .map(
@@ -241,8 +239,7 @@ export const SCENES: Record<string, SpScene> = {
         rays(s, 32, 22, 34, s.plate) +
         land(s, 38, { rims: false }) +
         mech(s, 'breacher', 32, 44, 0.165, { arms: { plus: [10, -10], minus: [10, -10] } }) +
-        `<g transform="translate(32,44) scale(0.165)">${charges}<path d="M-56,-156 L56,-130 M-56,-130 L56,-156" stroke="${INKS.oxide}" stroke-width="3"/></g>` +
-        stencil('DANGER', 32, 21.4, 3.2, INKS.oxide)
+        `<g transform="translate(32,44) scale(0.165)">${charges}</g>`
       );
     },
   },
@@ -271,13 +268,26 @@ export const SCENES: Record<string, SpScene> = {
 
   'r-flexible': {
     world: 'phobos',
-    caption: "a giant torque wrench on a Chameleon's hip joint, a mechanic hanging off its handle",
-    draw: (s) =>
-      outdoors(s, 34, { planet: { x: 52, y: 8, r: 8 } }) +
-      mech(s, 'chameleon', 22, 40, 0.12, { yaw: 20 }) +
-      `<g transform="rotate(6 26 26)">${r2(26, 24.8, 24, 2.6, s.key)}<circle cx="26" cy="26" r="3" fill="none" stroke="${s.key}" stroke-width="1.6"/>${r2(48, 23.8, 5, 4.6, s.key)}</g>` +
-      person(50, 46, 0.24, { facing: -1, arms: [176, 172], elbows: [0, 0], legs: [14, -10], knees: [20, 10] }, s.key, s.paper) +
-      sparks(s.r, 26, 26, 8, 5),
+    caption: "a repair arm on its floor mount welding at a Tactician's hip joint",
+    draw: (s) => {
+      const joint = (x: number, y: number, r: number) =>
+        `<circle cx="${x}" cy="${y}" r="${r}" fill="${s.key}"/><circle cx="${x}" cy="${y}" r="${r * 0.45}" fill="${s.plate}"/>`;
+      return (
+        outdoors(s, 34, { planet: { x: 12, y: 8, r: 8 } }) +
+        mech(s, 'tactician', 22, 40, 0.11, { yaw: 24 }) +
+        // the arm: a floor mount, two booms with their hydraulics, a welding head at the hip
+        plated(s, (ink) => r2(48, 36.4, 12, 3.6, ink) + r2(51, 32, 6, 4.6, ink)) +
+        stroke('M54,32 L49,14', s.key, 3) +
+        stroke('M56,31 L51.6,17', s.ink.rod, 0.6) +
+        stroke('M49,14 L36,24', s.key, 2.4) +
+        stroke('M47,17 L38.6,23', s.ink.rod, 0.5) +
+        joint(54, 32, 2.4) +
+        joint(49, 14, 2) +
+        `<g transform="rotate(38 36 24)">${r2(32, 22.8, 5, 2.4, s.key)}${r2(30.4, 23.4, 1.8, 1.2, INKS.amber)}</g>` +
+        flash(31, 26, 1.8, 8) +
+        sparks(s.r, 31, 26, 14, 7, 60, 200)
+      );
+    },
   },
 
   'r-hostile': {
@@ -287,8 +297,7 @@ export const SCENES: Record<string, SpScene> = {
       outdoors(s, 32, { planet: { x: 12, y: 8, r: 7 } }) +
       smoke(s, 20, 34, 30, GROUND.mars.shade) +
       `<g transform="rotate(84 22 37)">${mech(s, 'tactician', 22, 37, 0.07, {}, { ink: { ...s.ink, key: s.ink.side }, plate: false })}</g>` +
-      mech(s, 'chameleon', 34, 40, 0.115, { yaw: 34, legs: { plus: [-26, 36], minus: [24, 6] }, arms: { plus: [-60, -24] }, lean: -4 }) +
-      mech(s, 'sniper', 60, 32, 0.04, { yaw: -20 }, { plate: INKS.oxide }),
+      mech(s, 'chameleon', 34, 40, 0.115, { yaw: 34, legs: { plus: [-26, 36], minus: [24, 6] }, arms: { plus: [-60, -24] }, lean: -4 }),
   },
   'r-industrious': {
     world: 'deimos',
@@ -372,50 +381,43 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-prideful': {
     world: 'deimos',
-    caption: 'an enemy crewman pulling the flag off a wrecked mech',
+    caption: 'a victorious Chameleon holding up a flag over a downed mech',
     draw: (s) =>
       outdoors(s, 34, { planet: { x: 52, y: 9, r: 9 } }) +
-      smoke(s, 16, 30, 20, GROUND.deimos.shade) +
-      mech(
-        s,
-        'chameleon',
-        24,
-        40,
-        0.1,
-        { yaw: 30, lean: 16, legs: { plus: [10, 80], minus: [10, 80] }, arms: { plus: [30, 20], minus: [20, 10] } },
-        { ink: { ...s.ink, key: s.ink.side } },
-      ) +
-      `<g transform="rotate(26 32 18)">${flag(s, 32, 18, 14, INKS.ice, '', 1)}</g>` +
-      person(46, 41, 0.27, { facing: -1, arms: [150, 140], elbows: [10, 20], lean: -14, legs: [20, -16] }, s.key, s.paper) +
-      `<circle cx="46" cy="22.6" r="2.4" fill="${INKS.oxide}"/>`,
+      smoke(s, 17, 36, 22, GROUND.deimos.shade) +
+      `<g transform="rotate(-82 24 40)">${mech(s, 'tactician', 24, 40, 0.07, {}, { ink: { ...s.ink, key: s.ink.side }, plate: false })}</g>` +
+      mech(s, 'chameleon', 40, 41, 0.1, { yaw: -20, arms: { plus: [-100, -40] } }) +
+      flag(s, 57.6, 17, 12.5, INKS.ice, '', -1),
   },
   'r-profiteering': {
     world: 'mars',
-    caption: 'a strike beacon in its case, a price tag on the handle: forty litres of water',
+    caption: 'a strike beacon planted by a claim flag, the orbital strike it bought landing on the horizon',
     draw: (s) =>
-      paperGround(s) +
-      land(s, 30, { rims: false }) +
-      plated(s, (ink) => r2(8, 24, 44, 12, ink) + `<g transform="rotate(-20 8 24)">${r2(8, 10, 44, 14, ink)}</g>`) +
-      r2(10, 25.5, 40, 9, s.ink.recess) +
-      `<g transform="rotate(-20 8 24)">${r2(10, 11.6, 40, 11, ht(s, 'key'))}</g>` +
-      `<g transform="rotate(-80 30 29)">${r2(27, 20, 6, 18, INKS.bone)}${r2(27, 20, 6, 3, INKS.oxide)}${stroke('M30,20 L30,14', INKS.bone, 0.7)}<circle cx="30" cy="13.4" r="1.4" fill="${INKS.amber}"/></g>` +
-      r2(26, 21.4, 8, 1.6, s.key) +
-      stroke('M30,22 C33,24 38,22 44,15', s.key, 0.25) +
-      `<g transform="rotate(14 48 16)">${r2(44, 12, 10, 6, INKS.bone, ` stroke="${s.key}" stroke-width="0.3"`)}${label('40 L', 49, 16.4, 2, s.key)}</g>`,
+      outdoors(s, 26, { planet: false }) +
+      // the strike: a beam from orbit, its flash and smoke on the horizon
+      r2(46, -4, 3, 30, INKS.amber) +
+      r2(47, -4, 1, 30, INKS.bone) +
+      smoke(s, 47.5, 26, 10, GROUND.mars.shade) +
+      flash(47.5, 25, 5, 12) +
+      // the beacon on its tripod, calling it down, beside the claim flag
+      stroke('M20,40 L23,28 M26,40 L23,28 M23,40 L23,28', s.key, 0.7) +
+      r2(20.6, 22, 4.8, 7, s.key) +
+      r2(21.4, 23.2, 3.2, 1.6, INKS.oxide) +
+      stroke('M23,22 L23,12', s.key, 0.5) +
+      `<circle cx="23" cy="11.4" r="1.4" fill="${INKS.amber}"/>` +
+      rings(23, 11.4, 2.6, 2.4, 4, INKS.amber, 0.45, 290, 360) +
+      flag(s, 10, 41, 18, INKS.ice),
   },
   'r-rational': {
     world: 'phobos',
-    caption: 'a spirit level resting on a gun barrel, its bubble dead centre',
+    caption: 'three Snipers lined up in step on a marked drill ground',
     draw: (s) =>
-      paperGround(s) +
-      rays(s, 32, 60, 30, s.plate, 180, 360) +
-      plated(s, (ink) => r2(-4, 24, 72, 6, ink) + r2(-4, 22.6, 14, 9, ink) + r2(56, 22.8, 10, 8.4, ink)) +
-      stroke('M12,27 L54,27', s.ink.seam, 0.3) +
-      r2(14, 17.4, 36, 6, INKS.bone, ` stroke="${s.key}" stroke-width="0.6"`) +
-      r2(26, 18.6, 12, 3.6, INKS.ice, ' rx="1.8"') +
-      `<ellipse cx="32" cy="20.4" rx="2" ry="1.1" fill="${INKS.amber}"/>` +
-      stroke('M29.6,18.4 L29.6,22.4 M34.4,18.4 L34.4,22.4', s.key, 0.3) +
-      label('DRILL 3', 18, 35.6, 1.8, s.key, 'start'),
+      outdoors(s, 24, { planet: { x: 54, y: 8, r: 6 } }) +
+      // the drill ground: painted lines running back to the horizon
+      stroke('M-4,33 L68,33 M-4,39.5 L68,39.5', INKS.bone, 0.5) +
+      stroke('M4,44 L17,25 M28,44 L28,25 M52,44 L39,25', INKS.bone, 0.35, ' stroke-dasharray="1.2 0.8"') +
+      [10, 28, 46].map((x) => mech(s, 'sniper', x, 38, 0.07)).join('') +
+      flag(s, 62, 31, 12, INKS.oxide, '3', -1),
   },
   'r-ravenous': {
     world: 'mars',
@@ -454,20 +456,20 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-righteous': {
     world: 'mars',
-    caption: 'a wall stencilled NO RETREAT, a Breacher standing in front of it',
+    caption: 'a wall stencilled NO RETREAT, its flag on the roof, a Breacher standing in front of it',
     draw: (s) =>
       outdoors(s, 34, { planet: false }) +
       print(s, 'wall', 30, 34, { size: 0.36 }) +
       stencil('NO RETREAT', 21, 25, 4.8, INKS.bone) +
       mech(s, 'breacher', 51, 41, 0.085, { yaw: -20 }) +
-      flag(s, 4, 34, 24, INKS.oxide),
+      flag(s, 6, 14.4, 11, INKS.oxide),
   },
 
   'r-ruthless': {
     world: 'deimos',
     caption: "a jammer pod on a Tactician's shoulder, static rings going out",
     draw: (s) =>
-      outdoors(s, 38, { planet: { x: 52, y: 10, r: 9 } }) +
+      outdoors(s, 38, { planet: false }) +
       rings(28, 11, 4, 3.4, 6, INKS.oxide, 0.7, 200, 340) +
       stroke('M44,8 l2,2 l-2,2 l2,2 l-2,2 M50,12 l2,2 l-2,2 l2,2', INKS.oxide, 0.45) +
       mech(s, 'tactician', 28, 50, 0.16, { yaw: 22, arms: { plus: [-10, 0] } }) +
@@ -537,18 +539,14 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-talented': {
     world: 'phobos',
-    caption: 'a crew photo: five people, each with a different badge',
+    caption: 'a crew photo: five people, each printed in a different ink',
     draw: (s) => {
-      const badges = [INKS.oxide, INKS.ice, INKS.amber, INKS.green, INKS.violet];
+      const inks = [INKS.oxide, INKS.ice, INKS.amber, INKS.green, INKS.violet];
       return (
         outdoors(s, 30, { planet: { x: 52, y: 8, r: 8 } }) +
         mech(s, 'behemoth', 32, 42, 0.12, {}, { ink: { ...s.ink, key: s.ink.side, seam: s.ink.joint } }) +
         [8, 20, 32, 44, 56]
-          .map(
-            (x, i) =>
-              person(x, i === 2 ? 42 : 41, 0.3, { facing: i < 2 ? 1 : i > 2 ? -1 : 1, arms: [8, -8] }, s.key, s.paper) +
-              `<circle cx="${x}" cy="${i === 2 ? 26.6 : 25.6}" r="1.2" fill="${badges[i]}"/>`,
-          )
+          .map((x, i) => person(x, i === 2 ? 42 : 41, 0.3, { facing: i < 2 ? 1 : i > 2 ? -1 : 1, arms: [8, -8] }, inks[i], s.paper))
           .join('')
       );
     },
@@ -576,8 +574,7 @@ export const SCENES: Record<string, SpScene> = {
         rays(s, 32, 18, 28, INKS.oxide, 180, 360) +
         `<circle cx="32" cy="18" r="8" fill="${s.paper}"/>` +
         mech(s, 'chameleon', 32, 38, 0.13, { yaw: 0, arms: { plus: [-140, 0] } }, { plate: INKS.oxide }) +
-        [6, 14, 50, 58].map((x, i) => fist(x, 12 + (i % 2) * 6, (i < 2 ? -1 : 1) * 6)).join('') +
-        stencil('ALL TOGETHER', 32, 41, 3.2, s.key)
+        [6, 14, 50, 58].map((x, i) => fist(x, 12 + (i % 2) * 6, (i < 2 ? -1 : 1) * 6)).join('')
       );
     },
   },
@@ -599,15 +596,16 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-change-of-heart': {
     world: 'phobos',
-    caption: "an engineer walking away from one side's flag to another's",
+    caption: "a Sniper walking away from one side's flag to another's, where a Tactician waits for it",
     draw: (s) =>
-      outdoors(s, 30, { planet: { x: 32, y: 9, r: 8 } }) +
+      outdoors(s, 30, { planet: { x: 30, y: 9, r: 8 } }) +
       flag(s, 6, 38, 24, INKS.ice) +
-      flag(s, 58, 38, 24, INKS.oxide, '', -1) +
-      [10, 15, 20, 25]
-        .map((x, i) => `<ellipse cx="${x}" cy="${39 + (i % 2) * 1.2}" rx="1" ry="0.4" fill="${GROUND.phobos.shade}"/>`)
+      [10, 14, 18, 22]
+        .map((x, i) => `<ellipse cx="${x}" cy="${39 + (i % 2) * 1.2}" rx="1.2" ry="0.5" fill="${GROUND.phobos.shade}"/>`)
         .join('') +
-      person(34, 41, 0.3, { facing: 1, arms: [24, -24], legs: [22, -22], knees: [0, 20], lean: 4 }, s.key, s.paper),
+      mech(s, 'sniper', 30, 41, 0.085, { yaw: 30, legs: { plus: [-18, 14], minus: [18, 4] } }, { plate: INKS.ice }) +
+      mech(s, 'tactician', 52, 36, 0.06, { yaw: -24 }, { plate: INKS.oxide }) +
+      flag(s, 60, 36, 22, INKS.oxide, '', -1),
   },
   'r-momentum': {
     world: 'deimos',
@@ -632,31 +630,23 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-plan-ahead': {
     world: 'deimos',
-    caption: "a gunner's range card: hexes and distances inked in, the kill zone marked",
-    draw: (s) => {
-      let grid = '';
-      for (let row = 0; row < 6; row++)
-        for (let col = 0; col < 9; col++) {
-          const x = 6 + col * 6.6 + (row % 2) * 3.3;
-          const y = 6 + row * 5.8;
-          grid += hexOnGround(x, y, 3.6, 0.95, INKS.bone, 0.25);
-          if ((row + col) % 3 === 0) grid += label(String(Math.abs(col - 4) + Math.abs(row - 2)), x, y + 0.6, 1.4, '#8F877B');
-        }
-      return (
-        paperGround(s) +
-        `<g transform="rotate(-4 32 21)">${r2(2, 1, 60, 38, '#2c2a27')}${grid}` +
-        hexOnGround(38.4, 17.6, 3.6, 0.95, INKS.oxide, 0.9) +
-        hexOnGround(45, 17.6, 3.6, 0.95, INKS.oxide, 0.9) +
-        hexOnGround(41.7, 23.4, 3.6, 0.95, INKS.oxide, 0.9) +
-        `<path d="M38.4,17.6 L45,17.6 L41.7,23.4 Z" fill="${ht(s, 'plate')}"/>` +
-        `<circle cx="41.7" cy="19.6" r="6" fill="none" stroke="${INKS.oxide}" stroke-width="0.6"/>` +
-        stroke('M41.7,12 L41.7,27 M34,19.6 L49.4,19.6', INKS.oxide, 0.3) +
-        `<circle cx="12.6" cy="29.4" r="1.6" fill="${INKS.ice}"/>` +
-        stroke('M12.6,29.4 L41.7,19.6', INKS.ice, 0.35, ' stroke-dasharray="1 0.8"') +
-        label('KILL ZONE', 48, 36, 1.8, INKS.amber) +
-        `</g>`
-      );
-    },
+    caption: 'an enemy mech caught in a marked kill zone, crossfire coming in from both sides',
+    draw: (s) =>
+      outdoors(s, 22, { planet: { x: 52, y: 8, r: 7 } }) +
+      // the kill zone: three hexes painted on the ground, hatched in the plate
+      hexOnGround(26, 31, 6, 0.42, INKS.amber, 0.7) +
+      hexOnGround(38, 31, 6, 0.42, INKS.amber, 0.7) +
+      hexOnGround(32, 35.4, 6, 0.42, INKS.amber, 0.7) +
+      `<ellipse cx="32" cy="32.6" rx="12" ry="4" fill="${ht(s, 'plate')}"/>` +
+      mech(s, 'breacher', 32, 33.6, 0.052, { yaw: 20 }, { plate: INKS.oxide }) +
+      // tracers from both sides, impacts on the target
+      stroke('M-4,30 L29,25 M-4,34 L30,28.4', INKS.amber, 0.5) +
+      stroke('M68,28 L35,24.6 M68,33 L34.6,28.6', INKS.amber, 0.5) +
+      flash(29.4, 25.4, 2.4, 9) +
+      flash(34.8, 28.4, 2, 8, 14) +
+      sparks(s.r, 32, 26.6, 14, 8) +
+      mech(s, 'chameleon', 2, 46, 0.12, { yaw: 40, arms: { plus: [-80, -10] } }, { plate: INKS.ice }) +
+      mech(s, 'sniper', 63, 46, 0.12, { yaw: -40 }, { plate: INKS.ice, flip: true }),
   },
   'r-sabotage': {
     world: 'deimos',
@@ -754,10 +744,9 @@ export const SCENES: Record<string, SpScene> = {
     caption: "a new Chameleon walking out of a workshop's doors",
     draw: (s) =>
       outdoors(s, 34, { planet: { x: 10, y: 8, r: 8 } }) +
-      print(s, 'workshop', 32, 36, { size: 0.3 }) +
+      print({ ...s, key: '#4A4440' }, 'workshop', 32, 36, { size: 0.3 }) +
       r2(22, 20.4, 20, 15.6, INKS.amber, ' opacity="0.4"') +
       rays(s, 32, 28, 16, INKS.amber, 30, 150) +
-      mech(s, 'chameleon', 33, 40, 0.1, { yaw: 22, legs: { plus: [-20, 20], minus: [16, 6] } }) +
-      person(52, 40, 0.18, { facing: -1, arms: [150, 10] }, s.key, s.paper),
+      mech(s, 'chameleon', 33, 40, 0.1, { yaw: 22, legs: { plus: [-20, 20], minus: [16, 6] } }),
   },
 };

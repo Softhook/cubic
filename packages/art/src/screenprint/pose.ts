@@ -21,6 +21,8 @@ export interface Pose {
   arms?: { plus?: readonly number[]; minus?: readonly number[] };
   /** The held rifle's turn about its grip (the Sniper): + clockwise. */
   aim?: number;
+  /** Mid-refit: one arm off, drawn as the mech without it (`mech`) or as that arm alone (`arm`). */
+  detach?: { arm: 'plus' | 'minus'; show: 'mech' | 'arm' };
 }
 
 /** How a mech is placed: its feet's middle at `x`, `y` (mm), `size` mm per board unit, mirrored when `flip`. */
@@ -211,8 +213,9 @@ function groups(rig: Rig, pose: Pose): Group[] {
     // Seams and lights on the hull's front.
     items: [...rig.hull.map((p) => item(p, upper, 0, hullT)), ...rig.detail.map((p) => item(p, upper, hullT / 2, 0))],
   });
+  const detached = pose.detach && (pose.detach.arm === 'plus' ? 1 : -1);
   for (const s of [1, -1] as const) {
-    if (!rig.arm.length) continue;
+    if (!rig.arm.length || (s === detached && pose.detach?.show === 'mech')) continue;
     const maps = chainMaps(rig.arm, armA(s), mul(upper, mirror(s)));
     const extra = s > 0 ? rig.armExtra?.plain : rig.armExtra?.mirror;
     out.push({
@@ -222,6 +225,7 @@ function groups(rig: Rig, pose: Pose): Group[] {
       items: rig.arm.flatMap((seg, i) => [...seg.parts, ...(extra?.[i] ?? [])].map((p) => item(p, maps[i], 0, limbT))),
     });
   }
+  if (pose.detach?.show === 'arm') return out.filter((g) => g.seq === (detached === 1 ? 3 : 4));
   if (rig.held) {
     const grip = mul(upper, turn(pose.aim ?? 0, rig.held.pivot[0], rig.held.pivot[1]));
     const z = hullT / 2 + 6;
