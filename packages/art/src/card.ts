@@ -58,7 +58,7 @@ export interface CardFace {
 export type Measure = (text: string, sizeMm: number, font: MeasuredFont) => number;
 
 /** The faces cards are set in: the holo cards' (title, body, bold) and the screenprint cards' (stencil, condensed, mono). */
-export type MeasuredFont = 'title' | 'body' | 'bold' | 'stencil' | 'condensed' | 'condensedBold' | 'mono';
+export type MeasuredFont = 'title' | 'body' | 'bold' | 'stencil' | 'display' | 'condensed' | 'condensedBold' | 'mono';
 
 export interface CardOptions {
   bleed?: boolean;

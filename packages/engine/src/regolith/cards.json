@@ -62,7 +62,7 @@
     },
     {
       "id": "r-calculating",
-      "name": "Mech Pick",
+      "name": "Remodel",
       "subtitle": "Controlled scrapping",
       "text": "When a mech is placed in your salvage yard, choose its mech type.",
       "category": "ship",
@@ -71,8 +71,8 @@
       "status": "renamed",
       "effect": "calculating",
       "art": {
-        "title": "Foreman",
-        "brief": "A foreman with a clipboard in the salvage yard, pointing a crane at one chassis."
+        "title": "Salvage crane",
+        "brief": "The salvage yard crane lowering one chassis over a wreck."
       }
     },
     {
@@ -137,7 +137,7 @@
     },
     {
       "id": "r-dangerous",
-      "name": "Reactor Breach",
+      "name": "Unstable Reactor",
       "subtitle": "Destroy your attacker",
       "text": "When you defend, before players roll combat dice, you can decide to destroy both mechs (there is no power effect).",
       "category": "combat",
@@ -327,7 +327,7 @@
       "effect": "profiteering",
       "art": {
         "title": "Called in",
-        "brief": "A strike beacon planted by a claim flag, the atomic it bought landing on the horizon."
+        "brief": "A strike beacon on its tripod, the atomic it bought landing on the horizon."
       }
     },
     {

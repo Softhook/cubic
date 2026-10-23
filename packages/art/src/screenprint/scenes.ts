@@ -152,7 +152,7 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-calculating': {
     world: 'phobos',
-    caption: 'a foreman in the salvage yard pointing the crane at one chassis',
+    caption: 'the salvage yard crane lowering one chassis over a wreck',
     draw: (s) =>
       outdoors(s, 32, { planet: { x: 14, y: 9, r: 7 } }) +
       print(s, 'rocks', 22, 36, { size: 0.16, plate: GROUND.phobos.shade }) +
@@ -160,9 +160,7 @@ export const SCENES: Record<string, SpScene> = {
       print(s, 'crane', 54, 34, { size: 0.16, flip: true }) +
       stroke('M41.2,14.8 L41.2,22', s.key, 0.4) +
       stroke('M40,22 q1.2,2 2.4,0', s.key, 0.6) +
-      mech(s, 'chameleon', 41, 32, 0.045, {}, { plate: INKS.oxide }) +
-      person(10, 41, 0.3, { facing: 1, arms: [128, -10], elbows: [0, 70] }, s.key, s.paper) +
-      r2(9.4, 27.4, 3.4, 4.4, INKS.bone, ` stroke="${s.key}" stroke-width="0.3"`),
+      mech(s, 'chameleon', 41, 32, 0.045, {}, { plate: INKS.oxide }),
   },
   'r-clever': {
     world: 'mars',
@@ -391,7 +389,7 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-profiteering': {
     world: 'mars',
-    caption: 'a strike beacon planted by a claim flag, the atomic it bought landing on the horizon',
+    caption: 'a strike beacon on its tripod, the atomic it bought landing on the horizon',
     draw: (s) =>
       outdoors(s, 26, { planet: false }) +
       // the strike: a beam from orbit, its flash and smoke on the horizon
@@ -399,14 +397,13 @@ export const SCENES: Record<string, SpScene> = {
       r2(47, -4, 1, 30, INKS.bone) +
       smoke(s, 47.5, 26, 10, GROUND.mars.shade) +
       flash(47.5, 25, 5, 12) +
-      // the beacon on its tripod, calling it down, beside the claim flag
+      // the beacon on its tripod, calling it down
       stroke('M20,40 L23,28 M26,40 L23,28 M23,40 L23,28', s.key, 0.7) +
       r2(20.6, 22, 4.8, 7, s.key) +
       r2(21.4, 23.2, 3.2, 1.6, INKS.oxide) +
       stroke('M23,22 L23,12', s.key, 0.5) +
       `<circle cx="23" cy="11.4" r="1.4" fill="${INKS.amber}"/>` +
-      rings(23, 11.4, 2.6, 2.4, 4, INKS.amber, 0.45, 290, 360) +
-      flag(s, 10, 41, 18, INKS.ice),
+      rings(23, 11.4, 2.6, 2.4, 4, INKS.amber, 0.45, 290, 360),
   },
   'r-rational': {
     world: 'phobos',

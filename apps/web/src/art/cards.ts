@@ -83,6 +83,7 @@ const FAMILIES = {
   body: ['400', 'Inter'],
   bold: ['700', 'Inter'],
   stencil: ['400', "'Saira Stencil One'"],
+  display: ['900', 'Inter'],
   condensed: ['500', "'Barlow Condensed'"],
   condensedBold: ['700', "'Barlow Condensed'"],
   mono: ['600', "'JetBrains Mono'"],
@@ -94,6 +95,7 @@ const FALLBACK: Record<keyof typeof FAMILIES, string> = {
   body: FONTS.body,
   bold: FONTS.body,
   stencil: SP_FONTS.stencil,
+  display: SP_FONTS.display,
   condensed: SP_FONTS.condensed,
   condensedBold: SP_FONTS.condensed,
   mono: SP_FONTS.mono,
@@ -172,7 +174,7 @@ function embeddedFonts(query: string, ready: () => Promise<void>): () => Promise
 
 /** The card fonts, for card and player aid images. */
 export const cardFontCss = embeddedFonts(
-  'family=Inter:ital,wght@0,400;0,700;1,400&family=Orbitron:wght@900&family=Saira+Stencil+One&family=Barlow+Condensed:wght@500;700&family=JetBrains+Mono:wght@600',
+  'family=Inter:ital,wght@0,400;0,700;0,900;1,400&family=Orbitron:wght@900&family=Saira+Stencil+One&family=Barlow+Condensed:wght@500;700&family=JetBrains+Mono:wght@600',
   cardFontsReady,
 );
 

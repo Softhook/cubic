@@ -31,13 +31,16 @@ const PLATE: Record<string, string> = {
   card: INKS.dust,
 };
 
-/** The deck's name on the label bar, and whether it is kept or played at once. */
-const DECK: Record<CardDeck, { name: string; kind: string; dark: boolean }> = {
-  skill: { name: 'Skill', kind: 'Permanent', dark: false },
-  command: { name: 'Command', kind: 'Permanent', dark: false },
-  tactic: { name: 'Tactic', kind: 'One-shot', dark: true },
-  gambit: { name: 'Gambit', kind: 'One-shot', dark: true },
-  expansion: { name: 'Expansion', kind: 'Face up', dark: true },
+/** A category's name on the label bar, where Regolith's word differs from the category's. */
+const CATEGORY_NAME: Record<string, string> = { ship: 'unit' };
+
+/** The deck's name on its back, and whether it prints on night paper (one-shot and face-up decks). */
+const DECK: Record<CardDeck, { name: string; dark: boolean }> = {
+  skill: { name: 'Skill', dark: false },
+  command: { name: 'Command', dark: false },
+  tactic: { name: 'Tactic', dark: true },
+  gambit: { name: 'Gambit', dark: true },
+  expansion: { name: 'Expansion', dark: true },
 };
 
 /** Words set bold in the rules: the game's terms, in Regolith's words. */
@@ -66,7 +69,17 @@ const BOLD = new Set([
 const estimateScreenprint: Measure = (text, size, font) =>
   size *
   text.length *
-  (font === 'stencil' ? 0.7 : font === 'condensed' ? 0.42 : font === 'condensedBold' ? 0.45 : font === 'mono' ? 0.62 : 0.52);
+  (font === 'stencil'
+    ? 0.7
+    : font === 'display'
+      ? 0.74
+      : font === 'condensed'
+        ? 0.42
+        : font === 'condensedBold'
+          ? 0.45
+          : font === 'mono'
+            ? 0.62
+            : 0.52);
 
 const rect = (b: Box, fill: string, extra = '') =>
   `<rect x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}" fill="${fill}"${extra}/>`;
@@ -127,7 +140,6 @@ function wrap(text: string, size: number, width: number, measure: Measure): Word
 
 /** The panel under the scene: the rule, name, label bar, rules text and footer. */
 function panel(face: CardFace, s: Stage, area: Box, measure: Measure): string {
-  const deck = DECK[face.deck];
   const ink = s.key;
   let out = rect({ x: area.x, y: ART_BOTTOM, w: area.w, h: area.y + area.h - ART_BOTTOM }, s.paper);
   out += rect({ x: area.x, y: ART_BOTTOM, w: area.w, h: area.y + area.h - ART_BOTTOM }, `url(#${s.id}-soft)`, ' opacity="0.5"');
@@ -136,14 +148,15 @@ function panel(face: CardFace, s: Stage, area: Box, measure: Measure): string {
   // The name, as large as fits.
   const textW = W - 2 * SAFE;
   const name = face.name.toUpperCase();
-  const size = Math.min(5.8, textW / (measure(name, 1, 'stencil') * 1.04));
+  const size = Math.min(5.8, textW / (measure(name, 1, 'display') * 1.04));
   const nameY = ART_BOTTOM + 3.2 + size * 0.95;
-  out += `<text x="${n(SAFE)}" y="${n(nameY)}" font-family="${SP_FONTS.stencil}" font-size="${n(size)}" letter-spacing="${n(size * 0.02)}" fill="${ink}">${esc(name)}</text>`;
+  out += `<text x="${n(SAFE)}" y="${n(nameY)}" font-family="${SP_FONTS.display}" font-weight="900" font-size="${n(size)}" fill="${ink}">${esc(name)}</text>`;
 
-  // The label bar: deck, category, kind, reversed out of the key ink.
-  const tag =
-    [deck.name, ...(face.category === face.deck ? [] : [face.category]), deck.kind].join(' · ').toUpperCase() +
-    (face.copies && face.copies > 1 ? ` · ×${face.copies}` : '');
+  // The label bar: category and copies, reversed out of the key ink. The paper tells the deck and its kind.
+  const tag = [
+    ...(face.category === face.deck ? [] : [(CATEGORY_NAME[face.category] ?? face.category).toUpperCase()]),
+    ...(face.copies && face.copies > 1 ? [`×${face.copies}`] : []),
+  ].join(' · ');
   const tagSize = 1.6;
   const barY = nameY + 1.6;
   // Its letter spacing on top of the measured width.
@@ -170,9 +183,8 @@ function panel(face: CardFace, s: Stage, area: Box, measure: Measure): string {
     )
     .join('');
 
-  // The footer: the game, and the card's place in its deck.
+  // The footer: the card's place in its deck.
   const muted = s.dark ? '#8F877B' : '#8a7f6c';
-  out += label('REGOLITH', SAFE, H - SAFE + 0.3, 1.3, muted, 'start');
   if (face.index !== undefined && face.deckSize)
     out += label(
       `${String(face.index).padStart(2, '0')}/${String(face.deckSize).padStart(2, '0')}`,

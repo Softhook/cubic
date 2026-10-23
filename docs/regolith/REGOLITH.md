@@ -163,12 +163,12 @@ packages/art/src/screenprint/
   moons Mars hangs in the sky, on Mars the two moons do.
 - **Printed matter.** Every part prints in passes: a colour plate a little off register, the key ink, the
   amber accent, the spot. Halftone for shade, no gradients.
-- **Same card contract.** It takes the same `CardFace`, `Measure` and fonts (Saira Stencil One, Barlow
-  Condensed, JetBrains Mono, as the boards), so the Art Lab, exports and print sheets take it unchanged.
+- **Same card contract.** It takes the same `CardFace`, `Measure` and fonts (Inter Black for the name,
+  Saira Stencil One for stencilled lettering in the scenes, Barlow Condensed, JetBrains Mono), so the Art Lab, exports and print sheets take it unchanged.
   Size, bleed, safe zone and corner are the poker card's (GRAPHICS.md *Cards*).
 - **Decks tell apart as the Vocabulary board does:** the permanent deck on paper in key ink, the one-shot
   decks on night paper in bone. The category sets the colour plate (rule, name shadow, mech plates).
-- **The tag** reads `REGOLITH` and the card's place in its deck.
+- **The footer** shows only the card's place in its deck. The label bar shows the category (`ship` reads UNIT) and the copies (`×2`); the paper tells the deck.
 - **Tests** (art.test.ts): every Regolith card has a scene and no scene lacks a card, every card and back
   draws without bad numbers or broken references, no two scenes are the same, every mech poses both ways.
 - Still to do: rules readouts (action chips, combat dice) redrawn as flat inks, where a card shows one.

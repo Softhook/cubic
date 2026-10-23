@@ -18,6 +18,7 @@ import type { MechKind } from './mechs';
 /** The fonts the screenprint cards are lettered in, as the Vocabulary and CardStyles boards are. */
 export const SP_FONTS = {
   stencil: "'Saira Stencil One', 'Arial Black', Impact, sans-serif",
+  display: "Inter, 'Helvetica Neue', Arial, sans-serif",
   condensed: "'Barlow Condensed', 'Arial Narrow', Arial, sans-serif",
   mono: "'JetBrains Mono', ui-monospace, Menlo, monospace",
 } as const;
