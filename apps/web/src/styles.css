@@ -11,11 +11,34 @@
   --bg-2: #0a1022;
   --panel: rgba(14, 20, 40, 0.78);
   --panel-solid: #0f1630;
-  --line: rgba(140, 170, 255, 0.14);
-  --line-2: rgba(140, 170, 255, 0.26);
+  /* Shades as bare RGB channels, for rgb(var(--shade) / alpha): deep scrims, then panels. */
+  --shade: 5 8 19;
+  --shade-2: 12 18 38;
+  --accent-rgb: 122 162 255;
+  --line-rgb: 140 170 255;
+  --line: rgb(var(--line-rgb) / 0.14);
+  --line-2: rgb(var(--line-rgb) / 0.26);
   --text: #e8edff;
+  --text-2: #c3cbea;
   --muted: #8b96b9;
   --accent: #7aa2ff;
+  --on-accent: #07102a;
+  --primary-1: #8fb0ff;
+  --primary-2: #5b7fe8;
+  --brand: linear-gradient(90deg, #8fd3ff, #b98cff);
+  /* Dialogs and card placeholders. */
+  --sheet-1: #121a36;
+  --sheet-2: #0b1126;
+  /* Card faces by type: a light skill, dark tactic and expansion. */
+  --card-skill-1: #f5f7fd;
+  --card-skill-2: #dfe5f5;
+  --card-skill-ink: #111830;
+  --card-tactic-1: #241a3d;
+  --card-tactic-2: #130d24;
+  --card-tactic-ink: #f1eaff;
+  --card-expansion-1: #0f3b3a;
+  --card-expansion-2: #082222;
+  --card-expansion-ink: #dffcf4;
   --pc: var(--accent);
   --good: #5ef0b0;
   --bad: #ff5d73;
@@ -28,9 +51,65 @@
   --res-2: hsl(290 90% 66%);
   --radius: 14px;
   --display: 'Orbitron', 'Inter', system-ui, sans-serif;
+  /* Titles too small for the display face to read (card names over art). */
+  --display-small: var(--display);
   --body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme: dark;
 }
+/* On the ground (RuleSet.look, the Regolith mood board's Main palette): printed matter, not a lit screen. Basalt,
+   dust and paper inks, flat fills and hard edges instead of gradients and glows, stencil type for titles. The
+   chrome takes no hue of its own (paper is its accent), so colour on screen means a player, or good and bad.
+   GameScreen sets data-look on <html> while such a game is on screen. */
+:root[data-look='ground'] {
+  --bg: #141311;
+  --bg-2: #1e1c1a;
+  --panel: #1e1c1a;
+  --panel-solid: #1e1c1a;
+  --shade: 12 11 10;
+  --shade-2: 30 28 26;
+  --accent-rgb: 237 231 219;
+  --line-rgb: 214 196 168;
+  --text: #ede7db;
+  --text-2: #cfc8bc;
+  --muted: #a69e91;
+  --accent: #ede7db;
+  --on-accent: #1e1c1a;
+  /* One colour each: the gradients they fill are flat. */
+  --primary-1: #ede7db;
+  --primary-2: #ede7db;
+  --brand: #ede7db;
+  --sheet-1: #1e1c1a;
+  --sheet-2: #1e1c1a;
+  /* Work-order paper, then rust and teal inks. */
+  --card-skill-1: #ede7db;
+  --card-skill-2: #ede7db;
+  --card-skill-ink: #1e1c1a;
+  --card-tactic-1: #3a2219;
+  --card-tactic-2: #3a2219;
+  --card-tactic-ink: #f3e3d6;
+  --card-expansion-1: #163a3f;
+  --card-expansion-2: #163a3f;
+  --card-expansion-ink: #dcf1f3;
+  --radius: 6px;
+  --display: 'Saira Stencil One', 'Barlow Condensed', 'Inter', system-ui, sans-serif;
+  --display-small: 'Barlow Condensed', 'Inter', system-ui, sans-serif;
+  /* The stencil face has one weight; a faked bold fills in its gaps. */
+  font-synthesis-weight: none;
+}
+:root[data-look='ground'] body { background: var(--bg); }
+/* Dust, not stars. */
+:root[data-look='ground'] body::before { opacity: 0.12; }
+/* Ink on paper casts no light: panels sit on hard shadows, and a player's colour is a border, not a glow. */
+:root[data-look='ground'] .turn-panel { background: var(--panel-solid); box-shadow: 4px 4px 0 rgb(var(--shade) / .8); }
+:root[data-look='ground'] .modal { box-shadow: 6px 6px 0 rgb(var(--shade) / .8); border-radius: var(--radius); }
+:root[data-look='ground'] .combat-card { box-shadow: 6px 6px 0 rgb(var(--shade) / .8); border-radius: var(--radius); }
+:root[data-look='ground'] .combat-side.winning { box-shadow: inset 0 0 0 1px var(--pc); }
+:root[data-look='ground'] .combat-side.winning .combat-total { text-shadow: none; }
+:root[data-look='ground'] .market { background: rgb(var(--shade) / .6); }
+:root[data-look='ground'] .market.picking { background: rgb(var(--shade) / .6); }
+:root[data-look='ground'] .track-cells span.on { box-shadow: none; }
+:root[data-look='ground'] .track-dom .track-cells span.on { background: var(--dom-2); }
+:root[data-look='ground'] .track-res .track-cells span.on { background: var(--res-2); }
 /* Full screen hides the status bar, but Android still reports its height as the inset, which left an
    empty strip at the top. Separate rules: an unknown prefixed pseudo-class would void a shared list. */
 :root:fullscreen { --safe-top: 0px; }
@@ -89,22 +168,22 @@ input { font: inherit; }
   padding: 8px 14px;
   border-radius: 10px;
   border: 1px solid var(--line-2);
-  background: rgba(122, 162, 255, 0.08);
+  background: rgb(var(--accent-rgb) / 0.08);
   color: var(--text);
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
   transition: background .15s, border-color .15s, transform .1s, box-shadow .2s;
 }
-@media (hover: hover) { .btn:hover:not(:disabled) { background: rgba(122, 162, 255, 0.18); border-color: var(--accent); } }
+@media (hover: hover) { .btn:hover:not(:disabled) { background: rgb(var(--accent-rgb) / 0.18); border-color: var(--accent); } }
 .btn:active:not(:disabled) { transform: translateY(1px); }
 .btn:disabled { opacity: 0.38; cursor: not-allowed; }
 .btn-primary {
-  background: linear-gradient(180deg, #8fb0ff, #5b7fe8);
+  background: linear-gradient(180deg, var(--primary-1), var(--primary-2));
   border-color: transparent;
-  color: #07102a;
+  color: var(--on-accent);
 }
-@media (hover: hover) { .btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #a6c0ff, #6b8df0); } }
+@media (hover: hover) { .btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, color-mix(in srgb, var(--primary-1) 80%, #fff), color-mix(in srgb, var(--primary-2) 88%, #fff)); } }
 .btn-ghost { background: transparent; border-color: transparent; color: var(--muted); }
 @media (hover: hover) { .btn-ghost:hover:not(:disabled) { color: var(--text); background: rgba(255,255,255,.05); border-color: var(--line); } }
 .btn-lg { padding: 12px 22px; font-size: 15px; }
@@ -118,7 +197,7 @@ input { font: inherit; }
 /* Looping animations use transform and opacity only, so the compositor runs them without repainting. */
 .btn.pulse::before, .btn-missile.decisive::before {
   content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
-  box-shadow: 0 0 0 2px rgba(122, 162, 255, .55); animation: pulse-ring 1.6s ease-in-out infinite;
+  box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / .55); animation: pulse-ring 1.6s ease-in-out infinite;
 }
 @keyframes pulse-ring { 0%, 100% { opacity: 1; transform: none; } 50% { opacity: 0; transform: scale(1.14, 1.4); } }
 
@@ -156,7 +235,7 @@ input { font: inherit; }
   gap: 16px;
   padding: var(--safe-top) 16px 0; /* the top: under the camera cutout */
   border-bottom: 1px solid var(--line);
-  background: rgba(5, 8, 19, .6);
+  background: rgb(var(--shade) / .6);
   backdrop-filter: blur(8px);
 }
 .brand {
@@ -165,7 +244,7 @@ input { font: inherit; }
   letter-spacing: .28em;
   text-transform: uppercase;
   font-size: 15px;
-  background: linear-gradient(90deg, #8fd3ff, #b98cff);
+  background: var(--brand);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -193,7 +272,7 @@ input { font: inherit; }
   flex-direction: column;
   gap: 12px;
   border-left: 1px solid var(--line);
-  background: rgba(5, 8, 19, .35);
+  background: rgb(var(--shade) / .35);
 }
 .market { grid-area: market; }
 /* Tablets on their side (an iPad's 1180px): a narrower sidebar, so the market's seven cards fit on one line
@@ -284,7 +363,7 @@ input { font: inherit; }
 .zoom-controls { position: absolute; right: 6px; bottom: 6px; z-index: 6; display: flex; flex-direction: column; gap: 4px; }
 .zoom-controls button {
   width: 32px; height: 32px; display: grid; place-items: center; padding: 0; cursor: pointer;
-  border-radius: 8px; border: 1px solid var(--line-2); background: rgba(8, 12, 28, .9); color: var(--text);
+  border-radius: 8px; border: 1px solid var(--line-2); background: rgb(var(--shade-2) / .9); color: var(--text);
 }
 .zoom-controls button:disabled { opacity: .35; cursor: default; }
 .zoom-controls svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -292,7 +371,7 @@ input { font: inherit; }
 @media (pointer: coarse) { .zoom-controls { gap: 8px; } .zoom-controls button { width: 36px; height: 36px; } .zoom-controls .zoom-step { display: none; } }
 .zoom-tip {
   position: absolute; left: 50%; top: 12px; z-index: 6; translate: -50% 0; pointer-events: none; white-space: nowrap;
-  padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(8, 12, 28, .85);
+  padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-2); background: rgb(var(--shade-2) / .85);
   color: var(--text); font-size: 13px; animation: tip-in 4.2s ease both;
 }
 @keyframes tip-in { 0% { opacity: 0; transform: translateY(-6px); } 8%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; } }
@@ -300,7 +379,7 @@ input { font: inherit; }
 .zoom-hint {
   position: absolute; z-index: 5; display: flex; align-items: center; justify-content: center; gap: 2px;
   min-width: 30px; height: 30px; padding: 0 6px; border-radius: 15px; cursor: pointer;
-  border: 1px solid var(--good); background: rgba(8, 12, 28, .8); color: var(--good); font: inherit; font-size: 12px; font-weight: 700;
+  border: 1px solid var(--good); background: rgb(var(--shade-2) / .8); color: var(--good); font: inherit; font-size: 12px; font-weight: 700;
   box-shadow: 0 0 2px color-mix(in srgb, var(--good) 30%, transparent);
 }
 .zoom-hint::before {
@@ -873,7 +952,7 @@ svg.zones polygon {
 .action-pips .action-hex { color: var(--pc); opacity: .35; transition: all .3s; }
 .action-pips .action-hex.on { opacity: 1; filter: drop-shadow(0 0 4px var(--pc)); }
 .action-pips em { font-style: normal; font-size: 11px; color: var(--good); margin-left: 4px; }
-.hint { margin: 10px 0 0; font-size: 13px; color: #c3cbea; line-height: 1.45; }
+.hint { margin: 10px 0 0; font-size: 13px; color: var(--text-2); line-height: 1.45; }
 .hint.thinking { display: flex; align-items: center; gap: 8px; color: var(--muted); }
 .spinner { display: inline-block; flex: none; box-sizing: border-box; width: 14px; height: 14px; vertical-align: middle; border-radius: 50%; border: 2px solid var(--line-2); border-top-color: var(--pc); animation: spin .8s linear infinite; }
 .turn-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
@@ -889,7 +968,7 @@ svg.zones polygon {
 .ship-panel-head .ship-name { display: flex; flex-direction: column; }
 .ship-panel-head small { color: var(--muted); font-size: 12px; }
 .ship-panel-head .icon-btn { margin-left: auto; }
-.ship-ability { font-size: 12.5px; color: #c3cbea; margin: 8px 0 0; line-height: 1.4; }
+.ship-ability { font-size: 12.5px; color: var(--text-2); margin: 8px 0 0; line-height: 1.4; }
 .ship-panel .turn-actions .btn { font-size: 12px; padding: 6px 10px; }
 .ship-panel .label-short { display: none; }
 .ship-odds-note { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
@@ -983,7 +1062,7 @@ svg.zones polygon {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 11px; font-weight: 600;
   padding: 3px 8px; border-radius: 6px;
-  background: rgba(232, 237, 255, .9); color: #121a33;
+  background: color-mix(in srgb, var(--card-skill-1) 90%, transparent); color: var(--card-skill-ink);
   border: 0; font-family: inherit;
   box-shadow: inset 3px 0 0 var(--cat);
   cursor: pointer;
@@ -1006,7 +1085,7 @@ svg.zones polygon {
 .log-toggle[aria-expanded='true'] svg { transform: rotate(180deg); }
 @media (hover: hover) { .log-toggle:hover { color: var(--text); } }
 .log ol { list-style: none; margin: 0; padding: 0; overflow-y: auto; max-height: 220px; font-size: 12px; line-height: 1.45; }
-.log li { padding: 3px 0 3px 10px; border-left: 2px solid var(--pc); margin-bottom: 3px; color: #c3cbea; animation: fade-up .25s ease-out; }
+.log li { padding: 3px 0 3px 10px; border-left: 2px solid var(--pc); margin-bottom: 3px; color: var(--text-2); animation: fade-up .25s ease-out; }
 /* Everything but the start of a turn stays quiet, indented under it. */
 .log li.minor { margin-left: 12px; font-size: 11px; color: var(--muted); border-left-color: color-mix(in srgb, var(--pc) 45%, transparent); padding-block: 1px; margin-bottom: 1px; }
 /* An entry is a button that shows the map as it was then (GameScreen's review). */
@@ -1024,7 +1103,7 @@ svg.zones polygon {
 .review-bar {
   order: -1; flex: none; align-self: center; z-index: 20;
   display: flex; align-items: center; gap: 6px; width: min(560px, 100%);
-  padding: 6px; border-radius: 12px; background: rgba(12, 18, 38, .94);
+  padding: 6px; border-radius: 12px; background: rgb(var(--shade-2) / .94);
   border: 1px solid var(--line-2); border-left: 3px solid var(--pc); box-shadow: 0 10px 30px rgba(0,0,0,.4);
 }
 .review-bar > .btn { flex: none; }
@@ -1060,7 +1139,7 @@ svg.zones polygon {
 /* ------------------------------------------------------------------ cards */
 
 .qcard {
-  --cat: #7aa2ff;
+  --cat: var(--accent);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1076,9 +1155,9 @@ svg.zones polygon {
 }
 @keyframes deal { from { transform: translateY(-14px) rotate(-3deg); opacity: 0; } }
 .qcard::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--cat); }
-.qcard-skill { background: linear-gradient(180deg, #f5f7fd, #dfe5f5); color: #111830; }
-.qcard-tactic { background: linear-gradient(180deg, #241a3d, #130d24); color: #f1eaff; border-color: rgba(185,140,255,.3); }
-.qcard-expansion { background: linear-gradient(180deg, #0f3b3a, #082222); color: #dffcf4; border-color: rgba(94,240,176,.35); }
+.qcard-skill { background: linear-gradient(180deg, var(--card-skill-1), var(--card-skill-2)); color: var(--card-skill-ink); }
+.qcard-tactic { background: linear-gradient(180deg, var(--card-tactic-1), var(--card-tactic-2)); color: var(--card-tactic-ink); border-color: rgba(185,140,255,.3); }
+.qcard-expansion { background: linear-gradient(180deg, var(--card-expansion-1), var(--card-expansion-2)); color: var(--card-expansion-ink); border-color: rgba(94,240,176,.35); }
 /* --cat, the category's accent, is set per card from @quantum/art (categoryStyle in Card.tsx). */
 .qcard-top { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 .qcard-cat { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--cat-ink, var(--cat)); }
@@ -1091,7 +1170,7 @@ svg.zones polygon {
    as little art as it can. */
 .qcard-art {
   position: relative; flex: none; margin: -9px -10px 6px; aspect-ratio: 100 / 38; max-height: 50px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--cat) 30%, #0b1020), #0b1020) center 14% / 100% auto no-repeat;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cat) 30%, var(--bg-2)), var(--bg-2)) center 14% / 100% auto no-repeat;
   border-bottom: 2px solid var(--cat);
 }
 .qcard-sm .qcard-art { margin: -8px -9px 5px; }
@@ -1099,8 +1178,8 @@ svg.zones polygon {
 .qcard-art-name {
   position: absolute; top: 5px; left: 5px; max-width: calc(100% - 10px);
   display: inline-flex; align-items: flex-start; gap: 3px; padding: 2px 5px 2px 4px; border-radius: 5px;
-  background: rgba(5,8,20,.8); color: #fff; overflow-wrap: anywhere;
-  font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: .03em; line-height: 1.15;
+  background: rgb(var(--shade) / .8); color: #fff; overflow-wrap: anywhere;
+  font-family: var(--display-small); font-weight: 700; font-size: 12px; letter-spacing: .03em; line-height: 1.15;
 }
 .qcard-art-name > svg { flex: none; width: 1em; height: 1em; margin-top: .07em; color: var(--cat); }
 .qcard.has-art .qcard-top, .qcard.has-art .qcard-name { display: none; }
@@ -1133,10 +1212,10 @@ svg.zones polygon {
   gap: 8px;
   padding: 10px 16px 14px;
   border-top: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(5,8,19,.2), rgba(5,8,19,.6));
+  background: linear-gradient(180deg, rgb(var(--shade) / .2), rgb(var(--shade) / .6));
   transition: background .3s;
 }
-.market.picking { background: linear-gradient(180deg, rgba(122,162,255,.08), rgba(5,8,19,.6)); box-shadow: inset 0 1px 0 var(--accent); }
+.market.picking { background: linear-gradient(180deg, rgb(var(--accent-rgb) / .08), rgb(var(--shade) / .6)); box-shadow: inset 0 1px 0 var(--accent); }
 .market.picking .market-card.takeable::after {
   content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--cat) 70%, transparent);
@@ -1197,14 +1276,14 @@ svg.zones polygon {
   align-self: stretch; flex: none;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
   width: 30px; padding: 0; margin: -10px 0 -14px -16px;
-  border: 0; border-right: 1px solid var(--line); background: rgba(5,8,19,.35);
+  border: 0; border-right: 1px solid var(--line); background: rgb(var(--shade) / .35);
   color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
   cursor: pointer; transition: color .15s, background .15s;
 }
 .market-toggle span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
 .market-toggle svg { transform: rotate(180deg); transition: transform .2s; }
-@media (hover: hover) { .market-toggle:hover { color: var(--text); background: rgba(122,162,255,.1); outline: none; } }
-.market-toggle:focus-visible { color: var(--text); background: rgba(122,162,255,.1); outline: none; }
+@media (hover: hover) { .market-toggle:hover { color: var(--text); background: rgb(var(--accent-rgb) / .1); outline: none; } }
+.market-toggle:focus-visible { color: var(--text); background: rgb(var(--accent-rgb) / .1); outline: none; }
 /* Collapsed: one 40px line of chips. A strip too narrow for it drops the deck names (the chips' colours tell
    the decks apart; the open market has the decks), and then wraps onto a second line of 40px rather than
    scrolling sideways, its tactics and Expansion pile together (an iPad's Community market). */
@@ -1218,22 +1297,22 @@ svg.zones polygon {
 .market.collapsed.picking .market-toggle { position: relative; color: var(--accent); }
 .market.collapsed.picking .market-toggle::before {
   content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0;
-  background: rgba(122,162,255,.2); animation: togglepulse 1.6s ease-in-out infinite;
+  background: rgb(var(--accent-rgb) / .2); animation: togglepulse 1.6s ease-in-out infinite;
 }
 @keyframes togglepulse { 50% { opacity: 1; } }
 .market-strip-group { display: flex; align-items: center; gap: 5px; flex: none; }
 .market-strip-deck { border: 0; background: none; color: var(--muted); font: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; cursor: pointer; padding: 0 2px; white-space: nowrap; }
 @media (hover: hover) { .market-strip-deck:hover { color: var(--text); } }
 .market-chip {
-  --cat: #7aa2ff;
+  --cat: var(--accent);
   max-width: 130px; padding: 3px 9px 3px 7px; border-radius: 999px;
   border: 1px solid rgba(0,0,0,.2); border-left: 3px solid var(--cat);
   font: inherit; font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   cursor: pointer; transition: transform .15s, box-shadow .15s;
 }
-.market-chip-skill { background: #e6ebf7; color: #111830; }
-.market-chip-tactic { background: #22183a; color: #f1eaff; border-color: rgba(185,140,255,.3); border-left-color: var(--cat); }
-.market-chip-expansion { background: #0f3b3a; color: #dffcf4; border-color: rgba(94,240,176,.35); border-left-color: var(--good); }
+.market-chip-skill { background: var(--card-skill-2); color: var(--card-skill-ink); }
+.market-chip-tactic { background: var(--card-tactic-1); color: var(--card-tactic-ink); border-color: rgba(185,140,255,.3); border-left-color: var(--cat); }
+.market-chip-expansion { background: var(--card-expansion-1); color: var(--card-expansion-ink); border-color: rgba(94,240,176,.35); border-left-color: var(--good); }
 @media (hover: hover) { .market-chip:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px var(--cat); } }
 .market-chip.takeable { box-shadow: 0 0 0 1px var(--accent); }
 .deck { position: relative; flex: none; width: 50px; height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; padding-bottom: 8px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
@@ -1248,13 +1327,13 @@ svg.zones polygon {
 @media (hover: hover) { .deck:hover .deck-stack { transform: translateY(-3px); box-shadow: 3px 3px 0 -1px rgba(255,255,255,.18), 6px 6px 0 -2px rgba(255,255,255,.1), 0 0 0 2px var(--accent); } }
 .deck:focus-visible .deck-stack { transform: translateY(-3px); box-shadow: 3px 3px 0 -1px rgba(255,255,255,.18), 6px 6px 0 -2px rgba(255,255,255,.1), 0 0 0 2px var(--accent); }
 .deck:focus-visible { outline: none; }
-.deck-skill .deck-stack { background-image: repeating-linear-gradient(45deg, #d7deef 0 6px, #c7d0e6 6px 12px); }
-.deck-tactic .deck-stack { background-image: repeating-linear-gradient(45deg, #2a1d47 0 6px, #1d1433 6px 12px); border: 1px solid rgba(185,140,255,.3); }
+.deck-skill .deck-stack { background-image: repeating-linear-gradient(45deg, var(--card-skill-2) 0 6px, color-mix(in srgb, var(--card-skill-2) 90%, #000) 6px 12px); }
+.deck-tactic .deck-stack { background-image: repeating-linear-gradient(45deg, var(--card-tactic-1) 0 6px, var(--card-tactic-2) 6px 12px); border: 1px solid rgba(185,140,255,.3); }
 .deck-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 /* The count, on the pile's top corner. */
 .deck-count {
   position: absolute; top: -6px; right: -6px; min-width: 24px; padding: 1px 6px; border-radius: 999px;
-  background: #0b1020; box-shadow: 0 0 0 1px var(--line-2); font-weight: 700; font-size: 12px; text-align: center;
+  background: var(--bg-2); box-shadow: 0 0 0 1px var(--line-2); font-weight: 700; font-size: 12px; text-align: center;
 }
 
 /* Beside the sidebar (wider than the column layouts below), the market and the sidebar reach the screen's bottom
@@ -1280,7 +1359,7 @@ svg.zones polygon {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(3, 6, 15, .62);
+  background: rgb(var(--shade) / .62);
   backdrop-filter: blur(5px);
   animation: fade .2s ease-out;
 }
@@ -1293,7 +1372,7 @@ svg.zones polygon {
   overflow-y: auto;
   padding: 24px;
   border-radius: 20px;
-  background: linear-gradient(180deg, #121a36, #0b1126);
+  background: linear-gradient(180deg, var(--sheet-1), var(--sheet-2));
   border: 1px solid color-mix(in srgb, var(--pc) 40%, var(--line));
   box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 60px color-mix(in srgb, var(--pc) 18%, transparent);
   animation: pop .3s cubic-bezier(.2,.9,.3,1.2);
@@ -1328,9 +1407,9 @@ svg.zones polygon {
 .card-art { position: relative; width: 180px; max-width: 100%; aspect-ratio: 63.5 / 88.9; flex: none; }
 .card-art-lg { width: 300px; }
 .card-art img, .card-art-ph { display: block; width: 100%; height: 100%; border-radius: 4.7%/3.4%; box-shadow: 0 12px 28px rgba(0,0,0,.5); }
-.card-art-ph { background: linear-gradient(180deg, #1a2346, #0e1530); animation: card-art-pulse 1.2s ease-in-out infinite alternate; }
+.card-art-ph { background: linear-gradient(180deg, var(--sheet-1), var(--sheet-2)); animation: card-art-pulse 1.2s ease-in-out infinite alternate; }
 @keyframes card-art-pulse { to { opacity: .5; } }
-.card-art-badge { position: absolute; top: 8px; right: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(5,8,20,.85); color: #fff; font-weight: 700; font-size: 13px; box-shadow: 0 0 0 1px rgba(255,255,255,.25); }
+.card-art-badge { position: absolute; top: 8px; right: 8px; padding: 2px 8px; border-radius: 999px; background: rgb(var(--shade) / .85); color: #fff; font-weight: 700; font-size: 13px; box-shadow: 0 0 0 1px rgba(255,255,255,.25); }
 .choice-col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .choice-col small { color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
 
@@ -1346,7 +1425,7 @@ svg.zones polygon {
 .fleet-sum { text-align: center; margin: 10px 0 0; color: var(--muted); }
 .fleet-sum b { font-weight: 800; color: var(--text); font-size: 20px; margin-left: 6px; }
 
-.combat-overlay { background: rgba(3, 6, 15, .5); }
+.combat-overlay { background: rgb(var(--shade) / .5); }
 .combat-card {
   width: min(780px, 100%);
   max-height: calc(100vh - 32px);
@@ -1354,7 +1433,7 @@ svg.zones polygon {
   overflow-y: auto;
   padding: 20px 24px 22px;
   border-radius: 22px;
-  background: linear-gradient(180deg, rgba(20,26,52,.96), rgba(9,13,30,.96));
+  background: linear-gradient(180deg, rgb(var(--shade-2) / .96), rgb(var(--shade-2) / .96));
   border: 1px solid var(--line-2);
   box-shadow: 0 30px 90px rgba(0,0,0,.65);
   animation: pop .3s cubic-bezier(.2,.9,.3,1.2);
@@ -1381,7 +1460,7 @@ svg.zones polygon {
 .combat-plus { font-size: 22px; color: var(--muted); margin-bottom: 26px; }
 .combat-parts { list-style: none; margin: 0 auto; padding: 0; max-width: 200px; font-size: 12.5px; opacity: 0; transition: opacity .3s; }
 .combat-parts.show { opacity: 1; }
-.combat-parts li { display: flex; justify-content: space-between; padding: 2px 0; color: #c3cbea; }
+.combat-parts li { display: flex; justify-content: space-between; padding: 2px 0; color: var(--text-2); }
 .combat-parts li.muted { color: var(--muted); font-size: 11px; justify-content: center; }
 .combat-total { font-family: var(--body); font-weight: 800; font-variant-numeric: tabular-nums; font-size: 38px; margin-top: 6px; color: var(--muted); transition: color .3s, transform .3s; }
 .combat-total.show { color: var(--text); animation: pop .35s cubic-bezier(.2,.9,.3,1.4); }
@@ -1402,7 +1481,7 @@ svg.zones polygon {
   padding: 7px 14px;
   border-radius: 10px;
   font-size: 13px;
-  background: rgba(12, 18, 38, .92);
+  background: rgb(var(--shade-2) / .92);
   border: 1px solid var(--line-2);
   border-left: 3px solid var(--pc);
   box-shadow: 0 10px 30px rgba(0,0,0,.4);
@@ -1429,7 +1508,7 @@ svg.zones polygon {
   display: flex; flex-direction: column; align-items: center; gap: 8px;
   animation: played-card var(--pc-ms, 3.2s) ease both;
 }
-.played-card small { padding: 3px 10px; border-radius: 999px; background: rgba(12, 18, 38, .92); border: 1px solid var(--pc); color: var(--pc); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+.played-card small { padding: 3px 10px; border-radius: 999px; background: rgb(var(--shade-2) / .92); border: 1px solid var(--pc); color: var(--pc); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
 .played-card .card-art { width: min(200px, 45vw); }
 .played-card .card-art img, .played-card .card-art-ph { box-shadow: 0 0 0 2px var(--pc), 0 16px 40px rgba(0,0,0,.6); }
 @keyframes played-card { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.85); } 5%, 85% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; } }
@@ -1499,11 +1578,11 @@ svg.zones polygon {
 .gameover-burst { position: absolute; inset: -40%; background: conic-gradient(from 0deg, transparent, color-mix(in srgb, var(--pc) 25%, transparent), transparent 30%); animation: spin 8s linear infinite; pointer-events: none; }
 .gameover > *:not(.gameover-burst) { position: relative; }
 /* The victory show (components/fireworks/): a flash of the winner's colour, then fireworks behind the popup, which rises in after. */
-.overlay.celebrate { background: rgba(2, 4, 12, .72); }
+.overlay.celebrate { background: rgb(var(--shade) / .72); }
 .fireworks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .gameover-flash { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--pc) 55%, #fff) 0%, color-mix(in srgb, var(--pc) 30%, transparent) 30%, transparent 70%); animation: victory-flash 1.4s ease-out both; }
 @keyframes victory-flash { 0% { opacity: 0; } 8% { opacity: .9; } 100% { opacity: 0; } }
-.celebrate .gameover { animation: victory-rise .9s .25s cubic-bezier(.2, .9, .3, 1.25) both; background: linear-gradient(180deg, rgba(18, 26, 54, .9), rgba(11, 17, 38, .9)); }
+.celebrate .gameover { animation: victory-rise .9s .25s cubic-bezier(.2, .9, .3, 1.25) both; background: linear-gradient(180deg, color-mix(in srgb, var(--sheet-1) 90%, transparent), color-mix(in srgb, var(--sheet-2) 90%, transparent)); }
 @keyframes victory-rise { from { opacity: 0; transform: scale(.6) translateY(30px); } }
 .celebrate .gameover h2 {
   background: linear-gradient(100deg, #fff 30%, #ffd36b 45%, #fff 50%, color-mix(in srgb, var(--pc) 40%, #fff) 60%, #fff 75%) 0 0 / 300% 100%;
@@ -1512,8 +1591,8 @@ svg.zones polygon {
 }
 @keyframes victory-shine { from { background-position: 100% 0; } to { background-position: -50% 0; } }
 /* Defeat: the board drains of colour and darkens, and the popup sinks in slowly as the lament (gameOverSound.ts) falls. */
-.overlay.mourn { background: rgba(2, 4, 12, .8); backdrop-filter: blur(5px) grayscale(1); animation: mourn-drain 2.4s ease-out both; }
-@keyframes mourn-drain { from { background: rgba(3, 6, 15, .3); backdrop-filter: blur(0) grayscale(0); } }
+.overlay.mourn { background: rgb(var(--shade) / .8); backdrop-filter: blur(5px) grayscale(1); animation: mourn-drain 2.4s ease-out both; }
+@keyframes mourn-drain { from { background: rgb(var(--shade) / .3); backdrop-filter: blur(0) grayscale(0); } }
 .mourn .gameover { animation: defeat-sink 1.6s .9s ease-out both; }
 @keyframes defeat-sink { from { opacity: 0; transform: translateY(-14px); } }
 .mourn .gameover small { color: var(--muted); }
@@ -1582,7 +1661,7 @@ svg.zones polygon {
   content: ''; position: absolute; inset: 0; border-radius: inherit;
   background:
     radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .16), transparent 42%),
-    radial-gradient(circle at 38% 34%, transparent 52%, rgba(5, 8, 19, .55) 100%);
+    radial-gradient(circle at 38% 34%, transparent 52%, rgb(var(--shade) / .55) 100%);
   box-shadow: inset 0 0 calc(var(--d) * .06) rgba(160, 215, 255, .5);
 }
 /* An explosion's shock waves lie on the board; its flash and sparks stand up at die height, larger, facing the
@@ -1663,8 +1742,8 @@ svg.zones polygon {
 .backdrop-shade {
   position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse 60% 55% at 50% 45%, rgba(5, 8, 19, .35), transparent),
-    radial-gradient(ellipse 90% 80% at 50% 40%, transparent 45%, rgba(5, 8, 19, .75));
+    radial-gradient(ellipse 60% 55% at 50% 45%, rgb(var(--shade) / .35), transparent),
+    radial-gradient(ellipse 90% 80% at 50% 40%, transparent 45%, rgb(var(--shade) / .75));
 }
 .lobby-backdrop.still .backdrop-plane { animation: none; transform: rotateZ(-18deg); }
 .lobby-backdrop.still .backdrop-planet { animation: none; transform: var(--up) rotateZ(18deg) rotateX(-54deg); }
@@ -1688,7 +1767,7 @@ svg.zones polygon {
   color: transparent;
   /* blur(0) to match the opening's keyframe (lobby-title-in) function for function: with lists that differ, the
      filter can't interpolate, and Safari on iPad left the title blurred. */
-  filter: blur(0) drop-shadow(0 0 30px rgba(122,162,255,.35));
+  filter: blur(0) drop-shadow(0 0 30px rgb(var(--accent-rgb) / .35));
 }
 /* The opening (lobby/useIntro.ts): the title fades in alone in the middle of the screen, over the backdrop, then
    rises to its place while the rest of the lobby fades in under it. */
@@ -1706,14 +1785,14 @@ svg.zones polygon {
     transform calc(var(--intro-rise) * .5) ease-out calc(var(--intro-rise) * .45);
 }
 @keyframes lobby-title-in {
-  from { opacity: 0; letter-spacing: .6em; filter: blur(8px) drop-shadow(0 0 30px rgba(122,162,255,0)); }
+  from { opacity: 0; letter-spacing: .6em; filter: blur(8px) drop-shadow(0 0 30px rgb(var(--accent-rgb) / 0)); }
 }
 /* Where the opening waits for a click (to go full screen from it): asked under the title only after a while, so
    the title has the screen to itself first; gone as soon as the click comes. */
 .intro-prompt {
   position: fixed; left: 0; right: 0; top: calc(50% + 64px); margin: 0;
   font-size: 13px; font-weight: 600; letter-spacing: .32em; text-transform: uppercase; color: var(--muted);
-  text-shadow: 0 0 12px rgba(5,8,19,.9), 0 1px 2px rgba(5,8,19,.9);
+  text-shadow: 0 0 12px rgb(var(--shade) / .9), 0 1px 2px rgb(var(--shade) / .9);
   pointer-events: none;
   animation: intro-prompt-in 1.2s ease-out 4s both, intro-prompt-pulse 2.4s ease-in-out 5.2s infinite;
 }
@@ -1734,7 +1813,7 @@ svg.zones polygon {
 .home-hint-steps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--accent); font-size: 13px; }
 .home-hint-step {
   display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
-  background: rgba(5, 8, 19, .45); color: var(--text); font-weight: 600;
+  background: rgb(var(--shade) / .45); color: var(--text); font-weight: 600;
 }
 .home-hint-step svg { color: var(--accent); }
 .home-hint .icon-btn { flex: none; color: var(--text); }
@@ -1751,15 +1830,16 @@ svg.zones polygon {
 .mode-badge {
   display: inline-block; margin-right: 8px; padding: 2px 8px; border-radius: 999px;
   font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-  background: rgba(122,162,255,.15); color: var(--accent);
+  background: rgb(var(--accent-rgb) / .15); color: var(--accent);
 }
 .mode-badge.mode-basic { background: rgba(94,240,176,.13); color: var(--good); }
 .mode-badge.mode-original { background: rgba(255,200,87,.13); color: var(--gold); }
 .mode-badge.experimental { background: rgba(185,140,255,.15); color: var(--violet); }
+[data-look='ground'] .mode-badge.experimental { background: rgb(var(--accent-rgb) / .12); color: var(--accent); }
 .field { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 13px; }
 .segmented { display: inline-flex; padding: 3px; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid var(--line); }
 .segmented button { border: 0; background: transparent; padding: 6px 14px; border-radius: 7px; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 13px; }
-.segmented button.on { background: var(--accent); color: #07102a; }
+.segmented button.on { background: var(--accent); color: var(--on-accent); }
 .segmented.small button { padding: 4px 10px; font-size: 12px; }
 .narrow-only { display: none; }
 @media (max-width: 480px) { .wide-only { display: none; } .narrow-only { display: inline; } }
@@ -1781,7 +1861,7 @@ svg.zones polygon {
 .seat input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--text); font-weight: 600; outline: none; padding: 4px 0; }
 .seat input:focus { border-bottom: 1px solid var(--pc); }
 .ai-level { background: rgba(255,255,255,.05); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
-.ai-level option { background: #121a33; }
+.ai-level option { background: var(--panel-solid); }
 @media (max-width: 420px) { .seat { flex-wrap: wrap; } .seat input { flex: 1 1 110px; } }
 .map-preview { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid var(--line); }
 .map-preview > div:first-child { display: flex; flex-direction: column; gap: 2px; }
@@ -1790,7 +1870,7 @@ svg.zones polygon {
 .map-preview .map-info { min-width: 0; }
 .map-select { display: flex; gap: 6px; align-items: center; margin: 2px 0; }
 .map-select select { min-width: 0; max-width: 100%; background: rgba(255,255,255,.05); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-family: var(--display); font-size: 13px; cursor: pointer; }
-.map-select select optgroup, .map-select select option { background: #121a33; font-family: var(--body); }
+.map-select select optgroup, .map-select select option { background: var(--panel-solid); font-family: var(--body); }
 .map-select .btn-icon { padding: 4px 8px; font-size: 16px; line-height: 1; }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
@@ -1927,7 +2007,7 @@ svg.zones polygon {
 .relay-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff6b81; box-shadow: 0 0 0 3px rgba(255,107,129,.15); flex: none; }
 .relay-dot.ok { background: #80ed99; box-shadow: 0 0 0 3px rgba(128,237,153,.15); }
 .ask-select { background: rgba(255,255,255,.05); color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 5px 6px; font: inherit; font-size: 12px; cursor: pointer; }
-.ask-select option { background: #121a33; }
+.ask-select option { background: var(--panel-solid); }
 .combat-waiting { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--muted); font-size: 13px; }
 .seat-you { padding: 4px 10px; font-size: 12px; font-weight: 600; color: var(--muted); }
 .your-games ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -1955,7 +2035,7 @@ svg.zones polygon {
 .field-row { display: flex; flex-direction: column; gap: 6px; }
 .field-hint { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
 .lobby-card > .field-hint { margin-top: 14px; }
-.tag.your-turn { background: var(--accent); color: #07102a; }
+.tag.your-turn { background: var(--accent); color: var(--on-accent); }
 .your-games .spinner { --pc: var(--accent); }
 .join-dialog .field { margin: 14px 0; }
 .join-dialog .field input { flex: 1; min-width: 0; background: rgba(255,255,255,.05); color: var(--text); border: 1px solid var(--line-2); border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 15px; }
@@ -2098,7 +2178,7 @@ body:has(.sheet-layout) { overflow: hidden; }
 .layout.sheet-layout { display: block; position: relative; overflow: hidden; padding: 0; min-height: 0; }
 .sheet-layout .stage { position: absolute; inset: 0 0 var(--sheet-rest, 180px); height: auto; padding: 4px; }
 .sheet-layout .board-wrap { touch-action: none; }
-.sheet-backdrop { position: absolute; inset: 0; z-index: 19; background: rgba(2, 4, 12, .55); opacity: 0; pointer-events: none; transition: opacity .25s; }
+.sheet-backdrop { position: absolute; inset: 0; z-index: 19; background: rgb(var(--shade) / .55); opacity: 0; pointer-events: none; transition: opacity .25s; }
 .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
 .sheet {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 20;

@@ -73,6 +73,15 @@ export function Game({
   useEffect(() => {
     if (!review && leftAt) setLeftAt(null);
   }, [review, leftAt]);
+  // The page's colours follow the rule set's look (styles.css, :root[data-look]).
+  const look = rulesOf(game).look;
+  useEffect(() => {
+    if (!look) return;
+    document.documentElement.dataset.look = look;
+    return () => {
+      delete document.documentElement.dataset.look;
+    };
+  }, [look]);
   const { error, toasts } = view;
   const ctl = useController(game, dispatch, review ? NOBODY : view.mine);
   const [hideGameOver, setHideGameOver] = useState(false);

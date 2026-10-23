@@ -109,6 +109,7 @@ export function regolithMode(base: RuleSet): RuleSet {
     contestedDeploy: REGOLITH_CONTESTED_DEPLOY,
     homeShipyard: REGOLITH_HOME_SHIPYARD,
     experimental: true,
+    look: 'ground',
     words: REGOLITH_WORDS,
   };
 }
