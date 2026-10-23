@@ -28,6 +28,11 @@ import { rng } from '../src/rng';
 import { MIN_TEXT, playerAidSvg } from '../src/aid';
 import { shipDie } from '../src/kit/starships';
 import { PRESS_TEST, pressTestSvg } from '../src/proof';
+import regolithCards from '../../engine/src/regolith/cards.json';
+import { SCENES } from '../src/screenprint/scenes';
+import { RIGS, type MechKind } from '../src/screenprint/mechs';
+import { mech } from '../src/screenprint/pose';
+import { INKS, ON_PAPER } from '../src/screenprint/inks';
 
 const DIE = 19;
 
@@ -314,5 +319,59 @@ describe('press test', () => {
     expect(svg).toContain(`viewBox="0 0 ${PRESS_TEST.w} ${PRESS_TEST.h}"`);
     for (const c of Object.values(CARD_CATEGORIES)) expect(svg).toContain(`>${c.label}<`);
     expect(svg.match(/<image /g)).toHaveLength(2);
+  });
+});
+
+describe('screenprint cards', () => {
+  const decks: [CardDeck, typeof regolithCards.skills][] = [
+    ['skill', regolithCards.skills],
+    ['tactic', regolithCards.tactics],
+    ['expansion', regolithCards.expansion],
+  ];
+  const faces = decks.flatMap(([deck, list]) =>
+    list.map((c, i) => ({ ...c, deck, copies: c.count, index: i + 1, deckSize: list.length, look: 'screenprint' as const })),
+  );
+
+  it('has a scene for every Regolith card, and none for a card it lacks', () => {
+    expect(Object.keys(SCENES).sort()).toEqual(faces.map((f) => f.id).sort());
+  });
+
+  it('draws every card and back without bad numbers or broken references, the same every time', () => {
+    const fronts = faces.map((f) => cardSvg(f, { bleed: true, rounded: true }));
+    fronts.forEach((svg, i) => checkSvg(svg, faces[i].id));
+    expect(cardSvg(faces[0])).toBe(cardSvg({ ...faces[0] }));
+    for (const [deck] of decks) checkSvg(cardBackSvg(deck, { bleed: true, look: 'screenprint' }), `back-${deck}`);
+    // Each card's own scene: no two draw the same.
+    const scenes = faces.map((f) =>
+      SCENES[f.id].draw({
+        id: 'x',
+        r: rng(1),
+        dark: false,
+        world: SCENES[f.id].world,
+        w: 63.5,
+        h: 42,
+        paper: INKS.paper,
+        key: INKS.key,
+        ink: ON_PAPER,
+        plate: INKS.oxide,
+        defs: [],
+      }),
+    );
+    expect(new Set(scenes).size).toBe(scenes.length);
+  });
+
+  it('poses every mech front on and turned, both ways, standing on the ground', () => {
+    for (const kind of Object.keys(RIGS) as MechKind[])
+      for (const yaw of [0, 35, -35]) {
+        const svg = mech(kind, {
+          x: 0,
+          y: 0,
+          size: 1,
+          pose: { yaw, legs: { plus: [-20, 30], minus: [15, 0] } },
+          ink: ON_PAPER,
+          paper: INKS.paper,
+        });
+        expect(svg, `${kind} ${yaw}`).not.toMatch(/NaN|undefined|Infinity/);
+      }
   });
 });

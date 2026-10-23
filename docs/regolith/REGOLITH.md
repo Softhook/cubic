@@ -134,41 +134,43 @@ Expansion card (`expansionCard(state)`, which the market and card flights ask).
 
 ## 5. Cards: art (screenprint)
 
-The screenprint look is a second card renderer, not options on the first: layout, palette and type
-differ throughout, and `cardSvg` stays as it is for Community and Classic.
+Done (23 October 2026). The screenprint look is a second card renderer, not options on the first: layout,
+palette and type differ throughout, and `cardSvg` stays as it is for Community and Classic. A face with
+`look: 'screenprint'` goes to it; the rule set says which look its decks have (`CardRules.look`).
 
 ```
-packages/art/src/
-  screenprint/
-    index.ts        screenprintCardSvg(face, measure), screenprintBackSvg(deck)
-    inks.ts         paper, night paper, key ink, bone, oxide and ice plates, amber accent (Vocabulary board)
-    plates.ts       printing a part in three passes: offset colour plate, key ink, accent; registration offset
-    layout.ts       the card face: art window, name, subtitle, rules text, category mark, tag
-    mechs.ts        the six mech classes (Breacher, Behemoth, Tactician, Chameleon, Sniper, Wisp), posable parts
-    objectives.ts   Habitat, Refinery, Ice Mine, Reactor, Sinkhole
-    props.ts        bunker, comms mast, drop pod, barricade, boulders, ordnance, intel and control readouts
-  scenes/
-    regolith.ts     one scene per Regolith card, keyed by card id, with its caption
+packages/art/src/screenprint/
+  inks.ts     paper, night paper, key ink, bone; oxide, ice and dust plates; amber; habitat green, crystal violet
+  mechs.ts    the six mechs as rigs: the Silhouettes board's parts, cut at their joints
+  pose.ts     a mech posed (joint angles, lean, aim), stood on its lowest foot, turned to three-quarters, plated
+  kit.ts      the stage (sky, each world's ground), the tiles' buildings and small things, crews, effects
+  card.ts     screenprintCardSvg(face), screenprintBackSvg(deck): the face and back layouts
+  scenes.ts   one scene per Regolith card, keyed by card id, drawn from its art brief, with its caption
 ```
 
-- **Same card contract.** It takes the same `CardFace`, `Measure` and fonts, and fits text the same way,
-  so the Art Lab, exports and print sheets take it unchanged. Size, bleed, safe zone and corner are the
-  poker card's (GRAPHICS.md *Cards*).
-- **Decks tell apart as now:** the permanent deck on light paper, the one-shot deck on night paper with
-  bone ink (Vocabulary board). Category still sets the accent and the icon.
-- **Rules readouts stay one system:** action chips, combat dice and the other quantities keep their
-  meaning from GRAPHICS.md *Cards*, redrawn as flat inks. A hexagon still means an action.
-- **The tag** reads `7/35 R`: position in the deck, then the set.
-- `CardDeck` in [card.ts](../../packages/art/src/card.ts) gains Regolith's decks, and each deck says which
-  renderer draws it, so callers pick by deck, not by mode.
-- **Art follows the card, not its status.** While a card is still a Community copy its scene can be
-  a plain screenprint of its category's mech or prop; it gets its own scene when it is renamed or reworked.
-  Once every card has a scene, the art tests that hold for Community hold here: every card has one, no
-  two are the same, no text under `MIN_TEXT`.
-
-**The ground and the cards.** CardScale notes the flat screenprint cards pull away from the photographic
-Regolith ground. Pieces that sit beside the map in play (the market, the card viewer, the player aid)
-should agree with it; how far the tiles move towards flat inks is open, below.
+- **The real mechs.** Every mech on a card is one of the six from the Silhouettes board, part for part,
+  rigged: each limb turns at its joints, a mech leans or aims, and stands on its lowest foot. Turned to
+  three-quarters its front narrows, its hull gets a side face in a second ink, and its far limbs fall
+  back in the far ink, as the board draws them. The same rig at large scale, cropped by the art window,
+  makes the close-ups (a knee joint, a hull, a gun).
+- **The map's buildings and ground.** The kit draws, side on, what the tiles have from above
+  (regolith/base.ts): the habitat's great dome, greenhouses and solar panels; the refinery's tanks, flare
+  stacks and pipework; the ice mine's rig, shed, silos and ice heap; the reactor's cooling tower and
+  radiators; the sinkhole's crystals; landing pads, containers, dishes, rovers, crates, beacons, an old
+  probe. Each objective prints in its tile's own colour as a spot ink. Each scene stands on one world:
+  Phobos grey and cratered, Deimos dusty and streaked, Mars rust with dunes and dust devils' tracks; on the
+  moons Mars hangs in the sky, on Mars the two moons do.
+- **Printed matter.** Every part prints in passes: a colour plate a little off register, the key ink, the
+  amber accent, the spot. Halftone for shade, no gradients.
+- **Same card contract.** It takes the same `CardFace`, `Measure` and fonts (Saira Stencil One, Barlow
+  Condensed, JetBrains Mono, as the boards), so the Art Lab, exports and print sheets take it unchanged.
+  Size, bleed, safe zone and corner are the poker card's (GRAPHICS.md *Cards*).
+- **Decks tell apart as the Vocabulary board does:** the permanent deck on paper in key ink, the one-shot
+  decks on night paper in bone. The category sets the colour plate (rule, name shadow, mech plates).
+- **The tag** reads `REGOLITH` and the card's place in its deck.
+- **Tests** (art.test.ts): every Regolith card has a scene and no scene lacks a card, every card and back
+  draws without bad numbers or broken references, no two scenes are the same, every mech poses both ways.
+- Still to do: rules readouts (action chips, combat dice) redrawn as flat inks, where a card shows one.
 
 ## 6. Web
 
@@ -177,8 +179,9 @@ should agree with it; how far the tiles move towards flat inks is open, below.
   its rule set (`edition` is the mode's id), and `faceOf` finds their faces. A card draws the picture of
   the card it is `from` (`CardFace.scene`) until it has its own. The game shows the cards of the mode it
   plays. Done (23 October 2026).
-- On-screen cards (`cardImages`, `cardPalette`) render through the deck's renderer, so a Regolith game's
-  market and hand show screenprint cards.
+- On-screen cards (`cardImages`) render through the deck's renderer, so a Regolith game's market, hand,
+  card viewer and deck piles show screenprint cards and backs. Done. The game's own card frames (Card.tsx,
+  the starting-skill draft) are still the holo cards' HTML, with the screenprint art in their band.
 - Art Lab (`#lab/cards`): a Regolith edition (done), each card's note naming the Community card it is
   `from`, its `status` and its art brief; print exports pick it by edition, so a print run is a whole
   Regolith deck. Still to do: each card beside its Community card, as the Redesigns view pairs them.
@@ -219,9 +222,10 @@ A card renamed in its own deck can say the words itself; the rewording leaves th
 2. **Own deck.** *Done (23 October 2026):* `data/regolith.yaml` with the names picked on the Card Picks
    page, the build step, `regolithMode()` dealing it, `DECKS` and the Art Lab listing it, drawn with
    today's `cardSvg` and the Community pictures for now. The game plays as before, from its own deck.
-3. **Screenprint renderer.** Inks, plates, the card layout and backs, with plain art windows. Market,
-   viewer and print exports switch to it.
-4. **Screenprint kit.** Mechs, objectives, props; the category art for copied cards.
+3. **Screenprint renderer.** *Done (23 October 2026):* inks, plates, the card layout and backs. Market,
+   viewer, Art Lab and print exports use it.
+4. **Screenprint kit.** *Done (23 October 2026):* the six mechs rigged from the Silhouettes board, the
+   tiles' buildings and small things, crews, each world's ground, and a scene for every card.
 5. **Moving away, card by card.** Renames with the new words and their own scenes, then reworked and new
    actions, with the card-hook surface built for the first one. Playtest and AI self-play as they land.
 6. **Words and aid.** A Regolith player aid and rulebook pages (the mode-wide vocabulary is done, §7).
@@ -232,6 +236,6 @@ Steps 1–4 need no card designed.
 
 - **Deck names** in the theme (the permanent and the one-shot deck), and whether the Expansion card stays.
 - **Deck size:** Community's (35 Skills, 9 Tactics), or smaller as cards are reworked.
-- **One look for map and cards:** keep the photographic ground with flat-ink cards, or move tiles and
-  dice towards the screenprint inks (CardScale's warning).
+- **One look for map and cards:** the cards now share the tiles' buildings, colours and worlds, drawn
+  flat; whether the tiles and dice move further towards the screenprint inks (CardScale's warning) is open.
 - **Binary Reach:** the one square drift map, in `drift-square` and played by no mode: give it to Community, or drop it.

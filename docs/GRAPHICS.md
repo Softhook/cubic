@@ -385,6 +385,10 @@ Art image requirements: at least **300 dpi at final size including bleed**, bett
 headroom. For a card art window filling the whole card with bleed (69.5 × 94.9 mm) that's
 **≥ 821 × 1121 px**, ideally ~1650 × 2250 px. Keep originals in RGB, 16-bit PNG/TIFF where possible.
 
+Regolith's cards have a renderer of their own, the screenprint cards (`packages/art/src/screenprint`,
+[REGOLITH.md](regolith/REGOLITH.md) §5): flat inks and halftone, the six mechs rigged from the mood board's
+Silhouettes board, and the map tiles' buildings drawn side on. A card face's `look` picks the renderer.
+
 ### Iconography
 
 Replace text and pips with one icon set drawn on a 24-unit grid with mm-based stroke widths:

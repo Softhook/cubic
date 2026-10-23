@@ -5,6 +5,8 @@ import { CARD_CATEGORIES, FONTS, INK, PLAYER_HUES } from './tokens';
 import { icon } from './icons';
 import { die, glow } from './kit';
 import { ILLUSTRATIONS } from './illustrations';
+import { screenprintBackSvg, screenprintCardSvg } from './screenprint/card';
+import { SCENES } from './screenprint/scenes';
 
 /**
  * Advance cards, poker size (63.5 × 88.9 mm), for print and the Art Lab. See docs/GRAPHICS.md §2, Cards.
@@ -29,6 +31,9 @@ export const CARD = {
 
 export type CardDeck = 'skill' | 'tactic' | 'expansion' | 'command' | 'gambit';
 
+/** How a deck's cards are printed. */
+export type CardLook = 'holo' | 'screenprint';
+
 /** Everything printed on a card face. */
 export interface CardFace {
   id: string;
@@ -40,6 +45,8 @@ export interface CardFace {
   category: string;
   /** Whose illustration to draw, when not its own: a mode's card shows the card it started as until it has art. */
   scene?: string;
+  /** How the card is printed: the holo cards (the default), or the screenprint cards (screenprint/card.ts). */
+  look?: CardLook;
   /** How many copies the deck has. */
   copies?: number;
   /** Position in its deck, for the "7/35 C" footer. */
@@ -48,7 +55,10 @@ export interface CardFace {
 }
 
 /** Measures text width in mm, for wrapping. The browser passes a canvas-based one; tests use the estimate. */
-export type Measure = (text: string, sizeMm: number, font: 'title' | 'body' | 'bold') => number;
+export type Measure = (text: string, sizeMm: number, font: MeasuredFont) => number;
+
+/** The faces cards are set in: the holo cards' (title, body, bold) and the screenprint cards' (stencil, condensed, mono). */
+export type MeasuredFont = 'title' | 'body' | 'bold' | 'stencil' | 'condensed' | 'condensedBold' | 'mono';
 
 export interface CardOptions {
   bleed?: boolean;
@@ -68,6 +78,7 @@ export const estimateWidth: Measure = (text, size, font) => size * text.length *
 
 /** What an illustration shows, for art direction (the Art Lab prints it under the card). */
 export function cardIllustration(f: CardFace): string {
+  if (f.look === 'screenprint') return SCENES[f.id]?.caption ?? 'no illustration yet';
   return ILLUSTRATIONS[f.scene ?? f.id]?.caption ?? 'no illustration yet';
 }
 
@@ -269,6 +280,7 @@ function textPanel(face: CardFace, category: string, area: Box, p: CardPalette, 
 
 /** The front of a card as a standalone SVG document. */
 export function cardSvg(face: CardFace, o: CardOptions = {}): string {
+  if (face.look === 'screenprint') return screenprintCardSvg(face, o);
   const id = o.idPrefix ?? `card-${face.id}`;
   const cat = categoryOf(face);
   const p = cardPalette(DECK_INFO[face.deck].light, cat.hue);
@@ -279,7 +291,8 @@ export function cardSvg(face: CardFace, o: CardOptions = {}): string {
 }
 
 /** The back of a deck's cards; `plain` leaves out the lettering (the game's narrow deck piles). */
-export function cardBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure'> & { plain?: boolean } = {}): string {
+export function cardBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure'> & { plain?: boolean; look?: CardLook } = {}): string {
+  if (o.look === 'screenprint') return screenprintBackSvg(deck, o);
   const id = o.idPrefix ?? `back-${deck}`;
   const info = DECK_INFO[deck];
   const { w: W, h: H } = CARD;

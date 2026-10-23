@@ -68,10 +68,13 @@ export {
   estimateWidth,
   type CardDeck,
   type CardFace,
+  type CardLook,
   type CardOptions,
   type CardPalette,
   type Measure,
+  type MeasuredFont,
 } from './card';
+export { SP_FONTS } from './screenprint/kit';
 export { AID, MIN_TEXT, playerAidSvg, type AidEdition, type AidOptions } from './aid';
 export { PRESS_TEST, pressTestSvg } from './proof';
 export { missile } from './kit/effects';

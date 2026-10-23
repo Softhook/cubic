@@ -1,4 +1,4 @@
-import { FONTS, type CardDeck, type CardFace, type Measure } from '@quantum/art';
+import { FONTS, SP_FONTS, type CardDeck, type CardFace, type CardLook, type Measure } from '@quantum/art';
 import { EXPANSION, MODES, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef } from '@quantum/engine';
 import { blobToDataUrl } from '../files';
 
@@ -19,7 +19,7 @@ export interface Edition {
   title: string;
 }
 
-const faces = (deck: CardDeck, defs: CardDef[]): CardFace[] =>
+const faces = (deck: CardDeck, defs: CardDef[], look?: CardLook): CardFace[] =>
   defs.map((c, i) => ({
     id: c.id,
     name: c.name,
@@ -29,6 +29,7 @@ const faces = (deck: CardDeck, defs: CardDef[]): CardFace[] =>
     // A mode's card shows the card it started as until it has art of its own.
     scene: c.from,
     deck,
+    look,
     copies: c.count,
     index: i + 1,
     deckSize: defs.length,
@@ -45,10 +46,17 @@ export const DECKS: Deck[] = [
     const c = m.cards;
     if (!c || [SKILLS, ORIGINAL_COMMAND].includes(c.skills)) return [];
     return [
-      { id: 'skill', name: `${m.name} ${c.terms.skillDeck}`, edition: m.id, cards: faces('skill', c.skills) },
-      { id: 'tactic', name: `${m.name} ${c.terms.tacticDeck}`, edition: m.id, cards: faces('tactic', c.tactics) },
+      { id: 'skill', name: `${m.name} ${c.terms.skillDeck}`, edition: m.id, cards: faces('skill', c.skills, c.look) },
+      { id: 'tactic', name: `${m.name} ${c.terms.tacticDeck}`, edition: m.id, cards: faces('tactic', c.tactics, c.look) },
       ...(c.expansion
-        ? [{ id: 'expansion' as const, name: `${m.name} ${c.expansion.name}`, edition: m.id, cards: faces('expansion', [c.expansion]) }]
+        ? [
+            {
+              id: 'expansion' as const,
+              name: `${m.name} ${c.expansion.name}`,
+              edition: m.id,
+              cards: faces('expansion', [c.expansion], c.look),
+            },
+          ]
         : []),
     ];
   }),
@@ -69,8 +77,27 @@ export function faceOf(id: string): CardFace {
   return face;
 }
 
-/** The fonts cards are set in, as the page loads them (index.html). */
-const FAMILIES = { title: ['900', 'Orbitron'], body: ['400', 'Inter'], bold: ['700', 'Inter'] } as const;
+/** The fonts cards are set in, as the page loads them (index.html): the holo cards' and the screenprint cards'. */
+const FAMILIES = {
+  title: ['900', 'Orbitron'],
+  body: ['400', 'Inter'],
+  bold: ['700', 'Inter'],
+  stencil: ['400', "'Saira Stencil One'"],
+  condensed: ['500', "'Barlow Condensed'"],
+  condensedBold: ['700', "'Barlow Condensed'"],
+  mono: ['600', "'JetBrains Mono'"],
+} as const;
+
+/** Each font's fallback, measured when it hasn't loaded. */
+const FALLBACK: Record<keyof typeof FAMILIES, string> = {
+  title: FONTS.title,
+  body: FONTS.body,
+  bold: FONTS.body,
+  stencil: SP_FONTS.stencil,
+  condensed: SP_FONTS.condensed,
+  condensedBold: SP_FONTS.condensed,
+  mono: SP_FONTS.mono,
+};
 
 let ctx: CanvasRenderingContext2D | null = null;
 
@@ -78,7 +105,7 @@ let ctx: CanvasRenderingContext2D | null = null;
 export const measure: Measure = (text, size, font) => {
   ctx ??= document.createElement('canvas').getContext('2d')!;
   const [weight, family] = FAMILIES[font];
-  ctx.font = `${weight} 100px ${family}, ${font === 'title' ? FONTS.title : FONTS.body}`;
+  ctx.font = `${weight} 100px ${family}, ${FALLBACK[font]}`;
   return (ctx.measureText(text).width / 100) * size;
 };
 
@@ -144,7 +171,10 @@ function embeddedFonts(query: string, ready: () => Promise<void>): () => Promise
 }
 
 /** The card fonts, for card and player aid images. */
-export const cardFontCss = embeddedFonts('family=Inter:ital,wght@0,400;0,700;1,400&family=Orbitron:wght@900', cardFontsReady);
+export const cardFontCss = embeddedFonts(
+  'family=Inter:ital,wght@0,400;0,700;1,400&family=Orbitron:wght@900&family=Saira+Stencil+One&family=Barlow+Condensed:wght@500;700&family=JetBrains+Mono:wght@600',
+  cardFontsReady,
+);
 
 /** The tile fonts: Inter ExtraBold for the planet number, JetBrains Mono for the flavour label. */
 export const tileFontCss = embeddedFonts('family=Inter:wght@800&family=JetBrains+Mono:wght@400;700', async () => {});

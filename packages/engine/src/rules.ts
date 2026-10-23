@@ -72,6 +72,8 @@ export interface CardRules {
   expansionPile: boolean;
   /** The card that pile is, when the mode has its own (default: the Community Expansion card); see expansionCard. */
   expansion?: CardDef;
+  /** How the mode's cards are printed (the art package's `CardLook`): the holo cards when absent. */
+  look?: 'holo' | 'screenprint';
   /** A card pick may be spent to discard every face-up card and deal new ones (2013 rulebook p.9). */
   refresh: boolean;
   terms: {

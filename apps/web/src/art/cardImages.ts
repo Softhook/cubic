@@ -1,4 +1,4 @@
-import { CARD, cardBackSvg, cardSvg, dataUrl, hash, type CardDeck } from '@quantum/art';
+import { CARD, cardBackSvg, cardSvg, dataUrl, hash, type CardDeck, type CardLook } from '@quantum/art';
 import { rasterise } from '../files';
 import { cardFontCss, cardFontsReady, faceOf, measure } from './cards';
 import { idle, storeImage, storedImage } from './imageStore';
@@ -129,9 +129,13 @@ const fronts = drawnOnce(async (id: string) => {
 const BACK_WIDTH = 286;
 const BACK_HEIGHT = Math.round((BACK_WIDTH * CARD.h) / CARD.w);
 
-const backs = drawnOnce(async (deck: CardDeck) => {
-  const svg = cardBackSvg(deck, { plain: true });
-  const { url } = await drawKept(`back:${deck}`, hash(svg), BACK_WIDTH, BACK_HEIGHT, async () => ({ svg, keep: true }));
+/** A back by its look and deck, as `look:deck`. */
+const backKey = (id: string) => `${faceOf(id).look ?? 'holo'}:${faceOf(id).deck}`;
+
+const backs = drawnOnce(async (key: string) => {
+  const [look, deck] = key.split(':') as [CardLook, CardDeck];
+  const svg = cardBackSvg(deck, { plain: true, look });
+  const { url } = await drawKept(`back:${key}`, hash(svg), BACK_WIDTH, BACK_HEIGHT, async () => ({ svg, keep: true }));
   return url;
 });
 
@@ -143,9 +147,9 @@ export const cardFronts: Drawn<string> = fronts;
  * belongs to.
  */
 export const cardBacks: Drawn<string> = {
-  get: (id) => backs.get(faceOf(id).deck),
-  now: (id) => backs.now(faceOf(id).deck),
-  subscribe: (id, cb) => backs.subscribe(faceOf(id).deck, cb),
+  get: (id) => backs.get(backKey(id)),
+  now: (id) => backs.now(backKey(id)),
+  subscribe: (id, cb) => backs.subscribe(backKey(id), cb),
 };
 
 /** The cards still to prepare in the background, first first. */

@@ -92,7 +92,14 @@ export function regolithMode(base: RuleSet): RuleSet {
     ),
     cards:
       REGOLITH_CARDS && base.cards
-        ? { ...base.cards, skills: REGOLITH_DECKS.skills, tactics: REGOLITH_DECKS.tactics, expansion: REGOLITH_DECKS.expansion[0] }
+        ? {
+            ...base.cards,
+            skills: REGOLITH_DECKS.skills,
+            tactics: REGOLITH_DECKS.tactics,
+            expansion: REGOLITH_DECKS.expansion[0],
+            // Printed in screenprint (docs/regolith/REGOLITH.md §5).
+            look: 'screenprint',
+          }
         : null,
     mapGroups: ['hex', 'open', 'drift'],
     ships: REGOLITH_SHIPS,
