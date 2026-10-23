@@ -132,6 +132,22 @@ describe('hex maps', () => {
     }
   });
 
+  // Through the spaces touching each other: on a square map that takes in the corners, which is all that joins Rupture's halves.
+  it('joins every space of a map to every other, with no tile cut off', () => {
+    for (const m of MAPS) {
+      const b = buildBoard(m);
+      const all = spaces(b).filter((p) => b.cells[p.r][p.c].kind === 'space');
+      const seen = new Set([`${all[0].r},${all[0].c}`]);
+      for (const queue = [all[0]]; queue.length;)
+        for (const q of surrounding(b, queue.pop()!)) {
+          if (b.cells[q.r][q.c].kind !== 'space' || seen.has(`${q.r},${q.c}`)) continue;
+          seen.add(`${q.r},${q.c}`);
+          queue.push(q);
+        }
+      expect(seen.size, m.id).toBe(all.length);
+    }
+  });
+
   it('refuses a hex map that wraps', () => {
     expect(() => buildBoard({ ...HEX_MAPS[0], wrap: 'both' })).toThrow(/can't wrap/);
   });

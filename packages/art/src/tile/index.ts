@@ -66,6 +66,7 @@ const LAYERS: Record<TileLook, readonly TileLayerName[]> = {
   square: ['sky', 'body', 'label', 'spaces', 'planet'],
   hex: ['sky', 'body', 'spaces', 'planet'],
   phobos: ON_GROUND,
+  deimos: ON_GROUND,
   mars: ON_GROUND,
 };
 

@@ -24,7 +24,7 @@ describe('tile layers', () => {
   it('stack in space as printed, and on the ground with what stands over the wells', () => {
     expect(names('square', { markings: true })).toEqual(['sky', 'body', 'label', 'spaces', 'planet']);
     expect(names('hex', { markings: true })).toEqual(['sky', 'body', 'spaces', 'planet']);
-    for (const world of ['phobos', 'mars'] as const) expect(names(world, { markings: true })).toEqual(tileLayerNames(world));
+    for (const world of ['phobos', 'deimos', 'mars'] as const) expect(names(world, { markings: true })).toEqual(tileLayerNames(world));
   });
 
   it('carry markings only when asked, and what stands again only over the wells', () => {
@@ -47,6 +47,7 @@ describe('tile layers', () => {
     ['hex', ['spaces', 'planet']],
     // On the ground the wells are under what stands, so drawn with it.
     ['phobos', ['planet']],
+    ['deimos', ['planet']],
     ['mars', ['planet']],
   ] as const)('leave out of their raster part only what an editor keeps as vectors (%s)', (look, vectors) => {
     const o = { look, markings: true, bleed: true };
@@ -64,7 +65,7 @@ describe('tile layers', () => {
 
 describe('raster layers alone, for the map', () => {
   it('are the look’s own', () => {
-    for (const look of ['square', 'hex', 'phobos', 'mars'] as const)
+    for (const look of ['square', 'hex', 'phobos', 'deimos', 'mars'] as const)
       for (const layer of ['sky', 'body', 'ground'] as const) {
         const draw = () => rasterLayerSvg(seven, look, layer);
         if (tileLayerNames(look).includes(layer)) expect(draw()).toMatch(/^<svg /);
@@ -101,7 +102,7 @@ describe('a blank tile', () => {
   });
 
   it('has bare ground on a world, with nothing standing on it', () => {
-    for (const world of ['phobos', 'mars'] as const) {
+    for (const world of ['phobos', 'deimos', 'mars'] as const) {
       expect(layer(blank, world, 'ground')).toBeTruthy();
       expect(layer(blank, world, 'standing')).toBeUndefined();
     }

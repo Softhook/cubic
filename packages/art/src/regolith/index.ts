@@ -5,16 +5,17 @@ import type { World } from '../tile/look';
 import type { TileSpec } from '../tile/set';
 import { SPACE, SCALE, SIZE, LIT, DRAWN } from './core';
 import { ground, built, cast, dust } from './light';
-import { GRADIENTS, CRATERS, RIDGE, DUNES, terrain, weathering } from './terrain';
+import { GRADIENTS, CRATERS, BURIED, RIDGE, DUNES, terrain, weathering } from './terrain';
 import { BUILDING_GRADIENTS } from './parts';
 import { base } from './base';
 
 /**
- * Phobos or Mars ground for a hex tile, after the Regolith mood board (docs/moodboards/regolith/HexSurface.dc.html):
+ * Phobos, Deimos or Mars ground for a hex tile, after the Regolith mood board (docs/moodboards/regolith/HexSurface.dc.html):
  * a height map painted in colour (red is height, 128 the ground; green marks smooth areas; blue is
  * brightness), then lit once by one filter. Drawn in the board's own units, where a space is 69.3 tall,
  * so its numbers carry over; the tile is scaled to millimetres at the end. Each tile's craters, pits and
- * boulders come from its seed; the world only changes its colour, and adds Mars's dunes, tracks and dust.
+ * boulders come from its seed; the world changes its colour, adds Mars's dunes, tracks and dust, and on
+ * Deimos buries most craters in dust, smooths the ground and streaks it bright.
  *
  * Chrome ignores the lighting's `kernelUnitLength`, so its relief differs from Firefox's and Safari's
  * (the mood board's Surface study); the game draws each tile once to a bitmap, in the player's browser.
@@ -43,7 +44,7 @@ function scene(spec: TileSpec, at: Spot, world: World): Scene {
   const [bx, by] = [SIZE / 2 + at.x * SPACE, SIZE / 2 + at.y * SPACE];
   const place = (f: string) => `<g transform="translate(${n(bx)},${n(by)})">${f}</g>`;
   const heights =
-    terrain(r, mars) +
+    terrain(r, world) +
     // The ground is levelled round a base, smoothing over any crater there, then it's built.
     (site ? place(site.grade + site.heights) : '');
   // Craters, pits and dunes are weathered, and the blurs soften what's drawn: after the terrain, as they draw on its stream.
@@ -58,6 +59,7 @@ function scene(spec: TileSpec, at: Spot, world: World): Scene {
     cast(DRAWN) +
     (mars ? dust(r.noiseSeed(), DRAWN) : '') +
     CRATERS +
+    (world === 'deimos' ? BURIED : '') +
     RIDGE;
   const lit = `<g filter="url(#rg-ground)">${heights}</g>`;
   if (!site) return { defs, lit };
@@ -140,7 +142,7 @@ export function regolithGroundSvg(spec: TileSpec, world: World, at: Spot = { x: 
  * it, to lay over the spaces' wells, rather than drawing it again.
  */
 export function regolithMaskSvg(spec: TileSpec, at: Spot = { x: 0, y: 0 }): string {
-  // What stands is the same on either world, so either will do.
+  // What stands is the same on every world, so any will do.
   const { standing } = scene(spec, at, 'mars');
   // Only the defs its shapes use: their gradients, and a blur.
   const defs = WHITE + BUILDING_GRADIENTS + blur('rg-soft1', 1);

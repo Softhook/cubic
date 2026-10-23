@@ -11,7 +11,7 @@ from the canvas 22 October 2026.
 
 ## The story
 
-**Regolith**: the loose dust and broken rock that covers Phobos and Mars. Everything here is built on it, and
+**Regolith**: the loose dust and broken rock that covers Mars and its moons. Everything here is built on it, and
 everything gets buried in it.
 
 > Generations ago China, America, Europe and the South each founded settlements on Mars, to send water and
@@ -31,7 +31,9 @@ everything gets buried in it.
 > cubes where the others can't pull them out.
 
 **Phobos** is the same war, earlier and colder, in the dark polar craters; the Phobos maps are that front.
-Its ground is grey and its light is hard; on Mars the ground is rust and the light is dusty.
+Its ground is grey and its light is hard; on Mars the ground is rust and the light is dusty. **Deimos**, the
+smaller, outer moon, is the far front: its craters are drowned in dust, and its ground is smooth and a little red,
+streaked bright where the dust slid down the slopes.
 
 ## Themes
 
@@ -147,7 +149,7 @@ What a Regolith game shows today (the mode is still `prototyping` in the code):
   overlays. They live in the mode's ship table (`SHIPS` in
   [prototyping/index.ts](../packages/engine/src/prototyping/index.ts)), and the engine and web app ask the
   game's rules for a name (`shipOf`, `shipName`), so Community games keep Battlestation to Scout.
-- **Hex maps only**, on Phobos's and Mars's ground.
+- **Hex maps only**, on Phobos's, Deimos's and Mars's ground.
 - **The words** in the table above, across the game's text: log, hints, cards, panels and errors
   ([REGOLITH.md](REGOLITH.md) §7).
 

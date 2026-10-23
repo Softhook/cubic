@@ -132,12 +132,12 @@ export const TILES_AND_AIDS: PressSheets = {
   },
 };
 
-/** The set as hex tiles, blanks too, in space or on Phobos or Mars, planets in the middle, on press sheets of their own with each tile's die-cut line. */
+/** The set as hex tiles, blanks too, in space or on Phobos, Deimos or Mars, planets in the middle, on press sheets of their own with each tile's die-cut line. */
 const hexTiles = (look: Exclude<TileLook, 'square'>): PressSheets => {
-  const on = { hex: '', phobos: ' on Phobos', mars: ' on Mars' }[look];
+  const on = { hex: '', phobos: ' on Phobos', deimos: ' on Deimos', mars: ' on Mars' }[look];
   return {
     name: look === 'hex' ? 'hex-tiles' : `hex-tiles-${look}`,
-    label: { hex: 'Hex tiles', phobos: 'Phobos hex tiles', mars: 'Mars hex tiles' }[look],
+    label: { hex: 'Hex tiles', phobos: 'Phobos hex tiles', deimos: 'Deimos hex tiles', mars: 'Mars hex tiles' }[look],
     contents: `all ${HEX_TILE_SET.length} tiles as hex tiles${on} (${PIECES.hexTile.cols * PIECES.hexTile.rows} a page), each with its die-cut line in a CutContour spot colour`,
     async groups() {
       const tile = await tileFontCss();
@@ -152,5 +152,6 @@ export const TILE_PRINT: Record<TileLook, { piece: Piece; cmyk: PressSheets }> =
   square: { piece: PIECES.tile, cmyk: TILES_AND_AIDS },
   hex: { piece: PIECES.hexTile, cmyk: hexTiles('hex') },
   phobos: { piece: PIECES.hexTile, cmyk: hexTiles('phobos') },
+  deimos: { piece: PIECES.hexTile, cmyk: hexTiles('deimos') },
   mars: { piece: PIECES.hexTile, cmyk: hexTiles('mars') },
 };

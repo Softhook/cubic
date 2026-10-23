@@ -4,7 +4,7 @@ import type { TileLook } from '@quantum/art';
 import { remember, stored } from '../storage';
 
 /*
- * How hex maps look: on their world's ground, Phobos's or Mars's (the Regolith tiles, with a building on
+ * How hex maps look: on their world's ground, Phobos's, Deimos's or Mars's (the Regolith tiles, with a building on
  * each planet's space), or in space, as the original tiles. Kept on this device; the top bar switches it
  * (WorldButton).
  */

@@ -29,8 +29,9 @@
 #   a tile touches the two tiles beside it and two in each neighbouring row (docs/HEX.md). Hex maps
 #   don't wrap.
 #
-# world (optional, hex maps only): phobos | mars. The surface the map lies on, which its tiles show; Mars
-#   when absent.
+# world (optional, hex maps only): phobos | deimos | mars. The surface the map lies on, which its tiles show;
+#   Mars when absent. Phobos is grey and cratered; Deimos, the outer moon, redder and smoother, its craters
+#   buried under dust; Mars has dunes and dust devils' tracks.
 #
 # wrap (optional): horizontal | vertical | both. The booklet marks these edges with arrows.
 #   A ship leaving one edge comes back at the opposite edge of the same row or column, as if
@@ -110,6 +111,7 @@ maps:
     players: 3
     group: hex
     grid: hex
+    world: deimos
     cubes: 5
     stats: { slack: 4, shared: 4, planets: 10 }
     layout:
@@ -160,15 +162,16 @@ maps:
     stats: { slack: 2, shared: 4, planets: 6 }
     # A ring of eight round a two-tile hole, the starts across it.
     layout:
-      - "7* 8  8"
+      - ".  7* 8  8"
       - "8  .  .  8"
-      - "8  8  7*"
+      - ".  8  8  7*"
 
   - id: the-great-plan-hex
     name: The Great Plan (hex)
     players: 2
     group: hex
     grid: hex
+    world: deimos
     cubes: 7
     stats: { slack: 2, shared: 2, planets: 10 }
     # A void ringed by 8s and 7s; each start sits among three 7s at an end.
@@ -229,11 +232,12 @@ maps:
     players: 4
     group: hex
     grid: hex
+    world: deimos
     cubes: 6
     stats: { slack: 4, shared: 5, planets: 9 }
     # A 10 in the middle, four arms of 8s out to the starts.
     layout:
-      - ".  7*"
+      - ".  .  7*"
       - ".  .  8"
       - ".  9  9"
       - "7* 8  10 8  7*"
@@ -267,6 +271,7 @@ maps:
     players: 2
     group: drift
     grid: hex
+    world: deimos
     cubes: 6
     stats: { slack: 6, shared: 2, planets: 10 }
     # Each start shares two orbital spaces with a 7 beside it, and the 9s share two more. Two 7s

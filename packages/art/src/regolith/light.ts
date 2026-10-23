@@ -10,7 +10,8 @@ import { LIT } from './core';
 
 /**
  * The ground's colours are the mechs' inks (mood board GroundMechs, look 1): from key ink (#1E1C1A),
- * never black, up to bone on Phobos, and through oxide (#E0703A) to Jupiter (#D9A066) on Mars.
+ * never black, up to bone on Phobos, a dusty rose tan on Deimos, and through oxide (#E0703A) to Jupiter
+ * (#D9A066) on Mars.
  */
 
 /** Phobos: warm grey dust, key ink in the shadows and bone (#E6DDC8) in the light. */
@@ -19,6 +20,14 @@ const PHOBOS_RAMP =
   '<feFuncR type="table" tableValues="0.118 0.18 0.29 0.435 0.604 0.769 0.902"/>' +
   '<feFuncG type="table" tableValues="0.11 0.169 0.275 0.416 0.573 0.733 0.867"/>' +
   '<feFuncB type="table" tableValues="0.102 0.157 0.251 0.376 0.51 0.651 0.784"/>' +
+  '</feComponentTransfer>';
+
+/** Deimos: dust a little redder and darker than Phobos's, key ink in the shadows and a dusty rose tan (#D9C3AA) in the light. */
+const DEIMOS_RAMP =
+  '<feComponentTransfer in="lit2" result="ramp">' +
+  '<feFuncR type="table" tableValues="0.118 0.196 0.318 0.471 0.627 0.753 0.851"/>' +
+  '<feFuncG type="table" tableValues="0.11 0.17 0.267 0.392 0.525 0.651 0.765"/>' +
+  '<feFuncB type="table" tableValues="0.102 0.153 0.231 0.329 0.443 0.561 0.667"/>' +
   '</feComponentTransfer>';
 
 /** Mars: oxide and ochre dust, and patches of dark basalt where the wind swept it bare (the broad noise's alpha lays them). */
@@ -39,6 +48,11 @@ const MARS_RAMP =
   '<feComposite in="dust" in2="mD" operator="arithmetic" k1="1" result="dustM"/>' +
   '<feComposite in="rock" in2="mR" operator="arithmetic" k1="1" result="rockM"/>' +
   '<feComposite in="dustM" in2="rockM" operator="arithmetic" k2="1" k3="1" result="ramp"/>';
+
+const RAMPS: Record<World, string> = { phobos: PHOBOS_RAMP, deimos: DEIMOS_RAMP, mars: MARS_RAMP };
+
+/** How much the fine noise roughens the ground: less on Deimos, whose deep dust smooths it over. */
+const FINE: Record<World, number> = { phobos: 1, deimos: 0.85, mars: 1 };
 
 /**
  * A relief's surfaceScale, tuned for a pixel 0.28 across, at the pixel the light is made for (`LIT`): Chrome
@@ -67,6 +81,7 @@ const shadow = (height: string, steps: [d: number, k: number][], blur: number, c
 /** The light: the height map gains fine noise where it isn't smooth, is lit from the top left, shadowed, tinted for its world and grained. Over `area`, in board units. */
 export function ground(r: Rng, area: Box, world: World): string {
   const s = () => r.noiseSeed();
+  const fine = FINE[world];
   const light = '<feDistantLight azimuth="225" elevation="22"/>';
   return (
     `<filter id="rg-ground" filterUnits="userSpaceOnUse" ${region(area)} color-interpolation-filters="sRGB">` +
@@ -87,7 +102,7 @@ export function ground(r: Rng, area: Box, world: World): string {
     '<feComponentTransfer in="SMOOTH" result="ROUGH"><feFuncA type="table" tableValues="1 0.02"/></feComponentTransfer>' +
     '<feComposite in="nzw" in2="ROUGH" operator="in" result="nzm"/>' +
     '<feComposite in="ridged" in2="ROUGH" operator="in" result="rgm"/>' +
-    '<feComposite in="H0" in2="nzm" operator="arithmetic" k2="0.85" k3="0.28" k4="-0.07" result="h1"/>' +
+    `<feComposite in="H0" in2="nzm" operator="arithmetic" k2="0.85" k3="${n(0.28 * fine)}" k4="${n(-0.07 * fine)}" result="h1"/>` +
     '<feComposite in="h1" in2="rgm" operator="arithmetic" k2="1" k3="0.12" k4="-0.05" result="H"/>' +
     // Lit in two parts, the drawn ground and the noise on it, each at its full 256 levels and given its share
     // of the relief by its surfaceScale: scaled down to its share first (0.28 of the height), the noise
@@ -95,7 +110,7 @@ export function ground(r: Rng, area: Box, world: World): string {
     // flat ground (1.3 · sin 22°), so it only adds its relief. `H`, all in one, still makes the shine.
     `<feDiffuseLighting in="H0" kernelUnitLength="${LIT}" surfaceScale="${relief(7.65)}" diffuseConstant="1.3" lighting-color="#ffffff" result="LS">${light}</feDiffuseLighting>` +
     '<feComposite in="nzm" in2="rgm" operator="arithmetic" k2="0.7" k3="0.3" result="HN"/>' +
-    `<feDiffuseLighting in="HN" kernelUnitLength="${LIT}" surfaceScale="${relief(4.3)}" diffuseConstant="1.3" lighting-color="#ffffff" result="LN">${light}</feDiffuseLighting>` +
+    `<feDiffuseLighting in="HN" kernelUnitLength="${LIT}" surfaceScale="${relief(4.3 * fine)}" diffuseConstant="1.3" lighting-color="#ffffff" result="LN">${light}</feDiffuseLighting>` +
     '<feComposite in="LS" in2="LN" operator="arithmetic" k2="1" k3="1" k4="-0.487" result="L"/>' +
     // Shadowed as read from the height map before its fine noise, as moving the noisy one makes Chrome work
     // it all out again for each shadow (~65 ms a time), and the noise's own shadows are too small to see.
@@ -120,7 +135,7 @@ export function ground(r: Rng, area: Box, world: World): string {
     `<feSpecularLighting in="H" kernelUnitLength="${LIT}" surfaceScale="${relief(9)}" specularConstant="0.6" specularExponent="40" lighting-color="#e6f6ff" result="spec">${light}</feSpecularLighting>` +
     '<feComposite in="spec" in2="SMOOTH" operator="in" result="specM"/>' +
     '<feComposite in="lit" in2="specM" operator="arithmetic" k2="1" k3="0.7" result="lit2"/>' +
-    (world === 'phobos' ? PHOBOS_RAMP : MARS_RAMP) +
+    RAMPS[world] +
     turbulence(1.4, 1, s(), 'grain') +
     '<feComposite in="ramp" in2="grain" operator="arithmetic" k2="1" k3="0.09" k4="-0.045"/>' +
     '</filter>'

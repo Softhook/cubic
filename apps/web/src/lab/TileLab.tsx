@@ -34,7 +34,7 @@ import {
  * Art Lab, tiles page (#lab): every tile of the physical set, with controls to explore seeds and
  * planet types and to export print files: single tiles, the whole set, print sheets, and the CMYK press
  * sheets the tiles share with the player aids. See docs/GRAPHICS.md §3–4. The set can be shown and
- * exported as hex tiles too (die-cut along the flower), in space or on Phobos (the Regolith look), and with
+ * exported as hex tiles too (die-cut along the flower), in space or on Phobos, Deimos or Mars (the Regolith look), and with
  * its planets moved off the middle, as maps place them (docs/HEX.md).
  */
 
@@ -43,7 +43,13 @@ const THUMB_PX = 400;
 
 const TYPES: PlanetType[] = ['gas', 'rocky', 'ice', 'lava', 'ocean'];
 
-const LOOKS: Record<TileLook, string> = { square: 'Square', hex: 'Hex', phobos: 'Hex, on Phobos', mars: 'Hex, on Mars' };
+const LOOKS: Record<TileLook, string> = {
+  square: 'Square',
+  hex: 'Hex',
+  phobos: 'Hex, on Phobos',
+  deimos: 'Hex, on Deimos',
+  mars: 'Hex, on Mars',
+};
 
 type Override = Partial<Pick<TileSpec, 'seed' | 'type' | 'rings'>>;
 

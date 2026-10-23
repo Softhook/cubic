@@ -147,8 +147,8 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
 
   A printed tile (`tileSvg`) is the same layers in one piece, so the screen and the table look alike.
   The Art Lab shows the set as hex tiles too, and with each planet on any space (`look`, `planetAt`).
-- **Looks.** A tile has one of four looks (`TileLook`, [`tile/look.ts`](../packages/art/src/tile/look.ts)):
-  `square` or `hex` in space, or a hex tile on a world's ground, `phobos` or `mars` (the Regolith look,
+- **Looks.** A tile has one of five looks (`TileLook`, [`tile/look.ts`](../packages/art/src/tile/look.ts)):
+  `square` or `hex` in space, or a hex tile on a world's ground, `phobos`, `deimos` or `mars` (the Regolith look,
   [`regolith/`](../packages/art/src/regolith/)), with a building on its planet's space in place of the
   sky and body. Print, the Art Lab and the map all take the same look: a hex map is on its world's ground
   unless the top bar switches it to space ([`mapLook.ts`](../apps/web/src/art/mapLook.ts) `useMapLook`).

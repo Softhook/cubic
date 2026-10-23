@@ -1,8 +1,12 @@
 import type { Rng } from '../rng';
 import { n, region, turbulence } from '../svg';
+import type { World } from '../tile/look';
 import { DRAWN, SIZE, anywhere, radial, stops } from './core';
 
-/** The Regolith ground's terrain, as a height map: craters of every age, pits, boulders, ridges, and on Mars dunes and dust devils' tracks. */
+/**
+ * The Regolith ground's terrain, as a height map: craters of every age, pits, boulders, ridges, on Mars dunes
+ * and dust devils' tracks, and on Deimos craters buried in dust and bright streaks where it slid downhill.
+ */
 
 /** Craters carve: the bowl multiplies height (red only), the rim is screened on, so overlaps cut each other. */
 export const GRADIENTS =
@@ -81,8 +85,11 @@ export const RIDGE =
   '<path d="M-20,6 C-11,-5 6,-11 21,-7" fill="none" stroke="rgb(236,0,128)" stroke-width="1.6" stroke-linecap="round" filter="url(#rg-soft1)"/>' +
   '</g>';
 
+/** Deimos's craters, buried under its dust: a shallow hollow and the ghost of a rim, softer than an old one. */
+export const BURIED = `<g id="rg-cr-b">${crater('rg-wx-o', false, 'rg-bowlOld', 0.55, 0.3)}</g>`;
+
 /** How far a crater of each kind reaches, at scale 1: its rim (36), or where its bright ejecta fades (r 55, 68). */
-const CRATER_REACH = { o: 38, m: 38, y: 42, big: 52 };
+const CRATER_REACH = { o: 38, m: 38, y: 42, big: 52, b: 38 };
 
 /** Copies of a crater, each placed, turned and stretched a little (as the mood board's are). */
 function craters(r: Rng, kind: keyof typeof CRATER_REACH, count: number, min: number, max: number): string {
@@ -173,6 +180,23 @@ function tracks(r: Rng): string {
   return `<g style="mix-blend-mode: multiply" filter="url(#rg-soft1)">${out}</g>`;
 }
 
+/** Bright streaks where dust slid down a slope, each a fan of a few tapering ones (lighter only: blue is brightness). */
+function streaks(r: Rng): string {
+  let out = '';
+  for (let i = r.int(2, 4); i > 0; i--) {
+    const { x, y } = anywhere(r, 30);
+    const a = r.range(0, 2 * Math.PI);
+    for (let j = r.int(3, 6); j > 0; j--) {
+      const b = a + r.range(-0.35, 0.35);
+      const [ox, oy] = [x + r.range(-6, 6), y + r.range(-6, 6)];
+      const [len, w] = [r.range(14, 34), r.range(1.5, 4)];
+      const [px, py] = [(-Math.sin(b) * w) / 2, (Math.cos(b) * w) / 2];
+      out += `<path d="M${n(ox + px)},${n(oy + py)} L${n(ox + len * Math.cos(b))},${n(oy + len * Math.sin(b))} L${n(ox - px)},${n(oy - py)} Z" fill="rgb(0,0,${r.int(200, 240)})"/>`;
+    }
+  }
+  return `<g style="mix-blend-mode: lighten" opacity="0.9" filter="url(#rg-soft1)">${out}</g>`;
+}
+
 /** The weathering filters, `rg-wx-*`: a young, middle-aged and old crater's, the pits' and the dunes'. The bases' sinkhole and ice pit use them too. */
 export const weathering = (r: Rng) =>
   weather('rg-wx-y', 0.07, r.noiseSeed(), 5, 0.5) +
@@ -182,18 +206,43 @@ export const weathering = (r: Rng) =>
   weather('rg-wx-d', 0.02, r.noiseSeed(), 14, 0.4);
 
 /**
- * A tile's terrain as a height map over all that's drawn (`DRAWN`): level ground, on Mars dunes and dust
- * devils' tracks, a ridge or two, craters of every age, pits and boulders.
+ * Deimos's terrain: smoother than Phobos's, its dust deep enough to bury most craters, leaving a fresh one now
+ * and then, fewer pits, a low ridge at most, boulders, and bright streaks down the slopes.
  */
-export function terrain(r: Rng, mars: boolean): string {
-  const ridges = Array.from({ length: r.int(0, 2) }, () => {
+function deimos(r: Rng): string {
+  return (
+    `<rect ${region(DRAWN)} fill="rgb(128,0,128)"/>` +
+    ridges(r, 1) +
+    craters(r, 'b', r.int(2, 4), 0.6, 1.6) +
+    craters(r, 'o', r.int(0, 1), 0.4, 0.9) +
+    craters(r, 'y', r.int(0, 1), 0.24, 0.45) +
+    streaks(r.fork('streaks')) +
+    pits(r.fork('pits'), [
+      [22, 0.45, 1],
+      [6, 1.2, 4],
+    ]) +
+    boulders(r.fork('boulders'), r.int(1, 2), 10)
+  );
+}
+
+/** Up to `max` low ridges. */
+const ridges = (r: Rng, max: number) =>
+  Array.from({ length: r.int(0, max) }, () => {
     const { x, y } = anywhere(r, 34);
     return `<use href="#rg-ridge" transform="translate(${n(x)},${n(y)}) rotate(${r.int(-40, 40)})"/>`;
   }).join('');
+
+/**
+ * A tile's terrain on `world` as a height map over all that's drawn (`DRAWN`): level ground, on Mars dunes
+ * and dust devils' tracks, a ridge or two, craters of every age, pits and boulders; Deimos's its own.
+ */
+export function terrain(r: Rng, world: World): string {
+  if (world === 'deimos') return deimos(r);
+  const mars = world === 'mars';
   return (
     `<rect ${region(DRAWN)} fill="rgb(128,0,128)"/>` +
     (mars ? dunes(r.fork('dunes')) + tracks(r.fork('tracks')) : '') +
-    ridges +
+    ridges(r, 2) +
     craters(r, 'o', r.int(1, 2), 0.6, 1.4) +
     (r.chance(0.25) ? craters(r, 'big', 1, 0.8, 1.05) : '') +
     craters(r, 'm', r.int(1, 2), 0.32, 0.8) +

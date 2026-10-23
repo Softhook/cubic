@@ -21,12 +21,12 @@ describe('regolith ground in print', () => {
     expect(groundOf('phobos')).toContain(`kernelUnitLength="${LIT}"`);
   });
 
-  it.each(['phobos', 'mars'] as const)('has a space between its attributes, as an image must be XML (%s)', (world) => {
+  it.each(['phobos', 'deimos', 'mars'] as const)('has a space between its attributes, as an image must be XML (%s)', (world) => {
     // A browser draws a run-on attribute inline but can't decode it as an image, so the tile fails to print.
     expect(groundOf(world).match(/="[^"]*"[^\s/>]/g)).toBeNull();
   });
 
-  it.each(['phobos', 'mars'] as const)('is the lit ground alone, with nothing standing on it (%s)', (world) => {
+  it.each(['phobos', 'deimos', 'mars'] as const)('is the lit ground alone, with nothing standing on it (%s)', (world) => {
     const used = filters(groundOf(world));
     expect(used.has('rg-ground')).toBe(true);
     for (const standing of ['rg-built', 'rg-cast', 'rg-dust']) expect(used.has(standing)).toBe(false);
@@ -40,7 +40,7 @@ describe('regolith ground in print', () => {
     if (at) expect(ground).not.toBe(groundOf('mars'));
   });
 
-  it.each(['phobos', 'mars'] as const)('goes in a tile as a bitmap, over its trim and bleed, under what stands (%s)', (world) => {
+  it.each(['phobos', 'deimos', 'mars'] as const)('goes in a tile as a bitmap, over its trim and bleed, under what stands (%s)', (world) => {
     const svg = tileSvg(spec, { look: world, bleed: true, markings: true, ground: IMAGE });
     expect(filters(svg).has('rg-ground')).toBe(false);
     expect(filters(svg).has('rg-built')).toBe(true);
@@ -49,6 +49,15 @@ describe('regolith ground in print', () => {
     const [x, y, w, h] = image!.slice(2).map((v) => Number(v) * SCALE);
     expect([x, y, w, h].map((v) => Math.round(v * 100) / 100)).toEqual([BLED.x, BLED.y, BLED.w, BLED.h]);
     expect(svg.indexOf(IMAGE)).toBeLessThan(svg.indexOf('url(#rg-built)'));
+  });
+
+  it("is Deimos's own: its craters buried in dust, no dunes, streaked bright", () => {
+    const [phobos, deimos, mars] = (['phobos', 'deimos', 'mars'] as const).map((world) => groundOf(world));
+    expect(deimos).toContain('href="#rg-cr-b"');
+    expect(deimos).toContain('mix-blend-mode: lighten" opacity="0.9"');
+    expect(deimos).not.toContain('rg-dunes');
+    expect(phobos).not.toContain('#rg-cr-b"');
+    expect(mars).not.toContain('#rg-cr-b"');
   });
 
   it('is lit by its filter when no bitmap is given', () => {
