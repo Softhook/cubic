@@ -6,12 +6,15 @@ import { H, type Part, placed, merged, disc, square, box, graded, glow, lamp } f
 
 /** Ships, rovers and the small things round a base: landing pads and what stands on them, crates, beacons, an old probe. */
 
-/** Four landing legs splayed out to `reach`, each on a foot. */
-const legs = (reach: number, angles = [45, 135, 225, 315]) =>
+/** A ship's legs: they stand on a pad's deck, so above it. */
+const SHIP_LEGS = 'rgb(206,120,200)';
+
+/** Four landing legs splayed out to `reach`, each on a foot, `height` high. */
+const legs = (reach: number, angles = [45, 135, 225, 315], height = H.pipe) =>
   angles
     .map((a) => {
       const { x, y } = polar(a, reach);
-      return `<path d="M0,0 L${n(x)},${n(y)}" stroke="${H.pipe}" stroke-width="1.3"/>` + disc(x, y, 1.5, H.pipe);
+      return `<path d="M0,0 L${n(x)},${n(y)}" stroke="${height}" stroke-width="1.3"/>` + disc(x, y, 1.5, height);
     })
     .join('');
 
@@ -20,7 +23,10 @@ const rocket = (r: Rng): Part => {
   const band = r.pick(['#e8322a', '#2a2d30', '#2f6fd0']);
   const fins = [0, 90, 180, 270].map((a) => `<path d="M0,0 L9,0" transform="rotate(${a})"`);
   return {
-    heights: legs(9.5) + fins.map((f) => `${f} stroke="rgb(205,160,200)" stroke-width="1.8"/>`).join('') + disc(0, 0, 5.4, 'url(#rg-nose)'),
+    heights:
+      legs(9.5, undefined, SHIP_LEGS) +
+      fins.map((f) => `${f} stroke="rgb(218,160,200)" stroke-width="1.8"/>`).join('') +
+      disc(0, 0, 5.4, 'url(#rg-nose)'),
     tint: fins.map((f) => `${f} stroke="${band}" stroke-width="2.2"/>`).join('') + disc(0, 0, 5.6, '#f2f2ee'),
     paint:
       `<circle r="3.9" fill="none" stroke="${band}" stroke-width="0.9" opacity="0.85"/>` +
@@ -34,7 +40,7 @@ const spaceplane = (): Part => {
   const wing = 'M11,0 L1,-3 L-8,-10 L-10,-10 L-9,0 L-10,10 L-8,10 L1,3 Z';
   const body = 'M12,0 C10,-2.2 4,-2.6 -10,-2.4 L-10,2.4 C4,2.6 10,2.2 12,0 Z';
   return {
-    heights: `<path d="${wing}" fill="rgb(192,170,205)"/><path d="${body}" fill="rgb(222,170,215)"/>`,
+    heights: `<path d="${wing}" fill="rgb(212,170,205)"/><path d="${body}" fill="rgb(236,170,215)"/>`,
     tint: `<path d="${wing}" fill="#ecebe6" stroke="#ecebe6" stroke-width="0.6"/>`,
     paint:
       '<path d="M1,-3 L-8,-10 M1,3 L-8,10" stroke="#25272a" stroke-width="1.1" stroke-linecap="round" opacity="0.85"/>' +
@@ -50,7 +56,7 @@ const spaceplane = (): Part => {
 const lander = (): Part => {
   const hex = [0, 60, 120, 180, 240, 300].map((a) => `${n(polar(a, 5).x)},${n(polar(a, 5).y)}`).join(' ');
   return {
-    heights: legs(9) + `<polygon points="${hex}" fill="rgb(215,90,190)"/>` + disc(1.5, -1, 1.8, 'rgb(240,150,215)'),
+    heights: legs(9, undefined, SHIP_LEGS) + `<polygon points="${hex}" fill="rgb(225,90,190)"/>` + disc(1.5, -1, 1.8, 'rgb(244,150,215)'),
     tint: `<polygon points="${hex}" fill="#d9a531" stroke="#d9a531" stroke-width="0.6"/>` + disc(1.5, -1, 2, '#e9ecee'),
     paint:
       `<polygon points="${hex}" fill="none" stroke="#5b3a08" stroke-width="0.4" opacity="0.6"/>` +
@@ -69,9 +75,9 @@ export function landingPad(r: Rng, light: string): Part {
       {
         grade: graded(0, 0, 20),
         heights: disc(0, 0, 15, H.apron) + disc(0, 0, 14, 'url(#rg-scorch)'),
-        tint: disc(0, 0, 15, '#8d969c'),
+        // Its ring in the tint, not the paint, so a ship standing on it covers it.
+        tint: disc(0, 0, 15, '#8d969c') + '<circle r="11" fill="none" stroke="#F2B233" stroke-width="1.2" stroke-dasharray="4 2.6"/>',
         paint:
-          '<circle r="11" fill="none" stroke="#F2B233" stroke-width="1.2" stroke-dasharray="4 2.6" opacity="0.8"/>' +
           (ship ? '' : '<path d="M-4,-4 V4 M4,-4 V4 M-4,0 H4" stroke="#F2B233" stroke-width="1.3" opacity="0.85"/>') +
           lamps.map((l) => lamp(l.x, l.y, light)).join(''),
       },

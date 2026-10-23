@@ -86,11 +86,11 @@ export const BUILDING_GRADIENTS =
     [0.5, 'rgb(240,170,225)'],
     [1, 'rgb(205,170,205)'],
   ]) +
-  // A pad's deck, darkened (blue is brightness) where engines have fired on it.
+  // A pad's deck, a low slab so what stands on it stands tall, darkened (blue is brightness) where engines have fired on it.
   radial('rg-scorch', [
-    [0, 'rgb(192,160,40)'],
-    [0.45, 'rgb(192,160,90)'],
-    [0.8, H.deck],
+    [0, 'rgb(160,160,40)'],
+    [0.45, 'rgb(160,160,90)'],
+    [0.8, 'rgb(160,160,205)'],
   ]) +
   radial('rg-frost', [
     [0, 'rgb(0,210,225)', 0.9],

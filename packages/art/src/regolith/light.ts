@@ -135,8 +135,23 @@ export function built(r: Rng, area: Box): string {
     `<feSpecularLighting in="H" surfaceScale="7" specularConstant="0.35" specularExponent="18" lighting-color="#ffffff" result="spec">${light}</feSpecularLighting>` +
     '<feComposite in="spec" in2="SMOOTH" operator="in" result="specM"/>' +
     '<feComposite in="lit" in2="specM" operator="arithmetic" k2="1" k3="0.6" result="lit2"/>' +
+    // Shadowed where something taller stands towards the light, as long as the ground's cast ones (a height
+    // of 1 throws 42), so a ship's falls across its pad and a tank's across its deck.
+    [1, 2, 3.5, 5, 7, 9.5, 12.5, 16]
+      .map(
+        (d, i) =>
+          `<feOffset in="H" dx="${d}" dy="${d}" result="o${i}"/>` +
+          `<feComposite in="o${i}" in2="H" operator="arithmetic" k2="1" k3="-1" k4="${n(-d / 42)}" result="d${i}"/>`,
+      )
+      .join('') +
+    `<feMerge result="sh">${[0, 1, 2, 3, 4, 5, 6, 7].map((i) => `<feMergeNode in="d${i}"/>`).join('')}</feMerge>` +
+    '<feComponentTransfer in="sh" result="shA"><feFuncA type="linear" slope="14"/></feComponentTransfer>' +
+    '<feGaussianBlur in="shA" stdDeviation="0.3" result="shB"/>' +
+    '<feFlood flood-color="#000" flood-opacity="0.75"/>' +
+    '<feComposite in2="shB" operator="in" result="SHD"/>' +
+    '<feMerge result="lit3"><feMergeNode in="lit2"/><feMergeNode in="SHD"/></feMerge>' +
     // Warm steel, key ink to bone, as the ground.
-    `<feComponentTransfer in="lit2"><feFuncR ${ramp('0.118 0.24 0.45 0.66 0.84 0.93')}/><feFuncG ${ramp('0.11 0.22 0.42 0.62 0.8 0.89')}/><feFuncB ${ramp('0.102 0.2 0.37 0.55 0.72 0.8')}/></feComponentTransfer>` +
+    `<feComponentTransfer in="lit3"><feFuncR ${ramp('0.118 0.24 0.45 0.66 0.84 0.93')}/><feFuncG ${ramp('0.11 0.22 0.42 0.62 0.8 0.89')}/><feFuncB ${ramp('0.102 0.2 0.37 0.55 0.72 0.8')}/></feComponentTransfer>` +
     '<feComposite in2="SourceAlpha" operator="in"/>' +
     '</filter>'
   );
