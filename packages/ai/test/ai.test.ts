@@ -71,7 +71,7 @@ describe.each(LEVELS)('level %i', (level) => {
   });
 });
 
-describe.each([2, 3, 4, 5] as AiLevel[])('contested orbit (Prototyping), level %i', (level) => {
+describe.each([2, 3, 4, 5] as AiLevel[])('contested orbit (Regolith), level %i', (level) => {
   /**
    * On Alpha Sector (hex): player 0's 6 and a ship of the rest make a free planet's number in its
    * orbit, but player 1's 6 sits in it too. Player 0's 2 waits next to it outside the orbit; on a
@@ -79,7 +79,7 @@ describe.each([2, 3, 4, 5] as AiLevel[])('contested orbit (Prototyping), level %
    * conquest in the same turn.
    */
   function siege(): { s: GameState; planet: number } {
-    const base = quickStart(2, 1, 'prototyping', 'alpha-hex');
+    const base = quickStart(2, 1, 'regolith', 'alpha-hex');
     const planet = base.board.planets.find((q) => !q.start && !q.cubes.length)!;
     const orbit = orbitals(base.board, planet);
     const inOrbit = (q: { r: number; c: number }) => orbit.some((o) => o.r === q.r && o.c === q.c);

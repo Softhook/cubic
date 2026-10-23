@@ -1,12 +1,12 @@
 /**
  * The prototype kit: the engine APIs trusted experimental-mode code may use, in one file.
  * It holds the interface a prototype ship power plugs into (ShipHooks) and the engine helpers a power
- * may call. A prototype imports this file and nothing else from the engine (test/prototyping.test.ts checks
+ * may call. A prototype imports this file and nothing else from the engine (test/regolith.test.ts checks
  * the import convention). This is an architectural boundary, not a sandbox: hooks can mutate GameState,
  * so prototype code is trusted engine code.
  *
  * It re-exports the engine's building blocks whole, so a power can use any of them. When a power needs a
- * new kind of hook, add it to ShipHooks and read it where it applies in the engine (docs/PROTOTYPING.md §9).
+ * new kind of hook, add it to ShipHooks and read it where it applies in the engine (docs/regolith/PROTOTYPING.md §9).
  */
 import type { ShipDef } from './data';
 import type { Cell, Die, GameState } from './types';

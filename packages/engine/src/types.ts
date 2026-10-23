@@ -80,7 +80,7 @@ export interface PlayerState extends PlayerConfig {
   missiles: number;
   cubesLeft: number;
   /**
-   * Home shipyard (Prototyping): the planet this player may always deploy to. Their starting planet; when
+   * Home shipyard (Regolith): the planet this player may always deploy to. Their starting planet; when
    * their last cube there leaves, it goes with the cube (Relocation) or to another of their planets.
    */
   home?: number;

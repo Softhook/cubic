@@ -13,7 +13,7 @@ import { HomeScreenHint } from './HomeScreenHint';
 import { VersionLine } from './VersionLine';
 import { WhereIcon } from './WhereIcon';
 import { YourGames } from './YourGames';
-import { Field, MapPicker, ModeLabel, SeatRow } from './NewGameFields';
+import { Field, MapPicker, SeatRow } from './NewGameFields';
 import { INTRO_RISE_MS, useIntro } from './useIntro';
 import { MODE_KEY, PLAYER_COUNTS, isFriendSeat, mapKey, storedAiLevel, storedMap, storedMode } from './choices';
 
@@ -148,11 +148,7 @@ export function Lobby({
           </Field>
 
           <Field label="Rules" hint={RULESETS[mode].summary}>
-            <Segmented
-              options={MODES.map((m) => [m.id, <ModeLabel id={m.id} name={m.name} />] as const)}
-              value={mode}
-              onPick={chooseMode}
-            />
+            <Segmented className="rules-picker" options={MODES.map((m) => [m.id, m.name] as const)} value={mode} onPick={chooseMode} />
           </Field>
 
           <Field label="Players">

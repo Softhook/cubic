@@ -1,7 +1,7 @@
 /**
- * Prototyping mode (docs/PROTOTYPING.md, src/prototyping): Community Edition with movement capped at 3,
+ * Regolith mode (docs/regolith/PROTOTYPING.md, src/regolith): Community Edition with movement capped at 3,
  * zones of control (every ship pickets the spaces around it), a new power for the 5 (Shoot), which
- * replaces Manoeuvre, contested orbits, and over-conquest (an orbit of 12) when PROTOTYPING_OVER_CONQUEST is on. The first block checks that none of it reaches the official modes, and that the mode
+ * replaces Manoeuvre, contested orbits, and over-conquest (an orbit of 12) when REGOLITH_OVER_CONQUEST is on. The first block checks that none of it reaches the official modes, and that the mode
  * folder and the engine meet only at RULESETS and the prototype kit.
  *
  * Scenarios run on Alpha Sector, the basic map for 2 players (9×9; planets at rows/cols 1, 4, 7,
@@ -43,31 +43,27 @@ import {
 } from '../src';
 import { cubeLeft } from '../src/core';
 import { beginPlay } from '../src/turn';
-import { PROTOTYPING_CARDS, PROTOTYPING_CONTESTED_DEPLOY, PROTOTYPING_HOME_SHIPYARD, PROTOTYPING_OVER_CONQUEST } from '../src/prototyping';
-import { picket } from '../src/prototyping/powers/picket';
-import { shoot as shootPower, shootTargets } from '../src/prototyping/powers/shoot';
+import { REGOLITH_CARDS, REGOLITH_CONTESTED_DEPLOY, REGOLITH_HOME_SHIPYARD, REGOLITH_OVER_CONQUEST } from '../src/regolith';
+import { picket } from '../src/regolith/powers/picket';
+import { shoot as shootPower, shootTargets } from '../src/regolith/powers/shoot';
 import { allowMapGroups, arrange, quickStart } from './helpers';
 
 // Most of these rules were first written and pinned on the square Alpha Sector, which Regolith no longer plays
-// (it is hex only, docs/REGOLITH.md): this file lets it, as hex.test.ts lets Basic play the hex maps.
-allowMapGroups('prototyping', 'basic');
+// (it is hex only, docs/regolith/REGOLITH.md): this file lets it, as hex.test.ts lets Basic play the hex maps.
+allowMapGroups('regolith', 'basic');
 
 /**
- * `prototyping`: the mode on the square Alpha Sector. `hex`: Prototyping on Alpha Sector (hex), with axial cells
+ * `regolith`: the mode on the square Alpha Sector. `hex`: Regolith on Alpha Sector (hex), with axial cells
  * (docs/HEX.md): a space's sides are a row or column away, or (-1, +1) and (+1, -1).
  */
-const BASE: Record<'prototyping' | 'community' | 'hex', GameState> = {
-  prototyping: quickStart(2, 1, 'prototyping', 'alpha-sector'),
+const BASE: Record<'regolith' | 'community' | 'hex', GameState> = {
+  regolith: quickStart(2, 1, 'regolith', 'alpha-sector'),
   community: quickStart(2, 1, 'community'),
-  hex: quickStart(2, 1, 'prototyping', 'alpha-hex'),
+  hex: quickStart(2, 1, 'regolith', 'alpha-hex'),
 };
 
 /** Player 0 to act with 3 fresh actions, only the listed ships on the map, and the given skills. */
-function scenario(
-  dice: Record<string, [number, number, number]>,
-  mode: keyof typeof BASE = 'prototyping',
-  skills: string[] = [],
-): GameState {
+function scenario(dice: Record<string, [number, number, number]>, mode: keyof typeof BASE = 'regolith', skills: string[] = []): GameState {
   const s = structuredClone(BASE[mode]);
   for (const d of s.dice) if (d.loc.zone === 'board') d.loc = { zone: 'scrapyard' };
   for (const [id, [r, c, value]] of Object.entries(dice)) {
@@ -90,27 +86,27 @@ const shots = (s: GameState) =>
     .flatMap((a) => (a.type === 'power' && a.die === 'p0d0' && a.target ? [a.target] : []))
     .sort();
 
-describe('Prototyping mode', () => {
+describe('Regolith mode', () => {
   it('is listed after the official modes and plays like Community otherwise', () => {
-    expect(MODES.map((m) => m.id)).toEqual(['basic', 'original', 'community', 'prototyping'] satisfies GameMode[]);
-    const prototyping = rulesOf(BASE.prototyping);
+    expect(MODES.map((m) => m.id)).toEqual(['basic', 'original', 'community', 'regolith'] satisfies GameMode[]);
+    const regolith = rulesOf(BASE.regolith);
     const community = rulesOf(BASE.community);
-    expect(prototyping.name).toBe('Regolith');
-    expect(prototyping.cards).toBe(PROTOTYPING_CARDS ? community.cards : null);
-    expect(prototyping.mapGroups).toEqual(['hex', 'open', 'drift', 'basic']); // 'basic' only in this file: see BASE
+    expect(regolith.name).toBe('Regolith');
+    expect(regolith.cards).toBe(REGOLITH_CARDS ? community.cards : null);
+    expect(regolith.mapGroups).toEqual(['hex', 'open', 'drift', 'basic']); // 'basic' only in this file: see BASE
     const played = MAPS.filter((m) => ['hex', 'open', 'drift'].includes(m.group));
     expect(played.every((m) => m.grid === 'hex')).toBe(true);
     expect(played.map((m) => m.id)).toContain('twin-drift');
-    expect(prototyping.startingMissiles).toBe(1);
-    expect(prototyping.maxMovement).toBe(3);
-    expect(prototyping.overConquest).toBe(PROTOTYPING_OVER_CONQUEST);
-    expect(prototyping.contestedOrbit).toBe(true);
-    expect(prototyping.contestedDeploy).toBe(PROTOTYPING_CONTESTED_DEPLOY);
-    expect(prototyping.homeShipyard).toBe(PROTOTYPING_HOME_SHIPYARD);
-    expect(prototyping.ships[5].hooks).toEqual({ ...shootPower.hooks, ...picket.hooks });
-    expect(prototyping.ships[5].power).toBeUndefined();
-    expect([1, 2, 3, 4, 6].map((v) => prototyping.ships[v].power)).toEqual([1, 2, 3, 4, 6].map((v) => community.ships[v].power));
-    expect([1, 2, 3, 4, 5, 6].map((v) => prototyping.ships[v].name)).toEqual([
+    expect(regolith.startingMissiles).toBe(1);
+    expect(regolith.maxMovement).toBe(3);
+    expect(regolith.overConquest).toBe(REGOLITH_OVER_CONQUEST);
+    expect(regolith.contestedOrbit).toBe(true);
+    expect(regolith.contestedDeploy).toBe(REGOLITH_CONTESTED_DEPLOY);
+    expect(regolith.homeShipyard).toBe(REGOLITH_HOME_SHIPYARD);
+    expect(regolith.ships[5].hooks).toEqual({ ...shootPower.hooks, ...picket.hooks });
+    expect(regolith.ships[5].power).toBeUndefined();
+    expect([1, 2, 3, 4, 6].map((v) => regolith.ships[v].power)).toEqual([1, 2, 3, 4, 6].map((v) => community.ships[v].power));
+    expect([1, 2, 3, 4, 5, 6].map((v) => regolith.ships[v].name)).toEqual([
       'Breacher',
       'Behemoth',
       'Tactician',
@@ -118,7 +114,7 @@ describe('Prototyping mode', () => {
       'Sniper',
       'Wisp',
     ]);
-    for (const v of [1, 2, 3, 4, 5, 6]) expect(prototyping.ships[v].hooks?.stopsEnemies, `ship ${v}`).toBe(picket.hooks.stopsEnemies);
+    for (const v of [1, 2, 3, 4, 5, 6]) expect(regolith.ships[v].hooks?.stopsEnemies, `ship ${v}`).toBe(picket.hooks.stopsEnemies);
   });
 
   it('leaves the official modes alone: classic ships, no movement cap', () => {
@@ -165,27 +161,61 @@ describe('Prototyping mode', () => {
   };
   const imports = (f: string) => moduleSpecifiers(readFileSync(f, 'utf8'));
   const importedPath = (file: string, specifier: string) => resolve(dirname(file), specifier);
-  const inPrototyping = (f: string) => relative(src, f).startsWith('prototyping/');
-  const inPrototypingPath = (f: string) => {
+  const inRegolith = (f: string) => relative(src, f).startsWith('regolith/');
+  const inRegolithPath = (f: string) => {
     const path = relative(src, f);
-    return path === 'prototyping' || path.startsWith('prototyping/');
+    return path === 'regolith' || path.startsWith('regolith/');
   };
 
   it('is reached from the engine only through RULESETS (rulesets.ts)', () => {
     const importers = files(src)
-      .filter((f) => !inPrototyping(f))
-      .filter((f) => imports(f).some((i) => inPrototypingPath(importedPath(f, i))))
+      .filter((f) => !inRegolith(f))
+      .filter((f) => imports(f).some((i) => inRegolithPath(importedPath(f, i))))
       .map((f) => relative(src, f));
     expect(importers).toEqual(['rulesets.ts']);
   });
 
   it('uses the engine only through the prototype kit (prototype.ts)', () => {
-    for (const f of files(src).filter(inPrototyping)) {
+    for (const f of files(src).filter(inRegolith)) {
       for (const i of imports(f)) {
         const target = relative(src, importedPath(f, i)).replace(/\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs)$/, '');
-        expect(target === 'prototype' || target.startsWith('prototyping/'), `${relative(src, f)} imports ${i}`).toBe(true);
+        expect(target === 'prototype' || target.startsWith('regolith/'), `${relative(src, f)} imports ${i}`).toBe(true);
       }
     }
+  });
+
+  // So Regolith can leave for its own app one day (docs/regolith/REGOLITH.md): everything else asks the rule set, never the mode's id.
+  it('is named, by its id or its name, only in its folder, rulesets.ts and the GameMode type', () => {
+    const root = join(__dirname, '../../..');
+    const allowed = ['packages/engine/src/regolith/', 'packages/engine/src/rulesets.ts'];
+    const isGameMode = (node: ts.Node): boolean =>
+      !!node.parent && ((ts.isTypeAliasDeclaration(node.parent) && node.parent.name.text === 'GameMode') || isGameMode(node.parent));
+    const names = (text: string) => text.toLowerCase() === 'regolith';
+    const sources = ['packages/engine/src', 'packages/ai/src', 'packages/online/src', 'apps/web/src']
+      .flatMap((dir) => files(join(root, dir)))
+      .filter((f) => !allowed.some((a) => relative(root, f).startsWith(a)));
+    const named = sources.filter((f) => {
+      let found = false;
+      const visit = (node: ts.Node) => {
+        if (
+          (ts.isStringLiteralLike(node) && names(node.text) && !isGameMode(node)) ||
+          (ts.isPropertyAccessExpression(node) && names(node.name.text))
+        )
+          found = true;
+        ts.forEachChild(node, visit);
+      };
+      visit(ts.createSourceFile(f, readFileSync(f, 'utf8'), ts.ScriptTarget.Latest, true));
+      return found;
+    });
+    // Styles too, outside their comments: a mode's look keys on its rule set (`.experimental`), not its id.
+    const css = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? css(join(dir, e.name)) : e.name.endsWith('.css') ? [join(dir, e.name)] : [],
+      );
+    const styled = css(join(root, 'apps/web/src')).filter((f) =>
+      /regolith/i.test(readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')),
+    );
+    expect([...named, ...styled].map((f) => relative(root, f))).toEqual([]);
   });
 
   it('recognizes static, re-export, dynamic and require imports in the boundary check', () => {
@@ -199,14 +229,14 @@ describe('Prototyping mode', () => {
   });
 
   it('uses mode-configured regular-turn actions and research cap', () => {
-    const rules = RULESETS.prototyping;
+    const rules = RULESETS.regolith;
     const oldActions = rules.actionsPerTurn;
     const oldResearchLimit = rules.researchLimit;
     const oldCards = rules.cards;
     try {
       rules.actionsPerTurn = 2;
       rules.researchLimit = 4;
-      // Research needs cards, which Prototyping may be playing without (PROTOTYPING_CARDS): lend it Community's.
+      // Research needs cards, which Regolith may be playing without (REGOLITH_CARDS): lend it Community's.
       rules.cards = RULESETS.community.cards;
 
       const started = scenario({});
@@ -236,8 +266,8 @@ describe('movement cap', () => {
   });
 
   it('applies before skill bonuses: a 6 with Agile moves 4 (ruling 2026-10-08)', () => {
-    expect(farthest(scenario({ p0d0: [0, 0, 6] }, 'prototyping', ['agile']), 'p0d0')).toBe(4);
-    expect(farthest(scenario({ p0d0: [0, 0, 2] }, 'prototyping', ['agile']), 'p0d0')).toBe(3);
+    expect(farthest(scenario({ p0d0: [0, 0, 6] }, 'regolith', ['agile']), 'p0d0')).toBe(4);
+    expect(farthest(scenario({ p0d0: [0, 0, 2] }, 'regolith', ['agile']), 'p0d0')).toBe(3);
   });
 });
 
@@ -286,9 +316,9 @@ describe('zones of control (Picket on every ship)', () => {
 
   it('doesn’t stop a player with Devious, who may also pass through the ship', () => {
     // Devious passes (0,2), next to p1d0, and p1d0 itself for free: (0,4) is 3 steps from (0,0).
-    expect(reachable(scenario({ p0d0: [0, 0, 3], p1d0: [0, 3, 6] }, 'prototyping', ['devious']))).toContain('0,4');
+    expect(reachable(scenario({ p0d0: [0, 0, 3], p1d0: [0, 3, 6] }, 'regolith', ['devious']))).toContain('0,4');
     expect(reachable(scenario({ p0d0: [0, 0, 3], p1d0: [0, 3, 6] }))).not.toContain('0,4');
-    expect(reachable(scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, 6] }, 'prototyping', ['devious']))).toContain('0,4');
+    expect(reachable(scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, 6] }, 'regolith', ['devious']))).toContain('0,4');
     expect(reachable(scenario({ p0d0: [0, 2, 3], p1d0: [1, 3, 6] }))).not.toContain('0,4');
   });
 
@@ -318,7 +348,7 @@ describe('zones of control (Picket on every ship)', () => {
   });
 
   it('agrees with a plain reference search on random positions', () => {
-    const g = grid(BASE.prototyping.board);
+    const g = grid(BASE.regolith.board);
     const spaces = [...Array(g.size).keys()].filter((i) => g.space[i]);
     const random = mulberry32(42);
     for (let n = 0; n < 500; n++) {
@@ -435,13 +465,13 @@ describe('the way a ship flies (movePath)', () => {
 });
 
 describe('classic 5 ability is gone, 4 and 6 are kept', () => {
-  it('a Frigate can change and a Scout can reconfigure for free, as in Community', () => {
+  it('a Chameleon (4) can change and a Wisp (6) can reconfigure for free, as in Community', () => {
     const s = scenario({ p0d0: [0, 0, 4], p0d1: [0, 8, 6] });
     expect(offered(s, 'change').length).toBeGreaterThan(0);
     expect(offered(s, 'freeReconfigure').length).toBeGreaterThan(0);
   });
 
-  it('an Interceptor never moves diagonally', () => {
+  it('a Sniper (5) never moves diagonally, as a Community Interceptor does', () => {
     const s = scenario({ p0d0: [2, 2, 5] });
     expect([...moveOptions(s, 'p0d0').moves.values()].every((m) => !m.diagonal)).toBe(true);
     expect([...moveOptions(scenario({ p0d0: [2, 2, 5] }, 'community'), 'p0d0').moves.values()].some((m) => m.diagonal)).toBe(true);
@@ -454,7 +484,7 @@ describe('classic 5 ability is gone, 4 and 6 are kept', () => {
   });
 });
 
-describe('Shoot (5 Interceptor)', () => {
+describe('Shoot (5 Sniper)', () => {
   /** Shoots and fixes both combat rolls (lower total wins). */
   function shoot(s: GameState, target: string, attackerRoll: number, defenderRoll: number) {
     s = apply(s, { type: 'power', die: 'p0d0', target });
@@ -473,7 +503,7 @@ describe('Shoot (5 Interceptor)', () => {
     expect(at(s, 'p1d0').loc.zone).toBe('scrapyard');
     expect(at(s, 'p0d0').loc).toEqual({ zone: 'board', r: 0, c: 0 });
     expect(s.pending.some((p) => p.kind === 'advance')).toBe(false);
-    expect(s.players[0].dominance).toBeGreaterThan(BASE.prototyping.players[0].dominance);
+    expect(s.players[0].dominance).toBeGreaterThan(BASE.regolith.players[0].dominance);
   });
 
   it('is the ship’s one action: no move, attack or second shot after it', () => {
@@ -530,7 +560,7 @@ describe('Shoot (5 Interceptor)', () => {
     expect(shootTargets(s, at(s, 'p0d0')).map((d) => d.id)).toEqual(['p1d0']);
   });
 
-  it('only a Prototyping Interceptor can shoot', () => {
+  it('only Regolith’s 5, the Sniper, can shoot', () => {
     expect(shots(scenario({ p0d0: [0, 0, 4], p1d0: [0, 2, 3] }))).toEqual([]);
     const community = scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 3] }, 'community');
     expect(shots(community)).toEqual([]);
@@ -540,7 +570,7 @@ describe('Shoot (5 Interceptor)', () => {
 
 describe('contested orbit', () => {
   /** p0's ships making a free planet's number in its orbit, and `enemy` (p1's ship) in another of its spaces or beside the orbit. */
-  const siege = (mode: 'prototyping' | 'community' | 'hex', enemy: 'orbit' | 'outside' | 'none' = 'orbit') => {
+  const siege = (mode: 'regolith' | 'community' | 'hex', enemy: 'orbit' | 'outside' | 'none' = 'orbit') => {
     const base = BASE[mode];
     const planet = base.board.planets.find((q) => !q.start && !q.cubes.length)!;
     const [a, b, c] = orbitals(base.board, planet);
@@ -557,7 +587,7 @@ describe('contested orbit', () => {
   };
 
   it('stops a conquest while an enemy ship is in orbit, though the sum is made', () => {
-    for (const mode of ['prototyping', 'hex'] as const) {
+    for (const mode of ['regolith', 'hex'] as const) {
       const { s, planet } = siege(mode);
       const check = conquerCheck(s, 0, planet);
       expect(check, mode).toMatchObject({ ok: false, blocked: true, sum: s.board.planets[planet].number });
@@ -567,7 +597,7 @@ describe('contested orbit', () => {
   });
 
   it('lets it go ahead once the orbit is clear, or with the enemy ship beside the orbit', () => {
-    for (const mode of ['prototyping', 'hex'] as const) {
+    for (const mode of ['regolith', 'hex'] as const) {
       for (const enemy of ['none', 'outside'] as const) {
         const { s, planet } = siege(mode, enemy);
         expect(conquerCheck(s, 0, planet).ok, `${mode} ${enemy}`).toBe(true);
@@ -577,12 +607,12 @@ describe('contested orbit', () => {
   });
 
   it('never blocks a player’s own ships, nor Infamy', () => {
-    const { s, planet } = siege('prototyping');
+    const { s, planet } = siege('regolith');
     expect(conquerCheck(s, 1, planet)).not.toMatchObject({ blocked: true });
     expect(infamyTargets(s, 0).map((p) => p.id)).toContain(planet);
   });
 
-  it('is off outside Prototyping', () => {
+  it('is off outside Regolith', () => {
     const { s, planet } = siege('community');
     expect(conquerCheck(s, 0, planet).ok).toBe(true);
   });
@@ -596,19 +626,19 @@ describe('contested orbit', () => {
   });
 
   it('with Ingenious: an enemy on a corner doesn’t block, an own ship on a corner is blocked like the rest', () => {
-    const base = BASE.prototyping;
+    const base = BASE.regolith;
     const planet = base.board.planets.find((q) => !q.start && !q.cubes.length)!;
     const [o1, o2] = orbitals(base.board, planet);
     const [k1, k2] = diagonals(base.board, planet);
     const sum = { p0d0: [o1.r, o1.c, 6], p0d1: [k1.r, k1.c, planet.number - 6] } as Record<string, [number, number, number]>;
-    expect(conquerCheck(scenario({ ...sum, p1d0: [k2.r, k2.c, 3] }, 'prototyping', ['ingenious']), 0, planet.id).ok).toBe(true);
-    expect(conquerCheck(scenario({ ...sum, p1d0: [o2.r, o2.c, 3] }, 'prototyping', ['ingenious']), 0, planet.id).blocked).toBe(true);
+    expect(conquerCheck(scenario({ ...sum, p1d0: [k2.r, k2.c, 3] }, 'regolith', ['ingenious']), 0, planet.id).ok).toBe(true);
+    expect(conquerCheck(scenario({ ...sum, p1d0: [o2.r, o2.c, 3] }, 'regolith', ['ingenious']), 0, planet.id).blocked).toBe(true);
   });
 
   it('on off-centre maps, an enemy on a space two orbits share blocks both planets', () => {
     // Twin Drift only: Binary Reach, the square one, isn't played since Regolith went hex only.
     for (const map of ['twin-drift']) {
-      const base = quickStart(2, 1, 'prototyping', map);
+      const base = quickStart(2, 1, 'regolith', map);
       const shared = base.board.planets.flatMap((p) => orbitals(base.board, p)).find((c) => orbitedPlanets(base.board, c).length > 1)!;
       const planets = orbitedPlanets(base.board, shared);
       expect(planets.length, map).toBe(2);
@@ -622,7 +652,7 @@ describe('contested orbit', () => {
   });
 
   it('blocks over-conquest too, when that is on', () => {
-    const base = BASE.prototyping;
+    const base = BASE.regolith;
     const planet = base.board.planets.find((q) => !q.start && q.capacity >= 2)!;
     const [a, b, c] = orbitals(base.board, planet);
     const s = scenario({ p0d0: [a.r, a.c, 6], p0d1: [b.r, b.c, 6], p1d0: [c.r, c.c, 3] });
@@ -640,7 +670,7 @@ describe('contested orbit', () => {
   });
 });
 
-describe.runIf(PROTOTYPING_CONTESTED_DEPLOY)('deploying to a contested planet', () => {
+describe.runIf(REGOLITH_CONTESTED_DEPLOY)('deploying to a contested planet', () => {
   const deploys = (s: GameState) => offered(s, 'deploy').map((a) => (a.type === 'deploy' ? `${a.to.r},${a.to.c}` : ''));
   const ring = (s: GameState, planet: { id: number }) => orbitals(s.board, s.board.planets[planet.id]).map((c) => `${c.r},${c.c}`);
   const into = (s: GameState, planet: { id: number }) => new Set(deploys(s).filter((c) => ring(s, planet).includes(c))).size;
@@ -669,7 +699,7 @@ describe.runIf(PROTOTYPING_CONTESTED_DEPLOY)('deploying to a contested planet', 
   };
 
   it('keeps a player out of the orbit of their planet while an enemy ship is in it', () => {
-    for (const mode of ['prototyping', 'hex'] as const) {
+    for (const mode of ['regolith', 'hex'] as const) {
       const { s, planet } = colony(mode);
       expect(into(s, planet), mode).toBe(0);
       expect(tryApply(s, { type: 'deploy', die: 'p0d0', to: orbitals(s.board, planet)[1] }), mode).toBeNull();
@@ -679,24 +709,24 @@ describe.runIf(PROTOTYPING_CONTESTED_DEPLOY)('deploying to a contested planet', 
   });
 
   it('is never stopped by a player’s own ships in orbit', () => {
-    const base = BASE.prototyping;
-    const homeRing = ring(base, home('prototyping'));
+    const base = BASE.regolith;
+    const homeRing = ring(base, home('regolith'));
     const planet = base.board.planets.find((q) => !q.start && !ring(base, q).some((c) => homeRing.includes(c)))!;
     const [a] = orbitals(base.board, planet);
-    const { s } = colony('prototyping', false, { p0d1: [a.r, a.c, 6] });
+    const { s } = colony('regolith', false, { p0d1: [a.r, a.c, 6] });
     expect(into(s, planet)).toBeGreaterThan(0);
   });
 
   it('keeps Stealthy out of a contested orbit too', () => {
-    const base = BASE.prototyping;
+    const base = BASE.regolith;
     const planet = base.board.planets.find((q) => !q.cubes.includes(0))!;
     const [a] = orbitals(base.board, planet);
-    const s = scenario({ p1d0: [a.r, a.c, 6] }, 'prototyping', ['stealthy']);
+    const s = scenario({ p1d0: [a.r, a.c, 6] }, 'regolith', ['stealthy']);
     expect(deployTargets(s, 0).some((c) => ring(s, planet).includes(`${c.r},${c.c}`))).toBe(false);
   });
 
   it('knows each player’s home: the starting planet they chose', () => {
-    const s = structuredClone(BASE.prototyping);
+    const s = structuredClone(BASE.regolith);
     const mine = homePlanet(s, 0)!;
     expect(mine.start).toBe(true);
     expect(mine.cubes).toContain(0);
@@ -713,7 +743,7 @@ describe.runIf(PROTOTYPING_CONTESTED_DEPLOY)('deploying to a contested planet', 
     const elsewhere = (s: GameState) => s.board.planets.find((q) => !q.start && !q.cubes.length)!;
 
     it('to the planet Relocation puts it on, and the shipyard there', () => {
-      const s = structuredClone(BASE.prototyping);
+      const s = structuredClone(BASE.regolith);
       const from = homePlanet(s, 0)!.id;
       const to = elsewhere(s).id;
       const after = relocate(s, from, to);
@@ -722,7 +752,7 @@ describe.runIf(PROTOTYPING_CONTESTED_DEPLOY)('deploying to a contested planet', 
     });
 
     it('not while another of their cubes stays on it', () => {
-      const s = structuredClone(BASE.prototyping);
+      const s = structuredClone(BASE.regolith);
       const home = homePlanet(s, 0)!;
       s.board.planets[home.id].capacity = 2;
       s.board.planets[home.id].cubes.push(0);
@@ -730,18 +760,18 @@ describe.runIf(PROTOTYPING_CONTESTED_DEPLOY)('deploying to a contested planet', 
     });
 
     it('nor when a cube leaves another planet, and never becomes another player’s', () => {
-      const s = structuredClone(BASE.prototyping);
+      const s = structuredClone(BASE.regolith);
       const home = homePlanet(s, 0)!.id;
       const other = elsewhere(s);
       s.board.planets[other.id].cubes.push(0);
       const after = relocate(s, other.id, s.board.planets.find((q) => q !== other && !q.start && !q.cubes.length)!.id);
       expect(homePlanet(after, 0)!.id).toBe(home);
-      const moved = relocate(structuredClone(BASE.prototyping), home, other.id);
+      const moved = relocate(structuredClone(BASE.regolith), home, other.id);
       expect(homePlanet(moved, 1)!.id).not.toBe(home);
     });
 
     it('to another of their planets when over-conquest displaces it, or nowhere', () => {
-      const s = structuredClone(BASE.prototyping);
+      const s = structuredClone(BASE.regolith);
       const home = homePlanet(s, 0)!.id;
       const other = elsewhere(s).id;
       s.board.planets[other].cubes.push(0);
@@ -755,7 +785,7 @@ describe.runIf(PROTOTYPING_CONTESTED_DEPLOY)('deploying to a contested planet', 
   });
 
   it('a home shipyard stays open while contested, so a player is never shut out', () => {
-    for (const mode of ['prototyping', 'hex'] as const) {
+    for (const mode of ['regolith', 'hex'] as const) {
       const planet = home(mode);
       const [a] = orbitals(BASE[mode].board, planet);
       // Player 0 holds only its home, its whole fleet is in the scrapyard, and an enemy sits in that orbit.
@@ -767,33 +797,33 @@ describe.runIf(PROTOTYPING_CONTESTED_DEPLOY)('deploying to a contested planet', 
   });
 
   it('a home shipyard doesn’t open a player’s other planets, nor a rival’s home', () => {
-    const { s, planet } = colony('prototyping');
+    const { s, planet } = colony('regolith');
     shipyard(s, true, () => expect(into(s, planet)).toBe(0));
     const theirs = homePlanet(s, 1)!;
     expect(conquerCheck(s, 0, theirs.id).ok).toBe(false);
   });
 
-  it('is off outside Prototyping', () => {
+  it('is off outside Regolith', () => {
     const { s, planet } = colony('community');
     expect(into(s, planet)).toBeGreaterThan(0);
   });
 });
 
-describe.runIf(PROTOTYPING_OVER_CONQUEST)('over-conquest', () => {
-  const full = (mode: 'prototyping' | 'community') => {
+describe.runIf(REGOLITH_OVER_CONQUEST)('over-conquest', () => {
+  const full = (mode: 'regolith' | 'community') => {
     const s = scenario({ p0d0: [0, 1, 6], p0d1: [1, 0, 6] }, mode);
     const planet = s.board.planets.find((p) => p.cubes.length === 0)!;
     return { s, planet };
   };
 
-  it('is off outside Prototyping: a full planet cannot be conquered', () => {
+  it('is off outside Regolith: a full planet cannot be conquered', () => {
     const { s, planet } = full('community');
     planet.cubes.push(1, 1, 1, 1, 1, 1, 1, 1);
     expect(conquerCheck(s, 0, planet.id).ok).toBe(false);
   });
 
   it('needs a sum of 12 and displaces a chosen opponent cube', () => {
-    const base = scenario({}, 'prototyping');
+    const base = scenario({}, 'regolith');
     const planet = base.board.planets.find((q) => q.cubes.length === 0)!;
     const target = 12;
     const spots = orbitals(base.board, planet);
@@ -801,7 +831,7 @@ describe.runIf(PROTOTYPING_OVER_CONQUEST)('over-conquest', () => {
     for (let left = target; left > 0; left -= values[values.length - 1]) values.push(Math.min(6, left));
     const placed: Record<string, [number, number, number]> = {};
     values.forEach((v, i) => (placed[`p0d${i}`] = [spots[i].r, spots[i].c, v]));
-    const s = scenario(placed, 'prototyping');
+    const s = scenario(placed, 'regolith');
     const p = s.board.planets[planet.id];
     while (planetFreeSlots(p) > 0) p.cubes.push(1);
     const check = conquerCheck(s, 0, p.id);
@@ -815,14 +845,14 @@ describe.runIf(PROTOTYPING_OVER_CONQUEST)('over-conquest', () => {
     expect(after.board.planets[planet.id].cubes.filter((c) => c === 1)).toHaveLength(p.cubes.length - 1);
   });
   it('is also offered on a planet with room, next to a plain conquest', () => {
-    const base = scenario({}, 'prototyping');
+    const base = scenario({}, 'regolith');
     const planet = base.board.planets.find((q) => q.capacity >= 2)!;
     const spots = orbitals(base.board, planet);
     const values: number[] = [];
     for (let left = 12; left > 0; left -= values[values.length - 1]) values.push(Math.min(6, left));
     const placed: Record<string, [number, number, number]> = {};
     values.forEach((v, i) => (placed[`p0d${i}`] = [spots[i].r, spots[i].c, v]));
-    const s = scenario(placed, 'prototyping');
+    const s = scenario(placed, 'regolith');
     const p = s.board.planets[planet.id];
     p.cubes = [1];
     expect(planetFreeSlots(p)).toBeGreaterThan(0);

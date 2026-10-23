@@ -12,7 +12,7 @@ import { formatUsage, measurePowerUsage } from './powerUsage';
 
 const GAMES = Number(process.env.POWER_USAGE_GAMES ?? 1);
 const LEVEL = Number(process.env.POWER_USAGE_LEVEL ?? 2) as 1 | 2 | 3 | 4 | 5;
-const MODES: GameMode[] = ['basic', 'original', 'community', 'prototyping'];
+const MODES: GameMode[] = ['basic', 'original', 'community', 'regolith'];
 
 describe('power usage by mode', () => {
   for (const mode of MODES) {

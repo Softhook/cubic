@@ -1,35 +1,36 @@
-# Prototyping a Fourth Mode
+# Regolith's Rules: the Design Log
 
-How to build and evaluate **Prototyping**, our experimental rule set, alongside Basic, Classic, and Community.
+How we build and evaluate the rules of **Regolith**, our own rule set, alongside Basic, Classic, and Community. The
+mode was called Prototyping until October 2026; this log keeps the word for the work, not the mode.
 
 > **Design Thesis: From Arithmetic Sprint to Positional War**  
 > In base Quantum, hyper-mobility collapsed geography. Ships with 5–6 movement on compact boards crossed the map with ease, turning battles into isolated teleport raids and conquest into an arithmetic puzzle.  
-> **Prototyping aims to restore territorial gravity**: the current movement cap creates distance;
+> **Regolith aims to restore territorial gravity**: the current movement cap creates distance;
 > candidate powers and experiments explore zone control, forward logistics, and orbital superiority.
 
-Prototyping is becoming **Regolith**, its own hex-only game on Phobos, Deimos and Mars with its own
-screenprint cards, and takes that name in the lobby: [REGOLITH.md](REGOLITH.md).
-Nothing here is permanently adopted. Rulings go to [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) and, once decided, to [RULES.md](RULES.md).
+Regolith is becoming its own hex-only game on Phobos, Deimos and Mars, with its own screenprint cards:
+[REGOLITH.md](REGOLITH.md).
+Nothing here is permanently adopted. Rulings go to [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md) and, once decided, to [RULES.md](../RULES.md).
 
-> **Status key:** **Current** rules are enabled in the playable Prototyping mode and covered by
-> [prototyping.test.ts](../packages/engine/test/prototyping.test.ts). **Candidates** are described
-> design work or partially implemented building blocks; they do not change a Prototyping game until
-> they are registered in `PROTOTYPING_SHIPS` or `prototypingMode()`.
+> **Status key:** **Current** rules are enabled in the playable Regolith mode and covered by
+> [regolith.test.ts](../../packages/engine/test/regolith.test.ts). **Candidates** are described
+> design work or partially implemented building blocks; they do not change a Regolith game until
+> they are registered in `REGOLITH_SHIPS` or `regolithMode()`.
 
-## Current Prototyping baseline
+## Current Regolith baseline
 
-As of 2026-10-21, Prototyping is **Community Edition**, with only these changes:
+As of 2026-10-21, Regolith is **Community Edition**, with only these changes:
 
 | Status | Rule |
 |---|---|
-| **Current** | Community's **cards** (Skills, Tactics, research). `PROTOTYPING_CARDS` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) turns them off. |
-| **Current** | Plays the **hex** and **off-centre planet** maps (Twin Drift, Binary Reach) too, as well as Community's. On a hex map **Ingenious** ("conquer from the corners") is left out of the deck, as hex tiles have no corners (ruling 2026-10-20, [HEX.md](HEX.md) *Cards*). |
+| **Current** | Community's **cards** (Skills, Tactics, research). `REGOLITH_CARDS` in [regolith/index.ts](../../packages/engine/src/regolith/index.ts) turns them off. |
+| **Current** | Plays the **hex** and **off-centre planet** maps (Twin Drift, Binary Reach) too, as well as Community's. On a hex map **Ingenious** ("conquer from the corners") is left out of the deck, as hex tiles have no corners (ruling 2026-10-20, [HEX.md](../HEX.md) *Cards*). |
 | **Current** | A ship's die value contributes at most **3** movement; skill bonuses apply after that cap. |
 | **Current** | **Zones of control:** every ship pickets the 4 orthogonally adjacent spaces (the 6 sides on hex maps; not diagonals) as a mode rule, not a ship power. Diagonals were dropped (2026-10-12) because most ships can't attack diagonally from where they stop. An enemy ship that moves into one must stop there (it may still attack from there; one that starts its move there may leave). Friendly ships are never stopped, and a player with the **Devious** skill ignores zones (ruling 2026-10-12; the card text is unchanged). |
 | **Current** | The **5 Interceptor** replaces its diagonal Manoeuvre ability with **Shoot**: spend one action to attack the first enemy in a clear orthogonal line (one out of each of a hex's 6 sides on hex maps) without advancing. Shooting is that ship's action for the turn. |
 | **Current** | **Contested orbit** (§6.8, since 2026-10-21): a planet can't be conquered while an opponent's ship is in one of its orbital positions. Friendly ships never block, ships beside the orbit don't, and Infamy ignores it. |
-| **Current** | **Contested deploy** (§6.8, since 2026-10-21): no deploying into a planet's orbit while an opponent's ship is in it, by any route (Deploy, Expansion, Stealthy), **except to your own home planet** (home shipyard). `PROTOTYPING_CONTESTED_DEPLOY` and `PROTOTYPING_HOME_SHIPYARD` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) turn them off. |
-| **Off** | **Over-conquest** (§6.10): replacing an opponent's cube with an orbit of exactly **12**. Off since 2026-10-21; `PROTOTYPING_OVER_CONQUEST` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) turns it back on. |
+| **Current** | **Contested deploy** (§6.8, since 2026-10-21): no deploying into a planet's orbit while an opponent's ship is in it, by any route (Deploy, Expansion, Stealthy), **except to your own home planet** (home shipyard). `REGOLITH_CONTESTED_DEPLOY` and `REGOLITH_HOME_SHIPYARD` in [regolith/index.ts](../../packages/engine/src/regolith/index.ts) turn them off. |
+| **Off** | **Over-conquest** (§6.10): replacing an opponent's cube with an orbit of exactly **12**. Off since 2026-10-21; `REGOLITH_OVER_CONQUEST` in [regolith/index.ts](../../packages/engine/src/regolith/index.ts) turns it back on. |
 | **Unchanged** | Ships 1–3 retain their Community abilities. The **4 Frigate** retains Modify and the **6 Scout** retains Free Reconfigure. |
 
 Picket is active as the default zone-of-control rule for every ship rather than as the 4's power. Contested Orbit (§6.8) is current. Beacon and every other rule below are **candidates**, not current rules.
@@ -47,13 +48,13 @@ What the AI self-play says about this baseline is summarised in §8.
 6. [Future Experiments](#6-future-experiments-a-different-game-not-a-re-tuned-one)
 7. [Next Steps](#7-next-steps)
 8. [Current Status & Playtest Results](#8-current-status--playtest-results-2026-10-21)
-9. [Developer Guide: Working on Prototyping](#9-working-on-prototyping)
+9. [Developer Guide: Working on Regolith](#9-developer-guide-working-on-regolith)
 
 ---
 
 ## 1. How modes work today
 
-Every rule lives in [`packages/engine`](../packages/engine). A game is a pure function: take the
+Every rule lives in [`packages/engine`](../../packages/engine). A game is a pure function: take the
 state and an action, return the new state. The AI, the web UI, and online play only call
 `legalActions()` and `apply()`. Online, every browser replays the same moves through the same engine,
 so a new mode needs no network changes as long as it stays deterministic.
@@ -63,15 +64,15 @@ so a new mode needs no network changes as long as it stays deterministic.
   AI ──────┼── legalActions() / apply() ──▶  action handlers ──▶ rule questions ◀── RULESETS
   Online ──┘                                 (actions, combat,   (queries.ts:        (rulesets.ts:
                                               cards, turn)        movementRange,      Basic, Classic,
-                                                                  conquerCheck…)      Community, + Prototyping)
+                                                                  conquerCheck…)      Community, + Regolith)
 ```
 
-A mode is one entry in `RULESETS` ([rulesets.ts](../packages/engine/src/rulesets.ts)). The engine reads it
-through `rulesOf(state)` ([rules.ts](../packages/engine/src/rules.ts)) and never compares mode names. Today a `RuleSet` varies only these:
+A mode is one entry in `RULESETS` ([rulesets.ts](../../packages/engine/src/rulesets.ts)). The engine reads it
+through `rulesOf(state)` ([rules.ts](../../packages/engine/src/rules.ts)) and never compares mode names. Today a `RuleSet` varies only these:
 
-| Setting | Basic | Classic | Community | Prototyping |
+| Setting | Basic | Classic | Community | Regolith |
 |---|---|---|---|---|
-| Cards | none | Command + Gambit | Skills + Tactics | as Community (`PROTOTYPING_CARDS`) |
+| Cards | none | Command + Gambit | Skills + Tactics | as Community (`REGOLITH_CARDS`) |
 | Starting skill draft, peek, expansion pile | — | no | yes | yes |
 | Market refresh | — | yes | no | no |
 | Starting missiles | 0 | 0 | 1 | 1 |
@@ -88,13 +89,13 @@ through `rulesOf(state)` ([rules.ts](../packages/engine/src/rules.ts)) and never
 Two patterns make changes cheap:
 
 - **Single choke points.** Each rule question has one function in
-  [queries.ts](../packages/engine/src/queries.ts): `movementRange`, `deployTargets`, `conquerCheck`,
+  [queries.ts](../../packages/engine/src/queries.ts): `movementRange`, `deployTargets`, `conquerCheck`,
   `combatOutcome`, `breakthroughAt`, `infamyAt`. Change the function and every caller follows.
 - **Closed registries.** Actions, decisions, and skill effects are closed TypeScript unions. Add one
   without a handler and the build fails, pointing at the gap.
 
 Skills already work like small plugins: each is a set of hooks in
-[skillRules.ts](../packages/engine/src/skillRules.ts) (`movement`, `combat.modifier`, `startOfTurn`…).
+[skillRules.ts](../../packages/engine/src/skillRules.ts) (`movement`, `combat.modifier`, `startOfTurn`…).
 Prototype ship powers use the same pattern: `ShipHooks` (§9).
 
 ---
@@ -102,7 +103,7 @@ Prototype ship powers use the same pattern: `ShipHooks` (§9).
 ## 2. Worked example: ships move at most 3
 
 *This is how the cap was first planned. It is now built: `MAX_MOVEMENT` in
-[prototyping/index.ts](../packages/engine/src/prototyping/index.ts), read by `movementRange`. §9 details where
+[regolith/index.ts](../../packages/engine/src/regolith/index.ts), read by `movementRange`. §9 details where
 the mode's code lives today.*
 
 A ship's movement is calculated in one place:
@@ -115,10 +116,12 @@ export function movementRange(state: GameState, d: Die): number {
 ```
 
 The legal-move search (`moveOptions`, `carryOptions`), board highlights, both AI planners
-([greedy.ts](../packages/ai/src/greedy.ts), [evaluate.ts](../packages/ai/src/evaluate.ts)), and the
+([greedy.ts](../../packages/ai/src/greedy.ts), [evaluate.ts](../../packages/ai/src/evaluate.ts)), and the
 ship panel's "Moves N" label all call it.
 
-1. Add `'prototyping'` to `GameMode` in [data.ts](../packages/engine/src/data.ts).
+How the mode was first added (2026-10-08, as `'prototyping'`, since renamed):
+
+1. Add `'prototyping'` to `GameMode` in [data.ts](../../packages/engine/src/data.ts).
 2. Give `RuleSet` an optional `maxMovement?: number`.
 3. Add the mode, copying Community, and list it in `MODES`:
    ```ts
@@ -127,7 +130,7 @@ ship panel's "Moves N" label all call it.
    ```
 4. Cap the result in `movementRange`.
 5. Optional: a `.mode-badge.mode-prototyping` colour in `styles.css`, a row in the rulebook's mode table
-   ([Manual.tsx](../apps/web/src/rulebook/Manual.tsx)), and a scenario test.
+   ([Manual.tsx](../../apps/web/src/rulebook/Manual.tsx)), and a scenario test.
 
 About 15 lines; the three existing modes and their golden replays don't change.
 
@@ -144,24 +147,24 @@ Capping the total instead would make Agile useless on any ship showing 3 or more
 
 ## 3. How to test a new mode
 
-1. **Play it by hand.** `npm run dev`, then `localhost:5173/?play=prototyping&players=2&seed=7` skips the
-   lobby and starts a game against the AI ([devStart.ts](../apps/web/src/game/devStart.ts)). The same
+1. **Play it by hand.** `npm run dev`, then `localhost:5173/?play=regolith&players=2&seed=7` skips the
+   lobby and starts a game against the AI ([devStart.ts](../../apps/web/src/game/devStart.ts)). The same
    seed gives the same dice, so situations can be replayed after each tweak.
-2. **Pin each rule with a scenario.** `quickStart(2, 1, 'prototyping')` and `arrange()` in
-   [test/helpers.ts](../packages/engine/test/helpers.ts) set up exact positions. One test per rule,
-   as in [basic.test.ts](../packages/engine/test/basic.test.ts) and [prototyping.test.ts](../packages/engine/test/prototyping.test.ts).
-3. **Check it never breaks the engine.** Add `'prototyping'` to the modes in
-   [golden.test.ts](../packages/engine/test/golden.test.ts) and the consistency cross-check: seeded AI
+2. **Pin each rule with a scenario.** `quickStart(2, 1, 'regolith')` and `arrange()` in
+   [test/helpers.ts](../../packages/engine/test/helpers.ts) set up exact positions. One test per rule,
+   as in [basic.test.ts](../../packages/engine/test/basic.test.ts) and [regolith.test.ts](../../packages/engine/test/regolith.test.ts).
+3. **Check it never breaks the engine.** Add `'regolith'` to the modes in
+   [golden.test.ts](../../packages/engine/test/golden.test.ts) and the consistency cross-check: seeded AI
    games run `checkInvariants()` after every action, and `legalActions` and `apply` must agree.
 4. **Measure balance with AI self-play.**
-   - `npm run ai:match -- 3 3 100 prototyping 2`: turns per game and seat win rates. Compare with `community`.
-   - `npm run selfplay:cards -- 50 prototyping`: card win, pick, and use rates.
-   - `npm run power:usage -- 20 community,prototyping`: how often each ship's power is used, against
+   - `npm run ai:match -- 3 3 100 regolith 2`: turns per game and seat win rates. Compare with `community`.
+   - `npm run selfplay:cards -- 50 regolith`: card win, pick, and use rates.
+   - `npm run power:usage -- 20 community,regolith`: how often each ship's power is used, against
      how often it was on offer, per die value.
    - `npm run interaction -- 200 4,4`: how much the players get in each other's way (interaction ratio,
      harm by kind of action, conquests blocked), per mode and map, with and without cards
-     ([HEX.md](HEX.md) *Interaction*).
-   - [basic-sweep.ts](../scripts/basic-sweep.ts) is a template for flagging AI mistakes per mode.
+     ([HEX.md](../HEX.md) *Interaction*).
+   - [basic-sweep.ts](../../scripts/basic-sweep.ts) is a template for flagging AI mistakes per mode.
 
 **Still worth building:** a stats script that writes one CSV row per game: mode, turns, winner seat,
 attacks, conquers, and **moves per ship value**. `power:usage` covers power uses; moves per ship value
@@ -182,15 +185,15 @@ No up-front refactor is needed. Do each step when a rule needs it. Step 2 is don
 | 1 | Lift fixed numbers into `RuleSet`: actions per turn and research cap (done); remaining shared track and threshold rules | Variable tweaks | Small (partial) |
 | 2 | **Ship table per mode**: `RuleSet.ships` gives each value its name, movement, and power as hooks like `SkillRule` | §5, and factions in §6 | Medium (Done) |
 | 3 | Formula hooks on `RuleSet`: `combatOutcome`, `conquerCheck`, `deployTargets` | Supply (§6.2), conquer rules a flag can't express (contested orbit and over-conquest are flags) | Small–medium |
-| 4 | Win check as a hook, not fixed in `placeCube` ([core.ts](../packages/engine/src/core.ts)) | Points, round limits, planet economy (§6.3) | Medium |
+| 4 | Win check as a hook, not fixed in `placeCube` ([core.ts](../../packages/engine/src/core.ts)) | Points, round limits, planet economy (§6.3) | Medium |
 | 5 | Mode-owned player state (an extension field, not new fields on every player) | New resources, energy economy | Medium |
 | 6 | Mode-gated actions and decisions | Ship activations (§6.9), command dice (§6.4) | Medium–large |
 | 7 | AI scoring per mode | Trustworthy self-play evaluation | Medium |
 | 8 | UI driven by the rule set: ship names and powers, player tracks, generic decision dialogs | Showing dynamic rule sets on screen | Large |
 
 Step 2 mattered most for ship redesign and is complete. A ship's identity was formerly hard-coded as
-`d.value === N` across [abilities.ts](../packages/engine/src/abilities.ts), `moveOptions`, and
-[legal.ts](../packages/engine/src/legal.ts). Now each mode has a ship table (`RuleSet.ships`): the engine
+`d.value === N` across [abilities.ts](../../packages/engine/src/abilities.ts), `moveOptions`, and
+[legal.ts](../../packages/engine/src/legal.ts). Now each mode has a ship table (`RuleSet.ships`): the engine
 queries `hasPower(state, d, 'warp')` or reads a prototype's hooks, and the UI reads names and ability texts
 through `shipOf(state, value)`.
 
@@ -239,7 +242,7 @@ movement on maps typically only 6–9 spaces across:
 Only Shoot is active as a ship power. Picket's hook applies to every ship as the zone-of-control rule (2026-10-12),
 so it is not a power of the 4. Beacon is a candidate power with a source file and a reusable hook, not assigned to a ship.
 
-| Ship | Current Prototyping rule | Candidate | Intended role if activated |
+| Ship | Current Regolith rule | Candidate | Intended role if activated |
 |---|:-:|---|---|
 | **4 Frigate** | Move 3; **Modify** remains active | None registered. **Picket** (an enemy ship entering one of the orthogonally adjacent spaces must stop there) was its candidate; it is now every ship's zone of control. See §5.4 for powers the 4 could get instead. | Formerly: zone control |
 | **5 Interceptor** | Move 3; **Shoot** is active | — | Ranged pressure: threatens space without abandoning position |
@@ -272,7 +275,7 @@ adjacent to it, using that ship's normal movement (and attack) rules. Carry is r
 Is it overpowered? Probably not, but it needs a limit:
 - Carry costs the Flagship's move and forbids its attack; the passenger only relocates. Rally lets a
   ship act without spending the Flagship's move, so it is closer to a free extra activation: strictly stronger.
-- Under Prototyping's move-3 cap, this gives a second ship 3 moves for one action, which erodes the cap's
+- Under Regolith's move-3 cap, this gives a second ship 3 moves for one action, which erodes the cap's
   purpose and risks the hyper-mobility problem from 5.1.
 - Orthogonal adjacency is a real positional tax, and the Flagship is a single ship, so the effect is bounded.
 
@@ -419,7 +422,7 @@ AI self-play is the primary investment.
 **Why it's different.** Introduces reconnaissance, hidden fleet movements, and ambushes.
 
 **Caution.** Conflicts with Quantum's online architecture where all clients hold full game state
-([MULTIPLAYER.md](MULTIPLAYER.md)). Feasible for hot-seat play, but requires cryptographic commit-reveal
+([MULTIPLAYER.md](../MULTIPLAYER.md)). Feasible for hot-seat play, but requires cryptographic commit-reveal
 or trusted hosts for online games.
 
 ---
@@ -427,10 +430,10 @@ or trusted hosts for online games.
 ### 6.8 Contested orbit (orbital blockade): no conquering under enemy ships
 
 **Status: current since 2026-10-21** (`RuleSet.contestedOrbit`, `orbitBlockers` in
-[queries.ts](../packages/engine/src/queries.ts)), with over-conquest switched off. Rulings as proposed below:
+[queries.ts](../../packages/engine/src/queries.ts)), with over-conquest switched off. Rulings as proposed below:
 Infamy ignores the blockade, Ingenious corners don't block, and only opponents' ships in the orbital
 positions do. The AI counts each blocker as an attack before the conquest, by a ship of its own (`clearing`
-in [evaluate.ts](../packages/ai/src/evaluate.ts)). The board marks a planet whose orbit makes the sum but is
+in [evaluate.ts](../../packages/ai/src/evaluate.ts)). The board marks a planet whose orbit makes the sum but is
 blocked, and its info and the turn hint say why. With the Captain AI in every seat, 200 games per hex map
 (same seeds, against over-conquest without the blockade):
 
@@ -445,8 +448,8 @@ Most of it is the blockade: with over-conquest off and no blockade, games run as
 17–47% without the blockade. The AI barely parks ships in orbit on purpose, so with people, who will,
 games may well run longer.
 
-In the interaction measure ([HEX.md](HEX.md) *Interaction*, Admiral against Admiral on Alpha Sector),
-Prototyping blocks about one conquest a game (0.82 on squares, 1.00 on hexes, against 0.14–0.24 in the
+In the interaction measure ([HEX.md](../HEX.md) *Interaction*, Admiral against Admiral on Alpha Sector),
+Regolith blocks about one conquest a game (0.82 on squares, 1.00 on hexes, against 0.14–0.24 in the
 official modes), and about 40% of the harm players do each other comes from moves rather than attacks,
 against 11–14% in the official modes: zones of control, orbits taken and conquests blocked.
 
@@ -536,7 +539,7 @@ for 1 action, the same price as the attack that destroyed it, so a planet can be
 deploying (Deploy, Expansion, Unveil the Fleet, Stealthy, Beacon), and a space two orbits share is
 closed if either orbit is contested. Contested orbit now reads both ways: an enemy ship in orbit stops
 you conquering the planet *and* deploying to it. Built as `RuleSet.contestedDeploy`, read in
-`deployTargets` ([queries.ts](../packages/engine/src/queries.ts)); the deploy hint and planet info say why.
+`deployTargets` ([queries.ts](../../packages/engine/src/queries.ts)); the deploy hint and planet info say why.
 
 **Self-play** (Captain AI in every seat, 200 games per map and setting, the same seeds, 2026-10-21).
 *Re-blocks* are deploys into a contested orbit of one's own planet; a *lockout* is a turn starting with
@@ -569,10 +572,10 @@ normal planet: you may always deploy to it, contested or not. Opponents' ships i
 *other* players conquering it. A home moves with the cube: when a player's last cube on their home
 leaves, Relocation takes the home to the planet the cube goes to, and a cube displaced by over-conquest
 takes it to another planet with their cube (the first in map order), or none if they have no other.
-Neither card is in Prototyping today (Relocation is Classic's; over-conquest is off), so this only
+Neither card is in Regolith today (Relocation is Classic's; over-conquest is off), so this only
 matters if they come in. `RuleSet.homeShipyard`; the home is `PlayerState.home`, set when the starting
-planet is chosen, moved by `cubeLeft` ([core.ts](../packages/engine/src/core.ts)) and read through
-`homePlanet` ([queries.ts](../packages/engine/src/queries.ts)).
+planet is chosen, moved by `cubeLeft` ([core.ts](../../packages/engine/src/core.ts)) and read through
+`homePlanet` ([queries.ts](../../packages/engine/src/queries.ts)).
 
 Same games, with the home shipyard (*off* = no contested deploy; re-blocks at home in brackets):
 
@@ -599,8 +602,8 @@ Same games, with the home shipyard (*off* = no contested deploy; re-blocks at ho
 3. **Late arrival instead of a ban:** deploying is allowed, but a ship deployed into a contested orbit
    doesn't block until its owner's next turn. No lockout is possible; it needs a marker per ship.
 
-**Build (done).** `orbitBlockers` in [queries.ts](../packages/engine/src/queries.ts), read by
-`conquerCheck` behind `RuleSet.contestedOrbit`, so only Prototyping sees it. Infamy goes through a
+**Build (done).** `orbitBlockers` in [queries.ts](../../packages/engine/src/queries.ts), read by
+`conquerCheck` behind `RuleSet.contestedOrbit`, so only Regolith sees it. Infamy goes through a
 separate path and is unaffected. The AI has a term for attacking blockers (`clearing`) but not yet one
 for garrisoning its own planets, so self-play still understates the rule.
 
@@ -648,7 +651,7 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 
 ### 6.10 Off: over-conquest, a sum of 12 to displace a cube
 
-**Rule (off since 2026-10-21, `PROTOTYPING_OVER_CONQUEST`).** A player may conquer a planet that holds an opponent's cube by displacing that cube, whether or not the planet is full. A full planet is not locked out: this is the only way to take it. The requirement is one number to remember: the orbiting ships must sum to **exactly 12**, whatever the planet's printed value. (Doubling the value, 14 to 20, was tried first: those sums were too unlikely, and the AI almost never reached them.)
+**Rule (off since 2026-10-21, `REGOLITH_OVER_CONQUEST`).** A player may conquer a planet that holds an opponent's cube by displacing that cube, whether or not the planet is full. A full planet is not locked out: this is the only way to take it. The requirement is one number to remember: the orbiting ships must sum to **exactly 12**, whatever the planet's printed value. (Doubling the value, 14 to 20, was tried first: those sums were too unlikely, and the AI almost never reached them.)
 - On a planet with room, the ordinary conquest (printed value) stays available; over-conquest is the alternative that takes an opponent's cube instead of a free location.
 - Ships in orbit are still subject to orbital limits and standard conquer restrictions.
 - Upon success the player places their cube and chooses which opponent's cube to replace (if there is a choice). The displaced cube is returned to its owner's supply.
@@ -660,8 +663,8 @@ prevent runaway leaders, or does losing ships to the scrapyard create too steep 
 - **Target selection & diplomacy.** When multiple players share a full planet, the conqueror decides whose cube to eliminate, introducing tactical target selection.
 
 **Implementation status.** Built and switched off: `RuleSet.overConquest`, checked by `conquerCheck`,
-set from `PROTOTYPING_OVER_CONQUEST` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts).
-Its scenarios in [prototyping.test.ts](../packages/engine/test/prototyping.test.ts) run only while the
+set from `REGOLITH_OVER_CONQUEST` in [regolith/index.ts](../../packages/engine/src/regolith/index.ts).
+Its scenarios in [regolith.test.ts](../../packages/engine/test/regolith.test.ts) run only while the
 flag is on. The UI and legal actions offer replacement targets; AI valuation and a dedicated
 orbit-requirement display remain possible follow-up work. Worth turning back on only if games under
 the blockade end with planets nobody can take.
@@ -683,7 +686,7 @@ the blockade end with planets nobody can take.
 | **6.7 Fog of war** | Local vision ranges | Very high | Very large | Conflicts with online model |
 
 **Recommendation:**
-1. Keep the live Prototyping baseline: **movement cap 3 + Shoot + contested orbit (§6.8)**; over-conquest is off.
+1. Keep the live Regolith baseline: **movement cap 3 + Shoot + contested orbit (§6.8)**; over-conquest is off.
 2. Test **Kinetic ships (§6.1)** as an independent one-file experiment to explore movement-driven sums.
 3. If fleet expansion still feels underwhelming, evaluate **Ship activations (§6.9)** to unlock full
    multi-front command bandwidth.
@@ -693,13 +696,13 @@ the blockade end with planets nobody can take.
 ## 7. Next steps
 
 - [x] Rule on the movement cap: caps die value before skill bonuses and powers
-- [x] Add Prototyping mode with `maxMovement: 3` and scenario tests
-- [x] Add Prototyping to golden replay and consistency invariants
+- [x] Add Regolith mode with `maxMovement: 3` and scenario tests
+- [x] Add Regolith to golden replay and consistency invariants
 - [x] Refactor: ship table per mode (§4 step 2)
 - [x] Replace the 5's diagonal Manoeuvre ability with Shoot
 - [x] Add over-conquest at an orbit sum of 12
 - [x] Picket active as the default zone of control for all ships (2026-10-12)
-- [x] Hex and off-centre (drift) maps playable in Prototyping (2026-10-20)
+- [x] Hex and off-centre (drift) maps playable in Regolith (2026-10-20)
 - [x] Contested Orbit (§6.8), with the AI's `clearing` term and board marks (2026-10-21)
 - [x] Over-conquest switched off (2026-10-21)
 - [x] Measure interaction across modes and maps (`npm run interaction`, 2026-10-21)
@@ -719,7 +722,7 @@ the blockade end with planets nobody can take.
 
 ## 8. Current status & playtest results (2026-10-21)
 
-Prototyping is playable in the lobby, on Community's maps, the hex tiles and the off-centre maps. The
+Regolith is playable in the lobby, on Community's maps, the hex tiles and the off-centre maps. The
 authoritative current-rule summary is at the top of this document: Community Edition with a movement
 cap of 3, zones of control on every ship, Shoot for the 5, and contested orbit, which also closes the
 orbit to the defender's deploys except at their home planet; over-conquest is off.
@@ -746,7 +749,7 @@ The 4's Modify and the 6's Free Reconfigure are still active. Beacon is not enab
 - **Over-conquest** (off) is optional alongside an ordinary conquest when an opponent cube is present. It
   requires an orbit sum of exactly 12 and returns the replaced cube to its owner's reserve.
 
-Scenarios live in [prototyping.test.ts](../packages/engine/test/prototyping.test.ts).
+Scenarios live in [regolith.test.ts](../../packages/engine/test/regolith.test.ts).
 
 ### Playtest status
 
@@ -755,28 +758,28 @@ earlier Shoot) measured a different configuration and are not evidence for these
 
 | Date | What | Where | Finding |
 |---|---|---|---|
-| 2026-10-20 | Cap, zones of control, Shoot, cards, over-conquest; 20 games per map | [HEX.md](HEX.md) *First AI results* | Zones of control halve the fighting on hexes as on squares; Gamma (hex) no longer runs long; no game stalled. |
+| 2026-10-20 | Cap, zones of control, Shoot, cards, over-conquest; 20 games per map | [HEX.md](../HEX.md) *First AI results* | Zones of control halve the fighting on hexes as on squares; Gamma (hex) no longer runs long; no game stalled. |
 | 2026-10-21 | Contested orbit against over-conquest; 200 games per hex map | §6.8 | Games 2–3 rounds longer, fewer conquests, more attacks and Infamy; no game unfinished. |
 | 2026-10-21 | Contested deploy on and off; 200 games per map, 2–4 players | §6.8 | Ends the re-block loop (up to 10 a game with 4 players) and shortens games, but locks players out in 12–40% of 4-player games. With the home shipyard: no lockouts, and 60–85% of the loop still gone. |
-| 2026-10-21 | Interaction, all modes, Alpha Sector square and hex, with and without cards | [HEX.md](HEX.md) *Interaction* | Prototyping is the most interactive set (ratio 0.33 square, 0.39 hex, against 0.30 Classic), and its harm comes as much from moves as attacks. Cards make every mode more solitary. Neither hexes nor cards change how often the stronger AI wins. |
+| 2026-10-21 | Interaction, all modes, Alpha Sector square and hex, with and without cards | [HEX.md](../HEX.md) *Interaction* | Regolith is the most interactive set (ratio 0.33 square, 0.39 hex, against 0.30 Classic), and its harm comes as much from moves as attacks. Cards make every mode more solitary. Neither hexes nor cards change how often the stronger AI wins. |
 
 The open risk is stalls: the AI barely garrisons, so it may understate how long games run when people
 park ships in orbit on purpose.
 
 ---
 
-## 9. Developer guide: working on Prototyping
+## 9. Developer guide: working on Regolith
 
-Prototyping is isolated in a modular sandbox. Everything specific to the mode lives in
-[`packages/engine/src/prototyping/`](../packages/engine/src/prototyping). The core engine and web UI never hard-code
+Regolith is isolated in a modular sandbox. Everything specific to the mode lives in
+[`packages/engine/src/regolith/`](../../packages/engine/src/regolith). The core engine and web UI never hard-code
 its powers or mode name.
 
 ### File Layout
 
 ```
 packages/engine/src/
-  prototyping/
-    index.ts          mode definition: MAX_MOVEMENT, PROTOTYPING_SHIPS, prototypingMode()
+  regolith/
+    index.ts          mode definition: MAX_MOVEMENT, REGOLITH_SHIPS, regolithMode()
     powers/picket.ts  Picket's hooks, applied to every ship as the zone-of-control rule
     powers/shoot.ts   power text and hooks for Shoot (5)
     powers/beacon.ts  candidate power text and hooks for Beacon (not registered)
@@ -785,24 +788,24 @@ packages/engine/src/
 
 | To Change | File to Edit |
 |---|---|
-| Movement cap, mode summary, base rules | [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) |
-| Cards on/off, over-conquest on/off | `PROTOTYPING_CARDS`, `PROTOTYPING_OVER_CONQUEST` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) |
-| Contested deploy, home shipyard on/off | `PROTOTYPING_CONTESTED_DEPLOY`, `PROTOTYPING_HOME_SHIPYARD` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) |
-| Contested orbit | `contestedOrbit` in `prototypingMode()`; the rule itself is `orbitBlockers` in [queries.ts](../packages/engine/src/queries.ts) |
-| Which ship has which power, ship names | `PROTOTYPING_SHIPS` in [prototyping/index.ts](../packages/engine/src/prototyping/index.ts) |
-| A power's rules text, range, or hooks | Power file in [prototyping/powers/](../packages/engine/src/prototyping/powers) |
-| Add a power using existing hooks | New file in `powers/`, referenced in `PROTOTYPING_SHIPS` |
-| Add an engine helper to the kit | Re-export from [prototype.ts](../packages/engine/src/prototype.ts) |
-| Add a new kind of rule hook | Add to `ShipHooks` in [prototype.ts](../packages/engine/src/prototype.ts) |
+| Movement cap, mode summary, base rules | [regolith/index.ts](../../packages/engine/src/regolith/index.ts) |
+| Cards on/off, over-conquest on/off | `REGOLITH_CARDS`, `REGOLITH_OVER_CONQUEST` in [regolith/index.ts](../../packages/engine/src/regolith/index.ts) |
+| Contested deploy, home shipyard on/off | `REGOLITH_CONTESTED_DEPLOY`, `REGOLITH_HOME_SHIPYARD` in [regolith/index.ts](../../packages/engine/src/regolith/index.ts) |
+| Contested orbit | `contestedOrbit` in `regolithMode()`; the rule itself is `orbitBlockers` in [queries.ts](../../packages/engine/src/queries.ts) |
+| Which ship has which power, ship names | `REGOLITH_SHIPS` in [regolith/index.ts](../../packages/engine/src/regolith/index.ts) |
+| A power's rules text, range, or hooks | Power file in [regolith/powers/](../../packages/engine/src/regolith/powers) |
+| Add a power using existing hooks | New file in `powers/`, referenced in `REGOLITH_SHIPS` |
+| Add an engine helper to the kit | Re-export from [prototype.ts](../../packages/engine/src/prototype.ts) |
+| Add a new kind of rule hook | Add to `ShipHooks` in [prototype.ts](../../packages/engine/src/prototype.ts) |
 
 ### Defining a Power
 
 A power is a `PrototypePower` object combining UI metadata with optional engine hooks. The current
-implementation is [shoot.ts](../packages/engine/src/prototyping/powers/shoot.ts); the unregistered
+implementation is [shoot.ts](../../packages/engine/src/regolith/powers/shoot.ts); the unregistered
 Beacon candidate is a small passive example:
 
 ```ts
-// packages/engine/src/prototyping/powers/beacon.ts
+// packages/engine/src/regolith/powers/beacon.ts
 import { cellOf, surrounding, type PrototypePower } from '../../prototype';
 
 export const beacon: PrototypePower = {
@@ -818,8 +821,8 @@ export const beacon: PrototypePower = {
 
 ### Engine Integration & Hooks
 
-1. **One import.** `RULESETS.prototyping = prototypingMode(COMMUNITY)` in [rulesets.ts](../packages/engine/src/rulesets.ts)
-   is the only place in the main engine importing the `prototyping` folder. Engine modules read the rule set
+1. **One import.** `RULESETS.regolith = regolithMode(COMMUNITY)` in [rulesets.ts](../../packages/engine/src/rulesets.ts)
+   is the only place in the main engine importing the `regolith` folder. Engine modules read the rule set
    through `rulesOf` (rules.ts), which imports no mode, so the engine loads the same whichever module comes
    first (`load-order.test.ts`).
 2. **Hooks over names.** Ships have built-in official powers (`strike`, `transport`...) or
@@ -841,17 +844,17 @@ export const beacon: PrototypePower = {
 
 - **Complete isolation:** Official modes use `CLASSIC_SHIPS` with no hooks. Their code paths observe
   `undefined` for all hook lookups.
-- **Import boundary by convention:** Nothing in `engine` imports `prototyping` except `rulesets.ts`. The
-  `prototyping` folder imports nothing from `engine` except `prototype.ts`; `prototyping.test.ts` checks
+- **Import boundary by convention:** Nothing in `engine` imports `regolith` except `rulesets.ts`. The
+  `regolith` folder imports nothing from `engine` except `prototype.ts`; `regolith.test.ts` checks
   static and dynamic relative imports. This is not a sandbox: prototype hooks are trusted engine code
   and can mutate `GameState`.
 - **Golden test protection:** Golden replays for Basic, Classic, and Community must never change. Any
-  alteration indicates a leak. Only Prototyping replay snapshots may update (`npx vitest run golden -t prototyping -u`).
+  alteration indicates a leak. Only Regolith replay snapshots may update (`npx vitest run golden -t regolith -u`).
 
 ### Adding a New Hook
 
 Only add a new hook when no existing hook fits:
-1. Add the optional hook signature to `ShipHooks` in [prototype.ts](../packages/engine/src/prototype.ts).
+1. Add the optional hook signature to `ShipHooks` in [prototype.ts](../../packages/engine/src/prototype.ts).
 2. Name the hook after the **rule concept** (e.g. `stopsEnemies`), not the specific power name (`picket`).
 3. Read the hook via `hooksOf` in the single engine function it affects.
-4. Add a scenario test in [prototyping.test.ts](../packages/engine/test/prototyping.test.ts).
+4. Add a scenario test in [regolith.test.ts](../../packages/engine/test/regolith.test.ts).

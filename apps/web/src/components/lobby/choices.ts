@@ -19,7 +19,7 @@ export function storedAiLevel(): number {
 
 export function storedMode(): GameMode {
   const saved = stored(MODE_KEY);
-  return MODES.find((m) => m.id === saved || (saved === 'cubic' && m.id === 'prototyping'))?.id ?? 'community';
+  return MODES.find((m) => m.id === saved)?.id ?? 'community';
 }
 
 export function storedMap(players: number): string {

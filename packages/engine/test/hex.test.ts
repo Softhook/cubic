@@ -1,7 +1,7 @@
 /**
  * Hex maps (docs/HEX.md) on 7-hex tiles. The rules are the square game's; what changes is which spaces
  * are next to each other, how far apart they are, and what a diagonal is. The lobby offers them with the
- * Prototyping rules; the geometry is pinned down here with Basic's plain ones.
+ * Regolith rules; the geometry is pinned down here with Basic's plain ones.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -57,9 +57,9 @@ function scenario(dice: Record<string, [Cell, number]>): GameState {
 }
 
 describe('hex maps', () => {
-  it('are the basic maps for 2, 3 and 4 players, in Prototyping', () => {
+  it('are the basic maps for 2, 3 and 4 players, in Regolith', () => {
     expect(BASIC_HEX.map((m) => m.players)).toEqual([2, 3, 4]);
-    expect(RULESETS.prototyping.mapGroups).toContain('hex');
+    expect(RULESETS.regolith.mapGroups).toContain('hex');
     for (const m of BASIC_HEX) expect(mapStats(m)).toEqual(m.stats);
   });
 
@@ -197,7 +197,7 @@ describe('hex maps', () => {
   });
 
   it('leaves Ingenious (conquer from the corners) out of the deck, as hex tiles have no corners', () => {
-    const cards = (mapId: string, mode: GameMode = 'prototyping') => {
+    const cards = (mapId: string, mode: GameMode = 'regolith') => {
       const s = createGame({ players: players(2), seed: 1, mode, mapId });
       expect(checkInvariants(s)).toEqual([]);
       const { skillDeck, skillRow } = s.market;
@@ -211,7 +211,7 @@ describe('hex maps', () => {
   for (const m of HEX_MAPS)
     it(`plays out with AI players on ${m.name}`, () => {
       const { state } = playAiGame({
-        mode: 'prototyping',
+        mode: 'regolith',
         players: m.players,
         seed: 3,
         aiSeed: 7,

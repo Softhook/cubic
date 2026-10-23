@@ -7,15 +7,17 @@ export function Segmented<T extends string | number | boolean>({
   onPick,
   small,
   label,
+  className,
 }: {
   options: readonly (readonly [T, ReactNode])[];
   value: T;
   onPick: (v: T) => void;
   small?: boolean;
   label?: string;
+  className?: string;
 }) {
   return (
-    <div className={`segmented${small ? ' small' : ''}`} role="group" aria-label={label}>
+    <div className={`segmented${small ? ' small' : ''}${className ? ` ${className}` : ''}`} role="group" aria-label={label}>
       {options.map(([v, l]) => (
         <button type="button" key={String(v)} className={v === value ? 'on' : ''} aria-pressed={v === value} onClick={() => onPick(v)}>
           {l}

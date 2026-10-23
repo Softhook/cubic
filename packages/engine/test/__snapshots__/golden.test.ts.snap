@@ -81,28 +81,28 @@ exports[`golden master > original, 4 players, seed 13 1`] = `
 }
 `;
 
-exports[`golden master > prototyping, 2 players, seed 11 1`] = `
+exports[`golden master > regolith, 2 players, seed 11 1`] = `
 {
   "actions": "ac0e31fbfb6aecab",
-  "state": "bebae367b20f0ff3",
+  "state": "cd91b5ab50324c92",
   "steps": 115,
   "winner": 0,
 }
 `;
 
-exports[`golden master > prototyping, 3 players, seed 12 1`] = `
+exports[`golden master > regolith, 3 players, seed 12 1`] = `
 {
   "actions": "b621701f9dbd09eb",
-  "state": "446d3641398dc58f",
+  "state": "3b1c53d6493e0656",
   "steps": 211,
   "winner": 1,
 }
 `;
 
-exports[`golden master > prototyping, 4 players, seed 13 1`] = `
+exports[`golden master > regolith, 4 players, seed 13 1`] = `
 {
   "actions": "79c913d4a5fb5aa4",
-  "state": "88490d0cf3adb54b",
+  "state": "cce11397b169ee16",
   "steps": 293,
   "winner": 3,
 }

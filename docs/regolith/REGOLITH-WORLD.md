@@ -5,7 +5,7 @@ worth fighting over, and the words the game uses. Cards, scenes, the player aid,
 take their names and flavour from here; when a name changes, it changes here first.
 [REGOLITH.md](REGOLITH.md) is how the game is built; this is what it is about.
 
-The [mood board](moodboards/regolith/README.md)'s World and Mech roster boards show the same, and are where
+The [mood board](../moodboards/regolith/README.md)'s World and Mech roster boards show the same, and are where
 names get tried out (the roster's names are its Tweaks); a name settled there is copied here. Last synced
 from the canvas 22 October 2026.
 
@@ -66,7 +66,7 @@ rules. They are the starting point if Regolith ever tries asymmetric sides (PROT
 | 3 | Amber (`#ffb703`) | **Merika Free Port** | Traders and fixers from the volcanic highlands, who own the reactors and owe nobody. | Power, and the price of it |
 | 4 | Green (`#80ed99`) | **Austral Collective** | Farm settlements in the deep Hellas basin: the most people and the thirstiest crops. | Water, before the next harvest fails |
 
-The colours are `PLAYER_COLORS` in [theme.ts](../apps/web/src/theme.ts) (and `PLAYER_HUES` in the art package), the same in every mode. The sides are not in the game yet: players still name their own seats.
+The colours are `PLAYER_COLORS` in [theme.ts](../../apps/web/src/theme.ts) (and `PLAYER_HUES` in the art package), the same in every mode. The sides are not in the game yet: players still name their own seats.
 
 ## The six mechs
 
@@ -82,9 +82,9 @@ combat, higher is lighter and quicker. A refit re-rolls the die.
 | 5 | **Sniper** | Long-range gunner | *Shoot*: attack the first enemy in a clear straight line, without moving | Fires down a line of hexes from where it stands |
 | 6 | **Wisp** | Recon drone | *Free Refit*: re-roll for free | Cheap and fragile, swapped out without a second thought |
 
-**Silhouette reference:** [mech-silhouettes.jpg](moodboards/regolith/reference/mech-silhouettes.jpg), twelve
+**Silhouette reference:** [mech-silhouettes.jpg](../moodboards/regolith/reference/mech-silhouettes.jpg), twelve
 front views (reference only, not ours to print). The mechs should read apart by outline alone, in black, as
-these do. A second sheet, [mech-silhouettes-2.jpg](moodboards/regolith/reference/mech-silhouettes-2.jpg), has
+these do. A second sheet, [mech-silhouettes-2.jpg](../moodboards/regolith/reference/mech-silhouettes-2.jpg), has
 eight more, each beside a human figure for scale. Rows and columns of the first sheet count from the top left:
 
 | Mech | Closest silhouettes | What to take |
@@ -142,12 +142,12 @@ docs). Players only see "ability" today, so there is no clash on screen, but the
 
 ## In the game
 
-What a Regolith game shows today (the mode is still `prototyping` in the code):
+What a Regolith game shows today:
 
 - **The name**, in the lobby's mode menu and the game's top bar.
 - **The mech names and power texts**, everywhere a ship is named: board, sidebar, log, combat and the other
   overlays. They live in the mode's ship table (`SHIPS` in
-  [prototyping/index.ts](../packages/engine/src/prototyping/index.ts)), and the engine and web app ask the
+  [regolith/index.ts](../../packages/engine/src/regolith/index.ts)), and the engine and web app ask the
   game's rules for a name (`shipOf`, `shipName`), so Community games keep Battlestation to Scout.
 - **Hex maps only**, on Phobos's, Deimos's and Mars's ground.
 - **The words** in the table above, across the game's text: log, hints, cards, panels and errors

@@ -57,7 +57,7 @@ would make it easier to find one.
 
 **Status: left as is.** The level-1 AI breaks ties by the order in which `legalActions` lists
 actions, so a registry must list them in exactly today's order. Otherwise the golden replays for
-Basic, Classic and Community change, which [PROTOTYPING.md](PROTOTYPING.md) rules out. That can be
+Basic, Classic and Community change, which [PROTOTYPING.md](regolith/PROTOTYPING.md) rules out. That can be
 done, but it's fiddly, for a gain in maintainability only. The concrete risk, a handler and
 `legalActions` disagreeing, is caught by `consistency.test.ts`, which checks that `apply` accepts
 exactly what `legalActions` offers, decisions included.

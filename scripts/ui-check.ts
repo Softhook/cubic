@@ -11,7 +11,7 @@
 import { mkdirSync } from 'node:fs';
 import type { Page } from 'playwright';
 import { apply, legalActions, orbitals, say, type GameState } from '../packages/engine/src';
-import { PROTOTYPING_OVER_CONQUEST } from '../packages/engine/src/prototyping';
+import { REGOLITH_OVER_CONQUEST } from '../packages/engine/src/regolith';
 import { arrange, quickStart } from '../packages/engine/test/helpers';
 import { devServer, finish, launchChrome, playUrl, succeeds } from './mobile-common';
 
@@ -21,9 +21,9 @@ mkdirSync(OUT, { recursive: true });
 const load = (page: Page, state: unknown) => page.evaluate((st) => window.__quantum.load(st as GameState), state);
 const cubesOn = (page: Page, planet: number) => page.evaluate((id) => window.__quantum.state().board.planets[id].cubes, planet);
 
-/** A Prototyping position where the player to move can conquer a full planet by displacing either opponent's cube. */
+/** A Regolith position where the player to move can conquer a full planet by displacing either opponent's cube. */
 function overConquest() {
-  let s: GameState = quickStart(3, 1, 'prototyping');
+  let s: GameState = quickStart(3, 1, 'regolith');
   const me = s.turn.player;
   const planet = s.board.planets.find((p) => !p.cubes.length && p.capacity >= 2)!;
   const [a, b] = orbitals(s.board, planet);
@@ -39,10 +39,10 @@ function overConquest() {
   return { s, planet: target, me, victim: others[1] };
 }
 
-/** A Prototyping hex position where the player to move has a free planet's sum in orbit, but an enemy ship in it too (contested orbit). */
+/** A Regolith hex position where the player to move has a free planet's sum in orbit, but an enemy ship in it too (contested orbit). */
 function contested() {
   // 3 players, as the page and the other positions have.
-  let s: GameState = quickStart(3, 1, 'prototyping', 'beta-hex');
+  let s: GameState = quickStart(3, 1, 'regolith', 'beta-hex');
   const me = s.turn.player;
   const planet = s.board.planets.find((p) => !p.start && !p.cubes.length)!;
   const [a, b, c] = orbitals(s.board, planet);
@@ -79,11 +79,11 @@ const { base, close } = await devServer(5197);
 const browser = await launchChrome();
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
-  await page.goto(playUrl(base, { play: 'prototyping', players: 3 }));
+  await page.goto(playUrl(base, { play: 'regolith', players: 3 }));
   await page.waitForFunction(() => '__quantum' in window);
 
-  // Over-conquest with two opponents' cubes: the player chooses whose to displace (only while Prototyping plays it).
-  if (PROTOTYPING_OVER_CONQUEST) {
+  // Over-conquest with two opponents' cubes: the player chooses whose to displace (only while Regolith plays it).
+  if (REGOLITH_OVER_CONQUEST) {
     const { s, planet, me, victim } = overConquest();
     if (legalActions(s).filter((x) => x.type === 'conquer' && x.planet === planet.id).length !== 2)
       fail('the position does not offer two over-conquests');
@@ -104,7 +104,7 @@ try {
     if (count(after, victim) !== count(planet.cubes, victim) - 1 || count(after, me) !== 1) {
       fail(`displacing ${name}: the planet's cubes went from ${JSON.stringify(planet.cubes)} to ${JSON.stringify(after)}`);
     } else console.log(`✓ over-conquest: chose ${name}'s cube, and it was displaced`);
-  } else console.log('- over-conquest: off in Prototyping (PROTOTYPING_OVER_CONQUEST), not checked');
+  } else console.log('- over-conquest: off in Regolith (REGOLITH_OVER_CONQUEST), not checked');
 
   // Contested orbit: the planet is marked blocked, and tapping it says why instead of conquering.
   {
@@ -148,7 +148,7 @@ try {
   }
 
   // A position the screen can't draw: the crash screen, not a blank page, and a way back to the lobby.
-  await load(page, { ...quickStart(3, 1, 'prototyping'), dice: null }).catch(() => {});
+  await load(page, { ...quickStart(3, 1, 'regolith'), dice: null }).catch(() => {});
   const crash = page.locator('.crash');
   if (await succeeds(crash.waitFor({ timeout: 5000 }))) {
     await page.screenshot({ path: `${OUT}/crash.png` });

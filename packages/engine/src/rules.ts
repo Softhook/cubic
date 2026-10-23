@@ -71,7 +71,7 @@ export interface CardRules {
 
 /**
  * The rule sets by mode: rulesets.ts builds them (it needs the modes, which use the whole engine) and sets
- * them here. Importing rulesets.ts from this file would bring back an import cycle (rules → prototyping →
+ * them here. Importing rulesets.ts from this file would bring back an import cycle (rules → regolith →
  * the whole engine → rules) that crashed the engine when some modules were loaded first, so each module
  * that takes a state from outside (setup, engine, legal through engine, invariants) loads rulesets.ts
  * itself; load-order.test.ts checks each one alone.

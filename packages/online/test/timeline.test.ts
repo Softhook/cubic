@@ -1,16 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
-import {
-  actor,
-  apply,
-  checkInvariants,
-  legalActions,
-  defaultMap,
-  type GameMode,
-  type Action,
-  type GameState,
-  type PlayerId,
-} from '@quantum/engine';
+import { actor, apply, checkInvariants, legalActions, defaultMap, type Action, type GameState, type PlayerId } from '@quantum/engine';
 import { chooseAction, chooseCombatResponse } from '@quantum/ai';
 import {
   actBody,
@@ -105,28 +95,14 @@ function playOnline(browsers: Browser[], seed: number, maxTicks = 20000) {
 }
 
 describe('online timeline', () => {
-  it('migrates old Cubic create posts to the Prototyping mode', () => {
-    const g = create('alice', [seat('Alice'), seat('Bob')], [1], 7, 'prototyping');
-    const body = g.body;
-    if (body.t !== 'create') throw new Error('expected create post');
-    const legacy = {
-      ...g,
-      body: { ...body, config: { ...body.config, mode: 'cubic' as GameMode } },
-    };
+  it('says when the game was made by another version (a mode this one does not have)', () => {
     const t = new Timeline();
-    t.add(legacy);
-
-    const replay = t.replay()!;
-    expect(replay.config.mode).toBe('prototyping');
-    expect(head(replay).mode).toBe('prototyping');
-
-    const action = legalActions(head(replay))[0];
-    expect(action).toBeDefined();
-    const next = apply(head(replay), action!);
-    const oldHash = stateHash({ ...next, mode: 'cubic' as GameMode });
-    expect(stateHash(next)).toBe(oldHash);
-    t.add(post('alice', { t: 'act', seat: 0, action: action!, h: oldHash }, g.id));
-    expect(t.replay()?.desync).toBeNull();
+    expect(t.unreadable()).toBe(false);
+    const g = create('alice', [seat('Alice'), seat('Bob')], [1], 7, 'regolith');
+    if (g.body.t !== 'create') throw new Error('expected create post');
+    t.add({ ...g, body: { ...g.body, config: { ...g.body.config, mode: 'prototyping' as never } } });
+    expect(t.replay()).toBeNull();
+    expect(t.unreadable()).toBe(true);
   });
 
   it('two browsers and an AI play a whole game and end with the same game', { timeout: 60000 }, () => {

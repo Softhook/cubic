@@ -3,7 +3,7 @@ import { RULESETS, reword, say } from '../src';
 import { quickStart } from './helpers';
 
 describe("a mode's words", () => {
-  const words = RULESETS.prototyping.words;
+  const words = RULESETS.regolith.words;
 
   it('reads as Quantum in the official modes', () => {
     for (const mode of ['basic', 'original', 'community'] as const) expect(RULESETS[mode].words).toBeUndefined();
@@ -30,12 +30,12 @@ describe("a mode's words", () => {
   });
 
   it("keeps the players' names in a game's text", () => {
-    const s = quickStart(2, 1, 'prototyping', 'alpha-hex');
+    const s = quickStart(2, 1, 'regolith', 'alpha-hex');
     s.players[0].name = 'Ship Shape';
     expect(say(s, 'Ship Shape destroys a ship.')).toBe('Ship Shape destroys a mech.');
   });
 
   it('describes Regolith in its own words in the lobby', () => {
-    expect(RULESETS.prototyping.summary).not.toMatch(/\b(ships?|planets?|orbits?|conquer\w*|deploy\w*)\b/i);
+    expect(RULESETS.regolith.summary).not.toMatch(/\b(ships?|planets?|orbits?|conquer\w*|deploy\w*)\b/i);
   });
 });

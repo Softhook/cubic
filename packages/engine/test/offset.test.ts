@@ -299,7 +299,7 @@ describe('playing with off-centre planets', () => {
 describe('the drift maps', () => {
   const drift = MAPS.filter((m) => m.group === 'drift' || m.group === 'drift-square');
 
-  it('are a square and a hex map; Regolith (Prototyping), hex only, plays the hex one and no mode the square one', () => {
+  it('are a square and a hex map; Regolith, hex only, plays the hex one and no mode the square one', () => {
     expect(drift.map((m) => [m.id, m.grid ?? 'square'])).toEqual([
       ['binary-reach', 'square'],
       ['twin-drift', 'hex'],
@@ -308,7 +308,7 @@ describe('the drift maps', () => {
       Object.values(RULESETS)
         .filter((r) => r.mapGroups.includes(m.group))
         .map((r) => r.id);
-    expect(drift.map(playedBy)).toEqual([[], ['prototyping']]);
+    expect(drift.map(playedBy)).toEqual([[], ['regolith']]);
   });
 
   for (const m of drift) {
@@ -331,10 +331,10 @@ describe('the drift maps', () => {
       expect(spaces(b).filter((q) => orbitedPlanets(b, q).length > 1).length).toBeGreaterThanOrEqual(4);
     });
 
-    // Binary Reach, the square one, isn't played by any mode since Regolith (Prototyping) went hex only (docs/REGOLITH.md).
+    // Binary Reach, the square one, isn't played by any mode since Regolith went hex only (docs/regolith/REGOLITH.md).
     if (m.grid === 'hex')
-      it(`AI plays a Prototyping game on ${m.name} to the end`, () => {
-        const { state } = playAiGame({ mode: 'prototyping', players: 2, seed: 5, aiSeed: 7, mapId: m.id, levels: [2, 2] });
+      it(`AI plays a Regolith game on ${m.name} to the end`, () => {
+        const { state } = playAiGame({ mode: 'regolith', players: 2, seed: 5, aiSeed: 7, mapId: m.id, levels: [2, 2] });
         expect(state.winner).not.toBeNull();
       }, 60_000);
   }

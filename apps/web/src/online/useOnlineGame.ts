@@ -168,6 +168,8 @@ function usePostLog(secret: string) {
       batch.current = undefined;
       const r = timeline.replay();
       setReplay(r && { ...r, seats: r.seats.map((s) => ({ ...s })), steps: [...r.steps] });
+      if (timeline.unreadable())
+        setFailure('it was made with a different version of the app. Reload this page, and ask whoever made it to reload theirs.');
     }, 16);
   }, [timeline]);
   useEffect(() => () => window.clearTimeout(batch.current), []);

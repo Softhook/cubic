@@ -197,6 +197,14 @@ export class Timeline {
   }
 
   /**
+   * Whether a `create` post is known but none can start a game here: most likely made by another version of
+   * the app (another protocol, or a mode or map this one doesn't have), so this browser waits for nothing.
+   */
+  unreadable(): boolean {
+    return this.creates.length > 0 && !this.replay();
+  }
+
+  /**
    * Who owns each open seat: of those who claimed it, the earliest to claim it among those who have
    * played it, or the earliest to claim it if nobody has. So a seat that someone plays stays theirs:
    * a claim that arrives late (from a phone that was offline, or with a wrong clock) can't take it.
@@ -383,11 +391,9 @@ function start(g: Post): Replay | null {
     b.open.includes(b.creator)
   )
     return null;
-  const mode = String(b.config.mode) === 'cubic' ? 'prototyping' : b.config.mode;
-  const config = { ...b.config, mode };
   let state: GameState;
   try {
-    state = createGame({ players: config.players, mapId: config.mapId, mode: config.mode, seed: config.seed });
+    state = createGame({ players: b.config.players, mapId: b.config.mapId, mode: b.config.mode, seed: b.config.seed });
   } catch {
     return null;
   }
@@ -402,7 +408,7 @@ function start(g: Post): Replay | null {
   if (seats.some((s) => !s.ai && !s.open && s.id !== b.creator) || seats[b.creator].ai) return null;
   return {
     genesis: g,
-    config,
+    config: b.config,
     seats,
     steps: [{ state, post: null }],
     tip: g.id,

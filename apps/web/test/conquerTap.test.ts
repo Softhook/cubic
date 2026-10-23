@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { orbitals, type GameMode, type GameState, type PlayerId } from '@quantum/engine';
 import { arrange, quickStart } from '../../../packages/engine/test/helpers';
-import { PROTOTYPING_OVER_CONQUEST } from '../../../packages/engine/src/prototyping';
+import { REGOLITH_OVER_CONQUEST } from '../../../packages/engine/src/regolith';
 import { conquerOptions, conquerTap, legalFor } from '../src/game/legal';
 
 /**
@@ -37,15 +37,15 @@ describe('conquerTap', () => {
     expect(conquerTap(legalFor(s), planet)).toEqual({ type: 'conquer', planet });
   });
 
-  it.runIf(PROTOTYPING_OVER_CONQUEST)('asks how when a full planet holds two opponents’ cubes (over-conquest)', () => {
+  it.runIf(REGOLITH_OVER_CONQUEST)('asks how when a full planet holds two opponents’ cubes (over-conquest)', () => {
     const probe = position(
-      'prototyping',
+      'regolith',
       () => 12,
       () => [],
     );
     const capacity = probe.s.board.planets[probe.planet].capacity;
     const { s, planet, others } = position(
-      'prototyping',
+      'regolith',
       () => 12,
       (o) => fill(capacity, o),
     );
@@ -58,15 +58,15 @@ describe('conquerTap', () => {
     expect(conquerTap(legal, planet)).toBe('choose');
   });
 
-  it.runIf(PROTOTYPING_OVER_CONQUEST)('conquers at once when a full planet holds one opponent’s cubes', () => {
+  it.runIf(REGOLITH_OVER_CONQUEST)('conquers at once when a full planet holds one opponent’s cubes', () => {
     const probe = position(
-      'prototyping',
+      'regolith',
       () => 12,
       () => [],
     );
     const capacity = probe.s.board.planets[probe.planet].capacity;
     const { s, planet, others } = position(
-      'prototyping',
+      'regolith',
       () => 12,
       (o) => fill(capacity, [o[0]]),
     );

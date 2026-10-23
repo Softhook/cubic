@@ -1,6 +1,6 @@
 import type { Words } from '../prototype';
 
-/** How Quantum's words read in Regolith (docs/REGOLITH-WORLD.md, *The words*), as the UI shows them. */
+/** How Quantum's words read in Regolith (docs/regolith/REGOLITH-WORLD.md, *The words*), as the UI shows them. */
 export const REGOLITH_WORDS: Words = {
   ship: 'mech',
   ships: 'mechs',

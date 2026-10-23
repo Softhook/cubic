@@ -2,22 +2,11 @@
 
 import { type CSSProperties, type ReactNode, useMemo } from 'react';
 import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
-import { buildBoard, drawing, parseToken, tileCentres, type GameMode, type MapDef, type PlayerConfig } from '@quantum/engine';
+import { buildBoard, drawing, parseToken, tileCentres, type MapDef, type PlayerConfig } from '@quantum/engine';
 import { Segmented } from '../Segmented';
 import { remember } from '../../storage';
 import { pick } from '../../random';
 import { AI_LEVEL_KEY, isFriendSeat } from './choices';
-
-/** A mode's name for the rules picker: the long one is cut short on a phone, so the four fit across. */
-export function ModeLabel({ id, name }: { id: GameMode; name: string }) {
-  if (id !== 'prototyping') return name;
-  return (
-    <>
-      <span className="wide-only">{name}</span>
-      <span className="narrow-only">Proto</span>
-    </>
-  );
-}
 
 const MAP_GROUPS: { id: string; name: string }[] = [
   { id: 'basic', name: 'Basic' },

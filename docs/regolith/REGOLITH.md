@@ -6,7 +6,7 @@ It starts from the Community Edition cards and moves away from them, card by car
 action. This doc sets out the structure for that: where each part lives, what it reuses, and the order to
 build it in. It does not design the cards.
 
-The look comes from the [Regolith mood board](moodboards/regolith/README.md): the CardStyles, CardScale and
+The look comes from the [Regolith mood board](../moodboards/regolith/README.md): the CardStyles, CardScale and
 Vocabulary boards for the cards (flat inks on paper, three passes per part: colour plate, key ink, accent;
 mechs and objectives built from one kit), HexSurface for the ground.
 
@@ -36,26 +36,31 @@ there: this is a rename and a new identity, not new rules.
 
 ## 1. The rename
 
-There are no users to keep (no saved or online games to carry over), so the rename goes all the way down
-rather than only changing the label:
+Done (23 October 2026). There were no users to keep, so the rename went all the way down rather than only
+changing the label:
 
-- `GameMode` `'prototyping'` → `'regolith'` in [data.ts](../packages/engine/src/data.ts), `RULESETS.regolith`
-  in [rulesets.ts](../packages/engine/src/rulesets.ts), `name` and `title` "Regolith", a new `summary`.
-- `packages/engine/src/prototyping/` → `packages/engine/src/regolith/`; `prototypingMode()` → `regolithMode()`,
-  the `PROTOTYPING_*` switches → `REGOLITH_*`, `prototyping.test.ts` → `regolith.test.ts`.
-- The prototype kit ([prototype.ts](../packages/engine/src/prototype.ts)) keeps its name: it is the engine's
+- The mode's id is `'regolith'` (`GameMode` in [data.ts](../../packages/engine/src/data.ts), `RULESETS.regolith`
+  in [rulesets.ts](../../packages/engine/src/rulesets.ts)), its folder `packages/engine/src/regolith/` with
+  `regolithMode()` and the `REGOLITH_*` switches, its tests `regolith.test.ts`. The old ids (`'prototyping'`,
+  and `'cubic'` before it) are gone, aliases included: saved and online games under them are dropped.
+- The prototype kit ([prototype.ts](../../packages/engine/src/prototype.ts)) keeps its name: it is the engine's
   surface for experimental rules, whichever mode uses it.
-- Anything in the web app, AI, scripts and golden games that names the mode; the golden games are
-  refreshed once (`npx vitest run golden -u`).
-- PROTOTYPING.md stays the design log of the rules, retitled to say it is Regolith's, with links updated.
-  It keeps the word "prototyping" for the work, not the mode.
+- PROTOTYPING.md stays the design log of the rules, retitled as Regolith's, and keeps the word "prototyping" for the work, not the mode.
+- **Kept apart, for a later split.** So Regolith can one day leave for its own app on the shared packages,
+  only its folder, rulesets.ts and the `GameMode` type name it, by id or name; everything else asks the rule
+  set (`contestedOrbit`, `words`, `grid`, `experimental` for the badge's colour, …). `regolith.test.ts` checks
+  it across the engine, AI, online and web sources and the web app's styles, as it checks that the folder uses
+  the engine only through the kit. It reads text, so a check that gets at the mode some other way (by its
+  summary, say) passes it: review still matters.
+- **Other versions online.** A browser that gets an invite for a game it can't start (made by a version with
+  other modes, maps or protocol) says so and asks both players to reload, rather than "Game not found".
 
 ## 2. Maps: hex only
 
 - `regolithMode()` stops adding to `base.mapGroups` and sets its own: the hex group and the hex drift
   maps. Binary Reach (square, drift group) leaves the mode; it moves to a square group, or the drift group
   splits by grid.
-- Every hex map names its world in [data/maps.yaml](../data/maps.yaml). Today Alpha and Gamma Sector, Circular
+- Every hex map names its world in [data/maps.yaml](../../data/maps.yaml). Today Alpha and Gamma Sector, Circular
   Logic, Critical Density and Nexus (hex), Stickney Crater and Limtoc are `phobos`, Beta Sector, The Great
   Plan and Tesseract (hex) and Twin Drift are `deimos`, and the rest fall back to Mars; write them out so a map's world is a choice, not a default.
 - More hex maps (HEX.md *Not yet*: advanced, add-on, BGA layouts) go in the same group as they are made. Seven
@@ -91,10 +96,10 @@ Each card is a `CardDef` with the fields cards already have (`id`, `name`, `subt
   a new `effect`), `new` (no Community ancestor, no `from`).
 
 Ids are prefixed (`r-`) so they never collide with Community's or Classic's (`o-`).
-[build-data.mjs](../scripts/build-data.mjs) checks what it checks for `cards.yaml`, plus that every
+[build-data.mjs](../../scripts/build-data.mjs) checks what it checks for `cards.yaml`, plus that every
 `effect` is one the engine knows and that `status` agrees with `from` and `effect`.
 
-[data.ts](../packages/engine/src/data.ts) exports `REGOLITH_PERMANENT`, `REGOLITH_ONESHOT` and
+[data.ts](../../packages/engine/src/data.ts) exports `REGOLITH_PERMANENT`, `REGOLITH_ONESHOT` and
 `REGOLITH_EXPANSION` and adds them to `ALL_CARDS`; the prototype kit re-exports them for the mode.
 
 ## 4. Cards: rules
@@ -102,15 +107,15 @@ Ids are prefixed (`r-`) so they never collide with Community's or Classic's (`o-
 - `regolithMode()` sets `cards` to Regolith's decks, with Community's market settings (starting draft,
   peek, expansion pile, no refresh). `REGOLITH_CARDS` still switches cards off. `terms` names the decks.
 - **Renamed cards** need no rules work: the engine resolves a card through `effectOf`, and the AI values
-  cards by effect ([cardValues.ts](../packages/ai/src/cardValues.ts)).
+  cards by effect ([cardValues.ts](../../packages/ai/src/cardValues.ts)).
 - **Reworked and new cards** need new rules. Where an effect can be written as a hook, it goes in
   `packages/engine/src/regolith/cards/`, one file per effect, like
-  [powers/](../packages/engine/src/prototyping/powers), so Community's rules can't change by accident. That
+  [powers/](../../packages/engine/src/regolith/powers), so Community's rules can't change by accident. That
   needs a card-hook surface in the kit next to `ShipHooks` (PROTOTYPING.md §9 *Adding a New Hook*), built
   when the first reworked card needs it. An effect too tangled for a hook goes into the engine's effects
   like any card, registered in `IMPLEMENTED_EFFECTS`, and only Regolith's deck deals it.
 - Each new effect needs an AI value in `cardValues.ts`, a rule test, and a line in
-  [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) for every ruling made while writing it.
+  [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md) for every ruling made while writing it.
 
 ## 5. Cards: art (screenprint)
 
@@ -139,7 +144,7 @@ packages/art/src/
 - **Rules readouts stay one system:** action chips, combat dice and the other quantities keep their
   meaning from GRAPHICS.md *Cards*, redrawn as flat inks. A hexagon still means an action.
 - **The tag** reads `7/35 R`: position in the deck, then the set.
-- `CardDeck` in [card.ts](../packages/art/src/card.ts) gains Regolith's decks, and each deck says which
+- `CardDeck` in [card.ts](../../packages/art/src/card.ts) gains Regolith's decks, and each deck says which
   renderer draws it, so callers pick by deck, not by mode.
 - **Art follows the card, not its status.** While a card is still a Community copy its scene can be
   a plain screenprint of its category's mech or prop; it gets its own scene when it is renamed or reworked.
@@ -153,7 +158,7 @@ should agree with it; how far the tiles move towards flat inks is open, below.
 ## 6. Web
 
 - The lobby's mode menu lists Regolith where Prototyping was (it comes from `MODES`), with the hex maps.
-- [apps/web/src/art/cards.ts](../apps/web/src/art/cards.ts): `DECKS` gains Regolith's decks with
+- [apps/web/src/art/cards.ts](../../apps/web/src/art/cards.ts): `DECKS` gains Regolith's decks with
   `edition: 'regolith'`; `faceOf` finds their faces. The game shows the cards of the mode it plays.
 - On-screen cards (`cardImages`, `cardPalette`) render through the deck's renderer, so a Regolith game's
   market and hand show screenprint cards.
@@ -170,7 +175,7 @@ The names, words and story are kept in one place, [REGOLITH-WORLD.md](REGOLITH-W
 Sinkhole), the sides, and how each Quantum term reads in Regolith.
 
 The game says them everywhere (22 October 2026): `RuleSet.words` (engine `words.ts`) is the mode's
-vocabulary, REGOLITH-WORLD.md's table as `REGOLITH_WORDS` (`prototyping/words.ts`), and `reword` / `say`
+vocabulary, REGOLITH-WORLD.md's table as `REGOLITH_WORDS` (`regolith/words.ts`), and `reword` / `say`
 put a text in it, with its case and article ("a planet" → "an objective") and with players' names kept.
 The engine, its log and the card data stay in Quantum's words; the web app rewords what it shows: the
 log and toasts (`logText`), hints, rule errors, cards (`CardView`, through `useSay` from GameScreen),
@@ -184,17 +189,17 @@ A card renamed in its own deck can say the words itself; the rewording leaves th
 - While every card is a copy, a Regolith game plays move for move the same as one on Community's deck
   with the same seed; a test can hold that until the first card is reworked.
 - The golden games are refreshed whenever a card's action changes.
-- [card-audit.ts](../scripts/card-audit.ts) and [selfplay-cards.ts](../scripts/selfplay-cards.ts) run on
+- [card-audit.ts](../../scripts/card-audit.ts) and [selfplay-cards.ts](../../scripts/selfplay-cards.ts) run on
   Regolith's deck; results go in PROTOTYPING.md §8 like the other playtests.
 - The legal-move cross-check in `consistency.test.ts` plays a Regolith game.
 
 ## 9. Order of work
 
 1. **Rename and hex only.** Regolith in the lobby, the mode's id and folder, its map groups, every map's
-   world, the tests. *Partly done (22 October 2026):* the lobby and game say Regolith, the mode plays hex
+   world, the tests. *Partly done (22–23 October 2026):* the lobby and game say Regolith, the mode plays hex
    maps only (`grid: 'hex'` on its rule set, `playsMap` and `defaultMapFor` in rules.ts), and its ships carry
    the mech names, which the engine and web app take from the game's rules. Binary Reach is played by no
-   mode for now. Still to do: the id and folder rename, and every map's world written out.
+   mode for now. The id and folder are renamed (§1). Still to do: every map's world written out.
 2. **Own deck.** `data/regolith.yaml` as a copy of Community's, the build step, exports, `regolithMode()`
    dealing it, `DECKS` and the Art Lab listing it, drawn with today's `cardSvg` for now. The game plays
    as before, from its own deck.

@@ -117,7 +117,7 @@ function fuzz(mode: GameMode, seed: number) {
 }
 
 describe('malformed actions are refused, never crash the engine', () => {
-  for (const mode of ['basic', 'original', 'community', 'prototyping'] as const) {
+  for (const mode of ['basic', 'original', 'community', 'regolith'] as const) {
     it(mode, () => fuzz(mode, 41), 120_000);
   }
 });

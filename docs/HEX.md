@@ -2,7 +2,7 @@
 
 The game played on hexagonal tiles instead of 3×3 squares. The rules are unchanged; what changes
 is which spaces are next to each other, how far apart they are, and what counts as a diagonal. Pick a
-map from the **Hex tiles** group in the lobby with the **Prototyping** rules (only those, while hexes are
+map from the **Hex tiles** group in the lobby with the **Regolith** rules (only those, while hexes are
 being tried out; the tests pin the geometry down with Basic's). One card is left out on hexes: see *Cards*.
 
 ## The tiles
@@ -32,14 +32,14 @@ no planet.
 | 2 Flagship: carry a nearby ship and drop it next to you | the 8 surrounding spaces | the 6 touching hexes |
 | 5 Interceptor: move and attack diagonally (Basic, Classic, Community) | the 4 corner spaces, touching only at a corner | the 6 hexes two away that sit between two neighbours |
 | Warp Gates, Nomadic (not in Basic) | unchanged | unchanged (Nomadic's neighbouring tiles are the planets 3 hexes away) |
-| Prototyping's zones of control (Picket) | the 4 orthogonal spaces | the 6 hexes sharing a side |
-| Prototyping's 5 Interceptor: Shoot along a clear straight line | 4 lines, up, down, left, right | 6 lines, one out of each side |
+| Regolith's zones of control (Picket) | the 4 orthogonal spaces | the 6 hexes sharing a side |
+| Regolith's 5 Interceptor: Shoot along a clear straight line | 4 lines, up, down, left, right | 6 lines, one out of each side |
 
 **The Interceptor's diagonal.** A square's diagonal step covers two spaces of distance in one step and
 slips between two neighbours. The hex diagonal does the same: it is two hexes away, between the two
 hexes that touch both, and the Interceptor may take it even when both are occupied. So the 5 keeps
 the same edge it has on squares: it is never boxed in, and it attacks from one step farther away.
-Prototyping, the only rules the lobby offers hexes with, gives the 5 Shoot instead, so in play today the
+Regolith, the only rules the lobby offers hexes with, gives the 5 Shoot instead, so in play today the
 hex diagonal is only pinned down by the tests.
 
 **Conquering.** Six orbital positions mean up to six of your ships can count towards a planet's
@@ -114,7 +114,7 @@ On hexes ships meet more often: more neighbours, and every space is some planet'
 little longer, and Gamma's much longer (+29%), with conquests harder to finish among more fighting.
 Twenty games are too few to read anything into the seat wins.
 
-With the Prototyping rules, as the lobby offers hexes (moves capped at 3, zones of control, Shoot, Community
+With the Regolith rules, as the lobby offers hexes (moves capped at 3, zones of control, Shoot, Community
 cards without Ingenious on hexes), the same seeds, 20 October 2026:
 
 | Map | Rounds | Attacks | Conquers | Wins by seat |
@@ -143,7 +143,7 @@ player who acted and to what they did. The main measure:
 And counts of the board itself: turns starting with the two fleets at most 2 spaces apart, moves ending next to
 an enemy ship, turns with both players' ships in one planet's orbit, and turns where a player's orbit adds up to a
 planet's number but an enemy ship sits in it (a conquest blocked). The setups compare the hex board with the
-rules apart: Prototyping without cards is the same rules with `cards: null`.
+rules apart: Regolith without cards is the same rules with `cards: null`.
 
 Level 4 AI (Admiral) in both seats, Alpha Sector, 200 games per setup, the same seeds, 21 October 2026
 (`npm run interaction -- 200 4,4`):
@@ -165,23 +165,23 @@ Level 4 AI (Admiral) in both seats, Alpha Sector, 200 games per setup, the same 
 | Turns with a shared orbit | 22% | 23% | 21% | 35% | 31% | 40% | 34% |
 | Conquests blocked per game | 0.17 | 0.24 | 0.14 | 1.25 | 0.82 | 1.72 | 1.00 |
 
-- **Classic on squares is the most solitary.** The Prototyping rules on squares add a little interaction
+- **Classic on squares is the most solitary.** The Regolith rules on squares add a little interaction
   (0.30 → 0.33), the hex board as much again (0.39), with 45% more harm per turn than Classic: the fleets
   meet more, and twice as many moves end next to an enemy ship.
-- **The interaction changes kind.** In Classic three quarters of the harm is attacks. In Prototyping about
+- **The interaction changes kind.** In Classic three quarters of the harm is attacks. In Regolith about
   40% is moves: zones of control, orbits taken, conquests blocked (most of those are contested orbit's, §6.8
-  in [PROTOTYPING.md](PROTOTYPING.md)), the getting in each other's way the classic game lacks.
-- **Cards make every game more solitary.** With cards the games are about a third shorter in Prototyping,
+  in [PROTOTYPING.md](regolith/PROTOTYPING.md)), the getting in each other's way the classic game lacks.
+- **Cards make every game more solitary.** With cards the games are about a third shorter in Regolith,
   with half the battles and less contact, and the ratio falls by 0.04–0.05 in every rule set: cards harm the
   opponent (Tactics mostly), but they help their player about as much, so players race for conquests more
   than they fight.
-- **Cards weigh about twice as much in Prototyping as in Classic** (15–16% of the harm against 8%), as
+- **Cards weigh about twice as much in Regolith as in Classic** (15–16% of the harm against 8%), as
   Community's Skills and Tactics do more than Command and Gambit cards. Hexes don't change that.
 - The player who took more cards won 86–97% of games, but a player ahead has actions to spare for research,
   so that says little of what the cards do; the games without cards do.
 
 **Skill.** Level 4 against level 2 (`npm run interaction -- 200 2,4`), Admiral's wins: Basic 78%,
-Classic 84%, Prototyping without cards 82% (square) and 82% (hex), with cards 84% and 82%, each ±5. Neither
+Classic 84%, Regolith without cards 82% (square) and 82% (hex), with cards 84% and 82%, each ±5. Neither
 the hexes nor the cards make the stronger player win more or less often: they add neither luck nor
 skill that this measures.
 
@@ -226,7 +226,7 @@ square pad leaves 2.5 mm round it. The wells stay hexes, so a die can turn to fa
 
 The engine can place a tile's planet off its middle, on one of the spaces around it, on squares and
 hexes alike: a layout token takes a compass direction, `7ne` or `8s*` ([`data/maps.yaml`](../data/maps.yaml)).
-The **Off-centre planets** group in the lobby (Prototyping rules) has two maps that do (see *Drift maps*).
+The **Off-centre planets** group in the lobby (Regolith rules) has two maps that do (see *Drift maps*).
 
 | | Square tile | Hex tile |
 |---|---|---|

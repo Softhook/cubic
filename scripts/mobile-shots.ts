@@ -16,7 +16,7 @@
  * Then each device opens the in-game popups (`-combat`, `-changeOfHeart`, `-over`, `-rules`, see
  * POPUPS): the popup must fit the screen, and its buttons must be on screen without scrolling inside
  * it (Change of Heart and the rules scroll their content, so only their heading and × must show).
- * Each device also opens the lobby (`-lobby`): every control of the new-game form must be inside its card and on screen.
+ * Each device also opens the lobby (`-lobby`): every control of the new-game form must be inside its card, its segmented control and on screen.
  * On touch screens it also pinches, pans and fits the map on your turn (checkZoom; Chrome only).
  */
 import { mkdirSync } from 'node:fs';
@@ -281,7 +281,7 @@ async function checkPopups(newPage: () => Promise<Page>, base: string, device: s
 
 /**
  * The new-game form, played here and online: every control in the card is inside it and on screen (the four rule
- * sets once ran off the card of a 320px phone, without widening the page). Screenshot `-lobby`.
+ * sets once ran off the card of a 320px phone, without widening the page, and later out of their own control). Screenshot `-lobby`.
  */
 async function checkLobby(page: Page, device: string, base: string): Promise<string[]> {
   await page.goto(base);
@@ -297,7 +297,16 @@ async function checkLobby(page: Page, device: string, base: string): Promise<str
       return [...document.querySelectorAll('.lobby-card :is(button, select, input)')].flatMap((el) => {
         const r = el.getBoundingClientRect();
         if (!r.width) return [];
-        const out = r.left < Math.max(card.left, 0) - 1 || r.right > Math.min(card.right, innerWidth) + 1;
+        // Inside the card and on screen, inside its segmented control, and its text inside it.
+        // (The text by its own box: a button's enlarged tap area, ::after, widens its scrollWidth.)
+        const box = el.closest('.segmented')?.getBoundingClientRect() ?? card;
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const text = range.getBoundingClientRect();
+        const out =
+          r.left < Math.max(card.left, box.left, 0) - 1 ||
+          r.right > Math.min(card.right, box.right, innerWidth) + 1 ||
+          (text.width > 0 && (text.left < r.left - 1 || text.right > r.right + 1));
         return out ? [`"${(el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 30)}"`] : [];
       });
     });

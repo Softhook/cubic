@@ -19,7 +19,7 @@ function myTurn(s: GameState): GameState {
 
 describe('highlightsFor', () => {
   it('marks a planet blocked when its orbit makes the sum but an enemy ship is in it (contested orbit), and says why', () => {
-    const base = quickStart(2, 1, 'prototyping', 'alpha-hex');
+    const base = quickStart(2, 1, 'regolith', 'alpha-hex');
     const planet = base.board.planets.find((q) => !q.start && !q.cubes.length)!;
     const [a, b, c] = orbitals(base.board, planet);
     const sum = { p0d0: [a.r, a.c, 6], p0d1: [b.r, b.c, planet.number - 6] } as Record<string, [number, number, number]>;
@@ -79,7 +79,7 @@ describe('highlightsFor', () => {
 
   it('matches the legal actions in every action-phase position of full AI games', () => {
     let checked = 0;
-    for (const mode of ['basic', 'original', 'community', 'prototyping'] as const) {
+    for (const mode of ['basic', 'original', 'community', 'regolith'] as const) {
       playAiGame({
         mode,
         players: 2,

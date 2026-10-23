@@ -175,7 +175,7 @@ function playChecked(mode: GameMode, players: number, seed: number, mapId?: stri
 }
 
 describe('legal actions agree with the engine', () => {
-  for (const mode of ['basic', 'original', 'community', 'prototyping'] as const)
+  for (const mode of ['basic', 'original', 'community', 'regolith'] as const)
     for (const [players, seed] of DEEP
       ? [
           [2, 21],
@@ -192,7 +192,7 @@ describe('legal actions agree with the engine', () => {
         [4, 'gamma-hex'],
       ] as const)
     : ([[3, 'beta-hex']] as const))
-    it(`prototyping on ${mapId}, seed 22`, () => playChecked('prototyping', players, 22, mapId), DEEP ? 600_000 : 60_000);
+    it(`regolith on ${mapId}, seed 22`, () => playChecked('regolith', players, 22, mapId), DEEP ? 600_000 : 60_000);
   // Planets off the middle of their tiles: orbits that overlap, cross tiles and lose spaces at the edge.
   // Original has Nomadic and Ingenious, which read orbits and tiles their own way.
   for (const [mode, mapId] of [

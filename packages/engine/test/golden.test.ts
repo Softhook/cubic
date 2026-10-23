@@ -23,7 +23,7 @@ function play(mode: GameMode, players: number, seed: number) {
 }
 
 describe('golden master', () => {
-  for (const mode of ['basic', 'original', 'community', 'prototyping'] as const)
+  for (const mode of ['basic', 'original', 'community', 'regolith'] as const)
     for (const [players, seed] of [
       [2, 11],
       [3, 12],
