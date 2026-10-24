@@ -2,7 +2,8 @@ import { rng } from '../rng';
 import { dieCut, document, esc, n, type Box, type Fragment } from '../svg';
 import type { CardDeck, CardFace, CardOptions, Measure, MeasuredFont } from '../card';
 import { INKS, ON_NIGHT, ON_PAPER } from './inks';
-import { SP_FONTS, land, label, mech, paperGround, screens, sky, stencil, type Stage } from './kit';
+import { SP_FONTS, label, land, mech, paperGround, person, screens, sky, type Stage } from './kit';
+import type { MechKind } from './mechs';
 import { SCENES } from './scenes';
 
 /**
@@ -31,13 +32,16 @@ const PLATE: Record<string, string> = {
   card: INKS.dust,
 };
 
-/** The deck's name on its back, and whether it prints on night paper (one-shot and face-up decks). */
-const DECK: Record<CardDeck, { name: string; dark: boolean }> = {
-  skill: { name: 'Skill', dark: false },
-  command: { name: 'Command', dark: false },
-  tactic: { name: 'Tactic', dark: true },
-  gambit: { name: 'Gambit', dark: true },
-  expansion: { name: 'Expansion', dark: true },
+/**
+ * The deck's name on its back, the mech standing on it (at `size` mm per board unit, so each fills the back
+ * about as much as the next), and whether it prints on night paper (one-shot and face-up decks).
+ */
+const DECK: Record<CardDeck, { name: string; mech: MechKind; size: number; dark: boolean }> = {
+  skill: { name: 'Skill', mech: 'breacher', size: 0.13, dark: false },
+  command: { name: 'Command', mech: 'sniper', size: 0.14, dark: false },
+  tactic: { name: 'Tactic', mech: 'tactician', size: 0.13, dark: true },
+  gambit: { name: 'Gambit', mech: 'wisp', size: 0.17, dark: true },
+  expansion: { name: 'Reinforcements', mech: 'behemoth', size: 0.11, dark: true },
 };
 
 /** Words set bold in the rules: the game's terms, in Regolith's words. */
@@ -234,7 +238,11 @@ export function screenprintCardSvg(face: CardFace, o: CardOptions = {}): string 
   return finish(f, area, id, o);
 }
 
-/** A screenprint deck's back: the game's name over Mars and a Chameleon on its ground, on the deck's paper. */
+/** Lettering on a back, in the title face. */
+const title = (text: string, y: number, size: number, ink: string, spacing = 0) =>
+  `<text x="${n(W / 2)}" y="${n(y)}" font-family="${SP_FONTS.display}" font-weight="900" font-size="${n(size)}" letter-spacing="${n(spacing * size)}" fill="${ink}" text-anchor="middle">${esc(text)}</text>`;
+
+/** A screenprint deck's back: the game's name over Mars and the deck's mech facing out on its ground, a person beside it for scale, on the deck's paper. */
 export function screenprintBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure'> & { plain?: boolean } = {}): string {
   const id = o.idPrefix ?? `sp-back-${deck}`;
   const s = paperStage(deck, {
@@ -249,10 +257,10 @@ export function screenprintBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure
     paperGround(s) +
     sky(s, { planet: { x: W * 0.62, y: H * 0.3, r: 22 } }) +
     land(s, H * 0.7) +
-    mech(s, 'chameleon', W * 0.36, H * 0.72, 0.17, { yaw: 30 }) +
-    (o.plain
-      ? ''
-      : stencil('REGOLITH', W / 2, H * 0.88, 9, s.key) + label(DECK[deck].name.toUpperCase(), W / 2, H * 0.88 + 4.4, 2, s.key)) +
+    mech(s, DECK[deck].mech, W * 0.44, H * 0.72, DECK[deck].size) +
+    // The person is in the mech's units, so at its size they stand to scale.
+    person(W * 0.85, H * 0.72, DECK[deck].size, { facing: -1 }, s.key, s.paper) +
+    (o.plain ? '' : title('REGOLITH', H * 0.88, 9, s.key, 0.02) + title(DECK[deck].name.toUpperCase(), H * 0.88 + 4.6, 2.6, s.key, 0.16)) +
     `<rect x="3" y="3" width="${W - 6}" height="${H - 6}" fill="none" stroke="${s.key}" stroke-width="0.5"/>`;
   return finish({ defs: screens(s) + s.defs.join(''), body: rect(area, s.paper) + body }, area, id, o);
 }
