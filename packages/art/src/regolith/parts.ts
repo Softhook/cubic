@@ -1,6 +1,6 @@
 import { n, turbulence } from '../svg';
 import type { Spot } from '../tile/geometry';
-import { polar, stops, radial } from './core';
+import { polar, radial } from './core';
 
 /**
  * How a piece of a base is drawn: in layers (`Part`), with the height-map colours, gradients and small shapes
@@ -52,11 +52,6 @@ export const biohazard = (p: Spot) =>
 
 export const BUILDING_GRADIENTS =
   BIOHAZARD +
-  `<linearGradient id="rg-vault" x2="0" y2="1">${stops([
-    [0, 'rgb(165,255,120)'],
-    [0.5, 'rgb(225,255,150)'],
-    [1, 'rgb(165,255,120)'],
-  ])}</linearGradient>` +
   radial('rg-sphere', [
     [0, 'rgb(255,60,235)'],
     [0.8, 'rgb(228,60,215)'],
@@ -145,8 +140,11 @@ export const glow = (x: number, y: number, r: number, colour: string, opacity: n
 export const lamp = (x: number, y: number, colour: string) => glow(x, y, 3.2, colour, 0.75, 'rg-soft1') + disc(x, y, 1, '#fff6e0');
 
 /** A raised run (a tube, a pipe or a conduit) from a to b, `w` wide, coloured `colour`. */
-export function run(a: Spot, b: Spot, w: number, colour: string, height = H.pipe): Part {
-  const d = `M${n(a.x)},${n(a.y)} L${n(b.x)},${n(b.y)}`;
+export const run = (a: Spot, b: Spot, w: number, colour: string, height = H.pipe): Part =>
+  pipe(`M${n(a.x)},${n(a.y)} L${n(b.x)},${n(b.y)}`, w, colour, height);
+
+/** A raised run along the path `d`, `w` wide, coloured `colour`. */
+export function pipe(d: string, w: number, colour: string, height = H.pipe): Part {
   const line = (stroke: string, width: number, extra = '') =>
     `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${n(width)}" stroke-linecap="round"${extra}/>`;
   return {

@@ -1,18 +1,16 @@
 import type { Rng } from '../rng';
 import { n } from '../svg';
 import { cubePadCentres, numberCorner, type Spot } from '../tile/geometry';
-import { SPACE, SCALE, SIZE, inside, toward } from './core';
-import { H, biohazard, type Part, placed, type Drawn, merged, disc, graded, glow, run } from './parts';
+import { SPACE, SCALE, SIZE, inside, polar, toward } from './core';
+import { H, biohazard, type Part, placed, type Drawn, merged, disc, box, graded, glow, pipe, run } from './parts';
 import {
   hub,
   dome,
-  greenhouses,
   domelets,
   solar,
   tankFarm,
   flares,
   stack,
-  columns,
   pit,
   rig,
   silos,
@@ -172,14 +170,89 @@ function outskirts(
   return out;
 }
 
+/** A straight side of a hub's deck, from `a` to `b`, facing `out`. */
+interface Side {
+  a: Spot;
+  b: Spot;
+  out: Spot;
+}
+
+/**
+ * The sides of a hub's deck round its sockets (as `hub` draws it, 15 past them): a box round two, or the
+ * three squares' own shape round three, its stem down the middle; none round others.
+ */
+function hubSides(pads: readonly Spot[]): Side[] {
+  const side = (ax: number, ay: number, bx: number, by: number, ox: number, oy: number): Side => ({
+    a: { x: ax, y: ay },
+    b: { x: bx, y: by },
+    out: { x: ox, y: oy },
+  });
+  if (pads.length === 2) {
+    const [X, Y] = [Math.max(...pads.map((p) => p.x)) + 15, Math.max(...pads.map((p) => p.y)) + 15];
+    return [side(-X, -Y, X, -Y, 0, -1), side(X, -Y, X, Y, 1, 0), side(-X, Y, X, Y, 0, 1), side(-X, -Y, -X, Y, -1, 0)];
+  }
+  if (pads.length !== 3) return [];
+  const [left, right, below] = pads;
+  const [e, X, T, B1, B2] = [15, (right.x - left.x) / 2 + 15, left.y - 15, left.y + 15, below.y + 15];
+  return [
+    side(-X, T, X, T, 0, -1),
+    side(X, T, X, B1, 1, 0),
+    side(e, B1, X, B1, 0, 1),
+    side(e, B1, e, B2, 1, 0),
+    side(-e, B2, e, B2, 0, 1),
+    side(-e, B1, -e, B2, -1, 0),
+    side(-X, B1, -e, B1, 0, 1),
+    side(-X, T, -X, B1, -1, 0),
+  ];
+}
+
+/**
+ * Where a pipe the way out `a` toward `p` leaves the hub: on the side the way out crosses last, where it's
+ * nearest `p`, clear of the side's ends.
+ */
+function leaving(sides: readonly Side[], a: number, p: Spot): { s: Spot; out: Spot } {
+  const way = polar(a, 1);
+  let last: { t: number; side: Side } | undefined;
+  for (const side of sides) {
+    const t = side.out.x ? side.a.x / way.x : side.a.y / way.y;
+    if (!(t > 0) || !Number.isFinite(t)) continue;
+    const along = side.out.x ? t * way.y : t * way.x;
+    const [lo, hi] = side.out.x ? [side.a.y, side.b.y] : [side.a.x, side.b.x];
+    if (along >= lo && along <= hi && (!last || t > last.t)) last = { t, side };
+  }
+  const { a: from, b: to, out } = last!.side;
+  const [lo, hi] = out.x ? [from.y, to.y] : [from.x, to.x];
+  const m = Math.min(8, (hi - lo) / 2);
+  const along = Math.max(lo + m, Math.min(hi - m, out.x ? p.y : p.x));
+  return { s: out.x ? { x: from.x, y: along } : { x: along, y: from.y }, out };
+}
+
+/** A collar on a hub's side at `s`, facing `out`, round a pipe `w` wide: a block as high as its deck, coloured `deck`, drawn over the hub so the pipe goes in under it. */
+function collar(s: Spot, out: Spot, w: number, deck: string): Part {
+  const c = { x: s.x + out.x * 1.5, y: s.y + out.y * 1.5 };
+  const block = (grow: number, fill: string) =>
+    out.x ? box(c.x, c.y, 5 + grow, w + 3 + grow, 1, fill) : box(c.x, c.y, w + 3 + grow, 5 + grow, 1, fill);
+  return { heights: block(1.5, H.apron) + block(0, H.deck), tint: block(0.5, deck) };
+}
+
+/**
+ * A pipe out of a hub's side at `s`, facing `out`, to `p`, `w` wide: from just under the side, straight out
+ * of it, then curving round to `p`.
+ */
+function elbow(s: Spot, out: Spot, p: Spot, w: number, colour: string): Part {
+  const reach = 0.6 * Math.abs(out.x * (p.x - s.x) + out.y * (p.y - s.y));
+  const at = (k: number) => `${n(s.x + out.x * k)},${n(s.y + out.y * k)}`;
+  return pipe(`M${at(-4)} L${at(0)} Q${at(reach)} ${n(p.x)},${n(p.y)}`, w, colour);
+}
+
 /** How many outbuildings a base has: one to four, two or three most often. */
 const SPREAD = [1, 1, 2, 2, 2, 3, 3, 3, 4];
 
 /**
  * The base on a planet's space, after the planets' own colours: a hub round its cube sockets (one per cube
  * the planet holds), and a few outbuildings out in the hexes round it, joined to it, a different few on
- * each tile: for a 7 a habitat under a great green dome, with violet greenhouses, blue domes and solar
- * panels; for an 8 a refinery, gold tanks and burning flare stacks; for a 9 an ice mine in a ring of frost,
+ * each tile: for a 7 a habitat under a great green dome, with blue domes and solar panels;
+ * for an 8 a refinery, gold tanks and burning flare stacks; for a 9 an ice mine in a ring of frost,
  * its pit glowing blue; for a 10 a black reactor with red-hot cooling towers; any of them with a landing
  * pad, containers or a dish; and on a Void tile a sinkhole ringed by violet crystals, its cracks glowing.
  * Centred on the planet's space, in board units. `at` is where the planet sits on its tile (in spaces from
@@ -198,8 +271,19 @@ export function base(number: number, at: Spot, r: Rng): Drawn | undefined {
     taken.push({ x: 0, y: 0, r: hubReach });
     return incidentals(r.fork('incidentals'), centre, taken, links, hubReach, light);
   };
-  // Links start at the hub's edge, so none crosses the cube sockets.
-  const tube = (w: number, colour: string) => (a: number, p: Spot) => run(toward(a, 0.3), p, w * r.range(0.8, 1.2), colour);
+  // Pipes run in under the hub (drawn over them): out of a hub's side square on, through a collar (drawn
+  // over the hub, in `collars`), curving round to what they feed; or, where it has no sides (a dome or a
+  // reactor over it), from the middle.
+  const sides = number === 8 || number === 9 ? hubSides(pads) : [];
+  const deck = number === 9 ? '#c4ced4' : '#a59c90';
+  const collars: Part[] = [];
+  const tube = (w: number, colour: string) => (a: number, p: Spot) => {
+    const width = w * r.range(0.8, 1.2);
+    if (!sides.length) return run({ x: 0, y: 0 }, p, width, colour);
+    const { s, out } = leaving(sides, a, p);
+    collars.push(collar(s, out, width, deck));
+    return elbow(s, out, p, width, colour);
+  };
   const road = (a: number, p: Spot): Part => {
     const d = `M${n(toward(a, 0.3).x)},${n(toward(a, 0.3).y)} L${n(p.x)},${n(p.y)}`;
     return {
@@ -231,7 +315,6 @@ export function base(number: number, at: Spot, r: Rng): Drawn | undefined {
       const great = r.range(25, 30);
       return merged([
         ...outskirtsOf(great + 2.5, [
-          annex(2, [0.74, 0.84], tube(6, '#a7b0b6'), greenhouses, 1.15, true),
           annex(1.5, [0.64, 0.74], tube(6, '#a7b0b6'), domelets, BIG, true),
           annex(1.5, [0.7, 0.8], tube(2.5, '#8d969c'), solar, BIG, true),
           ...common('#7dffb0'),
@@ -247,10 +330,10 @@ export function base(number: number, at: Spot, r: Rng): Drawn | undefined {
         ...outskirtsOf(32, [
           annex(2.5, [0.7, 0.8], tube(3, '#f2ad2c'), tankFarm, 1),
           annex(1.5, [0.6, 0.72], tube(3, '#c9c4bc'), flares, BIG, true),
-          annex(1.5, [0.72, 0.8], tube(3.5, '#d4802a'), columns, BIG, true),
           ...common('#ffcf4a'),
         ]),
-        hub(pads, '#a59c90'),
+        hub(pads, deck),
+        ...collars,
         ...around(32, '#ffcf4a'),
       ]);
     case 9: {
@@ -267,11 +350,13 @@ export function base(number: number, at: Spot, r: Rng): Drawn | undefined {
           annex(1.5, [0.68, 0.78], tube(3.5, '#e8eef2'), silos, BIG, true),
           ...common('#7fe9ff'),
         ]),
-        hub(pads, '#c4ced4', H.deck, '#ff3b2a'),
+        // Its tower, in a corner the three sockets leave, piped up into the deck's underside.
+        run({ x: tower, y: 15 }, { x: tower, y: -4 }, 2.5, '#c9c4bc'),
+        hub(pads, deck, H.deck, '#ff3b2a'),
+        ...collars,
+        collar({ x: tower, y: pads[0].y + 15 }, { x: 0, y: 1 }, 2.5, deck),
         // A biohazard sign on one of its sockets.
         { paint: biohazard(r.pick(pads)) },
-        // Its tower, in a corner the three sockets leave, piped up to the deck.
-        run({ x: tower, y: 15 }, { x: tower, y: -4 }, 2.5, '#c9c4bc'),
         placed(tower, 15, stack(), 0, 1.25),
         ...around(40, '#7fe9ff'),
       ]);

@@ -83,28 +83,6 @@ export function dome(size: number, glass: string, plants: string, clear = 0): Pa
 /** Up to `count` things in a row `gap` apart, centred on 0. */
 const row = (count: number, gap: number) => Array.from({ length: count }, (_, i) => (i - (count - 1) / 2) * gap);
 
-/** One to three greenhouse halls side by side: vaulted violet glass, magenta grow lights under it. */
-export function greenhouses(r: Rng): Part {
-  const ys = row(r.pick([1, 2, 2, 3]), 13);
-  const len = r.range(26, 38);
-  const ribs = row(Math.floor(len / 4.5), 4.5)
-    .map((x) => `M${n(x)},-4.5 V4.5`)
-    .join(' ');
-  return {
-    extent: Math.hypot(len / 2 + 1, (ys.length * 13 - 2.5) / 2),
-    grade: graded(0, 0, len / 2 + 8),
-    heights: ys.map((y) => box(0, y, len + 2, 10.5, 5, H.apron) + box(0, y, len, 9, 4.5, 'url(#rg-vault)')).join(''),
-    tint: ys.map((y) => box(0, y, len + 2, 10.5, 5, '#8e72c4')).join(''),
-    paint: ys
-      .map(
-        (y) =>
-          `<ellipse cx="0" cy="${n(y)}" rx="${n(len * 0.4)}" ry="3" fill="#ff5fd2" opacity="0.4" filter="url(#rg-soft1)" style="mix-blend-mode: screen"/>` +
-          `<path d="${ribs}" transform="translate(0,${n(y)})" stroke="#1e2426" stroke-width="0.45" opacity="0.5"/>`,
-      )
-      .join(''),
-  };
-}
-
 /** Small blue domes, one to three, joined in a line. */
 export function domelets(r: Rng): Part {
   const xs = row(r.int(1, 3), 26);
@@ -153,9 +131,17 @@ export function tankFarm(r: Rng): Part {
   const spread = [13, 15, 18][count - 2];
   const turn = r.range(0, 360);
   const spots = Array.from({ length: count }, (_, i) => polar(turn + (360 * i) / count, spread));
+  const deck = spread * 0.75;
   return {
     extent: spread + 12.2,
-    ...merged([{ grade: graded(0, 0, 32) }, ...spots.map((s) => tank(s.x, s.y, r.range(8, 11))), { paint: lamp(0, 0, '#ffcf4a') }]),
+    ...merged([
+      { grade: graded(0, 0, 32) },
+      // A low platform in the middle, where the pipe comes in, piped out to each tank.
+      ...spots.map((s) => run({ x: 0, y: 0 }, s, 2.4, '#f2ad2c')),
+      { heights: disc(0, 0, deck + 1, H.apron) + disc(0, 0, deck, H.deck), tint: disc(0, 0, deck + 0.5, '#8e8a86') },
+      ...spots.map((s) => tank(s.x, s.y, r.range(8, 11))),
+      { paint: lamp(0, 0, '#ffcf4a') },
+    ]),
   };
 }
 
@@ -206,20 +192,6 @@ export const stack = (): Part => ({
     flame(12, 0.5) +
     lamp(5.2, 5.2, '#ff3b2a'),
 });
-
-/** Three to five process columns in a row on a platform, copper. */
-export function columns(r: Rng): Part {
-  const xs = row(r.int(3, 5), 11.5);
-  const len = xs.length * 11.5 + 1;
-  const size = xs.map(() => r.range(3.6, 5.2));
-  return {
-    extent: Math.hypot(len / 2, 6.75),
-    grade: graded(0, 0, len / 2 + 6),
-    heights: box(0, 0, len, 13, 2, H.deck) + xs.map((x, i) => disc(x, 0, size[i], 'url(#rg-sphere)')).join(''),
-    tint: box(0, 0, len + 0.5, 13.5, 2, '#8e8a86') + xs.map((x, i) => disc(x, 0, size[i] + 0.3, '#d4802a')).join(''),
-    paint: xs.map((x) => disc(x - 1.4, -1.4, 1.2, '#fff4d8', ' opacity="0.7"')).join('') + lamp(-len / 2 + 2, 5, '#ff3b2a'),
-  };
-}
 
 /** An open pit stepping down to glowing ice, three to five benches deep. */
 export function pit(r: Rng): Part {
