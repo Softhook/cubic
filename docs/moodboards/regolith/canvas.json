@@ -98,6 +98,13 @@
       "w": 1478,
       "x": 4120,
       "y": 2540
+    },
+    "ObjectiveColours.dc.html": {
+      "h": 3800,
+      "title": "Objective colours",
+      "w": 1320,
+      "x": 5678,
+      "y": 2540
     }
   },
   "createdOnFiles": {
@@ -140,7 +147,8 @@
     "World.dc.html",
     "Roster.dc.html",
     "Silhouettes.dc.html",
-    "RegolithCards.dc.html"
+    "RegolithCards.dc.html",
+    "ObjectiveColours.dc.html"
   ],
   "pages": [],
   "title": "Moon Mech Mood Board",

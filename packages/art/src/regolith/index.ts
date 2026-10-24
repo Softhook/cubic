@@ -8,6 +8,7 @@ import { ground, built, cast, dust } from './light';
 import { GRADIENTS, CRATERS, BURIED, RIDGE, DUNES, terrain, weathering } from './terrain';
 import { BUILDING_GRADIENTS } from './parts';
 import { base } from './base';
+import { inked } from './inks';
 
 /**
  * Phobos, Deimos or Mars ground for a hex tile, after the Regolith mood board (docs/moodboards/regolith/HexSurface.dc.html):
@@ -25,7 +26,8 @@ import { base } from './base';
  *
  * The parts: core (units, the hex flower, SVG helpers), light (the lighting filters), terrain (craters,
  * ridges, dunes), parts (how a piece of a base is drawn, in layers), buildings, craft (ships, rovers and
- * small things) and base (how a base is laid out round its planet's space).
+ * small things), base (how a base is laid out round its planet's space) and inks (the bases' colours in
+ * each world's inks).
  */
 
 /** A tile's scene, in board units: the ground's defs and its lit height map, and what stands on it (if anything), drawn round the planet's space. */
@@ -68,9 +70,9 @@ function scene(spec: TileSpec, at: Spot, world: World): Scene {
   const drawn =
     `<g filter="url(#rg-cast)">${standing}</g>` +
     `<g filter="url(#rg-built)">${standing}</g>` +
-    place(`<g style="mix-blend-mode: color">${site.tint}</g>`) +
+    place(`<g style="mix-blend-mode: color">${inked(site.tint, world)}</g>`) +
     (mars ? `<g filter="url(#rg-dust)" opacity="0.9" style="mix-blend-mode: soft-light">${standing}</g>` : '') +
-    place(site.paint);
+    place(inked(site.paint, world));
   return { defs, lit, standing: { heights: standing, drawn } };
 }
 
