@@ -60,6 +60,15 @@ const ORBIT_PROGRESS = 0.12;
 const APPROACH = 0.024;
 /** Chance of clearing an enemy ship from orbit that none of mine can attack yet: it takes a move first. */
 const UNREACHED_BLOCKER = 0.3;
+/**
+ * Ganging up: a rival this many cubes from winning (cubes left less their best planet's potential)
+ * or closer costs extra, growing with the square of how close they are, so that stopping a rival
+ * about to win can outweigh a cube of my own (the game ends before my cube counts). Only in full
+ * for a rival half a cube or more closer to winning than me; one as far as me or further is left
+ * to the race.
+ */
+const THREAT_RANGE = 2;
+const THREAT = 0.5;
 
 interface Ctx {
   s: GameState;
@@ -77,17 +86,26 @@ interface Ctx {
 }
 
 /**
- * Scores `s` for `me`: my value minus the strongest rival's (and a little of the others'). `mover`
- * is who moves next, if not the usual (see nextMover).
+ * Scores `s` for `me`: my value minus the strongest rival's (and a little of the others'), less
+ * the threat of each rival close to winning. `mover` is who moves next, if not the usual (see
+ * nextMover).
  */
 export function evaluate(s: GameState, me: PlayerId, mover = nextMover(s, me)): number {
   if (s.phase === 'over') return s.winner === me ? WIN : -WIN;
   const ctx = context(s, mover);
-  const values = s.players.map((p) => playerValue(ctx, p.id));
-  const rivals = values.filter((_, i) => i !== me);
-  const top = Math.max(...rivals);
-  const rest = rivals.reduce((a, b) => a + b, 0) - top;
-  return values[me] - top - 0.25 * rest;
+  const scores = s.players.map((p) => playerScore(ctx, p.id));
+  const rivals = scores.filter((_, i) => i !== me);
+  const top = Math.max(...rivals.map((x) => x.value));
+  const rest = rivals.reduce((a, x) => a + x.value, 0) - top;
+  const threat = rivals.reduce((a, x) => a + threatOf(x.left, scores[me].left), 0);
+  return scores[me].value - top - 0.25 * rest - threat;
+}
+
+/** How much a rival `left` cubes from winning costs on top of their value, when I am `mine` from it. */
+function threatOf(left: number, mine: number): number {
+  if (left >= THREAT_RANGE) return 0;
+  const closer = Math.min(1, Math.max(0, mine - left + 0.5));
+  return CUBE * THREAT * (THREAT_RANGE - left) ** 2 * closer;
 }
 
 /**
@@ -144,6 +162,13 @@ function strongestAttackerDominance(s: GameState, victim: PlayerId): number {
   return Math.max(...s.players.filter((p) => p.id !== victim).map((p) => p.dominance));
 }
 
+/** Player p's value, and how many cubes they are from winning. */
+function playerScore(ctx: Ctx, p: PlayerId): { value: number; left: number } {
+  const { total, best } = conquestPotential(ctx, p);
+  return { value: playerValue(ctx, p) + total, left: Math.max(0, ctx.s.players[p].cubesLeft - best / CUBE) };
+}
+
+/** Player p's value, without conquest potential. */
 function playerValue(ctx: Ctx, p: PlayerId): number {
   const { s } = ctx;
   const pl = s.players[p];
@@ -170,7 +195,6 @@ function playerValue(ctx: Ctx, p: PlayerId): number {
   v += ctx.fleets[p].length * SHIP_ON_BOARD;
   v += scrapyard(s, p).length * SHIP_IN_SCRAPYARD;
   v -= ctx.exposure[p];
-  v += conquestPotential(ctx, p);
   return v;
 }
 
@@ -225,10 +249,11 @@ function clearing(ctx: Ctx, p: PlayerId, blockers: Die[], orbit: Die[]): { odds:
   return { odds, actions };
 }
 
-/** The best planets this player is working towards: best + a little of the next two. */
-function conquestPotential(ctx: Ctx, p: PlayerId): number {
+/** The best planets this player is working towards: best + a little of the next two (and the best alone). */
+function conquestPotential(ctx: Ctx, p: PlayerId): { total: number; best: number } {
   const values = ctx.s.board.planets.map((planet) => planetPotential(ctx, p, planet)).sort((a, b) => b - a);
-  return (values[0] ?? 0) + 0.35 * (values[1] ?? 0) + 0.15 * (values[2] ?? 0);
+  const best = values[0] ?? 0;
+  return { total: best + 0.35 * (values[1] ?? 0) + 0.15 * (values[2] ?? 0), best };
 }
 
 function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
@@ -330,5 +355,5 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
 
 /** Player p's own value, without the rivals', scored as if p moves next (scripts/interaction.ts). */
 export function valueOf(s: GameState, p: PlayerId): number {
-  return playerValue(context(s, p), p);
+  return playerScore(context(s, p), p).value;
 }

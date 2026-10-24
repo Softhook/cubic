@@ -56,9 +56,12 @@ To measure a change, run for example:
 ```sh
 npm run ai:match -- 2 3 40            # Captain vs Commodore, 40 basic games
 npm run ai:match -- 3 4 20 community  # Commodore vs Admiral, community rules
-npm run ai:match -- 4 5 200 basic 2 10 # 200 games split over 10 processes (one per CPU core)
-npm run ai:match -- 3@HEAD~1 3 240 community 2 10 # Commodore as of the previous commit vs now
+npm run ai:match -- 4 5 200 basic 2 4  # 200 games on 4 processes (default: one per CPU core)
+npm run ai:match -- 3@HEAD~1 3 240 community # Commodore as of the previous commit vs now
 ```
+
+The games are handed out a pair at a time to one worker process per core, so the fast and slow
+cores all stay busy until the end. Ctrl-C stops early and reports the games finished so far.
 
 Twelve games can mislead: during development one version of Admiral went 7–5 against Commodore
 over 12 games, and 38–10 over 48. Use 40 or more before trusting a difference, and 200 or more for

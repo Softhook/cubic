@@ -1,7 +1,7 @@
 /**
  * AI benchmark: plays two AI levels against each other and reports wins and thinking time.
  *
- *   npm run ai:match -- <levelA> <levelB> [games=20] [mode=basic] [players=2] [jobs=1]
+ *   npm run ai:match -- <levelA> <levelB> [games=20] [mode=basic] [players=2] [jobs=all cores]
  *
  * A level may name a git commit to play that version of the AI against the current one:
  * `3@HEAD~1` is Commodore as of the previous commit (against today's engine). Its source is
@@ -9,18 +9,21 @@
  *
  * Seats alternate between games and each pair of games shares a map seed, so neither level
  * gets the better start. With more than 2 players, level A plays seat 0 and level B the rest.
- * With jobs > 1 the games are split between that many processes (one per CPU core is about
- * right); the results are the same as with one, as each game has its own seeds.
+ * With jobs > 1 the games are played by that many worker processes, which take a pair of games
+ * (one map seed) at a time as they free up, so fast and slow cores both stay busy to the end; the
+ * results are the same as with one, as each game has its own seeds. Ctrl-C stops early and
+ * reports the games finished so far.
  */
 import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import * as current from '../packages/ai/src';
 import { actor, apply, createGame, mulberry32, type Action, type GameMode, type GameState } from '../packages/engine/src';
 
 type Ai = Pick<typeof current, 'chooseAction' | 'chooseCombatResponse'>;
 
-const [a = '1', b = '3', games = '20', mode = 'basic', players = '2', jobs = '1'] = process.argv.slice(2);
+const [a = '1', b = '3', games = '20', mode = 'basic', players = '2', jobs = String(availableParallelism())] = process.argv.slice(2);
 const specs = [a, b];
 // Split at the first @ only: refs such as main@{1} contain one too.
 const parts = specs.map((x) => x.match(/^([^@]*)(?:@(.*))?$/)!);
@@ -28,8 +31,8 @@ const levels = parts.map(([, level]) => Number(level) as current.AiLevel);
 const ais: Ai[] = await Promise.all(parts.map(([, , ref]) => loadAi(ref)));
 const n = Number(games);
 const seats = Number(players);
-/** Set for a worker process: the games it plays, "from-to". */
-const shard = process.env.AI_MATCH_SHARD;
+/** Set for a worker process, which plays the games the main process sends it. */
+const worker = !!process.env.AI_MATCH_WORKER;
 
 interface Result {
   wins: number[];
@@ -60,8 +63,24 @@ async function loadAi(ref?: string): Promise<Ai> {
   return import(`${dir}/index.ts`);
 }
 
-function play(from: number, to: number, progress: boolean): Result {
-  const r: Result = { wins: [0, 0], unfinished: 0, turns: 0, time: [0, 0], decisions: [0, 0], slowest: [0, 0] };
+function empty(): Result {
+  return { wins: [0, 0], unfinished: 0, turns: 0, time: [0, 0], decisions: [0, 0], slowest: [0, 0] };
+}
+
+/** Adds `r` into `total`. */
+function merge(total: Result, r: Result) {
+  for (const i of [0, 1]) {
+    total.wins[i] += r.wins[i];
+    total.time[i] += r.time[i];
+    total.decisions[i] += r.decisions[i];
+    total.slowest[i] = Math.max(total.slowest[i], r.slowest[i]);
+  }
+  total.unfinished += r.unfinished;
+  total.turns += r.turns;
+}
+
+/** Plays games from-to into `r`. */
+function play(from: number, to: number, progress: boolean, r = empty()): Result {
   for (let g = from; g < to; g++) {
     const swap = seats === 2 && g % 2 === 1;
     // Which side (0 = level A, 1 = level B) plays seat p.
@@ -96,52 +115,49 @@ function play(from: number, to: number, progress: boolean): Result {
   return r;
 }
 
-/** Plays the games in `count` worker processes (this script again, each with a shard). */
-async function playInParallel(count: number): Promise<Result> {
-  // Shards of an even size, so that both games of a pair (one map seed) land in the same one.
-  const size = Math.ceil(n / count / 2) * 2;
-  const shards: [number, number][] = [];
-  for (let from = 0; from < n; from += size) shards.push([from, Math.min(n, from + size)]);
+/** Plays the games in `count` worker processes (this script again), a pair of games at a time, into `total`. */
+const workers = new Set<ReturnType<typeof spawn>>();
+
+async function playInParallel(count: number, total: Result): Promise<void> {
+  const queue: [number, number][] = [];
+  for (let from = 0; from < n; from += 2) queue.push([from, Math.min(n, from + 2)]);
   let done = 0;
-  const results = await Promise.all(
-    shards.map(
-      ([from, to]) =>
-        new Promise<Result>((resolve, reject) => {
+  await Promise.all(
+    Array.from(
+      { length: Math.min(count, queue.length) },
+      () =>
+        new Promise<void>((resolve, reject) => {
           // Under vite-node, argv[1] is vite-node itself and the script's path is left out.
           const child = spawn(process.execPath, [process.argv[1], fileURLToPath(import.meta.url), ...process.argv.slice(2)], {
-            env: { ...process.env, AI_MATCH_SHARD: `${from}-${to}` },
-            stdio: ['ignore', 'pipe', 'inherit'],
+            env: { ...process.env, AI_MATCH_WORKER: '1' },
+            stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
           });
-          let out = '';
-          child.stdout.on('data', (d) => (out += d));
+          workers.add(child);
+          let games: [number, number] | undefined;
+          const next = () => {
+            games = queue.shift();
+            if (games) child.send(games);
+            else child.disconnect();
+          };
+          child.on('message', (r: Result) => {
+            merge(total, r);
+            done += games![1] - games![0];
+            process.stdout.write(`\r${done}/${n} games: L${specs[0]} ${total.wins[0]} – ${total.wins[1]} L${specs[1]}`);
+            next();
+          });
           child.on('error', reject);
-          child.on('exit', (code) => {
-            if (code !== 0) return reject(new Error(`games ${from}-${to} failed (exit ${code})`));
-            process.stdout.write(`\r${(done += to - from)}/${n} games`);
-            resolve(JSON.parse(out.trim().split('\n').pop()!));
-          });
+          child.on('exit', (code) => (games ? reject(new Error(`games ${games[0]}-${games[1]} failed (exit ${code})`)) : resolve()));
+          next();
         }),
     ),
   );
-  const sum = (k: 'wins' | 'time' | 'decisions') => [0, 1].map((i) => results.reduce((x, r) => x + r[k][i], 0));
-  return {
-    wins: sum('wins'),
-    time: sum('time'),
-    decisions: sum('decisions'),
-    slowest: [0, 1].map((i) => Math.max(...results.map((r) => r.slowest[i]))),
-    unfinished: results.reduce((x, r) => x + r.unfinished, 0),
-    turns: results.reduce((x, r) => x + r.turns, 0),
-  };
 }
 
-if (shard) {
-  const [from, to] = shard.split('-').map(Number);
-  console.log(JSON.stringify(play(from, to, false)));
-} else {
-  const r = Number(jobs) > 1 ? await playInParallel(Number(jobs)) : play(0, n, true);
-  const finished = n - r.unfinished;
+function report(r: Result, stopped: boolean) {
+  const finished = r.wins[0] + r.wins[1];
+  const played = finished + r.unfinished;
   console.log(
-    `\n\n${mode}, ${seats} players, ${n} games${r.unfinished ? ` (${r.unfinished} unfinished)` : ''}, ${(r.turns / Math.max(1, finished)).toFixed(1)} turns on average`,
+    `\n\n${mode}, ${seats} players, ${played} games${stopped ? ` (stopped early, of ${n})` : ''}${r.unfinished ? ` (${r.unfinished} unfinished)` : ''}, ${(r.turns / Math.max(1, finished)).toFixed(1)} turns on average`,
   );
   for (const i of [0, 1]) {
     const avg = r.time[i] / Math.max(1, r.decisions[i]);
@@ -152,4 +168,20 @@ if (shard) {
     const z = (r.wins[0] - finished / 2) / Math.sqrt(finished / 4);
     console.log(`  level ${specs[0]} won ${((100 * r.wins[0]) / finished).toFixed(1)}% (z = ${z.toFixed(2)})`);
   }
+}
+
+if (worker) {
+  process.on('message', ([from, to]: [number, number]) => process.send!(play(from, to, false)));
+  process.on('disconnect', () => process.exit(0));
+} else {
+  const total = empty();
+  process.on('SIGINT', () => {
+    // The workers stop mid-game (Ctrl-C reaches them too, but not every way of stopping does).
+    for (const w of workers) w.kill();
+    report(total, true);
+    process.exit(130);
+  });
+  if (Number(jobs) > 1) await playInParallel(Number(jobs), total);
+  else play(0, n, true, total);
+  report(total, false);
 }
