@@ -12,9 +12,9 @@
 
 skills:
   - id: r-agile
-    name: "Servo Tuning"
+    name: "Tune Up"
     subtitle: "Movement bonus"
-    text: "All of your mechs have +1 movement."
+    text: "Your mechs move 1 extra space."
     category: movement
     count: 1
     from: agile
@@ -24,13 +24,13 @@ skills:
   - id: r-ambitious
     name: "Final Push"
     subtitle: "3 extra actions"
-    text: "Once per turn you may take an additional action, then put a token on this card. If this card has three tokens on it, discard it."
+    text: "Once per turn, take 1 extra action and put a token here. At 3 tokens, discard this card."
     category: action
     count: 1
     from: ambitious
     status: renamed
     effect: ambitious
-    art: { title: "Overheating", brief: "A mech pushed past its limit: motor housing glowing, heat haze and sparks." }
+    art: { title: "Overheating", brief: "A Breacher pushed past its limit, lunging forward under amber rays." }
   - id: r-brilliant
     name: "Science Survey"
     subtitle: "Research bonus"
@@ -44,7 +44,7 @@ skills:
   - id: r-brutal
     name: "Paired Cannons"
     subtitle: "Combat with advantage"
-    text: "For Combat rolls, roll twice and use the lower number."
+    text: "Roll Combat twice and keep the lower roll."
     category: combat
     count: 1
     from: brutal
@@ -54,7 +54,7 @@ skills:
   - id: r-calculating
     name: "Remodel"
     subtitle: "Controlled scrapping"
-    text: "When a mech is placed in your salvage yard, choose its mech type."
+    text: "When one of your mechs goes to the salvage yard, choose its type."
     category: ship
     count: 1
     from: calculating
@@ -62,9 +62,9 @@ skills:
     effect: calculating
     art: { title: "Salvage crane", brief: "The salvage yard crane lowering one chassis over a wreck." }
   - id: r-clever
-    name: "Field Fitter"
+    name: "Engineering"
     subtitle: "Flexible modification"
-    text: "After refitting, you may increase or decrease the mech number by 1."
+    text: "After you Refit a mech, you may change its number by 1."
     category: ship
     count: 1
     from: clever
@@ -73,28 +73,28 @@ skills:
     art: { title: "Gantry", brief: "A Chameleon in a gantry with one arm off, the arm hanging from the hoist beside its open shoulder." }
   - id: r-composed
     name: "Stand Down"
-    subtitle: "Reduce power for research"
-    text: "Once per turn, you may lose 1 Power and gain 3 Research."
+    subtitle: "Trade Power for Research"
+    text: "Once per turn, swap 1 Power for 3 Research."
     category: research
     count: 1
     from: composed
     status: renamed
     effect: composed
-    art: { title: "Powered down", brief: "A Chameleon powered down in a low crouch, venting heat." }
+    art: { title: "Powered down", brief: "A Chameleon powered down in a low crouch on the left, a radar dish on the right sweeping the sky." }
   - id: r-cunning
-    name: "Second Charge"
+    name: "Boost"
     subtitle: "Extra mech ability"
-    text: "Once per turn, you may use one mech ability a second time."
+    text: "Once per turn, use one mech ability twice."
     category: action
     count: 1
     from: cunning
     status: renamed
     effect: cunning
-    art: { title: "Override switch", brief: "A hand flipping a guarded red switch on a cockpit panel." }
+    art: { title: "Double pulse", brief: "A mech with dotted ice-blue rings pulsing out to its left and right." }
   - id: r-curious
     name: "Prospectors"
     subtitle: "Bonus peaceful move"
-    text: "At the end of your turn, if you did not Attack or Claim, gain an additional Move or Research action."
+    text: "If you didn't Attack or Claim this turn, take 1 extra Move or Research action at the end of it."
     category: action
     count: 1
     from: curious
@@ -104,67 +104,67 @@ skills:
   - id: r-dangerous
     name: "Unstable Reactor"
     subtitle: "Destroy your attacker"
-    text: "When you defend, before players roll combat dice, you can decide to destroy both mechs (there is no power effect)."
+    text: "When you’re attacked, before the roll, you may destroy both mechs. No one's Power changes."
     category: combat
     count: 1
     from: dangerous
     status: renamed
     effect: dangerous
-    art: { title: "Strapped charge", brief: "A Breacher with charges strapped across its chest." }
+    art: { title: "Strapped charge", brief: "A Breacher with charges strapped across its chest, hazard stripes behind it." }
   - id: r-devious
-    name: "Crawlway"
+    name: "Sneak"
     subtitle: "Slingshot past enemies"
-    text: "You may move your mechs through enemy mechs. These spaces do not count towards your movement."
+    text: "Your mechs ignore zones of control and may move through enemy mechs. Those spaces cost no movement."
     category: movement
     count: 1
     from: devious
     status: renamed
     effect: devious
-    art: { title: "Between the legs", brief: "A small mech ducking between two enemy mechs' legs." }
+    art: { title: "Between the legs", brief: "A small mech, printed light, ducking between an enemy mech's dark legs." }
   - id: r-ferocious
     name: "Armour Piercing"
     subtitle: "Combat bonus"
-    text: "-1 to your Combat rolls."
+    text: "Subtract 1 from your Combat rolls."
     category: combat
     count: 1
     from: ferocious
     status: renamed
     effect: ferocious
-    art: { title: "Red barrel", brief: "A Breacher's cannon barrel close up, heat shimmer printed as halftone." }
+    art: { title: "Red barrel", brief: "A Chameleon firing its long gun level, the barrel red hot in halftone." }
   - id: r-flexible
     name: "Field Refit"
     subtitle: "Adjust a mech"
-    text: "Once per turn, you may increase or decrease one of your mech numbers by 1."
+    text: "Once per turn, you may change one mech up or down 1."
     category: ship
     count: 1
     from: flexible
     status: renamed
     effect: flexible
-    art: { title: "Repair arm", brief: "A repair arm on its floor mount welding at a Tactician's hip joint." }
+    art: { title: "Repair arm", brief: "A repair arm on its floor mount working at a Tactician's hip joint." }
   - id: r-hostile
     name: "Breakthrough"
     subtitle: "Extra action for destruction"
-    text: "The first time you destroy an enemy mech each turn, gain 1 action."
+    text: "When you first destroy an enemy mech each turn, gain 1 action."
     category: action
     count: 1
     from: hostile
     status: renamed
     effect: hostile
-    art: { title: "Stepping over", brief: "A mech stepping over a smoking wreck, already turning to the next target." }
+    art: { title: "Striding on", brief: "A mech striding on past a smoking wreck on the ground to its left, already turning to the next target." }
   - id: r-industrious
-    name: "Drop Crew"
+    name: "Free Drop"
     subtitle: "Extra drop"
-    text: "Gain an additional Drop action each turn."
+    text: "Take 1 extra Drop action each turn."
     category: action
     count: 1
     from: industrious
     status: renamed
     effect: industrious
-    art: { title: "Two pods", brief: "Two drop pods coming down side by side, retro rockets in amber." }
+    art: { title: "Two drops", brief: "Two mechs coming down side by side on amber booster flames." }
   - id: r-intelligent
     name: "Hacking"
     subtitle: "Flexible claiming"
-    text: "When Claiming, you may add or subtract 1 from the objective number."
+    text: "When Claiming, you may count the objective's number as 1 higher or lower."
     category: conquer
     count: 1
     from: intelligent
@@ -172,19 +172,19 @@ skills:
     effect: intelligent
     art: { title: "Spliced panel", brief: "A hacker's hand terminal spliced into an objective's control panel, the 8 on its readout flickering to 7 and 9." }
   - id: r-patient
-    name: "Reserve Orders"
+    name: "Strategic Plan"
     subtitle: "Delayed tactics"
-    text: "Whenever you take a Tactic, you may instead store it. At the end of each of your turns, you may play a stored Tactic. When you take this Skill, you may take and store a Tactic."
+    text: "You can store Tactics instead of playing them. Play stored Tactics at the end of future turns. Get a free Tactic with this card."
     category: card
     count: 1
     from: patient
     status: renamed
     effect: patient
-    art: { title: "Lockbox", brief: "A battered metal strongbox, its lid open a crack." }
+    art: { title: "Battle plan", brief: "A battle plan: mechs drawn on a hex map, little dashed lines joining them to where they go next." }
   - id: r-pioneering
-    name: "First Survey"
+    name: "Science"
     subtitle: "Claim with research"
-    text: "You may use your Research number in place of one of your mech numbers when Claiming."
+    text: "When Claiming, your Research number can stand in for one of your mechs."
     category: conquer
     count: 1
     from: pioneering
@@ -192,9 +192,9 @@ skills:
     effect: pioneering
     art: { title: "Flag and number", brief: "A survey flag with a stencilled research number flying over an objective." }
   - id: r-plundering
-    name: "Wreck Survey"
+    name: "Exploit"
     subtitle: "Destruction is research"
-    text: "The first time you destroy an enemy mech each turn, gain 3 Research."
+    text: "When you first destroy an enemy mech each turn, gain 3 Research."
     category: research
     count: 1
     from: plundering
@@ -204,7 +204,7 @@ skills:
   - id: r-precocious
     name: "Rush Research"
     subtitle: "Accelerated breakthrough"
-    text: "Your Research resets at 4, 5, or 6."
+    text: "Your Research resets at 4 instead of 6."
     category: research
     count: 1
     from: precocious
@@ -214,7 +214,7 @@ skills:
   - id: r-prideful
     name: "Stolen Flag"
     subtitle: "Accelerated domination"
-    text: "Your Power resets at 4, 5, or 6. When a player destroys one of your mechs, they may take this card from you."
+    text: "Your Power resets at 4 instead of 6. Whoever destroys one of your mechs may take this card."
     category: conquer
     count: 1
     from: prideful
@@ -224,7 +224,7 @@ skills:
   - id: r-profiteering
     name: "Arms Deal"
     subtitle: "Atomics from claiming"
-    text: "When you take a card for Claiming, you may instead gain 1 Atomic."
+    text: "When Claiming earns you a card, you may take 1 Atomic instead."
     category: combat
     count: 1
     from: profiteering
@@ -234,7 +234,7 @@ skills:
   - id: r-rational
     name: "Drill Sergeant"
     subtitle: "Fixed combat"
-    text: "Your Combat rolls are 3."
+    text: "Your Combat rolls are always 3."
     category: combat
     count: 1
     from: rational
@@ -244,7 +244,7 @@ skills:
   - id: r-ravenous
     name: "Trophy Hunters"
     subtitle: "Power amplification"
-    text: "The first time you destroy an enemy mech each turn, gain 1 additional Power."
+    text: "When you first destroy an enemy mech each turn, gain 1 extra Power."
     category: combat
     count: 1
     from: ravenous
@@ -252,19 +252,19 @@ skills:
     effect: ravenous
     art: { title: "Tally", brief: "Stencilled kill marks on a mech's hull, a painter adding one more." }
   - id: r-resourceful
-    name: "Strip for Parts"
+    name: "Recycle"
     subtitle: "Sacrifice for action"
-    text: "Once per turn, you may destroy one of your mechs and gain 1 Action."
+    text: "Once per turn, destroy one of your mechs to gain 1 action."
     category: action
     count: 1
     from: resourceful
     status: renamed
     effect: resourceful
-    art: { title: "Crane", brief: "A crane lifting a mech's reactor out of its chest." }
+    art: { title: "Core salvage", brief: "A stripped mech kneeling, one arm off, a crew member carrying its glowing core away." }
   - id: r-righteous
-    name: "True Believers"
+    name: "Fanatics"
     subtitle: "Irreducible power"
-    text: "You cannot lose Power. You cannot gain Research."
+    text: "You never lose Power. You never gain Research."
     category: conquer
     count: 1
     from: righteous
@@ -274,17 +274,17 @@ skills:
   - id: r-ruthless
     name: "Signal Jammer"
     subtitle: "Weaken your enemies"
-    text: "The first time you destroy an enemy mech each turn, you may disable one of the enemy's Skills until the start of your next turn."
+    text: "When you first destroy an enemy mech each turn, you may switch off one of that player's Skills until your next turn."
     category: card
     count: 1
     from: ruthless
     status: renamed
     effect: ruthless
-    art: { title: "Jammer pod", brief: "A jammer pod on a mech's shoulder, static rings in oxide." }
+    art: { title: "Jammer pod", brief: "A jammer pod on a mech's shoulder, static rings in oxide going out all round." }
   - id: r-steadfast
     name: "Double Time"
     subtitle: "Move more than once"
-    text: "Your mechs can move or move/attack more than once per turn (each move counts as an action)."
+    text: "Your mechs may Move (or Move/Attack) more than once a turn. Each move costs an action."
     category: movement
     count: 1
     from: steadfast
@@ -292,19 +292,19 @@ skills:
     effect: steadfast
     art: { title: "Column", brief: "A column of mechs trudging through a dust storm, heads down." }
   - id: r-stealthy
-    name: "Drop Ships"
+    name: "Infiltration"
     subtitle: "Isolated drop"
-    text: "You may drop to any space that is not adjacent to a mech."
+    text: "You may Drop onto any space that isn't adjacent to a mech."
     category: ship
     count: 1
     from: stealthy
     status: renamed
     effect: stealthy
-    art: { title: "Pod in the dust", brief: "A drop pod falling into a dust storm, alone on the map." }
+    art: { title: "Lone descent", brief: "A lone mech coming down on its boosters into a dust storm." }
   - id: r-strategic
     name: "Close Protection"
     subtitle: "Combat support bonus"
-    text: "During combat, if your mech is adjacent to one or more friendly mechs, -2 to your Combat roll."
+    text: "In combat, if your mech is adjacent to another of yours, subtract 2 from your roll."
     category: combat
     count: 1
     from: strategic
@@ -314,7 +314,7 @@ skills:
   - id: r-stubborn
     name: "Entrenched"
     subtitle: "Strong defence"
-    text: "When you are attacked, ties go in your favour and you destroy your attacker if you win (and gain power)."
+    text: "When you're attacked, you win ties, and if you win, the attacker is destroyed and you gain Power."
     category: combat
     count: 1
     from: stubborn
@@ -322,9 +322,9 @@ skills:
     effect: stubborn
     art: { title: "Trench", brief: "A Breacher in a trench behind a barricade of boulders." }
   - id: r-tactical
-    name: "Lunge"
+    name: "Advance"
     subtitle: "Bonus short move"
-    text: "Once per turn, you may move/attack 1 space with a mech even if it's already moved."
+    text: "Once per turn, a mech may Move/Attack 1 space, even if it has already moved."
     category: action
     count: 1
     from: tactical
@@ -334,7 +334,7 @@ skills:
   - id: r-talented
     name: "Veteran Crew"
     subtitle: "Get more skills"
-    text: "You can have up to 5 Skills."
+    text: "You may have up to 5 Skills."
     category: card
     count: 1
     from: talented
@@ -344,7 +344,7 @@ skills:
   - id: r-tyrannical
     name: "Martial Law"
     subtitle: "Claim with power"
-    text: "You may use your Power number as an additional mech number when Claiming."
+    text: "When Claiming, you may count your Power number as an extra mech."
     category: conquer
     count: 1
     from: tyrannical
@@ -356,7 +356,7 @@ tactics:
   - id: r-aggression
     name: "Power Grab"
     subtitle: "Add power"
-    text: "Immediately add 2 to power."
+    text: "Gain 2 Power."
     category: combat
     count: 2
     from: aggression
@@ -376,7 +376,7 @@ tactics:
   - id: r-change-of-heart
     name: "Headhunter"
     subtitle: "Choose a skill"
-    text: "Search the Skill deck and take a card of your choosing, then shuffle the deck."
+    text: "Take any Skill from the Skill deck, then shuffle it."
     category: card
     count: 2
     from: change-of-heart
@@ -384,9 +384,9 @@ tactics:
     effect: change-of-heart
     art: { title: "Crossing over", brief: "A mech walking away from one side's flag to another's, where a Tactician waits for it." }
   - id: r-momentum
-    name: "Forced Advance"
+    name: "Forced March"
     subtitle: "Take a bonus turn"
-    text: "Immediately take another turn, but with 2 actions instead of 3 (treat it as a brand-new turn)."
+    text: "Take another turn right now, with 2 actions."
     category: action
     count: 2
     from: momentum
@@ -396,7 +396,7 @@ tactics:
   - id: r-plan-ahead
     name: "Kill Zone"
     subtitle: "Become the atomic"
-    text: "Until the end of your next turn, all your combat rolls are 1."
+    text: "Until the end of your next turn, your Combat rolls are 1."
     category: combat
     count: 2
     from: plan-ahead
@@ -406,7 +406,7 @@ tactics:
   - id: r-sabotage
     name: "Sabotage"
     subtitle: "Limit enemy action"
-    text: "Every opponent's next turn has 2 fewer actions."
+    text: "Each opponent has 2 fewer actions on their next turn."
     category: action
     count: 2
     from: sabotage
@@ -416,7 +416,7 @@ tactics:
   - id: r-show-of-force
     name: "Orbital Cannon"
     subtitle: "Target destroyed"
-    text: "Destroy any one mech. Gain 1 Power."
+    text: "Destroy any mech. Gain 1 Power."
     category: combat
     count: 2
     from: show-of-force
@@ -424,19 +424,19 @@ tactics:
     effect: show-of-force
     art: { title: "Impact", brief: "An enemy mech hit from above, an amber column of light." }
   - id: r-unveil-the-fleet
-    name: "Full Refit"
+    name: "Invasion"
     subtitle: "Destroy & reroll mechs"
-    text: "Destroy all your mechs. You may reroll any mechs in your salvage yard once. Drop any number of mechs."
+    text: "Destroy all your mechs. Reroll any in your salvage yard once, then Drop as many as you like."
     category: ship
     count: 2
     from: unveil-the-fleet
     status: renamed
     effect: unveil-the-fleet
-    art: { title: "Pods raining", brief: "Drop pods coming down all over the map." }
+    art: { title: "Mechs raining", brief: "Mechs coming down on their boosters all over the map." }
   - id: r-warp-gate
     name: "Ice Tunnel"
     subtitle: "Teleportation system"
-    text: "Place the Ice Tunnel tokens on two different spaces on the board. Any player may consider those spaces adjacent."
+    text: "Place the 2 Ice Tunnel tokens on different spaces. Those spaces count as adjacent for everyone."
     category: movement
     count: 2
     from: warp-gate
@@ -448,7 +448,7 @@ expansion:
   - id: r-expansion
     name: "Reinforcements"
     subtitle: "Expand your fleet"
-    text: "Immediately roll a reserve mech and put it in perimeter space on an objective with one of your cubes or in your salvage yard."
+    text: "Roll a reserve mech. Put it on the perimeter of an objective with one of your cubes, or in your salvage yard."
     category: expansion
     count: 6
     from: expansion

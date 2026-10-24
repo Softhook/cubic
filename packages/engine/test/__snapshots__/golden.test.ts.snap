@@ -84,7 +84,7 @@ exports[`golden master > original, 4 players, seed 13 1`] = `
 exports[`golden master > regolith, 2 players, seed 11 1`] = `
 {
   "actions": "0eb58ba0a4464bd7",
-  "state": "b6ffde41e1216469",
+  "state": "0701e7aa2fd745ec",
   "steps": 115,
   "winner": 0,
 }
@@ -93,7 +93,7 @@ exports[`golden master > regolith, 2 players, seed 11 1`] = `
 exports[`golden master > regolith, 3 players, seed 12 1`] = `
 {
   "actions": "22baa1731963737a",
-  "state": "d766d414c9d54d20",
+  "state": "9b016f362c0cb2bb",
   "steps": 211,
   "winner": 1,
 }
@@ -102,7 +102,7 @@ exports[`golden master > regolith, 3 players, seed 12 1`] = `
 exports[`golden master > regolith, 4 players, seed 13 1`] = `
 {
   "actions": "5618561591d88ba3",
-  "state": "eb54bef507201894",
+  "state": "368bf0bee2bf8022",
   "steps": 293,
   "winner": 3,
 }

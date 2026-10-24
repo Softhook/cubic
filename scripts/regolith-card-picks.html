@@ -3,10 +3,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link
   rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Barlow+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+  href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Inter:wght@900&family=Barlow+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
 />
 <style>
-  /* Layout: a sticky work-order bar over one row per card: the card as it is (left), the name and art choices (middle), and a live proof of the Regolith card (right). Paper and key ink by day, night paper by night, like the two decks. */
+  /* Layout: a sticky work-order bar over one row per card: the card as it is (left), the name, subtitle and text choices (middle), and a live proof of the Regolith card (right). Paper and key ink by day, night paper by night, like the two decks. */
   :root {
     --paper: #e6ddc8;
     --sheet: #ede6d6;
@@ -232,7 +232,7 @@
   }
   .arts {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
   .opt {
@@ -319,110 +319,32 @@
     outline: none;
     border-bottom-color: var(--ink);
   }
+  .opt .body {
+    font-size: 17px;
+    line-height: 1.3;
+  }
+  .own textarea {
+    min-height: 56px;
+    font-size: 17px;
+    background: transparent;
+    border-width: 0 0 2px;
+    padding: 2px 0 4px;
+  }
 
-  /* The proof: a mock of the screenprint card, set from the picks. Category inks colour the art window. */
+  /* The proof: the printed card, drawn by the game's renderer from the picks. */
   .proof {
     align-self: start;
     position: sticky;
     top: calc(env(safe-area-inset-top, 0px) + 92px);
   }
-  .face {
+  .proof .drawn {
     aspect-ratio: 63.5 / 88.9;
     max-width: 100%;
-    background: #ede6d6;
-    color: #1e1c1a;
-    border: 2px solid #1e1c1a;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
   }
-  .face.tactic {
-    background: #24211d;
-    color: #ece4d2;
-    border-color: #24211d;
-  }
-  .window {
-    position: relative;
-    flex: 0 0 47%;
-    background: var(--cat);
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 10px;
-    gap: 4px;
-    overflow: hidden;
-  }
-  .window::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle, rgba(30, 28, 26, 0.22) 1px, transparent 1.4px) 0 0 / 6px 6px;
-    mix-blend-mode: multiply;
-    pointer-events: none;
-  }
-  .window .art-title {
-    position: relative;
-    z-index: 1;
-    font: 600 10px/1.2 var(--mono);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #1e1c1a;
-    background: #f2b233;
-    align-self: flex-start;
-    padding: 2px 5px;
-  }
-  .window .art-brief {
-    position: relative;
-    z-index: 1;
-    font: 500 13px/1.25 var(--body);
-    color: #1e1c1a;
-    background: rgba(237, 230, 214, 0.85);
-    padding: 4px 6px;
-  }
-  .face .text {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 12px 12px 8px;
-    text-align: center;
-  }
-  .face .fname {
-    font:
-      400 21px/1 'Saira Stencil One',
-      'Arial Black',
-      Impact,
-      sans-serif;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    text-shadow: 2px 1px 0 var(--cat);
-    overflow-wrap: anywhere;
-  }
-  .face .kind {
-    font:
-      600 9px/1 'JetBrains Mono',
-      monospace;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    opacity: 0.75;
-  }
-  .face .ftext {
-    font:
-      500 14px/1.25 'Barlow Condensed',
-      'Arial Narrow',
-      sans-serif;
-    margin-top: 4px;
-  }
-  .face .tag {
-    display: flex;
-    justify-content: space-between;
-    font:
-      600 9px/1 'JetBrains Mono',
-      monospace;
-    letter-spacing: 0.1em;
-    padding: 0 10px 8px;
-    opacity: 0.7;
+  .proof .drawn svg {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
   .cat-movement {
     --cat: #6f9db3;
@@ -502,7 +424,7 @@
   <div class="wrap">
     <h1>Regolith Card Picks</h1>
     <div class="meter">
-      <span><b id="named">0</b> of <b class="total">0</b> named · <b id="drawn">0</b> with art</span>
+      <span><b id="decided">0</b> of <b class="total">0</b> decided</span>
       <div class="track"><i id="fill"></i></div>
     </div>
     <div class="spacer"></div>
@@ -514,9 +436,10 @@
 
 <main class="wrap">
   <p class="intro" id="intro">
-    Every Community card in Regolith's deck, with three names and three art briefs to choose from. Keep the old name, take <b>A</b>,
-    <b>B</b> or <b>C</b>, or type your own; pick the art brief the screenprint card should be drawn from, and leave a note for anything to
-    change. The proof on the right shows the card as you set it. The rules text is the game's, in Regolith's words.
+    Every Regolith card as it is now, beside a shorter rewrite of its subtitle and rules text. For each, keep <b>NOW</b>, take <b>NEW</b>,
+    or type your own; a few cards also offer other names, where the current one clashes. Leave a note for anything else. The proof on the
+    right is the printed card as you set it, drawn the way the game draws it; the subtitle isn't printed, it shows in the game's hand and
+    market. Every rewrite keeps the card's action.
     <span id="status" class="status">Connecting…</span>
   </p>
   <div id="list"></div>
@@ -526,11 +449,15 @@
   /*DATA*/
 </script>
 <script>
+  /*ART*/
+</script>
+<script>
   (() => {
     const CARDS = JSON.parse(document.getElementById('data').textContent);
     const DECKS = ['All', ...new Set(CARDS.map((c) => c.deck))];
-    const LS = 'regolith-card-picks';
-    const COLL = 'picks';
+    const FIELDS = ['name', 'subtitle', 'text'];
+    const LS = 'regolith-card-text-4';
+    const COLL = 'text4';
     const picks = {};
     let deckFilter = 'All';
     let undecidedOnly = false;
@@ -554,23 +481,25 @@
       el.textContent = CARDS.length;
     });
 
-    /** The name a card has with its picks: the old one, a candidate, or the player's own. */
-    const nameOf = (c, p = picks[c.id] || {}) => {
-      if (p.name === 'own' && p.own?.trim()) return p.own.trim();
-      return c.names.find((n) => n.key === p.name)?.name ?? c.was;
+    const group = (c, field) => c.groups.find((g) => g.field === field);
+    /** A field's value with its picks: an option, or the player's own; today's until something is picked. */
+    const valueOf = (c, field, p = picks[c.id] || {}) => {
+      const own = p[field + 'Own']?.trim();
+      if (p[field] === 'own' && own) return own;
+      const opts = group(c, field).options;
+      return (opts.find((o) => o.key === p[field]) ?? opts[0]).value;
     };
-    const named = (c) => {
+    const picked = (c, field) => {
       const p = picks[c.id] || {};
-      return p.name === 'keep' || (p.name === 'own' ? !!p.own?.trim() : !!p.name);
+      return p[field] === 'own' ? !!p[field + 'Own']?.trim() : !!p[field];
     };
-    const drawn = (c) => !!picks[c.id]?.art;
+    // A card with only today's name needs no name pick.
+    const decided = (c) => FIELDS.every((f) => picked(c, f) || (f === 'name' && group(c, f).options.length === 1));
 
     function updateMeter() {
-      const n = CARDS.filter(named).length;
-      const a = CARDS.filter(drawn).length;
-      document.getElementById('named').textContent = n;
-      document.getElementById('drawn').textContent = a;
-      document.getElementById('fill').style.width = (50 * (n + a)) / CARDS.length + '%';
+      const n = CARDS.filter(decided).length;
+      document.getElementById('decided').textContent = n;
+      document.getElementById('fill').style.width = (100 * n) / CARDS.length + '%';
     }
 
     const deckBox = document.getElementById('decks');
@@ -593,13 +522,17 @@
       applyFilter();
     };
 
-    // Community faces are injected as they near the viewport, so the page opens fast.
+    /** A card as printed, with the name and text it would have; ids kept apart per drawing. */
+    const draw = (c, name, text, idPrefix) => Art.cardSvg({ ...c.face, name, text }, { rounded: true, idPrefix });
+
+    // Current faces are drawn as they near the viewport, so the page opens fast.
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
           if (!e.isIntersecting) return;
           io.unobserve(e.target);
-          e.target.innerHTML = CARDS.find((c) => c.id === e.target.dataset.id).svg;
+          const c = CARDS.find((x) => x.id === e.target.dataset.id);
+          e.target.innerHTML = draw(c, c.face.name, c.face.text, 'now-' + c.id);
         });
       },
       { rootMargin: '900px 0px' },
@@ -617,24 +550,20 @@
     CARDS.forEach((c, i) => {
       const s = el('section', 'card cat-' + c.category);
       s.id = c.id;
+      const now = (f) => group(c, f).options[0].value;
 
       const meta = el('div', 'meta');
       meta.append(
-        el(
-          'div',
-          'eyebrow',
-          `${c.deck} · ${c.category} · ${String(c.index).padStart(2, '0')}/${c.deckSize}${c.copies > 1 ? ' · ×' + c.copies : ''}`,
-        ),
+        el('div', 'eyebrow', `${c.deck} · ${String(c.index).padStart(2, '0')}/${c.deckSize}${c.copies > 1 ? ' · ×' + c.copies : ''}`),
       );
-      meta.append(el('h2', null, c.was));
-      meta.append(el('p', 'rules', c.text));
+      meta.append(el('h2', null, now('name')));
+      meta.append(el('p', 'rules', now('text')));
       const thumb = el('div', 'thumb');
       thumb.dataset.id = c.id;
       thumb.setAttribute('role', 'img');
-      thumb.setAttribute('aria-label', `${c.was}, the Community Edition card`);
-      if (i < 2) thumb.innerHTML = c.svg;
-      else io.observe(thumb);
-      meta.append(thumb, el('div', 'was', 'The Community card today'));
+      thumb.setAttribute('aria-label', `${now('name')}, the card today`);
+      io.observe(thumb);
+      meta.append(thumb, el('div', 'was', 'The card today'));
       const ta = el('textarea');
       ta.id = 'note-' + c.id;
       ta.placeholder = 'Note (optional): what to change';
@@ -646,91 +575,67 @@
       meta.append(ta);
 
       const choices = el('div', 'choices');
-      const ng = el('div', 'group');
-      ng.append(el('h3', null, 'Name'));
-      const names = el('div', 'names');
-      names.setAttribute('role', 'radiogroup');
-      names.setAttribute('aria-label', c.was + ': name');
-      const nameOpt = (key, label, name, why) => {
-        const b = el('button', 'opt');
-        b.type = 'button';
-        b.setAttribute('role', 'radio');
-        b.dataset.name = key;
-        const head = el('span', 'head');
-        head.append(el('span', 'key', label), el('span', 'name', name));
-        b.append(head, el('span', 'why', why));
-        b.onclick = () => setPick(c.id, { name: key });
-        return b;
-      };
-      names.append(nameOpt('keep', 'KEEP', c.was, 'The Community name'));
-      c.names.forEach((n) => names.append(nameOpt(n.key, n.key.toUpperCase(), n.name, n.why)));
-      const own = el('div', 'own');
-      own.dataset.name = 'own';
-      const lab = el('label');
-      lab.htmlFor = 'own-' + c.id;
-      lab.append(el('span', 'key', 'OWN'), document.createTextNode('Your own name'));
-      const inp = el('input');
-      inp.id = 'own-' + c.id;
-      inp.placeholder = 'Type a name';
-      inp.autocomplete = 'off';
-      let t2;
-      inp.addEventListener('input', () => {
-        picks[c.id] = { ...(picks[c.id] || {}), own: inp.value, name: 'own' };
-        renderCard(c.id);
-        updateMeter();
-        clearTimeout(t2);
-        t2 = setTimeout(() => setPick(c.id, {}), 700);
+      c.groups.forEach((g) => {
+        const box = el('div', 'group');
+        box.append(el('h3', null, g.title));
+        const opts = el('div', g.field === 'name' ? 'names' : 'arts');
+        opts.setAttribute('role', 'radiogroup');
+        opts.setAttribute('aria-label', now('name') + ': ' + g.title);
+        const valueCls = g.field === 'name' ? 'name' : g.field === 'subtitle' ? 'title' : 'body';
+        g.options.forEach((o) => {
+          const b = el('button', 'opt');
+          b.type = 'button';
+          b.setAttribute('role', 'radio');
+          b.dataset.field = g.field;
+          b.dataset.key = o.key;
+          const head = el('span', 'head');
+          head.append(el('span', 'key', o.key.toUpperCase()), el('span', 'why', o.why));
+          b.append(head, el('span', valueCls, o.value));
+          b.onclick = () => setPick(c.id, { [g.field]: o.key });
+          opts.append(b);
+        });
+        const own = el('div', 'own');
+        own.dataset.field = g.field;
+        own.dataset.key = 'own';
+        const lab = el('label');
+        lab.htmlFor = `own-${g.field}-${c.id}`;
+        lab.append(el('span', 'key', 'OWN'), document.createTextNode('Your own ' + g.title.toLowerCase()));
+        const inp = el(g.field === 'text' ? 'textarea' : 'input');
+        inp.id = `own-${g.field}-${c.id}`;
+        inp.placeholder = 'Type your own';
+        inp.autocomplete = 'off';
+        let t2;
+        inp.addEventListener('input', () => {
+          picks[c.id] = { ...(picks[c.id] || {}), [g.field + 'Own']: inp.value, [g.field]: 'own' };
+          renderCard(c.id);
+          updateMeter();
+          clearTimeout(t2);
+          t2 = setTimeout(() => setPick(c.id, {}), 700);
+        });
+        inp.addEventListener('focus', () => {
+          if (picks[c.id]?.[g.field] !== 'own' && inp.value.trim()) setPick(c.id, { [g.field]: 'own' });
+        });
+        own.append(lab, inp);
+        if (g.field === 'text') {
+          box.append(opts, own);
+          own.style.marginTop = '8px';
+        } else {
+          opts.append(own);
+          box.append(opts);
+        }
+        choices.append(box);
       });
-      inp.addEventListener('focus', () => {
-        if (picks[c.id]?.name !== 'own' && inp.value.trim()) setPick(c.id, { name: 'own' });
-      });
-      own.append(lab, inp);
-      names.append(own);
-      ng.append(names);
-
-      const ag = el('div', 'group');
-      ag.append(el('h3', null, 'Art'));
-      const arts = el('div', 'arts');
-      arts.setAttribute('role', 'radiogroup');
-      arts.setAttribute('aria-label', c.was + ': art');
-      c.art.forEach((a) => {
-        const b = el('button', 'opt');
-        b.type = 'button';
-        b.setAttribute('role', 'radio');
-        b.dataset.art = a.key;
-        const head = el('span', 'head');
-        head.append(el('span', 'key', a.key.toUpperCase()), el('span', 'title', a.title));
-        b.append(head, el('span', 'why', a.brief));
-        b.onclick = () => setPick(c.id, { art: a.key });
-        arts.append(b);
-      });
-      ag.append(arts);
-      choices.append(ng, ag);
 
       const proof = el('div', 'proof');
-      const face = el('div', 'face ' + (c.deck === 'Tactics' ? 'tactic' : 'skill'));
-      const win = el('div', 'window');
-      win.append(el('span', 'art-title'), el('span', 'art-brief'));
-      const text = el('div', 'text');
-      text.append(
-        el('div', 'fname'),
-        el(
-          'div',
-          'kind',
-          `${c.deckWord} · ${c.category} · ${c.deck === 'Tactics' ? 'one-shot' : c.deck === 'Skills' ? 'permanent' : 'face up'}`,
-        ),
-        el('div', 'ftext', c.text),
-      );
-      const tag = el('div', 'tag');
-      tag.append(el('span', null, `${String(c.index).padStart(2, '0')}/${c.deckSize}`), el('span', null, 'REGOLITH'));
-      face.append(win, text, tag);
-      proof.append(face);
+      const drawn = el('div', 'drawn');
+      drawn.setAttribute('role', 'img');
+      proof.append(drawn, el('div', 'was', 'The card as picked, with its art'));
 
       s.append(meta, choices, proof);
       list.append(s);
       sections[c.id] = s;
     });
-    const empty = el('p', 'empty', 'Every card in this view has a name and art.');
+    const empty = el('p', 'empty', 'Every card in this view is decided.');
     empty.hidden = true;
     list.append(empty);
 
@@ -739,30 +644,41 @@
       const c = CARDS.find((x) => x.id === id);
       if (!s) return;
       const p = picks[id] || {};
-      s.querySelectorAll('[data-name]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.name === p.name)));
-      s.querySelectorAll('[data-art]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.art === p.art)));
-      const inp = s.querySelector('.own input');
-      if (document.activeElement !== inp && (p.own ?? '') !== inp.value) inp.value = p.own ?? '';
-      const ta = s.querySelector('textarea');
+      s.querySelectorAll('[data-field]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.key === p[b.dataset.field])));
+      FIELDS.forEach((f) => {
+        const inp = document.getElementById(`own-${f}-${id}`);
+        if (document.activeElement !== inp && (p[f + 'Own'] ?? '') !== inp.value) inp.value = p[f + 'Own'] ?? '';
+      });
+      const ta = document.getElementById('note-' + id);
       if (document.activeElement !== ta && (p.note ?? '') !== ta.value) ta.value = p.note ?? '';
-      s.querySelector('h2').textContent = nameOf(c);
-      s.querySelector('.was').textContent = nameOf(c) === c.was ? 'The Community card today' : `Was ${c.was}: the Community card today`;
-      s.querySelector('.fname').textContent = nameOf(c);
-      const art = c.art.find((a) => a.key === p.art);
-      s.querySelector('.art-title').textContent = art ? art.title : 'No art picked';
-      s.querySelector('.art-brief').textContent = art ? art.brief : 'Pick an art brief to see it here.';
+      const name = valueOf(c, 'name');
+      const text = valueOf(c, 'text');
+      const drawn = s.querySelector('.drawn');
+      if (drawn.dataset.key !== name + '\n' + text) {
+        drawn.dataset.key = name + '\n' + text;
+        drawn.innerHTML = draw(c, name, text, 'pick-' + c.id);
+        drawn.setAttribute('aria-label', `${name}: ${text}`);
+      }
     }
 
     function applyFilter() {
       let shown = 0;
       CARDS.forEach((c) => {
-        const hide = (deckFilter !== 'All' && c.deck !== deckFilter) || (undecidedOnly && named(c) && drawn(c));
+        const hide = (deckFilter !== 'All' && c.deck !== deckFilter) || (undecidedOnly && decided(c));
         sections[c.id].hidden = hide;
         if (!hide) shown++;
       });
       empty.hidden = shown > 0;
     }
 
+    const doc = (p) => {
+      const d = { note: p.note ?? '', at: new Date().toISOString() };
+      FIELDS.forEach((f) => {
+        d[f] = p[f] ?? null;
+        d[f + 'Own'] = p[f + 'Own'] ?? '';
+      });
+      return d;
+    };
     const writing = {};
     async function setPick(id, patch) {
       picks[id] = { ...(picks[id] || {}), ...patch };
@@ -778,10 +694,7 @@
       try {
         do {
           writing[id].again = false;
-          const p = picks[id];
-          await db
-            .doc(COLL + '/' + id)
-            .set({ name: p.name ?? null, own: p.own ?? '', art: p.art ?? null, note: p.note ?? '', at: new Date().toISOString() });
+          await db.doc(COLL + '/' + id).set(doc(picks[id]));
         } while (writing[id].again);
         status('Picks are saved and Claude can read them.');
       } catch (e) {
@@ -798,9 +711,10 @@
     document.getElementById('copy').onclick = async () => {
       const lines = CARDS.filter((c) => picks[c.id]).map((c) => {
         const p = picks[c.id];
-        const name = named(c) ? `${nameOf(c)} (${p.name === 'keep' ? 'kept' : p.name === 'own' ? 'own' : p.name.toUpperCase()})` : '—';
-        const art = c.art.find((a) => a.key === p.art);
-        return `${c.id}: name ${name} · art ${art ? art.key.toUpperCase() + ' ' + art.title : '—'}${p.note ? ' — ' + p.note : ''}`;
+        const parts = FIELDS.filter((f) => picked(c, f)).map(
+          (f) => `${f} ${p[f] === 'own' ? 'OWN' : p[f].toUpperCase()} "${valueOf(c, f)}"`,
+        );
+        return `${c.id}: ${parts.join(' · ') || '—'}${p.note ? ' — ' + p.note : ''}`;
       });
       const text = lines.join('\n');
       try {
@@ -845,7 +759,12 @@
           snap.docs.forEach((d) => {
             if (writing[d.id] || !sections[d.id]) return;
             const v = d.data() || {};
-            picks[d.id] = { name: v.name ?? undefined, own: v.own ?? '', art: v.art ?? undefined, note: v.note ?? '' };
+            const p = { note: v.note ?? '' };
+            FIELDS.forEach((f) => {
+              p[f] = v[f] ?? undefined;
+              p[f + 'Own'] = v[f + 'Own'] ?? '';
+            });
+            picks[d.id] = p;
             renderCard(d.id);
           });
           saveLocal();

@@ -1,48 +1,64 @@
 /**
- * Builds the Regolith Card Picks page (docs/regolith/REGOLITH.md §3): every Community card in Regolith's deck
- * with the name and art candidates from docs/regolith/card-ideas.yaml, its rules text in Regolith's words,
- * and its Community face for reference. The page is published as an Artifact, where picks are saved.
+ * Builds the Regolith Card Picks page (docs/regolith/REGOLITH.md §3): every card in data/regolith.yaml, its name,
+ * subtitle and rules text as they are now beside the rewrites in docs/regolith/card-text-ideas.yaml. The page
+ * carries the card renderer, so it draws each card as printed today and as picked. It is published as an
+ * Artifact, where picks are saved.
  *   npm run regolith:picks -- [out=test-results/regolith-card-picks.html]
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { build } from 'esbuild';
 import { parse } from 'yaml';
-import { cardSvg, type CardDeck } from '../packages/art/src';
-import { EXPANSION, SKILLS, TACTICS, reword, type CardDef } from '../packages/engine/src';
-import { REGOLITH_WORDS } from '../packages/engine/src/regolith/words';
+import type { CardDeck } from '../packages/art/src';
+import { MODES } from '../packages/engine/src';
 
+interface Card {
+  id: string;
+  name: string;
+  subtitle: string;
+  text: string;
+  category: string;
+  count: number;
+  from?: string;
+  art: { title: string; brief: string };
+}
 interface Ideas {
-  names: { name: string; why: string }[];
-  art: { title: string; brief: string }[];
+  subtitle: string;
+  text: string;
+  names?: { name: string; why: string }[];
 }
 
 const [out = 'test-results/regolith-card-picks.html'] = process.argv.slice(2);
 const root = new URL('..', import.meta.url);
-const ideas: Record<string, Record<string, Ideas>> = parse(readFileSync(new URL('docs/regolith/card-ideas.yaml', root), 'utf8'));
-const KEYS = ['a', 'b', 'c'];
+const read = (path: string) => parse(readFileSync(new URL(path, root), 'utf8'));
+const regolith: Record<string, Card[]> = read('data/regolith.yaml');
+const ideas: Record<string, Record<string, Ideas>> = read('docs/regolith/card-text-ideas.yaml');
+const LOOK = MODES.find((m) => m.id === 'regolith')?.cards?.look;
 
-// Ingenious ("conquer from the corners") isn't dealt on hexes, so it isn't in Regolith's deck.
-const DECKS: { deck: CardDeck; name: string; word: string; ideas: Record<string, Ideas>; cards: CardDef[] }[] = [
-  { deck: 'skill', name: 'Skills', word: 'Skill', ideas: ideas.skills, cards: SKILLS.filter((c) => c.id !== 'ingenious') },
-  { deck: 'tactic', name: 'Tactics', word: 'Tactic', ideas: ideas.tactics, cards: TACTICS },
-  { deck: 'expansion', name: 'Expansion', word: 'Expansion', ideas: ideas.expansion, cards: [EXPANSION] },
+const DECKS: { key: string; deck: CardDeck; name: string; word: string }[] = [
+  { key: 'skills', deck: 'skill', name: 'Skills', word: 'Skill' },
+  { key: 'tactics', deck: 'tactic', name: 'Tactics', word: 'Tactic' },
+  { key: 'expansion', deck: 'expansion', name: 'Expansion', word: 'Expansion' },
 ];
 
 const cards = DECKS.flatMap((d) =>
-  d.cards.map((c, i) => {
-    const idea = d.ideas[c.id];
-    if (!idea || idea.names.length !== 3 || idea.art.length !== 3)
-      throw new Error(`card-ideas.yaml: ${c.id} needs three names and three art briefs`);
+  regolith[d.key].map((c, i) => {
+    const idea = ideas[d.key]?.[c.id];
+    if (!idea?.subtitle || !idea.text) throw new Error(`card-text-ideas.yaml: ${c.id} needs a subtitle and a text`);
+    const deckSize = regolith[d.key].length;
+    // Printed as the game prints it, with the `from` card's picture until its own art is drawn.
     const face = {
       id: c.id,
       name: c.name,
       subtitle: c.subtitle,
       text: c.text,
       category: c.category,
+      scene: c.from,
       deck: d.deck,
+      look: LOOK,
       copies: c.count,
       index: i + 1,
-      deckSize: d.cards.length,
+      deckSize,
     };
     return {
       id: c.id,
@@ -50,23 +66,56 @@ const cards = DECKS.flatMap((d) =>
       deckWord: d.word,
       category: c.category,
       index: i + 1,
-      deckSize: d.cards.length,
+      deckSize,
       copies: c.count,
-      was: c.name,
-      text: reword(REGOLITH_WORDS, c.text),
-      names: idea.names.map((n, k) => ({ key: KEYS[k], ...n })),
-      art: idea.art.map((a, k) => ({ key: KEYS[k], ...a })),
-      svg: cardSvg(face, { rounded: true }),
+      groups: [
+        {
+          field: 'name',
+          title: 'Name',
+          options: [
+            { key: 'now', value: c.name, why: 'The name today' },
+            ...(idea.names ?? []).map((n, k) => ({ key: 'abc'[k], value: n.name, why: n.why })),
+          ],
+        },
+        {
+          field: 'subtitle',
+          title: 'Subtitle',
+          options: [
+            { key: 'now', value: c.subtitle, why: 'The subtitle today' },
+            { key: 'new', value: idea.subtitle, why: 'Suggested' },
+          ],
+        },
+        {
+          field: 'text',
+          title: 'Rules text',
+          options: [
+            { key: 'now', value: c.text, why: 'The text today' },
+            { key: 'new', value: idea.text, why: 'Suggested' },
+          ],
+        },
+      ],
+      face,
     };
   }),
 );
 const extra = Object.values(ideas)
   .flatMap((deck) => Object.keys(deck))
   .filter((id) => !cards.some((c) => c.id === id));
-if (extra.length) throw new Error(`card-ideas.yaml: no such card in Regolith's deck: ${extra.join(', ')}`);
+if (extra.length) throw new Error(`card-text-ideas.yaml: no such card in data/regolith.yaml: ${extra.join(', ')}`);
+
+// The card renderer, bundled for the page as `Art.cardSvg`.
+const bundle = await build({
+  stdin: { contents: "export { cardSvg } from './packages/art/src';", resolveDir: new URL('.', root).pathname, loader: 'ts' },
+  bundle: true,
+  minify: true,
+  format: 'iife',
+  globalName: 'Art',
+  write: false,
+});
+const art = bundle.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 
 const template = readFileSync(new URL('scripts/regolith-card-picks.html', root), 'utf8');
-const html = template.replace('/*DATA*/', () => JSON.stringify(cards).replace(/<\//g, '<\\/'));
+const html = template.replace('/*ART*/', () => art).replace('/*DATA*/', () => JSON.stringify(cards).replace(/<\//g, '<\\/'));
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, html);
 console.log(`${out}: ${cards.length} cards, ${(html.length / 1e6).toFixed(1)} MB`);
