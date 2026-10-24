@@ -267,7 +267,7 @@
       "effect": "science",
       "art": {
         "title": "Flag and number",
-        "brief": "A survey flag with a stencilled research number flying over an objective."
+        "brief": "A survey flag with the research flask on it flying over an objective."
       }
     },
     {
@@ -432,7 +432,7 @@
       "effect": "stealthy",
       "art": {
         "title": "Lone descent",
-        "brief": "A lone mech coming down on its boosters into a dust storm."
+        "brief": "A lone Sniper coming down on its boosters into a dust storm."
       }
     },
     {

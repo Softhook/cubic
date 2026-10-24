@@ -1,3 +1,4 @@
+import { icon } from '../icons';
 import { n } from '../svg';
 import type { World } from '../tile/look';
 import { INKS, ON_NIGHT, ON_PAPER, mono } from './inks';
@@ -318,8 +319,7 @@ export const SCENES: Record<string, SpScene> = {
       outdoors(s, 37, { planet: { x: 54, y: 8, r: 7 } }) +
       // face on, standing straight
       dropping(s, 'breacher', 19, 24, 0.075, 0, {}) +
-      dropping(s, 'chameleon', 44, 19, 0.075, 0, {}) +
-      rings(31, 38, 3, 3, 3, s.key, 0.35, 180, 360),
+      dropping(s, 'chameleon', 44, 19, 0.075, 0, {}),
   },
   'r-intelligent': {
     world: 'mars',
@@ -394,12 +394,13 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-pioneering': {
     world: 'mars',
-    caption: 'a survey flag with a stencilled research number flying over a refinery',
+    caption: 'a survey flag with the research flask on it flying over a refinery',
     draw: (s) =>
       outdoors(s, 32, { planet: { x: 12, y: 8, r: 8 } }) +
       print(s, 'refinery', 42, 33, { size: 0.16 }) +
       print(s, 'tanks', 18, 33, { size: 0.12 }) +
-      flag(s, 26, 42, 28, s.plate, '4') +
+      flag(s, 26, 42, 28, s.plate) +
+      icon('research', 30.6, 19, 6.5, s.key, 2.6) +
       person(20, 42, 0.22, { facing: 1, arms: [120, 20], elbows: [-10, 10] }, s.key, s.paper),
   },
   'r-plundering': {
@@ -545,7 +546,7 @@ export const SCENES: Record<string, SpScene> = {
   'r-stealthy': {
     world: 'deimos',
     caption: 'a lone mech coming down on its boosters into a dust storm',
-    draw: (s) => outdoors(s, 36, { planet: { x: 12, y: 9, r: 8 } }) + dropping(s, 'wisp', 38, 22, 0.085, -20) + storm(s, 14, 40, 0.85),
+    draw: (s) => outdoors(s, 36, { planet: { x: 12, y: 9, r: 8 } }) + dropping(s, 'sniper', 38, 25, 0.068, -20) + storm(s, 14, 40, 0.85),
   },
   'r-strategic': {
     world: 'phobos',

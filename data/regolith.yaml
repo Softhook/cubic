@@ -190,7 +190,7 @@ skills:
     from: pioneering
     status: reworked
     effect: science
-    art: { title: "Flag and number", brief: "A survey flag with a stencilled research number flying over an objective." }
+    art: { title: "Flag and number", brief: "A survey flag with the research flask on it flying over an objective." }
   - id: r-plundering
     name: "Exploit"
     subtitle: "Destruction is research"
@@ -300,7 +300,7 @@ skills:
     from: stealthy
     status: renamed
     effect: stealthy
-    art: { title: "Lone descent", brief: "A lone mech coming down on its boosters into a dust storm." }
+    art: { title: "Lone descent", brief: "A lone Sniper coming down on its boosters into a dust storm." }
   - id: r-strategic
     name: "Close Protection"
     subtitle: "Combat support bonus"
