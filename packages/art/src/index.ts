@@ -38,7 +38,7 @@ export {
   type Spot,
   type TileShape,
 } from './tile/geometry';
-export { WORLD_NAMES, lookShape, lookWorld, type TileLook, type World } from './tile/look';
+export { OBJECTIVE_NAMES, WORLD_NAMES, lookShape, lookWorld, type TileLook, type World } from './tile/look';
 export { HATCH, hexWell, voidFlask, well } from './tile/markings';
 export { tileFlavour, tileLabel, tileLabelFits } from './tile/label';
 export { tileHasRings } from './tile/space';

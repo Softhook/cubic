@@ -1,5 +1,6 @@
 import {
   HEX_TILE_SET,
+  OBJECTIVE_NAMES,
   REGOLITH_GROUND_PX,
   TILE_SET,
   WORLD_NAMES,
@@ -96,13 +97,25 @@ export const latestThumbnail = (t: TileSpec, look: TileOptions['look']) => lates
 
 /**
  * A tile as a printable face, named for where its planet sits when that's not the middle, and for the
- * world when it's on one: `p7-01`, `p7-01-ne`, `p7-01-phobos` (a Void has no spot).
+ * world when it's on one, where its planet is an objective: `p7-01`, `p7-01-ne`, `habitat-01-phobos`,
+ * `sinkhole-02-mars` (a Void has no spot).
  */
-export const printableTile = (t: TileSpec, fontCss: string, markings = true, view: TileView = {}): Printable => ({
-  name: (view.planetAt && t.number > 0 ? `${t.id}-${view.planetAt}` : t.id) + (lookWorld(view.look) ? `-${view.look}` : ''),
-  svg: (bleed) => tileSvg(t, { ...view, markings, bleed, fontCss }),
-  print: (bleed) => printedTileSvg(t, { ...view, markings, bleed, fontCss }),
-});
+export const printableTile = (t: TileSpec, fontCss: string, markings = true, view: TileView = {}): Printable => {
+  const id = lookWorld(view.look) ? objectiveId(t) : t.id;
+  return {
+    name: (view.planetAt && t.number > 0 ? `${id}-${view.planetAt}` : id) + (lookWorld(view.look) ? `-${view.look}` : ''),
+    svg: (bleed) => tileSvg(t, { ...view, markings, bleed, fontCss }),
+    print: (bleed) => printedTileSvg(t, { ...view, markings, bleed, fontCss }),
+  };
+};
+
+/** A tile's id with its objective for its planet: `p7-01` → `habitat-01`, `void-2` → `sinkhole-02` (blanks as they are). */
+function objectiveId(t: TileSpec): string {
+  const objective = OBJECTIVE_NAMES[t.number]?.toLowerCase().replaceAll(' ', '-');
+  if (!objective) return t.id;
+  const n = t.number === 0 ? (t.id === 'void' ? 1 : Number(t.id.slice(5))) : Number(t.id.split('-')[1]);
+  return `${objective}-${String(n).padStart(2, '0')}`;
+}
 
 /** A player aid as a printable face. */
 export const printableAid = (edition: AidEdition, fontCss: string): Printable => ({

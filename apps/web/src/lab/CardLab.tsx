@@ -70,6 +70,12 @@ const backOf = (d: Deck): Item => {
   return { key: `${d.id}:${look ?? 'holo'}:back`, deck: d.id, look };
 };
 const itemsOf = (d: Deck): Item[] => [backOf(d), ...d.cards.map(itemOf)];
+/** A name as a file name: `Ice Tunnel` → `ice-tunnel`. */
+const slugOf = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 /** Items once each: decks of different editions share a back. */
 const unique = (items: Item[]) => [...new Map(items.map((i) => [i.key, i])).values()];
 
@@ -123,7 +129,8 @@ export function CardLab() {
 
   const detail = useSvgUrl(fonts === null ? '' : svgOf(item, { bleed }));
 
-  const fileName = (i: Item) => (i.face ? `${String(i.face.index).padStart(2, '0')}-${i.face.id}` : 'back');
+  // Named as the card reads, not by its id: `07-tune-up`, not `07-r-agile`.
+  const fileName = (i: Item) => (i.face ? `${String(i.face.index).padStart(2, '0')}-${slugOf(i.face.name)}` : 'back');
   // Screenprint cards in their own folders, so a set of both looks keeps both decks' backs.
   const printable = (i: Item): Printable => ({
     name: `${i.look === 'screenprint' ? 'screenprint-' : ''}${i.deck}/${fileName(i)}`,

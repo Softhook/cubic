@@ -6,6 +6,9 @@ export type World = 'phobos' | 'deimos' | 'mars';
 /** Each world's name, as players read it. */
 export const WORLD_NAMES: Record<World, string> = { phobos: 'Phobos', deimos: 'Deimos', mars: 'Mars' };
 
+/** What a tile's planet is on a world's ground, by its number (0 for a Void): docs/regolith/REGOLITH-WORLD.md, *Objectives*. */
+export const OBJECTIVE_NAMES: Record<number, string> = { 7: 'Habitat', 8: 'Refinery', 9: 'Ice Mine', 10: 'Reactor', 0: 'Sinkhole' };
+
 /**
  * How a tile looks: 3 × 3 squares or a 7-hex flower in space (its sky, and its planet or a Void's heart), or
  * a hex tile on a world's ground (the Regolith look, regolith/), with a building on its planet's space.
