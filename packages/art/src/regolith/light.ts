@@ -185,6 +185,13 @@ export function built(r: Rng, area: Box): string {
 }
 
 /**
+ * How the buildings' cast shadows look (`cast`), for what the game draws standing on the ground to match: as
+ * dark (`opacity`, of black), as sharp (`blur`, board units), and as long, down and to the right, `length` along
+ * each axis for each unit of height (a gold tank some 20 tall throws its shadow about 19 on).
+ */
+export const SHADOW = { opacity: 0.85, blur: 0.45, length: 1 };
+
+/**
  * The shadows the buildings cast on the ground, away from the light (to the bottom right), as long as
  * they're tall: each height (red, 128 the ground) stands in its shadow that much further along, so a dome
  * or a tank throws a long one and a deck or a pipe a short one. Over `area`.
@@ -205,8 +212,8 @@ export function cast(area: Box): string {
       .join('') +
     `<feMerge>${levels.map((_, i) => `<feMergeNode in="s${i}"/>`).join('')}</feMerge>` +
     // Just enough blur to join its steps, so its edge stays crisp.
-    '<feGaussianBlur stdDeviation="0.45"/>' +
-    '<feComponentTransfer><feFuncA type="linear" slope="0.85"/></feComponentTransfer>' +
+    `<feGaussianBlur stdDeviation="${SHADOW.blur}"/>` +
+    `<feComponentTransfer><feFuncA type="linear" slope="${SHADOW.opacity}"/></feComponentTransfer>` +
     '</filter>'
   );
 }

@@ -4,7 +4,7 @@ import { BLED, type Spot } from '../tile/geometry';
 import type { World } from '../tile/look';
 import type { TileSpec } from '../tile/set';
 import { SPACE, SCALE, SIZE, LIT, DRAWN } from './core';
-import { ground, built, cast, dust } from './light';
+import { ground, built, cast, dust, SHADOW } from './light';
 import { GRADIENTS, CRATERS, BURIED, RIDGE, DUNES, terrain, weathering } from './terrain';
 import { BUILDING_GRADIENTS } from './parts';
 import { base } from './base';
@@ -82,6 +82,9 @@ const LIT_AREA = { x: BLED.x / SCALE, y: BLED.y / SCALE, w: BLED.w / SCALE, h: B
 /** The lit ground: drawn by its filter, or a bitmap of it (a data URL of `regolithGroundSvg`) in its place. */
 const litGround = (scene: Scene, image?: string) =>
   image ? `<image href="${image}" ${region(LIT_AREA)} preserveAspectRatio="none"/>` : scene.lit;
+
+/** The buildings' cast shadows (light.ts `SHADOW`), their blur in mm: for the dice and cubes the game stands on the ground. */
+export const REGOLITH_SHADOW = { ...SHADOW, blur: SHADOW.blur * SCALE };
 
 /** The size, px, to draw `regolithGroundSvg` at: a pixel the size its light is made for (`LIT`). */
 export const REGOLITH_GROUND_PX = Math.round(LIT_AREA.w / LIT);

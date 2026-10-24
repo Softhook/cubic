@@ -4,6 +4,7 @@ import { playRoll } from '../sound';
 import { APPLE_TOUCH } from '../platform';
 import { useEffectEvent } from '../game/useEffectEvent';
 import { PIP } from '../theme';
+import { PIECE_SHADOW_LENGTH, pieceShadowTint } from './board/shadows';
 
 /**
  * A CSS 3D die. Faces sit on a cube; the cube rotates so the face for `value` points at
@@ -65,6 +66,11 @@ const PLANES: { face?: number; at: string }[] = [
   { face: 5, at: 'rotateX(-90deg) translateZ(var(--half))' },
 ];
 
+/** How high a rolled die hops at each of its hop's keyframes (`HOP_AT`), in sizes. */
+const HOP_HEIGHTS = [0, 0.55, 0, 0.12, 0];
+/** It lands back at HOP_LANDS: heard as the clatter starts (beats.ts). */
+const HOP_AT = [0, 0.28, HOP_LANDS, 0.78, 1];
+
 export interface Die3DProps {
   value: number;
   rolls?: number;
@@ -79,6 +85,8 @@ export interface Die3DProps {
   /** Seconds to wait before the tumble (to stagger several dice). */
   delay?: number;
   sound?: boolean;
+  /** No soft shadow under it: its shadow is drawn elsewhere (a cast one on the ground, `DieShadow`). */
+  shadowless?: boolean;
   className?: string;
   title?: string;
   onClick?: () => void;
@@ -95,6 +103,7 @@ export const Die3D = memo(function Die3D({
   scene,
   delay = 0,
   sound = true,
+  shadowless,
   className = '',
   title,
   onClick,
@@ -169,14 +178,10 @@ export const Die3D = memo(function Die3D({
     setRotation(DICE.turn);
     hopAnimation.current?.cancel();
     hopAnimation.current = hop.current?.animate(
-      [
-        { transform: 'translateY(0) scale(1)' },
-        { transform: `translateY(${-size * 0.55}px) scale(1.12)`, offset: 0.28 },
-        // It lands back here: heard as the clatter starts (beats.ts).
-        { transform: 'translateY(0) scale(0.96)', offset: HOP_LANDS },
-        { transform: `translateY(${-size * 0.12}px) scale(1.02)`, offset: 0.78 },
-        { transform: 'translateY(0) scale(1)' },
-      ],
+      [1, 1.12, 0.96, 1.02, 1].map((scale, i) => ({
+        transform: `translateY(${-size * HOP_HEIGHTS[i]}px) scale(${scale})`,
+        offset: HOP_AT[i],
+      })),
       { duration: DICE.hop, delay: delay * 1000, easing: HOP_EASING },
     );
     clearTimeout(clatter.current); // a roll still waiting to sound is overtaken by this one
@@ -227,7 +232,7 @@ export const Die3D = memo(function Die3D({
 
   return (
     <div className={`die3d ${className}`} style={style} title={title} onClick={onClick}>
-      <div className="die3d-shadow" />
+      {!shadowless && <div className="die3d-shadow" />}
       <div className={moving ? 'die3d-hop moving' : 'die3d-hop'} ref={hop}>
         {moving ? (
           <div className="die3d-cube" ref={cube}>
@@ -254,3 +259,62 @@ function Face({ n, className }: { n: number; className?: string }) {
     </div>
   );
 }
+
+/**
+ * The hard shadow a die `size` across casts on the ground (board/shadows.ts): its rounded footprint swept down and
+ * to the right, blurred `blur` px, with a hint of the die's `color`. Opaque, so where shadows meet they don't darken each
+ * other: the layer they're all in sets how dark they are. While its die hops on a roll (`rolls`, as Die3D's) it
+ * falls that much further away; not when the die only jumps to another position (`scene`).
+ */
+export const DieShadow = memo(function DieShadow({
+  size,
+  blur,
+  color,
+  rolls = 0,
+  scene,
+}: {
+  size: number;
+  blur: number;
+  color: string;
+  rolls?: number;
+  scene?: string;
+}) {
+  const el = useRef<HTMLDivElement>(null);
+  const last = useRef({ rolls, scene });
+  useEffect(() => {
+    const was = last.current;
+    last.current = { rolls, scene };
+    if (rolls === was.rolls || scene !== was.scene) return;
+    const away = (h: number) => size * h * PIECE_SHADOW_LENGTH;
+    const hop = el.current?.animate(
+      HOP_HEIGHTS.map((h, i) => ({ transform: `translate(${away(h)}px, ${away(h)}px)`, offset: HOP_AT[i] })),
+      { duration: DICE.hop, easing: HOP_EASING },
+    );
+    return () => hop?.cancel();
+  }, [rolls, scene, size]);
+  // The sweep of its corners' centres, stroked round by their radius (the faces' 16%).
+  const far = size * PIECE_SHADOW_LENGTH;
+  const r = size * 0.16;
+  const [a, w] = [r, size - 2 * r];
+  const points = [
+    [a, a],
+    [a + w, a],
+    [a + w + far, a + far],
+    [a + w + far, a + w + far],
+    [a + far, a + w + far],
+    [a, a + w],
+  ];
+  const tint = pieceShadowTint(color);
+  return (
+    <div className="die3d-cast" ref={el} style={{ width: size, height: size }}>
+      <svg width={size + far} height={size + far} style={{ filter: `blur(${blur}px)` }}>
+        <polygon
+          points={points.map((p) => p.join(',')).join(' ')}
+          style={{ fill: tint, stroke: tint }}
+          strokeWidth={2 * r}
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  );
+});

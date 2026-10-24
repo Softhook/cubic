@@ -1,12 +1,13 @@
 import { memo, type CSSProperties } from 'react';
 import { drawing, type Board, type GameState } from '@quantum/engine';
-import { PLANET_DIAMETER, TILE } from '@quantum/art';
+import { PLANET_DIAMETER, TILE, lookWorld } from '@quantum/art';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { GATE_COLOR } from '../../theme';
 import { placement, wrapMarks, type WrapMark } from './geometry';
 import { PlanetMarkings } from './PlanetMarkings';
 import { MapTiles } from './MapTiles';
 import { numberCorner } from './layers';
+import { useMapLook } from '../../art/mapLook';
 
 /** Which way each board edge faces, for the wrap chevrons. */
 const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number }> = {
@@ -18,7 +19,7 @@ const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number 
 
 // A map's tile art, worked out once: a map id always names the same layout.
 const tileArtByMap = new Map<string, TileArt[]>();
-function tileArtOf(board: Board): TileArt[] {
+export function tileArtOf(board: Board): TileArt[] {
   let tiles = tileArtByMap.get(board.mapId);
   if (!tiles) tileArtByMap.set(board.mapId, (tiles = tileArt(board)));
   return tiles;
@@ -46,6 +47,8 @@ export const BoardArt = memo(function BoardArt({
   const { box, mid } = placement(game.board, cell);
   // Print millimetres to screen pixels: the tile art and everything drawn over it use the printed geometry.
   const mm = cell / TILE.cell;
+  // On a world's ground the cubes cast hard shadows, as its buildings do.
+  const ground = !!lookWorld(useMapLook(game.board));
   // The open gates, then any of a Warp Gate pair placed so far: faint until the pair is complete.
   const head = game.pending[0];
   const placing = head?.kind === 'warpGate' ? head.placed : [];
@@ -120,6 +123,7 @@ export const BoardArt = memo(function BoardArt({
                 shape={game.board.hex ? 'hex' : 'square'}
                 numberClass="planet-num"
                 cubeClass="cube"
+                cast={ground ? 'cube-shadow' : undefined}
               />
             </g>
           );
