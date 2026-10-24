@@ -1,6 +1,6 @@
 import { rng } from '../rng';
 import { dieCut, document, esc, n, type Box, type Fragment } from '../svg';
-import type { CardDeck, CardFace, CardOptions, Measure } from '../card';
+import type { CardDeck, CardFace, CardOptions, Measure, MeasuredFont } from '../card';
 import { INKS, ON_NIGHT, ON_PAPER } from './inks';
 import { SP_FONTS, land, label, mech, paperGround, screens, sky, stencil, type Stage } from './kit';
 import { SCENES } from './scenes';
@@ -62,43 +62,38 @@ const BOLD = new Set([
   'strikes',
 ]);
 
+/** Rough widths of the screenprint faces, per character and mm of size. */
+const WIDTHS: Partial<Record<MeasuredFont, number>> = { stencil: 0.7, display: 0.74, condensed: 0.42, condensedBold: 0.45, mono: 0.62 };
+
 /** Rough widths of the screenprint faces, when no real measurement is available. */
-const estimateScreenprint: Measure = (text, size, font) =>
-  size *
-  text.length *
-  (font === 'stencil'
-    ? 0.7
-    : font === 'display'
-      ? 0.74
-      : font === 'condensed'
-        ? 0.42
-        : font === 'condensedBold'
-          ? 0.45
-          : font === 'mono'
-            ? 0.62
-            : 0.52);
+const estimateScreenprint: Measure = (text, size, font) => size * text.length * (WIDTHS[font] ?? 0.52);
 
 const rect = (b: Box, fill: string, extra = '') =>
   `<rect x="${n(b.x)}" y="${n(b.y)}" width="${n(b.w)}" height="${n(b.h)}" fill="${fill}"${extra}/>`;
 
-/** A card's stage: its paper and inks, its plate, and its scene's world. */
-function stage(face: CardFace, id: string): Stage & { world: Stage['world'] } {
-  const dark = DECK[face.deck].dark;
-  const scene = SCENES[face.id];
+/** A stage on the deck's paper, in its inks: key on paper, bone on night paper. */
+const paperStage = (deck: CardDeck, o: Pick<Stage, 'id' | 'r' | 'world' | 'h' | 'plate'>): Stage => {
+  const dark = DECK[deck].dark;
   return {
-    id,
-    r: rng(`screenprint:${face.id}`),
+    ...o,
     dark,
-    world: scene?.world ?? 'phobos',
     w: W,
-    h: ART_BOTTOM,
     paper: dark ? INKS.night : INKS.paper,
     key: dark ? INKS.bone : INKS.key,
     ink: dark ? ON_NIGHT : ON_PAPER,
-    plate: PLATE[face.category] ?? INKS.dust,
     defs: [],
   };
-}
+};
+
+/** A card's stage: its plate, and its scene's world. */
+const stage = (face: CardFace, id: string): Stage =>
+  paperStage(face.deck, {
+    id,
+    r: rng(`screenprint:${face.id}`),
+    world: SCENES[face.id]?.world ?? 'phobos',
+    h: ART_BOTTOM,
+    plate: PLATE[face.category] ?? INKS.dust,
+  });
 
 /** The scene, clipped to the art window and its bleed, under a shade fading down from the top. */
 function art(face: CardFace, s: Stage): Fragment {
@@ -242,20 +237,13 @@ export function screenprintCardSvg(face: CardFace, o: CardOptions = {}): string 
 /** A screenprint deck's back: the game's name over Mars and a Chameleon on its ground, on the deck's paper. */
 export function screenprintBackSvg(deck: CardDeck, o: Omit<CardOptions, 'measure'> & { plain?: boolean } = {}): string {
   const id = o.idPrefix ?? `sp-back-${deck}`;
-  const dark = DECK[deck].dark;
-  const s: Stage = {
+  const s = paperStage(deck, {
     id,
     r: rng(`screenprint-back:${deck}`),
-    dark,
     world: deck === 'expansion' ? 'mars' : 'phobos',
-    w: W,
     h: H,
-    paper: dark ? INKS.night : INKS.paper,
-    key: dark ? INKS.bone : INKS.key,
-    ink: dark ? ON_NIGHT : ON_PAPER,
     plate: deck === 'expansion' ? INKS.ice : INKS.oxide,
-    defs: [],
-  };
+  });
   const area = pageArea(o.bleed);
   const body =
     paperGround(s) +

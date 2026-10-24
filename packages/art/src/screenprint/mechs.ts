@@ -27,7 +27,7 @@ export interface Rig {
   leg: readonly Seg[];
   /** Upper arm, forearm (and hand) of the arm at x > 0. */
   arm: readonly Seg[];
-  /** Extra parts on the arm's segments: on the arm at x > 0 (`near`) or the mirrored one (`mirror`, in its own coordinates). */
+  /** Extra parts on the arm's segments: on the arm at x > 0 (`plain`) or the mirrored one (`mirror`, in its own coordinates). */
   armExtra?: { plain?: readonly (readonly Part[])[]; mirror?: readonly (readonly Part[])[] };
   /** The hull: its solid parts get a side face in three-quarter view; `detail` is drawn over them. */
   hull: readonly Part[];

@@ -5,15 +5,16 @@ import type { Pose } from './pose';
 import {
   GROUND,
   flash,
-  OFF_REGISTER,
   ht,
   label,
   land,
   mech,
   paperGround,
   person,
+  plated,
   print,
   rays,
+  rect,
   rings,
   sky,
   smoke,
@@ -41,14 +42,16 @@ const HZ = 33;
 /** Paper, sky and the world's ground: the start of most scenes. */
 const outdoors = (s: Stage, horizon = HZ, o: Parameters<typeof sky>[1] = {}) => paperGround(s) + sky(s, o) + land(s, horizon);
 
-const r2 = (x: number, y: number, w: number, h: number, fill: string, extra = '') =>
-  `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" fill="${fill}"${extra}/>`;
 const path = (d: string, fill: string, extra = '') => `<path d="${d}" fill="${fill}"${extra}/>`;
 const stroke = (d: string, ink: string, w: number, extra = '') =>
   `<path d="${d}" fill="none" stroke="${ink}" stroke-width="${n(w)}" stroke-linecap="round" stroke-linejoin="round"${extra}/>`;
-/** A shape printed with its plate a little off register under it. */
-const plated = (s: Stage, body: (ink: string) => string, plate = s.plate) =>
-  (OFF_REGISTER ? `<g transform="translate(0.55,-0.35)">${body(plate)}</g>` : '') + body(s.key);
+
+/** The stage's mech ink with the key in the side ink: a wreck, or a mech further back. */
+const sideInk = (s: Stage) => ({ ...s.ink, key: s.ink.side });
+
+/** A downed mech: in the side ink, knocked over by `deg` about its feet at `x`, `y`. */
+const wreck = (s: Stage, kind: Parameters<typeof mech>[1], x: number, y: number, size: number, deg: number, plate?: false) =>
+  `<g transform="rotate(${deg} ${x} ${y})">${mech(s, kind, x, y, size, {}, { ink: sideInk(s), plate })}</g>`;
 
 /** A gloved hand: a mitten from the wrist at `x`, `y`, turned `deg`, `size` mm long. */
 const glove = (x: number, y: number, size: number, deg: number, ink: string) =>
@@ -104,12 +107,12 @@ export const SCENES: Record<string, SpScene> = {
     caption: "a mechanic on a step ladder, a wrench on a Wisp's knee joint, sparks flying",
     draw: (s) =>
       paperGround(s) +
-      rays(s, 36, 16, 26, s.plate) +
+      rays(36, 16, 26, s.plate) +
       land(s, 36, { rims: false }) +
       mech(s, 'wisp', 24, 39, 0.19) +
       // the step ladder, the mechanic on it, the wrench on the knee
       stroke('M44,39 L48,22 M52,39 L48,22 M45.2,34 L50.8,34 M46.4,29 L49.6,29', s.key, 0.7) +
-      `<g transform="rotate(16 37 15.6)">${r2(37, 14.4, 9, 2.4, s.key)}<circle cx="37" cy="15.6" r="2.6" fill="none" stroke="${s.key}" stroke-width="1.4"/></g>` +
+      `<g transform="rotate(16 37 15.6)">${rect(37, 14.4, 9, 2.4, s.key)}<circle cx="37" cy="15.6" r="2.6" fill="none" stroke="${s.key}" stroke-width="1.4"/></g>` +
       person(48, 29, 0.2, { facing: -1, arms: [124, 112], elbows: [-10, -6], lean: -6, legs: [6, -6] }, s.key, s.paper) +
       sparks(s.r, 37, 15.6, 16, 8) +
       flash(37, 15.6, 2, 8),
@@ -120,7 +123,7 @@ export const SCENES: Record<string, SpScene> = {
     caption: 'a Breacher pushed past its limit',
     draw: (s) =>
       paperGround(s) +
-      rays(s, 30, 14, 30, s.plate, 180, 360) +
+      rays(30, 14, 30, s.plate, 180, 360) +
       land(s, 34) +
       mech(s, 'breacher', 30, 36, 0.12, {
         yaw: -32,
@@ -144,7 +147,7 @@ export const SCENES: Record<string, SpScene> = {
         paperGround(s) +
         sky(s, { planet: { x: 54, y: 6, r: 6 } }) +
         land(s, 16, { marks: false }) +
-        r2(-3, 17.5, 70, 28, ht(s, 'shade'), ' opacity="0.6"') +
+        rect(-3, 17.5, 70, 28, ht(s, 'shade'), ' opacity="0.6"') +
         strata +
         rings(26, 16.5, 3, 4, 6, INKS.amber, 0.6, 20, 160) +
         print(s, 'containers', 9, 16.5, { size: 0.08 }) +
@@ -159,7 +162,7 @@ export const SCENES: Record<string, SpScene> = {
     caption: 'a Breacher front on, firing both fists at the viewer, two muzzle flashes',
     draw: (s) =>
       paperGround(s) +
-      rays(s, 32, 20, 32, s.plate) +
+      rays(32, 20, 32, s.plate) +
       land(s, 36, { rims: false }) +
       mech(s, 'breacher', 32, 40, 0.13, { arms: { plus: [-16, -10], minus: [16, 10] } }) +
       flash(14, 31.5, 4.2, 10) +
@@ -173,7 +176,7 @@ export const SCENES: Record<string, SpScene> = {
     draw: (s) =>
       outdoors(s, 32, { planet: { x: 14, y: 9, r: 7 } }) +
       print(s, 'rocks', 22, 36, { size: 0.16, plate: GROUND.phobos.shade }) +
-      `<g transform="rotate(-78 44 34)">${mech(s, 'tactician', 44, 34, 0.08, {}, { ink: { ...s.ink, key: s.ink.side } })}</g>` +
+      wreck(s, 'tactician', 44, 34, 0.08, -78) +
       print(s, 'crane', 54, 34, { size: 0.16, flip: true }) +
       stroke('M41.2,14.8 L41.2,22', s.key, 0.4) +
       stroke('M40,22 q1.2,2 2.4,0', s.key, 0.6) +
@@ -227,10 +230,10 @@ export const SCENES: Record<string, SpScene> = {
       stroke('M26,38 l-6,1.5 l-5,-0.6 M26,38 l4,2 l7,0.4 M26,38 l2,-1.6 l8,-0.8', s.key, 0.35) +
       // the tripod, its drill string and motor, a core coming up
       stroke('M26,14 L17,39 M26,14 L35,39 M26,14 L27,40', s.key, 0.8) +
-      r2(25.3, 14, 1.4, 24, s.key) +
-      r2(22.6, 18, 6.8, 4.4, s.plate, ` stroke="${s.key}" stroke-width="0.5"`) +
+      rect(25.3, 14, 1.4, 24, s.key) +
+      rect(22.6, 18, 6.8, 4.4, s.plate, ` stroke="${s.key}" stroke-width="0.5"`) +
       `<circle cx="26" cy="13.6" r="1.4" fill="${INKS.amber}"/>` +
-      r2(9, 34.6, 8, 1.6, INKS.ice, ` stroke="${s.key}" stroke-width="0.35"`) +
+      rect(9, 34.6, 8, 1.6, INKS.ice, ` stroke="${s.key}" stroke-width="0.35"`) +
       mech(s, 'wisp', 49, 40, 0.13, { yaw: -24 }),
   },
   'r-dangerous': {
@@ -269,10 +272,10 @@ export const SCENES: Record<string, SpScene> = {
     caption: 'a Chameleon firing its long gun level, the barrel red hot, a round leaving it',
     draw: (s) =>
       paperGround(s) +
-      rays(s, 50, 18, 26, s.plate, 120, 240) +
+      rays(50, 18, 26, s.plate, 120, 240) +
       land(s, 34) +
       mech(s, 'chameleon', 18, 38, 0.12, { yaw: 18, arms: { plus: [-10, -80] } }) +
-      r2(30, 18.2, 14, 2.6, ht(s, 'plate')) +
+      rect(30, 18.2, 14, 2.6, ht(s, 'plate')) +
       flash(48, 19.4, 4, 11) +
       stroke('M52,19.4 L66,19.4', INKS.amber, 0.7, ' stroke-dasharray="3 1.4"'),
   },
@@ -287,14 +290,14 @@ export const SCENES: Record<string, SpScene> = {
         outdoors(s, 34, { planet: { x: 12, y: 8, r: 8 } }) +
         mech(s, 'tactician', 22, 40, 0.11, { yaw: 24 }) +
         // the arm: a floor mount, two booms with their hydraulics, a welding head at the hip
-        plated(s, (ink) => r2(48, 36.4, 12, 3.6, ink) + r2(51, 32, 6, 4.6, ink)) +
+        plated(s, (ink) => rect(48, 36.4, 12, 3.6, ink) + rect(51, 32, 6, 4.6, ink)) +
         stroke('M54,32 L49,14', s.key, 3) +
         stroke('M56,31 L51.6,17', s.ink.rod, 0.6) +
         stroke('M49,14 L36,24', s.key, 2.4) +
         stroke('M47,17 L38.6,23', s.ink.rod, 0.5) +
         joint(54, 32, 2.4) +
         joint(49, 14, 2) +
-        `<g transform="rotate(38 36 24)">${r2(32, 22.8, 5, 2.4, s.key)}${r2(30.4, 23.4, 1.8, 1.2, INKS.amber)}</g>`
+        `<g transform="rotate(38 36 24)">${rect(32, 22.8, 5, 2.4, s.key)}${rect(30.4, 23.4, 1.8, 1.2, INKS.amber)}</g>`
       );
     },
   },
@@ -305,7 +308,7 @@ export const SCENES: Record<string, SpScene> = {
     draw: (s) =>
       outdoors(s, 32, { planet: { x: 54, y: 8, r: 7 } }) +
       smoke(s, 9, 37, 30, GROUND.mars.shade) +
-      `<g transform="rotate(84 8 39)">${mech(s, 'tactician', 8, 39, 0.07, {}, { ink: { ...s.ink, key: s.ink.side }, plate: false })}</g>` +
+      wreck(s, 'tactician', 8, 39, 0.07, 84, false) +
       mech(s, 'chameleon', 34, 40, 0.115, { yaw: 34, legs: { plus: [-26, 36], minus: [24, 6] }, arms: { plus: [-60, -24] }, lean: -4 }),
   },
   'r-industrious': {
@@ -323,16 +326,16 @@ export const SCENES: Record<string, SpScene> = {
     caption: "a hand terminal spliced into an objective's panel, its 8 flickering to 7 and 9",
     draw: (s) =>
       paperGround(s) +
-      r2(6, 4, 40, 34, s.key) +
-      r2(10, 8, 32, 20, s.ink.recess) +
+      rect(6, 4, 40, 34, s.key) +
+      rect(10, 8, 32, 20, s.ink.recess) +
       stencil('7', 18, 24, 15, INKS.oxide) +
       stencil('9', 34, 24, 15, INKS.ice) +
       stencil('8', 26.4, 24.6, 16, INKS.amber) +
-      r2(10, 8, 32, 20, ht(s, 'key'), ' opacity="0.4"') +
-      [12, 18, 24, 30].map((x) => r2(x, 31, 4, 3, s.ink.seam)).join('') +
+      rect(10, 8, 32, 20, ht(s, 'key'), ' opacity="0.4"') +
+      [12, 18, 24, 30].map((x) => rect(x, 31, 4, 3, s.ink.seam)).join('') +
       stroke('M44,30 C52,30 50,38 56,36', INKS.oxide, 1) +
       stroke('M44,33 C50,34 48,40 56,38', INKS.amber, 0.8) +
-      `<g transform="rotate(-14 57 30)">${r2(52, 22, 11, 17, s.key)}${r2(53.5, 24, 8, 7, INKS.ice)}${label('ACCESS', 57.5, 28.2, 1.2, s.key)}${[33, 35.5].map((y) => r2(53.5, y, 8, 1.4, s.ink.seam)).join('')}</g>` +
+      `<g transform="rotate(-14 57 30)">${rect(52, 22, 11, 17, s.key)}${rect(53.5, 24, 8, 7, INKS.ice)}${label('ACCESS', 57.5, 28.2, 1.2, s.key)}${[33, 35.5].map((y) => rect(53.5, y, 8, 1.4, s.ink.seam)).join('')}</g>` +
       glove(60, 44, 9, -20, s.key),
   },
   'r-patient': {
@@ -370,7 +373,7 @@ export const SCENES: Record<string, SpScene> = {
       const at = (kind: Parameters<typeof mech>[1], [x, y]: [number, number], size: number, o: Parameters<typeof mech>[6] = {}) =>
         mech(s, kind, x, y + 2.6, size, {}, o);
       return (
-        r2(-4, -4, 72, 50, INKS.bone) +
+        rect(-4, -4, 72, 50, INKS.bone) +
         grid +
         arrow(cell(1, 2), cell(3, 2), -3, s.key) +
         arrow(cell(2, 4), cell(5, 3), 3, s.key) +
@@ -408,7 +411,7 @@ export const SCENES: Record<string, SpScene> = {
         outdoors(s, 32, { planet: { x: 12, y: 9, r: 8 } }) +
         `<path d="M38,11.6 L22,35 L52,35 Z" fill="${INKS.amber}" opacity="0.25"/>` +
         [24, 30, 36, 42, 48].map((x) => stroke(`M38,11.6 L${x},35`, INKS.amber, 0.25)).join('') +
-        `<g transform="rotate(80 36 37)">${mech(s, 'sniper', 36, 37, 0.06, {}, { ink: { ...s.ink, key: s.ink.side } })}</g>` +
+        wreck(s, 'sniper', 36, 37, 0.06, 80) +
         smoke(s, 44, 34, 10, GROUND.deimos.shade) +
         drone
       );
@@ -423,7 +426,7 @@ export const SCENES: Record<string, SpScene> = {
       print(s, 'beacon', 6, 40, { size: 0.12 }) +
       person(22, 41, 0.27, { facing: 1, arms: [60, -50], elbows: [-60, 40], legs: [40, -40], knees: [-50, 30], lean: 18 }, s.key, s.paper) +
       person(34, 40, 0.27, { facing: 1, arms: [-20, -60], elbows: [30, 40], legs: [36, -36], knees: [-40, 30], lean: 18 }, s.key, s.paper) +
-      `<g transform="rotate(4 28 31)">${r2(25, 30, 7, 4, INKS.amber)}${r2(27.4, 29.2, 2.2, 1, s.key)}</g>`,
+      `<g transform="rotate(4 28 31)">${rect(25, 30, 7, 4, INKS.amber)}${rect(27.4, 29.2, 2.2, 1, s.key)}</g>`,
   },
   'r-prideful': {
     world: 'deimos',
@@ -431,7 +434,7 @@ export const SCENES: Record<string, SpScene> = {
     draw: (s) =>
       outdoors(s, 34, { planet: { x: 52, y: 9, r: 9 } }) +
       smoke(s, 17, 36, 22, GROUND.deimos.shade) +
-      `<g transform="rotate(-82 24 40)">${mech(s, 'tactician', 24, 40, 0.07, {}, { ink: { ...s.ink, key: s.ink.side }, plate: false })}</g>` +
+      wreck(s, 'tactician', 24, 40, 0.07, -82, false) +
       mech(s, 'chameleon', 40, 41, 0.1, { yaw: -20, arms: { plus: [-100, -40] } }) +
       flag(s, 57.6, 17, 12.5, INKS.ice, '', -1),
   },
@@ -441,14 +444,14 @@ export const SCENES: Record<string, SpScene> = {
     draw: (s) =>
       outdoors(s, 26, { planet: false }) +
       // the strike: a beam from orbit, its flash and smoke on the horizon
-      r2(46, -4, 3, 30, INKS.amber) +
-      r2(47, -4, 1, 30, INKS.bone) +
+      rect(46, -4, 3, 30, INKS.amber) +
+      rect(47, -4, 1, 30, INKS.bone) +
       smoke(s, 47.5, 26, 10, GROUND.mars.shade) +
       flash(47.5, 25, 5, 12) +
       // the beacon on its tripod, calling it down
       stroke('M20,40 L23,28 M26,40 L23,28 M23,40 L23,28', s.key, 0.7) +
-      r2(20.6, 22, 4.8, 7, s.key) +
-      r2(21.4, 23.2, 3.2, 1.6, INKS.oxide) +
+      rect(20.6, 22, 4.8, 7, s.key) +
+      rect(21.4, 23.2, 3.2, 1.6, INKS.oxide) +
       stroke('M23,22 L23,12', s.key, 0.5) +
       `<circle cx="23" cy="11.4" r="1.4" fill="${INKS.amber}"/>` +
       rings(23, 11.4, 2.6, 2.4, 4, INKS.amber, 0.45, 290, 360),
@@ -471,11 +474,11 @@ export const SCENES: Record<string, SpScene> = {
       // the marks on the hull, laid out for the mech at (30, 90) and 0.4, then moved with it
       const [x, y, size] = [24, 66, 0.26];
       let marks = '';
-      for (let i = 0; i < 9; i++) marks += r2(16 + (i % 5) * 3 + (i >= 5 ? 1.5 : 0), 14 + Math.floor(i / 5) * 7, 1.2, 5, INKS.bone);
+      for (let i = 0; i < 9; i++) marks += rect(16 + (i % 5) * 3 + (i >= 5 ? 1.5 : 0), 14 + Math.floor(i / 5) * 7, 1.2, 5, INKS.bone);
       const hull =
         stroke('M14,21 L32,14', INKS.bone, 0.9) +
         marks +
-        r2(31, 21, 1.2, 5, INKS.oxide) +
+        rect(31, 21, 1.2, 5, INKS.oxide) +
         `<circle cx="34" cy="23" r="2.4" fill="${INKS.oxide}" opacity="0.4"/>`;
       return (
         outdoors(s, 40, { planet: false }) +
@@ -498,7 +501,7 @@ export const SCENES: Record<string, SpScene> = {
         41,
         0.12,
         { lean: 18, legs: { plus: [-60, 110], minus: [60, -110] }, arms: { minus: [10, 0] }, detach: { arm: 'plus', show: 'mech' } },
-        { ink: { ...s.ink, key: s.ink.side }, plate: false },
+        { ink: sideInk(s), plate: false },
       ) +
       person(44, 41, 0.26, { facing: 1, arms: [40, 30], elbows: [60, 70], legs: [26, -26], lean: -6 }, s.key, s.paper) +
       `<circle cx="50" cy="30" r="5" fill="${INKS.amber}" opacity="0.3"/>` +
@@ -531,8 +534,8 @@ export const SCENES: Record<string, SpScene> = {
       const walk = (i: number) => ({ yaw: -30, lean: 10, legs: { plus: [i % 2 ? -14 : 14, 12], minus: [i % 2 ? 14 : -14, 6] } });
       return (
         outdoors(s, 30, { planet: false }) +
-        mech(s, 'behemoth', 8, 30, 0.035, walk(0), { ink: { ...s.ink, key: s.ink.side }, plate: false }) +
-        mech(s, 'chameleon', 20, 32, 0.05, walk(1), { ink: { ...s.ink, key: s.ink.side } }) +
+        mech(s, 'behemoth', 8, 30, 0.035, walk(0), { ink: sideInk(s), plate: false }) +
+        mech(s, 'chameleon', 20, 32, 0.05, walk(1), { ink: sideInk(s) }) +
         mech(s, 'tactician', 34, 35, 0.07, walk(2)) +
         mech(s, 'chameleon', 52, 40, 0.1, walk(3)) +
         storm(s, 2, 40, 0.7)
@@ -559,8 +562,8 @@ export const SCENES: Record<string, SpScene> = {
     draw: (s) =>
       outdoors(s, 28, { planet: { x: 52, y: 8, r: 8 } }) +
       mech(s, 'breacher', 30, 44, 0.12, { yaw: 14 }) +
-      r2(-4, 34, 72, 12, GROUND.mars.shade) +
-      r2(-4, 34, 72, 2, ht(s, 'key')) +
+      rect(-4, 34, 72, 12, GROUND.mars.shade) +
+      rect(-4, 34, 72, 2, ht(s, 'key')) +
       print(s, 'rocks', 30, 38, { size: 0.26 }) +
       print(s, 'barricade', 4, 38, { size: 0.12 }) +
       print(s, 'barricade', 60, 38, { size: 0.12, flip: true }),
@@ -589,7 +592,7 @@ export const SCENES: Record<string, SpScene> = {
       const inks = [INKS.oxide, INKS.ice, INKS.amber, INKS.green, INKS.violet];
       return (
         outdoors(s, 30, { planet: { x: 52, y: 8, r: 8 } }) +
-        mech(s, 'behemoth', 32, 42, 0.12, {}, { ink: { ...s.ink, key: s.ink.side, seam: s.ink.joint } }) +
+        mech(s, 'behemoth', 32, 42, 0.12, {}, { ink: { ...sideInk(s), seam: s.ink.joint } }) +
         [8, 20, 32, 44, 56]
           .map((x, i) => person(x, i === 2 ? 42 : 41, 0.3, { facing: i < 2 ? 1 : i > 2 ? -1 : 1, arms: [8, -8] }, inks[i], s.paper))
           .join('')
@@ -604,7 +607,7 @@ export const SCENES: Record<string, SpScene> = {
       print(s, 'habitat', 34, 35, { size: 0.2 }) +
       print(s, 'mast', 52, 37, { size: 0.24 }) +
       path('M51,9 L45,6 L45,12 Z', s.key) +
-      r2(51, 8.2, 2, 1.6, s.key) +
+      rect(51, 8.2, 2, 1.6, s.key) +
       rings(45, 9, 3, 3, 6, INKS.oxide, 0.8, 140, 220),
   },
   // ---------------------------------------------------------------------------------------------- Tactics
@@ -616,7 +619,7 @@ export const SCENES: Record<string, SpScene> = {
         `<g transform="rotate(${t} ${x} 44)"><rect x="${x - 2.6}" y="${44 - h}" width="5.2" height="${h}" fill="${INKS.oxide}"/><rect x="${x - 3.6}" y="${44 - h - 5}" width="7.2" height="6" rx="1.6" fill="${INKS.oxide}"/></g>`;
       return (
         paperGround(s) +
-        rays(s, 32, 18, 28, INKS.oxide, 180, 360) +
+        rays(32, 18, 28, INKS.oxide, 180, 360) +
         `<circle cx="32" cy="18" r="8" fill="${s.paper}"/>` +
         mech(s, 'chameleon', 32, 42, 0.12, { yaw: 0, arms: { plus: [-140, 0] } }, { plate: INKS.oxide }) +
         [6, 14, 50, 58].map((x, i) => fist(x, 12 + (i % 2) * 6, (i < 2 ? -1 : 1) * 6)).join('')
@@ -642,13 +645,13 @@ export const SCENES: Record<string, SpScene> = {
         return (
           path(`M${n(x - 2.4)},${n(y - 7)} L${n(x - 5)},${n(y - 1)} L${n(x - 2.4)},${n(y - 2)} Z`, INKS.oxide) +
           path(`M${n(x + 2.4)},${n(y - 7)} L${n(x + 5)},${n(y - 1)} L${n(x + 2.4)},${n(y - 2)} Z`, INKS.oxide) +
-          r2(x - 2.4, top, 4.8, h, INKS.bone) +
-          r2(x + 1.2, top, 1.2, h, s.ink.seam) +
+          rect(x - 2.4, top, 4.8, h, INKS.bone) +
+          rect(x + 1.2, top, 1.2, h, s.ink.seam) +
           path(
             `M${n(x - 2.4)},${n(top)} Q${n(x - 2.4)},${n(top - 4)} ${n(x)},${n(top - 7.5)} Q${n(x + 2.4)},${n(top - 4)} ${n(x + 2.4)},${n(top)} Z`,
             INKS.oxide,
           ) +
-          r2(x - 2.4, t - 2.2, 4.8, 4.4, INKS.amber) +
+          rect(x - 2.4, t - 2.2, 4.8, 4.4, INKS.amber) +
           blade(-90) +
           blade(30) +
           blade(150) +
@@ -656,19 +659,17 @@ export const SCENES: Record<string, SpScene> = {
         );
       };
       return (
-        paperGround(s) +
-        sky(s, { planet: false }) +
-        land(s, 30) +
+        outdoors(s, 30, { planet: false }) +
         `<circle cx="31" cy="22" r="17" fill="${INKS.amber}" opacity="0.16"/>` +
         atomic(25, 34, 18) +
         atomic(37, 34, 18) +
         // the crate: its front, slats and a hazard band; the lid against its side
-        `<g transform="rotate(14 50 39)">${r2(47, 22, 4, 17, INKS.key)}${r2(47, 22, 4, 1, ON_PAPER.recess)}</g>` +
-        r2(17, 30, 28, 10, INKS.key) +
-        r2(17, 30, 28, 1.2, ON_PAPER.recess) +
-        [24, 31, 38].map((x) => r2(x, 31.2, 0.5, 8.8, ON_PAPER.recess)).join('') +
+        `<g transform="rotate(14 50 39)">${rect(47, 22, 4, 17, INKS.key)}${rect(47, 22, 4, 1, ON_PAPER.recess)}</g>` +
+        rect(17, 30, 28, 10, INKS.key) +
+        rect(17, 30, 28, 1.2, ON_PAPER.recess) +
+        [24, 31, 38].map((x) => rect(x, 31.2, 0.5, 8.8, ON_PAPER.recess)).join('') +
         `<clipPath id="${s.id}-band"><rect x="17" y="35" width="28" height="2.4"/></clipPath>` +
-        `<g clip-path="url(#${s.id}-band)">${r2(17, 35, 28, 2.4, INKS.amber)}${[...Array(10)].map((_, i) => path(`M${17 + i * 3},37.4 l1.4,0 l2.4,-2.4 l-1.4,0 Z`, INKS.key)).join('')}</g>`
+        `<g clip-path="url(#${s.id}-band)">${rect(17, 35, 28, 2.4, INKS.amber)}${[...Array(10)].map((_, i) => path(`M${17 + i * 3},37.4 l1.4,0 l2.4,-2.4 l-1.4,0 Z`, INKS.key)).join('')}</g>`
       );
     },
   },
@@ -742,8 +743,8 @@ export const SCENES: Record<string, SpScene> = {
         grit += `<circle cx="${n(36 + s.r.range(-1.4, 1.4) + i * 0.02)}" cy="${n(10 + i * 0.36)}" r="${n(s.r.range(0.2, 0.5))}" fill="${INKS.dust}"/>`;
       return (
         paperGround(s) +
-        r2(6, 22, 52, 20, '#2c2a27') +
-        r2(4, 20, 56, 3, s.key) +
+        rect(6, 22, 52, 20, '#2c2a27') +
+        rect(4, 20, 56, 3, s.key) +
         gear(22, 32, 7, 12, s.key) +
         gear(36, 30, 5, 9, s.ink.joint) +
         gear(48, 34, 6, 10, s.key) +
@@ -759,12 +760,10 @@ export const SCENES: Record<string, SpScene> = {
     world: 'mars',
     caption: 'an enemy mech hit from above by an amber column of light',
     draw: (s) =>
-      paperGround(s) +
-      sky(s, { planet: { x: 12, y: 9, r: 9 } }) +
-      land(s, 32) +
-      r2(36, -4, 8, 38, INKS.amber, ' opacity="0.35"') +
-      r2(38.4, -4, 3.2, 38, INKS.amber) +
-      r2(39.4, -4, 1.2, 38, INKS.bone) +
+      outdoors(s, 32, { planet: { x: 12, y: 9, r: 9 } }) +
+      rect(36, -4, 8, 38, INKS.amber, ' opacity="0.35"') +
+      rect(38.4, -4, 3.2, 38, INKS.amber) +
+      rect(39.4, -4, 1.2, 38, INKS.bone) +
       mech(s, 'chameleon', 40, 37, 0.1, { yaw: -24, lean: 12 }, { plate: INKS.oxide }) +
       flash(40, 22, 6, 12),
   },
@@ -807,8 +806,8 @@ export const SCENES: Record<string, SpScene> = {
     draw: (s) =>
       outdoors(s, 34, { planet: { x: 10, y: 8, r: 8 } }) +
       print({ ...s, key: '#4A4440' }, 'workshop', 32, 36, { size: 0.3 }) +
-      r2(22, 20.4, 20, 15.6, INKS.amber, ' opacity="0.4"') +
-      rays(s, 32, 28, 16, INKS.amber, 30, 150) +
+      rect(22, 20.4, 20, 15.6, INKS.amber, ' opacity="0.4"') +
+      rays(32, 28, 16, INKS.amber, 30, 150) +
       mech(s, 'chameleon', 33, 40, 0.1, { yaw: 22, legs: { plus: [-20, 20], minus: [16, 6] } }),
   },
 };

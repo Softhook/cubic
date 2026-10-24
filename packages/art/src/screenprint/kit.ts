@@ -67,7 +67,7 @@ export function screens(s: Stage): string {
 /** A halftone fill by name. */
 export const ht = (s: Stage, which: 'key' | 'fine' | 'bone' | 'shade' | 'plate') => `url(#${s.id}-${which})`;
 
-const rect = (x: number, y: number, w: number, h: number, fill: string, extra = '') =>
+export const rect = (x: number, y: number, w: number, h: number, fill: string, extra = '') =>
   `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" fill="${fill}"${extra}/>`;
 
 /** The paper over the whole art window and its bleed. */
@@ -89,7 +89,7 @@ export function sky(s: Stage, o: { planet?: false | { x: number; y: number; r: n
   if (s.world === 'mars') {
     // Phobos, lumpy and grey, and Deimos, a dot.
     out += `<ellipse cx="${n(p.x)}" cy="${n(p.y)}" rx="${n(p.r * 0.36)}" ry="${n(p.r * 0.28)}" fill="${INKS.grey}" transform="rotate(-20 ${n(p.x)} ${n(p.y)})"/>`;
-    out += `<circle cx="${n(p.x - p.r * 0.2)}" cy="${n(p.y + p.r * 0.02)}" r="${n(p.r * 0.06)}" fill="#5E5A55"/>`;
+    out += `<circle cx="${n(p.x - p.r * 0.2)}" cy="${n(p.y + p.r * 0.02)}" r="${n(p.r * 0.06)}" fill="${GROUND.phobos.shade}"/>`;
     out += `<circle cx="${n(p.x - p.r * 1.3)}" cy="${n(p.y + p.r * 0.5)}" r="${n(p.r * 0.1)}" fill="${INKS.grey}"/>`;
     return out;
   }
@@ -351,7 +351,7 @@ export interface PartPlacing {
 const OFFSET = { dx: 0.55, dy: -0.35 };
 
 /** Whether parts print their colour plate off register under them (the coloured shadow); off for now. */
-export const OFF_REGISTER = false;
+const OFF_REGISTER = false;
 
 /** A part printed in its passes at `x`, `y`. */
 export function print(s: Stage, name: PartName, x: number, y: number, o: PartPlacing): string {
@@ -363,6 +363,10 @@ export function print(s: Stage, name: PartName, x: number, y: number, o: PartPla
   const spotInk = o.spot === false ? s.key : (o.spot ?? p.spotInk ?? s.plate);
   return plate + pass(p.key, s.key) + (p.spot ? pass(p.spot, spotInk) : '') + (p.acc ? pass(p.acc, INKS.amber) : '');
 }
+
+/** A shape (in mm, drawn in the ink it's given) printed in key, with its plate off register under it. */
+export const plated = (s: Stage, body: (ink: string) => string, plate = s.plate) =>
+  (OFF_REGISTER ? `<g transform="translate(${n(OFFSET.dx)},${n(OFFSET.dy)})">${body(plate)}</g>` : '') + body(s.key);
 
 /** A mech on this stage: its ink and plate the card's unless given. */
 export function mech(
@@ -450,7 +454,7 @@ export function flash(x: number, y: number, r: number, spikes = 9, turn = 0): st
 }
 
 /** Rays fanning out from `x`, `y`: alternate wedges in `ink`, as the Hot Loads card's. */
-export function rays(s: Stage, x: number, y: number, count: number, ink: string, from = 0, to = 360): string {
+export function rays(x: number, y: number, count: number, ink: string, from = 0, to = 360): string {
   const R = 120;
   let d = '';
   const step = (to - from) / count;
@@ -459,7 +463,6 @@ export function rays(s: Stage, x: number, y: number, count: number, ink: string,
     const a2 = ((from + (i + 1) * step) * Math.PI) / 180;
     d += `M${n(x)},${n(y)} L${n(x + Math.cos(a1) * R)},${n(y + Math.sin(a1) * R)} L${n(x + Math.cos(a2) * R)},${n(y + Math.sin(a2) * R)} Z `;
   }
-  void s;
   return `<path d="${d}" fill="${ink}"/>`;
 }
 
