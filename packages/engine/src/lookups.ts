@@ -1,6 +1,6 @@
 /** Basic lookups on a state: where dice are, what is on a space. No rules, no skills. */
 import { cellAt } from './board';
-import { RuleError, type Cell, type Die, type DieLoc, type GameState, type PlayerId } from './types';
+import { RuleError, type Barrier, type Cell, type Die, type DieLoc, type GameState, type PlayerId } from './types';
 
 /** The die with this id. An unknown id is an illegal action (it can only come from outside). */
 export function die(state: GameState, id: string): Die {
@@ -34,7 +34,12 @@ export function reserve(state: GameState, player: PlayerId): Die[] {
   return state.dice.filter((d) => d.owner === player && d.loc.zone === 'reserve');
 }
 
+/** The barrier on this space, if any (GameState.barriers). */
+export function barrierAt(state: GameState, p: Cell): Barrier | undefined {
+  return state.barriers?.find((b) => b.r === p.r && b.c === p.c);
+}
+
 export function isEmptySpace(state: GameState, p: Cell): boolean {
   const cell = cellAt(state.board, p);
-  return !!cell && cell.kind === 'space' && !dieAt(state, p);
+  return !!cell && cell.kind === 'space' && !dieAt(state, p) && !barrierAt(state, p);
 }

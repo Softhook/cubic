@@ -109,7 +109,7 @@ export class Search {
 
     // Deepen the most promising candidates. Ending the turn needs no deepening.
     if (depth > 1) {
-      for (const x of scored.slice(0, this.params.width)) {
+      for (const x of withFreePower(root, scored, this.params.width)) {
         if (this.exhausted()) break;
         if (x.outs) x.line = this.action(x.outs, depth - 1);
       }
@@ -226,7 +226,7 @@ export class Search {
       );
       for (const x of scored) if (x.line.value > best.value) best = x.line;
       if (depth > 1) {
-        for (const x of scored.slice(0, this.params.innerWidth)) {
+        for (const x of withFreePower(s, scored, this.params.innerWidth)) {
           if (this.exhausted()) break;
           if (!x.outs) continue;
           const line = this.action(x.outs, depth - 1);
@@ -287,6 +287,23 @@ export class Search {
     }
     return this.score(s, this.me, s.turn.player === this.me ? this.me : undefined);
   }
+}
+
+/**
+ * The first `width` of `scored` (best first), and the best free prototype power beyond them: one that
+ * spends no action (Regolith's Barrier). Alone it may score below a paid action, yet it can come first
+ * and leave that action to follow, a line the search would otherwise never try.
+ */
+function withFreePower(s: GameState, scored: Scored[], width: number): Scored[] {
+  const top = scored.slice(0, width);
+  const free = scored
+    .slice(width)
+    .find(
+      (x) =>
+        x.a.type === 'power' &&
+        x.outs?.every((o) => o.state.turn.player === s.turn.player && o.state.turn.actionsLeft >= s.turn.actionsLeft),
+    );
+  return free ? [...top, free] : top;
 }
 
 /** Turns in a row a player may end without spending an action before the AI must act. */
@@ -367,6 +384,7 @@ function signature(s: GameState): string {
     [m.skillRow, m.tacticRow, m.skillDeck.length, m.tacticDeck.length, m.skillDiscard.length, m.tacticDiscard.length, m.expansions],
     s.board.planets.map((p) => p.cubes),
     s.gates,
+    s.barriers ?? [],
     s.pending,
   ]);
 }

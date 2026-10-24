@@ -279,6 +279,11 @@ export interface LogEntry {
   turn?: true;
 }
 
+/** A barrier on the map, and the player whose ship placed it. */
+export interface Barrier extends Cell {
+  owner: PlayerId;
+}
+
 export interface GameState {
   version: 1;
   mode: GameMode;
@@ -289,6 +294,11 @@ export interface GameState {
   dice: Die[];
   market: Market;
   gates: Cell[];
+  /**
+   * Barriers on the map (a prototype power places them), for good: nothing moves into, is deployed on or
+   * shoots through their spaces. Absent in a game that never had one.
+   */
+  barriers?: Barrier[];
   turn: TurnState;
   /** Decisions waiting to be made; the head is the current one. */
   pending: Pending[];

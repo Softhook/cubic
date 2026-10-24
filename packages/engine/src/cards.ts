@@ -27,7 +27,7 @@ import {
 } from './core';
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
-import { boardLoc, die, reserve, shipsOnBoard } from './lookups';
+import { barrierAt, boardLoc, die, reserve, shipsOnBoard } from './lookups';
 import {
   canPlayStoredTactic,
   canProfiteer,
@@ -309,6 +309,7 @@ export const cardHandlers = {
     const head = headOf(s, 'warpGate', 'No Warp Gate to place');
     const cell = s.board.cells[a.cell.r]?.[a.cell.c];
     if (!cell || cell.kind !== 'space') fail('Gates go on spaces, not planets');
+    if (barrierAt(s, a.cell)) fail('Gates don’t go on barriers');
     if (head.placed.some((p) => same(p, a.cell))) fail('Choose a different space');
     head.placed.push({ r: a.cell.r, c: a.cell.c });
     if (head.placed.length === 2) {

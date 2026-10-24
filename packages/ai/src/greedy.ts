@@ -147,6 +147,8 @@ function tieBreak(a: Action): number {
   if (a.type === 'endTurn') return -0.5;
   // Free abilities must actually improve the position, not just shuffle ships around.
   if (a.type === 'swap' || a.type === 'change' || a.type === 'flexible' || a.type === 'freeReconfigure') return -2;
+  // A free power aimed at a space (Regolith's Barrier) is there for good: only where it clearly helps.
+  if (a.type === 'power' && a.to) return -8;
   if (a.type === 'advance' && a.move) return 0.2;
   if (a.type === 'ruthless' && a.skill) return 0.5;
   if (a.type === 'prideful' && a.take) return 0.5;

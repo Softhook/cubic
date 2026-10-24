@@ -16,7 +16,7 @@ import {
   tilesTouch,
 } from './board';
 import { card, effectOf } from './data';
-import { cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
+import { barrierAt, cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
 import { hasPower, hooksOf, modeHasHook, rulesOf } from './rules';
 import { activeSkills, anySkill, ruleOf, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
 import type { Cell, CombatPending, CombatRole, Die, GameState, OncePerTurn, Planet, PlayerId, TurnState } from './types';
@@ -194,9 +194,10 @@ function reach(
   steps[from] = 0;
   const gate = gates(state, g);
   const near = diagonal ? g.around : g.ortho;
+  const walls = barrierMask(state, g);
   /** 0 = blocked, 1 = free, 2 = passed through (Devious). */
   const entry = (i: number): number => {
-    if (!g.space[i]) return 0;
+    if (!g.space[i] || walls?.[i]) return 0;
     const d = at[i];
     if (!d || (ignored.length && ignored.includes(i))) return 1;
     return through !== undefined && d.owner !== through ? 2 : 0;
@@ -225,6 +226,14 @@ function reach(
     if (partner >= 0) visit(cur, partner);
   }
   return { found, steps, passing };
+}
+
+/** 1 on each space with a barrier (GameState.barriers), by board cell index; undefined when there are none. */
+function barrierMask(state: GameState, g: Grid): Uint8Array | undefined {
+  if (!state.barriers?.length) return undefined;
+  const mask = new Uint8Array(g.size);
+  for (const b of state.barriers) mask[b.r * g.cols + b.c] = 1;
+  return mask;
 }
 
 /** The two Warp Gates' cell indexes, or -1s until both are placed (see board.ts stepNeighbours). */
@@ -431,6 +440,7 @@ export function shipReach(state: GameState, d: Die, at: (Die | undefined)[]): Sh
   const [gateA, gateB] = gateIndexes(state, g);
   const diagonals = hasPower(state, d, 'manoeuvre') && canUseAbility(state, d);
   const zone = stopZone(state, d.owner, at);
+  const walls = barrierMask(state, g);
   for (let pass = 0; pass < (diagonals ? 2 : 1); pass++) {
     const near = pass ? g.around : g.ortho;
     // Plain breadth-first search: without Devious every step costs 1.
@@ -454,7 +464,7 @@ export function shipReach(state: GameState, d: Die, at: (Die | undefined)[]): Sh
           if (ship.owner !== d.owner && !result.attacks.includes(ship)) result.attacks.push(ship);
           continue;
         }
-        if (stopped || STEPS[nb] >= 0 || !g.space[nb]) continue;
+        if (stopped || STEPS[nb] >= 0 || !g.space[nb] || walls?.[nb]) continue;
         STEPS[nb] = steps + 1;
         QUEUE[tail++] = nb;
         if (!result.moves[nb]) {
@@ -487,7 +497,7 @@ export function carryOptions(state: GameState, flagshipId: string, passengerId: 
     if (steps[i] === 0 && (range < 2 || found.length < 2)) continue;
     const cell = cells[i];
     const drops = surrounding(state.board, cell).filter((q) => {
-      if (!space[q.r * cols + q.c]) return false;
+      if (!space[q.r * cols + q.c] || barrierAt(state, q)) return false;
       const occupant = dieAt(state, q);
       return !occupant || occupant.id === flag.id || occupant.id === passenger.id;
     });

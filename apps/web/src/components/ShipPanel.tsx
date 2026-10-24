@@ -42,11 +42,7 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
           className="btn"
           disabled={!legal.can('power', mine)}
           onClick={() => ctl.select({ kind: 'power', die: d.id })}
-          title={
-            legal.can('power', mine)
-              ? ability.text
-              : `${ability.name} unavailable: no enemy in a clear straight line, or no action left. ${ability.text}`
-          }
+          title={legal.can('power', mine) ? ability.text : `${ability.name} unavailable now. ${ability.text}`}
         >
           {ability.name}
         </button>

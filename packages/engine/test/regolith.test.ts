@@ -50,6 +50,7 @@ import {
 import { cubeLeft } from '../src/core';
 import { beginPlay } from '../src/turn';
 import { REGOLITH_CARDS, REGOLITH_DECKS, REGOLITH_CONTESTED_DEPLOY, REGOLITH_HOME_SHIPYARD, REGOLITH_OVER_CONQUEST } from '../src/regolith';
+import { barrier as barrierPower, barrierTargets } from '../src/regolith/powers/barrier';
 import { picket } from '../src/regolith/powers/picket';
 import { shoot as shootPower, shootTargets } from '../src/regolith/powers/shoot';
 import { allowMapGroups, arrange, quickStart } from './helpers';
@@ -132,7 +133,9 @@ describe('Regolith mode', () => {
     expect(regolith.homeShipyard).toBe(REGOLITH_HOME_SHIPYARD);
     expect(regolith.ships[5].hooks).toEqual({ ...shootPower.hooks, ...picket.hooks });
     expect(regolith.ships[5].power).toBeUndefined();
-    expect([1, 2, 3, 4, 6].map((v) => regolith.ships[v].power)).toEqual([1, 2, 3, 4, 6].map((v) => community.ships[v].power));
+    expect(regolith.ships[6].hooks).toEqual({ ...barrierPower.hooks, ...picket.hooks });
+    expect(regolith.ships[6].power).toBeUndefined();
+    expect([1, 2, 3, 4].map((v) => regolith.ships[v].power)).toEqual([1, 2, 3, 4].map((v) => community.ships[v].power));
     expect([1, 2, 3, 4, 5, 6].map((v) => regolith.ships[v].name)).toEqual([
       'Breacher',
       'Behemoth',
@@ -491,11 +494,12 @@ describe('the way a ship flies (movePath)', () => {
   });
 });
 
-describe('classic 5 ability is gone, 4 and 6 are kept', () => {
-  it('a Chameleon (4) can change and a Wisp (6) can reconfigure for free, as in Community', () => {
+describe('classic 5 and 6 abilities are gone, the 4 is kept', () => {
+  it('a Chameleon (4) can change, as in Community, but a Wisp (6) can’t reconfigure for free', () => {
     const s = scenario({ p0d0: [0, 0, 4], p0d1: [0, 8, 6] });
     expect(offered(s, 'change').length).toBeGreaterThan(0);
-    expect(offered(s, 'freeReconfigure').length).toBeGreaterThan(0);
+    expect(offered(s, 'freeReconfigure')).toEqual([]);
+    expect(() => apply(s, { type: 'freeReconfigure', die: 'p0d1' })).toThrow();
   });
 
   it('a Sniper (5) never moves diagonally, as a Community Interceptor does', () => {
@@ -592,6 +596,81 @@ describe('Shoot (5 Sniper)', () => {
     const community = scenario({ p0d0: [0, 0, 5], p1d0: [0, 2, 3] }, 'community');
     expect(shots(community)).toEqual([]);
     expect(() => apply(community, { type: 'power', die: 'p0d0', target: 'p1d0' })).toThrow(/no such power/);
+  });
+});
+
+describe('Barrier (6 Wisp)', () => {
+  const cells = (list: { r: number; c: number }[]) => list.map((p) => `${p.r},${p.c}`).sort();
+  const fire = (s: GameState, r: number, c: number, die = 'p0d0') => apply(s, { type: 'power', die, to: { r, c } });
+
+  it('lands on any clear space in a straight line out of a side, at any distance', () => {
+    // Row 0 and column 0 of Alpha Sector are all spaces; the enemy at (0,5) stops the line along the row.
+    const s = scenario({ p0d0: [0, 0, 6], p1d0: [0, 5, 3] });
+    expect(cells(barrierTargets(s, at(s, 'p0d0')))).toEqual(
+      cells([1, 2, 3, 4].map((c) => ({ r: 0, c })).concat([1, 2, 3, 4, 5, 6, 7, 8].map((r) => ({ r, c: 0 })))),
+    );
+    // A planet stops it: (2,1) is next to planet (1,1), which blocks the line up.
+    expect(cells(barrierTargets(scenario({ p0d0: [2, 1, 6] }), at(scenario({ p0d0: [2, 1, 6] }), 'p0d0')))).not.toContain('0,1');
+  });
+
+  it('costs no action and leaves the move: once a turn', () => {
+    const s = fire(scenario({ p0d0: [0, 0, 6] }), 0, 3);
+    expect(s.barriers).toEqual([{ r: 0, c: 3, owner: 0 }]);
+    expect(s.turn.actionsLeft).toBe(3);
+    expect(offered(s, 'move').some((a) => 'die' in a && a.die === 'p0d0')).toBe(true);
+    expect(offered(s, 'power')).toEqual([]);
+    // After a move too.
+    const moved = apply(scenario({ p0d0: [0, 0, 6] }), { type: 'move', die: 'p0d0', to: { r: 0, c: 2 } });
+    expect(offered(moved, 'power').length).toBeGreaterThan(0);
+  });
+
+  it('blocks every move into or through its space', () => {
+    const s0 = scenario({ p0d0: [0, 8, 6], p0d1: [0, 2, 3] });
+    expect(cells([...moveOptions(s0, 'p0d1').moves.values()].map((m) => m.cell))).toContain('0,4');
+    const s = fire(s0, 0, 4);
+    expect(cells([...moveOptions(s, 'p0d1').moves.values()].map((m) => m.cell))).not.toContain('0,4');
+    // The Wisp's own way along the row is shut too.
+    expect(cells([...moveOptions(s, 'p0d0').moves.values()].map((m) => m.cell))).not.toContain('0,4');
+  });
+
+  it('blocks shots, and its own line', () => {
+    // A Sniper at (0,8) has the enemy at (0,2) in its sights until the Wisp at (2,5) fires a barrier up to (0,5).
+    const s0 = scenario({ p0d0: [2, 5, 6], p0d1: [0, 8, 5], p1d0: [0, 2, 3] });
+    expect(shootTargets(s0, at(s0, 'p0d1')).map((d) => d.id)).toEqual(['p1d0']);
+    const s = fire(s0, 0, 5);
+    expect(shootTargets(s, at(s, 'p0d1')).map((d) => d.id)).toEqual([]);
+    // Nor does a barrier fly past one.
+    expect(cells(barrierTargets(scenario({ p0d0: [0, 8, 6] }), at(scenario({ p0d0: [0, 8, 6] }), 'p0d0')))).toContain('0,4');
+    const blocked = fire(scenario({ p0d0: [0, 8, 6] }), 0, 6);
+    expect(cells(barrierTargets(blocked, at(blocked, 'p0d0')))).not.toContain('0,4');
+  });
+
+  it('holds a perimeter space: nothing drops there', () => {
+    // A perimeter space player 0 may drop into, and a space next to it for the Wisp to fire from.
+    let found: [GameState, { r: number; c: number }] | undefined;
+    for (const p of deployTargets(scenario({}), 0))
+      for (const q of adjacent(BASE.regolith.board, p)) {
+        const s0 = scenario({ p0d0: [q.r, q.c, 6] });
+        if (!found && s0.board.cells[q.r][q.c].kind === 'space' && cells(deployTargets(s0, 0)).includes(`${p.r},${p.c}`)) found = [s0, p];
+      }
+    expect(found).toBeDefined();
+    const [s0, p] = found!;
+    expect(orbitedPlanets(s0.board, p).length).toBeGreaterThan(0);
+    const s = fire(s0, p.r, p.c);
+    expect(cells(deployTargets(s, 0))).not.toContain(`${p.r},${p.c}`);
+  });
+
+  it('stays for good: nothing can attack or remove it', () => {
+    const s = fire(scenario({ p0d0: [0, 0, 6], p1d0: [0, 3, 1] }), 0, 2);
+    const next = apply(apply(s, { type: 'endTurn' }), { type: 'endTurn' });
+    expect(next.barriers).toEqual(s.barriers);
+    expect(legalActions(s).some((a) => 'to' in a && typeof a.to === 'object' && a.to?.r === 0 && a.to.c === 2)).toBe(false);
+  });
+
+  it('only Regolith’s 6, the Wisp, fires barriers', () => {
+    expect(offered(scenario({ p0d0: [0, 0, 4] }), 'power')).toEqual([]);
+    const community = scenario({ p0d0: [0, 0, 6] }, 'community');
+    expect(() => fire(community, 0, 3)).toThrow(/no such power/);
   });
 });
 

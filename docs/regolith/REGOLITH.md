@@ -29,7 +29,7 @@ there: Regolith is a rename and a new identity, not new rules.
 | Lobby | "Prototyping" | "Regolith" (done) |
 | Maps | Community's square maps, plus the hex and drift groups | Hex maps only, each on Phobos, Deimos or Mars (done) |
 | Tiles | Ground on by default (top-bar switch to space) | The same; ground is the game's look |
-| Rules | Community + cap 3, zones of control, Shoot, contested orbit and deploy | The same, and still changing |
+| Rules | Community + cap 3, zones of control, Shoot, contested orbit and deploy | The same, plus the Wisp's Barrier, and still changing |
 | Cards | Community's Skills and Tactics (no Ingenious on hexes) | Regolith's own decks, starting as copies of Community's |
 | Card art | `cardSvg`, the holo-grid scenes | A screenprint card renderer and its own scenes |
 | Words | Ship, planet, dominance, research | Mech, objective, control, intel (Vocabulary board; done in the UI, §7) |

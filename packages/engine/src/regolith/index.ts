@@ -12,6 +12,7 @@
  */
 import { CLASSIC_SHIPS, reword, type CardDef, type RuleSet, type ShipTable } from '../prototype';
 import cardsJson from './cards.json';
+import { barrier } from './powers/barrier';
 import { picket } from './powers/picket';
 import { shoot } from './powers/shoot';
 import { REGOLITH_WORDS } from './words';
@@ -48,7 +49,7 @@ const MAX_MOVEMENT = 3;
 
 /**
  * Regolith's mechs (docs/regolith/REGOLITH-WORLD.md, *The six mechs*): the official powers under the mechs' names, except
- * the 5's, which strikes at range.
+ * the 5's, which strikes at range, and the 6's, which fires barriers.
  */
 const SHIPS: ShipTable = {
   1: {
@@ -64,7 +65,7 @@ const SHIPS: ShipTable = {
   3: { ...CLASSIC_SHIPS[3], name: 'Tactician', ability: { name: 'Swap', text: 'Swap places with any of your other mechs.' } },
   4: { ...CLASSIC_SHIPS[4], name: 'Chameleon', ability: { name: 'Change to 3 or 5', text: 'Refit as a Tactician or a Sniper.' } },
   5: { name: 'Sniper', ...shoot },
-  6: { ...CLASSIC_SHIPS[6], name: 'Wisp', ability: { name: 'Free Refit', text: 'Re-roll this mech for free.' } },
+  6: { name: 'Wisp', ...barrier },
 };
 
 /**
@@ -88,7 +89,7 @@ export function regolithMode(base: RuleSet): RuleSet {
     title: 'Regolith',
     summary: reword(
       REGOLITH_WORDS,
-      `Mechs fight over the ice of Mars and its moons, on hex maps. Community Edition${REGOLITH_CARDS ? ' with its own deck,' : ' without cards,'} with moves capped at 3, zones of control (a mech moving next to an enemy mech, not diagonally, stops there), a ranged Sniper and contested orbits (no conquering${REGOLITH_CONTESTED_DEPLOY ? ` or deploying${REGOLITH_HOME_SHIPYARD ? ', except to your home planet,' : ''}` : ''} while an enemy mech is in orbit)${REGOLITH_OVER_CONQUEST ? ' and over-conquest, displacing an opponent cube' : ''}.`,
+      `Mechs fight over the ice of Mars and its moons, on hex maps. Community Edition${REGOLITH_CARDS ? ' with its own deck,' : ' without cards,'} with moves capped at 3, zones of control (a mech moving next to an enemy mech, not diagonally, stops there), a ranged Sniper, a Wisp that fires barriers and contested orbits (no conquering${REGOLITH_CONTESTED_DEPLOY ? ` or deploying${REGOLITH_HOME_SHIPYARD ? ', except to your home planet,' : ''}` : ''} while an enemy mech is in orbit)${REGOLITH_OVER_CONQUEST ? ' and over-conquest, displacing an opponent cube' : ''}.`,
     ),
     cards:
       REGOLITH_CARDS && base.cards

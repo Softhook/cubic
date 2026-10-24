@@ -31,7 +31,8 @@ As of 2026-10-21, Regolith is **Community Edition**, with only these changes:
 | **Current** | **Contested orbit** (§6.8, since 2026-10-21): a planet can't be conquered while an opponent's ship is in one of its orbital positions. Friendly ships never block, ships beside the orbit don't, and Infamy ignores it. |
 | **Current** | **Contested deploy** (§6.8, since 2026-10-21): no deploying into a planet's orbit while an opponent's ship is in it, by any route (Deploy, Expansion, Stealthy), **except to your own home planet** (home shipyard). `REGOLITH_CONTESTED_DEPLOY` and `REGOLITH_HOME_SHIPYARD` in [regolith/index.ts](../../packages/engine/src/regolith/index.ts) turn them off. |
 | **Off** | **Over-conquest** (§6.10): replacing an opponent's cube with an orbit of exactly **12**. Off since 2026-10-21; `REGOLITH_OVER_CONQUEST` in [regolith/index.ts](../../packages/engine/src/regolith/index.ts) turns it back on. |
-| **Unchanged** | Ships 1–3 retain their Community abilities. The **4 Frigate** retains Modify and the **6 Scout** retains Free Reconfigure. |
+| **Current** | The **6 Scout** (Wisp) replaces Free Reconfigure with **Barrier** (since 2026-10-24): once a turn, for no action and besides its move, it fires a barrier onto any empty space in a clear straight line out of a side of its space, at any distance (stopped as a shot is). A barrier is permanent and can't be destroyed: no ship moves into or through its space, deploys onto it or shoots through it. It may sit in a planet's orbital position, holding that space, but never counts towards a conquest or contests the orbit. There is no limit on how many barriers are on the map. |
+| **Unchanged** | Ships 1–3 retain their Community abilities. The **4 Frigate** retains Modify. |
 
 Picket is active as the default zone-of-control rule for every ship rather than as the 4's power. Contested Orbit (§6.8) is current. Beacon and every other rule below are **candidates**, not current rules.
 What the AI self-play says about this baseline is summarised in §8.
@@ -726,7 +727,7 @@ Regolith is playable in the lobby, on Community's maps, the hex tiles and the of
 authoritative current-rule summary is at the top of this document: Community Edition with a movement
 cap of 3, zones of control on every ship, Shoot for the 5, and contested orbit, which also closes the
 orbit to the defender's deploys except at their home planet; over-conquest is off.
-The 4's Modify and the 6's Free Reconfigure are still active. Beacon is not enabled.
+The 4's Modify is still active; the 6's Free Reconfigure became Barrier (2026-10-24). Beacon is not enabled.
 
 ### Rulings established during implementation
 
@@ -782,6 +783,7 @@ packages/engine/src/
     index.ts          mode definition: MAX_MOVEMENT, REGOLITH_SHIPS, regolithMode()
     powers/picket.ts  Picket's hooks, applied to every ship as the zone-of-control rule
     powers/shoot.ts   power text and hooks for Shoot (5)
+    powers/barrier.ts power text and hooks for Barrier (6); the barriers themselves are GameState.barriers
     powers/beacon.ts  candidate power text and hooks for Beacon (not registered)
   prototype.ts        the prototype kit: ShipHooks, PrototypePower, and the engine helpers a power may use
 ```
@@ -832,7 +834,11 @@ export const beacon: PrototypePower = {
    |---|---|---|
    | `stopsEnemies` | `stopZone` → `moveIndexes`, `shipReach` | Stops enemy movement when entering zone (Picket) |
    | `deployTargets` | `deployTargets` | Additional valid cells for Deploy action (Beacon) |
-   | `action` (`options`, `apply`) | generic `power` action handler | Custom active power button & execution (Shoot) |
+   | `action` (`options`, `apply`) | generic `power` action handler | Custom active power button & execution (Shoot, Barrier) |
+
+   Barrier needed one piece of engine state no hook could hold: `GameState.barriers`, which `isEmptySpace`
+   (deploys, shots, Tactical, Nomadic, start slots), the move searches (`reach`, `shipReach`), `carryOptions`,
+   Warp Gate placement and `checkInvariants` read. Official modes never set it.
 
 3. **Generic action pipeline.** Powers with an `action` hook produce `{ type: 'power', die, target?, to? }`.
    The UI automatically renders a button with `ability.name`, highlights valid targets, and displays

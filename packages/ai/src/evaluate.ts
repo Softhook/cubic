@@ -1,5 +1,6 @@
 import {
   attackChance,
+  barrierAt,
   breakthroughAt,
   canGainResearch,
   cellOf,
@@ -263,7 +264,9 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
   const { sum, target, ships: inOrbit } = check;
   const gap = target - sum;
   const { cols, space, cells } = grid(s.board);
+  // A barrier (Regolith) holds its space for good: no ship can fly in.
   const empty = orbitals(s.board, planet)
+    .filter((c) => !barrierAt(s, c))
     .map((c) => c.r * cols + c.c)
     .filter((i) => space[i] && !ctx.at[i]);
   const reaches = (d: Die) => empty.some((i) => ctx.reach.get(d.id)?.moves[i]);
