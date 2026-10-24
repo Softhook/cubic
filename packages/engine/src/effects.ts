@@ -43,6 +43,8 @@ export const SKILL_EFFECTS = [
   'patient',
   'prideful',
   'ruthless',
+  // Regolith's own skills
+  'science',
   // original command cards
   'arrogant',
   'clever-original',

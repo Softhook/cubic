@@ -676,6 +676,34 @@ describe('passive skills and rule hooks', () => {
     }
   });
 
+  cardCase(['r-pioneering'], 'Science (Regolith)', () => {
+    const conquers = (id: string | null, ships: [number, number, number][], research: number) => {
+      const base = originalGame({ me: id ? [id] : [] });
+      const me = base.turn.player;
+      const s = arrange(base, Object.fromEntries(ships.map((p, i) => [`p${me}d${i}`, p])));
+      s.players[me].research = research;
+      const centre = s.board.planets.find((p) => p.number === 8)!.id;
+      return conquerCheck(s, me, centre).ok;
+    };
+    // Ship 6 + 2 of research 3; ships 12 − 4 of research 5; research 2 has only 1 to spend.
+    const cases: [[number, number, number][], number, boolean][] = [
+      [[[3, 4, 6]], 3, true],
+      [
+        [
+          [3, 4, 6],
+          [5, 4, 6],
+        ],
+        5,
+        true,
+      ],
+      [[[3, 4, 6]], 2, false],
+    ];
+    for (const [ships, research, ok] of cases) {
+      expect(conquers(null, ships, research)).toBe(false);
+      expect(conquers('r-pioneering', ships, research), `research ${research}`).toBe(ok);
+    }
+  });
+
   cardCase(['industrious', 'o-curious', 'o-arrogant', 'o-conformist'], 'Start-of-turn bonuses', () => {
     let s = quickStart(2, 814, 'community');
     const p = s.turn.player;

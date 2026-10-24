@@ -109,7 +109,10 @@ export const actionHandlers = {
     }
     spend(s, 2);
     t.conquered = (t.conquered ?? 0) + 1;
-    log(s, `${name(s, t.player)} conquers planet ${s.board.planets[a.planet].number}.`, t.player, 'conquer', [a.planet]);
+    // Science: the research that moved the sum onto the target.
+    if (check.research) s.players[t.player].research -= check.research;
+    const spent = check.research ? `, spending ${check.research} research` : '';
+    log(s, `${name(s, t.player)} conquers planet ${s.board.planets[a.planet].number}${spent}.`, t.player, 'conquer', [a.planet]);
     tally(s, t.player, 'planetsTaken');
     placeCube(s, t.player, a.planet);
   },

@@ -111,6 +111,8 @@ export interface SkillRule {
     tolerance?: number;
     /** Other totals the player may use instead of the plain sum. */
     sums?: (ctx: ConquerContext) => number[];
+    /** Research above 1 may be spent to move the total up or down by that much. */
+    spendResearch?: boolean;
   };
   combat?: {
     /** Roll this many dice and keep the lowest. */
@@ -200,6 +202,8 @@ export const SKILL_RULES: Record<SkillEffect, SkillRule> = {
   patient: { storeTactics: true },
   prideful: { infamyAt: 4, stolenOnDestroy: true },
   ruthless: { disableSkillOnDestroy: true },
+  // Regolith's own skills
+  science: { conquer: { spendResearch: true } },
   // original command cards
   arrogant: {
     // More ships on the map than every other player.

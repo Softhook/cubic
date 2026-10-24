@@ -1,10 +1,12 @@
 import {
   attackChance,
   breakthroughAt,
+  canGainResearch,
   cellOf,
   conquerCheck,
   distance,
   grid,
+  hasSkill,
   hooksOf,
   movementRange,
   orbitBlockers,
@@ -288,6 +290,20 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
   if (reachers.length && gap >= 1 && gap <= 6) option(4, RECONFIGURE_ODDS);
   // Two ships fly in, one of them reconfigured to fit.
   if (empty.length >= 2 && reachers.length >= 2 && gap >= 2 && gap <= 12) option(5, RECONFIGURE_ODDS);
+  // Science: research actions raise Research (one each) until the part above 1 covers how far the orbit is off.
+  if (hasSkill(s, p, 'science')) {
+    const { research } = s.players[p];
+    const steer = (off: number, moves: number) => {
+      const need = Math.abs(off) + 1;
+      const raise = Math.max(0, need - research);
+      const actions = moves + raise + 2;
+      if (need > rulesOf(s).researchLimit || (raise && !canGainResearch(s, p))) return;
+      // A breakthrough resets Research at the end of the turn, so Research that high has to be spent this turn.
+      if (need < breakthroughAt(s, p) || actions <= 3) option(actions);
+    };
+    steer(gap, 0);
+    for (const d of reachers) steer(gap - d.value, 1);
+  }
 
   // Progress: ships already in orbit are part of the sum, worth more the more of it they make up.
   // An orbit over the target has to shed ships first, so it counts for nothing.

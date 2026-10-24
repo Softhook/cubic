@@ -890,3 +890,41 @@ describe.runIf(REGOLITH_OVER_CONQUEST)('over-conquest', () => {
     expect(after.board.planets[planet.id].cubes).toEqual([0]);
   });
 });
+
+describe('Science: Research spent to move the claim total', () => {
+  const base = scenario({}, 'regolith');
+  const planet = base.board.planets.find((q) => !q.start && !q.cubes.length && q.number > 6)!;
+  const [o1, o2] = orbitals(base.board, planet);
+  const short = (research: number) => {
+    const s = scenario({ p0d0: [o1.r, o1.c, 6] }, 'regolith', ['r-pioneering']);
+    s.players[0].research = research;
+    return s;
+  };
+
+  it('adds the Research needed, and only that', () => {
+    const gap = planet.number - 6;
+    const s = short(6);
+    expect(conquerCheck(s, 0, planet.id)).toMatchObject({ ok: true, research: gap });
+    const after = apply(s, { type: 'conquer', planet: planet.id });
+    expect(after.players[0].research).toBe(6 - gap);
+    expect(after.log.at(-1)?.text).toMatch(`spending ${gap} research`);
+  });
+
+  it('can’t spend the die’s lowest face', () => {
+    expect(conquerCheck(short(planet.number - 6), 0, planet.id).ok).toBe(false);
+    expect(conquerCheck(short(planet.number - 5), 0, planet.id).ok).toBe(true);
+  });
+
+  it('subtracts from an orbit over the target', () => {
+    const s = scenario({ p0d0: [o1.r, o1.c, 6], p0d1: [o2.r, o2.c, 6] }, 'regolith', ['r-pioneering']);
+    s.players[0].research = 6;
+    expect(conquerCheck(s, 0, planet.id)).toMatchObject({ ok: true, research: 12 - planet.number });
+  });
+
+  it('spends nothing when the mechs make the total', () => {
+    const s = scenario({ p0d0: [o1.r, o1.c, 6], p0d1: [o2.r, o2.c, planet.number - 6] }, 'regolith', ['r-pioneering']);
+    s.players[0].research = 5;
+    expect(conquerCheck(s, 0, planet.id).research).toBeUndefined();
+    expect(apply(s, { type: 'conquer', planet: planet.id }).players[0].research).toBe(5);
+  });
+});

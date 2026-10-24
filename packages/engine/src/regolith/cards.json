@@ -259,12 +259,12 @@
       "id": "r-pioneering",
       "name": "Science",
       "subtitle": "Claim with research",
-      "text": "When Claiming, your Research number can stand in for one of your mechs.",
+      "text": "When Claiming, you may lower your Research to add or subtract that amount from your mechs' total.",
       "category": "conquer",
       "count": 1,
       "from": "pioneering",
-      "status": "renamed",
-      "effect": "pioneering",
+      "status": "reworked",
+      "effect": "science",
       "art": {
         "title": "Flag and number",
         "brief": "A survey flag with a stencilled research number flying over an objective."

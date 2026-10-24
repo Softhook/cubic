@@ -644,6 +644,8 @@ export interface ConquerCheck {
   replace?: PlayerId[];
   /** Contested orbit: the ships make the sum, but opponents' ships in orbit stop the conquest. */
   blocked?: boolean;
+  /** Research the conquest spends to move the sum onto the target (Science). */
+  research?: number;
 }
 
 /** The player's home planet (home shipyard): their starting planet, unless their cube there has moved (`cubeLeft`). */
@@ -705,17 +707,24 @@ export function conquerCheck(state: GameState, player: PlayerId, planetId: numbe
 
   const p = state.players[player];
   const tolerance = Math.max(0, ...rules.map((r) => r.tolerance ?? 0));
+  // Science: Research above 1 (the die's lowest face) moves the sum up or down, as little as needed.
+  const spendable = rules.some((r) => r.spendResearch) ? p.research - 1 : 0;
+  let found: { ships: Die[]; sum: number; research: number } | undefined;
   // Every orbital ship counts; Ingenious lets each diagonal ship count or not ("may be counted").
-  for (let mask = 0; mask < 1 << corners.length; mask++) {
+  for (let mask = 0; mask < 1 << corners.length && found?.research !== 0; mask++) {
     const ships = [...orbit, ...corners.filter((_, i) => mask & (1 << i))];
     if (!ships.length) continue;
     const sum = total(ships);
     const ctx = { sum, ships, dominance: p.dominance, research: p.research };
     const sums = [sum, ...rules.flatMap((r) => r.sums?.(ctx) ?? [])];
-    if (!sums.some((s) => Math.abs(s - target) <= tolerance)) continue;
+    const research = Math.min(...sums.map((s) => Math.max(0, Math.abs(s - target) - tolerance)));
+    if (research <= spendable && research < (found?.research ?? Infinity)) found = { ships, sum, research };
+  }
+  if (found) {
+    const { ships, sum, research } = found;
     if (blockers.length)
       return { ...fail(`Enemy ships in orbit block it (${blockers.map((d) => d.value).join(', ')})`, ships, sum), blocked: true };
-    return { ok: true, sum, target, ships, replace };
+    return { ok: true, sum, target, ships, replace, ...(research && { research }) };
   }
   const sum = total(all);
   return fail(`Orbit totals ${sum}, needs ${target}${blockade}`, all, sum);

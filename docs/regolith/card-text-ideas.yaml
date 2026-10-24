@@ -65,7 +65,7 @@ skills:
     text: You may hold a Tactic instead of playing it, and play a held Tactic at the end of any of your turns. When you take this Skill, also take and hold a Tactic.
   r-pioneering:
     subtitle: Claim with Research
-    text: When Claiming, your Research number can stand in for one of your mechs.
+    text: When Claiming, you may lower your Research to add or subtract that amount from your mechs' total.
   r-plundering:
     subtitle: Learn from wrecks
     text: When you first destroy an enemy mech each turn, gain 3 Research.
