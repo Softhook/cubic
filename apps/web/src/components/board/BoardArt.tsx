@@ -1,6 +1,7 @@
 import { memo, type CSSProperties } from 'react';
 import { drawing, type Board, type GameState } from '@quantum/engine';
 import { PLANET_DIAMETER, TILE, lookWorld } from '@quantum/art';
+import { BarrierWeb } from './BarrierWeb';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { GATE_COLOR } from '../../theme';
 import { placement, wrapMarks, type WrapMark } from './geometry';
@@ -94,26 +95,10 @@ export const BoardArt = memo(function BoardArt({
           </g>
         ))}
 
-        {/* Barriers (a prototype power): a slab in its owner's colour, filling the space it blocks. */}
-        {(game.barriers ?? []).map((b) => {
-          const s = cell * 0.36;
-          const outline = game.board.hex
-            ? [0, 60, 120, 180, 240, 300].map((a) => `${s * Math.cos((a * Math.PI) / 180)},${s * Math.sin((a * Math.PI) / 180)}`).join(' ')
-            : `${-s},${-s} ${s},${-s} ${s},${s} ${-s},${s}`;
-          return (
-            <g key={`b${b.r},${b.c}`} className="barrier" transform={`translate(${mid(b).x} ${mid(b).y})`}>
-              <polygon points={outline} fill={game.players[b.owner].color} stroke="#111" strokeWidth={cell * 0.04} strokeLinejoin="round" />
-              <path
-                d={`M${-s * 0.5} ${-s * 0.35} L${s * 0.5} ${-s * 0.35} M${-s * 0.5} 0 L${s * 0.5} 0 M${-s * 0.5} ${s * 0.35} L${s * 0.5} ${s * 0.35}`}
-                stroke="#111"
-                strokeOpacity={0.55}
-                strokeWidth={cell * 0.035}
-                strokeLinecap="round"
-              />
-              <title>{`${game.players[b.owner].name}'s barrier: nothing moves, drops or shoots through it`}</title>
-            </g>
-          );
-        })}
+        {/* Barriers (a prototype power): webs of regolith glass, no one's once spun (BarrierWeb). */}
+        {(game.barriers ?? []).map((b) => (
+          <BarrierWeb key={`b${b.r},${b.c}`} r={b.r} c={b.c} x={mid(b).x} y={mid(b).y} cell={cell} mm={mm} cast={ground} />
+        ))}
 
         {planets.map((p) => {
           const { x: cx, y: cy } = mid(p);

@@ -80,7 +80,7 @@ combat, higher is lighter and quicker. A refit re-rolls the die.
 | 3 | **Tactician** | Tunnelling assault frame | *Swap*: swap places with any of your other mechs | Bores through the ice tunnels and surfaces where another mech stood |
 | 4 | **Chameleon** | Flexible hardpoint | *Change to 3 or 5*: refit as a Tactician or a Sniper | The standard frame, one arm swap away from either |
 | 5 | **Sniper** | Long-range gunner | *Shoot*: attack the first enemy in a clear straight line, without moving | Fires down a line of hexes from where it stands |
-| 6 | **Wisp** | Recon drone | *Barrier*: once a turn, for free and besides its move, fire a permanent barrier onto any clear hex in a straight line; nothing moves, drops or shoots through it, and it can hold a perimeter space | Darts ahead of the column and walls off the ground behind it |
+| 6 | **Wisp** | Recon drone | *Barrier*: once a turn, for free and besides its move, fire a permanent barrier onto any clear hex in a straight line; nothing moves, drops or shoots through it, and it can hold a perimeter space | Darts ahead of the column and walls off the ground behind it: its spinneret sprays molten regolith that cools into a low web of glass threads (as Pele's hair), anchored to the ground and no one's once spun |
 
 **Silhouette reference:** [mech-silhouettes.jpg](../moodboards/regolith/reference/mech-silhouettes.jpg), twelve
 front views (reference only, not ours to print). The mechs should read apart by outline alone, in black, as
