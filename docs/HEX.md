@@ -194,12 +194,13 @@ is next.
 Hexes are flat-topped, one space tall, with columns √3/2 of a space apart. The flower lattice is turned
 about 11° from the hexes, so a map's rows of tiles lean a little. The map is drawn in the same layers as a
 square one ([GRAPHICS.md](GRAPHICS.md), *Tiles*): each tile's sky cut to its flower, its planet, the
-seams, then a well etched for each space, hatched where it is in an orbit.
+seams, then a line along each space's hex edge (`HEX_EDGE`) the same as the seams, faded with them as one so shared sides are no darker.
 
 **Sizes.** A hex is one space (32 mm) from flat side to flat side, so neighbouring dice sit 32 mm apart,
 as on squares, and a flower is 92.4 × 96 mm, inside the 96 mm trim. The well (`HEX_WELL` 0.8) is
 25.6 mm across: a 19 mm die fits it snugly, its rounded corners close to the slanted sides, where the
-square pad leaves 2.5 mm round it. The wells stay hexes, so a die can turn to face its planet.
+square pad leaves 2.5 mm round it; labels keep clear of it. The spaces are marked by their hex edges
+alone, not a sunk well.
 
 ## Code
 

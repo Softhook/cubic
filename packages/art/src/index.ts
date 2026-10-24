@@ -9,6 +9,7 @@ export {
   NEBULA_HUES,
   VOID_NEBULA_HUES,
   WELL,
+  HEX_EDGE,
   NUMBER_TEXT,
   PLANET_DIAMETER,
   PLANET_FAMILY,
@@ -39,7 +40,7 @@ export {
   type TileShape,
 } from './tile/geometry';
 export { OBJECTIVE_NAMES, WORLD_NAMES, lookShape, lookWorld, type TileLook, type World } from './tile/look';
-export { HATCH, hexWell, voidFlask, well } from './tile/markings';
+export { HATCH, hexEdges, hexWell, voidFlask, well } from './tile/markings';
 export { tileFlavour, tileLabel, tileLabelFits } from './tile/label';
 export { tileHasRings } from './tile/space';
 export {

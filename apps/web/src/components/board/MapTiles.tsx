@@ -2,7 +2,7 @@ import { Fragment, memo, type ReactNode } from 'react';
 import { cellAt, type Board } from '@quantum/engine';
 import {
   HATCH,
-  HEX_WELL,
+  HEX_EDGE,
   RASTER_AREA,
   SPACE_BASE_CSS,
   TILE,
@@ -46,13 +46,14 @@ const pattern = (id: string, opacity: number, width: number, cross = false) => {
 const PATTERNS = `<defs>${pattern('map-orbit', 0.14, 0.25)}${pattern('map-shared', 0.24, 0.3, true)}</defs>`;
 
 /**
- * The spaces as wells etched into the map, in millimetres: on a square map, hatched where they orbit a planet,
- * cross-hatched where they orbit two, with a faint flask on a Void's (ships there gain Research). Worked out from the
+ * The spaces as wells etched into the map, in millimetres, or on a hex map a line round each: on a square map,
+ * hatched where they orbit a planet, cross-hatched where they orbit two, with a faint flask on a Void's (ships there gain Research). Worked out from the
  * board, so an orbit reaching onto another tile is marked there too.
  */
-function wells(board: Board): string {
+function wells(board: Board): { edges: string; wells: string } {
   const { mid } = placement(board, TILE.cell);
   let out = '';
+  let edges = '';
   for (const { p, orbits, void: isVoid } of spaceRoles(board)) {
     const { x, y } = mid(p);
     const style = orbits ? WELL.conquer : WELL.space;
@@ -60,7 +61,7 @@ function wells(board: Board): string {
     const role = orbits > 1 ? 'shared' : orbits ? 'orbit' : 'space';
     out += `<g class="well" data-r="${p.r}" data-c="${p.c}" data-role="${role}${isVoid ? ' void' : ''}">`;
     if (board.hex) {
-      out += hexWell(x, y, HEX_WELL * TILE.cell, style);
+      edges += hexWell(x, y);
     } else {
       out += well(x, y, TILE.pad, 4, style);
       const h = TILE.pad / 2 - HATCH.inset;
@@ -69,7 +70,7 @@ function wells(board: Board): string {
     if (isVoid) out += voidFlask(x, y);
     out += '</g>';
   }
-  return out;
+  return { edges, wells: out };
 }
 
 /** The planets' flavour labels beside them, as printed, where there's room (layers.ts `labelFits`), in millimetres. */
@@ -87,12 +88,16 @@ function labels(board: Board, tiles: readonly TileArt[]): string {
 
 /**
  * The spaces and labels of a map, in millimetres, by map: they follow from where its planets are, not from
- * the cubes on them, so a move (a new board) doesn't redraw them.
+ * the cubes on them, so a move (a new board) doesn't redraw them. A hex map's space outlines (`edges`) are apart,
+ * to fade with its seams.
  */
-const marksByMap = new Map<string, { wells: string; labels: string }>();
+const marksByMap = new Map<string, { edges: string; wells: string; labels: string }>();
 function marksOf(board: Board, tiles: readonly TileArt[]) {
   let marks = marksByMap.get(board.mapId);
-  if (marks === undefined) marksByMap.set(board.mapId, (marks = { wells: PATTERNS + wells(board), labels: labels(board, tiles) }));
+  if (marks === undefined) {
+    const { edges, wells: spaces } = wells(board);
+    marksByMap.set(board.mapId, (marks = { edges, wells: PATTERNS + spaces, labels: labels(board, tiles) }));
+  }
   return marks;
 }
 
@@ -173,14 +178,17 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
     spaces: () => (
       <>
         {board.hex && (
-          <path
-            d={hexSeams(board, cell, tiles).map(line).join(' ')}
-            fill="none"
-            stroke="#000"
-            strokeOpacity={0.55}
-            strokeWidth={Math.max(1, cell * 0.03)}
-            strokeLinecap="round"
-          />
+          // The seams and the spaces' outlines solid, faded as one, so where they meet the line is no darker.
+          <g opacity={HEX_EDGE.opacity}>
+            <path
+              d={hexSeams(board, cell, tiles).map(line).join(' ')}
+              fill="none"
+              stroke="#000"
+              strokeWidth={Math.max(1, HEX_EDGE.width * mm)}
+              strokeLinecap="round"
+            />
+            <g transform={`scale(${mm})`} dangerouslySetInnerHTML={{ __html: marks.edges }} />
+          </g>
         )}
         <g transform={`scale(${mm})`} dangerouslySetInnerHTML={{ __html: marks.wells }} />
       </>

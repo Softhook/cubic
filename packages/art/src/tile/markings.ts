@@ -1,17 +1,7 @@
-import { CUBE_PAD, FONTS, PLANET_FAMILY, TILE, WELL, type WellStyle } from '../tokens';
+import { CUBE_PAD, FONTS, HEX_EDGE, PLANET_FAMILY, TILE, WELL, type WellStyle } from '../tokens';
 import { icon } from '../icons';
 import { hex, n, type Fragment } from '../svg';
-import {
-  HEX_WELL,
-  MID,
-  TILE_SPOTS,
-  cubePadCentres,
-  hexCorners,
-  numberCorner,
-  numberPlacement,
-  type Spot,
-  type TileShape,
-} from './geometry';
+import { MID, TILE_SPOTS, cubePadCentres, hexCorners, numberCorner, numberPlacement, type Spot, type TileShape } from './geometry';
 import type { TileSpec } from './set';
 
 /**
@@ -63,18 +53,16 @@ export function hatch(cx: number, cy: number): string {
 }
 
 /**
- * A hex space's well centred on (cx, cy), `size` tall: etched in as `well`, shaded along its top sides and
- * lit along its bottom ones (corners 3 to 0 are the top, as y is down).
+ * A hex space's outline centred on (cx, cy): a solid line along its edge, a space tall. Draw a set of them
+ * inside `hexEdges`, which fades them together.
  */
-export function hexWell(cx: number, cy: number, size: number, style: WellStyle): string {
-  const w = hexCorners(cx, cy, size);
-  const pts = (list: Spot[]) => list.map((p) => `${n(p.x)} ${n(p.y)}`);
-  return (
-    `<polygon points="${pts(w).join(' ')}" fill="#000" fill-opacity="${style.fill}"/>` +
-    `<path d="M${pts([w[3], w[4], w[5], w[0]]).join(' L')}" fill="none" stroke="#000" stroke-opacity="${style.shade}" stroke-width="${style.shadeWidth}"/>` +
-    `<path d="M${pts([w[0], w[1], w[2], w[3]]).join(' L')}" fill="none" stroke="#fff" stroke-opacity="${style.lit}" stroke-width="${style.litWidth}"/>`
-  );
+export function hexWell(cx: number, cy: number): string {
+  const pts = hexCorners(cx, cy, TILE.cell).map((p) => `${n(p.x)} ${n(p.y)}`);
+  return `<polygon points="${pts.join(' ')}" fill="none" stroke="#000" stroke-width="${HEX_EDGE.width}" stroke-linejoin="round"/>`;
 }
+
+/** Hex outlines (`hexWell`) faded as one, so where two meet the line is no darker. */
+export const hexEdges = (outlines: string) => (outlines ? `<g opacity="${HEX_EDGE.opacity}">${outlines}</g>` : '');
 
 /**
  * A well centred on (cx, cy): a dark fill with a shaded and a lit inner edge. Plain vectors, so they
@@ -101,13 +89,15 @@ export function markings(spec: TileSpec, part: 'spaces' | 'planet', shape: TileS
   const mm = (p: Spot) => ({ x: MID + p.x * TILE.cell, y: MID + p.y * TILE.cell });
   const hasPlanet = spec.number > 0;
   let body = '';
+  let edges = '';
   for (const spot of part === 'spaces' ? Object.values(TILE_SPOTS[shape]) : []) {
     const away = Math.hypot(spot.x - at.x, spot.y - at.y);
     if (hasPlanet && away < 1e-6) continue;
     const { x, y } = mm(spot);
     const conquer = hasPlanet && Math.abs(away - 1) < 1e-6;
     const style = conquer ? WELL.conquer : WELL.space;
-    body += shape === 'hex' ? hexWell(x, y, TILE.cell * HEX_WELL, style) : well(x, y, TILE.pad, 4, style);
+    if (shape === 'hex') edges += hexWell(x, y);
+    else body += well(x, y, TILE.pad, 4, style);
     // The spaces beside a planet are where dice go to conquer it: on a square tile, very faint diagonal hatching marks them.
     if (conquer && shape === 'square') body += hatch(x, y);
     // Ships on the Void gain Research: a faint flask on each space.
@@ -126,5 +116,5 @@ export function markings(spec: TileSpec, part: 'spaces' | 'planet', shape: TileS
     body +=
       text(`fill="none" stroke="${hex(hue, 50, 7)}" stroke-width="${n(num.size * 0.13)}" stroke-linejoin="round"`) + text(`fill="#fff"`);
   }
-  return { defs: '', body };
+  return { defs: '', body: hexEdges(edges) + body };
 }

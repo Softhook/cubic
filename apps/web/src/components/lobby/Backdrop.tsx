@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { buildBoard, drawing, spaces, type Board, type MapDef } from '@quantum/engine';
 import {
-  HEX_WELL,
+  HEX_EDGE,
   PLANET_DIAMETER,
   SPACE_BASE_CSS,
   TILE,
@@ -161,7 +161,7 @@ function MapCanvas({
 /**
  * The tiles as the game draws them (MapTiles), more simply: each tile's sky cut to its outline (rounded
  * squares a little apart, or 7-hex flowers), a Void's heart, the seams between hex tiles, and each space a
- * faint well.
+ * faint well, or on hex tiles a faint line round it.
  */
 function drawTiles(
   ctx: CanvasRenderingContext2D,
@@ -203,23 +203,24 @@ function drawTiles(
     if (tileSpec(t.id).number === 0) art(bodies[t.id], t.body);
     ctx.restore();
   }
+  ctx.beginPath();
+  for (const p of spaces(board)) {
+    if (board.hex) hex(p, 1);
+    else square(p, (TILE.pad / TILE.cell) * cell, (4 / TILE.cell) * cell);
+  }
   if (board.hex) {
-    ctx.beginPath();
     for (const [[x0, y0], [x1, y1]] of hexSeams(board, cell, tiles)) {
       ctx.moveTo(x0, y0);
       ctx.lineTo(x1, y1);
     }
-    ctx.strokeStyle = 'rgba(0,0,0,.55)';
-    ctx.lineWidth = Math.max(1, cell * 0.03);
+    // The seams and the spaces' outlines in one path, so where they meet the line is no darker.
+    ctx.strokeStyle = `rgba(0,0,0,${HEX_EDGE.opacity})`;
+    ctx.lineWidth = Math.max(1, (HEX_EDGE.width / TILE.cell) * cell);
     ctx.stroke();
+  } else {
+    ctx.fillStyle = 'rgba(0,0,0,.18)';
+    ctx.fill();
   }
-  ctx.beginPath();
-  for (const p of spaces(board)) {
-    if (board.hex) hex(p, HEX_WELL);
-    else square(p, (TILE.pad / TILE.cell) * cell, (4 / TILE.cell) * cell);
-  }
-  ctx.fillStyle = 'rgba(0,0,0,.18)';
-  ctx.fill();
 }
 
 /** The faces around a die showing `top`, as on a real die: opposite faces add up to 7. */
