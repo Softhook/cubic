@@ -21,7 +21,7 @@ export const INKS = {
   violet: '#9C86C9',
 } as const;
 
-/** How a mech is printed: its key ink, seams, joints, recesses, rods, lights, the rifle's metal, and its parts' sides when turned. */
+/** How a mech is printed: its key ink, seams, joints, recesses, rods, lights, the rifle's metal, and its parts' sides and tops when turned. */
 export interface MechInk {
   key: string;
   seam: string;
@@ -31,6 +31,7 @@ export interface MechInk {
   light: string;
   gun: string;
   side: string;
+  top: string;
 }
 
 /** On paper (the permanent deck): key ink, as the Silhouettes board prints it. */
@@ -43,6 +44,7 @@ export const ON_PAPER: MechInk = {
   light: INKS.paper,
   gun: '#6E6760',
   side: '#34302D',
+  top: '#4F4843',
 };
 
 /** On night paper (the one-shot decks): bone. */
@@ -54,7 +56,8 @@ export const ON_NIGHT: MechInk = {
   rod: '#A79F92',
   light: INKS.night,
   gun: '#B5AC9E',
-  side: '#CFC7B8',
+  side: '#C4BBAB',
+  top: '#F8F3E9',
 };
 
 /** One ink for every part: a colour plate's print of the shape. */
@@ -67,4 +70,5 @@ export const mono = (colour: string): MechInk => ({
   light: colour,
   gun: colour,
   side: colour,
+  top: colour,
 });

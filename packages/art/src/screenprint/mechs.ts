@@ -7,8 +7,8 @@
 
 /** How a part is printed: key ink and seams (`k`), a joint (`j`), a recess (`r`), a seam line (`l`), a hydraulic rod (`rod`), a light or slit in the paper's colour (`p` stroked, `pf` filled), a thin key stroke (`w`), the rifle's lighter metal (`gun`). */
 type Kind = 'k' | 'j' | 'r' | 'l' | 'rod' | 'p' | 'pf' | 'w' | 'gun';
-/** A part: how it's printed, its path, a stroke width where it's stroked, and how far in front of (+) or behind (−) its limb or hull's middle it stands, in depth. */
-type Part = readonly [Kind, string, number?, number?];
+/** A part: how it's printed, its path, a stroke width where it's stroked, how far in front of (+) or behind (−) its limb or hull's middle it stands, in depth, and its own thickness front to back (default its limb's or the hull's). */
+type Part = readonly [Kind, string, number?, number?, number?];
 
 /** One segment of a limb: it turns about `pivot` (rest coordinates), carrying the segments after it. */
 interface Seg {
@@ -31,7 +31,11 @@ export interface Rig {
   armExtra?: { plain?: readonly (readonly Part[])[]; mirror?: readonly (readonly Part[])[] };
   /** The hull: its solid parts get a side face in three-quarter view; `detail` is drawn over them. */
   hull: readonly Part[];
+  /** Hull parts that are round in plan (domes, a helmet), turned about the upright axis rather than pushed back; drawn after `hull`, and the `detail` on them wraps round. */
+  round?: readonly Part[];
   detail: readonly Part[];
+  /** Each leg pair's turn in plan, out of the front plane: + swings the legs forward (default one pair, `[0]`). */
+  splay?: readonly number[];
   /** Drawn after the arms: masts, dishes. */
   top?: readonly Part[];
   /** Held across the body (the Sniper's rifle, in its own `frame`, and the hands on it), turning about `pivot` with the pose's `aim`. */
@@ -96,10 +100,16 @@ export const RIGS: Record<MechKind, Rig> = {
     ],
     armExtra: { mirror: [[], [['k', 'M98,-56 L92,-56 L88,10 L91,16 L94,10 Z M86,-58 L80,-58 L78,4 L81,10 L84,4 Z']]] },
     hull: [
-      ['k', 'M-32,-124 L32,-124 L38,-96 L26,-84 L-26,-84 L-38,-96 Z'],
-      ['k', 'M-60,-210 C-40,-228 40,-228 60,-210 L80,-180 L82,-150 L66,-126 L30,-114 L-30,-114 L-66,-126 L-82,-150 L-80,-180 Z'],
-      ['k', 'M18,-222 L46,-220 L46,-206 L18,-208 Z'],
-      ['k', 'M-20,-196 L20,-196 L26,-180 L20,-162 L-20,-162 L-26,-180 Z'],
+      ['k', 'M-32,-124 L32,-124 L38,-96 L26,-84 L-26,-84 L-38,-96 Z', undefined, -4, 60],
+      [
+        'k',
+        'M-60,-210 C-40,-228 40,-228 60,-210 L80,-180 L82,-150 L66,-126 L30,-114 L-30,-114 L-66,-126 L-82,-150 L-80,-180 Z',
+        undefined,
+        0,
+        90,
+      ],
+      ['k', 'M18,-222 L46,-220 L46,-206 L18,-208 Z', undefined, -14, 40],
+      ['k', 'M-20,-196 L20,-196 L26,-180 L20,-162 L-20,-162 L-26,-180 Z', undefined, 38, 26],
     ],
     detail: [
       ['l', 'M-24,-108 L24,-108 M0,-122 L0,-86'],
@@ -112,6 +122,7 @@ export const RIGS: Record<MechKind, Rig> = {
   behemoth: {
     height: 298,
     depth: 150,
+    limb: 52,
     leg: [
       {
         pivot: [45, -188],
@@ -165,11 +176,17 @@ export const RIGS: Record<MechKind, Rig> = {
       },
     ],
     hull: [
-      ['k', 'M-6,-182 L6,-182 L6,-170 L-6,-170 Z'],
-      ['r', 'M-84,-198 L84,-198 L72,-180 L-72,-180 Z'],
-      ['k', 'M-82,-292 L-74,-292 L-74,-250 L-82,-250 Z M74,-292 L82,-292 L82,-250 L74,-250 Z M-88,-298 L88,-298 L88,-290 L-88,-290 Z'],
-      ['k', 'M-68,-286 L68,-286 L68,-252 L-68,-252 Z'],
-      ['k', 'M-112,-252 L112,-252 L120,-238 L120,-208 L108,-196 L-108,-196 L-120,-208 L-120,-238 Z'],
+      ['k', 'M-6,-182 L6,-182 L6,-170 L-6,-170 Z', undefined, 0, 30],
+      ['r', 'M-84,-198 L84,-198 L72,-180 L-72,-180 Z', undefined, 0, 120],
+      [
+        'k',
+        'M-82,-292 L-74,-292 L-74,-250 L-82,-250 Z M74,-292 L82,-292 L82,-250 L74,-250 Z M-88,-298 L88,-298 L88,-290 L-88,-290 Z',
+        undefined,
+        -6,
+        104,
+      ],
+      ['k', 'M-68,-286 L68,-286 L68,-252 L-68,-252 Z', undefined, -6, 96],
+      ['k', 'M-112,-252 L112,-252 L120,-238 L120,-208 L108,-196 L-108,-196 L-120,-208 L-120,-238 Z', undefined, 0, 150],
     ],
     detail: [
       ['w', circ(0, -160, 9), 3.5],
@@ -226,10 +243,10 @@ export const RIGS: Record<MechKind, Rig> = {
       },
     ],
     hull: [
-      ['k', 'M-36,-152 L36,-152 L28,-120 L-28,-120 Z'],
-      ['k', 'M-26,-124 L26,-124 L20,-102 L0,-94 L-20,-102 Z'],
-      ['k', 'M-52,-172 C-52,-212 -26,-226 0,-226 C26,-226 52,-212 52,-172 L44,-148 L-44,-148 Z'],
+      ['k', 'M-36,-152 L36,-152 L28,-120 L-28,-120 Z', undefined, 0, 64],
+      ['k', 'M-26,-124 L26,-124 L20,-102 L0,-94 L-20,-102 Z', undefined, 10, 40],
     ],
+    round: [['k', 'M-52,-172 C-52,-212 -26,-226 0,-226 C26,-226 52,-212 52,-172 L44,-148 L-44,-148 Z']],
     detail: [
       ['l', 'M-48,-186 L48,-186 M-44,-160 L44,-160'],
       ['p', 'M-14,-204 L14,-204 L16,-194 L-16,-194 Z', 2.4],
@@ -250,7 +267,7 @@ export const RIGS: Record<MechKind, Rig> = {
   // 4: the standard frame, upright and boxy on straight legs: a missile box and a long gun.
   chameleon: {
     height: 248,
-    depth: 100,
+    depth: 68,
     leg: [
       {
         pivot: [28, -118],
@@ -301,10 +318,10 @@ export const RIGS: Record<MechKind, Rig> = {
       mirror: [[], [['w', circ(67, -112, 5), 1.8]]],
     },
     hull: [
-      ['k', 'M-34,-134 L34,-134 L30,-112 L-30,-112 Z'],
-      ['k', 'M-50,-214 L50,-214 L56,-202 L56,-142 L44,-128 L-44,-128 L-56,-142 L-56,-202 Z'],
-      ['k', 'M-40,-228 L-14,-228 L-12,-214 L-42,-214 Z'],
-      ['k', 'M6,-248 L54,-248 L54,-214 L6,-214 Z'],
+      ['k', 'M-34,-134 L34,-134 L30,-112 L-30,-112 Z', undefined, -4, 44],
+      ['k', 'M-50,-214 L50,-214 L56,-202 L56,-142 L44,-128 L-44,-128 L-56,-142 L-56,-202 Z', undefined, 0, 68],
+      ['k', 'M-40,-228 L-14,-228 L-12,-214 L-42,-214 Z', undefined, 8, 34],
+      ['k', 'M6,-248 L54,-248 L54,-214 L6,-214 Z', undefined, -10, 40],
     ],
     detail: [
       ['l', 'M-50,-190 L50,-190 M-50,-160 L50,-160 M0,-214 L0,-190 M-30,-176 L-12,-176'],
@@ -356,12 +373,12 @@ export const RIGS: Record<MechKind, Rig> = {
       },
     ],
     hull: [
-      ['k', 'M-24,-128 L24,-128 L28,-108 L16,-98 L-16,-98 L-28,-108 Z'],
-      ['r', 'M-18,-144 L18,-144 L16,-126 L-16,-126 Z'],
-      ['k', 'M-40,-206 L40,-206 L50,-190 L44,-160 L22,-140 L-22,-140 L-44,-160 L-50,-190 Z'],
-      ['r', 'M-18,-210 L18,-210 L16,-200 L-16,-200 Z'],
-      ['k', 'M-14,-224 C-14,-238 14,-238 14,-224 L16,-210 L8,-202 L-8,-202 L-16,-210 Z'],
+      ['k', 'M-24,-128 L24,-128 L28,-108 L16,-98 L-16,-98 L-28,-108 Z', undefined, 0, 46],
+      ['r', 'M-18,-144 L18,-144 L16,-126 L-16,-126 Z', undefined, 0, 36],
+      ['k', 'M-40,-206 L40,-206 L50,-190 L44,-160 L22,-140 L-22,-140 L-44,-160 L-50,-190 Z', undefined, 0, 70],
+      ['r', 'M-18,-210 L18,-210 L16,-200 L-16,-200 Z', undefined, 0, 34],
     ],
+    round: [['k', 'M-14,-224 C-14,-238 14,-238 14,-224 L16,-210 L8,-202 L-8,-202 L-16,-210 Z']],
     detail: [
       ['l', 'M-32,-188 L0,-176 L32,-188 M-28,-160 L28,-160 M0,-176 L0,-142'],
       ['p', 'M-9,-219 L9,-219 M0,-219 L0,-208', 2.5],
@@ -381,39 +398,31 @@ export const RIGS: Record<MechKind, Rig> = {
       ],
     },
   },
-  // 6: a sensor dome on four tall spindly legs.
+  // 6: a sensor dome on four tall spindly legs, splayed forward and back.
   wisp: {
     height: 138,
     depth: 60,
     limb: 10,
     scale: 1.2,
+    splay: [42, -42],
     leg: [
       {
         pivot: [27, -76],
-        parts: [
-          // The back leg, behind the front one, on the same foot.
-          ['j', 'M26,-90 L74,-118 L79,-110 L32,-82 Z', undefined, -24],
-          ['j', circ(76, -114, 5), undefined, -24],
-          ['j', 'M71,-112 L80,-112 L87,-10 L80,-10 Z', undefined, -24],
-          ['j', 'M70,-10 L96,-10 L100,0 L66,0 Z', undefined, -24],
-          ['k', 'M24,-80 L54,-106 L61,-98 L30,-72 Z', undefined, 16],
-        ],
+        parts: [['k', 'M24,-80 L54,-106 L61,-98 L30,-72 Z']],
       },
       {
         pivot: [57, -102],
         parts: [
-          ['k', circ(57, -102, 6), undefined, 16],
-          ['k', 'M52,-100 L63,-100 L61,-8 L53,-8 Z', undefined, 16],
-          ['l', 'M52,-60 L62,-60', undefined, 16],
+          ['k', circ(57, -102, 6)],
+          ['k', 'M52,-100 L63,-100 L61,-8 L53,-8 Z'],
+          ['l', 'M52,-60 L62,-60'],
         ],
       },
-      { pivot: [57, -9], parts: [['k', 'M44,-10 L70,-10 L74,0 L40,0 Z', undefined, 16]] },
+      { pivot: [57, -9], parts: [['k', 'M44,-10 L70,-10 L74,0 L40,0 Z']] },
     ],
     arm: [],
-    hull: [
-      ['r', 'M-18,-74 L18,-74 L12,-62 L-12,-62 Z'],
-      ['k', 'M-34,-84 C-34,-110 -18,-120 0,-120 C18,-120 34,-110 34,-84 L28,-72 L-28,-72 Z'],
-    ],
+    hull: [['r', 'M-18,-74 L18,-74 L12,-62 L-12,-62 Z']],
+    round: [['k', 'M-34,-84 C-34,-110 -18,-120 0,-120 C18,-120 34,-110 34,-84 L28,-72 L-28,-72 Z']],
     detail: [
       ['l', 'M-32,-94 L32,-94'],
       ['p', circ(0, -84, 6), 2],
