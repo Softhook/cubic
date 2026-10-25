@@ -173,11 +173,11 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-calculating': {
     world: 'phobos',
-    caption: 'the salvage yard crane lowering one chassis over a wreck',
+    caption: 'the salvage yard crane lowering one chassis beside a wreck',
     draw: (s) =>
       outdoors(s, 32, { planet: { x: 14, y: 9, r: 7 } }) +
-      print(s, 'rocks', 22, 36, { size: 0.16, plate: GROUND.phobos.shade }) +
-      wreck(s, 'tactician', 44, 34, 0.08, -78) +
+      print(s, 'rocks', 12, 36, { size: 0.16, plate: GROUND.phobos.shade }) +
+      wreck(s, 'tactician', 28, 34, 0.08, -78) +
       print(s, 'crane', 54, 34, { size: 0.16, flip: true }) +
       stroke('M41.2,14.8 L41.2,22', s.key, 0.4) +
       stroke('M40,22 q1.2,2 2.4,0', s.key, 0.6) +
@@ -481,8 +481,13 @@ export const SCENES: Record<string, SpScene> = {
     world: 'mars',
     caption: "kill marks stencilled on a mech's hull, a painter adding one more",
     draw: (s) => {
-      // the marks on the hull, laid out for the mech at (30, 90) and 0.4, then moved with it
+      // the marks on the hull, projected in 3D to match the mech's yaw and pitch
       const [x, y, size] = [24, 66, 0.26];
+      const yaw = -20 * (Math.PI / 180);
+      const pitch = 14 * (Math.PI / 180);
+      const [sy, cy, sp, cp] = [Math.sin(yaw), Math.cos(yaw), Math.sin(pitch), Math.cos(pitch)];
+      const z = 34;
+      const mat = `${n(cy)},${n(sy * sp)},0,${n(cp)},${n(-z * sy)},${n(z * cy * sp)}`;
       let marks = '';
       for (let i = 0; i < 9; i++) marks += rect(16 + (i % 5) * 3 + (i >= 5 ? 1.5 : 0), 14 + Math.floor(i / 5) * 7, 1.2, 5, INKS.bone);
       const hull =
@@ -493,7 +498,7 @@ export const SCENES: Record<string, SpScene> = {
       return (
         outdoors(s, 40, { planet: false }) +
         mech(s, 'chameleon', x, y, size, { yaw: -20 }) +
-        `<g transform="translate(${x},${y}) scale(${n(size / 0.4)}) translate(-30,-90)">${hull}</g>` +
+        `<g transform="translate(${x},${y}) scale(${n(size)}) matrix(${mat}) scale(2.5) translate(-30.5,-91.5)">${hull}</g>` +
         stroke('M44,42 L50,4 M54,42 L56,4 M45,34 L54,34 M46,26 L55,26 M47,18 L55,18', s.key, 0.8) +
         person(50, 26, 0.18, { facing: -1, arms: [100, 20], elbows: [-10, 10] }, s.key, s.paper)
       );
