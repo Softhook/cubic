@@ -70,7 +70,7 @@ export interface AuditStep {
   fired: string[];
 }
 
-interface Anomaly {
+export interface Anomaly {
   game: string;
   step: number;
   card?: string;

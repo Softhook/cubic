@@ -9,21 +9,20 @@
  *
  * Seats alternate between games and each pair of games shares a map seed, so neither level
  * gets the better start. With more than 2 players, level A plays seat 0 and level B the rest.
- * With jobs > 1 the games are played by that many worker processes, which take a pair of games
- * (one map seed) at a time as they free up, so fast and slow cores both stay busy to the end; the
- * results are the same as with one, as each game has its own seeds. Ctrl-C stops early and
+ * With jobs > 1 the games are played by that many worker processes (pool.ts), a pair of games (one
+ * map seed) at a time; the results are the same as with one, as each game has its own seeds. Ctrl-C stops early and
  * reports the games finished so far.
  */
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
-import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import * as current from '../packages/ai/src';
+import { allCores, isWorker, pool } from './pool';
 import { actor, apply, createGame, mulberry32, type Action, type GameMode, type GameState } from '../packages/engine/src';
 
 type Ai = Pick<typeof current, 'chooseAction' | 'chooseCombatResponse'>;
 
-const [a = '1', b = '3', games = '20', mode = 'basic', players = '2', jobs = String(availableParallelism())] = process.argv.slice(2);
+const [a = '1', b = '3', games = '20', mode = 'basic', players = '2', jobs = allCores] = process.argv.slice(2);
 const specs = [a, b];
 // Split at the first @ only: refs such as main@{1} contain one too.
 const parts = specs.map((x) => x.match(/^([^@]*)(?:@(.*))?$/)!);
@@ -31,8 +30,6 @@ const levels = parts.map(([, level]) => Number(level) as current.AiLevel);
 const ais: Ai[] = await Promise.all(parts.map(([, , ref]) => loadAi(ref)));
 const n = Number(games);
 const seats = Number(players);
-/** Set for a worker process, which plays the games the main process sends it. */
-const worker = !!process.env.AI_MATCH_WORKER;
 
 interface Result {
   wins: number[];
@@ -115,44 +112,6 @@ function play(from: number, to: number, progress: boolean, r = empty()): Result 
   return r;
 }
 
-/** Plays the games in `count` worker processes (this script again), a pair of games at a time, into `total`. */
-const workers = new Set<ReturnType<typeof spawn>>();
-
-async function playInParallel(count: number, total: Result): Promise<void> {
-  const queue: [number, number][] = [];
-  for (let from = 0; from < n; from += 2) queue.push([from, Math.min(n, from + 2)]);
-  let done = 0;
-  await Promise.all(
-    Array.from(
-      { length: Math.min(count, queue.length) },
-      () =>
-        new Promise<void>((resolve, reject) => {
-          // Under vite-node, argv[1] is vite-node itself and the script's path is left out.
-          const child = spawn(process.execPath, [process.argv[1], fileURLToPath(import.meta.url), ...process.argv.slice(2)], {
-            env: { ...process.env, AI_MATCH_WORKER: '1' },
-            stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
-          });
-          workers.add(child);
-          let games: [number, number] | undefined;
-          const next = () => {
-            games = queue.shift();
-            if (games) child.send(games);
-            else child.disconnect();
-          };
-          child.on('message', (r: Result) => {
-            merge(total, r);
-            done += games![1] - games![0];
-            process.stdout.write(`\r${done}/${n} games: L${specs[0]} ${total.wins[0]} – ${total.wins[1]} L${specs[1]}`);
-            next();
-          });
-          child.on('error', reject);
-          child.on('exit', (code) => (games ? reject(new Error(`games ${games[0]}-${games[1]} failed (exit ${code})`)) : resolve()));
-          next();
-        }),
-    ),
-  );
-}
-
 function report(r: Result, stopped: boolean) {
   const finished = r.wins[0] + r.wins[1];
   const played = finished + r.unfinished;
@@ -170,18 +129,28 @@ function report(r: Result, stopped: boolean) {
   }
 }
 
-if (worker) {
-  process.on('message', ([from, to]: [number, number]) => process.send!(play(from, to, false)));
-  process.on('disconnect', () => process.exit(0));
-} else {
-  const total = empty();
+const total = empty();
+if (!isWorker) {
   process.on('SIGINT', () => {
-    // The workers stop mid-game (Ctrl-C reaches them too, but not every way of stopping does).
-    for (const w of workers) w.kill();
+    // The workers stop mid-game.
     report(total, true);
     process.exit(130);
   });
-  if (Number(jobs) > 1) await playInParallel(Number(jobs), total);
-  else play(0, n, true, total);
-  report(total, false);
 }
+if (Number(jobs) > 1) {
+  const pairs: [number, number][] = [];
+  for (let from = 0; from < n; from += 2) pairs.push([from, Math.min(n, from + 2)]);
+  let done = 0;
+  await pool(
+    fileURLToPath(import.meta.url),
+    pairs,
+    Number(jobs),
+    ([from, to]) => play(from, to, false),
+    (r, [from, to]) => {
+      merge(total, r);
+      done += to - from;
+      process.stdout.write(`\r${done}/${n} games: L${specs[0]} ${total.wins[0]} – ${total.wins[1]} L${specs[1]}`);
+    },
+  );
+} else play(0, n, true, total);
+report(total, false);

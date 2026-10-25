@@ -10,13 +10,17 @@
  * each move, deploy or conquer a movement, deployment or conquer skill could have changed.
  * Win rates over a handful of games are noise: check "Taken" before reading anything into them.
  *
- *   npm run selfplay:cards -- [games=50] [mode=community|original] [level=1]
+ * The games are played on all cores (pool.ts); the results are the same with any number of jobs.
+ *
+ *   npm run selfplay:cards -- [games=50] [mode=community|original] [level=1] [jobs=all cores]
  */
+import { fileURLToPath } from 'node:url';
 import type { AiLevel } from '../packages/ai/src';
 import type { CardDef, GameMode, GameState, PlayerId } from '../packages/engine/src';
-import { auditGame, cardTaken, modeCards } from '../packages/engine/test/audit';
+import { auditGame, cardTaken, modeCards, type Anomaly } from '../packages/engine/test/audit';
+import { allCores, isWorker, pool } from './pool';
 
-const [argGames = '50', argMode = 'community', argLevel = '1'] = process.argv.slice(2);
+const [argGames = '50', argMode = 'community', argLevel = '1', jobs = allCores] = process.argv.slice(2);
 const numGames = Number(argGames);
 const mode = argMode as GameMode;
 const level = Number(argLevel) as AiLevel;
@@ -44,18 +48,26 @@ function standing(s: GameState, p: PlayerId): CardStats['picks'][number]['standi
   return mine < foe ? 'leading' : mine > foe ? 'behind' : 'tied';
 }
 
-console.log(`Starting self-play: ${numGames} ${mode} games with Level ${level} AI...`);
-
-let completedGames = 0;
-let totalTurns = 0;
-
-for (let g = 0; g < numGames; g++) {
+/** What one game did to the card stats, as plain data (it comes back from a worker). */
+interface GameRecord {
+  anomalies: Anomaly[];
+  /** Each card taken, and the drafting player's position at the pick. */
+  picks: [string, CardStats['picks'][number]][];
+  /** Each use of a card. */
+  fired: string[];
+  /** Turns each card was held. */
+  heldTurns: [string, number][];
   /** Cards in play this game, and the cards each player held or took (credited with the result). */
+  inGame: string[];
+  credited: string[][];
+  /** Turns played, and the winner (null if none), when the game finished. */
+  finished?: { turns: number; winner: PlayerId | null };
+}
+
+function playGame(g: number): GameRecord {
   const inGame = new Set<string>();
-  const credited = new Map<PlayerId, Set<string>>([
-    [0, new Set()],
-    [1, new Set()],
-  ]);
+  const credited = [new Set<string>(), new Set<string>()];
+  const rec: GameRecord = { anomalies: [], picks: [], fired: [], heldTurns: [], inGame: [], credited: [] };
   let last: GameState | undefined;
 
   const result = auditGame(
@@ -64,57 +76,78 @@ for (let g = 0; g < numGames; g++) {
       onStep: ({ before, action, after, fired }) => {
         last = after;
         const taken = cardTaken(before, action, after);
-        const st = taken && stats.get(taken.id);
-        if (taken && st) {
-          st.taken++;
+        if (taken && stats.has(taken.id)) {
           inGame.add(taken.id);
-          credited.get(taken.p)!.add(taken.id);
+          credited[taken.p].add(taken.id);
           const pl = before.players[taken.p];
-          st.picks.push({
-            turn: Math.max(1, before.turn.number),
-            cubesLeft: pl.cubesLeft,
-            dominance: pl.dominance,
-            research: pl.research,
-            standing: standing(before, taken.p),
-          });
+          rec.picks.push([
+            taken.id,
+            {
+              turn: Math.max(1, before.turn.number),
+              cubesLeft: pl.cubesLeft,
+              dominance: pl.dominance,
+              research: pl.research,
+              standing: standing(before, taken.p),
+            },
+          ]);
         }
         for (const id of fired) {
-          stats.get(id)!.played++;
+          rec.fired.push(id);
           inGame.add(id);
         }
-        for (const p of after.players) for (const sk of p.skills) credited.get(p.id)!.add(sk.id);
+        for (const p of after.players) for (const sk of p.skills) credited[p.id].add(sk.id);
       },
     },
   );
 
-  if (result.anomalies.length) {
-    for (const a of result.anomalies)
+  rec.anomalies = result.anomalies;
+  for (const [id, c] of result.coverage) {
+    rec.heldTurns.push([id, c.heldTurns]);
+    if (c.heldTurns) inGame.add(id);
+  }
+  rec.inGame = [...inGame];
+  rec.credited = credited.map((ids) => [...ids]);
+  if (result.finished && last) rec.finished = { turns: last.turn.number, winner: last.winner };
+  return rec;
+}
+
+if (!isWorker) console.log(`Starting self-play: ${numGames} ${mode} games with Level ${level} AI...`);
+
+let completedGames = 0;
+let totalTurns = 0;
+let played = 0;
+
+const games = Array.from({ length: numGames }, (_, g) => g);
+await pool(fileURLToPath(import.meta.url), games, Number(jobs), playGame, (rec, g) => {
+  if (rec.anomalies.length) {
+    for (const a of rec.anomalies)
       console.log(`\nGame ${g}, step ${a.step}${a.card ? ` [${a.card}]` : ''}: ${a.message}\n  ${a.context.join('\n  ')}`);
     process.exit(1);
   }
-  for (const [id, c] of result.coverage) {
-    stats.get(id)!.turnsActive += c.heldTurns;
-    if (c.heldTurns) inGame.add(id);
+  for (const [id, pick] of rec.picks) {
+    const st = stats.get(id)!;
+    st.taken++;
+    st.picks.push(pick);
   }
-
-  if (result.finished && last) {
+  for (const id of rec.fired) stats.get(id)!.played++;
+  for (const [id, turns] of rec.heldTurns) stats.get(id)!.turnsActive += turns;
+  if (rec.finished) {
     completedGames++;
-    totalTurns += last.turn.number;
-    if (last.winner !== null) {
-      for (const [p, ids] of credited) {
+    totalTurns += rec.finished.turns;
+    if (rec.finished.winner !== null) {
+      rec.credited.forEach((ids, p) => {
         for (const id of ids) {
           const st = stats.get(id);
           if (!st) continue;
-          if (p === last.winner) st.wins++;
+          if (p === rec.finished!.winner) st.wins++;
           else st.losses++;
         }
-      }
+      });
     }
-    for (const id of inGame) stats.get(id)!.gamesPresent++;
+    for (const id of rec.inGame) stats.get(id)!.gamesPresent++;
   }
-
-  process.stdout.write(`\rPlayed game ${g + 1}/${numGames}...`);
-}
+  process.stdout.write(`\rPlayed game ${++played}/${numGames}...`);
+});
 
 console.log(
   `\n\nCompleted ${completedGames}/${numGames} games, avg ${(totalTurns / Math.max(1, completedGames)).toFixed(1)} turns/game.\n`,
