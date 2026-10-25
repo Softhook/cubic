@@ -36,8 +36,12 @@ export interface Rig {
   detail: readonly Part[];
   /** Each leg segment's depth and thickness, as fractions of the limbs' thickness (default a heavy thigh, a slimmer shin, a long foot set forward). */
   legShape?: readonly { z: number; t: number }[];
+  /** Each arm segment's depth and thickness, as fractions of the limbs' thickness (default heavy shoulder, forearm forward). */
+  armShape?: readonly { z: number; t: number }[];
   /** Each leg pair's turn in plan, out of the front plane: + swings the legs forward (default one pair, `[0]`). */
   splay?: readonly number[];
+  /** How much the arms turn in plan, out of the front plane (degrees). */
+  armSplay?: number;
   /** Drawn after the arms: masts, dishes. */
   top?: readonly Part[];
   /** Held across the body (the Sniper's rifle, in its own `frame`, and the hands on it), turning about `pivot` with the pose's `aim`. */
@@ -59,18 +63,18 @@ export const RIGS: Record<MechKind, Rig> = {
       {
         pivot: [38, -98],
         parts: [
-          ['rod', 'M50,-92 L60,-30', 5],
+          ['rod', 'M48,-92 L52,-62', 5],
           ['j', circ(38, -98, 11)],
-          ['k', 'M24,-100 L52,-104 L60,-62 L38,-54 Z'],
+          ['k', 'M28,-98 L48,-100 L60,-62 L64,-48 L54,-38 L40,-42 L40,-54 Z'],
+          ['l', 'M40,-54 L60,-50'],
         ],
       },
       {
         pivot: [52, -56],
         parts: [
           ['j', circ(54, -16, 8)],
-          ['k', 'M42,-50 L66,-48 L64,-16 L44,-16 Z'],
-          ['k', 'M36,-78 L64,-76 L70,-50 L58,-40 L40,-46 Z'],
-          ['l', 'M44,-62 L62,-60'],
+          ['k', 'M40,-50 L64,-50 L64,-18 L40,-18 Z'],
+          ['l', 'M44,-34 L62,-34'],
         ],
       },
       {
@@ -85,7 +89,7 @@ export const RIGS: Record<MechKind, Rig> = {
       {
         pivot: [82, -178],
         parts: [
-          ['r', 'M78,-162 L100,-160 L102,-128 L80,-128 Z'],
+          ['r', 'M68,-164 L100,-160 L102,-126 L70,-126 Z'],
           ['k', 'M58,-214 C78,-222 102,-210 106,-188 L104,-156 L78,-150 L64,-176 Z'],
           ['l', 'M70,-196 L100,-190'],
         ],
@@ -93,7 +97,7 @@ export const RIGS: Record<MechKind, Rig> = {
       {
         pivot: [90, -128],
         parts: [
-          ['j', circ(90, -126, 10)],
+          ['j', circ(90, -128, 10)],
           ['k', 'M70,-132 L110,-132 L116,-80 L106,-64 L76,-64 L66,-80 Z'],
           ['k', 'M72,-66 L108,-66 L110,-46 L102,-32 L78,-32 L70,-46 Z'],
           ['l', 'M76,-120 L106,-120 M74,-106 L108,-106 M80,-50 L80,-34 M90,-52 L90,-33 M100,-50 L100,-34'],
@@ -116,7 +120,6 @@ export const RIGS: Record<MechKind, Rig> = {
     detail: [
       ['l', 'M-24,-108 L24,-108 M0,-122 L0,-86'],
       ['l', 'M-44,-150 L44,-150 M-50,-138 L50,-138 M-30,-126 L30,-126 M-62,-200 L-36,-206 M62,-200 L36,-206'],
-      ['w', 'M30,-222 L30,-238', 2.5],
       ['p', 'M-15,-181 L15,-181', 3],
     ],
   },
@@ -129,7 +132,7 @@ export const RIGS: Record<MechKind, Rig> = {
       {
         pivot: [45, -188],
         parts: [
-          ['rod', 'M48,-176 L54,-40', 4],
+          ['rod', 'M48,-176 L52,-120', 4],
           ['r', 'M30,-198 L58,-198 L56,-176 L32,-176 Z'],
           ['k', 'M22,-182 L68,-182 L72,-120 L28,-118 Z'],
           ['l', 'M28,-156 L70,-156'],
@@ -138,7 +141,7 @@ export const RIGS: Record<MechKind, Rig> = {
       {
         pivot: [48, -112],
         parts: [
-          ['j', circ(50, -34, 11)],
+          ['j', circ(50, -36, 11)],
           ['k', 'M26,-102 L72,-102 L70,-34 L30,-34 Z'],
           ['k', 'M18,-134 L76,-130 L80,-100 L62,-88 L24,-94 Z'],
           ['l', 'M30,-70 L70,-70 M30,-56 L70,-56'],
@@ -172,7 +175,7 @@ export const RIGS: Record<MechKind, Rig> = {
       {
         pivot: [150, -76],
         parts: [
-          ['j', circ(150, -74, 9)],
+          ['j', circ(150, -76, 9)],
           ['k', 'M124,-78 L176,-78 L182,-50 L170,-18 L160,-46 L140,-46 L130,-18 L118,-50 Z'],
         ],
       },
@@ -206,13 +209,14 @@ export const RIGS: Record<MechKind, Rig> = {
         pivot: [24, -118],
         parts: [
           ['j', circ(24, -118, 9)],
-          ['rod', 'M30,-118 L50,-30', 4],
+          ['rod', 'M30,-118 L46,-76', 4],
           ['k', 'M18,-122 L40,-124 L52,-80 L34,-74 Z'],
         ],
       },
       {
         pivot: [46, -76],
         parts: [
+          ['j', circ(40, -25, 7)],
           ['k', 'M38,-68 L56,-68 L48,-24 L32,-24 Z'],
           ['k', 'M32,-92 L56,-90 L60,-66 L40,-60 Z'],
         ],
@@ -237,9 +241,9 @@ export const RIGS: Record<MechKind, Rig> = {
       {
         pivot: [67, -128],
         parts: [
-          ['j', circ(67, -126, 7)],
+          ['j', circ(67, -128, 7)],
           ['k', 'M58,-132 L78,-132 L80,-82 L62,-82 Z'],
-          ['k', 'M60,-84 L80,-84 L80,-70 L74,-62 L66,-62 L60,-70 Z'],
+          ['k', 'M64,-84 L78,-84 L78,-70 L74,-62 L66,-62 L64,-70 Z'],
           ['l', 'M60,-110 L79,-110'],
         ],
       },
@@ -262,8 +266,6 @@ export const RIGS: Record<MechKind, Rig> = {
       ],
       ['k', 'M54,-206 L60,-206 L60,-194 L54,-194 Z'],
       ['k', 'M40,-206 Q62,-242 100,-222 L94,-214 Q66,-230 48,-200 Z'],
-      ['w', 'M66,-218 L72,-234', 2.5],
-      ['w', 'M14,-226 L14,-252', 2.5],
     ],
   },
   // 4: the standard frame, upright and boxy on straight legs: a missile box and a long gun.
@@ -274,14 +276,15 @@ export const RIGS: Record<MechKind, Rig> = {
       {
         pivot: [28, -118],
         parts: [
-          ['j', circ(26, -116, 9)],
-          ['rod', 'M44,-110 L46,-20', 4],
+          ['j', circ(28, -118, 9)],
+          ['rod', 'M38,-110 L40,-76', 4],
           ['k', 'M16,-120 L40,-120 L42,-76 L18,-76 Z'],
         ],
       },
       {
         pivot: [30, -72],
         parts: [
+          ['j', circ(30, -19, 7)],
           ['k', 'M18,-64 L42,-64 L42,-18 L20,-18 Z'],
           ['k', 'M14,-86 L44,-86 L46,-66 L30,-58 L14,-66 Z'],
           ['l', 'M20,-40 L42,-40'],
@@ -300,7 +303,7 @@ export const RIGS: Record<MechKind, Rig> = {
       {
         pivot: [67, -148],
         parts: [
-          ['j', circ(67, -146, 7)],
+          ['j', circ(67, -148, 7)],
           ['k', 'M54,-152 L80,-152 L80,-98 L56,-98 Z'],
           ['k', 'M58,-100 L78,-100 L76,-84 L60,-84 Z'],
           ['l', 'M56,-136 L80,-136 M56,-122 L80,-122'],
@@ -328,7 +331,6 @@ export const RIGS: Record<MechKind, Rig> = {
     detail: [
       ['l', 'M-50,-190 L50,-190 M-50,-160 L50,-160 M0,-214 L0,-190 M-30,-176 L-12,-176'],
       ['p', 'M-36,-221 L-18,-221', 2.4],
-      ['w', 'M-30,-228 L-30,-246', 2.5],
       ['pf', [18, 30, 42].flatMap((x) => [circ(x, -239, 5), circ(x, -224, 5)]).join(' ')],
     ],
   },
@@ -340,7 +342,7 @@ export const RIGS: Record<MechKind, Rig> = {
       {
         pivot: [22, -112],
         parts: [
-          ['j', circ(20, -112, 9)],
+          ['j', circ(22, -112, 9)],
           ['k', 'M10,-118 L34,-118 L38,-74 L18,-70 Z'],
           ['k', 'M18,-120 L34,-116 L36,-90 L22,-94 Z'],
         ],
@@ -348,7 +350,7 @@ export const RIGS: Record<MechKind, Rig> = {
       {
         pivot: [28, -68],
         parts: [
-          ['j', circ(28, -21, 7)],
+          ['j', circ(28, -22, 7)],
           ['k', 'M16,-62 L38,-62 L36,-20 L20,-20 Z'],
           ['k', 'M36,-58 L46,-50 L40,-24 L36,-24 Z'],
           ['k', 'M14,-84 L40,-82 L42,-60 L28,-52 L14,-60 Z'],
@@ -421,7 +423,7 @@ export const RIGS: Record<MechKind, Rig> = {
       {
         pivot: [57, -102],
         parts: [
-          ['k', circ(57, -102, 6)],
+          ['j', circ(57, -102, 6)],
           ['k', 'M52,-100 L63,-100 L61,-8 L53,-8 Z'],
           ['l', 'M52,-60 L62,-60'],
         ],
@@ -435,7 +437,6 @@ export const RIGS: Record<MechKind, Rig> = {
       ['l', 'M-32,-94 L32,-94'],
       ['p', circ(0, -84, 6), 2],
       ['pf', circ(0, -84, 2.5)],
-      ['w', 'M12,-118 L12,-138', 2],
     ],
   },
 };

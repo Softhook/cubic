@@ -165,11 +165,11 @@ export const SCENES: Record<string, SpScene> = {
       paperGround(s) +
       rays(32, 20, 32, s.plate) +
       land(s, 36, { rims: false }) +
-      mech(s, 'breacher', 32, 40, 0.13, { yaw: 18, arms: { plus: [-16, -10], minus: [16, 10] } }) +
+      mech(s, 'breacher', 32, 40, 0.13, { arms: { plus: [-16, -10], minus: [16, 10] } }) +
       flash(14, 31.5, 4.2, 10) +
-      flash(51, 32, 4.2, 10, 12) +
+      flash(50, 31.5, 4.2, 10, 12) +
       sparks(s.r, 14, 31.5, 12, 10) +
-      sparks(s.r, 51, 32, 12, 10),
+      sparks(s.r, 50, 31.5, 12, 10),
   },
   'r-calculating': {
     world: 'phobos',
@@ -189,10 +189,10 @@ export const SCENES: Record<string, SpScene> = {
     draw: (s) =>
       outdoors(s, 36, { planet: { x: 54, y: 8, r: 8 } }) +
       print(s, 'gantry', 32, 38, { size: 0.24 }) +
-      mech(s, 'chameleon', 28, 38, 0.115, { yaw: -20, detach: { arm: 'plus', show: 'mech' } }) +
-      stroke('M42.4,5.6 L42.4,13.4', s.key, 0.35, ' stroke-dasharray="0.6 0.4"') +
-      mech(s, 'chameleon', 33.5, 39, 0.115, { yaw: -20, detach: { arm: 'plus', show: 'arm' } }) +
-      sparks(s.r, 35.2, 13.4, 10, 5),
+      mech(s, 'chameleon', 28, 38, 0.115, { detach: { arm: 'plus', show: 'mech' } }) +
+      stroke('M42.4,5.6 L42.4,16', s.key, 0.35, ' stroke-dasharray="0.6 0.4"') +
+      mech(s, 'chameleon', 35, 38.5, 0.115, { detach: { arm: 'plus', show: 'arm' } }) +
+      sparks(s.r, 35.4, 15.5, 10, 5),
   },
   'r-composed': {
     world: 'phobos',
@@ -272,22 +272,22 @@ export const SCENES: Record<string, SpScene> = {
     world: 'deimos',
     caption: 'a Wisp ducking between an enemy Behemoth’s legs',
     draw: (s) =>
-      outdoors(s, 38, { planet: { x: 54, y: 9, r: 9 } }) +
-      mech(s, 'behemoth', 30, 40, 0.11, { yaw: 12 }, { plate: INKS.oxide }) +
-      mech(s, 'wisp', 30, 40, 0.075, { yaw: -40, legs: { plus: [20, -20], minus: [-20, 20] } }, { ink: ON_NIGHT }) +
-      stroke('M14,36 l8,0 M12,38 l9,0', s.key, 0.4, ' opacity="0.6"'),
+      outdoors(s, 36, { planet: { x: 32, y: 10, r: 7 } }) +
+      mech(s, 'behemoth', 31, 44, 0.38, { yaw: 12, legs: { plus: [-14, 20], minus: [18, -14] } }, { plate: INKS.oxide }) +
+      mech(s, 'wisp', 30.5, 40.5, 0.08, { yaw: -40, legs: { plus: [24, -24], minus: [-24, 24] } }, { ink: ON_NIGHT }) +
+      stroke('M34,39 l5,0 M33,41 l6,0', s.key, 0.45, ' opacity="0.6"'),
   },
   'r-ferocious': {
     world: 'mars',
     caption: 'a Chameleon firing its long gun level, the barrel red hot, a round leaving it',
     draw: (s) =>
       paperGround(s) +
-      rays(50, 18, 26, s.plate, 120, 240) +
+      rays(42, 19.6, 26, s.plate, 120, 240) +
       land(s, 34) +
-      mech(s, 'chameleon', 18, 38, 0.12, { yaw: 18, arms: { plus: [-10, -80] } }) +
-      rect(30, 18.2, 14, 2.6, ht(s, 'plate')) +
-      flash(48, 19.4, 4, 11) +
-      stroke('M52,19.4 L66,19.4', INKS.amber, 0.7, ' stroke-dasharray="3 1.4"'),
+      mech(s, 'chameleon', 18, 38, 0.12, { arms: { plus: [-10, -80] } }) +
+      rect(30, 18.4, 11, 2.4, ht(s, 'plate')) +
+      flash(42, 19.6, 4, 11) +
+      stroke('M46,19.6 L66,19.6', INKS.amber, 0.7, ' stroke-dasharray="3 1.4"'),
   },
 
   'r-flexible': {
@@ -571,7 +571,7 @@ export const SCENES: Record<string, SpScene> = {
     caption: 'a Breacher dug into a trench behind a barricade of boulders',
     draw: (s) =>
       outdoors(s, 28, { planet: { x: 52, y: 8, r: 8 } }) +
-      mech(s, 'breacher', 30, 44, 0.12, { yaw: 14 }) +
+      mech(s, 'breacher', 30, 44, 0.12) +
       rect(-4, 34, 72, 12, GROUND.mars.shade) +
       rect(-4, 34, 72, 2, ht(s, 'key')) +
       print(s, 'rocks', 30, 38, { size: 0.26 }) +
