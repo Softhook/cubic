@@ -655,7 +655,7 @@ const PASSIVE: Partial<Record<Action['type'], string[]>> = {
   move: ['agile', 'devious', 'steadfast'],
   carry: ['agile', 'steadfast'],
   deploy: ['stealthy', 'eager'],
-  conquer: ['ingenious', 'intelligent', 'pioneering', 'tyrannical'],
+  conquer: ['ingenious', 'intelligent', 'pioneering', 'science', 'tyrannical'],
 };
 /** Re-roll skills: each re-roll counts as firing. */
 const REROLL = ['cruel', 'relentless', 'scrappy'];
