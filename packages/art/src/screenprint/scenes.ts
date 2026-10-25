@@ -522,9 +522,9 @@ export const SCENES: Record<string, SpScene> = {
     caption: 'a wall stencilled NO RETREAT, its flag on the roof, a Breacher standing in front of it',
     draw: (s) =>
       outdoors(s, 34, { planet: false }) +
-      print(s, 'wall', 30, 34, { size: 0.36 }) +
+      print({ ...s, key: '#4A4440' }, 'wall', 30, 34, { size: 0.36 }) +
       stencil('NO RETREAT', 21, 25, 4.8, INKS.bone) +
-      mech(s, 'breacher', 51, 41, 0.085, { yaw: -20 }) +
+      mech(s, 'breacher', 51, 41, 0.085) +
       flag(s, 6, 14.4, 11, INKS.oxide),
   },
 
@@ -570,7 +570,7 @@ export const SCENES: Record<string, SpScene> = {
     world: 'mars',
     caption: 'a Breacher dug into a trench behind a barricade of boulders',
     draw: (s) =>
-      outdoors(s, 28, { planet: { x: 52, y: 8, r: 8 } }) +
+      outdoors(s, 28, { planet: false }) +
       mech(s, 'breacher', 30, 44, 0.12) +
       rect(-4, 34, 72, 12, GROUND.mars.shade) +
       rect(-4, 34, 72, 2, ht(s, 'key')) +
@@ -592,8 +592,7 @@ export const SCENES: Record<string, SpScene> = {
         lean: 16,
         legs: { plus: [-30, 30], minus: [30, 0] },
         arms: { plus: [-90, 0], minus: [30, 10] },
-      }) +
-      stroke('M8,16 L18,16 M6,20 L17,20 M9,24 L16,24', s.key, 0.5, ' opacity="0.7"'),
+      }),
   },
   'r-talented': {
     world: 'phobos',
@@ -631,7 +630,7 @@ export const SCENES: Record<string, SpScene> = {
         paperGround(s) +
         rays(32, 18, 28, INKS.oxide, 180, 360) +
         `<circle cx="32" cy="18" r="8" fill="${s.paper}"/>` +
-        mech(s, 'chameleon', 32, 42, 0.12, { yaw: 20, arms: { plus: [-140, 0] } }, { plate: INKS.oxide }) +
+        mech(s, 'chameleon', 32, 42, 0.12, { arms: { plus: [-140, 0] } }, { plate: INKS.oxide }) +
         [6, 14, 50, 58].map((x, i) => fist(x, 12 + (i % 2) * 6, (i < 2 ? -1 : 1) * 6)).join('')
       );
     },
@@ -818,6 +817,6 @@ export const SCENES: Record<string, SpScene> = {
       print({ ...s, key: '#4A4440' }, 'workshop', 32, 36, { size: 0.3 }) +
       rect(22, 20.4, 20, 15.6, INKS.amber, ' opacity="0.4"') +
       rays(32, 28, 16, INKS.amber, 30, 150) +
-      mech(s, 'chameleon', 33, 40, 0.1, { yaw: 22, legs: { plus: [-20, 20], minus: [16, 6] } }),
+      mech(s, 'chameleon', 33, 40, 0.1, { legs: { plus: [-20, 20], minus: [16, 6] } }),
   },
 };
