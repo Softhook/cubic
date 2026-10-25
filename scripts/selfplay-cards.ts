@@ -10,17 +10,20 @@
  * each move, deploy or conquer a movement, deployment or conquer skill could have changed.
  * Win rates over a handful of games are noise: check "Taken" before reading anything into them.
  *
- * The games are played on all cores (pool.ts); the results are the same with any number of jobs.
+ * The games are played on the fast cores (pool.ts); the results are the same with any number of jobs.
  *
- *   npm run selfplay:cards -- [games=50] [mode=community|original] [level=1] [jobs=all cores]
+ *   npm run selfplay:cards -- [games=50] [mode=community|original] [level=1] [jobs=fast cores]
+ *
+ * Any argument may be given by name instead, in any order: `--level=3` (args.ts).
  */
 import { fileURLToPath } from 'node:url';
 import type { AiLevel } from '../packages/ai/src';
 import type { CardDef, GameMode, GameState, PlayerId } from '../packages/engine/src';
 import { auditGame, cardTaken, modeCards, type Anomaly } from '../packages/engine/test/audit';
-import { allCores, isWorker, pool } from './pool';
+import { args } from './args';
+import { defaultJobs, isWorker, pool } from './pool';
 
-const [argGames = '50', argMode = 'community', argLevel = '1', jobs = allCores] = process.argv.slice(2);
+const { games: argGames, mode: argMode, level: argLevel, jobs } = args({ games: '50', mode: 'community', level: '1', jobs: defaultJobs });
 const numGames = Number(argGames);
 const mode = argMode as GameMode;
 const level = Number(argLevel) as AiLevel;
