@@ -10,8 +10,8 @@ import { n, type Box } from '../svg';
 /** The shape of a map's spaces: a tile of 3 × 3 squares, or a 7-hex flower. */
 export type TileShape = 'square' | 'hex';
 
-/** A hex space's well, as a part of its hex (a square's pad is 24 of its 32 mm). */
-export const HEX_WELL = 0.8;
+/** The middle of a hex space kept clear of gutter art (betweenSpaces), as a part of its hex (a square's pad is 24 of its 32 mm). */
+const HEX_WELL = 0.8;
 
 /**
  * The planets a map may put off the middle of a tile, by the tile's shape: an off-centre planet sits on

@@ -36,7 +36,7 @@ export interface WellStyle {
 const SPACE_WELL: WellStyle = { fill: 0.055, shade: 0.55, shadeWidth: 0.7, lit: 0.16, litWidth: 0.35 };
 
 /**
- * A hex space's outline (tile/markings.ts `hexWell`): a plain line along its edge, its opacity and width (mm), the
+ * A hex space's outline (tile/markings.ts `hexEdge`): a plain line along its edge, its opacity and width (mm), the
  * same as the seams between a hex map's tiles. The lines are drawn solid and faded as a group, so a side two spaces
  * (or a space and a seam) share is no darker than the rest.
  */

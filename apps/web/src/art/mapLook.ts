@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { Board } from '@quantum/engine';
-import type { TileLook } from '@quantum/art';
+import { lookWorld, type TileLook } from '@quantum/art';
 import { remember, stored } from '../storage';
 
 /*
@@ -32,3 +32,6 @@ export function useMapLook(board: Board): TileLook {
   if (!board.hex) return 'square';
   return ground && board.world ? board.world : 'hex';
 }
+
+/** Whether this map is drawn on its world's ground, where the pieces cast hard shadows. */
+export const useOnGround = (board: Board): boolean => !!lookWorld(useMapLook(board));

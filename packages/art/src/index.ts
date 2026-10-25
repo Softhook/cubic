@@ -25,7 +25,6 @@ export { planet, type PlanetOptions } from './planet';
 export {
   BLED,
   HEX_TILE_CUT,
-  HEX_WELL,
   OFF_CENTRE,
   TILE_SPOTS,
   cubePadCentres,
@@ -40,7 +39,7 @@ export {
   type TileShape,
 } from './tile/geometry';
 export { OBJECTIVE_NAMES, WORLD_NAMES, lookShape, lookWorld, type TileLook, type World } from './tile/look';
-export { HATCH, hexEdges, hexWell, voidFlask, well } from './tile/markings';
+export { HATCH, hexEdges, hexEdge, voidFlask, well } from './tile/markings';
 export { tileFlavour, tileLabel, tileLabelFits } from './tile/label';
 export { tileHasRings } from './tile/space';
 export {

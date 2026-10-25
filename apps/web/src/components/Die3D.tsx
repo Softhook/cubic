@@ -4,7 +4,7 @@ import { playRoll } from '../sound';
 import { APPLE_TOUCH } from '../platform';
 import { useEffectEvent } from '../game/useEffectEvent';
 import { PIP } from '../theme';
-import { PIECE_SHADOW_LENGTH, pieceShadowTint } from './board/shadows';
+import { PIECE_SHADOW_LENGTH, pieceShadowTint, sweptSquare } from './board/shadows';
 
 /**
  * A CSS 3D die. Faces sit on a cube; the cube rotates so the face for `value` points at
@@ -295,21 +295,12 @@ export const DieShadow = memo(function DieShadow({
   // The sweep of its corners' centres, stroked round by their radius (the faces' 16%).
   const far = size * PIECE_SHADOW_LENGTH;
   const r = size * 0.16;
-  const [a, w] = [r, size - 2 * r];
-  const points = [
-    [a, a],
-    [a + w, a],
-    [a + w + far, a + far],
-    [a + w + far, a + w + far],
-    [a + far, a + w + far],
-    [a, a + w],
-  ];
   const tint = pieceShadowTint(color);
   return (
     <div className="die3d-cast" ref={el} style={{ width: size, height: size }}>
       <svg width={size + far} height={size + far} style={{ filter: `blur(${blur}px)` }}>
         <polygon
-          points={points.map((p) => p.join(',')).join(' ')}
+          points={sweptSquare(r, r, size - 2 * r, far)}
           style={{ fill: tint, stroke: tint }}
           strokeWidth={2 * r}
           strokeLinejoin="round"

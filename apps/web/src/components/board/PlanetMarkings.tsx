@@ -10,7 +10,7 @@ import {
   type TileShape,
 } from '@quantum/art';
 import type { CSSProperties } from 'react';
-import { PIECE_SHADOW_LENGTH, PIECE_SHADOW_OPACITY, pieceShadowTint } from './shadows';
+import { PIECE_SHADOW_LENGTH, PIECE_SHADOW_OPACITY, pieceShadowTint, sweptSquare } from './shadows';
 
 /** A planet's number as the tile prints it: white, outlined in a dark shade of the planet's hue. `y` is the baseline. */
 export function PlanetNumber({ n, x, y, size, className }: { n: number; x: number; y: number; size: number; className?: string }) {
@@ -126,18 +126,9 @@ function CubeShadow({ x, y, mm, colour, className }: { x: number; y: number; mm:
   const w = CUBE_PAD.size * mm - 2 * r;
   const far = CUBE_PAD.size * mm * PIECE_SHADOW_LENGTH;
   const tint = pieceShadowTint(colour);
-  const [a, b] = [x - w / 2, y - w / 2];
-  const points = [
-    [a, b],
-    [a + w, b],
-    [a + w + far, b + far],
-    [a + w + far, b + w + far],
-    [a + far, b + w + far],
-    [a, b + w],
-  ];
   return (
     <polygon
-      points={points.map((p) => p.join(',')).join(' ')}
+      points={sweptSquare(x - w / 2, y - w / 2, w, far)}
       fill={tint}
       stroke={tint}
       strokeWidth={2 * r}

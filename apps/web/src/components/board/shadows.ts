@@ -12,3 +12,20 @@ export const PIECE_SHADOW_OPACITY = 0.7;
 
 /** A shadow's colour, for a piece of colour `color`: nearly black. */
 export const pieceShadowTint = (color: string) => `color-mix(in srgb, ${color} 14%, #000)`;
+
+/**
+ * A rounded square's cast shadow, as SVG polygon points: the sweep of its corners' centres (the inner square, `w`
+ * across, from (`x`, `y`)) `far` down and to the right. Stroke it round by the corners' radius to get the shadow.
+ */
+export function sweptSquare(x: number, y: number, w: number, far: number): string {
+  return [
+    [x, y],
+    [x + w, y],
+    [x + w + far, y + far],
+    [x + w + far, y + w + far],
+    [x + far, y + w + far],
+    [x, y + w],
+  ]
+    .map((p) => p.join(','))
+    .join(' ');
+}

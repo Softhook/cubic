@@ -2,22 +2,19 @@
  * Shoot: attack an enemy in a straight line, without moving. Like a move or a normal attack it is the
  * ship's one action of the turn (and costs one action); the shooter never advances.
  */
-import { canMoveDie, cellOf, die, dieAt, geometry, isEmptySpace, markMoved, offsets, onBoard, spend, startCombat } from '../../prototype';
+import { canMoveDie, cellOf, die, dieAt, isEmptySpace, markMoved, spend, startCombat } from '../../prototype';
 import type { Die, GameState, PrototypePower } from '../../prototype';
+import { lines } from './lines';
 
 /** Enemy ships in range from where it stands, whatever the cost. */
 export function shootTargets(s: GameState, d: Die): Die[] {
   const start = cellOf(d);
   if (!start) return [];
   const out: Die[] = [];
-  // Along each line out of a side of its space (4 on squares, 6 on hexes): a shot flies as far as the first
-  // thing in its way (a ship, a planet, a barrier or the board's edge; it flies over the void).
-  for (const dir of geometry(s.board).sides) {
-    let at = start;
-    // The step count only matters on a board that wraps, where a line comes back round to the shooter.
-    for (let k = 0; k < s.board.rows + s.board.cols; k++) {
-      [at] = offsets(s.board, at, [dir]);
-      if (!onBoard(s.board, at)) break;
+  // A shot flies as far as the first thing in its way (a ship, a planet, a barrier or the board's edge; it
+  // flies over the void).
+  for (const line of lines(s, start)) {
+    for (const at of line) {
       const target = dieAt(s, at);
       if (target) {
         if (target.owner !== d.owner && !out.includes(target)) out.push(target);

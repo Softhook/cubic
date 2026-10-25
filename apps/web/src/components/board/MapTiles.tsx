@@ -7,7 +7,7 @@ import {
   SPACE_BASE_CSS,
   TILE,
   WELL,
-  hexWell,
+  hexEdge,
   tileLabel,
   tileLayerNames,
   tileSpec,
@@ -61,7 +61,7 @@ function wells(board: Board): { edges: string; wells: string } {
     const role = orbits > 1 ? 'shared' : orbits ? 'orbit' : 'space';
     out += `<g class="well" data-r="${p.r}" data-c="${p.c}" data-role="${role}${isVoid ? ' void' : ''}">`;
     if (board.hex) {
-      edges += hexWell(x, y);
+      edges += hexEdge(x, y);
     } else {
       out += well(x, y, TILE.pad, 4, style);
       const h = TILE.pad / 2 - HATCH.inset;

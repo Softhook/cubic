@@ -56,12 +56,12 @@ export function hatch(cx: number, cy: number): string {
  * A hex space's outline centred on (cx, cy): a solid line along its edge, a space tall. Draw a set of them
  * inside `hexEdges`, which fades them together.
  */
-export function hexWell(cx: number, cy: number): string {
+export function hexEdge(cx: number, cy: number): string {
   const pts = hexCorners(cx, cy, TILE.cell).map((p) => `${n(p.x)} ${n(p.y)}`);
   return `<polygon points="${pts.join(' ')}" fill="none" stroke="#000" stroke-width="${HEX_EDGE.width}" stroke-linejoin="round"/>`;
 }
 
-/** Hex outlines (`hexWell`) faded as one, so where two meet the line is no darker. */
+/** Hex outlines (`hexEdge`) faded as one, so where two meet the line is no darker. */
 export const hexEdges = (outlines: string) => (outlines ? `<g opacity="${HEX_EDGE.opacity}">${outlines}</g>` : '');
 
 /**
@@ -96,7 +96,7 @@ export function markings(spec: TileSpec, part: 'spaces' | 'planet', shape: TileS
     const { x, y } = mm(spot);
     const conquer = hasPlanet && Math.abs(away - 1) < 1e-6;
     const style = conquer ? WELL.conquer : WELL.space;
-    if (shape === 'hex') edges += hexWell(x, y);
+    if (shape === 'hex') edges += hexEdge(x, y);
     else body += well(x, y, TILE.pad, 4, style);
     // The spaces beside a planet are where dice go to conquer it: on a square tile, very faint diagonal hatching marks them.
     if (conquer && shape === 'square') body += hatch(x, y);

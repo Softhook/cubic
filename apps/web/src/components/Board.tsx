@@ -14,8 +14,8 @@ import { useBoardZoom } from './board/useBoardZoom';
 import { OffscreenHints, ZoomControls, useFollowMoves, useZoomIntro } from './board/ZoomUi';
 import { Die3D, DieShadow } from './Die3D';
 import { PIECE_SHADOW_OPACITY } from './board/shadows';
-import { lookWorld, REGOLITH_SHADOW, TILE } from '@quantum/art';
-import { useMapLook } from '../art/mapLook';
+import { REGOLITH_SHADOW, TILE } from '@quantum/art';
+import { useOnGround } from '../art/mapLook';
 import { planetNames } from '../art/boardTiles';
 import { InfoPop, useAnchorName } from './InfoPop';
 
@@ -53,7 +53,7 @@ export function Board({
   const { cell } = zoom;
   const { box } = placement(game.board, cell);
   // On a world's ground the dice cast hard shadows, as its buildings do: blurred as much, in pixels.
-  const cast = lookWorld(useMapLook(game.board)) ? REGOLITH_SHADOW.blur * (cell / TILE.cell) : undefined;
+  const cast = useOnGround(game.board) ? REGOLITH_SHADOW.blur * (cell / TILE.cell) : undefined;
   const spots = shipSpots(game);
   const staging = useStaging(game, scene);
   const tip = useZoomIntro(game, ctl, zoom, !!introduce);
