@@ -718,28 +718,28 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-plan-ahead': {
     world: 'deimos',
-    caption: 'an enemy mech caught in a marked kill zone, crossfire coming in from both sides',
+    caption: 'a huge black Behemoth caught in a marked kill zone, crossfire coming in from both sides',
     draw: (s) =>
       outdoors(s, 22, { planet: { x: 52, y: 8, r: 7 } }) +
       // the kill zone: three hexes painted on the ground, hatched in the plate
       hexOnGround(26, 31, 6, 0.42, INKS.amber, 0.7) +
       hexOnGround(38, 31, 6, 0.42, INKS.amber, 0.7) +
       hexOnGround(32, 35.4, 6, 0.42, INKS.amber, 0.7) +
-      `<ellipse cx="32" cy="32.6" rx="12" ry="4" fill="${ht(s, 'plate')}"/>` +
-      mech(s, 'breacher', 32, 33.6, 0.052, { yaw: 20 }, { plate: INKS.oxide }) +
+      `<ellipse cx="32" cy="34" rx="14" ry="4.5" fill="${ht(s, 'plate')}"/>` +
+      mech(s, 'behemoth', 32, 43.5, 0.13, {}, { ink: ON_PAPER, plate: INKS.oxide }) +
       // crossfire tracers converging from both sides
-      stroke('M-4,24 L28.5,24.8 M-4,32 L30,28', INKS.amber, 0.6) +
-      stroke('M68,23 L35.5,25.2 M68,31 L34,28.6', INKS.amber, 0.6) +
+      stroke('M-4,18 L26,22.5 M-4,30 L29.5,28', INKS.amber, 0.6) +
+      stroke('M68,17 L38,22 M68,29 L34.5,28', INKS.amber, 0.6) +
       // explosions on the mech and the center
-      `<circle cx="32" cy="26.5" r="7.5" fill="${INKS.oxide}" opacity="0.45"/>` +
-      `<circle cx="32" cy="26.5" r="4.5" fill="${INKS.amber}" opacity="0.55"/>` +
-      `<ellipse cx="32" cy="31" rx="6" ry="2.2" fill="${INKS.oxide}" opacity="0.4"/>` +
-      flash(32, 26.2, 6.4, 12, 10) +
-      flash(28.5, 24.8, 4, 9, 24) +
-      flash(35.5, 27.2, 4.2, 9, 36) +
-      flash(32, 31, 3.8, 8, 15) +
-      sparks(s.r, 32, 26.5, 26, 15) +
-      sparks(s.r, 32, 31, 12, 9),
+      `<circle cx="32" cy="22.5" r="8" fill="${INKS.oxide}" opacity="0.45"/>` +
+      `<circle cx="32" cy="22.5" r="5" fill="${INKS.amber}" opacity="0.55"/>` +
+      `<ellipse cx="32" cy="30" rx="6.5" ry="2.4" fill="${INKS.oxide}" opacity="0.4"/>` +
+      flash(32, 22, 7.5, 12, 10) +
+      flash(26, 23.5, 4.5, 9, 24) +
+      flash(38, 23, 4.6, 9, 36) +
+      flash(32, 29.5, 4.2, 8, 15) +
+      sparks(s.r, 32, 22.5, 28, 16) +
+      sparks(s.r, 32, 29.5, 14, 10),
   },
   'r-sabotage': {
     world: 'deimos',
