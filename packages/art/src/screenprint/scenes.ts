@@ -113,7 +113,7 @@ export const SCENES: Record<string, SpScene> = {
       mech(s, 'wisp', 24, 39, 0.19, { yaw: -28 }) +
       // the step ladder, the mechanic on it, the wrench on the knee
       stroke('M44,39 L48,22 M52,39 L48,22 M45.2,34 L50.8,34 M46.4,29 L49.6,29', s.key, 0.7) +
-      `<g transform="rotate(16 37 15.6)">${rect(37, 14.4, 9, 2.4, s.key)}<circle cx="37" cy="15.6" r="2.6" fill="none" stroke="${s.key}" stroke-width="1.4"/></g>` +
+      `<g transform="rotate(16 37 15.6)">${rect(37, 14.4, 9, 2.4, s.key)}</g>` +
       person(48, 29, 0.2, { facing: -1, arms: [124, 112], elbows: [-10, -6], lean: -6, legs: [6, -6] }, s.key, s.paper) +
       sparks(s.r, 37, 15.6, 16, 8) +
       flash(37, 15.6, 2, 8),
@@ -559,12 +559,12 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-strategic': {
     world: 'phobos',
-    caption: 'three mechs back to back, guns out three ways',
+    caption: 'a towering Behemoth guarded by a Sniper and a Breacher',
     draw: (s) =>
-      outdoors(s, 32, { planet: { x: 32, y: 8, r: 7 } }) +
-      mech(s, 'sniper', 15, 39, 0.1, { aim: -48 }, { flip: true }) +
-      mech(s, 'breacher', 48, 39, 0.1, { yaw: 30, arms: { plus: [-80, -10] } }) +
-      mech(s, 'chameleon', 31, 41, 0.11, { yaw: 15 }),
+      outdoors(s, 32, { planet: { x: 50, y: 8, r: 6 } }) +
+      mech(s, 'behemoth', 32, 39, 0.135) +
+      mech(s, 'sniper', 16, 41, 0.085, { yaw: -32, aim: -25 }) +
+      mech(s, 'breacher', 48, 41, 0.085, { yaw: 25 }),
   },
   'r-stubborn': {
     world: 'mars',
