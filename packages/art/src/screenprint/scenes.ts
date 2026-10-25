@@ -727,13 +727,19 @@ export const SCENES: Record<string, SpScene> = {
       hexOnGround(32, 35.4, 6, 0.42, INKS.amber, 0.7) +
       `<ellipse cx="32" cy="32.6" rx="12" ry="4" fill="${ht(s, 'plate')}"/>` +
       mech(s, 'breacher', 32, 33.6, 0.052, { yaw: 20 }, { plate: INKS.oxide }) +
-      // tracers from both sides, impacts on the target
-      stroke('M-4,30 L29,25 M-4,34 L30,28.4', INKS.amber, 0.5) +
-      stroke('M68,28 L35,24.6 M68,33 L34.6,28.6', INKS.amber, 0.5) +
-      flash(29.4, 25.4, 2.4, 9) +
-      flash(34.8, 28.4, 2, 8, 14) +
-      sparks(s.r, 32, 26.6, 14, 8) +
-      mech(s, 'chameleon', 2, 46, 0.12, { yaw: 40, arms: { plus: [-80, -10] } }, { plate: INKS.ice }),
+      // crossfire tracers converging from both sides
+      stroke('M-4,24 L28.5,24.8 M-4,32 L30,28', INKS.amber, 0.6) +
+      stroke('M68,23 L35.5,25.2 M68,31 L34,28.6', INKS.amber, 0.6) +
+      // explosions on the mech and the center
+      `<circle cx="32" cy="26.5" r="7.5" fill="${INKS.oxide}" opacity="0.45"/>` +
+      `<circle cx="32" cy="26.5" r="4.5" fill="${INKS.amber}" opacity="0.55"/>` +
+      `<ellipse cx="32" cy="31" rx="6" ry="2.2" fill="${INKS.oxide}" opacity="0.4"/>` +
+      flash(32, 26.2, 6.4, 12, 10) +
+      flash(28.5, 24.8, 4, 9, 24) +
+      flash(35.5, 27.2, 4.2, 9, 36) +
+      flash(32, 31, 3.8, 8, 15) +
+      sparks(s.r, 32, 26.5, 26, 15) +
+      sparks(s.r, 32, 31, 12, 9),
   },
   'r-sabotage': {
     world: 'deimos',
@@ -781,12 +787,12 @@ export const SCENES: Record<string, SpScene> = {
     caption: 'mechs coming down on their boosters all over the map',
     draw: (s) =>
       outdoors(s, 34, { planet: { x: 52, y: 26, r: 8 } }) +
-      dropping(s, 'wisp', 9, 12, 0.035, 20) +
-      dropping(s, 'sniper', 24, 6, 0.03, -10) +
-      dropping(s, 'chameleon', 52, 8, 0.035, -20) +
-      dropping(s, 'breacher', 40, 18, 0.05, 14) +
-      dropping(s, 'tactician', 20, 26, 0.06, -14) +
-      mech(s, 'behemoth', 54, 39, 0.05, { yaw: -20 }) +
+      dropping(s, 'wisp', 9, 12, 0.035) +
+      dropping(s, 'sniper', 24, 6, 0.03) +
+      dropping(s, 'chameleon', 52, 8, 0.035) +
+      dropping(s, 'breacher', 40, 18, 0.05) +
+      dropping(s, 'tactician', 20, 26, 0.06) +
+      mech(s, 'behemoth', 54, 39, 0.05) +
       rings(20, 38, 3, 3, 3, s.key, 0.35, 180, 360),
   },
   'r-warp-gate': {
