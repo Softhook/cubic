@@ -52,7 +52,7 @@ const sideInk = (s: Stage) => ({ ...s.ink, key: s.ink.side });
 
 /** A downed mech: in the side ink, knocked over by `deg` about its feet at `x`, `y`. */
 const wreck = (s: Stage, kind: Parameters<typeof mech>[1], x: number, y: number, size: number, deg: number, plate?: false) =>
-  `<g transform="rotate(${deg} ${x} ${y})">${mech(s, kind, x, y, size, {}, { ink: sideInk(s), plate })}</g>`;
+  `<g transform="rotate(${deg} ${x} ${y})">${mech(s, kind, x, y, size, { yaw: 25 }, { ink: sideInk(s), plate })}</g>`;
 
 /** A gloved hand: a mitten from the wrist at `x`, `y`, turned `deg`, `size` mm long. */
 const glove = (x: number, y: number, size: number, deg: number, ink: string) =>
@@ -110,7 +110,7 @@ export const SCENES: Record<string, SpScene> = {
       paperGround(s) +
       rays(36, 16, 26, s.plate) +
       land(s, 36, { rims: false }) +
-      mech(s, 'wisp', 24, 39, 0.19) +
+      mech(s, 'wisp', 24, 39, 0.19, { yaw: -28 }) +
       // the step ladder, the mechanic on it, the wrench on the knee
       stroke('M44,39 L48,22 M52,39 L48,22 M45.2,34 L50.8,34 M46.4,29 L49.6,29', s.key, 0.7) +
       `<g transform="rotate(16 37 15.6)">${rect(37, 14.4, 9, 2.4, s.key)}<circle cx="37" cy="15.6" r="2.6" fill="none" stroke="${s.key}" stroke-width="1.4"/></g>` +
@@ -165,7 +165,7 @@ export const SCENES: Record<string, SpScene> = {
       paperGround(s) +
       rays(32, 20, 32, s.plate) +
       land(s, 36, { rims: false }) +
-      mech(s, 'breacher', 32, 40, 0.13, { arms: { plus: [-16, -10], minus: [16, 10] } }) +
+      mech(s, 'breacher', 32, 40, 0.13, { yaw: 18, arms: { plus: [-16, -10], minus: [16, 10] } }) +
       flash(14, 31.5, 4.2, 10) +
       flash(51, 32, 4.2, 10, 12) +
       sparks(s.r, 14, 31.5, 12, 10) +
@@ -181,7 +181,7 @@ export const SCENES: Record<string, SpScene> = {
       print(s, 'crane', 54, 34, { size: 0.16, flip: true }) +
       stroke('M41.2,14.8 L41.2,22', s.key, 0.4) +
       stroke('M40,22 q1.2,2 2.4,0', s.key, 0.6) +
-      mech(s, 'chameleon', 41, 32, 0.045, {}, { plate: INKS.oxide }),
+      mech(s, 'chameleon', 41, 32, 0.045, { yaw: -25 }, { plate: INKS.oxide }),
   },
   'r-clever': {
     world: 'mars',
@@ -189,9 +189,9 @@ export const SCENES: Record<string, SpScene> = {
     draw: (s) =>
       outdoors(s, 36, { planet: { x: 54, y: 8, r: 8 } }) +
       print(s, 'gantry', 32, 38, { size: 0.24 }) +
-      mech(s, 'chameleon', 28, 38, 0.115, { detach: { arm: 'plus', show: 'mech' } }) +
+      mech(s, 'chameleon', 28, 38, 0.115, { yaw: -20, detach: { arm: 'plus', show: 'mech' } }) +
       stroke('M42.4,5.6 L42.4,13.4', s.key, 0.35, ' stroke-dasharray="0.6 0.4"') +
-      mech(s, 'chameleon', 33.5, 39, 0.115, { detach: { arm: 'plus', show: 'arm' } }) +
+      mech(s, 'chameleon', 33.5, 39, 0.115, { yaw: -20, detach: { arm: 'plus', show: 'arm' } }) +
       sparks(s.r, 35.2, 13.4, 10, 5),
   },
   'r-composed': {
@@ -200,7 +200,11 @@ export const SCENES: Record<string, SpScene> = {
     draw: (s) =>
       outdoors(s, 32, { planet: { x: 34, y: 8, r: 6 } }) +
       smoke(s, 18, 14, 10, GROUND.phobos.light) +
-      mech(s, 'chameleon', 18, 40, 0.12, { legs: { plus: [-34, 62], minus: [34, -62] }, arms: { plus: [4, 0], minus: [-4, 0] } }) +
+      mech(s, 'chameleon', 18, 40, 0.12, {
+        yaw: -12,
+        legs: { plus: [-34, 62], minus: [34, -62] },
+        arms: { plus: [4, 0], minus: [-4, 0] },
+      }) +
       // the dish: its sweep fanning out from the feed
       `<path d="M51.4,15.4 L38,-4 L64,-4 Z" fill="${INKS.amber}" opacity="0.22"/>` +
       rings(51.4, 15.4, 3, 3, 5, INKS.amber, 0.6, 235, 305) +
@@ -219,7 +223,12 @@ export const SCENES: Record<string, SpScene> = {
             return `<path d="M${n(32 + Math.cos(a1) * r)},${n(24 + Math.sin(a1) * r)} A${r},${r} 0 0,1 ${n(32 + Math.cos(a2) * r)},${n(24 + Math.sin(a2) * r)}" fill="none" stroke="${INKS.ice}" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="0.01 2.6" opacity="${n(1 - i * 0.1)}"/>`;
           })
           .join('');
-      return outdoors(s, 36, { planet: { x: 54, y: 8, r: 6 } }) + pulse(140, 220) + pulse(-40, 40) + mech(s, 'tactician', 32, 39, 0.1, {});
+      return (
+        outdoors(s, 36, { planet: { x: 54, y: 8, r: 6 } }) +
+        pulse(140, 220) +
+        pulse(-40, 40) +
+        mech(s, 'tactician', 32, 39, 0.1, { yaw: 20 })
+      );
     },
   },
   'r-curious': {
@@ -318,8 +327,8 @@ export const SCENES: Record<string, SpScene> = {
     draw: (s) =>
       outdoors(s, 37, { planet: { x: 54, y: 8, r: 7 } }) +
       // face on, standing straight
-      dropping(s, 'breacher', 19, 24, 0.075, 0, {}) +
-      dropping(s, 'chameleon', 44, 19, 0.075, 0, {}),
+      dropping(s, 'breacher', 19, 24, 0.075, 18, {}) +
+      dropping(s, 'chameleon', 44, 19, 0.075, -18, {}),
   },
   'r-intelligent': {
     world: 'mars',
@@ -465,7 +474,7 @@ export const SCENES: Record<string, SpScene> = {
       // the drill ground: painted lines running back to the horizon
       stroke('M-4,33 L68,33 M-4,39.5 L68,39.5', INKS.bone, 0.5) +
       stroke('M4,44 L17,25 M28,44 L28,25 M52,44 L39,25', INKS.bone, 0.35, ' stroke-dasharray="1.2 0.8"') +
-      [10, 28, 46].map((x) => mech(s, 'sniper', x, 38, 0.07)).join('') +
+      [10, 28, 46].map((x) => mech(s, 'sniper', x, 38, 0.07, { yaw: -25 })).join('') +
       flag(s, 62, 31, 12, INKS.oxide, '3', -1),
   },
   'r-ravenous': {
@@ -555,7 +564,7 @@ export const SCENES: Record<string, SpScene> = {
       outdoors(s, 32, { planet: { x: 32, y: 8, r: 7 } }) +
       mech(s, 'sniper', 15, 39, 0.1, { aim: -48 }, { flip: true }) +
       mech(s, 'breacher', 48, 39, 0.1, { yaw: 30, arms: { plus: [-80, -10] } }) +
-      mech(s, 'chameleon', 31, 41, 0.11, {}),
+      mech(s, 'chameleon', 31, 41, 0.11, { yaw: 15 }),
   },
   'r-stubborn': {
     world: 'mars',
@@ -622,7 +631,7 @@ export const SCENES: Record<string, SpScene> = {
         paperGround(s) +
         rays(32, 18, 28, INKS.oxide, 180, 360) +
         `<circle cx="32" cy="18" r="8" fill="${s.paper}"/>` +
-        mech(s, 'chameleon', 32, 42, 0.12, { yaw: 0, arms: { plus: [-140, 0] } }, { plate: INKS.oxide }) +
+        mech(s, 'chameleon', 32, 42, 0.12, { yaw: 20, arms: { plus: [-140, 0] } }, { plate: INKS.oxide }) +
         [6, 14, 50, 58].map((x, i) => fist(x, 12 + (i % 2) * 6, (i < 2 ? -1 : 1) * 6)).join('')
       );
     },
@@ -683,7 +692,7 @@ export const SCENES: Record<string, SpScene> = {
       [10, 14, 18, 22]
         .map((x, i) => `<ellipse cx="${x}" cy="${39 + (i % 2) * 1.2}" rx="1.2" ry="0.5" fill="${GROUND.phobos.shade}"/>`)
         .join('') +
-      mech(s, 'sniper', 30, 41, 0.085, { legs: { plus: [-18, 14], minus: [18, 4] } }, { plate: INKS.ice }) +
+      mech(s, 'sniper', 30, 41, 0.085, { yaw: 20, legs: { plus: [-18, 14], minus: [18, 4] } }, { plate: INKS.ice }) +
       mech(s, 'tactician', 52, 36, 0.06, { yaw: -24 }, { plate: INKS.oxide }) +
       flag(s, 60, 36, 22, INKS.oxide, '', -1),
   },

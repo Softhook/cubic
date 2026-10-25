@@ -164,7 +164,7 @@ interface Group {
   items: Item[];
 }
 
-/** A leg's segments' depth and thickness, as fractions of the limbs' thickness: a heavy thigh, a slimmer shin, a long foot set forward. */
+/** A leg's segments' depth and thickness by default, as fractions of the limbs' thickness: a heavy thigh, a slimmer shin, a long foot set forward. */
 const LEG = [
   { z: 0, t: 1.15 },
   { z: 0, t: 0.85 },
@@ -172,6 +172,8 @@ const LEG = [
 ];
 
 const FILLS = new Set(['k', 'j', 'r', 'pf', 'gun']);
+/** Lines printed on the front of the part they're drawn with (a rod runs through its middle). */
+const ON_FACE = new Set(['l', 'p', 'w']);
 
 /** A leg's angles with the foot kept flat when not given. */
 const legAngles = (a: readonly number[] = [], segs: number) => {
@@ -211,13 +213,14 @@ function groups(rig: Rig, pose: Pose): Group[] {
   const item = (part: Part, m: M, z: number, t: number, h = 0): Item => ({
     part,
     m,
-    z: z + (part[3] ?? 0),
+    z: z + (part[3] ?? 0) + (ON_FACE.has(part[0]) ? t / 2 : 0),
     t: FILLS.has(part[0]) ? (part[4] ?? t) : 0,
     h,
   });
 
   const out: Group[] = [];
   // The legs stand a little behind the hull's middle, so the hull's front covers the hips.
+  const shape = rig.leg.map((_, i) => rig.legShape?.[i] ?? LEG[i] ?? { z: 0, t: 1 });
   (rig.splay ?? [0]).forEach((splay, pair) => {
     for (const s of [1, -1] as const) {
       const maps = chainMaps(rig.leg, legA(s), mul(ground, mirror(s)));
@@ -227,7 +230,7 @@ function groups(rig: Rig, pose: Pose): Group[] {
         x: x * Math.cos(h) + limbT * Math.sin(h),
         z: x * Math.sin(h) - limbT * Math.cos(h),
         seq: pair * 2 + (s > 0 ? 0 : 1) - 10,
-        items: rig.leg.flatMap((seg, i) => seg.parts.map((p) => item(p, maps[i], LEG[i].z * limbT, LEG[i].t * limbT, s * splay))),
+        items: rig.leg.flatMap((seg, i) => seg.parts.map((p) => item(p, maps[i], shape[i].z * limbT, shape[i].t * limbT, s * splay))),
       });
     }
   });
@@ -350,6 +353,35 @@ function hull(ps: Pt[]): Pt[] {
   return [...half(s), ...half([...s].reverse())];
 }
 
+/** A part of several pieces (a frame's posts and bar) as one item each, so each finds its own depth. */
+const pieces = (it: Item): Item[] => {
+  const subs = FILLS.has(it.part[0]) ? it.part[1].split(/(?=M)/).filter((d) => d.trim()) : [];
+  return subs.length > 1 ? subs.map((d) => ({ ...it, part: [it.part[0], d, ...it.part.slice(2)] as unknown as Part })) : [it];
+};
+
+/**
+ * A group's parts in layers far to near: each layer's walls, then its fronts, so a part further back never prints
+ * over a nearer one's sides. A part goes after any `before` it, then by the depth of its front (the hull's seams
+ * and lights last); parts at one depth share a layer.
+ */
+function layers(items: Item[], before: (a: Item, b: Item) => boolean): Item[][] {
+  const front = (it: Item) => (it.wrap ? Infinity : Math.round(it.z + it.t / 2));
+  const rest = [...items].sort((a, b) => front(a) - front(b));
+  const out: Item[][] = [];
+  while (rest.length) {
+    // The first not waiting on another; in a cycle, the first.
+    const i = Math.max(
+      0,
+      rest.findIndex((x) => !rest.some((y) => y !== x && before(y, x))),
+    );
+    const [it] = rest.splice(i, 1);
+    const last = out[out.length - 1];
+    if (last && front(last[0]) === front(it)) last.push(it);
+    else out.push([it]);
+  }
+  return out;
+}
+
 /** The mech drawn in board units in `c`. */
 function drawn(rig: Rig, pose: Pose, c: MechInk): string {
   const deg = Math.PI / 180;
@@ -369,104 +401,136 @@ function drawn(rig: Rig, pose: Pose, c: MechInk): string {
     .map((g) => ({ g, near: g.x * sy + g.z * cy }))
     .sort((a, b) => a.near - b.near || a.g.seq - b.g.seq);
   let out = '';
-  for (const { g } of ordered) {
-    // The group's walls facing the viewer first, far to near, then its fronts over them.
-    const walls: { q: Pt[]; near: number; top: boolean }[] = [];
-    let edges = '';
-    if (Math.abs(sy) > 0.01 || pitch || g.items.some((it) => it.h))
-      for (const it of g.items) {
-        if (!it.t || it.round || it.part[0] === 'pf') continue;
-        for (const o of outlinesOf(it.part[1])) {
-          if (!o.closed) continue;
-          const body = o.pts.map((p) => at(it.m, p));
-          const sign = area(body) > 0 ? 1 : -1;
-          const back = body.map((p) => space(it, p, it.z - it.t / 2));
-          const front = body.map((p) => space(it, p, it.z + it.t / 2));
-          const seen = body.map((a, i) => {
-            const b = body[(i + 1) % body.length];
-            const [nx, ny] = [(b[1] - a[1]) * sign, (a[0] - b[0]) * sign];
-            const len = Math.hypot(nx, ny) || 1;
-            const n = space(it, [nx / len, ny / len], 0);
-            if (nearness(n) - nearness([0, 0, 0]) <= 0.01) return false;
-            const j = (i + 1) % body.length;
-            const q = [back[i], back[j], front[j], front[i]];
-            const page = q.map(view);
-            walls.push({
-              q: area(page) < 0 ? page.reverse() : page,
-              near: q.reduce((s, p) => s + nearness(p), 0) / 4,
-              top: ny / len < -0.55,
+  // A part's extent in the front plane and in depth.
+  const boxes = new Map<Item, { x0: number; x1: number; y0: number; y1: number; z0: number; z1: number }>();
+  const box = (it: Item) => {
+    if (!boxes.has(it)) {
+      const ps = outlinesOf(it.part[1]).flatMap((o) => o.pts.map((p) => at(it.m, p)));
+      const xs = ps.map((p) => p[0]);
+      const ys = ps.map((p) => p[1]);
+      boxes.set(it, {
+        x0: Math.min(...xs),
+        x1: Math.max(...xs),
+        y0: Math.min(...ys),
+        y1: Math.max(...ys),
+        z0: it.z - it.t / 2,
+        z1: it.z + it.t / 2,
+      });
+    }
+    return boxes.get(it)!;
+  };
+  // Whether `a` must print before `b`: wholly behind it; or, where their depths overlap, wholly below it (seen from
+  // above), or wholly on its far side.
+  const before = (a: Item, b: Item) => {
+    if (a.wrap || b.wrap) return false;
+    const [A, B] = [box(a), box(b)];
+    if (A.z1 <= B.z0 + 0.5 && A.z0 < B.z0) return true;
+    if (B.z1 <= A.z0 + 0.5 && B.z0 < A.z0) return false;
+    if (pitch && A.y0 >= B.y1 - 3) return true;
+    if (pitch && B.y0 >= A.y1 - 3) return false;
+    return (sy > 0.01 && A.x1 <= B.x0 + 0.5) || (sy < -0.01 && A.x0 >= B.x1 - 0.5);
+  };
+  // Front on, the parts print in the rig's order, as drawn.
+  const turned = Math.abs(sy) > 0.01 || !!pitch;
+  for (const { g } of ordered)
+    for (const items of turned || g.items.some((it) => it.h) ? layers(g.items.flatMap(pieces), before) : [g.items]) {
+      // The layer's walls facing the viewer first, far to near, then its fronts over them.
+      const walls: { q: Pt[]; near: number; top: boolean }[] = [];
+      let edges = '';
+      if (turned || items.some((it) => it.h))
+        for (const it of items) {
+          if (!it.t || it.round || it.part[0] === 'pf') continue;
+          for (const o of outlinesOf(it.part[1])) {
+            if (!o.closed) continue;
+            const body = o.pts.map((p) => at(it.m, p));
+            const sign = area(body) > 0 ? 1 : -1;
+            const back = body.map((p) => space(it, p, it.z - it.t / 2));
+            const front = body.map((p) => space(it, p, it.z + it.t / 2));
+            const seen = body.map((a, i) => {
+              const b = body[(i + 1) % body.length];
+              const [nx, ny] = [(b[1] - a[1]) * sign, (a[0] - b[0]) * sign];
+              const len = Math.hypot(nx, ny) || 1;
+              const n = space(it, [nx / len, ny / len], 0);
+              if (nearness(n) - nearness([0, 0, 0]) <= 0.01) return false;
+              const j = (i + 1) % body.length;
+              const q = [back[i], back[j], front[j], front[i]];
+              const page = q.map(view);
+              walls.push({
+                q: area(page) < 0 ? page.reverse() : page,
+                near: q.reduce((s, p) => s + nearness(p), 0) / 4,
+                top: ny / len < -0.55,
+              });
+              edges += path([view(back[i]), view(back[j])], false) + ' ';
+              return true;
             });
-            edges += path([view(back[i]), view(back[j])], false) + ' ';
-            return true;
-          });
-          // A line back from each corner a seen wall meets; curves stay smooth.
-          edges +=
-            body
-              .flatMap((_, i) =>
-                corner(body, i) && (seen[i] || seen[(i - 1 + body.length) % body.length])
-                  ? [path([view(front[i]), view(back[i])], false)]
-                  : [],
-              )
-              .join(' ') + ' ';
+            // A line back from each corner a seen wall meets; curves stay smooth.
+            edges +=
+              body
+                .flatMap((_, i) =>
+                  corner(body, i) && (seen[i] || seen[(i - 1 + body.length) % body.length])
+                    ? [path([view(front[i]), view(back[i])], false)]
+                    : [],
+                )
+                .join(' ') + ' ';
+          }
+        }
+      walls.sort((a, b) => a.near - b.near);
+      // In runs of one ink, their edges seamed as the fronts' panel lines are: the parts read as blocks.
+      for (let i = 0; i < walls.length;) {
+        let j = i;
+        while (j < walls.length && walls[j].top === walls[i].top) j++;
+        out += `<path d="${walls
+          .slice(i, j)
+          .map((w) => path(w.q, true))
+          .join(' ')}" fill="${walls[i].top ? c.top : c.side}"/>`;
+        i = j;
+      }
+      if (edges.trim())
+        out += `<path d="${edges}" fill="none" stroke="${c.seam}" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      for (const it of items) {
+        const [kind, d, w] = it.part;
+        let face: string;
+        if (it.round) {
+          // Turned about the upright axis: each band between two heights of its outline's right half is the hull of two rings.
+          const half = outlinesOf(d).flatMap((o) => o.pts.filter((p) => p[0] >= -0.01));
+          const ring = ([r, y]: Pt) =>
+            Array.from({ length: 24 }, (_, k) => {
+              const a = (k / 24) * 2 * Math.PI;
+              return view(space(it, at(it.m, [r * Math.cos(a), y]), it.z + r * Math.sin(a)));
+            });
+          const bands = half.slice(1).map((p, i) => ({ d: path(hull([...ring(half[i]), ...ring(p)]), true), a: half[i], b: p }));
+          face = bands.map((b) => b.d).join(' ');
+          // Seen from above, the bands that face up print in the top ink: a lit cap.
+          const sign = area(outlinesOf(d)[0].pts) > 0 ? 1 : -1;
+          const cap = pitch
+            ? bands.filter(({ a, b }) => ((a[0] - b[0]) * sign) / (Math.hypot(b[0] - a[0], b[1] - a[1]) || 1) < -0.55).map((b) => b.d)
+            : [];
+          if (cap.length) {
+            out += `<path d="${face}" fill="${fill[kind]}"/><path d="${cap.join(' ')}" fill="${c.top}"/>`;
+            continue;
+          }
+        } else
+          face = outlinesOf(d)
+            .map((o) =>
+              path(
+                (it.wrap ? finer(o.pts, o.closed) : o.pts).map((p) => view(space(it, at(it.m, p), it.wrap ? it.wrap(p) : it.z + it.t / 2))),
+                o.closed,
+              ),
+            )
+            .join(' ');
+        if (FILLS.has(kind)) {
+          const seam =
+            (kind === 'k' && !it.round) || kind === 'gun'
+              ? ` stroke="${kind === 'k' ? c.seam : c.recess}" stroke-width="1.4" stroke-linejoin="round"`
+              : '';
+          out += `<path d="${face}" fill="${fill[kind]}"${seam}/>`;
+        } else {
+          const colour = kind === 'l' ? c.seam : kind === 'rod' ? c.rod : kind === 'p' ? c.light : c.key;
+          const width = w ?? (kind === 'l' ? 1.4 : kind === 'rod' ? 4 : 2.5);
+          out += `<path d="${face}" fill="none" stroke="${colour}" stroke-width="${n(width)}" stroke-linecap="round" stroke-linejoin="round"/>`;
         }
       }
-    walls.sort((a, b) => a.near - b.near);
-    // In runs of one ink, their edges seamed as the fronts' panel lines are: the parts read as blocks.
-    for (let i = 0; i < walls.length;) {
-      let j = i;
-      while (j < walls.length && walls[j].top === walls[i].top) j++;
-      out += `<path d="${walls
-        .slice(i, j)
-        .map((w) => path(w.q, true))
-        .join(' ')}" fill="${walls[i].top ? c.top : c.side}"/>`;
-      i = j;
     }
-    if (edges.trim())
-      out += `<path d="${edges}" fill="none" stroke="${c.seam}" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>`;
-    for (const it of g.items) {
-      const [kind, d, w] = it.part;
-      let face: string;
-      if (it.round) {
-        // Turned about the upright axis: each band between two heights of its outline's right half is the hull of two rings.
-        const half = outlinesOf(d).flatMap((o) => o.pts.filter((p) => p[0] >= -0.01));
-        const ring = ([r, y]: Pt) =>
-          Array.from({ length: 24 }, (_, k) => {
-            const a = (k / 24) * 2 * Math.PI;
-            return view(space(it, at(it.m, [r * Math.cos(a), y]), it.z + r * Math.sin(a)));
-          });
-        const bands = half.slice(1).map((p, i) => ({ d: path(hull([...ring(half[i]), ...ring(p)]), true), a: half[i], b: p }));
-        face = bands.map((b) => b.d).join(' ');
-        // Seen from above, the bands that face up print in the top ink: a lit cap.
-        const sign = area(outlinesOf(d)[0].pts) > 0 ? 1 : -1;
-        const cap = pitch
-          ? bands.filter(({ a, b }) => ((a[0] - b[0]) * sign) / (Math.hypot(b[0] - a[0], b[1] - a[1]) || 1) < -0.55).map((b) => b.d)
-          : [];
-        if (cap.length) {
-          out += `<path d="${face}" fill="${fill[kind]}"/><path d="${cap.join(' ')}" fill="${c.top}"/>`;
-          continue;
-        }
-      } else
-        face = outlinesOf(d)
-          .map((o) =>
-            path(
-              (it.wrap ? finer(o.pts, o.closed) : o.pts).map((p) => view(space(it, at(it.m, p), it.wrap ? it.wrap(p) : it.z + it.t / 2))),
-              o.closed,
-            ),
-          )
-          .join(' ');
-      if (FILLS.has(kind)) {
-        const seam =
-          (kind === 'k' && !it.round) || kind === 'gun'
-            ? ` stroke="${kind === 'k' ? c.seam : c.recess}" stroke-width="1.4" stroke-linejoin="round"`
-            : '';
-        out += `<path d="${face}" fill="${fill[kind]}"${seam}/>`;
-      } else {
-        const colour = kind === 'l' ? c.seam : kind === 'rod' ? c.rod : kind === 'p' ? c.light : c.key;
-        const width = w ?? (kind === 'l' ? 1.4 : kind === 'rod' ? 4 : 2.5);
-        out += `<path d="${face}" fill="none" stroke="${colour}" stroke-width="${n(width)}" stroke-linecap="round" stroke-linejoin="round"/>`;
-      }
-    }
-  }
   return out;
 }
 

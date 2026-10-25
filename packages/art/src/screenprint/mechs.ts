@@ -34,6 +34,8 @@ export interface Rig {
   /** Hull parts that are round in plan (domes, a helmet), turned about the upright axis rather than pushed back; drawn after `hull`, and the `detail` on them wraps round. */
   round?: readonly Part[];
   detail: readonly Part[];
+  /** Each leg segment's depth and thickness, as fractions of the limbs' thickness (default a heavy thigh, a slimmer shin, a long foot set forward). */
+  legShape?: readonly { z: number; t: number }[];
   /** Each leg pair's turn in plan, out of the front plane: + swings the legs forward (default one pair, `[0]`). */
   splay?: readonly number[];
   /** Drawn after the arms: masts, dishes. */
@@ -405,6 +407,12 @@ export const RIGS: Record<MechKind, Rig> = {
     limb: 10,
     scale: 1.2,
     splay: [42, -42],
+    // One plane, one thickness, knee to foot: the joints line up.
+    legShape: [
+      { z: 0, t: 1 },
+      { z: 0, t: 1 },
+      { z: 0, t: 1.6 },
+    ],
     leg: [
       {
         pivot: [27, -76],
