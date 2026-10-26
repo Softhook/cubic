@@ -3,6 +3,7 @@ import { AidLab } from './AidLab';
 import { CardLab } from './CardLab';
 import { ProofLab } from './ProofLab';
 import { TileLab } from './TileLab';
+import { useLabArrowNav } from './labNav';
 
 /**
  * Art Lab (open with #lab): print artwork for tiles (#lab), cards (#lab/cards) and the player aid (#lab/aid),
@@ -15,6 +16,7 @@ export function Lab() {
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
+  useLabArrowNav();
   if (hash.startsWith('#lab/cards')) return <CardLab />;
   if (hash.startsWith('#lab/aid')) return <AidLab />;
   if (hash.startsWith('#lab/proof')) return <ProofLab />;

@@ -1929,6 +1929,7 @@ svg.zones polygon {
 .lab-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 520px); gap: 20px; padding: 20px; align-items: start; }
 .lab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 .lab-thumb { display: flex; flex-direction: column; gap: 4px; padding: 4px; border: 1px solid transparent; border-radius: 10px; background: none; cursor: pointer; font-size: 11px; color: var(--muted); }
+.lab-thumb:focus { outline: none; }
 .lab-thumb img { width: 100%; aspect-ratio: 1; display: block; }
 @media (hover: hover) { .lab-thumb:hover { border-color: var(--line-2); } }
 .lab-thumb.on { border-color: var(--accent); color: var(--text); }
