@@ -13,7 +13,7 @@
  * every browser plays random legal moves for its seats, answers its battles and dismisses them.
  *
  * Run it by hand, not before every deploy: each run posts a few hundred events to the relays.
- * Moves go through the dev-only `window.__quantumOnline` hook, so the app must be a dev server.
+ * Moves go through the dev-only `window.__gameOnline` hook, so the app must be a dev server.
  * Screenshots go to test-results/online-sim/.
  */
 import { mkdirSync } from 'node:fs';
@@ -36,7 +36,7 @@ interface OnlineHook {
 }
 declare global {
   interface Window {
-    __quantumOnline?: OnlineHook;
+    __gameOnline?: OnlineHook;
   }
 }
 
@@ -73,7 +73,7 @@ const nameOf = (p: Page) => NAMES[pages.indexOf(p)];
 const info = (p: Page) =>
   p
     .evaluate(() => {
-      const q = window.__quantumOnline;
+      const q = window.__gameOnline;
       const s = q?.state();
       const v = q?.view();
       if (!q || !s || !v) return null;
@@ -92,7 +92,7 @@ const info = (p: Page) =>
 /** One move, battle answer or dismissal for this browser's seats; what it did, or 'idle'. */
 const step = (p: Page) =>
   p.evaluate(() => {
-    const q = window.__quantumOnline;
+    const q = window.__gameOnline;
     const v = q?.view();
     const s = q?.state();
     if (!q || !v || !s) return 'idle';
@@ -172,7 +172,7 @@ try {
   await host.getByText('Online with friends').click();
   await host.locator('.field', { hasText: 'Players' }).getByRole('button', { name: '5', exact: true }).click();
   await host.getByRole('button', { name: 'Create online game' }).click();
-  await host.waitForFunction(() => !!window.__quantumOnline?.state(), null, { timeout: 30000 });
+  await host.waitForFunction(() => !!window.__gameOnline?.state(), null, { timeout: 30000 });
   const link = host.url();
   log('created', link);
   await play([host], 30000);

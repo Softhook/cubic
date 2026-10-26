@@ -21,7 +21,7 @@ export interface NewGameOptions {
 export function createGame(opts: NewGameOptions): GameState {
   const n = opts.players.length;
   // 5 players only on the CE print booklet's 5-player maps, which the mode's map groups decide.
-  if (n < 2 || n > 5) throw new Error('Cubic needs 2–5 players');
+  if (n < 2 || n > 5) throw new Error('A game needs 2–5 players');
   const mode = opts.mode ?? 'community';
   if (!Object.hasOwn(RULESETS, mode)) throw new Error(`Unknown mode ${mode}`);
   const rules = RULESETS[mode];

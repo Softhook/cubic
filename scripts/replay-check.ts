@@ -6,7 +6,7 @@
  *   npm run replay:check                         # starts its own dev server
  *   npm run replay:check -- --url http://…/      # or checks a running dev server
  *
- * The games play themselves (every seat an AI, through the dev-only `window.__quantum.load`), so the app
+ * The games play themselves (every seat an AI, through the dev-only `window.__game.load`), so the app
  * must be a dev server. Screenshots go to test-results/replay/.
  */
 import { mkdirSync } from 'node:fs';
@@ -27,13 +27,13 @@ const check = (ok: boolean, what: string, otherwise: string) => (ok ? console.lo
 /** A dev game with every seat an AI, played until its log has `entries` entries. */
 async function aiGame(page: Page, entries: number) {
   await page.goto(playUrl(base, { play: 'community', players: 2, seed: 5 }));
-  await page.waitForFunction(() => '__quantum' in window);
+  await page.waitForFunction(() => '__game' in window);
   await page.evaluate(() => {
-    const s = structuredClone(window.__quantum.state()) as GameState;
+    const s = structuredClone(window.__game.state()) as GameState;
     s.players.forEach((p) => (p.ai = true));
-    window.__quantum.load(s);
+    window.__game.load(s);
   });
-  await page.waitForFunction((n) => window.__quantum.state().log.length >= n, entries, { timeout: 120000 });
+  await page.waitForFunction((n) => window.__game.state().log.length >= n, entries, { timeout: 120000 });
 }
 
 /** How far the log list is from its newest entry, in pixels. */
@@ -83,7 +83,7 @@ try {
   });
   await page.reload();
   await page.getByRole('button', { name: 'Launch fleet' }).click();
-  await page.waitForFunction(() => '__quantum' in window);
+  await page.waitForFunction(() => '__game' in window);
   check(
     (await page.locator('.log li').first().locator('button').count()) === 1,
     'a new game’s first log entry can be looked back at',
@@ -111,7 +111,7 @@ try {
   await page.waitForTimeout(400);
   check(await moveInView(page), '→ steps through the game, and the log keeps the move in view', 'the log loses the move as → steps on');
   const rolls = await page.evaluate(() =>
-    window.__quantum
+    window.__game
       .state()
       .dice.map((d) => d.rolls)
       .join(),
@@ -120,7 +120,7 @@ try {
     await succeeds(
       page.waitForFunction(
         (r) =>
-          window.__quantum
+          window.__game
             .state()
             .dice.map((d) => d.rolls)
             .join() !== r,
@@ -146,8 +146,8 @@ try {
   }
   check((await bar.count()) === 0, 'Esc goes back to the game', 'Esc leaves the review bar up');
   check(rolling > 0, 'back in the game, the dice rolled meanwhile roll', 'back in the game, nothing that rolled meanwhile rolls');
-  const counter = await page.evaluate(() => window.__quantum.state().logCounter);
-  await page.waitForFunction((n) => window.__quantum.state().logCounter > n + 1, counter, { timeout: 30000 });
+  const counter = await page.evaluate(() => window.__game.state().logCounter);
+  await page.waitForFunction((n) => window.__game.state().logCounter > n + 1, counter, { timeout: 30000 });
   await page.waitForTimeout(900);
   check((await gapToNewest(page)) <= 12, 'back in the game, the log follows play', 'back in the game, the log doesn’t follow play');
 
@@ -157,8 +157,8 @@ try {
     l.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: -400 }));
     l.scrollTop = 0;
   });
-  const up = await page.evaluate(() => window.__quantum.state().logCounter);
-  await page.waitForFunction((n) => window.__quantum.state().logCounter > n, up, { timeout: 30000 });
+  const up = await page.evaluate(() => window.__game.state().logCounter);
+  await page.waitForFunction((n) => window.__game.state().logCounter > n, up, { timeout: 30000 });
   await page.waitForTimeout(900);
   check(
     (await page.evaluate(() => document.querySelector('.log ol')!.scrollTop)) === 0,
@@ -170,8 +170,8 @@ try {
     l.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 5000 }));
     l.scrollTop = l.scrollHeight;
   });
-  const down = await page.evaluate(() => window.__quantum.state().logCounter);
-  await page.waitForFunction((n) => window.__quantum.state().logCounter > n, down, { timeout: 30000 });
+  const down = await page.evaluate(() => window.__game.state().logCounter);
+  await page.waitForFunction((n) => window.__game.state().logCounter > n, down, { timeout: 30000 });
   await page.waitForTimeout(900);
   check((await gapToNewest(page)) <= 12, 'scrolled back down, the log follows again', 'scrolled back down, the log doesn’t follow');
 
@@ -182,9 +182,9 @@ try {
   check((await bar.count()) === 0, '→ after the last move goes back to the game', '→ after the last move stays in the review');
 
   // A reload brings the game back with its past.
-  const before = await page.evaluate(() => window.__quantum.state().log.length);
+  const before = await page.evaluate(() => window.__game.state().log.length);
   await page.goto(base);
-  await page.waitForFunction(() => '__quantum' in window, null, { timeout: 20000 });
+  await page.waitForFunction(() => '__game' in window, null, { timeout: 20000 });
   const reviewable = await entries.count();
   // The dev loader starts the past after what was logged before it: one entry.
   check(

@@ -1,3 +1,5 @@
+import { GAME_NAME } from '../appId';
+
 /**
  * A print PDF of CMYK images placed on pages, with crop marks when it's a sheet, made to the PDF/X-1a rules print services ask for: PDF 1.3,
  * CMYK only, no transparency or fonts (the faces are flattened images), each page's TrimBox and
@@ -132,7 +134,7 @@ export function cmykPdf(o: PdfOptions): Blob {
   const now = date(new Date());
   object(
     3,
-    `<< /Title ${str(o.title)} /Creator (Cubic Art Lab) /Producer (Cubic Art Lab) /CreationDate (${now}) /ModDate (${now})` +
+    `<< /Title ${str(o.title)} /Creator (${GAME_NAME} Art Lab) /Producer (${GAME_NAME} Art Lab) /CreationDate (${now}) /ModDate (${now})` +
       ` /Trapped /False /GTS_PDFXVersion (PDF/X-1:2001) /GTS_PDFXConformance (PDF/X-1a:2001) >>`,
   );
   object(

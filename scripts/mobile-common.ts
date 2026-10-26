@@ -1,7 +1,7 @@
 /** What the phone scripts (mobile-shots, mobile-play, pwa-check) share: the test phone, flags, server and browser. */
 import { chromium, devices, type BrowserContextOptions } from 'playwright';
 import { createServer } from 'vite';
-import type { QuantumHook } from '../apps/web/src/game/useGame';
+import type { GameHook } from '../apps/web/src/game/useGame';
 
 /** The user's Moto G55: 1080×2400 at a device pixel ratio of 2.625, minus Chrome's and Android's bars. */
 const g55 = { userAgent: devices['Pixel 7'].userAgent, deviceScaleFactor: 2.625, isMobile: true, hasTouch: true };
@@ -62,6 +62,6 @@ export const succeeds = (p: Promise<unknown>) =>
 declare global {
   /** In a dev server's page, once a local game is on screen (useGame.ts). */
   interface Window {
-    __quantum: QuantumHook;
+    __game: GameHook;
   }
 }

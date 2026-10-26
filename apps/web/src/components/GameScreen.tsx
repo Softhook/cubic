@@ -7,6 +7,7 @@ import { lost, type GameView } from '../game/view';
 import { useReview, type Review } from '../game/review';
 import { logText } from '../game/logText';
 import { SayContext } from '../game/words';
+import { GAME_NAME } from '../appId';
 import { SHEET, useMediaQuery } from '../game/useMediaQuery';
 import { BottomSheet } from './BottomSheet';
 import { Board } from './Board';
@@ -103,7 +104,7 @@ export function Game({
       <div className={`app ${review ? 'reviewing' : ''}`}>
         <header className="topbar">
           <button type="button" className="brand" title="Back to the lobby" onClick={onLobby}>
-            Cubic
+            {GAME_NAME}
           </button>
           <div className="topbar-map">
             <span className={`mode-badge mode-${game.mode}${rulesOf(game).experimental ? ' experimental' : ''}`}>{rulesOf(game).name}</span>

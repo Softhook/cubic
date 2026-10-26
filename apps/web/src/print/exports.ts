@@ -17,6 +17,7 @@ import {
 import { PRESS, encodePng, pressTag, toCmyk } from './press';
 import { A4, pressPages, printDocument, sheetsHtml, type Paper } from './sheets';
 import { zip } from './zip';
+import { GAME_NAME } from '../appId';
 
 /** Print exports: one face as PNG, a whole set as PNGs, print sheets, and CMYK PDFs for a press (a file per card, or press sheets). */
 
@@ -70,7 +71,7 @@ export async function exportZip(
     files.push({ name: `${item.name}.png`, blob: await svgToPng(await printSvg(item, o.bleed), w, h, piece.dpi) });
   }
   const readme =
-    `Cubic ${piece.plural}, ${sizeNote(piece, o.bleed)}.\n` +
+    `${GAME_NAME} ${piece.plural}, ${sizeNote(piece, o.bleed)}.\n` +
     `PNG at ${piece.dpi} dpi, one file per face. RGB, tagged sRGB: please convert with your press profile.\n` +
     cutNote(piece, 'in cut.svg (the same size as each PNG)') +
     (o.notes ?? '');
@@ -160,7 +161,7 @@ export async function exportCmykPdf(f: Format, item: Printable, deep: boolean, p
     progress('Writing PDF…');
     await paint();
   }
-  download(cmykName(f, item, deep), cmykFile(f, `Cubic ${f.id} ${item.name}`, [image]));
+  download(cmykName(f, item, deep), cmykFile(f, `${GAME_NAME} ${f.id} ${item.name}`, [image]));
 }
 
 /**
@@ -199,11 +200,11 @@ export async function exportCmykFiles(
       images.push(backs.get(face.back.name)!);
     }
     const name = `${face.front.name}.pdf`;
-    files.push({ name, blob: cmykFile(piece, `Cubic ${piece.id} ${face.front.name}`, images) });
+    files.push({ name, blob: cmykFile(piece, `${GAME_NAME} ${piece.id} ${face.front.name}`, images) });
     order.push(`${name},${copies},${images.length}`);
   }
   const readme =
-    `Cubic ${piece.plural}, ${sizeNote(piece, true)}.\n` +
+    `${GAME_NAME} ${piece.plural}, ${sizeNote(piece, true)}.\n` +
     `One CMYK PDF per ${piece.id}, converted for ${PRESS.described}${o.deep ? ' (the darkest tones as a 100 % K rich black, within 300 % total ink)' : ''}, ${piece.dpi} dpi, no crop marks` +
     (faces.some((f) => f.back) ? ': page 1 the front, page 2 the back, for double-sided printing' : '') +
     `.\n${cutNote(piece, 'in each PDF’s CutContour spot colour')}How many of each to order: order.csv. Upload with "Do not scale".\n`;
@@ -250,5 +251,5 @@ export async function exportCmykSheets(sheets: PressSheets, deep: boolean, progr
   }
   progress('Writing PDF…');
   await paint();
-  download(sheetName(sheets.name, deep), pressPdf({ title: `Cubic ${sheets.label}`, ...A4, bleed: 0, images, pages }));
+  download(sheetName(sheets.name, deep), pressPdf({ title: `${GAME_NAME} ${sheets.label}`, ...A4, bleed: 0, images, pages }));
 }

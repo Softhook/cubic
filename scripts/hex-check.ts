@@ -42,7 +42,7 @@ for (const map of [MAPS.find((m) => m.id === 'alpha-sector')!, ...MAPS.filter((m
   );
   await page.locator('.board').waitFor();
   await page.waitForTimeout(1500);
-  const state = () => page.evaluate(() => window.__quantum.state()) as Promise<GameState>;
+  const state = () => page.evaluate(() => window.__game.state()) as Promise<GameState>;
   const before = await state();
   if (before.board.mapId !== map.id) problem(`playing ${before.board.mapId}`);
   await page.screenshot({ path: `${OUT}/${map.id}.png` });

@@ -1,5 +1,6 @@
 import type { Line, PdfPage, Rect } from './pdf';
 import { dieAt, type Piece } from './pieces';
+import { GAME_NAME } from '../appId';
 
 /** Sheets: pieces laid out on paper with crop marks, printed from the browser or as CMYK PDF pages for a press. */
 
@@ -83,7 +84,7 @@ export function sheetsHtml(
       html += page(cells.flatMap((c) => (c.face.back ? [{ src: c.face.back, col: piece.cols - 1 - c.col, row: c.row }] : [])));
   }
   return (
-    `<!doctype html><html><head><meta charset="utf-8"><title>Cubic ${piece.plural}</title><style>` +
+    `<!doctype html><html><head><meta charset="utf-8"><title>${GAME_NAME} ${piece.plural}</title><style>` +
     `@page{size:${size.w}mm ${size.h}mm;margin:0}html,body{margin:0}` +
     `.sheet{position:relative;width:${size.w}mm;height:${size.h}mm;overflow:hidden;break-after:page}` +
     `.sheet:last-child{break-after:auto}` +

@@ -16,7 +16,7 @@
  * a page error or an engine error is reported too. Screenshots go to test-results/mobile-play/: the
  * first time each kind of decision comes up (`-<kind>`), each problem (`-issueN`) and the end
  * (`-over`); a game that gets stuck also saves its state (`-stuck.json`). Exits with 1 when anything was found. Uses the dev-only `?play=` link and
- * `window.__quantum` hook, so `--url` must be a dev server.
+ * `window.__game` hook, so `--url` must be a dev server.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { type Page } from 'playwright';
@@ -73,7 +73,7 @@ function look(page: Page, tapsThisTurn: number, tried: string[], want: Want | nu
         dice: { id: string; loc: unknown; value: number }[];
         cubes?: unknown;
       };
-      const q = (window as unknown as { __quantum: { state(): S } }).__quantum;
+      const q = (window as unknown as { __game: { state(): S } }).__game;
       const s = q.state();
       const head = s.pending[0];
       const actor = head?.player ?? s.turn.player;
@@ -243,7 +243,7 @@ async function playGame(page: Page, name: string): Promise<{ issues: string[]; s
     // conquers, researches and takes cards like a player would. Unknown actions and missed taps fall back to random.
     if (l.mine && l.kind === 'turn' && !plan.length && plannedAt !== l.sig && !process.argv.includes('--random')) {
       plannedAt = l.sig;
-      const state = await page.evaluate(() => window.__quantum.state());
+      const state = await page.evaluate(() => window.__game.state());
       try {
         const a = chooseAction(state, { level: 1 });
         plan = (a && tapsFor(state, a)) ?? [];
@@ -294,8 +294,8 @@ async function playGame(page: Page, name: string): Promise<{ issues: string[]; s
     }
     // AI turns move every second or so; a battle waits for OK, which the script taps.
     if (still > 60) {
-      // The state, to replay with window.__quantum.load or the engine.
-      writeFileSync(`${OUT}/${name}-stuck.json`, await page.evaluate(() => JSON.stringify(window.__quantum.state())));
+      // The state, to replay with window.__game.load or the engine.
+      writeFileSync(`${OUT}/${name}-stuck.json`, await page.evaluate(() => JSON.stringify(window.__game.state())));
       await report(
         `stuck:${l.kind}`,
         `stuck at "${l.kind}" on turn ${l.turn}${l.mine && l.target ? ` (tapping "${l.target.label}" does nothing)` : ''}`,
@@ -347,7 +347,7 @@ async function main() {
         const page = await ctx.newPage();
         await page.goto(playUrl(base, { ...g, seed: Number(arg('--seed') ?? 1) }));
         await page.waitForSelector('.board');
-        await page.waitForFunction(() => '__quantum' in window);
+        await page.waitForFunction(() => '__game' in window);
         const name = `${device}-${game}`;
         const { issues, summary } = await playGame(page, name);
         problems += issues.length;

@@ -109,7 +109,7 @@ store small signed messages for anyone. We run nothing.
 - In the browser: create an online game, open the link in a private window (a second identity)
   and join. The dev server listens on the local network and invite links made on it use this
   machine's address, so a phone on the same Wi-Fi can join (encryption is plain JavaScript, so
-  it works on plain http too). In dev, `window.__quantumOnline.{state(), view(), legal(), mySeats()}` drives a game
+  it works on plain http too). In dev, `window.__gameOnline.{state(), view(), legal(), mySeats()}` drives a game
   from a script.
 
 ### Turn notifications (proposed, 2026-10-08)

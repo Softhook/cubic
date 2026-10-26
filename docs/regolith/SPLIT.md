@@ -38,7 +38,7 @@ The app's identity is now set in one place each, so each repo changes one line:
 | What | Where | Cubic | Regolith |
 |---|---|---|---|
 | Browser storage: every localStorage and sessionStorage key, the IndexedDB name and the service worker's font cache | `APP_ID` in [apps/web/src/appId.ts](../../apps/web/src/appId.ts) | `quantum` → `cubic` | `regolith` |
-| The name players see: the lobby's title, the share sheet, the manual's title and every saved file (`cubic-manual.html`, `cubic-tiles.zip`) | `GAME_NAME` in [apps/web/src/appId.ts](../../apps/web/src/appId.ts) | `Cubic` | `Regolith` |
+| The name players see: the lobby and top bar, the share sheet, the manual, print PDFs and sheets, and every saved file (`cubic-manual.html`, `cubic-tiles.zip`) | `GAME_NAME` in [apps/web/src/appId.ts](../../apps/web/src/appId.ts) | `Cubic` | `Regolith` |
 | Online namespace: relay tags and game keys are derived under it | `NAMESPACE` in [packages/online/src/codec.ts](../../packages/online/src/codec.ts) | `cubic` | `regolith` |
 | The lobby's first mode | `DEFAULT_MODE` in [rulesets.ts](../../packages/engine/src/rulesets.ts) | `community` | `regolith` |
 
@@ -66,9 +66,8 @@ Regolith has to be copied out before Cubic deletes it:
 One commit, no rule changes:
 
 - `APP_ID = 'regolith'`, `NAMESPACE = 'regolith'`, `DEFAULT_MODE = 'regolith'`, `GAME_NAME = 'Regolith'`.
-- Packages `@quantum/*` → `@regolith/*` (every `package.json`, every import), root package `name`, the dev
-  hooks `window.__quantum` → `window.__regolith` and `window.__quantumOnline` → `window.__regolithOnline`
-  (scripts use them too).
+- Packages `@quantum/*` → `@regolith/*` (every `package.json`, every import), root package `name`.
+  The browser scripts' dev hooks are `window.__game` and `window.__gameOnline` in both apps, so they stay.
 - [index.html](../../apps/web/index.html) `<title>`, [manifest.webmanifest](../../apps/web/public/manifest.webmanifest)
   name, colours (the ground palette, not `#050813`), icons and favicon from the mood board, the lobby's credit
   line. The file names in `apps/web/test/print.test.ts` follow `GAME_NAME` (`regolith-manual.html`, …).
@@ -139,8 +138,6 @@ One commit, no rule changes:
 - Packages `@quantum/*` → `@cubic/*`, root package `"name": "quantum"` → `"cubic"`.
 - `APP_ID = 'cubic'` (storage keys `cubic.*`, IndexedDB `cubic-art`). Saved games under `quantum.*` are dropped:
   there are no users.
-- The dev hooks `window.__quantum` → `window.__cubic` and `window.__quantumOnline` → `window.__cubicOnline`, in
-  the app and the scripts; `QuantumHook` → `CubicHook`.
 - The README stops saying "working title". The lobby and manual already say Cubic.
 - "Quantum" stays where it names the original game: the credits, the rulebook, `Quantum Entanglement`.
 

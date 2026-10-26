@@ -5,7 +5,7 @@
  *   npm run ui:check                         # starts its own dev server
  *   npm run ui:check -- --url http://…/      # or checks a running dev server
  *
- * Positions are loaded through the dev-only `window.__quantum.load`, so the app must be a dev server.
+ * Positions are loaded through the dev-only `window.__game.load`, so the app must be a dev server.
  * Screenshots go to test-results/ui/.
  */
 import { mkdirSync } from 'node:fs';
@@ -18,8 +18,8 @@ import { devServer, finish, launchChrome, playUrl, succeeds } from './mobile-com
 const OUT = 'test-results/ui';
 mkdirSync(OUT, { recursive: true });
 
-const load = (page: Page, state: unknown) => page.evaluate((st) => window.__quantum.load(st as GameState), state);
-const cubesOn = (page: Page, planet: number) => page.evaluate((id) => window.__quantum.state().board.planets[id].cubes, planet);
+const load = (page: Page, state: unknown) => page.evaluate((st) => window.__game.load(st as GameState), state);
+const cubesOn = (page: Page, planet: number) => page.evaluate((id) => window.__game.state().board.planets[id].cubes, planet);
 
 /** A Regolith position where the player to move can conquer a full planet by displacing either opponent's cube. */
 function overConquest() {
@@ -80,7 +80,7 @@ const browser = await launchChrome();
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
   await page.goto(playUrl(base, { play: 'regolith', players: 3 }));
-  await page.waitForFunction(() => '__quantum' in window);
+  await page.waitForFunction(() => '__game' in window);
 
   // Over-conquest with two opponents' cubes: the player chooses whose to displace (only while Regolith plays it).
   if (REGOLITH_OVER_CONQUEST) {

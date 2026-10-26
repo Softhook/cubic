@@ -115,12 +115,12 @@ export function useOnlineGame(secret: string): OnlineGame {
     };
   }, [replay, shown, live, mySeats, dispatch, post, positions, jumps, toasts, error, ownBattle, dismissBattle]);
 
-  // Dev-only hook for browser tests: window.__quantumOnline.{state(), view(), legal(), mySeats()}.
+  // Dev-only hook for browser tests: window.__gameOnline.{state(), view(), legal(), mySeats()}.
   const latest = useRef({ head, view, mySeats });
   latest.current = { head, view, mySeats };
   useEffect(() => {
     if (!import.meta.env.DEV) return;
-    (window as unknown as Record<string, unknown>).__quantumOnline = {
+    (window as unknown as Record<string, unknown>).__gameOnline = {
       state: () => latest.current.head,
       view: () => latest.current.view,
       mySeats: () => latest.current.mySeats,

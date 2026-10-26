@@ -84,7 +84,7 @@ IndexedDB), `lab/` (the Art Lab pages), `print/` (print exports and sheets, shar
 - `checkInvariants(state)` lists everything wrong with a state: cube totals, every card in exactly one
   place, dice and board occupancy, track ranges, well-formed decisions. Tests run it after every action
   of full games; the web app runs it after every action in development and logs a violation to the
-  console with the action and the prior state (load it back with `window.__quantum.load(JSON.parse(…))`).
+  console with the action and the prior state (load it back with `window.__game.load(JSON.parse(…))`).
 - An engine crash (anything but a `RuleError`) is shown in the UI as "Engine error" and logged the same
   way. When the AI is the one to hit it, the AI's move falls back to the first legal move so the game
   goes on ([aiClient.ts](../apps/web/src/game/aiClient.ts)). Online, a crash while replaying another

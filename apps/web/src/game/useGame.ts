@@ -11,13 +11,13 @@ import type { GameView } from './view';
 /** Applies an action; false (with an error shown) if the rules refuse it. */
 export type Dispatch = (a: Action) => boolean;
 
-/** The dev-only `window.__quantum` hook the browser tests (scripts/) drive a local game through. */
-export type QuantumHook = { state(): GameState; load(s: GameState): void; dispatch: Dispatch };
+/** The dev-only `window.__game` hook the browser tests (scripts/) drive a local game through. */
+export type GameHook = { state(): GameState; load(s: GameState): void; dispatch: Dispatch };
 
 /** On this device, the screen plays for every human seat. */
 const human = (s: GameState) => (p: PlayerId) => !s.players[p].ai;
 
-/** Logs an engine bug with the state and action that trigger it (replay with window.__quantum.load). */
+/** Logs an engine bug with the state and action that trigger it (replay with window.__game.load). */
 function reportBug(what: string, state: GameState, action: Action, error?: unknown) {
   console.error(`[quantum] ${what}`, { action, error, state: JSON.stringify(state) });
 }
@@ -86,7 +86,7 @@ export function useGame(initial: GameState): GameView {
       setPast(begin(s, s.logCounter));
       announce(prev, s, human(s));
     };
-    (window as unknown as { __quantum: QuantumHook }).__quantum = { state: () => current(ref.current), load, dispatch };
+    (window as unknown as { __game: GameHook }).__game = { state: () => current(ref.current), load, dispatch };
   }, [announce, dispatch]);
 
   const mine = useCallback((p: PlayerId) => human(current(ref.current))(p), []);
