@@ -244,7 +244,7 @@ export const SCENES: Record<string, SpScene> = {
       rect(22.6, 18, 6.8, 4.4, s.plate, ` stroke="${s.key}" stroke-width="0.5"`) +
       `<circle cx="26" cy="13.6" r="1.4" fill="${INKS.amber}"/>` +
       rect(9, 34.6, 8, 1.6, INKS.ice, ` stroke="${s.key}" stroke-width="0.35"`) +
-      mech(s, 'wisp', 49, 40, 0.13, { yaw: -24 }),
+      mech(s, 'wisp', 49, 40, 0.13, { yaw: 42 }),
   },
   'r-dangerous': {
     world: 'mars',
@@ -327,8 +327,8 @@ export const SCENES: Record<string, SpScene> = {
     draw: (s) =>
       outdoors(s, 37, { planet: { x: 54, y: 8, r: 7 } }) +
       // face on, standing straight
-      dropping(s, 'breacher', 19, 24, 0.075, 18, {}) +
-      dropping(s, 'chameleon', 44, 19, 0.075, -18, {}),
+      dropping(s, 'breacher', 19, 24, 0.075, 0, {}) +
+      dropping(s, 'chameleon', 44, 19, 0.075, 0, {}),
   },
   'r-intelligent': {
     world: 'mars',
@@ -819,6 +819,33 @@ export const SCENES: Record<string, SpScene> = {
         mech(s, 'chameleon', 52, 14, 0.035, { yaw: -30 })
       );
     },
+  },
+  'r-barricade': {
+    world: 'mars',
+    caption: 'a Wisp firing a barrier across the ground',
+    draw: (s) =>
+      outdoors(s, 28, { planet: { x: 50, y: 7, r: 7 } }) +
+      mech(s, 'wisp', 16, 38, 0.12, { yaw: -45 }) +
+      flash(19.4, 27.1, 3, 8) +
+      sparks(s.r, 19.4, 27.1, 8, 5) +
+      stroke('M19.4,27.1 Q34,22 46,34', INKS.amber, 0.8, ' stroke-dasharray="2.5 1.2"') +
+      stroke('M19.4,27.6 Q34,23 46,34.5', INKS.bone, 0.5) +
+      `<ellipse cx="46" cy="36" rx="10" ry="3.5" fill="${s.key}" opacity="0.45"/>` +
+      hexOnGround(46, 36, 9, 0.35, INKS.amber, 0.6) +
+      stroke('M46,36 L39,34 M46,36 L53,34 M46,36 L46,32.5 M46,36 L46,39.5 M46,36 L40.5,38 M46,36 L51.5,38', INKS.bone, 0.45) +
+      stroke('M42,35 Q46,33.5 50,35 M43,37 Q46,38.5 49,37 M40,34 Q46,31.5 52,34', INKS.bone, 0.4) +
+      [
+        [-7, -2],
+        [7, -2],
+        [0, -3.5],
+        [0, 3.5],
+        [-5.5, 2],
+        [5.5, 2],
+      ]
+        .map(([dx, dy]) => `<circle cx="${46 + dx}" cy="${36 + dy}" r="0.6" fill="${INKS.amber}"/>`)
+        .join('') +
+      flash(46, 34, 3.5, 9) +
+      sparks(s.r, 46, 34, 14, 8),
   },
   'r-expansion': {
     world: 'mars',

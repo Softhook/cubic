@@ -72,6 +72,12 @@ export function highlightsFor(game: GameState, sel: Sel, legal: Legal, actionPha
           'gate',
         );
         break;
+      case 'placeBarrier':
+        addCells(
+          legal.of('placeBarrier').map((a) => a.cell),
+          'gate',
+        );
+        break;
       case 'relocation': {
         const moves = legal.of('relocate');
         if (sel.kind === 'relocate') {

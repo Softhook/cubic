@@ -30,6 +30,7 @@ import {
   expansionCard,
   EXPANSION,
   infamyTargets,
+  isEmptySpace,
   legalActions,
   ORIGINAL_COMMAND,
   ORIGINAL_GAMBIT,
@@ -37,8 +38,10 @@ import {
   reserve,
   RuleError,
   RULESETS,
+  same,
   shipsOnBoard,
   SKILLS,
+  spaces,
   TACTICS,
   type Action,
   type CardDef,
@@ -511,6 +514,10 @@ const ORACLES: ((c: Step) => void)[] = [
         break;
       case 'warp-gate':
         if (!pending('warpGate')) bad('no gates to place');
+        break;
+      case 'barrier':
+        if (spaces(before.board).some((c) => isEmptySpace(before, c) && !before.gates?.some((g) => same(g, c))) && !pending('placeBarrier'))
+          bad('no barrier to place');
         break;
       case 'change-of-heart':
         if ((before.market.skillDeck.length || before.market.skillDiscard.length) && !pending('changeOfHeart')) bad('no skill to choose');

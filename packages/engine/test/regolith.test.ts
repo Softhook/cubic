@@ -29,6 +29,7 @@ import {
   effectOf,
   EXPANSION,
   expansionCard,
+  isEmptySpace,
   legalActions,
   MODES,
   moveIndexes,
@@ -54,6 +55,7 @@ import { barrier as barrierPower, barrierTargets } from '../src/regolith/powers/
 import { picket } from '../src/regolith/powers/picket';
 import { shoot as shootPower, shootTargets } from '../src/regolith/powers/shoot';
 import { allowMapGroups, arrange, quickStart } from './helpers';
+import { toRow } from './audit';
 
 // Most of these rules were first written and pinned on the square Alpha Sector, which Regolith no longer plays
 // (it is hex only, docs/regolith/REGOLITH.md): this file lets it, as hex.test.ts lets Basic play the hex maps.
@@ -108,12 +110,23 @@ describe('Regolith mode', () => {
       expect(own.expansion).toBe(REGOLITH_DECKS.expansion[0]);
       const from = (c: CardDef) => card(c.from!);
       expect(own.skills.map((c) => c.from)).toEqual(community.cards!.skills.filter((c) => c.id !== 'ingenious').map((c) => c.id));
-      expect(own.tactics.map((c) => c.from)).toEqual(community.cards!.tactics.map((c) => c.id));
+      expect(own.tactics.filter((c) => c.from).map((c) => c.from)).toEqual(community.cards!.tactics.map((c) => c.id));
+      expect(own.tactics.filter((c) => !c.from).map((c) => c.id)).toEqual(['r-barricade']);
       for (const c of [...own.skills, ...own.tactics, own.expansion!]) {
-        expect(c.id, c.id).toBe(`r-${c.from}`);
-        if (c.status !== 'reworked') expect(effectOf(c.id), c.id).toBe(effectOf(c.from!));
-        expect([c.count, c.category], c.id).toEqual([from(c).count, from(c).category]);
-        expect(cardKind(c.id), c.id).toBe(cardKind(c.from!));
+        if (c.status === 'new') {
+          expect(c.id).toBe('r-barricade');
+          expect(c.from).toBeUndefined();
+          expect(effectOf(c.id)).toBe('barrier');
+          expect(cardKind(c.id)).toBe('tactic');
+          expect(c.count).toBe(2);
+          expect(c.category).toBe('movement');
+          expect(c.text).toBe('Place two barriers.');
+        } else {
+          expect(c.id, c.id).toBe(`r-${c.from}`);
+          if (c.status !== 'reworked') expect(effectOf(c.id), c.id).toBe(effectOf(c.from!));
+          expect([c.count, c.category], c.id).toEqual([from(c).count, from(c).category]);
+          expect(cardKind(c.id), c.id).toBe(cardKind(c.from!));
+        }
       }
       expect(expansionCard(BASE.regolith)).toBe(own.expansion);
       expect(expansionCard(BASE.community)).toBe(EXPANSION);
@@ -1005,5 +1018,59 @@ describe('Science: Research spent to move the claim total', () => {
     s.players[0].research = 5;
     expect(conquerCheck(s, 0, planet.id).research).toBeUndefined();
     expect(apply(s, { type: 'conquer', planet: planet.id }).players[0].research).toBe(5);
+  });
+});
+
+describe('Barricade tactic card (Regolith)', () => {
+  it('is a tactic card in the Regolith deck with 2 copies', () => {
+    const cardDef = REGOLITH_DECKS.tactics.find((c) => c.id === 'r-barricade');
+    expect(cardDef).toBeDefined();
+    expect(cardDef!.name).toBe('Barricade');
+    expect(cardDef!.text).toBe('Place two barriers.');
+    expect(cardDef!.count).toBe(2);
+    expect(cardDef!.category).toBe('movement');
+    expect(cardDef!.status).toBe('new');
+    expect(cardDef!.effect).toBe('barrier');
+    expect(cardKind('r-barricade')).toBe('tactic');
+  });
+
+  it('playing the card asks to place two barriers on empty spaces', () => {
+    let s = scenario({ p0d0: [2, 1, 6], p1d0: [2, 5, 5] }, 'regolith');
+    const me = s.turn.player;
+    toRow(s, 'tactic', 'r-barricade');
+    s.pending.unshift({ kind: 'takeCard', player: me, count: 1 });
+    s = apply(s, { type: 'takeCard', deck: 'tactic', index: 0 });
+
+    expect(s.pending[0]).toMatchObject({ kind: 'placeBarrier', player: me, placed: [] });
+    const legal = legalActions(s);
+    expect(legal.every((a) => a.type === 'placeBarrier')).toBe(true);
+    // Cannot place on planets
+    const planet = s.board.planets[0];
+    expect(legal).not.toContainEqual({ type: 'placeBarrier', cell: { r: planet.r, c: planet.c } });
+    expect(() => apply(s, { type: 'placeBarrier', cell: { r: planet.r, c: planet.c } })).toThrow(/Barriers go on spaces/);
+    // Cannot place on an occupied space (ship)
+    expect(legal).not.toContainEqual({ type: 'placeBarrier', cell: { r: 2, c: 1 } });
+    expect(() => apply(s, { type: 'placeBarrier', cell: { r: 2, c: 1 } })).toThrow(/Barriers go on empty spaces/);
+
+    // Place the first barrier on (0, 3)
+    s = apply(s, { type: 'placeBarrier', cell: { r: 0, c: 3 } });
+    expect(s.barriers).toEqual([{ r: 0, c: 3, owner: me }]);
+    expect(s.pending[0]).toMatchObject({ kind: 'placeBarrier', player: me, placed: [{ r: 0, c: 3 }] });
+
+    // Cannot place second barrier on the same space
+    expect(legalActions(s)).not.toContainEqual({ type: 'placeBarrier', cell: { r: 0, c: 3 } });
+    expect(() => apply(s, { type: 'placeBarrier', cell: { r: 0, c: 3 } })).toThrow(/Barriers go on empty spaces/);
+
+    // Place the second barrier on (0, 4)
+    s = apply(s, { type: 'placeBarrier', cell: { r: 0, c: 4 } });
+    expect(s.barriers).toEqual([
+      { r: 0, c: 3, owner: me },
+      { r: 0, c: 4, owner: me },
+    ]);
+    expect(s.pending).toHaveLength(0);
+
+    // The barriers now block moves through those spaces
+    expect(isEmptySpace(s, { r: 0, c: 3 })).toBe(false);
+    expect(isEmptySpace(s, { r: 0, c: 4 })).toBe(false);
   });
 });

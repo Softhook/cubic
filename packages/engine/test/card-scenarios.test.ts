@@ -158,6 +158,14 @@ describe('tactics, gambits and expansion', () => {
     expect(s.players[foe].actionPenalty).toBe(before + 2);
   });
 
+  cardCase(['r-barricade'], 'Barricade (Regolith)', () => {
+    const s = quickStart(2, 197, 'regolith', 'alpha-hex');
+    const before = s.barriers?.length ?? 0;
+    const r = resolveWithAi(takeTactic(s, 'r-barricade'), seededRandom(7));
+    expect(r.seen).toContain('placeBarrier');
+    expect(r.s.barriers).toHaveLength(before + 2);
+  });
+
   cardCase([EXPANSION.id], 'Expansion', () => {
     let s = quickStart(2, 199, 'community');
     const p = s.turn.player;

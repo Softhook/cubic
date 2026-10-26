@@ -38,6 +38,8 @@ function hint(game: GameState, sel: Sel): string {
         return 'Show of Force: choose any ship on the map to destroy.';
       case 'warpGate':
         return `Place Warp Gate ${head.placed.length + 1} of 2 on an empty space.`;
+      case 'placeBarrier':
+        return `Place Barrier ${head.placed.length + 1} of 2 on an empty space.`;
       case 'unveil':
         return head.reorganize
           ? 'Reorganisation: click your ships to re-roll them, then place re-rolled ships from your scrapyard. Press Done when finished.'

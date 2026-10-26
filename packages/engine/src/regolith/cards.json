@@ -646,6 +646,20 @@
         "title": "Cross-section",
         "brief": "A cut-away of the ground: a tunnel joining two hexes underneath."
       }
+    },
+    {
+      "id": "r-barricade",
+      "name": "Barricade",
+      "subtitle": "Place barriers",
+      "text": "Place two barriers.",
+      "category": "movement",
+      "count": 2,
+      "status": "new",
+      "effect": "barrier",
+      "art": {
+        "title": "Spun barrier",
+        "brief": "A Wisp firing a barrier across the ground."
+      }
     }
   ],
   "expansion": [

@@ -2,7 +2,7 @@
 import { same, spaces } from './board';
 import { actor, tryApply } from './engine';
 import type { PendingOf } from './core';
-import { barrierAt, reserve, scrapyard, shipsOnBoard } from './lookups';
+import { barrierAt, isEmptySpace, reserve, scrapyard, shipsOnBoard } from './lookups';
 import {
   actionsClosed,
   attackLaunches,
@@ -98,6 +98,10 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     spaces(s.board)
       .filter((cell) => !head.placed.some((p) => same(p, cell)) && !barrierAt(s, cell))
       .map((cell) => ({ type: 'warpGate', cell })),
+  placeBarrier: (s, head) =>
+    spaces(s.board)
+      .filter((cell) => !head.placed.some((p) => same(p, cell)) && isEmptySpace(s, cell) && !s.gates?.some((g) => same(g, cell)))
+      .map((cell) => ({ type: 'placeBarrier', cell })),
   changeOfHeart: (s) => [...new Set(s.market.skillDeck)].map((skill) => ({ type: 'changeOfHeart', skill })),
   patientTactic: (s) => [
     { type: 'patientTactic' } as const,

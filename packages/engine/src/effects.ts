@@ -82,6 +82,7 @@ export const TACTIC_EFFECT_IDS = [
   'relocation',
   'sabotage-original',
   'sabotage-double',
+  'barrier',
 ] as const;
 
 export type TacticEffect = (typeof TACTIC_EFFECT_IDS)[number];

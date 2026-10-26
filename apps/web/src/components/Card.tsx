@@ -93,10 +93,10 @@ export interface CardViewProps {
   art?: boolean;
 }
 
-/** A card's name and text in the game's words. */
+/** A card's name and text in the game's words. Card names are left as written. */
 const sayCard = (def: CardDef, say: (text: string) => string): CardDef => ({
   ...def,
-  name: say(def.name),
+  name: def.name,
   subtitle: say(def.subtitle),
   text: say(def.text),
 });

@@ -1,6 +1,6 @@
 /** Board highlights: everything lit up is a legal action, and every legal move or attack is lit up. */
 import { describe, expect, it } from 'vitest';
-import { actor, apply, createGame, key, legalActions, orbitals, type GameState } from '@quantum/engine';
+import { actor, apply, conquerCheck, createGame, key, legalActions, orbitals, type GameState } from '@quantum/engine';
 import { arrange, playAiGame, players, quickStart } from '../../../packages/engine/test/helpers';
 import { highlightsFor } from '../src/game/highlights';
 import { hintFor } from '../src/game/hints';
@@ -95,7 +95,10 @@ describe('highlightsFor', () => {
             const attacks = legal.of('attack', (a) => a.die === d.id).map((a) => a.target);
             expect([...h.cells.keys()].sort()).toEqual([...new Set(moves)].sort());
             expect([...h.dice.keys()].sort()).toEqual([...new Set(attacks)].sort());
-            expect([...h.planets.keys()].sort()).toEqual([...new Set(legal.of('conquer').map((a) => a.planet))].sort());
+            const conquerable = [...h.planets.entries()].filter(([, v]) => v.tone === 'conquer').map(([k]) => k);
+            expect(conquerable.sort()).toEqual([...new Set(legal.of('conquer').map((a) => a.planet))].sort());
+            const blocked = [...h.planets.entries()].filter(([, v]) => v.tone === 'blocked').map(([k]) => k);
+            for (const p of blocked) expect(conquerCheck(s, s.turn.player, p).blocked).toBe(true);
             checked++;
           }
         },

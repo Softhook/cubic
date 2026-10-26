@@ -29,14 +29,15 @@ function cased(from: string, to: string): string {
 
 /**
  * `text` in a mode's words (unchanged without any). The `keep` strings are left as they are wherever they
- * appear: names players chose, which may well contain a word ("Planet Express").
+ * appear: names players chose, which may well contain a word ("Planet Express"), or card names.
  */
 export function reword(words: Words | undefined, text: string, keep: readonly string[] = []): string {
   if (!words) return text;
   const kept: string[] = [];
   let out = text;
-  for (const k of keep)
-    if (k && out.includes(k)) {
+  const uniqueKeep = [...new Set(keep)].filter(Boolean).sort((a, b) => b.length - a.length);
+  for (const k of uniqueKeep)
+    if (out.includes(k)) {
       out = out.split(k).join(`\uE000${kept.length}\uE000`);
       kept.push(k);
     }

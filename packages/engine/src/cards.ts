@@ -5,7 +5,7 @@
  * To add a Tactic: list its effect in TACTIC_EFFECT_IDS (effects.ts); the compiler then asks for
  * its entry in TACTIC_EFFECTS. Skills are listed in SKILL_EFFECTS (effects.ts).
  */
-import { same } from './board';
+import { same, spaces } from './board';
 import {
   destroyedEnemyShip,
   destroyShip,
@@ -27,7 +27,7 @@ import {
 } from './core';
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
-import { barrierAt, boardLoc, die, reserve, shipsOnBoard } from './lookups';
+import { barrierAt, boardLoc, die, isEmptySpace, reserve, shipsOnBoard } from './lookups';
 import {
   canPlayStoredTactic,
   canProfiteer,
@@ -93,6 +93,10 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
   },
   'warp-gate': (s, p) => {
     s.pending.unshift({ kind: 'warpGate', player: p, placed: [] });
+  },
+  barrier: (s, p) => {
+    const avail = spaces(s.board).filter((c) => isEmptySpace(s, c) && !s.gates?.some((g) => same(g, c)));
+    if (avail.length > 0) s.pending.unshift({ kind: 'placeBarrier', player: p, placed: [] });
   },
   expansion: (s, p) => {
     const res = reserve(s, p);
@@ -316,6 +320,20 @@ export const cardHandlers = {
       s.gates = head.placed;
       s.pending.shift();
       note(s, `${name(s, head.player)} opens a pair of warp gates.`, head.player);
+    }
+  },
+  placeBarrier(s, a) {
+    const head = headOf(s, 'placeBarrier', 'No barrier to place');
+    const cell = s.board.cells[a.cell.r]?.[a.cell.c];
+    if (!cell || cell.kind !== 'space') fail('Barriers go on spaces, not planets');
+    if (!isEmptySpace(s, a.cell) || s.gates?.some((g) => same(g, a.cell))) fail('Barriers go on empty spaces');
+    if (head.placed.some((p) => same(p, a.cell))) fail('Choose a different space');
+    head.placed.push({ r: a.cell.r, c: a.cell.c });
+    (s.barriers ??= []).push({ r: a.cell.r, c: a.cell.c, owner: head.player });
+    logTo(s, head.player, `${name(s, head.player)} places a barrier`, a.cell);
+    const remaining = spaces(s.board).filter((c) => isEmptySpace(s, c) && !s.gates?.some((g) => same(g, c)));
+    if (head.placed.length === 2 || remaining.length === 0) {
+      s.pending.shift();
     }
   },
   /** Patient: "When you take this Skill, you may take and store a Tactic." */

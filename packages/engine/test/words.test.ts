@@ -35,6 +35,12 @@ describe("a mode's words", () => {
     expect(say(s, 'Ship Shape destroys a ship.')).toBe('Ship Shape destroys a mech.');
   });
 
+  it("keeps card names in a game's text", () => {
+    const s = quickStart(2, 1, 'regolith', 'alpha-hex');
+    expect(say(s, 'Orbital Cannon')).toBe('Orbital Cannon');
+    expect(say(s, 'Player 1 plays Orbital Cannon.')).toBe('Player 1 plays Orbital Cannon.');
+  });
+
   it('describes Regolith in its own words in the lobby', () => {
     expect(RULESETS.regolith.summary).not.toMatch(/\b(ships?|planets?|orbits?|conquer\w*|deploy\w*)\b/i);
   });

@@ -323,7 +323,8 @@ describe('press test', () => {
 });
 
 describe('screenprint cards', () => {
-  const decks: [CardDeck, typeof regolithCards.skills][] = [
+  type RegolithRawCard = (typeof regolithCards.skills | typeof regolithCards.tactics | typeof regolithCards.expansion)[number];
+  const decks: [CardDeck, RegolithRawCard[]][] = [
     ['skill', regolithCards.skills],
     ['tactic', regolithCards.tactics],
     ['expansion', regolithCards.expansion],

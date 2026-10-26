@@ -134,6 +134,7 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
         return setSel(sel.kind === 'scrap' ? sel : sel.kind === 'attackFrom' ? { kind: 'ship', die: sel.die } : NONE);
       if (head?.kind === 'advance') return void dispatch({ type: 'advance', move: true });
       if (head?.kind === 'warpGate') return void dispatch({ type: 'warpGate', cell });
+      if (head?.kind === 'placeBarrier') return void dispatch({ type: 'placeBarrier', cell });
       if (head?.kind === 'placeExpansion') return void dispatch({ type: 'placeExpansion', to: cell });
       if (head?.kind === 'placeShips') {
         // Place the selected ship, or the next one in the scrapyard.

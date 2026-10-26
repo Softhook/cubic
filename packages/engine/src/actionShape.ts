@@ -74,6 +74,7 @@ export const SHAPES: { [K in Action['type']]: Shape<K> } = {
   placeExpansion: { to: (v, s) => v === null || cell(v, s) },
   showOfForce: { die: str },
   warpGate: { cell },
+  placeBarrier: { cell },
   changeOfHeart: { skill: str },
   prideful: { take: bool },
   ruthless: { skill: opt(str) },

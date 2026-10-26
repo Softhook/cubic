@@ -74,6 +74,7 @@ const DECISION_BRUTE_FORCE: { [K in Pending['kind']]: (s: GameState) => Action[]
   placeExpansion: (s) => [{ type: 'placeExpansion', to: null }, ...allCells(s).map((to) => ({ type: 'placeExpansion', to }) as const)],
   showOfForce: (s) => s.dice.map((d) => ({ type: 'showOfForce', die: d.id })),
   warpGate: (s) => allCells(s).map((cell) => ({ type: 'warpGate', cell })),
+  placeBarrier: (s) => allCells(s).map((cell) => ({ type: 'placeBarrier', cell })),
   changeOfHeart: () => CARD_IDS.map((skill) => ({ type: 'changeOfHeart', skill })),
   patientTactic: () => [{ type: 'patientTactic' }, ...ROW_INDEXES.map((index) => ({ type: 'patientTactic', index }) as const)],
   prideful: () => [

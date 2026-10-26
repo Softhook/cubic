@@ -147,10 +147,26 @@ export function modeHasHook(state: GameState, hook: keyof ShipHooks): boolean {
   return hooks.has(hook);
 }
 
-/** `text` in this game's words (RuleSet.words), its players' names kept as they are. */
+const CARD_NAMES = new WeakMap<RuleSet, readonly string[]>();
+
+/** Every card name in this rule set, kept as written when rewording text for the UI. */
+export function cardNamesOf(rules: RuleSet): readonly string[] {
+  let names = CARD_NAMES.get(rules);
+  if (!names) {
+    const cards = rules.cards;
+    names = cards
+      ? [...cards.skills.map((c) => c.name), ...cards.tactics.map((c) => c.name), ...(cards.expansion ? [cards.expansion.name] : [])]
+      : [];
+    CARD_NAMES.set(rules, names);
+  }
+  return names;
+}
+
+/** `text` in this game's words (RuleSet.words), its players' and cards' names kept as they are. */
 export function say(state: GameState, text: string, keep: readonly string[] = []): string {
-  const { words } = rulesOf(state);
-  return words ? reword(words, text, [...state.players.map((p) => p.name), ...keep]) : text;
+  const rules = rulesOf(state);
+  const { words } = rules;
+  return words ? reword(words, text, [...state.players.map((p) => p.name), ...cardNamesOf(rules), ...keep]) : text;
 }
 
 /** The map a rule set starts on for a player count: the basic map, or its first map if it doesn't play that one. */
