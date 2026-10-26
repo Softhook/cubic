@@ -46,6 +46,11 @@ const SHIP_IN_SCRAPYARD = 30;
 const MISSILE = 40;
 /** A card still to be taken at the end of this turn (conquest or research breakthrough). */
 const CARD = 120;
+/**
+ * What each of a player's barriers costs them (Regolith): one stays for good, closing the space to their
+ * own ships too, so it should be fired only for a clear gain. Mutable for the self-play tests.
+ */
+export const BARRIER = { price: 0 };
 
 /**
  * Share of a cube a planet is worth when conquering it takes this many actions from now
@@ -192,6 +197,7 @@ function playerValue(ctx: Ctx, p: PlayerId): number {
     .reduce((a, b) => a + b, 0);
   v += storedTacticsValue(s, p);
   v += pl.missiles * MISSILE;
+  if (BARRIER.price) v -= BARRIER.price * (s.barriers ?? []).filter((b) => b.owner === p).length;
   v += ctx.fleets[p].length * SHIP_ON_BOARD;
   v += scrapyard(s, p).length * SHIP_IN_SCRAPYARD;
   v -= ctx.exposure[p];
@@ -333,24 +339,73 @@ function planetPotential(ctx: Ctx, p: PlayerId, planet: Planet): number {
     for (const d of reachers) steer(gap - d.value, 1);
   }
 
-  // Progress: ships already in orbit are part of the sum, worth more the more of it they make up.
-  // An orbit over the target has to shed ships first, so it counts for nothing.
-  const progress = gap > 0 ? ORBIT_PROGRESS * (sum / target) : 0;
   // Presence: ships that could join the orbit are a start even without a plan yet.
   const presence = 0.015 * Math.min(reachers.length, 3);
   // Approach: a planet no ship reaches in one move is still worth heading for, a little more the
   // fewer moves it takes, so that a distant last planet doesn't leave every move scoring the same.
+  // With PLANNING.walls the moves are counted around barriers (a walled-off planet draws nobody), and a
+  // ship already in orbit doesn't stop the others heading there to finish the sum.
   let approach = 0;
-  if (!inOrbit.length && !reachers.length && empty.length) {
+  if ((PLANNING.walls || !inOrbit.length) && !reachers.length && empty.length) {
+    const steps = PLANNING.walls ? stepsTo(s, planet) : undefined;
     for (const d of outside) {
       const from = cellOf(d);
       if (!from) continue;
-      const moves = Math.ceil(Math.min(...empty.map((i) => distance(from, cells[i], s.board))) / Math.max(1, movementRange(s, d)));
+      const far = steps ? steps[from.r * cols + from.c] : Math.min(...empty.map((i) => distance(from, cells[i], s.board)));
+      if (far < 0) continue;
+      const moves = Math.ceil(far / Math.max(1, movementRange(s, d)));
       approach = Math.max(approach, APPROACH / Math.max(2, moves));
     }
   }
+  // Progress: ships already in orbit are part of the sum, worth more the more of it they make up.
+  // An orbit over the target has to shed ships first, so it counts for nothing; with PLANNING.walls, so
+  // does one nothing can finish (no plan, and no other ship that can get there), or a ship would sit in it for good.
+  const finishable = !PLANNING.walls || best > 0 || reachers.length > 0 || approach > 0;
+  const progress = gap > 0 && finishable ? ORBIT_PROGRESS * (sum / target) : 0;
   const value = CUBE * (Math.max(best, presence, approach) + progress);
   return mover ? value : value * 0.8;
+}
+
+/** Whether planning counts barriers (stepsTo) and keeps heading for half-filled orbits. Mutable for the self-play tests. */
+export const PLANNING = { walls: true };
+
+/** stepsTo's results, by board, then by where the barriers and gates are, then by planet id. */
+const STEPS = new WeakMap<object, Map<string, Int16Array[]>>();
+
+/**
+ * Steps from every cell to the nearest orbital space of `planet` that isn't a barrier, around barriers
+ * and planets and through a pair of warp gates; -1 where no path gets there. Ships don't block: they move.
+ */
+function stepsTo(s: GameState, planet: Planet): Int16Array {
+  const g = grid(s.board);
+  let byWalls = STEPS.get(s.board.cells);
+  if (!byWalls) STEPS.set(s.board.cells, (byWalls = new Map()));
+  const walls = `${(s.barriers ?? []).map((b) => `${b.r},${b.c}`).join(';')}|${s.gates.map((c) => `${c.r},${c.c}`).join(';')}`;
+  let fields = byWalls.get(walls);
+  if (!fields) byWalls.set(walls, (fields = []));
+  if (fields[planet.id]) return fields[planet.id];
+  const blocked = new Uint8Array(g.size);
+  for (const b of s.barriers ?? []) blocked[b.r * g.cols + b.c] = 1;
+  const [gateA, gateB] = s.gates.length === 2 ? s.gates.map((c) => c.r * g.cols + c.c) : [-1, -1];
+  const steps = new Int16Array(g.size).fill(-1);
+  const queue: number[] = [];
+  for (const c of orbitals(s.board, planet)) {
+    const i = c.r * g.cols + c.c;
+    if (!blocked[i]) {
+      steps[i] = 0;
+      queue.push(i);
+    }
+  }
+  for (let head = 0; head < queue.length; head++) {
+    const cur = queue[head];
+    const next = cur === gateA ? [...g.ortho[cur], gateB] : cur === gateB ? [...g.ortho[cur], gateA] : g.ortho[cur];
+    for (const nb of next) {
+      if (steps[nb] >= 0 || !g.space[nb] || blocked[nb]) continue;
+      steps[nb] = steps[cur] + 1;
+      queue.push(nb);
+    }
+  }
+  return (fields[planet.id] = steps);
 }
 
 /** Player p's own value, without the rivals', scored as if p moves next (scripts/interaction.ts). */
