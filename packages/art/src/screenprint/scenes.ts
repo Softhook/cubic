@@ -349,56 +349,153 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-patient': {
     world: 'phobos',
-    caption: 'a battle plan: mechs drawn on a hex map, little lines joining them to where they go next',
+    caption: 'two gloved hands holding a creased hex map of mech battle movements out in the field',
     draw: (s) => {
-      // the sheet: a flat-topped hex grid (odd columns half a row down), our mechs in key, theirs in oxide, the moves drawn between cells
-      const R = 5.2;
+      const bg = outdoors(s, 20, { planet: { x: 50, y: 7, r: 6 } });
+      const mw = 48;
+      const mh = 30;
+      const mx = (63.5 - mw) / 2;
+      const my = 6.0;
+
+      const mapStage: Stage = {
+        ...s,
+        dark: false,
+        paper: INKS.bone,
+        key: INKS.key,
+        ink: ON_PAPER,
+      };
+
+      const R = 4.1;
       const SQ = 0.88;
       const ROW = Math.sqrt(3) * R * SQ;
-      const cell = (col: number, row: number): [number, number] => [4 + col * 1.5 * R, 4 + row * ROW + (col % 2) * (ROW / 2)];
+      const cell = (col: number, row: number): [number, number] => [mx + 3.8 + col * 1.5 * R, my + 4.2 + row * ROW + (col % 2) * (ROW / 2)];
+
       let grid = '';
-      for (let row = -1; row < 6; row++) for (let col = 0; col < 10; col++) grid += hexOnGround(...cell(col, row), R, SQ, s.ink.seam, 0.3);
+      for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 7; col++) {
+          grid += hexOnGround(...cell(col, row), R, SQ, '#8a8376', 0.3);
+        }
+      }
+
       const dot = ([x, y]: [number, number], ink: string) =>
-        `<circle cx="${n(x)}" cy="${n(y)}" r="1.1" fill="none" stroke="${ink}" stroke-width="0.5"/>`;
-      // a dashed move from one cell to another, bowed by `bow`, its tip stopping short of the dot
+        `<circle cx="${n(x)}" cy="${n(y)}" r="0.85" fill="none" stroke="${ink}" stroke-width="0.55"/>`;
+
       const arrow = (from: [number, number], to: [number, number], bow: number, ink: string) => {
-        const [x1, y1] = [from[0], from[1] - 1.6];
-        const [mx, my] = [(x1 + to[0]) / 2, (y1 + to[1]) / 2];
+        const [x1, y1] = [from[0], from[1] - 1.3];
+        const [mx1, my1] = [(x1 + to[0]) / 2, (y1 + to[1]) / 2];
         const len = Math.hypot(to[0] - x1, to[1] - y1);
-        const [cx, cy] = [mx + ((to[1] - y1) / len) * bow, my - ((to[0] - x1) / len) * bow];
+        const [cx, cy] = [mx1 + ((to[1] - y1) / len) * bow, my1 - ((to[0] - x1) / len) * bow];
         const dl = Math.hypot(to[0] - cx, to[1] - cy);
         const [ux, uy] = [(to[0] - cx) / dl, (to[1] - cy) / dl];
-        const [ex, ey] = [to[0] - ux * 1.5, to[1] - uy * 1.5];
-        const [bx, by] = [ex - ux * 2.2, ey - uy * 2.2];
+        const [ex, ey] = [to[0] - ux * 1.3, to[1] - uy * 1.3];
+        const [bx, by] = [ex - ux * 1.7, ey - uy * 1.7];
         return (
-          stroke(
-            `M${n(x1 + ux * 2.5)},${n(y1 + uy * 2.5)} Q${n(cx)},${n(cy)} ${n(bx)},${n(by)}`,
-            ink,
-            0.55,
-            ' stroke-dasharray="1.2 0.8"',
-          ) + path(`M${n(ex)},${n(ey)} L${n(bx - uy * 1.2)},${n(by + ux * 1.2)} L${n(bx + uy * 1.2)},${n(by - ux * 1.2)} Z`, ink)
+          stroke(`M${n(x1 + ux * 2)},${n(y1 + uy * 2)} Q${n(cx)},${n(cy)} ${n(bx)},${n(by)}`, ink, 0.55, ' stroke-dasharray="1.1 0.7"') +
+          path(`M${n(ex)},${n(ey)} L${n(bx - uy * 0.95)},${n(by + ux * 0.95)} L${n(bx + uy * 0.95)},${n(by - ux * 0.95)} Z`, ink)
         );
       };
+
       const at = (kind: Parameters<typeof mech>[1], [x, y]: [number, number], size: number, o: Parameters<typeof mech>[6] = {}) =>
-        mech(s, kind, x, y + 2.6, size, {}, o);
-      return (
-        rect(-4, -4, 72, 50, INKS.bone) +
+        mech(mapStage, kind, x, y + 1.9, size, {}, o);
+
+      const clipId = `${s.id}-map-sheet`;
+      const dogEar = 2.4;
+      const paperOutline =
+        `M${n(mx)},${n(my)} ` +
+        `L${n(mx + mw - dogEar)},${n(my)} ` +
+        `L${n(mx + mw)},${n(my + dogEar)} ` +
+        `L${n(mx + mw)},${n(my + mh)} ` +
+        `L${n(mx)},${n(my + mh)} Z`;
+
+      const dogEarFlap =
+        `<path d="M${n(mx + mw - dogEar)},${n(my)} L${n(mx + mw - dogEar)},${n(my + dogEar)} L${n(mx + mw)},${n(my + dogEar)} Z" fill="#d2ccbf"/>` +
+        `<path d="M${n(mx + mw - dogEar)},${n(my)} L${n(mx + mw)},${n(my + dogEar)}" stroke="#aba394" stroke-width="0.3"/>`;
+
+      const mapBody =
+        `<path d="${paperOutline}" fill="#080706" opacity="0.65" transform="translate(0.8, 1.2)"/>` +
+        `<path d="${paperOutline}" fill="${INKS.bone}"/>` +
+        `<clipPath id="${clipId}"><path d="${paperOutline}"/></clipPath>` +
+        `<g clip-path="url(#${clipId})">` +
         grid +
-        arrow(cell(1, 2), cell(3, 2), -3, s.key) +
-        arrow(cell(2, 4), cell(5, 3), 3, s.key) +
-        arrow(cell(3, 1), cell(5, 1), 0, s.key) +
-        stroke(`M${n(cell(7, 1)[0] - 4)},${n(cell(7, 1)[1] - 1)} L${n(cell(5, 1)[0] + 2)},${n(cell(5, 1)[1] + 1)}`, INKS.oxide, 0.4) +
-        stroke(`M${n(cell(7, 3)[0] - 4)},${n(cell(7, 3)[1] - 1)} L${n(cell(5, 3)[0] + 2)},${n(cell(5, 3)[1])}`, INKS.oxide, 0.4) +
-        dot(cell(3, 2), s.key) +
-        dot(cell(5, 3), s.key) +
-        dot(cell(5, 1), s.key) +
-        at('breacher', cell(1, 2), 0.032) +
-        at('sniper', cell(2, 4), 0.03) +
-        at('tactician', cell(3, 1), 0.03) +
-        at('behemoth', cell(7, 1), 0.03, { ink: mono(INKS.oxide) }) +
-        at('chameleon', cell(7, 3), 0.03, { ink: mono(INKS.oxide) }) +
-        label('PLAN B', 8, 6, 1.6, s.key, 'start')
-      );
+        arrow(cell(1, 1), cell(3, 1), -2.2, INKS.key) +
+        arrow(cell(1, 3), cell(4, 2), 2.5, INKS.key) +
+        arrow(cell(2, 0), cell(4, 0), 0, INKS.key) +
+        stroke(`M${n(cell(5, 1)[0] - 3)},${n(cell(5, 1)[1] - 1)} L${n(cell(3, 1)[0] + 2)},${n(cell(3, 1)[1])}`, INKS.oxide, 0.45) +
+        stroke(`M${n(cell(5, 3)[0] - 3)},${n(cell(5, 3)[1] - 1)} L${n(cell(4, 2)[0] + 2)},${n(cell(4, 2)[1])}`, INKS.oxide, 0.45) +
+        dot(cell(3, 1), INKS.key) +
+        dot(cell(4, 2), INKS.key) +
+        dot(cell(4, 0), INKS.key) +
+        `<path d="M${n(cell(4, 2)[0])},${n(cell(4, 2)[1] - 1.8)} l1.2,1.2 l-1.2,1.2 l-1.2,-1.2 Z" fill="none" stroke="${INKS.amber}" stroke-width="0.45"/>` +
+        at('breacher', cell(1, 1), 0.026) +
+        at('sniper', cell(1, 3), 0.024) +
+        at('tactician', cell(2, 0), 0.024) +
+        at('behemoth', cell(5, 1), 0.024, { ink: mono(INKS.oxide) }) +
+        at('chameleon', cell(5, 3), 0.024, { ink: mono(INKS.oxide) }) +
+        label('PLAN B', mx + 3.0, my + 3.0, 1.3, INKS.key, 'start') +
+        label('SEC-04', mx + mw - 4.5, my + 3.0, 1.0, '#7a7368', 'end') +
+        `</g>` +
+        stroke(`M${mx},${my + mh * 0.5} h${mw}`, '#ded8cc', 0.4) +
+        stroke(`M${mx},${my + mh * 0.5 + 0.25} h${mw}`, '#f5f2eb', 0.25) +
+        stroke(`M${mx + mw * 0.5},${my} v${mh}`, '#ded8cc', 0.4) +
+        stroke(`M${mx + mw * 0.5 + 0.25},${my} v${mh}`, '#f5f2eb', 0.25) +
+        `<path d="${paperOutline}" fill="none" stroke="#bcb5a7" stroke-width="0.35"/>` +
+        dogEarFlap;
+
+      const edgeY = my + mh - 6.0;
+
+      // Left hand
+      const leftEdgeX = mx + 1.0;
+      const lwristX = leftEdgeX - 4.5;
+      const lwristY = edgeY + 7.5;
+      const lArm =
+        `<path d="M-4,44 L${n(lwristX - 2.8)},${n(lwristY + 1.2)} L${n(lwristX + 2.5)},${n(lwristY - 0.6)} L7,44 Z" fill="${s.key}"/>` +
+        stroke(`M-1,42 L5,40`, s.ink.seam, 0.6) +
+        stroke(`M0.5,39 L6.5,37`, s.ink.seam, 0.6);
+      const lCuff =
+        `<g transform="translate(${n(lwristX)},${n(lwristY)}) rotate(25)">` +
+        `<rect x="-4.2" y="-1.5" width="8.4" height="3" rx="1.5" fill="${INKS.dust}"/>` +
+        `<rect x="-3" y="-0.6" width="6" height="1.2" rx="0.6" fill="${s.ink.joint}"/>` +
+        `</g>`;
+      const lGlove =
+        `<g transform="translate(${n(leftEdgeX)},${n(edgeY)})">` +
+        `<path d="M-4.2,7 L-5.2,5 Q-6.0,0 -5.0,-4.5 Q-4.5,-5.5 -2.5,-5.2 L-1.5,-4.8 L-1.5,5.5 L-2.5,6.8 Z" fill="${INKS.dust}"/>` +
+        `<path d="M-4.2,4 Q-5.0,0 -4.2,-4" stroke="${s.ink.seam}" stroke-width="0.35" fill="none"/>` +
+        `<path d="M-2.0,-4.8 C-0.2,-5.0 2.5,-4.3 2.5,-2.8 C2.5,-1.4 -0.2,-1.7 -2.0,-1.9 Z" fill="${INKS.dust}"/>` +
+        `<path d="M0.3,-4.5 C1.6,-4.0 1.6,-2.4 0.3,-2.1" stroke="${s.ink.seam}" stroke-width="0.3" fill="none"/>` +
+        `<path d="M-2.0,-1.9 C0.3,-2.1 2.9,-1.4 2.9,0.1 C2.9,1.6 0.3,1.3 -2.0,1.1 Z" fill="${INKS.dust}"/>` +
+        `<path d="M0.6,-1.7 C1.9,-1.2 1.9,0.5 0.6,0.8" stroke="${s.ink.seam}" stroke-width="0.3" fill="none"/>` +
+        `<path d="M-2.0,1.1 C0.3,0.9 2.7,1.6 2.7,3.1 C2.7,4.6 0.3,4.3 -2.0,4.1 Z" fill="${INKS.dust}"/>` +
+        `<path d="M0.6,1.3 C1.9,1.8 1.9,3.5 0.6,3.8" stroke="${s.ink.seam}" stroke-width="0.3" fill="none"/>` +
+        `<path d="M-2.0,4.1 C-0.3,3.9 2.0,4.5 2.0,5.7 C2.0,6.8 -0.3,6.6 -2.0,6.4 Z" fill="${INKS.dust}"/>` +
+        `</g>`;
+
+      // Right hand
+      const rightEdgeX = mx + mw - 1.0;
+      const rwristX = rightEdgeX + 4.5;
+      const rwristY = edgeY + 7.5;
+      const rArm =
+        `<path d="M67.5,44 L${n(rwristX + 2.8)},${n(rwristY + 1.2)} L${n(rwristX - 2.5)},${n(rwristY - 0.6)} L56.5,44 Z" fill="${s.key}"/>` +
+        stroke(`M64.5,42 L58.5,40`, s.ink.seam, 0.6) +
+        stroke(`M63,39 L57,37`, s.ink.seam, 0.6);
+      const rCuff =
+        `<g transform="translate(${n(rwristX)},${n(rwristY)}) rotate(-25)">` +
+        `<rect x="-4.2" y="-1.5" width="8.4" height="3" rx="1.5" fill="${INKS.dust}"/>` +
+        `<rect x="-3" y="-0.6" width="6" height="1.2" rx="0.6" fill="${s.ink.joint}"/>` +
+        `</g>`;
+      const rGlove =
+        `<g transform="translate(${n(rightEdgeX)},${n(edgeY)}) scale(-1, 1)">` +
+        `<path d="M-4.2,7 L-5.2,5 Q-6.0,0 -5.0,-4.5 Q-4.5,-5.5 -2.5,-5.2 L-1.5,-4.8 L-1.5,5.5 L-2.5,6.8 Z" fill="${INKS.dust}"/>` +
+        `<path d="M-4.2,4 Q-5.0,0 -4.2,-4" stroke="${s.ink.seam}" stroke-width="0.35" fill="none"/>` +
+        `<path d="M-2.0,-4.8 C-0.2,-5.0 2.5,-4.3 2.5,-2.8 C2.5,-1.4 -0.2,-1.7 -2.0,-1.9 Z" fill="${INKS.dust}"/>` +
+        `<path d="M0.3,-4.5 C1.6,-4.0 1.6,-2.4 0.3,-2.1" stroke="${s.ink.seam}" stroke-width="0.3" fill="none"/>` +
+        `<path d="M-2.0,-1.9 C0.3,-2.1 2.9,-1.4 2.9,0.1 C2.9,1.6 0.3,1.3 -2.0,1.1 Z" fill="${INKS.dust}"/>` +
+        `<path d="M0.6,-1.7 C1.9,-1.2 1.9,0.5 0.6,0.8" stroke="${s.ink.seam}" stroke-width="0.3" fill="none"/>` +
+        `<path d="M-2.0,1.1 C0.3,0.9 2.7,1.6 2.7,3.1 C2.7,4.6 0.3,4.3 -2.0,4.1 Z" fill="${INKS.dust}"/>` +
+        `<path d="M0.6,1.3 C1.9,1.8 1.9,3.5 0.6,3.8" stroke="${s.ink.seam}" stroke-width="0.3" fill="none"/>` +
+        `<path d="M-2.0,4.1 C-0.3,3.9 2.0,4.5 2.0,5.7 C2.0,6.8 -0.3,6.6 -2.0,6.4 Z" fill="${INKS.dust}"/>` +
+        `</g>`;
+
+      return bg + lArm + lCuff + rArm + rCuff + mapBody + lGlove + rGlove;
     },
   },
   'r-pioneering': {

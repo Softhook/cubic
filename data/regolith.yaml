@@ -180,7 +180,7 @@ skills:
     from: patient
     status: renamed
     effect: patient
-    art: { title: "Battle plan", brief: "A battle plan: mechs drawn on a hex map, little dashed lines joining them to where they go next." }
+    art: { title: "Strategic map", brief: "Two gloved hands holding a creased hex battle map out in the field on Phobos, plotting mech movements against enemy positions." }
   - id: r-pioneering
     name: "Science"
     subtitle: "Claim with research"
