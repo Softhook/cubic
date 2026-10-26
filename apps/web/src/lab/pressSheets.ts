@@ -15,7 +15,7 @@ import {
 } from '@quantum/art';
 import { blobToDataUrl, rasterise } from '../files';
 import type { PressSheets } from '../print/exports';
-import { PIECES, type Piece, type Printable } from '../print/pieces';
+import { PIECES, slugOf, type Piece, type Printable } from '../print/pieces';
 import { cardFontCss, measure, tileFontCss } from './cards';
 
 /** How a tile is shown and printed: its look, and where its planet sits (art `TileOptions`). */
@@ -111,10 +111,11 @@ export const printableTile = (t: TileSpec, fontCss: string, markings = true, vie
 
 /** A tile's id with its objective for its planet: `p7-01` → `habitat-01`, `void-2` → `sinkhole-02` (blanks as they are). */
 function objectiveId(t: TileSpec): string {
-  const objective = OBJECTIVE_NAMES[t.number]?.toLowerCase().replaceAll(' ', '-');
+  const objective = OBJECTIVE_NAMES[t.number];
   if (!objective) return t.id;
-  const n = t.number === 0 ? (t.id === 'void' ? 1 : Number(t.id.slice(5))) : Number(t.id.split('-')[1]);
-  return `${objective}-${String(n).padStart(2, '0')}`;
+  // Its number in the set: the id's last (`void` is the first).
+  const n = Number(t.id.match(/\d+$/)?.[0] ?? 1);
+  return `${slugOf(objective)}-${String(n).padStart(2, '0')}`;
 }
 
 /** A player aid as a printable face. */

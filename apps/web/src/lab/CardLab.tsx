@@ -22,7 +22,7 @@ import {
   type Deck,
   type Redesign,
 } from './cards';
-import { PIECES, type Printable } from '../print/pieces';
+import { PIECES, slugOf, type Printable } from '../print/pieces';
 import { PrintPanel } from '../print/PrintPanel';
 import { LabHeader } from './LabHeader';
 import { Segmented } from '../components/Segmented';
@@ -70,12 +70,6 @@ const backOf = (d: Deck): Item => {
   return { key: `${d.id}:${look ?? 'holo'}:back`, deck: d.id, look };
 };
 const itemsOf = (d: Deck): Item[] => [backOf(d), ...d.cards.map(itemOf)];
-/** A name as a file name: `Ice Tunnel` → `ice-tunnel`. */
-const slugOf = (name: string) =>
-  name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
 /** Items once each: decks of different editions share a back. */
 const unique = (items: Item[]) => [...new Map(items.map((i) => [i.key, i])).values()];
 
@@ -163,7 +157,7 @@ export function CardLab() {
   };
 
   const thumb = (i: Item) => (
-    <button key={i.key} className={`lab-thumb ${i.key === item.key ? 'on' : ''}`} onClick={() => setSelected(i.key)}>
+    <button data-lab-nav key={i.key} className={`lab-thumb ${i.key === item.key ? 'on' : ''}`} onClick={() => setSelected(i.key)}>
       {thumbs.get(i.key) ? <img src={thumbs.get(i.key)} alt={i.face?.name ?? 'Back'} loading="lazy" /> : <span className="lab-card-ph" />}
       <span>
         {i.face ? i.face.name : `${deckInfo(i.deck).label} back`}

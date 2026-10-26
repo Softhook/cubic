@@ -17,7 +17,7 @@ export const pieceShadowTint = (color: string) => `color-mix(in srgb, ${color} 1
  * A rounded square's cast shadow, as SVG polygon points: the sweep of its corners' centres (the inner square, `w`
  * across, from (`x`, `y`)) `far` down and to the right. Stroke it round by the corners' radius to get the shadow.
  */
-export function sweptSquare(x: number, y: number, w: number, far: number): string {
+function sweptSquare(x: number, y: number, w: number, far: number): string {
   return [
     [x, y],
     [x + w, y],
@@ -28,4 +28,19 @@ export function sweptSquare(x: number, y: number, w: number, far: number): strin
   ]
     .map((p) => p.join(','))
     .join(' ');
+}
+
+/**
+ * A cast shadow's SVG polygon props, for a rounded square `size` across with its top left at (`x`, `y`), its corners
+ * rounded by `corner`, reaching `far` down and to the right, tinted by its piece's `color`: the sweep of its corners'
+ * centres, stroked round by their radius. The tint goes in `style`, as `color-mix()` is CSS.
+ */
+export function castShadow(x: number, y: number, size: number, corner: number, far: number, color: string) {
+  const tint = pieceShadowTint(color);
+  return {
+    points: sweptSquare(x + corner, y + corner, size - 2 * corner, far),
+    strokeWidth: 2 * corner,
+    strokeLinejoin: 'round' as const,
+    style: { fill: tint, stroke: tint },
+  };
 }

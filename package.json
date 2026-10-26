@@ -21,6 +21,7 @@
     "interaction": "npm run data && vite-node scripts/interaction.ts --",
     "selfplay:cards": "npm run data && vite-node scripts/selfplay-cards.ts",
     "selfplay:skills": "npm run data && vite-node scripts/skill-ab.ts --",
+    "selfplay:powers": "npm run data && vite-node scripts/power-ab.ts --",
     "audit:cards": "npm run data && vite-node scripts/card-audit.ts --",
     "sweep:basic": "npm run data && vite-node scripts/basic-sweep.ts",
     "relays:check": "vite-node scripts/relay-check.ts --",

@@ -218,6 +218,12 @@ function Reach({ game, id, cell, spots }: { game: GameState; id: string; cell: n
   );
 }
 
+/** A ship's die, as a part of its space: the shadows it casts (ShipShadows) are made for the same size. */
+const DIE_SIZE = 0.56;
+
+/** A piece on space (r, c), `cell` px: placed in percent of its own size (one space), so a zoom or resize doesn't count as a move and glide. */
+const placeAt = (r: number, c: number, cell: number) => ({ transform: `translate(${c * 100}%, ${r * 100}%)`, width: cell, height: cell });
+
 /**
  * On a world's ground, the hard shadows every ship's die casts (DieShadow), blurred `blur` px with a hint of its colour: all in one layer
  * under the dice, as a die's top stands as high as the die beside it, so is lit, and as dark where they meet as
@@ -241,10 +247,9 @@ function ShipShadows({
 }) {
   // Only a hex map is ever on the ground.
   const edge = game.board.hex ? hexMapPath(game.board, cell, tileArtOf(game.board)) : undefined;
-  const place = (r: number, c: number) => ({ transform: `translate(${c * 100}%, ${r * 100}%)`, width: cell, height: cell });
   const struck = staging.struck.map(({ die: d, r, c, ms }) => (
-    <div key={`struck:${d.id}`} className="ship-shadow struck" style={{ ...place(r, c), '--late': `${ms}ms` } as CSSProperties}>
-      <DieShadow size={cell * 0.56} blur={blur} color={game.players[d.owner].color} />
+    <div key={`struck:${d.id}`} className="ship-shadow struck" style={{ ...placeAt(r, c, cell), '--late': `${ms}ms` } as CSSProperties}>
+      <DieShadow size={cell * DIE_SIZE} blur={blur} color={game.players[d.owner].color} />
     </div>
   ));
   const shadows = game.dice.map((d) => {
@@ -255,9 +260,9 @@ function ShipShadows({
       <div
         key={d.id}
         className={late === undefined ? 'ship-shadow' : 'ship-shadow late'}
-        style={{ ...place(at.r, at.c), '--late': `${late ?? 0}ms` } as CSSProperties}
+        style={{ ...placeAt(at.r, at.c, cell), '--late': `${late ?? 0}ms` } as CSSProperties}
       >
-        <DieShadow size={cell * 0.56} blur={blur} color={game.players[d.owner].color} rolls={d.rolls} scene={scene} />
+        <DieShadow size={cell * DIE_SIZE} blur={blur} color={game.players[d.owner].color} rolls={d.rolls} scene={scene} />
       </div>
     );
   });
@@ -307,16 +312,21 @@ function Ships({
       className="ship struck"
       style={
         {
-          transform: `translate(${c * 100}%, ${r * 100}%)`,
-          width: cell,
-          height: cell,
+          ...placeAt(r, c, cell),
           '--pc': game.players[d.owner].color,
           '--late': `${ms}ms`,
         } as CSSProperties
       }
       aria-hidden
     >
-      <Die3D value={d.value} rolls={d.rolls} scene={scene} size={cell * 0.56} color={game.players[d.owner].color} shadowless={shadowless} />
+      <Die3D
+        value={d.value}
+        rolls={d.rolls}
+        scene={scene}
+        size={cell * DIE_SIZE}
+        color={game.players[d.owner].color}
+        shadowless={shadowless}
+      />
     </div>
   ));
   const ships = game.dice.map((d) => {
@@ -334,8 +344,7 @@ function Ships({
     const attack = ctl.attacks.get(d.id);
     const { ability, name } = shipOf(game, d.value);
     const who = `${game.players[d.owner].name} · ${name} (${d.value})`;
-    // In percent of its own size (one space), so a zoom or resize doesn't count as a move and glide.
-    const place = { transform: `translate(${c * 100}%, ${r * 100}%)`, width: cell, height: cell };
+    const place = placeAt(r, c, cell);
     const late = staging.late.get(d.id);
     return (
       <Fragment key={d.id}>
@@ -375,7 +384,7 @@ function Ships({
             value={d.value}
             rolls={d.rolls}
             scene={scene}
-            size={cell * 0.56}
+            size={cell * DIE_SIZE}
             color={game.players[d.owner].color}
             shadowless={shadowless}
           />

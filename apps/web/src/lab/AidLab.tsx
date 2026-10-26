@@ -27,15 +27,18 @@ export function AidLab() {
   return (
     <div className="lab">
       <LabHeader page="aid">
-        <Segmented<AidEdition>
-          small
-          options={[
-            ['community', 'Community'],
-            ['classic', 'Classic'],
-          ]}
-          value={edition}
-          onPick={setEdition}
-        />
+        {/* The arrow keys switch edition (labNav). */}
+        <div data-lab-nav style={{ display: 'contents' }}>
+          <Segmented<AidEdition>
+            small
+            options={[
+              ['community', 'Community'],
+              ['classic', 'Classic'],
+            ]}
+            value={edition}
+            onPick={setEdition}
+          />
+        </div>
       </LabHeader>
       <div className="lab-aid-page">
         {detail ? <img className="lab-aid" src={detail} alt="Player aid" /> : <span className="lab-aid lab-aid-ph" />}

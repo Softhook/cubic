@@ -10,7 +10,7 @@ import {
   type TileShape,
 } from '@quantum/art';
 import type { CSSProperties } from 'react';
-import { PIECE_SHADOW_LENGTH, PIECE_SHADOW_OPACITY, pieceShadowTint, sweptSquare } from './shadows';
+import { PIECE_SHADOW_LENGTH, PIECE_SHADOW_OPACITY, castShadow } from './shadows';
 
 /** A planet's number as the tile prints it: white, outlined in a dark shade of the planet's hue. `y` is the baseline. */
 export function PlanetNumber({ n, x, y, size, className }: { n: number; x: number; y: number; size: number; className?: string }) {
@@ -118,25 +118,18 @@ export function PlanetMarkings({
 
 /**
  * The shadow a cube of `colour` centred on (x, y) casts on the ground (shadows.ts): its rounded footprint swept down
- * and to the right for its height (a cube, so its width), drawn as the sweep of its corners' centres, stroked round by
- * their radius. It falls in with its cube, from as far away as the cube falls from (`--away`, the cube's 320%).
+ * and to the right for its height (a cube, so its width). It falls in with its cube, from as far away as the cube
+ * falls from (`--away`, the cube's 320%).
  */
 function CubeShadow({ x, y, mm, colour, className }: { x: number; y: number; mm: number; colour: string; className: string }) {
-  const r = CUBE_PAD.corner * mm;
-  const w = CUBE_PAD.size * mm - 2 * r;
-  const far = CUBE_PAD.size * mm * PIECE_SHADOW_LENGTH;
-  const tint = pieceShadowTint(colour);
+  const size = CUBE_PAD.size * mm;
+  const far = size * PIECE_SHADOW_LENGTH;
+  const { style, ...shape } = castShadow(x - size / 2, y - size / 2, size, CUBE_PAD.corner * mm, far, colour);
   return (
     <polygon
-      points={sweptSquare(x - w / 2, y - w / 2, w, far)}
-      fill={tint}
-      stroke={tint}
-      strokeWidth={2 * r}
-      strokeLinejoin="round"
+      {...shape}
       className={className}
-      style={
-        { filter: `blur(${REGOLITH_SHADOW.blur * mm}px)`, '--away': `${3.2 * CUBE_PAD.size * mm * PIECE_SHADOW_LENGTH}px` } as CSSProperties
-      }
+      style={{ ...style, filter: `blur(${REGOLITH_SHADOW.blur * mm}px)`, '--away': `${3.2 * far}px` } as CSSProperties}
     />
   );
 }

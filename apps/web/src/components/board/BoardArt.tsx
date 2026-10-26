@@ -1,14 +1,14 @@
 import { memo, type CSSProperties } from 'react';
 import { drawing, type Board, type GameState } from '@quantum/engine';
 import { PLANET_DIAMETER, TILE, lookWorld } from '@quantum/art';
-import { BarrierBubble } from './BarrierWeb';
+import { BarrierBubble } from './BarrierBubble';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { GATE_COLOR } from '../../theme';
 import { placement, wrapMarks, type WrapMark } from './geometry';
 import { PlanetMarkings } from './PlanetMarkings';
 import { MapTiles } from './MapTiles';
 import { numberCorner } from './layers';
-import { useMapLook, useOnGround } from '../../art/mapLook';
+import { useMapLook } from '../../art/mapLook';
 
 /** Which way each board edge faces, for the wrap chevrons. */
 const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number }> = {
@@ -49,9 +49,8 @@ export const BoardArt = memo(function BoardArt({
   // Print millimetres to screen pixels: the tile art and everything drawn over it use the printed geometry.
   const mm = cell / TILE.cell;
   // On a world's ground the cubes cast hard shadows, as its buildings do.
-  const ground = useOnGround(game.board);
-  const look = useMapLook(game.board);
-  const world = lookWorld(look);
+  const world = lookWorld(useMapLook(game.board));
+  const ground = !!world;
   // The open gates, then any of a Warp Gate pair placed so far: faint until the pair is complete.
   const head = game.pending[0];
   const placing = head?.kind === 'warpGate' ? head.placed : [];

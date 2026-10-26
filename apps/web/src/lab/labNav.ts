@@ -55,9 +55,12 @@ export function findAdjacentItem<T extends HasRect>(items: readonly T[], current
   return row.reduce((best, item) => (offset(item) < offset(best) ? item : best));
 }
 
+/** The buttons the arrow keys move between: each marked `data-lab-nav`, or in something marked so. */
+const NAV = 'button[data-lab-nav], [data-lab-nav] button';
+
 /**
- * Art Lab keyboard shortcut: allows Arrow keys to move between items (tiles in TileLab, cards in CardLab,
- * or player aid editions in AidLab).
+ * Art Lab keyboard shortcut: the arrow keys move between the page's items (tiles in TileLab, cards in CardLab,
+ * player aid editions in AidLab), those it marks `data-lab-nav`.
  */
 export function useLabArrowNav() {
   useEffect(() => {
@@ -71,35 +74,19 @@ export function useLabArrowNav() {
       }
       if (document.querySelector('[aria-modal="true"]')) return;
 
-      const thumbs = Array.from(document.querySelectorAll<HTMLButtonElement>('.lab-thumb')).filter(
+      const items = Array.from(document.querySelectorAll<HTMLButtonElement>(NAV)).filter(
         (b) => b.offsetParent !== null || b.getClientRects().length > 0,
       );
-
-      if (thumbs.length > 0) {
-        e.preventDefault();
-        const active =
-          document.activeElement instanceof HTMLButtonElement && thumbs.includes(document.activeElement) ? document.activeElement : null;
-        const on = thumbs.find((b) => b.classList.contains('on')) ?? null;
-        const current = active ?? on ?? thumbs[0];
-
-        const target = findAdjacentItem(thumbs, current, e.key);
-        if (target) {
-          target.click();
-          target.focus({ preventScroll: true });
-          target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-        }
-        return;
-      }
-
-      // If no thumbnails (e.g. Player Aid lab), allow arrows to switch between player aid editions
-      const aidButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('.lab-head .segmented button')).filter(
-        (b) => b.offsetParent !== null || b.getClientRects().length > 0,
-      );
-      if (aidButtons.length === 2 && document.querySelector('.lab-aid-page')) {
-        e.preventDefault();
-        const target = e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? aidButtons[0] : aidButtons[1];
+      if (!items.length) return;
+      e.preventDefault();
+      const active =
+        document.activeElement instanceof HTMLButtonElement && items.includes(document.activeElement) ? document.activeElement : null;
+      const current = active ?? items.find((b) => b.classList.contains('on')) ?? items[0];
+      const target = findAdjacentItem(items, current, e.key);
+      if (target) {
         target.click();
         target.focus({ preventScroll: true });
+        target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       }
     };
 

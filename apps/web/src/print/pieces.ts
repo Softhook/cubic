@@ -93,6 +93,13 @@ export function sizeNote(p: Format, bleed: boolean): string {
 }
 
 /** A face's name in a file name: `skill/07-agile` → `skill-07-agile`. */
+/** A name as a file name: `Ice Tunnel` → `ice-tunnel`. */
+export const slugOf = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
 const slug = (item: Printable) => item.name.replaceAll('/', '-');
 
 /** A single export's file name: `cubic-card-skill-07-agile-bleed-300dpi.png`, `cubic-tile-p7-01.svg`. */

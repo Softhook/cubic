@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { BarrierBubble } from '../src/components/board/BarrierWeb';
+import { BarrierBubble } from '../src/components/board/BarrierBubble';
 
 describe('BarrierBubble', () => {
   it('renders a barrier group with defs, fused patch, body, and specular highlights', () => {

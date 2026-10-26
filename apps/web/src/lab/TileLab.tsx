@@ -180,7 +180,7 @@ export function TileLab() {
       <div className="lab-body">
         <div className="lab-grid">
           {thumbs.map(({ spec: t, url }) => (
-            <button key={t.id} className={`lab-thumb ${t.id === selected ? 'on' : ''}`} onClick={() => setSelected(t.id)}>
+            <button data-lab-nav key={t.id} className={`lab-thumb ${t.id === selected ? 'on' : ''}`} onClick={() => setSelected(t.id)}>
               <img src={(world && latestThumbnail(t, look)) || url} alt={t.id} />
               <span>
                 {t.id}
