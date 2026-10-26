@@ -464,9 +464,11 @@ function PlanetInfo({ game, id }: { game: GameState; id: number }) {
   const p = game.board.planets.find((x) => x.id === id)!;
   const free = p.capacity - p.cubes.length;
   const homeOf = game.players.find((pl) => pl.home === id);
-  const holders = rulesOf(game).contestedOrbit
+  const rules = rulesOf(game);
+  const holders = rules.contestedOrbit
     ? [...new Set(orbitals(game.board, p).flatMap((c) => dieAt(game, c)?.owner ?? []))].map((o) => game.players[o].name)
     : [];
+  const blocked = `conquer it${rules.contestedDeploy ? ' or deploy to it' : ''}`;
   return (
     <>
       <div className="info-title">{planetLabel(game, id)}</div>
@@ -478,10 +480,10 @@ function PlanetInfo({ game, id }: { game: GameState; id: number }) {
           {say(
             game,
             holders.length === 1
-              ? `Contested orbit: while ${holders[0]}’s ships are in orbit, only ${holders[0]} can conquer it${rulesOf(game).contestedDeploy ? ' or deploy to it' : ''}.`
+              ? `Contested orbit: while ${holders[0]}’s ships are in orbit, only ${holders[0]} can ${blocked}.`
               : holders.length === 2
-                ? `Contested orbit: ${holders.join(' and ')} both have ships in orbit, so neither can conquer it${rulesOf(game).contestedDeploy ? ' or deploy to it' : ''}.`
-                : `Contested orbit: ${holders.join(', ')} all have ships in orbit, so none of them can conquer it${rulesOf(game).contestedDeploy ? ' or deploy to it' : ''}.`,
+                ? `Contested orbit: ${holders.join(' and ')} both have ships in orbit, so neither can ${blocked}.`
+                : `Contested orbit: ${holders.join(', ')} all have ships in orbit, so none of them can ${blocked}.`,
           )}
         </div>
       )}

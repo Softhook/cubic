@@ -1,7 +1,7 @@
 /**
  * Player interaction and card impact over 2-player AI self-play (docs/HEX.md, *Interaction*).
  *
- *   npm run interaction -- [games=200] [levels=4,4] [setups=...] [jobs=1]
+ *   npm run interaction -- [games=200] [levels=4,4] [setups=...] [jobs=fast cores]
  *
  * A setup is mode@map, the mode with `-nocards` for its rules without cards: the default compares
  * basic, original and community on Alpha Sector, and regolith (hex maps only) with and
@@ -12,10 +12,12 @@
  * points), scored after every action and credited to the player who acted and to what they did. The
  * interaction ratio is how much a player's value moves in the opponent's actions over how much it
  * moves in their own: near 0, each player plays their own game.
+ *
+ * Any argument may be given by name instead, in any order: `--levels=2,4` (args.ts). The games are
+ * played on the fast cores, a pair at a time (pool.ts); the results are the same with any number of jobs.
  */
-import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { chooseAction, chooseCombatResponse, type AiLevel } from '../packages/ai/src';
+import type { AiLevel } from '../packages/ai/src';
 import { valueOf } from '../packages/ai/src/evaluate';
 import {
   actor,
@@ -32,6 +34,9 @@ import {
   type GameMode,
   type GameState,
 } from '../packages/engine/src';
+import { aiAction } from '../packages/engine/test/helpers';
+import { args } from './args';
+import { defaultJobs, pool } from './pool';
 
 const SETUPS = [
   'basic@alpha-sector',
@@ -40,11 +45,14 @@ const SETUPS = [
   'regolith-nocards@alpha-hex',
   'regolith@alpha-hex',
 ];
-const [games = '200', levelList = '4,4', setupList = SETUPS.join(','), jobs = '1'] = process.argv.slice(2);
+const {
+  games,
+  levels: levelList,
+  setups: setupList,
+  jobs,
+} = args({ games: '200', levels: '4,4', setups: SETUPS.join(','), jobs: defaultJobs });
 const levels = levelList.split(',').map(Number) as AiLevel[];
 const setups = setupList.split(',');
-/** Set for a worker process: "setup from to". */
-const shard = process.env.INTERACTION_SHARD;
 
 const CATS = ['attack', 'move', 'conquer', 'fleet', 'card', 'missile', 'other'] as const;
 type Cat = (typeof CATS)[number];
@@ -160,11 +168,7 @@ function play(setup: string, g: number): Game {
       }
       if (shared) r.sharedOrbit++;
     }
-    let action: Action | null = null;
-    if (s.pending[0]?.kind === 'combat') {
-      for (const p of s.players) action ??= chooseCombatResponse(s, p.id, { level: levels[side(p.id)], random });
-    }
-    action ??= chooseAction(s, { level: levels[side(actor(s))], random });
+    const action = aiAction(s, [levels[side(0)], levels[side(1)]], random);
     if (!action) throw new Error(`${setup} game ${g}: no action at step ${step}`);
     const who = actor(s);
     const cat: Cat = FOLLOW.has(action.type) ? chain : category(action);
@@ -208,43 +212,6 @@ function playRange(setup: string, from: number, to: number): Game[] {
   } finally {
     mode.cards = cards;
   }
-}
-
-/** Plays every setup's games in `count` worker processes (this script again, each with a shard). */
-async function playInParallel(count: number): Promise<Map<string, Game[]>> {
-  const n = Number(games);
-  const size = Math.max(2, Math.ceil(n / count / 2) * 2);
-  const queue = setups.flatMap((setup) =>
-    Array.from({ length: Math.ceil(n / size) }, (_, k) => [setup, k * size, Math.min(n, (k + 1) * size)] as const),
-  );
-  const total = queue.length;
-  const out = new Map(setups.map((x) => [x, [] as Game[]]));
-  let done = 0;
-  const worker = async () => {
-    for (let job = queue.shift(); job; job = queue.shift()) {
-      const [setup, from, to] = job;
-      const result = await new Promise<Game[]>((resolve, reject) => {
-        // Under vite-node, argv[1] is vite-node itself and the script's path is left out.
-        const child = spawn(process.execPath, [process.argv[1], fileURLToPath(import.meta.url), ...process.argv.slice(2)], {
-          env: { ...process.env, INTERACTION_SHARD: `${setup} ${from} ${to}` },
-          stdio: ['ignore', 'pipe', 'inherit'],
-        });
-        let text = '';
-        child.stdout.on('data', (d) => (text += d));
-        child.on('error', reject);
-        child.on('exit', (code) =>
-          code
-            ? reject(new Error(`${setup} games ${from}-${to} failed (exit ${code})`))
-            : resolve(JSON.parse(text.trim().split('\n').pop()!)),
-        );
-      });
-      out.get(setup)!.push(...result);
-      process.stderr.write(`\r${++done}/${total} shards`);
-    }
-  };
-  await Promise.all(Array.from({ length: count }, worker));
-  process.stderr.write('\n');
-  return out;
 }
 
 const sum = (gs: Game[], f: (g: Game) => number) => gs.reduce((n, g) => n + f(g), 0);
@@ -297,11 +264,16 @@ function report(results: Map<string, Game[]>) {
   for (const [name, f] of rows) console.log(`| ${name} | ${finished.map(f).join(' | ')} |`);
 }
 
-if (shard) {
-  const [setup, from, to] = shard.split(' ');
-  console.log(JSON.stringify(playRange(setup, Number(from), Number(to))));
-} else if (Number(jobs) > 1) {
-  report(await playInParallel(Number(jobs)));
-} else {
-  report(new Map(setups.map((x) => [x, playRange(x, 0, Number(games))])));
-}
+// Each setup's games, a pair (one map seed) at a time, collected in order.
+const tasks = setups.flatMap((setup) =>
+  Array.from({ length: Math.ceil(Number(games) / 2) }, (_, k) => [setup, 2 * k, Math.min(Number(games), 2 * k + 2)] as const),
+);
+const results = new Map(setups.map((x) => [x, [] as Game[]]));
+await pool(
+  fileURLToPath(import.meta.url),
+  [...tasks],
+  Number(jobs),
+  ([setup, from, to]) => playRange(setup, from, to),
+  (gs, [setup]) => results.get(setup)!.push(...gs),
+);
+report(results);

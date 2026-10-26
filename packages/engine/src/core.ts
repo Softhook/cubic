@@ -95,10 +95,7 @@ export const name = (s: GameState, p: PlayerId) => s.players[p].name;
 /** A ship's name in this game's rules, with its value: "Interceptor (5)". */
 export const shipName = (s: GameState, d: Die) => `${shipOf(s, d.value).name} (${d.value})`;
 /** A ship's name with its article: "an Interceptor (5)". */
-export function aShip(s: GameState, d: Die): string {
-  const { name } = shipOf(s, d.value);
-  return `${/^[AEIOU]/.test(name) ? 'an' : 'a'} ${name} (${d.value})`;
-}
+export const aShip = (s: GameState, d: Die) => `${/^[AEIOU]/.test(shipOf(s, d.value).name) ? 'an' : 'a'} ${shipName(s, d)}`;
 
 /** The pending decision at the head of the queue, if it is of the given kind. */
 export function headOf<K extends Pending['kind']>(s: GameState, kind: K, message: string): PendingOf<K> {

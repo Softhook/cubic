@@ -1,8 +1,6 @@
 import type { GameState, PlayerId } from '@quantum/engine';
 import { storedTacticValue } from './cardValues';
 
-/** Patient's stored Tactics, for the evaluations: how many the player holds, and what they are worth. */
-
 /**
  * Tactics the player holds with Patient, for the evaluations. The one played this turn still counts
  * until the turn ends, so playing it is judged by its effect alone (ties go to playing it).
