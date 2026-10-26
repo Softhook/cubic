@@ -2,9 +2,8 @@
  * Shoot: attack an enemy in a straight line, without moving. Like a move or a normal attack it is the
  * ship's one action of the turn (and costs one action); the shooter never advances.
  */
-import { canMoveDie, cellOf, die, dieAt, isEmptySpace, markMoved, spend, startCombat } from '../../prototype';
+import { canMoveDie, cellOf, die, dieAt, isEmptySpace, markMoved, spend, startCombat, straightLines } from '../../prototype';
 import type { Die, GameState, PrototypePower } from '../../prototype';
-import { lines } from './lines';
 
 /** Enemy ships in range from where it stands, whatever the cost. */
 export function shootTargets(s: GameState, d: Die): Die[] {
@@ -13,7 +12,7 @@ export function shootTargets(s: GameState, d: Die): Die[] {
   const out: Die[] = [];
   // A shot flies as far as the first thing in its way (a ship, a planet, a barrier or the board's edge; it
   // flies over the void).
-  for (const line of lines(s, start)) {
+  for (const line of straightLines(s.board, start)) {
     for (const at of line) {
       const target = dieAt(s, at);
       if (target) {

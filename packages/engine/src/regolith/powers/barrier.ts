@@ -3,9 +3,8 @@
  * the ship's move. A barrier stays for good and blocks every move, deploy and shot (GameState.barriers);
  * on a planet's orbital space it holds that space, as a ship would, but never counts towards a conquest.
  */
-import { canUseAbility, cellOf, isEmptySpace, logTo, markAbility, name, shipName } from '../../prototype';
+import { canUseAbility, cellOf, isEmptySpace, logTo, markAbility, name, shipName, straightLines } from '../../prototype';
 import type { Cell, Die, GameState, PrototypePower } from '../../prototype';
-import { lines } from './lines';
 
 /** The spaces a barrier can land on from where the ship stands. */
 export function barrierTargets(s: GameState, d: Die): Cell[] {
@@ -14,7 +13,7 @@ export function barrierTargets(s: GameState, d: Die): Cell[] {
   const out: Cell[] = [];
   // Like a shot: every empty space up to the first thing in its way (a ship, a planet, a barrier or the
   // board's edge; it flies over the void).
-  for (const line of lines(s, start)) {
+  for (const line of straightLines(s.board, start)) {
     for (const at of line) {
       if (!isEmptySpace(s, at)) break;
       if (!out.some((p) => p.r === at.r && p.c === at.c)) out.push(at);

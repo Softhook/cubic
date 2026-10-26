@@ -29,78 +29,30 @@ export function findAdjacentItem<T extends HasRect>(items: readonly T[], current
   }
 
   const index = items.indexOf(current);
+  const step = (by: number) => items[Math.max(0, Math.min(items.length - 1, index + by))];
 
-  if (key === 'ArrowRight') {
-    return items[Math.min(items.length - 1, index + 1)];
-  }
+  if (key === 'ArrowRight') return step(1);
+  if (key === 'ArrowLeft') return step(-1);
 
-  if (key === 'ArrowLeft') {
-    return items[Math.max(0, index - 1)];
-  }
-
-  const currentRect = current.getBoundingClientRect();
+  const rect = current.getBoundingClientRect();
+  const down = key === 'ArrowDown';
 
   // If layout info is unavailable (e.g. non-browser test environment), fall back to index stepping.
-  if (currentRect.height === 0 && currentRect.width === 0) {
-    if (key === 'ArrowDown') return items[Math.min(items.length - 1, index + 1)];
-    if (key === 'ArrowUp') return items[Math.max(0, index - 1)];
-  }
+  if (rect.height === 0 && rect.width === 0) return step(down ? 1 : -1);
 
-  const currentCenterX = currentRect.left + currentRect.width / 2;
-
-  if (key === 'ArrowDown') {
-    const threshold = currentRect.top + currentRect.height * 0.5;
-    const candidates = items.filter((item) => item.getBoundingClientRect().top >= threshold);
-    if (candidates.length === 0) return current;
-
-    // Find the row closest below (minimum top)
-    const minTop = Math.min(...candidates.map((c) => c.getBoundingClientRect().top));
-    const nextRow = candidates.filter((c) => c.getBoundingClientRect().top <= minTop + 20);
-
-    let closest = nextRow[0];
-    let minDiff = Math.abs(closest.getBoundingClientRect().left + closest.getBoundingClientRect().width / 2 - currentCenterX);
-
-    for (let i = 1; i < nextRow.length; i++) {
-      const item = nextRow[i];
-      const r = item.getBoundingClientRect();
-      const diff = Math.abs(r.left + r.width / 2 - currentCenterX);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closest = item;
-      }
-    }
-    return closest;
-  }
-
-  if (key === 'ArrowUp') {
-    const threshold = (currentRect.bottom ?? currentRect.top + currentRect.height) - currentRect.height * 0.5;
-    const candidates = items.filter((item) => {
-      const r = item.getBoundingClientRect();
-      const bottom = r.bottom ?? r.top + r.height;
-      return bottom <= threshold;
-    });
-    if (candidates.length === 0) return current;
-
-    // Find the row closest above (maximum top)
-    const maxTop = Math.max(...candidates.map((c) => c.getBoundingClientRect().top));
-    const prevRow = candidates.filter((c) => c.getBoundingClientRect().top >= maxTop - 20);
-
-    let closest = prevRow[0];
-    let minDiff = Math.abs(closest.getBoundingClientRect().left + closest.getBoundingClientRect().width / 2 - currentCenterX);
-
-    for (let i = 1; i < prevRow.length; i++) {
-      const item = prevRow[i];
-      const r = item.getBoundingClientRect();
-      const diff = Math.abs(r.left + r.width / 2 - currentCenterX);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closest = item;
-      }
-    }
-    return closest;
-  }
-
-  return null;
+  // The items starting below (or ending above) this one's middle; the nearest row of them; its closest column.
+  const middle = rect.top + rect.height / 2;
+  const centre = (r: ReturnType<HasRect['getBoundingClientRect']>) => r.left + r.width / 2;
+  const candidates = items.filter((item) => {
+    const r = item.getBoundingClientRect();
+    return down ? r.top >= middle : (r.bottom ?? r.top + r.height) <= middle;
+  });
+  if (candidates.length === 0) return current;
+  const tops = candidates.map((c) => c.getBoundingClientRect().top);
+  const rowTop = down ? Math.min(...tops) : Math.max(...tops);
+  const row = candidates.filter((c) => Math.abs(c.getBoundingClientRect().top - rowTop) <= 20);
+  const offset = (item: T) => Math.abs(centre(item.getBoundingClientRect()) - centre(rect));
+  return row.reduce((best, item) => (offset(item) < offset(best) ? item : best));
 }
 
 /**

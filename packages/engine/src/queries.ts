@@ -2,13 +2,10 @@
 import {
   cellAt,
   diagonals,
-  geometry,
   grid,
   type Grid,
   key,
   linked,
-  offsets,
-  onBoard,
   orbitals,
   orbitedPlanets,
   otherGate,
@@ -16,6 +13,7 @@ import {
   same,
   spaces,
   stepNeighbours,
+  straightLines,
   surrounding,
   tilesTouch,
 } from './board';
@@ -960,63 +958,65 @@ export function signed(n: number): string {
   return n < 0 ? `−${-n}` : `+${n}`;
 }
 
+/** Whether a barrier can go on `p`: an empty space with no warp gate on it. */
+export function canHoldBarrier(state: GameState, p: Cell): boolean {
+  return isEmptySpace(state, p) && !state.gates.some((g) => same(g, p));
+}
+
+/** The spaces Barricade can place a barrier on. */
+export function barrierSpaces(state: GameState): Cell[] {
+  return spaces(state.board).filter((p) => canHoldBarrier(state, p));
+}
+
+/** How far Kinetic Shunt pushes a mech. */
+const SHUNT_RANGE = 4;
+
+/** A space Kinetic Shunt can push a mech to, and whether it gets there through a warp gate. */
+export interface ShuntPath {
+  to: Cell;
+  tunnel: boolean;
+}
+
 /**
- * The empty spaces in straight lines a mech can be pushed to (up to 4 spaces away).
- * Pushing stops before obstacles (planets, mechs, barriers, void or the edge of the board).
- * Mechs can also be pushed through an Ice Tunnel (Warp Gate): entering one gate emerges from the other
- * (costing 1 step of distance), continuing in the straight line if distance remains.
+ * Where Kinetic Shunt can push a mech: the empty spaces up to 4 away in a straight line, stopping before
+ * anything in its way (a planet, a mech, a barrier, the void or the board's edge). A mech pushed onto a
+ * warp gate (Ice Tunnel) may come out of the other one, which counts as a space, and go on in the same line;
+ * one already on a gate may be pushed through it, then out of the other gate along any line.
  */
-export function shuntTargets(state: GameState, d: Die): Cell[] {
+export function shuntPaths(state: GameState, d: Die): ShuntPath[] {
   const start = cellOf(d);
   if (!start) return [];
-  const out: Cell[] = [];
-  const add = (c: Cell) => {
-    if (!out.some((p) => p.r === c.r && p.c === c.c)) out.push(c);
+  const out: ShuntPath[] = [];
+  // A space reached both ways counts as a straight push.
+  const add = (to: Cell, tunnel: boolean) => {
+    const seen = out.find((p) => same(p.to, to));
+    if (!seen) out.push({ to, tunnel });
+    else if (!tunnel) seen.tunnel = false;
   };
-
-  const partnerAtStart = otherGate(state, start);
-  if (partnerAtStart && isEmptySpace(state, partnerAtStart)) {
-    // If the mech starts on an Ice Tunnel, pushing it through the tunnel brings it to the other gate (1 step).
-    add(partnerAtStart);
-    // From the other gate, it can continue in any straight line out of it up to 3 more spaces.
-    for (const dir of geometry(state.board).sides) {
-      let curr = partnerAtStart;
-      for (let steps = 2; steps <= 4; steps++) {
-        const [next] = offsets(state.board, curr, [dir]);
-        if (!next || !onBoard(state.board, next) || !isEmptySpace(state, next)) break;
-        if (same(next, start)) break;
-        add(next);
-        curr = next;
-      }
-    }
+  /** The empty spaces at the start of `line`, at most `n` of them. */
+  const clear = (line: Cell[], n: number) => {
+    const blocked = line.slice(0, n).findIndex((p) => !isEmptySpace(state, p));
+    return line.slice(0, blocked < 0 ? n : blocked);
+  };
+  const partner = otherGate(state, start);
+  if (partner && isEmptySpace(state, partner)) {
+    add(partner, true);
+    for (const line of straightLines(state.board, partner)) for (const p of clear(line, SHUNT_RANGE - 1)) add(p, true);
   }
-
-  // Straight lines along each side direction
-  for (const dir of geometry(state.board).sides) {
-    let curr = start;
-    for (let steps = 1; steps <= 4; steps++) {
-      const [next] = offsets(state.board, curr, [dir]);
-      if (!next || !onBoard(state.board, next) || !isEmptySpace(state, next)) break;
-      if (same(next, start)) break;
-      add(next);
-
-      // If next is an Ice Tunnel and we have steps remaining, we can also push through it!
-      const partner = otherGate(state, next);
-      if (partner && isEmptySpace(state, partner) && steps < 4) {
-        add(partner);
-        let partnerCurr = partner;
-        for (let pSteps = steps + 2; pSteps <= 4; pSteps++) {
-          const [pNext] = offsets(state.board, partnerCurr, [dir]);
-          if (!pNext || !onBoard(state.board, pNext) || !isEmptySpace(state, pNext)) break;
-          if (same(pNext, start)) break;
-          add(pNext);
-          partnerCurr = pNext;
-        }
-      }
-
-      curr = next;
-    }
-  }
-
+  straightLines(state.board, start).forEach((line, side) => {
+    clear(line, SHUNT_RANGE).forEach((p, k) => {
+      add(p, false);
+      // Onto the gate at step k + 1, out of the other at k + 2, then on along the same line.
+      const exit = otherGate(state, p);
+      if (!exit || !isEmptySpace(state, exit) || k + 2 > SHUNT_RANGE) return;
+      add(exit, true);
+      for (const q of clear(straightLines(state.board, exit)[side], SHUNT_RANGE - k - 2)) add(q, true);
+    });
+  });
   return out;
+}
+
+/** The spaces Kinetic Shunt can push a mech to (shuntPaths). */
+export function shuntTargets(state: GameState, d: Die): Cell[] {
+  return shuntPaths(state, d).map((p) => p.to);
 }

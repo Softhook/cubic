@@ -1187,7 +1187,15 @@ describe('Kinetic Shunt tactic card (Regolith)', () => {
     s.pending.unshift({ kind: 'kineticShunt', player: 0 });
     s = apply(s, { type: 'kineticShunt', die: 'p0d0', to: { r: 8, c: 2 } });
     expect(at(s, 'p0d0').loc).toEqual({ zone: 'board', r: 8, c: 2 });
-    expect(s.log[s.log.length - 1].text).toMatch(/pushes their Tactician.*through an ice tunnel/);
+    // In the engine's words: the UI shows it as an ice tunnel.
+    expect(s.log[s.log.length - 1].text).toMatch(/pushes their Tactician.*through a warp gate/);
+
+    // A straight push says nothing of the gates, even with a pair on the map.
+    const straight = scenario({ p0d0: [1, 4, 3] }, 'regolith');
+    straight.gates = [gateA, gateB];
+    straight.pending.unshift({ kind: 'kineticShunt', player: 0 });
+    const pushed = apply(straight, { type: 'kineticShunt', die: 'p0d0', to: { r: 0, c: 4 } });
+    expect(pushed.log[pushed.log.length - 1].text).not.toMatch(/warp gate/);
 
     // If Gate B is blocked by an enemy mech, pushing through the tunnel is blocked
     const blocked = scenario({ p0d0: [1, 4, 3], p1d0: [7, 2, 6] }, 'regolith');
