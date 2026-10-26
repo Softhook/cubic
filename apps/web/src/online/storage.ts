@@ -2,13 +2,14 @@ import { generateSecretKey } from 'nostr-tools/pure';
 import { decodeEvent, gameKeys, hex, Timeline, type NostrEvent } from '@quantum/online';
 import { forget, remember, stored, storedJson } from '../storage';
 import { eventsKey, onlineGames, saveOnlineGames, type OnlineGameEntry } from './games';
+import { appKey } from '../appId';
 
 /**
  * What a browser keeps of its online games, in localStorage: its identity, every game's events
  * (the whole game, so it can be replayed and re-sent to relays that lost it) and the list of games
  * for the lobby (games.ts).
  */
-const KEY = 'quantum.online.key';
+const KEY = appKey('online.key');
 
 /** This browser's Nostr secret key: it signs its posts and so identifies its seats. */
 export function identity(): Uint8Array {

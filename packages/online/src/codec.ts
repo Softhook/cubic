@@ -53,7 +53,13 @@ export function newSecret(): string {
   return b64url(crypto.getRandomValues(new Uint8Array(16)));
 }
 
-const derive = (label: string, secret: string) => sha256(enc.encode(`cubic:${label}:${secret}`));
+/**
+ * Whose games these are: a game's relay tag and key are derived under it, so another app on the same relays
+ * (a fork such as Regolith's, docs/regolith/SPLIT.md) never sees this one's games, even from the same invite secret.
+ */
+const NAMESPACE = 'cubic';
+
+const derive = (label: string, secret: string) => sha256(enc.encode(`${NAMESPACE}:${label}:${secret}`));
 
 export function gameKeys(secret: string): GameKeys {
   return { secret, tag: hex(derive('tag', secret)).slice(0, 32), key: derive('key', secret) };

@@ -4,6 +4,7 @@
 
 import { APPLE_TOUCH } from './platform';
 import { remember, stored } from './storage';
+import { appKey } from './appId';
 
 /** The two switches in the game's top bar: sound effects, and the music (ambience.ts). */
 type Switch = 'sound' | 'music';
@@ -12,8 +13,8 @@ let ctx: AudioContext | null = null;
 let bus: AudioNode | null = null;
 let effectsGain: GainNode | null = null;
 const switches: Record<Switch, boolean> = {
-  sound: stored('quantum.sound') !== 'off',
-  music: stored('quantum.music') !== 'off',
+  sound: stored(appKey('sound')) !== 'off',
+  music: stored(appKey('music')) !== 'off',
 };
 const listeners = new Set<() => void>();
 let verb: { input: ConvolverNode; level: GainNode } | null = null;
@@ -72,7 +73,7 @@ export function effects(): AudioContext | null {
 export function turn(which: Switch, on: boolean) {
   if (switches[which] === on) return;
   switches[which] = on;
-  remember(`quantum.${which}`, on ? 'on' : 'off');
+  remember(appKey(which), on ? 'on' : 'off');
   if (which === 'sound' && ctx && effectsGain) effectsGain.gain.setTargetAtTime(on ? 1 : 0, ctx.currentTime, 0.05);
   if (on) audio();
   listeners.forEach((l) => l());

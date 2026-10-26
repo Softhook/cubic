@@ -11,6 +11,7 @@ import { CardViewer } from './CardViewer';
 import { warmCardImages } from '../art/cardImages';
 import { useCardBack } from '../art/useCardImages';
 import { Dialog } from './Dialog';
+import { appKey } from '../appId';
 
 /**
  * `steady` (looking back at the game): the market only grows, so the map above it keeps its size from step to step.
@@ -302,7 +303,7 @@ const LIST = '(max-width: 600px), (max-width: 980px) and (max-height: 500px) and
 
 const cardsLeft = (n: number) => `${n} card${n === 1 ? '' : 's'} left`;
 
-const STORAGE_KEY = 'quantum.marketCollapsed';
+const STORAGE_KEY = appKey('marketCollapsed');
 
 /** While `hold`, `el` never gets shorter than it has been (its own min-height), and is free again after. */
 function useGrowOnly(el: RefObject<HTMLElement>, hold: boolean) {

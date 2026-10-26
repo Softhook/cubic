@@ -2,8 +2,9 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { GameState } from '@quantum/engine';
 import { logText } from '../game/logText';
 import { remember, stored } from '../storage';
+import { appKey } from '../appId';
 
-const STORAGE_KEY = 'quantum.logOpen';
+const STORAGE_KEY = appKey('logOpen');
 /** Until the player chooses, the log starts open where the sidebar has room for it (a desktop monitor). */
 const ROOMY = '(min-width: 1600px) and (min-height: 900px)';
 const AUTO_SCROLL_THRESHOLD = 12;

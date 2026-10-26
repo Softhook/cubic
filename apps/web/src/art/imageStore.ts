@@ -3,7 +3,9 @@
  * from what it was drawn from (a hash of its SVG and its size), so changed artwork is drawn again.
  */
 
-const DB_NAME = 'quantum-art';
+import { APP_ID } from '../appId';
+
+const DB_NAME = `${APP_ID}-art`;
 const VERSION = 2;
 export type Store = 'tiles' | 'cards';
 

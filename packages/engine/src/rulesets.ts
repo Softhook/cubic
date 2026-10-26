@@ -74,5 +74,8 @@ export const RULESETS: Record<GameMode, RuleSet> = {
 
 defineRuleSets(RULESETS);
 
+/** The mode the lobby offers first, before a player has picked one. */
+export const DEFAULT_MODE: GameMode = 'community';
+
 /** Rule sets in menu order. */
 export const MODES: RuleSet[] = [RULESETS.basic, RULESETS.original, RULESETS.community, RULESETS.regolith];

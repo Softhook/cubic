@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { APPLE_TOUCH, FROM_HOME_SCREEN } from '../../platform';
 import { remember, stored } from '../../storage';
+import { appKey } from '../../appId';
 
 /** A dismissed hint, remembered between visits. */
-const HOME_HINT_KEY = 'quantum.homeScreenHint';
+const HOME_HINT_KEY = appKey('homeScreenHint');
 
 /**
  * iPhone and iPad have no full screen for a page (FullscreenButton) and no install prompt, so the lobby says how

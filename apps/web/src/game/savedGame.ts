@@ -1,11 +1,12 @@
 import { checkInvariants, MODES, type GameState } from '@quantum/engine';
 import { forget, remember, stored } from '../storage';
 import type { SavedPast } from './past';
+import { appKey } from '../appId';
 
 /** The unfinished game, kept in localStorage so a revisit can resume it. */
-const KEY = 'quantum.savedGame';
+const KEY = appKey('savedGame');
 /** And its past (past.ts), to look back at it from the log after a revisit too. */
-const PAST_KEY = 'quantum.savedPast';
+const PAST_KEY = appKey('savedPast');
 
 export function saveGame(state: GameState, past?: SavedPast) {
   if (state.phase === 'over') return clearSavedGame();
@@ -53,7 +54,7 @@ export function loadSavedGame(): GameState | null {
  * Per tab: a game on this device is on screen. A reload then brings it back instead of the lobby: a new
  * version taking over in the background (src/pwa.ts), pull to refresh, or the browser reloading the tab.
  */
-const ON_SCREEN = 'quantum.gameOnScreen';
+const ON_SCREEN = appKey('gameOnScreen');
 
 export function markGameOnScreen(on: boolean) {
   try {

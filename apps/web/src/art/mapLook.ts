@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { Board } from '@quantum/engine';
 import { lookWorld, type TileLook } from '@quantum/art';
 import { remember, stored } from '../storage';
+import { appKey } from '../appId';
 
 /*
  * How hex maps look: on their world's ground, Phobos's, Deimos's or Mars's (the Regolith tiles, with a building on
@@ -9,7 +10,7 @@ import { remember, stored } from '../storage';
  * (WorldButton).
  */
 
-let onGround = stored('quantum.ground') !== 'off';
+let onGround = stored(appKey('ground')) !== 'off';
 const listeners = new Set<() => void>();
 
 const subscribe = (listener: () => void) => {
@@ -19,7 +20,7 @@ const subscribe = (listener: () => void) => {
 
 export function setGroundMaps(on: boolean) {
   onGround = on;
-  remember('quantum.ground', on ? 'on' : 'off');
+  remember(appKey('ground'), on ? 'on' : 'off');
   listeners.forEach((l) => l());
 }
 

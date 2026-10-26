@@ -5,6 +5,7 @@ import { PRESS } from './press';
 import { PAPER, type Paper } from './sheets';
 import { remember, stored } from '../storage';
 import { useExport, type Run } from './useExport';
+import { appKey } from '../appId';
 
 interface Props {
   piece: Piece;
@@ -40,7 +41,7 @@ export function Space({ of }: { of: 'rgb' | 'cmyk' }) {
   return <span className={`space-tag ${of}`}>{of === 'rgb' ? 'RGB' : 'CMYK'}</span>;
 }
 
-const DEEP_BLACK_KEY = 'quantum.lab.deepBlack';
+const DEEP_BLACK_KEY = appKey('lab.deepBlack');
 
 /** Whether the CMYK exports print the deep black (press.ts `toCmyk`): off by default, and remembered across lab pages. */
 export function useDeepBlack(): [boolean, (on: boolean) => void] {

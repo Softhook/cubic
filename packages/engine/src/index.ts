@@ -14,7 +14,7 @@ export {
   type CardRules,
   type RuleSet,
 } from './rules';
-export { MODES, RULESETS } from './rulesets';
+export { DEFAULT_MODE, MODES, RULESETS } from './rulesets';
 export { reword, type Words } from './words';
 export type { ActionOf } from './core';
 export type { PowerChoice, PrototypePower, ShipHooks } from './prototype';

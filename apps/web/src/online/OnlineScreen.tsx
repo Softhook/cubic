@@ -9,8 +9,9 @@ import { inviteLink } from './create';
 import { useOnlineGame, type OnlineGame } from './useOnlineGame';
 import type { RelayStatus } from './relays';
 import { remember, stored } from '../storage';
+import { appKey } from '../appId';
 
-const NAME = 'quantum.online.name';
+const NAME = appKey('online.name');
 /** How long to look for a game on the relays before saying it can't be found. */
 const NOT_FOUND_MS = 15000;
 

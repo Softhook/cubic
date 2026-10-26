@@ -1,11 +1,12 @@
 import { forget, onStorageFull, remember, storedJson } from '../storage';
+import { appKey } from '../appId';
 
 /**
  * The lobby's list of this browser's online games, in localStorage. Apart from the rest of the online
  * code (storage.ts), so the lobby loads without it.
  */
-const GAMES = 'quantum.online.games';
-export const eventsKey = (tag: string) => `quantum.online.events.${tag}`;
+const GAMES = appKey('online.games');
+export const eventsKey = (tag: string) => appKey(`online.events.${tag}`);
 
 /** A game in the lobby's list, with how it stood when this browser last saw it. */
 export interface OnlineGameEntry {

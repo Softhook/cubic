@@ -1,5 +1,6 @@
 import { sfx } from '../sound';
 import { remember, storedJson } from '../storage';
+import { appKey } from '../appId';
 
 /**
  * Telling the player it has become their move in an online game, without getting in the way of one
@@ -7,7 +8,7 @@ import { remember, storedJson } from '../storage';
  */
 
 /** Per game, the last turn change this browser alerted, so its tabs alert each one once between them. */
-const ALERTED = 'quantum.online.alerted';
+const ALERTED = appKey('online.alerted');
 /** A tab the player isn't looking at waits this long before alerting, so a tab they are looking at goes first. */
 const GRACE_MS = 2000;
 
