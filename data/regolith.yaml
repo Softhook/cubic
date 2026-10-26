@@ -382,7 +382,7 @@ tactics:
     from: change-of-heart
     status: renamed
     effect: change-of-heart
-    art: { title: "Crossing over", brief: "A mech walking away from one side's flag to another's, where a Tactician waits for it." }
+    art: { title: "Files", brief: "A gloved hand pulling one personnel file from an archive drawer of them, stamped ACQUIRED in oxide." }
   - id: r-momentum
     name: "Forced March"
     subtitle: "Take a bonus turn"

@@ -689,22 +689,73 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-change-of-heart': {
     world: 'phobos',
-    caption: "a Sniper walking away from one side's flag to another's, where a Tactician waits for it",
-    draw: (s) =>
-      outdoors(s, 30, { planet: { x: 30, y: 9, r: 8 } }) +
-      flag(s, 6, 38, 24, INKS.ice) +
-      [10, 14, 18, 22]
-        .map((x, i) => `<ellipse cx="${x}" cy="${39 + (i % 2) * 1.2}" rx="1.2" ry="0.5" fill="${GROUND.phobos.shade}"/>`)
-        .join('') +
-      mech(s, 'sniper', 30, 41, 0.085, { yaw: 20, legs: { plus: [-18, 14], minus: [18, 4] } }, { plate: INKS.ice }) +
-      mech(s, 'tactician', 52, 36, 0.06, { yaw: -24 }, { plate: INKS.oxide }) +
-      flag(s, 60, 36, 22, INKS.oxide, '', -1),
+    caption: 'a gloved hand pulling one personnel file from an archive drawer of them, stamped ACQUIRED in oxide',
+    draw: (s) => {
+      const tabs = [
+        { y: 8, w: 32, x: 15.5 },
+        { y: 11, w: 33.5, x: 14.7 },
+        { y: 14, w: 35, x: 14 },
+        { y: 17, w: 36.5, x: 13.2 },
+        { y: 20, w: 38, x: 12.5 },
+        { y: 23, w: 39.5, x: 11.7 },
+        { y: 26, w: 41, x: 11 },
+      ];
+      const fx = 10.5;
+      const fy = 6.5;
+      const fw = 42.5;
+      const fh = 26.5;
+      const px = fx + 8.25;
+      const py = fy + 11.5;
+      const wx = 46;
+      const wy = 4.5;
+      return (
+        rect(-4, -4, 72, 48, '#181615') +
+        rect(4, 2, 55.5, 38, '#221F1C') +
+        stroke('M4,2 h55.5 v38 h-55.5 Z', '#3A3631', 0.6) +
+        rect(26, 3, 11.5, 2, '#3A3631') +
+        path('M8,38 L16,7 L47.5,7 L55.5,38 Z', '#131211') +
+        stroke('M8,38 L16,7 L47.5,7 L55.5,38', '#2F2B26', 0.5) +
+        tabs
+          .map(
+            (t, i) =>
+              path(`M${t.x},${t.y + 3} L${t.x + t.w},${t.y + 3} L${t.x + t.w - 0.6},${t.y} L${t.x + 0.6},${t.y} Z`, '#25221E') +
+              stroke(`M${t.x + 0.6},${t.y} L${t.x + t.w - 0.6},${t.y}`, '#3A352F', 0.4) +
+              path(`M${t.x + 2 + ((i * 5.5) % (t.w - 8))},${t.y} h5 l-0.4,-1.4 h-4.2 Z`, '#332F2A'),
+          )
+          .join('') +
+        rect(fx + 1.5, fy + 2, fw, fh, '#080707', ' opacity="0.8"') +
+        rect(fx, fy, fw, fh, s.key) +
+        path(`M${fx},${fy} h15 l-1.2,-2.8 h-13.8 Z`, s.key) +
+        label('DOSSIER', fx + 6.5, fy - 0.8, 1.2, s.paper) +
+        rect(fx, fy, fw, 4.8, s.plate) +
+        stencil('SKILL // FITTER', fx + 2.4, fy + 3.6, 2.7, s.paper, { anchor: 'start', spacing: 0.04 }) +
+        rect(fx + 2.5, fy + 6.8, 11.5, 14.5, s.paper) +
+        `<circle cx="${px}" cy="${py}" r="3.2" fill="${s.key}"/>` +
+        `<path d="M${px - 0.8},${py - 0.9} h2.6 v1.5 h-2.6 Z" fill="${INKS.amber}"/>` +
+        `<path d="M${px - 4.2},${py + 8} C${px - 4.2},${py + 3.8} ${px + 4.2},${py + 3.8} ${px + 4.2},${py + 8} Z" fill="${s.key}"/>` +
+        label('SPEC-04', px, fy + 20, 1.0, s.plate) +
+        label('SPECIALTY', fx + 16, fy + 8.6, 1.1, '#7A7368', 'start') +
+        stencil('SERVO TUNING', fx + 16, fy + 11.2, 2.0, s.paper, { anchor: 'start' }) +
+        label('CLEARANCE', fx + 16, fy + 14, 1.1, '#7A7368', 'start') +
+        stencil('LEVEL 1 PRIORITY', fx + 16, fy + 16.6, 1.9, s.paper, { anchor: 'start' }) +
+        label('RECORD', fx + 16, fy + 19.4, 1.1, '#7A7368', 'start') +
+        stencil('UNASSIGNED', fx + 16, fy + 22, 1.9, s.paper, { anchor: 'start' }) +
+        `<g transform="rotate(-9 ${fx + 30} ${fy + 24.5})">${rect(fx + 23, fy + 22, 14, 4.2, INKS.oxide)}${stencil('ACQUIRED', fx + 30, fy + 25.1, 2.4, s.key)}</g>` +
+        stroke(`M55,-4 L${wx},${wy}`, s.key, 4.2) +
+        `<g transform="scale(-1 1) translate(${-wx * 2} 0)">${glove(wx, wy, 7.5, 155, s.key)}</g>`
+      );
+    },
   },
   'r-momentum': {
     world: 'deimos',
     caption: 'mechs advancing at dawn, long shadows ahead of them',
     draw: (s) => {
-      const walk = (i: number) => ({ yaw: 30, legs: { plus: [i % 2 ? -18 : 18, 10], minus: [i % 2 ? 18 : -18, 6] } });
+      const poses = [
+        { yaw: 30, legs: { plus: [-9, 12], minus: [7, 4] } },
+        { yaw: 30, legs: { plus: [-10, 13], minus: [8, 4] } },
+        { yaw: 30, legs: { plus: [-8, 10], minus: [7, 3] } },
+      ];
+      const walk = (i: number) => poses[i] ?? poses[0];
       const shadow = (x: number, y: number, len: number) =>
         `<path d="M${n(x - 1)},${n(y)} L${n(x + len)},${n(y + 1)} L${n(x + len)},${n(y + 2.4)} L${n(x + 1)},${n(y + 0.5)} Z" fill="${s.key}" opacity="0.5"/>`;
       return (
