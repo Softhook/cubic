@@ -46,11 +46,6 @@ const SHIP_IN_SCRAPYARD = 30;
 const MISSILE = 40;
 /** A card still to be taken at the end of this turn (conquest or research breakthrough). */
 const CARD = 120;
-/**
- * What each of a player's barriers costs them (Regolith): one stays for good, closing the space to their
- * own ships too, so it should be fired only for a clear gain. Mutable for the self-play tests.
- */
-export const BARRIER = { price: 0 };
 
 /**
  * Share of a cube a planet is worth when conquering it takes this many actions from now
@@ -197,7 +192,6 @@ function playerValue(ctx: Ctx, p: PlayerId): number {
     .reduce((a, b) => a + b, 0);
   v += storedTacticsValue(s, p);
   v += pl.missiles * MISSILE;
-  if (BARRIER.price) v -= BARRIER.price * (s.barriers ?? []).filter((b) => b.owner === p).length;
   v += ctx.fleets[p].length * SHIP_ON_BOARD;
   v += scrapyard(s, p).length * SHIP_IN_SCRAPYARD;
   v -= ctx.exposure[p];

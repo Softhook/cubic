@@ -16,16 +16,14 @@
  * Each game goes into `out` as a JSON line the moment it finishes, so a run can be stopped at any point
  * (Ctrl-C reports on what is done) and run again to carry on: games already in the file are left out, the
  * same games as before, as each has its own seeds. `fresh=1` starts the file over; `games=0` only reports. Variants: `on` (as the rules are), `off` (no Wisp barriers; Barricade
- * still deals them), `capN` (at most N barriers per player on the map, the oldest removed), `priceN` (the AI
- * charges itself N per barrier it owns, BARRIER in evaluate.ts) and `abN` (that price for one seat only;
- * the report adds that seat's wins), `oldai` (the AI without PLANNING.walls) and `abwalls` (PLANNING.walls for
- * one seat only).
+ * still deals them), `capN` (at most N barriers per player on the map, the oldest removed), `oldai` (the AI
+ * without PLANNING.walls) and `abwalls` (PLANNING.walls for one seat only; the report adds that seat's wins).
  */
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chooseAction, chooseCombatResponse, type AiLevel } from '../packages/ai/src';
-import { BARRIER, PLANNING } from '../packages/ai/src/evaluate';
+import { PLANNING } from '../packages/ai/src/evaluate';
 import {
   actor,
   apply,
@@ -96,7 +94,7 @@ interface GameResult extends Task {
   turns: number;
   /** Stretches when no player had a live planet. */
   shutouts: Shutout[];
-  /** With `abN`: whether side A, the seat with the barrier price, won. */
+  /** With `abwalls`: whether side A, the seat with PLANNING.walls, won. */
   sideAWon?: boolean;
   /** The run's AI level and seed, as given. */
   level?: string;
@@ -164,8 +162,7 @@ function play({ variant, players, game }: Task): GameResult {
     mapId: map.id,
   });
   const cap = variant.startsWith('cap') ? Number(variant.slice(3)) : Infinity;
-  // The AI's barrier price: `priceN` for every seat, `abN` for side A only (seat game % 2), against none.
-  const price = Number(variant.match(/^(?:price|ab)(\d+)$/)?.[1] ?? 0);
+  // With `abwalls`, side A (seat game % 2) has what side B lacks.
   const sideA = game % players;
   const level = Number(o.level) as AiLevel;
   const r: GameResult = {
@@ -210,8 +207,7 @@ function play({ variant, players, game }: Task): GameResult {
         shutout = undefined;
       }
     }
-    // The AI's settings for whoever acts: the variants that give side A something side B lacks.
-    BARRIER.price = variant.startsWith('ab') && actor(s) !== sideA ? 0 : price;
+    // The AI's settings for whoever acts.
     PLANNING.walls = variant === 'oldai' ? false : variant === 'abwalls' ? actor(s) === sideA : true;
     let action: Action | null = null;
     if (s.pending[0]?.kind === 'combat') for (const p of s.players) action ??= chooseCombatResponse(s, p.id, { level, random });
@@ -243,7 +239,7 @@ function play({ variant, players, game }: Task): GameResult {
     }
   }
   r.finished = s.phase === 'over';
-  if (variant.startsWith('ab') && r.finished) r.sideAWon = s.winner === sideA;
+  if (variant === 'abwalls' && r.finished) r.sideAWon = s.winner === sideA;
   r.rounds = s.turn.number / players;
   if (!r.finished) r.longestDrought = Math.max(r.longestDrought, (s.turn.number - lastCubeTurn) / players);
   if (shutout) r.shutouts.push(shutout);
@@ -316,7 +312,7 @@ function report() {
         `| ${players} | ${variant} | ${rs.length} | ${rs.filter((r) => !r.finished).length} | ${avg(rs.filter((r) => r.finished).map((r) => r.rounds))} | ${avg(rs.map((r) => r.barriers))} | ${avg(rs.map((r) => r.longestDrought))} | ${pct(rs.filter((r) => r.longestDrought >= 5).length, rs.length)} | ${pct(
           rs.reduce((a, r) => a + r.anyLockedTurns, 0),
           rs.reduce((a, r) => a + r.turns, 0),
-        )} of turns | ${pct(shut.length, rs.length)} (avg ${avg(shut.flatMap((r) => r.shutouts.map((x) => x.turns / players)))} rounds) | ${pct(rs.filter((r) => r.shutouts.some((x) => x.sealed)).length, rs.length)} | ${Object.values(ends).join('/')} | ${variant.startsWith('ab') ? pct(rs.filter((r) => r.sideAWon).length, rs.filter((r) => r.finished).length) : '–'} |`,
+        )} of turns | ${pct(shut.length, rs.length)} (avg ${avg(shut.flatMap((r) => r.shutouts.map((x) => x.turns / players)))} rounds) | ${pct(rs.filter((r) => r.shutouts.some((x) => x.sealed)).length, rs.length)} | ${Object.values(ends).join('/')} | ${variant === 'abwalls' ? pct(rs.filter((r) => r.sideAWon).length, rs.filter((r) => r.finished).length) : '–'} |`,
       );
     }
 }
