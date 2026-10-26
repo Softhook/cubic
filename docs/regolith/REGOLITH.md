@@ -51,7 +51,7 @@ changing the label:
   set (`contestedOrbit`, `words`, `grid`, `experimental` for the badge's colour, …). `regolith.test.ts` checks
   it across the engine, AI, online and web sources and the web app's styles, as it checks that the folder uses
   the engine only through the kit. It reads text, so a check that gets at the mode some other way (by its
-  summary, say) passes it: review still matters.
+  summary, say) passes it: review still matters. The split itself is planned in [SPLIT.md](SPLIT.md).
 - **Other versions online.** A browser that gets an invite for a game it can't start (made by a version with
   other modes, maps or protocol) says so and asks both players to reload, rather than "Game not found".
 
