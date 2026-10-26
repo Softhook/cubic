@@ -5,7 +5,7 @@
  * To add a Tactic: list its effect in TACTIC_EFFECT_IDS (effects.ts); the compiler then asks for
  * its entry in TACTIC_EFFECTS. Skills are listed in SKILL_EFFECTS (effects.ts).
  */
-import { same, spaces } from './board';
+import { geometry, offsets, onBoard, otherGate, same, spaces } from './board';
 import {
   destroyedEnemyShip,
   destroyShip,
@@ -27,7 +27,7 @@ import {
 } from './core';
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
-import { barrierAt, boardLoc, die, isEmptySpace, reserve, shipsOnBoard } from './lookups';
+import { barrierAt, boardLoc, cellOf, die, isEmptySpace, reserve, shipsOnBoard } from './lookups';
 import {
   canPlayStoredTactic,
   canProfiteer,
@@ -36,12 +36,13 @@ import {
   canTakeCard,
   deployTargets,
   relocationOptions,
+  shuntTargets,
   skillLimit,
 } from './queries';
 import { shuffle } from './rng';
 import { rulesOf } from './rules';
 import { anySkill, ruleOf } from './skillRules';
-import type { DeckKind, GameState, PlayerId, PlayerState } from './types';
+import type { Cell, DeckKind, GameState, PlayerId, PlayerState } from './types';
 
 // ---------------------------------------------------------------------------
 // Tactic effects
@@ -97,6 +98,11 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
   barrier: (s, p) => {
     const avail = spaces(s.board).filter((c) => isEmptySpace(s, c) && !s.gates?.some((g) => same(g, c)));
     if (avail.length > 0) s.pending.unshift({ kind: 'placeBarrier', player: p, placed: [] });
+  },
+  'kinetic-shunt': (s, p) => {
+    if (shipsOnBoard(s).some((d) => shuntTargets(s, d).length > 0)) {
+      s.pending.unshift({ kind: 'kineticShunt', player: p });
+    }
   },
   expansion: (s, p) => {
     const res = reserve(s, p);
@@ -201,6 +207,22 @@ function consumeCardPick(s: GameState) {
   // A card can come from any pick, so the picks a Profiteering missile can replace are used last.
   if (head.conquer) head.conquer = Math.min(head.conquer, head.count);
   if (head.count <= 0) s.pending.shift();
+}
+
+function isThroughTunnel(s: GameState, from: Cell, to: Cell): boolean {
+  if (s.gates.length !== 2) return false;
+  const partner = otherGate(s, from);
+  if (partner && same(to, partner)) return true;
+  for (const dir of geometry(s.board).sides) {
+    let curr = from;
+    for (let steps = 1; steps <= 4; steps++) {
+      const [next] = offsets(s.board, curr, [dir]);
+      if (!next || !onBoard(s.board, next) || !isEmptySpace(s, next)) break;
+      if (same(next, to)) return false;
+      curr = next;
+    }
+  }
+  return true;
 }
 
 export const cardHandlers = {
@@ -335,6 +357,19 @@ export const cardHandlers = {
     if (head.placed.length === 2 || remaining.length === 0) {
       s.pending.shift();
     }
+  },
+  kineticShunt(s, a) {
+    const head = headOf(s, 'kineticShunt', 'No Kinetic Shunt to resolve');
+    const d = die(s, a.die);
+    if (d.loc.zone !== 'board') fail('Choose a mech on the map');
+    const valid = shuntTargets(s, d);
+    if (!valid.some((p) => same(p, a.to))) fail('Not a valid push destination');
+    const start = cellOf(d)!;
+    s.pending.shift();
+    d.loc = boardLoc(a.to);
+    const targetName = head.player === d.owner ? `their ${shipName(s, d)}` : `${name(s, d.owner)}'s ${shipName(s, d)}`;
+    const via = isThroughTunnel(s, start, a.to) ? ` through ${rulesOf(s).words ? 'an ice tunnel' : 'a warp gate'}` : '';
+    logTo(s, head.player, `${name(s, head.player)} pushes ${targetName}${via}`, a.to);
   },
   /** Patient: "When you take this Skill, you may take and store a Tactic." */
   patientTactic(s, a) {

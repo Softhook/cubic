@@ -33,6 +33,7 @@ export type Sel =
   | { kind: 'power'; die: string }
   | { kind: 'tactical'; die: string }
   | { kind: 'nomadic'; die: string }
+  | { kind: 'kineticShunt'; die: string }
   // Relocation: the cube chosen to move (planet it leaves, and its owner).
   | { kind: 'relocate'; planet: number; owner: number }
   // A planet that can be conquered in more than one way, waiting for the player to choose how.
@@ -91,6 +92,8 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
       if (!human) return false;
       const tone = highlights.dice.get(id);
       if (head?.kind === 'showOfForce' && tone) return void dispatch({ type: 'showOfForce', die: id });
+      if (head?.kind === 'kineticShunt' && tone)
+        return select(sel.kind === 'kineticShunt' && sel.die === id ? NONE : { kind: 'kineticShunt', die: id });
       if (head?.kind === 'unveil' && head.reorganize && tone === 'swap') return void dispatch({ type: 'unveilReroll', die: id });
       if (head) return false;
       if (sel.kind === 'swap' && tone === 'swap') return void (dispatch({ type: 'swap', die: sel.die, other: id }) && setSel(NONE));
@@ -135,6 +138,10 @@ export function useController(game: GameState, dispatch: Dispatch, mine: (p: Pla
       if (head?.kind === 'advance') return void dispatch({ type: 'advance', move: true });
       if (head?.kind === 'warpGate') return void dispatch({ type: 'warpGate', cell });
       if (head?.kind === 'placeBarrier') return void dispatch({ type: 'placeBarrier', cell });
+      if (head?.kind === 'kineticShunt' && sel.kind === 'kineticShunt') {
+        dispatch({ type: 'kineticShunt', die: sel.die, to: cell });
+        return setSel(NONE);
+      }
       if (head?.kind === 'placeExpansion') return void dispatch({ type: 'placeExpansion', to: cell });
       if (head?.kind === 'placeShips') {
         // Place the selected ship, or the next one in the scrapyard.

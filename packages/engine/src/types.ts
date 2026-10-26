@@ -229,6 +229,7 @@ export type Pending =
   | { kind: 'showOfForce'; player: PlayerId }
   | { kind: 'warpGate'; player: PlayerId; placed: Cell[] }
   | { kind: 'placeBarrier'; player: PlayerId; placed: Cell[] }
+  | { kind: 'kineticShunt'; player: PlayerId }
   | { kind: 'changeOfHeart'; player: PlayerId }
   /** CE Brilliant, at the start of the turn: gain 2 research or not (asked only with Pioneering). */
   | { kind: 'brilliant'; player: PlayerId }
@@ -369,6 +370,7 @@ export type Action =
   | { type: 'showOfForce'; die: string }
   | { type: 'warpGate'; cell: Cell }
   | { type: 'placeBarrier'; cell: Cell }
+  | { type: 'kineticShunt'; die: string; to: Cell }
   | { type: 'changeOfHeart'; skill: string }
   | { type: 'prideful'; take: boolean }
   | { type: 'ruthless'; skill?: string }

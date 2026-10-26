@@ -83,6 +83,7 @@ export const TACTIC_EFFECT_IDS = [
   'sabotage-original',
   'sabotage-double',
   'barrier',
+  'kinetic-shunt',
 ] as const;
 
 export type TacticEffect = (typeof TACTIC_EFFECT_IDS)[number];

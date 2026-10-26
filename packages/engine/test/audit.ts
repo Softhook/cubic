@@ -40,6 +40,7 @@ import {
   RULESETS,
   same,
   shipsOnBoard,
+  shuntTargets,
   SKILLS,
   spaces,
   TACTICS,
@@ -518,6 +519,9 @@ const ORACLES: ((c: Step) => void)[] = [
       case 'barrier':
         if (spaces(before.board).some((c) => isEmptySpace(before, c) && !before.gates?.some((g) => same(g, c))) && !pending('placeBarrier'))
           bad('no barrier to place');
+        break;
+      case 'kinetic-shunt':
+        if (shipsOnBoard(before).some((d) => shuntTargets(before, d).length > 0) && !pending('kineticShunt')) bad('no mech to shunt');
         break;
       case 'change-of-heart':
         if ((before.market.skillDeck.length || before.market.skillDiscard.length) && !pending('changeOfHeart')) bad('no skill to choose');

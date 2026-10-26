@@ -1,4 +1,4 @@
-import { legalActions, type Action, type GameState, type PlayerId } from '@quantum/engine';
+import { cellOf, die, distance, legalActions, type Action, type GameState, type PlayerId } from '@quantum/engine';
 import { storedTacticValue } from './cardValues';
 
 /** The card decisions the evaluation alone gets wrong: Patient (stored Tactics: when to play one, what holding one is worth) and Calculating. */
@@ -18,6 +18,15 @@ export function candidates(s: GameState, opts?: { includeCarry?: boolean }): Act
   if (head?.kind === 'clever' && head.source === 'calculating') {
     const rank = (a: Action) => (a.type === 'clever' ? CALCULATING_ORDER.indexOf(a.value) : 99);
     all.sort((a, b) => rank(a) - rank(b));
+  }
+  if (head?.kind === 'kineticShunt') {
+    const dist = (a: Action) => (a.type === 'kineticShunt' ? distance(cellOf(die(s, a.die))!, a.to, s.board) : 0);
+    const isEnemy = (a: Action) => a.type === 'kineticShunt' && die(s, a.die).owner !== head.player;
+    all.sort((a, b) => {
+      const eDiff = (isEnemy(b) ? 1 : 0) - (isEnemy(a) ? 1 : 0);
+      if (eDiff !== 0) return eDiff;
+      return dist(b) - dist(a);
+    });
   }
   const options = nearestAttacks(all);
   return s.turn.actionsLeft > 0 ? options.filter((a) => a.type !== 'playStoredTactic') : options;

@@ -25,6 +25,7 @@ import {
   moveOptions,
   nomadicTargets,
   relocationOptions,
+  shuntTargets,
   startSlots,
   tacticalOptions,
   usedThisTurn,
@@ -102,6 +103,7 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
     spaces(s.board)
       .filter((cell) => !head.placed.some((p) => same(p, cell)) && isEmptySpace(s, cell) && !s.gates?.some((g) => same(g, cell)))
       .map((cell) => ({ type: 'placeBarrier', cell })),
+  kineticShunt: (s) => shipsOnBoard(s).flatMap((d) => shuntTargets(s, d).map((to) => ({ type: 'kineticShunt', die: d.id, to }) as const)),
   changeOfHeart: (s) => [...new Set(s.market.skillDeck)].map((skill) => ({ type: 'changeOfHeart', skill })),
   patientTactic: (s) => [
     { type: 'patientTactic' } as const,

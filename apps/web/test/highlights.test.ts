@@ -77,6 +77,21 @@ describe('highlightsFor', () => {
     );
   });
 
+  it('highlights candidate mechs and allows switching during Kinetic Shunt', () => {
+    const base = quickStart(2, 1, 'regolith', 'alpha-hex');
+    const s = arrange(base, { p0d0: [4, 4, 3], p1d0: [4, 5, 2] });
+    s.pending.unshift({ kind: 'kineticShunt', player: 0 });
+
+    const unselected = lit(s, { kind: 'none' }, false);
+    expect(unselected.dice.get('p0d0')).toBe('target');
+    expect(unselected.dice.get('p1d0')).toBe('target');
+
+    const selected = lit(s, { kind: 'kineticShunt', die: 'p1d0' }, false);
+    expect(selected.dice.get('p1d0')).toBe('target');
+    expect(selected.dice.get('p0d0')).toBe('target');
+    expect(selected.cells.size).toBeGreaterThan(0);
+  });
+
   it('matches the legal actions in every action-phase position of full AI games', () => {
     let checked = 0;
     for (const mode of ['basic', 'original', 'community', 'regolith'] as const) {

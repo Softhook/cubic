@@ -40,6 +40,7 @@ import {
   rulesOf,
   RULESETS,
   shipsByIndex,
+  shuntTargets,
   stopZone,
   tryApply,
   type Action,
@@ -49,7 +50,7 @@ import {
   MAPS,
 } from '../src';
 import { cubeLeft } from '../src/core';
-import { beginPlay } from '../src/turn';
+import { beginPlay, settle } from '../src/turn';
 import { REGOLITH_CARDS, REGOLITH_DECKS, REGOLITH_CONTESTED_DEPLOY, REGOLITH_HOME_SHIPYARD, REGOLITH_OVER_CONQUEST } from '../src/regolith';
 import { barrier as barrierPower, barrierTargets } from '../src/regolith/powers/barrier';
 import { picket } from '../src/regolith/powers/picket';
@@ -111,16 +112,21 @@ describe('Regolith mode', () => {
       const from = (c: CardDef) => card(c.from!);
       expect(own.skills.map((c) => c.from)).toEqual(community.cards!.skills.filter((c) => c.id !== 'ingenious').map((c) => c.id));
       expect(own.tactics.filter((c) => c.from).map((c) => c.from)).toEqual(community.cards!.tactics.map((c) => c.id));
-      expect(own.tactics.filter((c) => !c.from).map((c) => c.id)).toEqual(['r-barricade']);
+      expect(own.tactics.filter((c) => !c.from).map((c) => c.id)).toEqual(['r-barricade', 'r-kinetic-shunt']);
       for (const c of [...own.skills, ...own.tactics, own.expansion!]) {
         if (c.status === 'new') {
-          expect(c.id).toBe('r-barricade');
+          expect(['r-barricade', 'r-kinetic-shunt']).toContain(c.id);
           expect(c.from).toBeUndefined();
-          expect(effectOf(c.id)).toBe('barrier');
           expect(cardKind(c.id)).toBe('tactic');
           expect(c.count).toBe(2);
           expect(c.category).toBe('movement');
-          expect(c.text).toBe('Place two barriers.');
+          if (c.id === 'r-barricade') {
+            expect(effectOf(c.id)).toBe('barrier');
+            expect(c.text).toBe('Place two barriers.');
+          } else {
+            expect(effectOf(c.id)).toBe('kinetic-shunt');
+            expect(c.text).toBe('Choose any mech. Push it up to 4 spaces in a straight line.');
+          }
         } else {
           expect(c.id, c.id).toBe(`r-${c.from}`);
           if (c.status !== 'reworked') expect(effectOf(c.id), c.id).toBe(effectOf(c.from!));
@@ -1072,5 +1078,122 @@ describe('Barricade tactic card (Regolith)', () => {
     // The barriers now block moves through those spaces
     expect(isEmptySpace(s, { r: 0, c: 3 })).toBe(false);
     expect(isEmptySpace(s, { r: 0, c: 4 })).toBe(false);
+  });
+});
+
+describe('Kinetic Shunt tactic card (Regolith)', () => {
+  it('is a tactic card in the Regolith deck with 2 copies', () => {
+    const cardDef = REGOLITH_DECKS.tactics.find((c) => c.id === 'r-kinetic-shunt');
+    expect(cardDef).toBeDefined();
+    expect(cardDef!.name).toBe('Kinetic Shunt');
+    expect(cardDef!.subtitle).toBe('Push any mech 4 spaces');
+    expect(cardDef!.text).toBe('Choose any mech. Push it up to 4 spaces in a straight line.');
+    expect(cardDef!.count).toBe(2);
+    expect(cardDef!.category).toBe('movement');
+    expect(cardDef!.status).toBe('new');
+    expect(cardDef!.effect).toBe('kinetic-shunt');
+    expect(cardKind('r-kinetic-shunt')).toBe('tactic');
+  });
+
+  it('playing the card asks to choose a mech and pushes it up to 4 spaces in a straight line', () => {
+    let s = scenario({ p0d0: [2, 1, 6], p1d0: [2, 5, 5] }, 'regolith');
+    const me = s.turn.player;
+    toRow(s, 'tactic', 'r-kinetic-shunt');
+    s.pending.unshift({ kind: 'takeCard', player: me, count: 1 });
+    s = apply(s, { type: 'takeCard', deck: 'tactic', index: 0 });
+
+    expect(s.pending[0]).toMatchObject({ kind: 'kineticShunt', player: me });
+    const legal = legalActions(s);
+    expect(legal.every((a) => a.type === 'kineticShunt')).toBe(true);
+
+    // Can target own or enemy mechs
+    expect(legal.some((a) => a.type === 'kineticShunt' && a.die === 'p0d0')).toBe(true);
+    expect(legal.some((a) => a.type === 'kineticShunt' && a.die === 'p1d0')).toBe(true);
+
+    // Cannot push into an occupied space or planet or non-straight line
+    const planet = s.board.planets[0];
+    expect(legal).not.toContainEqual({ type: 'kineticShunt', die: 'p0d0', to: { r: planet.r, c: planet.c } });
+    expect(() => apply(s, { type: 'kineticShunt', die: 'p0d0', to: { r: planet.r, c: planet.c } })).toThrow(/Not a valid push destination/);
+
+    // Push p1d0 right: from (2,5), (2,6) is empty (+1), (2,7) is empty (+2), (2,8) is empty (+3)
+    const canPushTo = shuntTargets(s, at(s, 'p1d0'));
+    expect(canPushTo).toContainEqual({ r: 2, c: 6 });
+    expect(canPushTo).toContainEqual({ r: 2, c: 7 });
+    expect(canPushTo).toContainEqual({ r: 2, c: 8 });
+
+    // Apply the push to (2, 8)
+    s = apply(s, { type: 'kineticShunt', die: 'p1d0', to: { r: 2, c: 8 } });
+    expect(at(s, 'p1d0').loc).toEqual({ zone: 'board', r: 2, c: 8 });
+    expect(s.pending).toHaveLength(0);
+  });
+
+  it('can push an enemy mech off an objective perimeter to break contested orbit', () => {
+    const base = BASE.regolith;
+    const planet = base.board.planets.find((q) => !q.start && !q.cubes.length)!;
+    const [o1, , o3] = orbitals(base.board, planet);
+    let s = scenario({ p0d0: [o1.r, o1.c, planet.number], p1d0: [o3.r, o3.c, 6] }, 'regolith');
+    expect(conquerCheck(s, 0, planet.id).blocked).toBe(true);
+    expect(conquerCheck(s, 0, planet.id).ok).toBe(false);
+
+    // Play Kinetic Shunt to shove enemy off the perimeter
+    s.pending.unshift({ kind: 'kineticShunt', player: 0 });
+    const target = shuntTargets(s, at(s, 'p1d0')).find((c) => !orbitals(s.board, planet).some((p) => p.r === c.r && p.c === c.c))!;
+    expect(target).toBeDefined();
+
+    s = apply(s, { type: 'kineticShunt', die: 'p1d0', to: target });
+    expect(at(s, 'p1d0').loc).toEqual({ zone: 'board', r: target.r, c: target.c });
+
+    // Now contested orbit is cleared and conquest is allowed!
+    expect(conquerCheck(s, 0, planet.id).blocked).toBeUndefined();
+    expect(conquerCheck(s, 0, planet.id).ok).toBe(true);
+  });
+
+  it('logs "their" when pushing a friendly mech and auto-resolves when no mechs can be shunted', () => {
+    let s = scenario({ p0d0: [4, 4, 3] }, 'regolith');
+    s.pending.unshift({ kind: 'kineticShunt', player: 0 });
+
+    const target = shuntTargets(s, at(s, 'p0d0'))[0];
+    s = apply(s, { type: 'kineticShunt', die: 'p0d0', to: target });
+    expect(s.log[s.log.length - 1].text).toMatch(/pushes their Tactician/);
+
+    // If kineticShunt is pending but no mechs are on board, settle auto-resolves it
+    s.dice.forEach((d) => (d.loc = { zone: 'scrapyard' }));
+    s.pending.unshift({ kind: 'kineticShunt', player: 0 });
+    settle(s);
+    expect(s.pending.some((p) => p.kind === 'kineticShunt')).toBe(false);
+  });
+
+  it('can push mechs through an ice tunnel and out the other side', () => {
+    let s = scenario({ p0d0: [1, 4, 3] }, 'regolith');
+    const gateA = { r: 2, c: 4 };
+    const gateB = { r: 7, c: 2 };
+    s.gates = [gateA, gateB];
+
+    // p0d0 is at (1,4). Pushing South (1,0) reaches Gate A (2,4) in 1 space.
+    // Traversing to Gate B (7,2) is step 2.
+    // Continuing South from Gate B: (8,2) is step 3.
+    const targets = shuntTargets(s, at(s, 'p0d0'));
+    expect(targets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining(gateA),
+        expect.objectContaining(gateB),
+        expect.objectContaining({ r: 8, c: 2 }),
+        expect.objectContaining({ r: 3, c: 4 }),
+      ]),
+    );
+
+    // Apply push through the ice tunnel
+    s.pending.unshift({ kind: 'kineticShunt', player: 0 });
+    s = apply(s, { type: 'kineticShunt', die: 'p0d0', to: { r: 8, c: 2 } });
+    expect(at(s, 'p0d0').loc).toEqual({ zone: 'board', r: 8, c: 2 });
+    expect(s.log[s.log.length - 1].text).toMatch(/pushes their Tactician.*through an ice tunnel/);
+
+    // If Gate B is blocked by an enemy mech, pushing through the tunnel is blocked
+    const blocked = scenario({ p0d0: [1, 4, 3], p1d0: [7, 2, 6] }, 'regolith');
+    blocked.gates = [gateA, gateB];
+    const blockedTargets = shuntTargets(blocked, at(blocked, 'p0d0'));
+    expect(blockedTargets).toContainEqual(expect.objectContaining(gateA));
+    expect(blockedTargets).not.toContainEqual(expect.objectContaining(gateB));
+    expect(blockedTargets).not.toContainEqual(expect.objectContaining({ r: 8, c: 2 }));
   });
 });

@@ -898,6 +898,23 @@ export const SCENES: Record<string, SpScene> = {
       flash(46, 34, 3.5, 9) +
       sparks(s.r, 46, 34, 14, 8),
   },
+  'r-kinetic-shunt': {
+    world: 'mars',
+    caption: 'an explosive kinetic pulse blasting out from a mech’s cannon, dust rings kicking up as the target is hurled backward',
+    draw: (s) =>
+      outdoors(s, 30, { planet: { x: 50, y: 7, r: 7 } }) +
+      mech(s, 'breacher', 16, 40, 0.11, { yaw: 40, lean: -8, arms: { plus: [-80, 0] } }) +
+      flash(22, 28, 4, 10) +
+      sparks(s.r, 22, 28, 14, 8) +
+      stroke('M22,28 Q34,25 46,27', INKS.amber, 1, ' stroke-dasharray="3 1.5"') +
+      stroke('M22,28.5 Q34,25.5 46,27.5', INKS.bone, 0.5) +
+      rings(28, 28, 3, 3, 3, INKS.amber, 0.6, 270, 450) +
+      rings(36, 27.5, 3, 3.5, 3, INKS.amber, 0.7, 270, 450) +
+      `<ellipse cx="48" cy="38" rx="8" ry="2.6" fill="${INKS.dust}" opacity="0.6"/>` +
+      rings(48, 38, 3, 2, 2.5, INKS.dust, 0.5, 0, 360) +
+      mech(s, 'chameleon', 48, 38, 0.09, { yaw: -30, lean: 24, legs: { plus: [20, 10], minus: [-25, 20] } }, { plate: INKS.oxide }) +
+      sparks(s.r, 48, 32, 12, 8),
+  },
   'r-expansion': {
     world: 'mars',
     caption: "a new Chameleon walking out of a workshop's doors",

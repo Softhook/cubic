@@ -2,12 +2,16 @@
 import {
   cellAt,
   diagonals,
+  geometry,
   grid,
   type Grid,
   key,
   linked,
+  offsets,
+  onBoard,
   orbitals,
   orbitedPlanets,
+  otherGate,
   planetFreeSlots,
   same,
   spaces,
@@ -954,4 +958,65 @@ export function attackFactors(
 /** A modifier with its sign: "+1", "−2" (a minus sign, not a hyphen). */
 export function signed(n: number): string {
   return n < 0 ? `−${-n}` : `+${n}`;
+}
+
+/**
+ * The empty spaces in straight lines a mech can be pushed to (up to 4 spaces away).
+ * Pushing stops before obstacles (planets, mechs, barriers, void or the edge of the board).
+ * Mechs can also be pushed through an Ice Tunnel (Warp Gate): entering one gate emerges from the other
+ * (costing 1 step of distance), continuing in the straight line if distance remains.
+ */
+export function shuntTargets(state: GameState, d: Die): Cell[] {
+  const start = cellOf(d);
+  if (!start) return [];
+  const out: Cell[] = [];
+  const add = (c: Cell) => {
+    if (!out.some((p) => p.r === c.r && p.c === c.c)) out.push(c);
+  };
+
+  const partnerAtStart = otherGate(state, start);
+  if (partnerAtStart && isEmptySpace(state, partnerAtStart)) {
+    // If the mech starts on an Ice Tunnel, pushing it through the tunnel brings it to the other gate (1 step).
+    add(partnerAtStart);
+    // From the other gate, it can continue in any straight line out of it up to 3 more spaces.
+    for (const dir of geometry(state.board).sides) {
+      let curr = partnerAtStart;
+      for (let steps = 2; steps <= 4; steps++) {
+        const [next] = offsets(state.board, curr, [dir]);
+        if (!next || !onBoard(state.board, next) || !isEmptySpace(state, next)) break;
+        if (same(next, start)) break;
+        add(next);
+        curr = next;
+      }
+    }
+  }
+
+  // Straight lines along each side direction
+  for (const dir of geometry(state.board).sides) {
+    let curr = start;
+    for (let steps = 1; steps <= 4; steps++) {
+      const [next] = offsets(state.board, curr, [dir]);
+      if (!next || !onBoard(state.board, next) || !isEmptySpace(state, next)) break;
+      if (same(next, start)) break;
+      add(next);
+
+      // If next is an Ice Tunnel and we have steps remaining, we can also push through it!
+      const partner = otherGate(state, next);
+      if (partner && isEmptySpace(state, partner) && steps < 4) {
+        add(partner);
+        let partnerCurr = partner;
+        for (let pSteps = steps + 2; pSteps <= 4; pSteps++) {
+          const [pNext] = offsets(state.board, partnerCurr, [dir]);
+          if (!pNext || !onBoard(state.board, pNext) || !isEmptySpace(state, pNext)) break;
+          if (same(pNext, start)) break;
+          add(pNext);
+          partnerCurr = pNext;
+        }
+      }
+
+      curr = next;
+    }
+  }
+
+  return out;
 }

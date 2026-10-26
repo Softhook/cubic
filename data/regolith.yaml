@@ -452,6 +452,15 @@ tactics:
     status: new
     effect: barrier
     art: { title: "Spun barrier", brief: "A Wisp firing a barrier across the ground." }
+  - id: r-kinetic-shunt
+    name: "Kinetic Shunt"
+    subtitle: "Push any mech 4 spaces"
+    text: "Choose any mech. Push it up to 4 spaces in a straight line."
+    category: movement
+    count: 2
+    status: new
+    effect: kinetic-shunt
+    art: { title: "Shockwave", brief: "An explosive kinetic pulse blasting out from a mech's cannon, dust rings kicking up as the target is hurled backward." }
 
 expansion:
   - id: r-expansion

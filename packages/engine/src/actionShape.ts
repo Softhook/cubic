@@ -75,6 +75,7 @@ export const SHAPES: { [K in Action['type']]: Shape<K> } = {
   showOfForce: { die: str },
   warpGate: { cell },
   placeBarrier: { cell },
+  kineticShunt: { die: str, to: cell },
   changeOfHeart: { skill: str },
   prideful: { take: bool },
   ruthless: { skill: opt(str) },

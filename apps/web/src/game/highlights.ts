@@ -78,6 +78,15 @@ export function highlightsFor(game: GameState, sel: Sel, legal: Legal, actionPha
           'gate',
         );
         break;
+      case 'kineticShunt':
+        for (const a of legal.of('kineticShunt')) h.dice.set(a.die, 'target');
+        if (sel.kind === 'kineticShunt') {
+          addCells(
+            legal.of('kineticShunt', (a) => a.die === sel.die).map((a) => a.to),
+            'move',
+          );
+        }
+        break;
       case 'relocation': {
         const moves = legal.of('relocate');
         if (sel.kind === 'relocate') {

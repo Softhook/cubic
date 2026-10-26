@@ -40,6 +40,10 @@ function hint(game: GameState, sel: Sel): string {
         return `Place Warp Gate ${head.placed.length + 1} of 2 on an empty space.`;
       case 'placeBarrier':
         return `Place Barrier ${head.placed.length + 1} of 2 on an empty space.`;
+      case 'kineticShunt':
+        return sel.kind === 'kineticShunt'
+          ? 'Kinetic Shunt: choose an empty space in a straight line to push the mech to.'
+          : 'Kinetic Shunt: choose any mech on the map to push.';
       case 'unveil':
         return head.reorganize
           ? 'Reorganisation: click your ships to re-roll them, then place re-rolled ships from your scrapyard. Press Done when finished.'

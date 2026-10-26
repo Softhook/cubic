@@ -166,6 +166,12 @@ describe('tactics, gambits and expansion', () => {
     expect(r.s.barriers).toHaveLength(before + 2);
   });
 
+  cardCase(['r-kinetic-shunt'], 'Kinetic Shunt (Regolith)', () => {
+    const s = quickStart(2, 197, 'regolith', 'alpha-hex');
+    const r = resolveWithAi(takeTactic(s, 'r-kinetic-shunt'), seededRandom(7));
+    expect(r.seen).toContain('kineticShunt');
+  });
+
   cardCase([EXPANSION.id], 'Expansion', () => {
     let s = quickStart(2, 199, 'community');
     const p = s.turn.player;

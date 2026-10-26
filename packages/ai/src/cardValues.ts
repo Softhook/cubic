@@ -68,6 +68,7 @@ const TACTIC_VALUE: Record<string, number> = {
   sabotage: 50,
   'warp-gate': 45,
   barrier: 45,
+  'kinetic-shunt': 50,
   'plan-ahead': 45,
   'unveil-the-fleet': 40,
 };

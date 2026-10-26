@@ -330,6 +330,24 @@ export function offsets(board: Board, p: Cell, deltas: readonly Cell[]): Cell[] 
 }
 
 /**
+ * Straight lines out of a space along each side/direction (4 on squares, 6 on hexes), nearest first, as far
+ * as the board's edge.
+ */
+export function straightLines(board: Board, start: Cell): Cell[][] {
+  return geometry(board).sides.map((dir) => {
+    const line: Cell[] = [];
+    let at = start;
+    for (let k = 0; k < board.rows + board.cols; k++) {
+      [at] = offsets(board, at, [dir]);
+      if (!onBoard(board, at)) break;
+      if (same(at, start) || line.some((p) => same(p, at))) break;
+      line.push(at);
+    }
+    return line;
+  });
+}
+
+/**
  * A board's cells by index (r * cols + c), with each cell's neighbours: they never change, and the
  * AI asks for them for every ship in every position it scores. Cached by `cells`, which states share
  * (see engine.ts copyState). The lists are frozen, as every caller gets the same one.
@@ -431,6 +449,13 @@ function gatePartner(state: GameState, p: Cell): Cell[] {
   if (state.gates.length !== 2) return [];
   const [a, b] = state.gates;
   return same(p, a) ? [b] : same(p, b) ? [a] : [];
+}
+
+/** The other Warp Gate / Ice Tunnel space, when p is one of two placed gates. */
+export function otherGate(state: GameState, p: Cell): Cell | undefined {
+  if (state.gates.length !== 2) return undefined;
+  const [a, b] = state.gates;
+  return same(p, a) ? b : same(p, b) ? a : undefined;
 }
 
 export function isDiagonalStep(a: Cell, b: Cell, board: Board): boolean {

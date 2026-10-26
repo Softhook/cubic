@@ -183,6 +183,7 @@ function playOutDecisions(state: GameState, me: PlayerId): GameState {
 /** The follow-up option `quickPolicy` prefers for each kind of decision; otherwise the first legal one. */
 const PREFERRED: { [K in Pending['kind']]?: (a: Action, s: GameState, me: PlayerId) => boolean } = {
   showOfForce: (a, s, me) => a.type === 'showOfForce' && die(s, a.die).owner !== me,
+  kineticShunt: (a, s, me) => a.type === 'kineticShunt' && die(s, a.die).owner !== me,
   takeCard: (a) => a.type === 'takeCard' && a.deck === 'expansion',
   patientTactic: (a) => a.type === 'patientTactic' && a.index !== undefined,
   unveil: (a) => a.type === 'unveilDeploy',
