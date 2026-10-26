@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { VitePWA } from 'vite-plugin-pwa';
+import { APP_ID } from './src/appId';
 
 /** This machine's address on the local network, so online invites made in dev work on other devices. */
 function lanAddress(): string {
@@ -44,18 +45,19 @@ export default defineConfig(({ command, mode }) => ({
       manifest: false,
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,webmanifest}'],
-        // The fonts come from Google: cached on first use, so a game offline keeps its lettering.
+        // The fonts come from Google: cached on first use, so a game offline keeps its lettering. Cache Storage
+        // is shared by the whole origin (softhook.github.io), so the cache is named for this app.
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
             handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'google-fonts', expiration: { maxEntries: 30 } },
+            options: { cacheName: `${APP_ID}-google-fonts`, expiration: { maxEntries: 30 } },
           },
         ],
       },
     }),
   ],
-  // Relative asset paths so the build works under a subpath (e.g. GitHub Pages /quantum/).
+  // Relative asset paths so the build works under a subpath (e.g. GitHub Pages /cubic/).
   base: './',
   // All addresses: IPv4 and IPv6 localhost (browsers differ in which "localhost" means), and the
   // local network, for trying online play from a phone.

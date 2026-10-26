@@ -4,7 +4,7 @@
  *   npm run pwa:check
  *
  * Builds the app five times (versions v1–v5, told apart by BUILD_ID) into test-results/pwa/ and serves
- * one at a time under /quantum/, as GitHub Pages does (with its 10-minute HTTP cache). Then, in Chrome
+ * one at a time under a subpath, as GitHub Pages does (with its 10-minute HTTP cache). Then, in Chrome
  * sized as the Moto G55:
  *   1. a first visit installs the service worker, which has every file of the build;
  *   2. with the network gone (and the server down) the app opens and a game against the AI starts;
@@ -26,7 +26,9 @@ const OUT = resolve('test-results/pwa');
 const VERSIONS = ['v1', 'v2', 'v3', 'v4', 'v5'] as const;
 type Version = (typeof VERSIONS)[number];
 const PORT = 5190;
-const BASE = `http://127.0.0.1:${PORT}/quantum/`;
+/** The subpath the build is served under, as GitHub Pages serves a repo's site. */
+const SUBPATH = '/app/';
+const BASE = `http://127.0.0.1:${PORT}${SUBPATH}`;
 
 const TYPES: Record<string, string> = {
   '.html': 'text/html',
@@ -70,8 +72,8 @@ let live: Version | null = 'v1';
 const server = createServer((req, res) => {
   if (!live) return req.socket.destroy();
   const path = new URL(req.url!, BASE).pathname;
-  if (!path.startsWith('/quantum/')) return res.writeHead(404).end();
-  const file = join(OUT, live, path.slice('/quantum/'.length) || 'index.html');
+  if (!path.startsWith(SUBPATH)) return res.writeHead(404).end();
+  const file = join(OUT, live, path.slice(SUBPATH.length) || 'index.html');
   try {
     const body = readFileSync(file);
     res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream', 'cache-control': 'max-age=600' }).end(body);
@@ -89,7 +91,7 @@ async function pastOpening() {
 
 async function servedVersion(page: Page): Promise<Version | undefined> {
   const src = await page.evaluate(() => document.querySelector<HTMLScriptElement>('script[type=module]')?.src ?? '');
-  return ENTRIES.get(new URL(src).pathname.replace('/quantum/', ''));
+  return ENTRIES.get(new URL(src).pathname.replace(SUBPATH, ''));
 }
 
 const versionLine = (page: Page) => page.locator('.version');
@@ -117,7 +119,7 @@ async function main() {
       for (const name of await caches.keys()) for (const r of await (await caches.open(name)).keys()) urls.push(new URL(r.url).pathname);
       return urls;
     });
-    const missing = filesOf(join(OUT, 'v1')).filter((f) => !/^(sw\.js|workbox-.*\.js)$/.test(f) && !cached.includes(`/quantum/${f}`));
+    const missing = filesOf(join(OUT, 'v1')).filter((f) => !/^(sw\.js|workbox-.*\.js)$/.test(f) && !cached.includes(`${SUBPATH}${f}`));
     check('every file of the build is cached for offline', missing.length === 0, missing.join(', ') || `${cached.length} files`);
 
     console.log('2. Offline');

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { download } from '../files';
+import { GAME_NAME, gameFile } from '../appId';
 import { PAPER, type Paper } from '../print/sheets';
 import { Manual } from './Manual';
 import css from './rulebook.css?raw';
@@ -31,8 +32,8 @@ export function Rulebook() {
   const pageCss = `@media print { @page { size: ${PAPER[paper].w}mm ${PAPER[paper].h}mm; } }`;
 
   const downloadHtml = () => {
-    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Cubic — Manual</title><style>${gameColours()}${css}${pageCss}</style></head><body class="rb-standalone">${page.current!.outerHTML}</body></html>`;
-    download('cubic-manual.html', new Blob([html], { type: 'text/html' }));
+    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${GAME_NAME} — Manual</title><style>${gameColours()}${css}${pageCss}</style></head><body class="rb-standalone">${page.current!.outerHTML}</body></html>`;
+    download(gameFile('manual.html'), new Blob([html], { type: 'text/html' }));
   };
 
   return (

@@ -1,6 +1,7 @@
 import { AID, CARD, HEX_TILE_CUT, TILE, hexTileShape } from '@quantum/art';
 import type { Line, Polygon } from './pdf';
 import { pressTag } from './press';
+import { gameFile } from '../appId';
 
 /**
  * The printed pieces, and the one convention every print file follows: size, bleed, sheet layout and
@@ -104,15 +105,15 @@ const slug = (item: Printable) => item.name.replaceAll('/', '-');
 
 /** A single export's file name: `cubic-card-skill-07-agile-bleed-300dpi.png`, `cubic-tile-p7-01.svg`. */
 export function fileName(p: Format, item: Printable, o: { bleed: boolean; dpi?: number; ext: string }): string {
-  return `cubic-${p.id}-${slug(item)}${o.bleed ? '-bleed' : ''}${o.dpi ? `-${o.dpi}dpi` : ''}.${o.ext}`;
+  return gameFile(`${p.id}-${slug(item)}${o.bleed ? '-bleed' : ''}${o.dpi ? `-${o.dpi}dpi` : ''}.${o.ext}`);
 }
 
 /** One face's CMYK PDF: `cubic-proof-a4-fogra39.pdf`, `…-fogra39-deep.pdf` with the deep black (always with the bleed). */
-export const cmykName = (p: Format, item: Printable, deep: boolean) => `cubic-${p.id}-${slug(item)}-${pressTag(deep)}.pdf`;
+export const cmykName = (p: Format, item: Printable, deep: boolean) => gameFile(`${p.id}-${slug(item)}-${pressTag(deep)}.pdf`);
 
 /** A whole set's ZIP: `cubic-cards-community-bleed.zip`, `cubic-cards-community-fogra39.zip`. */
 export const setName = (p: Piece, o: { part?: string; tag?: string }) =>
-  `cubic-${p.plural}${o.part ? `-${o.part}` : ''}${o.tag ? `-${o.tag}` : ''}.zip`;
+  gameFile(`${p.plural}${o.part ? `-${o.part}` : ''}${o.tag ? `-${o.tag}` : ''}.zip`);
 
 /** Press sheets of pieces printed together: `cubic-tiles-aids-a4-fogra39.pdf`, `…-fogra39-deep.pdf` with the deep black. */
-export const sheetName = (name: string, deep: boolean) => `cubic-${name}-a4-${pressTag(deep)}.pdf`;
+export const sheetName = (name: string, deep: boolean) => gameFile(`${name}-a4-${pressTag(deep)}.pdf`);

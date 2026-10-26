@@ -7,6 +7,7 @@ import { forgetFinishedGames, onlineGames } from '../src/online/games';
 import { generateSecretKey } from 'nostr-tools/pure';
 import { encodePost, gameKeys, newSecret, PROTOCOL } from '@quantum/online';
 import { openGameLog, rememberGame, saveEvents } from '../src/online/storage';
+import { appKey } from '../src/appId';
 
 /** localStorage holding at most `quota` characters (keys and values), like a browser's. */
 class FakeStorage {
@@ -52,10 +53,10 @@ describe('online games in storage', () => {
       { name: 'B', color: '#000', ai: true, aiLevel: 1 },
     ];
     const state = createGame({ players, mapId: 'alpha-hex', mode: 'regolith', seed: 1 });
-    store.setItem('quantum.savedGame', JSON.stringify({ ...state, mode: 'prototyping' }));
+    store.setItem(appKey('savedGame'), JSON.stringify({ ...state, mode: 'prototyping' }));
 
     expect(loadSavedGame()).toBeNull();
-    expect(stored('quantum.savedGame')).toBeNull();
+    expect(stored(appKey('savedGame'))).toBeNull();
   });
 
   it(`keeps only the most recently seen finished games`, () => {
@@ -65,7 +66,7 @@ describe('online games in storage', () => {
     expect(games.filter((g) => g.over).map((g) => g.secret)).toEqual([7, 6, 5, 4, 3].map(secret));
     expect(games.some((g) => g.secret === secret(8))).toBe(true);
     // The dropped games' events are gone too.
-    expect([...store.data.keys()].filter((k) => k.startsWith('quantum.online.events.')).length).toBe(6);
+    expect([...store.data.keys()].filter((k) => k.startsWith(appKey('online.events.'))).length).toBe(6);
   });
 
   it('frees room for the saved game by dropping finished games, oldest first', () => {
@@ -74,7 +75,7 @@ describe('online games in storage', () => {
     addGame(2, true);
     // Room for the save once one game's events are gone, not before.
     store.quota = [...store.data].reduce((n, [k, v]) => n + k.length + v.length, 0) + 800;
-    expect(remember('quantum.savedGame', 's'.repeat(1400))).toBe(true);
+    expect(remember(appKey('savedGame'), 's'.repeat(1400))).toBe(true);
     const left = onlineGames().map((g) => g.secret);
     expect(left).toContain(secret(1));
     expect(left).toContain(secret(2));
@@ -84,9 +85,9 @@ describe('online games in storage', () => {
   it('never drops a game in progress, and gives up when nothing more can go', () => {
     addGame(0, false);
     addGame(1, true);
-    expect(remember('quantum.savedGame', 's'.repeat(2_000_000))).toBe(false);
+    expect(remember(appKey('savedGame'), 's'.repeat(2_000_000))).toBe(false);
     expect(onlineGames().map((g) => g.secret)).toEqual([secret(0)]);
-    expect(stored('quantum.savedGame')).toBeNull();
+    expect(stored(appKey('savedGame'))).toBeNull();
   });
 
   it('lets the lobby forget every finished game and its events', () => {
@@ -95,7 +96,7 @@ describe('online games in storage', () => {
     addGame(2, true);
     expect(forgetFinishedGames().map((g) => g.secret)).toEqual([secret(1)]);
     expect(onlineGames().map((g) => g.secret)).toEqual([secret(1)]);
-    expect([...store.data.keys()].filter((k) => k.startsWith('quantum.online.events.')).length).toBe(1);
+    expect([...store.data.keys()].filter((k) => k.startsWith(appKey('online.events.'))).length).toBe(1);
   });
 
   it('ends when storage refuses every write', () => {
@@ -103,8 +104,8 @@ describe('online games in storage', () => {
     store.setItem = () => {
       throw new Error('SecurityError');
     };
-    expect(remember('quantum.mode', 'basic')).toBe(false);
-    forget('quantum.mode');
+    expect(remember(appKey('mode'), 'basic')).toBe(false);
+    forget(appKey('mode'));
   });
 
   describe('when the saved events were last whole (syncedAt)', () => {
@@ -145,7 +146,7 @@ describe('online games in storage', () => {
     it('is not trusted when a saved event cannot be read', () => {
       saveEvents(tag, [event, { ...event, id: 'other', content: 'damaged' }], 1234);
       expect(openGameLog(game).load()).toBeUndefined();
-      store.setItem(`quantum.online.events.${tag}`, JSON.stringify({ events: [event, 42], syncedAt: 1234 }));
+      store.setItem(appKey(`online.events.${tag}`), JSON.stringify({ events: [event, 42], syncedAt: 1234 }));
       expect(openGameLog(game).load()).toBeUndefined();
       // Valid encryption, malformed post body: rejected from both timeline and events.
       const { event: bad } = encodePost(gameKeys(game), generateSecretKey(), { t: 'nope' } as never, null);
@@ -156,7 +157,7 @@ describe('online games in storage', () => {
     });
 
     it('reads the older saves, a bare array of events, as never synced', () => {
-      store.setItem(`quantum.online.events.${tag}`, JSON.stringify([event]));
+      store.setItem(appKey(`online.events.${tag}`), JSON.stringify([event]));
       const log = openGameLog(game);
       expect(log.load()).toBeUndefined();
       expect(log.events.has(event.id)).toBe(true);

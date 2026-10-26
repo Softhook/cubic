@@ -37,13 +37,15 @@ The app's identity is now set in one place each, so each repo changes one line:
 
 | What | Where | Cubic | Regolith |
 |---|---|---|---|
-| Browser storage: every localStorage key and the IndexedDB name | `APP_ID` in [apps/web/src/appId.ts](../../apps/web/src/appId.ts) | `quantum` → `cubic` | `regolith` |
+| Browser storage: every localStorage and sessionStorage key, the IndexedDB name and the service worker's font cache | `APP_ID` in [apps/web/src/appId.ts](../../apps/web/src/appId.ts) | `quantum` → `cubic` | `regolith` |
+| The name players see: the lobby's title, the share sheet, the manual's title and every saved file (`cubic-manual.html`, `cubic-tiles.zip`) | `GAME_NAME` in [apps/web/src/appId.ts](../../apps/web/src/appId.ts) | `Cubic` | `Regolith` |
 | Online namespace: relay tags and game keys are derived under it | `NAMESPACE` in [packages/online/src/codec.ts](../../packages/online/src/codec.ts) | `cubic` | `regolith` |
 | The lobby's first mode | `DEFAULT_MODE` in [rulesets.ts](../../packages/engine/src/rulesets.ts) | `community` | `regolith` |
 
 Both apps are served from `softhook.github.io`, **one origin**, so with the same storage names they would
-read each other's saved game, lobby choices and online identity. Each service worker's scope is its own
-path, so the offline caches don't collide (check with `npm run pwa:check` after the first deploy of each).
+read each other's saved game, lobby choices and online identity. Cache Storage is per origin too: Workbox
+names its precache after the service worker's scope, and the font cache is named after `APP_ID`, so the
+offline caches don't collide (check with `npm run pwa:check` after the first deploy of each).
 
 ## The order
 
@@ -63,12 +65,13 @@ Regolith has to be copied out before Cubic deletes it:
 
 One commit, no rule changes:
 
-- `APP_ID = 'regolith'`, `NAMESPACE = 'regolith'`, `DEFAULT_MODE = 'regolith'`.
+- `APP_ID = 'regolith'`, `NAMESPACE = 'regolith'`, `DEFAULT_MODE = 'regolith'`, `GAME_NAME = 'Regolith'`.
 - Packages `@quantum/*` → `@regolith/*` (every `package.json`, every import), root package `name`, the dev
-  hook `window.__quantum` → `window.__regolith` (scripts use it too).
+  hooks `window.__quantum` → `window.__regolith` and `window.__quantumOnline` → `window.__regolithOnline`
+  (scripts use them too).
 - [index.html](../../apps/web/index.html) `<title>`, [manifest.webmanifest](../../apps/web/public/manifest.webmanifest)
   name, colours (the ground palette, not `#050813`), icons and favicon from the mood board, the lobby's credit
-  line, `cubic-manual.html` → `regolith-manual.html`.
+  line. The file names in `apps/web/test/print.test.ts` follow `GAME_NAME` (`regolith-manual.html`, …).
 - README for Regolith. Keep the Develop section's commands.
 - Enable Pages on the repo. The Pages workflow carries over as is, its `layout` and `pwa` jobs included.
 
@@ -136,7 +139,8 @@ One commit, no rule changes:
 - Packages `@quantum/*` → `@cubic/*`, root package `"name": "quantum"` → `"cubic"`.
 - `APP_ID = 'cubic'` (storage keys `cubic.*`, IndexedDB `cubic-art`). Saved games under `quantum.*` are dropped:
   there are no users.
-- The dev hook `window.__quantum` → `window.__cubic`, in the app and the scripts; `QuantumHook` → `CubicHook`.
+- The dev hooks `window.__quantum` → `window.__cubic` and `window.__quantumOnline` → `window.__cubicOnline`, in
+  the app and the scripts; `QuantumHook` → `CubicHook`.
 - The README stops saying "working title". The lobby and manual already say Cubic.
 - "Quantum" stays where it names the original game: the credits, the rulebook, `Quantum Entanglement`.
 

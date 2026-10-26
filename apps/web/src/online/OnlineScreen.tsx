@@ -9,7 +9,7 @@ import { inviteLink } from './create';
 import { useOnlineGame, type OnlineGame } from './useOnlineGame';
 import type { RelayStatus } from './relays';
 import { remember, stored } from '../storage';
-import { appKey } from '../appId';
+import { appKey, GAME_NAME } from '../appId';
 
 const NAME = appKey('online.name');
 /** How long to look for a game on the relays before saying it can't be found. */
@@ -157,7 +157,7 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
   const copy = async () => {
     const url = inviteLink(secret);
     try {
-      if (navigator.share && matchMedia(COARSE).matches) await navigator.share({ title: 'Join my game of Cubic', url });
+      if (navigator.share && matchMedia(COARSE).matches) await navigator.share({ title: `Join my game of ${GAME_NAME}`, url });
       else await navigator.clipboard.writeText(url);
       setCopied(true);
       window.clearTimeout(copyTimer.current);

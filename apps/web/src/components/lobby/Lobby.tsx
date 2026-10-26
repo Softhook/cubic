@@ -16,6 +16,7 @@ import { YourGames } from './YourGames';
 import { Field, MapPicker, SeatRow } from './NewGameFields';
 import { INTRO_RISE_MS, useIntro } from './useIntro';
 import { MODE_KEY, PLAYER_COUNTS, isFriendSeat, mapKey, storedAiLevel, storedMap, storedMode } from './choices';
+import { GAME_NAME } from '../../appId';
 
 export interface LobbyResult {
   players: PlayerConfig[];
@@ -101,7 +102,7 @@ export function Lobby({
     >
       <LobbyBackdrop map={map} />
       <div className="lobby-hero">
-        <h1 ref={title}>Cubic</h1>
+        <h1 ref={title}>{GAME_NAME}</h1>
         {intro.phase && intro.waits && (
           <p className={`intro-prompt${intro.started ? ' gone' : ''}`}>{matchMedia(COARSE).matches ? 'Tap' : 'Click'} to start</p>
         )}
