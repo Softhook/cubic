@@ -41,6 +41,7 @@ import {
   RULESETS,
   shipsByIndex,
   shuntTargets,
+  spaces,
   stopZone,
   tryApply,
   type Action,
@@ -1195,5 +1196,135 @@ describe('Kinetic Shunt tactic card (Regolith)', () => {
     expect(blockedTargets).toContainEqual(expect.objectContaining(gateA));
     expect(blockedTargets).not.toContainEqual(expect.objectContaining(gateB));
     expect(blockedTargets).not.toContainEqual(expect.objectContaining({ r: 8, c: 2 }));
+  });
+
+  it('Hex board: mechs can be shunted along all 6 hexagonal directions', () => {
+    const s = quickStart(2, 42, 'regolith', 'alpha-hex');
+    const hexSpaces = spaces(s.board);
+    const candidate = hexSpaces.find((c) => {
+      const targets = shuntTargets(s, { id: 'test', owner: 0, value: 3, loc: { zone: 'board', r: c.r, c: c.c }, rolls: 0 });
+      return targets.length >= 6;
+    })!;
+
+    const placed = arrange(s, { p0d0: [candidate.r, candidate.c, 3] });
+    const targets = shuntTargets(placed, at(placed, 'p0d0'));
+    expect(targets.length).toBeGreaterThanOrEqual(6);
+
+    placed.pending.unshift({ kind: 'kineticShunt', player: 0 });
+    const target = targets[0];
+    const next = apply(placed, { type: 'kineticShunt', die: 'p0d0', to: target });
+    expect(at(next, 'p0d0').loc).toEqual({ zone: 'board', r: target.r, c: target.c });
+  });
+
+  it('Obstacles: mechs and barriers block shunt paths cleanly', () => {
+    const s = scenario({ p0d0: [2, 2, 3], p1d0: [2, 4, 6] }, 'regolith');
+    s.barriers = [{ r: 4, c: 2, owner: 1 }];
+
+    const targets = shuntTargets(s, at(s, 'p0d0'));
+    expect(targets).toContainEqual(expect.objectContaining({ r: 2, c: 3 }));
+    expect(targets).not.toContainEqual(expect.objectContaining({ r: 2, c: 4 }));
+    expect(targets).not.toContainEqual(expect.objectContaining({ r: 2, c: 5 }));
+
+    expect(targets).toContainEqual(expect.objectContaining({ r: 3, c: 2 }));
+    expect(targets).not.toContainEqual(expect.objectContaining({ r: 4, c: 2 }));
+    expect(targets).not.toContainEqual(expect.objectContaining({ r: 5, c: 2 }));
+  });
+
+  it('Boxed-in mech: a mech with 0 valid shunt destinations is not in legal actions', () => {
+    const s = scenario(
+      {
+        p0d0: [2, 2, 3],
+        p1d0: [1, 2, 6],
+        p1d1: [3, 2, 5],
+        p1d2: [2, 1, 4],
+        p0d1: [6, 6, 2],
+      },
+      'regolith',
+    );
+    s.barriers = [{ r: 2, c: 3, owner: 1 }];
+
+    expect(shuntTargets(s, at(s, 'p0d0'))).toHaveLength(0);
+    expect(shuntTargets(s, at(s, 'p0d1')).length).toBeGreaterThan(0);
+
+    s.pending.unshift({ kind: 'kineticShunt', player: 0 });
+    const legal = legalActions(s);
+    expect(legal.some((a) => a.type === 'kineticShunt' && a.die === 'p0d1')).toBe(true);
+    expect(legal.some((a) => a.type === 'kineticShunt' && a.die === 'p0d0')).toBe(false);
+  });
+
+  it('All mechs boxed in: playing Kinetic Shunt does not stall the game', () => {
+    let s = scenario({ p0d0: [2, 2, 3] }, 'regolith');
+    s.barriers = [
+      { r: 1, c: 2, owner: 0 },
+      { r: 3, c: 2, owner: 0 },
+      { r: 2, c: 1, owner: 0 },
+      { r: 2, c: 3, owner: 0 },
+    ];
+
+    expect(shuntTargets(s, at(s, 'p0d0'))).toHaveLength(0);
+
+    toRow(s, 'tactic', 'r-kinetic-shunt');
+    s.pending.unshift({ kind: 'takeCard', player: 0, count: 1 });
+    s = apply(s, { type: 'takeCard', deck: 'tactic', index: 0 });
+
+    expect(s.pending.some((p) => p.kind === 'kineticShunt')).toBe(false);
+  });
+
+  it('Player can shunt friendly mech onto perimeter to claim objective', () => {
+    const base = quickStart(2, 10, 'regolith');
+    const planet = base.board.planets.find((q) => !q.start && !q.cubes.length)!;
+    const [o1, o2] = orbitals(base.board, planet);
+
+    const deltaR = o2.r - planet.r;
+    const deltaC = o2.c - planet.c;
+    const startR = o2.r + deltaR * 2;
+    const startC = o2.c + deltaC * 2;
+
+    let s = scenario({ p0d0: [o1.r, o1.c, 5], p0d1: [startR, startC, 3] }, 'regolith');
+    const p = s.board.planets.find((x) => x.id === planet.id)!;
+    p.number = 8;
+
+    expect(conquerCheck(s, 0, p.id).ok).toBe(false);
+
+    s.pending.unshift({ kind: 'kineticShunt', player: 0 });
+    const targets = shuntTargets(s, at(s, 'p0d1'));
+    expect(targets).toContainEqual(expect.objectContaining(o2));
+
+    s = apply(s, { type: 'kineticShunt', die: 'p0d1', to: o2 });
+    expect(at(s, 'p0d1').loc).toEqual({ zone: 'board', r: o2.r, c: o2.c });
+    expect(conquerCheck(s, 0, p.id).ok).toBe(true);
+  });
+
+  it('Patient: storing Kinetic Shunt and playing it later as stored tactic works', () => {
+    let s = scenario({ p0d0: [2, 2, 3], p1d0: [2, 5, 4] }, 'regolith');
+    s.players[0].skills = [{ id: 'patient', active: true }];
+
+    toRow(s, 'tactic', 'r-kinetic-shunt');
+    s.pending.unshift({ kind: 'takeCard', player: 0, count: 1 });
+    s = apply(s, { type: 'takeCard', deck: 'tactic', index: 0, store: true });
+
+    expect(s.players[0].storedTactics).toContain('r-kinetic-shunt');
+    expect(s.pending).toHaveLength(0);
+
+    s = apply(s, { type: 'playStoredTactic', card: 'r-kinetic-shunt' });
+    expect(s.pending[0]).toMatchObject({ kind: 'kineticShunt', player: 0 });
+
+    s = apply(s, { type: 'kineticShunt', die: 'p1d0', to: { r: 2, c: 7 } });
+    expect(at(s, 'p1d0').loc).toEqual({ zone: 'board', r: 2, c: 7 });
+    expect(s.pending).toHaveLength(0);
+  });
+
+  it('Warp Gate / Ice Tunnel: starting on Gate A allows choosing any direction out of Gate B', () => {
+    const s = scenario({ p0d0: [2, 2, 3] }, 'regolith');
+    const gateA = { r: 2, c: 2 };
+    const gateB = { r: 6, c: 5 };
+    s.gates = [gateA, gateB];
+
+    const targets = shuntTargets(s, at(s, 'p0d0'));
+    expect(targets).toContainEqual(expect.objectContaining(gateB));
+    expect(targets).toContainEqual(expect.objectContaining({ r: 5, c: 5 }));
+    expect(targets).toContainEqual(expect.objectContaining({ r: 6, c: 6 }));
+    expect(targets).toContainEqual(expect.objectContaining({ r: 1, c: 2 }));
+    expect(targets).toContainEqual(expect.objectContaining({ r: 3, c: 2 }));
   });
 });

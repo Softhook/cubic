@@ -657,8 +657,8 @@
       "status": "new",
       "effect": "barrier",
       "art": {
-        "title": "Spun barrier",
-        "brief": "A Wisp firing a barrier across the ground."
+        "title": "Glass bubble",
+        "brief": "A Wisp inflating soft glass barrier bubbles across the ground."
       }
     },
     {
@@ -672,7 +672,7 @@
       "effect": "kinetic-shunt",
       "art": {
         "title": "Shockwave",
-        "brief": "An explosive kinetic pulse blasting out from a mech's cannon, dust rings kicking up as the target is hurled backward."
+        "brief": "A kinetic pulse blasting out from a mech's cannon, dust rings kicking up as the target is hurled backward."
       }
     }
   ],

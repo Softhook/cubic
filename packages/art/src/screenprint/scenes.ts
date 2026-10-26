@@ -873,47 +873,50 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-barricade': {
     world: 'mars',
-    caption: 'a Wisp firing a barrier across the ground',
-    draw: (s) =>
-      outdoors(s, 28, { planet: { x: 50, y: 7, r: 7 } }) +
-      mech(s, 'wisp', 16, 38, 0.12, { yaw: -45 }) +
-      flash(19.4, 27.1, 3, 8) +
-      sparks(s.r, 19.4, 27.1, 8, 5) +
-      stroke('M19.4,27.1 Q34,22 46,34', INKS.amber, 0.8, ' stroke-dasharray="2.5 1.2"') +
-      stroke('M19.4,27.6 Q34,23 46,34.5', INKS.bone, 0.5) +
-      `<ellipse cx="46" cy="36" rx="10" ry="3.5" fill="${s.key}" opacity="0.45"/>` +
-      hexOnGround(46, 36, 9, 0.35, INKS.amber, 0.6) +
-      stroke('M46,36 L39,34 M46,36 L53,34 M46,36 L46,32.5 M46,36 L46,39.5 M46,36 L40.5,38 M46,36 L51.5,38', INKS.bone, 0.45) +
-      stroke('M42,35 Q46,33.5 50,35 M43,37 Q46,38.5 49,37 M40,34 Q46,31.5 52,34', INKS.bone, 0.4) +
-      [
-        [-7, -2],
-        [7, -2],
-        [0, -3.5],
-        [0, 3.5],
-        [-5.5, 2],
-        [5.5, 2],
-      ]
-        .map(([dx, dy]) => `<circle cx="${46 + dx}" cy="${36 + dy}" r="0.6" fill="${INKS.amber}"/>`)
-        .join('') +
-      flash(46, 34, 3.5, 9) +
-      sparks(s.r, 46, 34, 14, 8),
+    caption: 'a Wisp flash-blowing soft glass barrier bubbles across the ground',
+    draw: (s) => {
+      const b1 = 'M26.5,29 C26.5,24.6 28.8,22.2 32,22.2 C35.2,22.2 37.5,24.6 37.5,29 C37.5,30.8 26.5,30.8 26.5,29 Z';
+      const b2 = 'M39.2,36 C39.2,29.2 42.6,25.5 48,25.5 C53.4,25.5 56.8,29.2 56.8,36 C56.8,39 39.2,39 39.2,36 Z';
+      return (
+        outdoors(s, 28, { planet: { x: 50, y: 7, r: 7 } }) +
+        // Background cooled barrier bubble
+        `<ellipse cx="33" cy="29.8" rx="6.8" ry="2.2" fill="${s.key}" opacity="0.4"/>` +
+        `<ellipse cx="32" cy="29" rx="5.5" ry="1.9" fill="none" stroke="${s.key}" stroke-width="0.5"/>` +
+        stroke(b1, INKS.bone, 0.5) +
+        `<ellipse cx="30.2" cy="24.4" rx="1.6" ry="0.7" transform="rotate(-35 30.2 24.4)" fill="${INKS.bone}"/>` +
+        stroke('M29,26 C29,24.2 30.2,23.5 31.5,23.2', INKS.bone, 0.6) +
+        stroke('M35,29.4 C36.5,29.4 37.2,28.8 37.2,28', INKS.amber, 0.4) +
+        // Foreground barrier bubble being inflated
+        `<ellipse cx="49.5" cy="37.4" rx="10.5" ry="3.8" fill="${s.key}" opacity="0.45"/>` +
+        `<ellipse cx="48" cy="36" rx="8.8" ry="3.1" fill="none" stroke="${s.key}" stroke-width="0.6"/>` +
+        stroke(b2, INKS.bone, 0.65) +
+        stroke('M42.5,32 C42.5,29.5 44.5,28.5 46.8,28.2', INKS.bone, 0.85) +
+        `<ellipse cx="44.2" cy="30" rx="2.5" ry="1.1" transform="rotate(-35 44.2 30)" fill="${INKS.bone}"/>` +
+        `<circle cx="43" cy="32.4" r="0.4" fill="${INKS.bone}"/>` +
+        stroke('M53,36.5 C55.5,36.5 56.5,35.5 56.5,34.5', INKS.amber, 0.5) +
+        // Wisp deploying the second barrier
+        mech(s, 'wisp', 15, 38, 0.12, { yaw: -45 }) +
+        stroke('M18.4,27.1 Q32,21.5 47.5,27', INKS.amber, 0.9, ' stroke-dasharray="2.5 1.2"')
+      );
+    },
   },
   'r-kinetic-shunt': {
     world: 'mars',
-    caption: 'an explosive kinetic pulse blasting out from a mech’s cannon, dust rings kicking up as the target is hurled backward',
+    caption: 'a kinetic pulse blasting out from a mech’s cannon, dust rings kicking up as the target is hurled backward',
     draw: (s) =>
       outdoors(s, 30, { planet: { x: 50, y: 7, r: 7 } }) +
-      mech(s, 'breacher', 16, 40, 0.11, { yaw: 40, lean: -8, arms: { plus: [-80, 0] } }) +
-      flash(22, 28, 4, 10) +
-      sparks(s.r, 22, 28, 14, 8) +
-      stroke('M22,28 Q34,25 46,27', INKS.amber, 1, ' stroke-dasharray="3 1.5"') +
-      stroke('M22,28.5 Q34,25.5 46,27.5', INKS.bone, 0.5) +
-      rings(28, 28, 3, 3, 3, INKS.amber, 0.6, 270, 450) +
-      rings(36, 27.5, 3, 3.5, 3, INKS.amber, 0.7, 270, 450) +
-      `<ellipse cx="48" cy="38" rx="8" ry="2.6" fill="${INKS.dust}" opacity="0.6"/>` +
-      rings(48, 38, 3, 2, 2.5, INKS.dust, 0.5, 0, 360) +
-      mech(s, 'chameleon', 48, 38, 0.09, { yaw: -30, lean: 24, legs: { plus: [20, 10], minus: [-25, 20] } }, { plate: INKS.oxide }) +
-      sparks(s.r, 48, 32, 12, 8),
+      mech(s, 'breacher', 15, 40, 0.11, {
+        yaw: 32,
+        lean: -4,
+        legs: { plus: [-16, 22], minus: [18, -8] },
+        arms: { plus: [-45, -35], minus: [16, 14] },
+      }) +
+      stroke('M35,28 Q46,26 57,27', INKS.amber, 1, ' stroke-dasharray="3 1.5"') +
+      stroke('M35,28.4 Q46,26.5 57,27.5', INKS.bone, 0.5) +
+      rings(35, 28, 4, 4.4, 5, INKS.amber, 0.65, 285, 435) +
+      `<ellipse cx="59" cy="38" rx="8" ry="2.6" fill="${INKS.dust}" opacity="0.6"/>` +
+      rings(59, 38, 3, 2, 2.5, INKS.dust, 0.5, 0, 360) +
+      mech(s, 'chameleon', 59, 38, 0.09, { yaw: -30, lean: 24, legs: { plus: [20, 10], minus: [-25, 20] } }, { plate: INKS.oxide }),
   },
   'r-expansion': {
     world: 'mars',

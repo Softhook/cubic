@@ -1,14 +1,14 @@
 import { memo, type CSSProperties } from 'react';
 import { drawing, type Board, type GameState } from '@quantum/engine';
-import { PLANET_DIAMETER, TILE } from '@quantum/art';
-import { BarrierWeb } from './BarrierWeb';
+import { PLANET_DIAMETER, TILE, lookWorld } from '@quantum/art';
+import { BarrierBubble } from './BarrierWeb';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { GATE_COLOR } from '../../theme';
 import { placement, wrapMarks, type WrapMark } from './geometry';
 import { PlanetMarkings } from './PlanetMarkings';
 import { MapTiles } from './MapTiles';
 import { numberCorner } from './layers';
-import { useOnGround } from '../../art/mapLook';
+import { useMapLook, useOnGround } from '../../art/mapLook';
 
 /** Which way each board edge faces, for the wrap chevrons. */
 const WRAP_SIDE: Record<WrapMark['side'], { angle: number; r: number; c: number }> = {
@@ -50,6 +50,8 @@ export const BoardArt = memo(function BoardArt({
   const mm = cell / TILE.cell;
   // On a world's ground the cubes cast hard shadows, as its buildings do.
   const ground = useOnGround(game.board);
+  const look = useMapLook(game.board);
+  const world = lookWorld(look);
   // The open gates, then any of a Warp Gate pair placed so far: faint until the pair is complete.
   const head = game.pending[0];
   const placing = head?.kind === 'warpGate' ? head.placed : [];
@@ -95,9 +97,9 @@ export const BoardArt = memo(function BoardArt({
           </g>
         ))}
 
-        {/* Barriers (a prototype power): webs of regolith glass, no one's once spun (BarrierWeb). */}
+        {/* Barriers (a prototype power): soft glass bubbles on the planet's surface (BarrierBubble). */}
         {(game.barriers ?? []).map((b) => (
-          <BarrierWeb key={`b${b.r},${b.c}`} r={b.r} c={b.c} x={mid(b).x} y={mid(b).y} cell={cell} mm={mm} cast={ground} />
+          <BarrierBubble key={`b${b.r},${b.c}`} r={b.r} c={b.c} x={mid(b).x} y={mid(b).y} cell={cell} mm={mm} cast={ground} world={world} />
         ))}
 
         {planets.map((p) => {
