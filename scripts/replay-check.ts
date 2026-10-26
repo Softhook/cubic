@@ -11,6 +11,7 @@
  */
 import { mkdirSync } from 'node:fs';
 import type { Page } from 'playwright';
+import { appKey } from '../apps/web/src/appId';
 import type { GameState } from '../packages/engine/src';
 import { devServer, finish, launchChrome, MOTO_G55, playUrl, succeeds } from './mobile-common';
 
@@ -77,10 +78,10 @@ try {
 
   // A new game from the lobby: what its creation logged can be looked back at.
   await page.goto(base);
-  await page.evaluate(() => {
+  await page.evaluate((logOpen) => {
     localStorage.clear();
-    localStorage.setItem('quantum.logOpen', '1');
-  });
+    localStorage.setItem(logOpen, '1');
+  }, appKey('logOpen'));
   await page.reload();
   await page.getByRole('button', { name: 'Launch fleet' }).click();
   await page.waitForFunction(() => '__game' in window);

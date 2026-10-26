@@ -26,7 +26,7 @@ function getWorker(): Worker | null {
       waiting.delete(e.data.id);
     };
     worker.onerror = (e) => {
-      console.error('[quantum] AI worker failed; thinking on the main thread from now on', e);
+      console.error('[game] AI worker failed; thinking on the main thread from now on', e);
       worker = null;
       for (const [id, resolve] of waiting) resolve({ id, action: null, error: 'worker failed' });
       waiting.clear();
@@ -83,7 +83,7 @@ export function combatResponse(state: GameState, player: PlayerId, level: AiLeve
 }
 
 function failed(state: GameState, error: unknown, standIn: () => Action | null): AiMove {
-  console.error('[quantum] the AI failed', { error, state: JSON.stringify(state) });
+  console.error('[game] the AI failed', { error, state: JSON.stringify(state) });
   let action: Action | null = null;
   try {
     action = standIn();

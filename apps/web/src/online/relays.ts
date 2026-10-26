@@ -273,7 +273,7 @@ export class RelayLink {
         const why = String((err as Error)?.message ?? err);
         const tries = this.tries.get(url)?.get(e.id) ?? 0;
         if (REFUSED_FOR_GOOD.test(why)) {
-          console.warn(`[quantum] ${url} refuses our events (${why}); reading from it only`);
+          console.warn(`[game] ${url} refuses our events (${why}); reading from it only`);
           this.readOnly.add(url);
           this.outbox.delete(url);
           this.sending.delete(url);
@@ -281,8 +281,7 @@ export class RelayLink {
         } else if (RATE_LIMITED.test(why)) {
           next(RATE_LIMIT_PAUSE_MS);
         } else if (TRANSIENT.test(why)) {
-          if (tries === SEND_RETRY_MS.length)
-            console.warn(`[quantum] ${url} still has not confirmed event ${e.id}; retrying once a minute`);
+          if (tries === SEND_RETRY_MS.length) console.warn(`[game] ${url} still has not confirmed event ${e.id}; retrying once a minute`);
           // Back of the queue, after a pause: the events behind it go first.
           q.shift();
           this.tries.set(url, (this.tries.get(url) ?? new Map()).set(e.id, tries + 1));

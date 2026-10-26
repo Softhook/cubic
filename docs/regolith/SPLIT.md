@@ -42,6 +42,9 @@ The app's identity is now set in one place each, so each repo changes one line:
 | Online namespace: relay tags and game keys are derived under it | `NAMESPACE` in [packages/online/src/codec.ts](../../packages/online/src/codec.ts) | `cubic` | `regolith` |
 | The lobby's first mode | `DEFAULT_MODE` in [rulesets.ts](../../packages/engine/src/rulesets.ts) | `community` | `regolith` |
 
+Nothing else names the app: console messages are tagged `[game]`, the dev hooks are `window.__game` and
+`window.__gameOnline`, and the browser scripts build storage keys with `appKey` (as `replay-check.ts` does).
+
 Both apps are served from `softhook.github.io`, **one origin**, so with the same storage names they would
 read each other's saved game, lobby choices and online identity. Cache Storage is per origin too: Workbox
 names its precache after the service worker's scope, and the font cache is named after `APP_ID`, so the
@@ -71,7 +74,10 @@ One commit, no rule changes:
 - [index.html](../../apps/web/index.html) `<title>`, [manifest.webmanifest](../../apps/web/public/manifest.webmanifest)
   name, colours (the ground palette, not `#050813`), icons and favicon from the mood board, the lobby's credit
   line. The file names in `apps/web/test/print.test.ts` follow `GAME_NAME` (`regolith-manual.html`, …).
-- README for Regolith. Keep the Develop section's commands.
+- README for Regolith: **Regolith, a game by Christian Nold**, inspired by *Quantum* (Eric Zimmerman, FunForge 2013)
+  and its fan-made Community Edition (stolksdorf/quantum and contributors), with links to both. It says what
+  Regolith is (mechs on the ice of Mars and its moons, on hex maps), plays in the browser and prints. Keep the
+  Develop section's commands; drop "working title" and the Quantum doc table.
 - Enable Pages on the repo. The Pages workflow carries over as is, its `layout` and `pwa` jobs included.
 
 ## Phase 3: Regolith sheds Quantum
@@ -102,12 +108,38 @@ Regolith's two modes become the engine's only rule sets. One commit per step, `n
 6. **Words at the source.** Write the log, rule errors and card text in Regolith's words ("mech",
    "objective", "control"), then drop `REGOLITH_WORDS`, `reword` and `useSay`. Code identifiers (`Die`, `ship`,
    `planet`) can stay; renaming them is last, and only if wanted.
-7. **Square grid (optional).** Regolith is hex only, so the square paths in `board.ts`, the art and the web
-   board can go when they get in the way.
-8. **Docs.** Keep PROTOTYPING.md, REGOLITH.md, REGOLITH-WORLD.md, the mood board, HEX.md, AI.md,
-   MULTIPLAYER.md, MOBILE.md, GRAPHICS.md and ARCHITECTURE.md, edited to Regolith. Drop RULES.md's Quantum
+7. **Square grid.** Regolith is hex only, so the square paths in `board.ts`, the art and the web board go,
+   after the Tile Lab stops printing square tiles (step 10).
+8. **AI.** Every term and value the AI keeps must still mean something: `cardValues.ts` keyed by Regolith's
+   `effect` ids only (its cards keep Community's values through them, `science` its own), Quantum-only
+   effects gone. `ai.test.ts`'s full games play **Basic and Regolith** at every level, with invariants;
+   `ai:match` defaults to Regolith, not Basic. See *Done when* below.
+9. **Manual.** Rewrite `rulebook/Manual.tsx` (the in-game "How to play" and the printable `#rulebook`) for
+   Regolith: its turn, mechs and their powers, zones of control, contested orbits, the deck, and Basic as
+   "the game without cards". Diagrams in `diagrams.tsx` drawn on hex tiles on the ground, not 3 × 3 square
+   tiles in space. The rule set table compares Basic and Regolith. Credits as in the README.
+10. **Player aid and maps.** Remake the player aid (`art/src/aid.ts`, `AidEdition` = `basic | regolith`):
+   the mech table with each power, the turn, contested orbits and zones of control, in the ground palette.
+   The Tile Lab prints only what Regolith plays: hex tiles on Phobos, Deimos and Mars (no square tiles, no
+   space look), and a sheet of each map's layout (which tiles, where) for setting up at a table.
+11. **Docs.** Keep PROTOTYPING.md, REGOLITH.md, REGOLITH-WORLD.md, the mood board, HEX.md, AI.md,
+   HEX-CONCEPTS.md, MULTIPLAYER.md, MOBILE.md, GRAPHICS.md and ARCHITECTURE.md, edited to Regolith. Drop RULES.md's Quantum
    modes, OPEN-QUESTIONS.md's rulings for cards that are gone, card-benchmark.md and RULE-SUGGESTIONS.md.
    Write a Regolith rulebook and player aid (REGOLITH.md §9 step 6).
+
+### Phase 3 is done when
+
+Each is checked before Regolith's first deploy, not just at the end:
+
+- **AI.** `npm test` plays full AI games on Basic and Regolith at every level. `npm run ai:match` shows each
+  level beating the one below on both modes (the levels were measured on Quantum's modes, not these), and
+  `selfplay:stalls` shows no stalled games. The AI uses every power and the barrier.
+- **Art Lab** (`#lab`). Every page opens and exports: tiles (single, ZIP, PDF sheets, CMYK press sheets),
+  cards (Regolith's decks in the screenprint look, the backs, the ZIP and press sheets), the player aid and
+  the proof page. `npm run ground:check` is clean. No Original or Community deck, and no Redesigns view.
+- **Manual and player aid.** Remade (steps 9–10), both read in Regolith's words, and the manual's downloaded
+  file is `regolith-manual.html`.
+- **The rest.** `npm run check`, `ui:check`, `hex:check`, `mobile:play` and `pwa:check` pass.
 
 ## Phase 4: Cubic without Regolith
 
@@ -124,10 +156,11 @@ games for Basic, Classic and Community unchanged**, which proves Cubic still pla
 | Card effects | `barrier`, `kinetic-shunt`, `sabotage-double`, `science`; `CardDef` fields `from`, `status`, `brief`; `addCards` for a mode's own decks |
 | Words | `words.ts`, `reword`, `say` / `useSay`: Cubic speaks Quantum's words only |
 | AI | barrier and `threatens` terms in `evaluate.ts`, `greedy.ts`, `search.ts`, `candidates.ts`; Regolith's entries in `cardValues.ts` |
-| Art | `packages/art/src/screenprint/`. The hex ground tiles **stay** (Cubic's hex maps are drawn on them): rename `art/src/regolith/` to `ground/` and `REGOLITH_*` to `GROUND_*` |
+| Art | `packages/art/src/screenprint/`, and the ground tiles in `art/src/regolith/` (`REGOLITH_SHADOW`, `REGOLITH_GROUND_PX`, `mapLook.ts`, the Tile Lab's worlds) |
+| Hex | No Cubic mode plays a hex map, so Cubic is square only again: the `hex`, `open`, `drift` and `drift-square` map groups and `offset-hex`, `grid` on maps, the hex paths in `board.ts`, `art/src/tile/` and the web board, and their tests. Last, as it is the widest |
 | Web | `BarrierBubble`, the zone-of-control tint, power and shunt controls, the `ground` screen palette in styles.css, the mode's decks in `art/cards.ts` and the Card Lab's Regolith edition |
-| Scripts | `regolith-card-picks.*`, `power-ab`, `stall-probe`, `power-usage`, `interaction` |
-| Docs | `docs/regolith/`, `docs/moodboards/regolith/` (in the Regolith repo now); the README and ARCHITECTURE.md lose their Regolith lines and gain one pointing to the Regolith repo |
+| Scripts | `regolith-card-picks.*`, `power-ab`, `stall-probe`, `power-usage`, `interaction`, `hex-check`, `ground-check`, and their npm scripts (`regolith:picks`, `selfplay:powers`, `selfplay:stalls`, `power:usage`, `interaction`, `hex:check`, `ground:check`); `ui-check`'s over-conquest and contested-orbit checks; knip.json's `prototype.ts` and `powers/` entries |
+| Docs | `docs/regolith/`, `docs/moodboards/regolith/` (in the Regolith repo now), HEX.md, HEX-CONCEPTS.md; the README and ARCHITECTURE.md lose their Regolith lines and gain one pointing to the Regolith repo |
 
 Start with the mode and data, then follow the type errors and knip's unused-export report until both are clean.
 

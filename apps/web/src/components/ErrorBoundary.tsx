@@ -20,7 +20,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
 
   componentDidCatch(error: unknown, info: ErrorInfo) {
     // The last saved position of a local game: the crash can be replayed from it.
-    console.error('[quantum] the app crashed', { error, componentStack: info.componentStack, savedGame: savedGameJson() });
+    console.error('[game] the app crashed', { error, componentStack: info.componentStack, savedGame: savedGameJson() });
   }
 
   render() {

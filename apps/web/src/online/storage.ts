@@ -54,7 +54,7 @@ function loadLog(tag: string): SavedLog & { damaged: number } {
 /** Whether they were saved. `syncedAt`: see SavedLog; left out until a relay has sent everything. */
 export function saveEvents(tag: string, events: NostrEvent[], syncedAt?: number): boolean {
   const saved = remember(eventsKey(tag), JSON.stringify({ events, syncedAt } satisfies SavedLog));
-  if (!saved) console.warn('[quantum] could not save the online game locally');
+  if (!saved) console.warn('[game] could not save the online game locally');
   return saved;
 }
 
@@ -80,7 +80,7 @@ export function openGameLog(secret: string) {
     for (const e of saved.events) receive(e, true);
     // One that didn't decode (damaged, or another game's) never made it in.
     const damaged = saved.damaged + saved.events.filter((e) => !events.has(e.id)).length;
-    if (damaged) console.warn(`[quantum] ${damaged} saved event(s) of an online game could not be read`);
+    if (damaged) console.warn(`[game] ${damaged} saved event(s) of an online game could not be read`);
     return damaged ? undefined : saved.syncedAt;
   };
   return { keys, timeline, events, receive, load };

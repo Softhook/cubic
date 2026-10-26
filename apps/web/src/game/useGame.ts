@@ -19,7 +19,7 @@ const human = (s: GameState) => (p: PlayerId) => !s.players[p].ai;
 
 /** Logs an engine bug with the state and action that trigger it (replay with window.__game.load). */
 function reportBug(what: string, state: GameState, action: Action, error?: unknown) {
-  console.error(`[quantum] ${what}`, { action, error, state: JSON.stringify(state) });
+  console.error(`[game] ${what}`, { action, error, state: JSON.stringify(state) });
 }
 
 /**

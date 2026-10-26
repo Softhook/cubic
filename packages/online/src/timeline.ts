@@ -344,7 +344,7 @@ export class Timeline {
   private logOnce(key: string, what: string, details: () => object) {
     if (this.logged.has(key)) return;
     this.logged.add(key);
-    console.error(`[quantum] ${what}`, details());
+    console.error(`[game] ${what}`, details());
   }
 
   private combatWait(state: GameState, combat: CombatPending): CombatWait {

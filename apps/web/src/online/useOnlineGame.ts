@@ -70,7 +70,7 @@ export function useOnlineGame(secret: string): OnlineGame {
         apply(head, a);
       } catch (e) {
         if (e instanceof RuleError) return fail(say(head, e.message));
-        console.error('[quantum] apply threw', { action: a, error: e, state: JSON.stringify(head) });
+        console.error('[game] apply threw', { action: a, error: e, state: JSON.stringify(head) });
         return fail(`Engine error: ${(e as Error).message}`);
       }
       // Checked again against the game as it is when the post goes out: a second click before
@@ -199,7 +199,7 @@ function usePostLog(secret: string) {
       l.start();
       link.current = l;
     } catch (e) {
-      console.error('[quantum] could not open the online game', e);
+      console.error('[game] could not open the online game', e);
       setFailure(e instanceof Error ? e.message : String(e));
     }
     return () => {

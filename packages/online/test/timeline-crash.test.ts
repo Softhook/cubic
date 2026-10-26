@@ -51,7 +51,7 @@ describe('a move the engine crashes on', () => {
     expect(t.replay()!.seats[1].owner).toBe('bob');
     expect(t.replay()!.crash).toEqual({ seat: 0 });
     expect(errors).toHaveBeenCalledTimes(1);
-    expect(errors).toHaveBeenCalledWith('[quantum] the engine failed on a move', expect.objectContaining({ error: expect.any(TypeError) }));
+    expect(errors).toHaveBeenCalledWith('[game] the engine failed on a move', expect.objectContaining({ error: expect.any(TypeError) }));
   });
 
   it('is reported for an AI seat too, where a refused move is not', () => {
@@ -107,6 +107,6 @@ describe('a battle the engine crashes on', () => {
     }
     expect(t.replay()!.crash).toEqual({ seat: null });
     expect(t.replay()!.combat?.waitingOn).toEqual([]);
-    expect(errors).toHaveBeenCalledWith('[quantum] a battle failed to resolve', expect.objectContaining({ error: expect.any(TypeError) }));
+    expect(errors).toHaveBeenCalledWith('[game] a battle failed to resolve', expect.objectContaining({ error: expect.any(TypeError) }));
   });
 });

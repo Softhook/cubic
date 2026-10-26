@@ -430,14 +430,14 @@ More useful now that online games are async: people come back to a game over day
       *Check for updates*, which switches to a new version at once (*Up to date*, *Offline* or
       *Couldn't check* otherwise).
 - [x] **`npm run pwa:check`** ([scripts/pwa-check.ts](../scripts/pwa-check.ts), ≈ 45 s): builds four
-      versions, serves them one at a time under `/quantum/` with Pages' 10-minute HTTP cache, and in
+      versions, serves them one at a time under `/app/` with Pages' 10-minute HTTP cache, and in
       Chrome at G55 size checks: every file is precached; offline (server down too) the app opens
       and a game against the AI starts; a new version found on return to the app waits while you
       play, takes over when the app goes to the background, and the game is back on screen; an app
       just opened switches at once; *Check for updates* switches, then says *Up to date*. Run it
       after touching [pwa.ts](../apps/web/src/pwa.ts), the PWA config or saved-game loading.
-- [x] Scope and start URL with the `./` base: served under `/quantum/` like Pages, the scope is
-      `/quantum/`. Checked in Playwright: offline reload shows the lobby and a game against the AI
+- [x] Scope and start URL with the `./` base: served under `/app/` like Pages, the scope is
+      `/app/`. Checked in Playwright: offline reload shows the lobby and a game against the AI
       starts; a new `sw.js` waits while you play, goes live when the page is hidden, and applies at
       once on a page just opened.
 - [ ] **On the G55** after the Pages deploy (check the deploy finished: the repo's *Actions* tab,
