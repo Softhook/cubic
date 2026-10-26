@@ -1,9 +1,10 @@
 /** What a tap on a planet does about conquering it (conquerTap): conquer at once, or ask how. */
 import { describe, expect, it } from 'vitest';
-import { orbitals, type GameMode, type GameState, type PlayerId } from '@quantum/engine';
+import { orbitals, RULESETS, type GameMode, type GameState, type PlayerId } from '@quantum/engine';
 import { arrange, quickStart } from '../../../packages/engine/test/helpers';
-import { REGOLITH_OVER_CONQUEST } from '../../../packages/engine/src/regolith';
 import { conquerOptions, conquerTap, legalFor } from '../src/game/legal';
+
+const OVER_CONQUEST = !!RULESETS.regolith.overConquest;
 
 /**
  * The player to move has two ships in the orbit of an empty, non-starting planet, their numbers
@@ -37,7 +38,7 @@ describe('conquerTap', () => {
     expect(conquerTap(legalFor(s), planet)).toEqual({ type: 'conquer', planet });
   });
 
-  it.runIf(REGOLITH_OVER_CONQUEST)('asks how when a full planet holds two opponents’ cubes (over-conquest)', () => {
+  it.runIf(OVER_CONQUEST)('asks how when a full planet holds two opponents’ cubes (over-conquest)', () => {
     const probe = position(
       'regolith',
       () => 12,
@@ -58,7 +59,7 @@ describe('conquerTap', () => {
     expect(conquerTap(legal, planet)).toBe('choose');
   });
 
-  it.runIf(REGOLITH_OVER_CONQUEST)('conquers at once when a full planet holds one opponent’s cubes', () => {
+  it.runIf(OVER_CONQUEST)('conquers at once when a full planet holds one opponent’s cubes', () => {
     const probe = position(
       'regolith',
       () => 12,

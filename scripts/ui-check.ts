@@ -10,8 +10,7 @@
  */
 import { mkdirSync } from 'node:fs';
 import type { Page } from 'playwright';
-import { apply, legalActions, orbitals, say, type GameState } from '../packages/engine/src';
-import { REGOLITH_OVER_CONQUEST } from '../packages/engine/src/regolith';
+import { apply, legalActions, orbitals, RULESETS, say, type GameState } from '../packages/engine/src';
 import { arrange, quickStart } from '../packages/engine/test/helpers';
 import { devServer, finish, launchChrome, playUrl, succeeds } from './mobile-common';
 
@@ -83,7 +82,7 @@ try {
   await page.waitForFunction(() => '__game' in window);
 
   // Over-conquest with two opponents' cubes: the player chooses whose to displace (only while Regolith plays it).
-  if (REGOLITH_OVER_CONQUEST) {
+  if (RULESETS.regolith.overConquest) {
     const { s, planet, me, victim } = overConquest();
     if (legalActions(s).filter((x) => x.type === 'conquer' && x.planet === planet.id).length !== 2)
       fail('the position does not offer two over-conquests');
@@ -104,7 +103,7 @@ try {
     if (count(after, victim) !== count(planet.cubes, victim) - 1 || count(after, me) !== 1) {
       fail(`displacing ${name}: the planet's cubes went from ${JSON.stringify(planet.cubes)} to ${JSON.stringify(after)}`);
     } else console.log(`✓ over-conquest: chose ${name}'s cube, and it was displaced`);
-  } else console.log('- over-conquest: off in Regolith (REGOLITH_OVER_CONQUEST), not checked');
+  } else console.log('- over-conquest: off in Regolith (RuleSet.overConquest), not checked');
 
   // Contested orbit: the planet is marked blocked, and tapping it says why instead of conquering.
   {

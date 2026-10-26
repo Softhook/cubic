@@ -50,6 +50,20 @@ read each other's saved game, lobby choices and online identity. Cache Storage i
 names its precache after the service worker's scope, and the font cache is named after `APP_ID`, so the
 offline caches don't collide (check with `npm run pwa:check` after the first deploy of each).
 
+## Where each file goes
+
+Packages and the app split by the phases below; docs, scripts and the reference material go like this.
+"Both" means both repos keep it, each edited to its own game.
+
+| | Both | Regolith only | Cubic only |
+|---|---|---|---|
+| Docs | AI.md, ARCHITECTURE.md, GRAPHICS.md, MOBILE.md, MULTIPLAYER.md, CODE-REVIEW.md | `docs/regolith/` (with `card-ideas.yaml`, `card-text-ideas.yaml`), `docs/moodboards/regolith/`, HEX.md, HEX-CONCEPTS.md | RULES.md, OPEN-QUESTIONS.md, RULE-SUGGESTIONS.md, card-benchmark.md, ROADMAP.md, VISUAL-IDEAS.md |
+| Scripts | `ab`, `args`, `pool`, `sprt`, `ai-match`, `build-data.mjs`, `card-audit`, `selfplay-cards`, `skill-ab`, `mobile-*`, `online-sim`, `perf-probe`, `zoom-probe`, `fullscreen-check`, `relay-check`, `replay-check`, `pwa-check`, `cmyk-table`, `press.icc`, `ui-check` | `power-ab`, `power-usage`, `stall-probe`, `interaction`, `regolith-card-picks.*`, `hex-check`, `ground-check` | `basic-sweep` (Quantum's Basic rules) |
+| Reference | | | `reference/`: Quantum's rulebooks and cards, which only Quantum's modes and their tests cite |
+
+In Regolith, `perf-probe` and `zoom-probe` time a Regolith game in place of a 4-player Community one, and
+`card-audit` and `selfplay-cards` play its decks.
+
 ## The order
 
 Regolith has to be copied out before Cubic deletes it:
@@ -122,10 +136,9 @@ Regolith's two modes become the engine's only rule sets. One commit per step, `n
    the mech table with each power, the turn, contested orbits and zones of control, in the ground palette.
    The Tile Lab prints only what Regolith plays: hex tiles on Phobos, Deimos and Mars (no square tiles, no
    space look), and a sheet of each map's layout (which tiles, where) for setting up at a table.
-11. **Docs.** Keep PROTOTYPING.md, REGOLITH.md, REGOLITH-WORLD.md, the mood board, HEX.md, AI.md,
-   HEX-CONCEPTS.md, MULTIPLAYER.md, MOBILE.md, GRAPHICS.md and ARCHITECTURE.md, edited to Regolith. Drop RULES.md's Quantum
-   modes, OPEN-QUESTIONS.md's rulings for cards that are gone, card-benchmark.md and RULE-SUGGESTIONS.md.
-   Write a Regolith rulebook and player aid (REGOLITH.md §9 step 6).
+11. **Docs.** As in *Where each file goes*: the shared docs edited to Regolith, the Cubic-only ones and
+   `reference/` dropped. Write a Regolith rulebook and player aid (REGOLITH.md §9 step 6), and a roadmap from
+   REGOLITH.md §9 in place of ROADMAP.md.
 
 ### Phase 3 is done when
 
