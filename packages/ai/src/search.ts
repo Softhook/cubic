@@ -15,7 +15,7 @@ import {
 } from '@quantum/engine';
 import { outcomes, type Outcome } from './chance';
 import { shuffleUnseen } from './hidden';
-import { candidates } from './patient';
+import { candidates } from './candidates';
 import { evaluate } from './evaluate';
 
 /**

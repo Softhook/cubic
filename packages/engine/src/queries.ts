@@ -18,10 +18,10 @@ import {
   tilesTouch,
 } from './board';
 import { card, effectOf } from './data';
-import { barrierAt, cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
+import { barrierAt, cellOf, die, dieAt, isEmptySpace, reserve, shipsOnBoard } from './lookups';
 import { hasPower, hooksOf, modeHasHook, rulesOf } from './rules';
 import { activeSkills, anySkill, ruleOf, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
-import type { Cell, CombatPending, CombatRole, Die, GameState, OncePerTurn, Planet, PlayerId, TurnState } from './types';
+import type { Barrier, Cell, CombatPending, CombatRole, Die, GameState, OncePerTurn, Planet, PlayerId, TurnState } from './types';
 
 export type { CombatPart } from './skillRules';
 
@@ -230,11 +230,21 @@ function reach(
   return { found, steps, passing };
 }
 
-/** 1 on each space with a barrier (GameState.barriers), by board cell index; undefined when there are none. */
+const BARRIER_MASKS = new WeakMap<readonly Barrier[], Uint8Array>();
+
+/**
+ * 1 on each space with a barrier (GameState.barriers), by board cell index; undefined when there are none.
+ * Cached by the list, which a state keeps until a barrier is added: the AI asks for it for every ship it moves.
+ */
 function barrierMask(state: GameState, g: Grid): Uint8Array | undefined {
-  if (!state.barriers?.length) return undefined;
-  const mask = new Uint8Array(g.size);
-  for (const b of state.barriers) mask[b.r * g.cols + b.c] = 1;
+  const { barriers } = state;
+  if (!barriers?.length) return undefined;
+  let mask = BARRIER_MASKS.get(barriers);
+  if (!mask) {
+    mask = new Uint8Array(g.size);
+    for (const b of barriers) mask[b.r * g.cols + b.c] = 1;
+    BARRIER_MASKS.set(barriers, mask);
+  }
   return mask;
 }
 
@@ -720,7 +730,7 @@ export function conquerCheck(state: GameState, player: PlayerId, planetId: numbe
   const p = state.players[player];
   const tolerance = Math.max(0, ...rules.map((r) => r.tolerance ?? 0));
   // Science: Research above 1 (the die's lowest face) moves the sum up or down, as little as needed.
-  const spendable = rules.some((r) => r.spendResearch) ? p.research - 1 : 0;
+  const spendable = rules.some((r) => r.spendResearch) ? Math.max(0, p.research - 1) : 0;
   let found: { ships: Die[]; sum: number; research: number } | undefined;
   // Every orbital ship counts; Ingenious lets each diagonal ship count or not ("may be counted").
   for (let mask = 0; mask < 1 << corners.length && found?.research !== 0; mask++) {
@@ -958,7 +968,7 @@ export function signed(n: number): string {
   return n < 0 ? `−${-n}` : `+${n}`;
 }
 
-/** Whether a barrier can go on `p`: an empty space with no warp gate on it. */
+/** Whether a barrier can go on `p`, by Barricade or a Wisp: an empty space with no warp gate on it. */
 export function canHoldBarrier(state: GameState, p: Cell): boolean {
   return isEmptySpace(state, p) && !state.gates.some((g) => same(g, p));
 }
@@ -1019,4 +1029,9 @@ export function shuntPaths(state: GameState, d: Die): ShuntPath[] {
 /** The spaces Kinetic Shunt can push a mech to (shuntPaths). */
 export function shuntTargets(state: GameState, d: Die): Cell[] {
   return shuntPaths(state, d).map((p) => p.to);
+}
+
+/** Whether Kinetic Shunt has anything to push: a mech on the map with somewhere to go. */
+export function canShunt(state: GameState): boolean {
+  return shipsOnBoard(state).some((d) => shuntPaths(state, d).length > 0);
 }

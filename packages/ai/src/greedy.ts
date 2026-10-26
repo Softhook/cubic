@@ -15,6 +15,7 @@ import {
   orbitals,
   planetFreeSlots,
   rulesOf,
+  shipOf,
   shipsOnBoard,
   tryApply,
   type Action,
@@ -23,7 +24,8 @@ import {
   type PlayerId,
 } from '@quantum/engine';
 import { shuffleUnseen } from './hidden';
-import { candidates, storedTactics } from './patient';
+import { candidates } from './candidates';
+import { storedTactics } from './patient';
 
 /**
  * Level 1 (Cadet): greedy one-ply search. Every legal action is simulated (dice outcomes are
@@ -133,7 +135,7 @@ function best(state: GameState, me: PlayerId, candidates: Action[], opts: Greedy
       const sim = withRandomSeed(state, rand);
       total += scoreAfter(sim, me, a);
     }
-    const v = total / n + (opts.noise ? (rand() - 0.5) * opts.noise : 0) + tieBreak(a);
+    const v = total / n + (opts.noise ? (rand() - 0.5) * opts.noise : 0) + tieBreak(state, a);
     if (v > top) {
       top = v;
       pick = a;
@@ -143,12 +145,12 @@ function best(state: GameState, me: PlayerId, candidates: Action[], opts: Greedy
 }
 
 /** Small preferences so equal-scoring actions resolve sensibly. */
-function tieBreak(a: Action): number {
+function tieBreak(s: GameState, a: Action): number {
   if (a.type === 'endTurn') return -0.5;
   // Free abilities must actually improve the position, not just shuffle ships around.
   if (a.type === 'swap' || a.type === 'change' || a.type === 'flexible' || a.type === 'freeReconfigure') return -2;
-  // A free power aimed at a space (Regolith's Barrier) is there for good: only where it clearly helps.
-  if (a.type === 'power' && a.to) return -8;
+  // Regolith's Barrier is there for good: only where it clearly helps.
+  if (a.type === 'power' && shipOf(s, die(s, a.die).value).ability?.name === 'Barrier') return -8;
   if (a.type === 'advance' && a.move) return 0.2;
   if (a.type === 'ruthless' && a.skill) return 0.5;
   if (a.type === 'prideful' && a.take) return 0.5;

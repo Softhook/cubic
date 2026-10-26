@@ -665,6 +665,18 @@ describe('Barrier (6 Wisp)', () => {
     expect(cells(barrierTargets(blocked, at(blocked, 'p0d0')))).not.toContain('0,4');
   });
 
+  it('flies over a warp gate but doesn’t land on one, as Barricade’s don’t', () => {
+    const s = scenario({ p0d0: [0, 0, 6] });
+    s.gates = [
+      { r: 0, c: 2 },
+      { r: 8, c: 0 },
+    ];
+    const targets = cells(barrierTargets(s, at(s, 'p0d0')));
+    expect(targets).not.toContain('0,2');
+    expect(targets).not.toContain('8,0');
+    expect(targets).toContain('0,3');
+  });
+
   it('holds a perimeter space: nothing drops there', () => {
     // A perimeter space player 0 may drop into, and a space next to it for the Wisp to fire from.
     let found: [GameState, { r: number; c: number }] | undefined;
@@ -1025,6 +1037,12 @@ describe('Science: Research spent to move the claim total', () => {
     s.players[0].research = 5;
     expect(conquerCheck(s, 0, planet.id).research).toBeUndefined();
     expect(apply(s, { type: 'conquer', planet: planet.id }).players[0].research).toBe(5);
+  });
+
+  it('never stops an exact total, even with no Research at all', () => {
+    const s = scenario({ p0d0: [o1.r, o1.c, 6], p0d1: [o2.r, o2.c, planet.number - 6] }, 'regolith', ['r-pioneering']);
+    s.players[0].research = 0;
+    expect(conquerCheck(s, 0, planet.id).ok).toBe(true);
   });
 });
 

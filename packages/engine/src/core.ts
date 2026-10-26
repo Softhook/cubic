@@ -65,6 +65,14 @@ export function note(s: GameState, text: string, player: PlayerId, planets?: num
 }
 
 /**
+ * Puts a barrier of `owner`'s on `p`, for good (GameState.barriers); the caller checks canHoldBarrier. A new list,
+ * never the old one changed: queries cache what they work out from it (queries.ts barrierMask).
+ */
+export function addBarrier(s: GameState, p: Cell, owner: PlayerId) {
+  s.barriers = [...(s.barriers ?? []), { r: p.r, c: p.c, owner }];
+}
+
+/**
  * Logs a ship arriving at `to`: `text` is followed by where that is, beside (or diagonal to) a planet,
  * named as `planet N` so the UI can show its name. `after` goes at the end, before the full stop.
  */

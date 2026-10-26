@@ -108,7 +108,7 @@ export interface BarrierBubbleProps {
  */
 export function BarrierBubble({ r, c, x, y, cell, mm, cast, world }: BarrierBubbleProps) {
   const rand = seeded(r, c);
-  const tint = world ? WORLD_TINTS[world] : cast ? WORLD_TINTS.mars : SPACE_TINT;
+  const tint = world ? WORLD_TINTS[world] : SPACE_TINT;
 
   // Slight organic variation in dome radius and highlight angle
   const R = cell * (0.375 + (rand() - 0.5) * 0.015);

@@ -1,7 +1,7 @@
 /** Turn structure: start of turn, the end-of-turn card phase, and passing the turn on. */
 import { checkInfamy, emptyTurn, gainResearch, log, logBonus, name, type PendingOf } from './core';
 import { cellOf, scrapyard, shipsOnBoard } from './lookups';
-import { breakthroughAt, canProfiteer, canTakeAnyCard, infamyTargets, shuntTargets, startSlots } from './queries';
+import { breakthroughAt, canProfiteer, canShunt, canTakeAnyCard, infamyTargets, startSlots } from './queries';
 import { rulesOf } from './rules';
 import { activeSkills, askBrilliant, ruleOf, stealableSkill, type TurnBonus } from './skillRules';
 import type { GameState, OwnedSkill, Pending, PlayerId } from './types';
@@ -158,7 +158,7 @@ const AUTO_RESOLVE: { [K in Pending['kind']]?: (s: GameState, head: PendingOf<K>
     return true;
   },
   kineticShunt(s) {
-    if (shipsOnBoard(s).some((d) => shuntTargets(s, d).length > 0)) return false;
+    if (canShunt(s)) return false;
     s.pending.shift();
     return true;
   },

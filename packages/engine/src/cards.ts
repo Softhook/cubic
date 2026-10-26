@@ -7,6 +7,7 @@
  */
 import { same } from './board';
 import {
+  addBarrier,
   destroyedEnemyShip,
   destroyShip,
   fail,
@@ -31,6 +32,7 @@ import { barrierAt, boardLoc, die, reserve, shipsOnBoard } from './lookups';
 import {
   barrierSpaces,
   canHoldBarrier,
+  canShunt,
   canPlayStoredTactic,
   canProfiteer,
   canRefreshMarket,
@@ -39,7 +41,6 @@ import {
   deployTargets,
   relocationOptions,
   shuntPaths,
-  shuntTargets,
   skillLimit,
 } from './queries';
 import { shuffle } from './rng';
@@ -102,9 +103,7 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
     if (barrierSpaces(s).length > 0) s.pending.unshift({ kind: 'placeBarrier', player: p, placed: [] });
   },
   'kinetic-shunt': (s, p) => {
-    if (shipsOnBoard(s).some((d) => shuntTargets(s, d).length > 0)) {
-      s.pending.unshift({ kind: 'kineticShunt', player: p });
-    }
+    if (canShunt(s)) s.pending.unshift({ kind: 'kineticShunt', player: p });
   },
   expansion: (s, p) => {
     const res = reserve(s, p);
@@ -336,7 +335,7 @@ export const cardHandlers = {
     if (!cell || cell.kind !== 'space') fail('Barriers go on spaces, not planets');
     if (!canHoldBarrier(s, a.cell)) fail('Barriers go on empty spaces');
     head.placed.push({ r: a.cell.r, c: a.cell.c });
-    (s.barriers ??= []).push({ r: a.cell.r, c: a.cell.c, owner: head.player });
+    addBarrier(s, a.cell, head.player);
     logTo(s, head.player, `${name(s, head.player)} places a barrier`, a.cell);
     if (head.placed.length === 2 || !barrierSpaces(s).length) s.pending.shift();
   },
