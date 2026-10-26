@@ -1,3 +1,5 @@
+import { INKS } from '../screenprint/inks';
+import { rgbHex } from '../svg';
 import type { World } from '../tile/look';
 
 /**
@@ -19,16 +21,6 @@ const parse = (hex: string): Rgb => {
   const full = h.length === 3 ? [...h].map((c) => c + c).join('') : h;
   return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255) as Rgb;
 };
-
-const format = (c: Rgb) =>
-  '#' +
-  c
-    .map((v) =>
-      Math.round(Math.max(0, Math.min(1, v)) * 255)
-        .toString(16)
-        .padStart(2, '0'),
-    )
-    .join('');
 
 const mix = (a: Rgb, b: Rgb, t: number): Rgb => a.map((v, i) => v + (b[i] - v) * t) as Rgb;
 
@@ -56,14 +48,14 @@ function read(inks: Ramp, l: number): Rgb {
   return mix(inks[last], [1, 0.98, 0.94], (l - ls[last]) / (1 - ls[last]));
 }
 
-const BONE = ramp('#1E1C1A', '#4A4540', '#8C8478', '#CFC8BC', '#EDE7DB');
-const HAZARD = ramp('#5b3a08', '#c98a14', '#F2B233', '#ffd27a');
+const BONE = ramp(INKS.key, '#4A4540', '#8C8478', '#CFC8BC', '#EDE7DB');
+const HAZARD = ramp('#5b3a08', '#c98a14', INKS.amber, '#ffd27a');
 const OXIDE = ramp('#3a1608', '#A8441A', '#D8622A', '#f6b08c');
 const TEAL = ramp('#0f4a55', '#1E8597', '#3CB8CE', '#8fe6f2');
 const RUST = ramp('#5e2710', '#B24C1E', '#D8622A', '#f6b08c');
 
 /** Which ramp a colour of hue `h` goes to, on each world. */
-const INKS: Record<World, (h: number) => Ramp> = {
+const RAMP_FOR: Record<World, (h: number) => Ramp> = {
   phobos: (h) => (h >= 30 && h < 75 ? HAZARD : OXIDE),
   deimos: (h) => (h >= 30 && h < 75 ? HAZARD : OXIDE),
   mars: (h) => (h >= 30 && h < 70 ? HAZARD : h >= 70 && h < 320 ? TEAL : RUST),
@@ -76,7 +68,7 @@ const GREY = 0.18;
 function ink(hex: string, world: World): string {
   const c = parse(hex);
   const [h, s] = hueOf(c);
-  return format(read(s < GREY ? BONE : INKS[world](h), lightness(c)));
+  return rgbHex(read(s < GREY ? BONE : RAMP_FOR[world](h), lightness(c)));
 }
 
 /** Every colour in `svg` in `world`'s inks, but for pure white and black, which masks and lights are drawn in. */

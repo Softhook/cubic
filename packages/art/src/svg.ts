@@ -48,16 +48,19 @@ export function hslToRgb(h: number, s: number, l: number): [number, number, numb
 
 export type Hsl = [h: number, s: number, l: number];
 
-/** A colour as `#rrggbb`: for marks that must survive import into tools like Illustrator, which don't read `hsl()`. */
-export const hex = (h: number, s: number, l: number) =>
+/** An RGB colour (0–1, clamped) as `#rrggbb`. */
+export const rgbHex = (rgb: readonly number[]) =>
   '#' +
-  hslToRgb(h, s, l)
+  rgb
     .map((c) =>
-      Math.round(c * 255)
+      Math.round(Math.max(0, Math.min(1, c)) * 255)
         .toString(16)
         .padStart(2, '0'),
     )
     .join('');
+
+/** A colour as `#rrggbb`: for marks that must survive import into tools like Illustrator, which don't read `hsl()`. */
+export const hex = (h: number, s: number, l: number) => rgbHex(hslToRgb(h, s, l));
 
 /**
  * A filter primitive that maps a grey value (0–1, in every channel) to a colour ramp: a "gradient map".
