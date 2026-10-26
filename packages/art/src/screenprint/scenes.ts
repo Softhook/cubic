@@ -349,7 +349,7 @@ export const SCENES: Record<string, SpScene> = {
   },
   'r-patient': {
     world: 'phobos',
-    caption: 'two gloved hands holding a creased hex map of mech battle movements out in the field',
+    caption: 'two mechanical robot claws holding a creased hex map of mech battle movements out in the field',
     draw: (s) => {
       const bg = outdoors(s, 20, { planet: { x: 50, y: 7, r: 6 } });
       const mw = 48;
@@ -441,61 +441,54 @@ export const SCENES: Record<string, SpScene> = {
         `<path d="${paperOutline}" fill="none" stroke="#bcb5a7" stroke-width="0.35"/>` +
         dogEarFlap;
 
-      const edgeY = my + mh - 6.0;
+      const gripY = my + mh - 6.5;
 
-      // Left hand
-      const leftEdgeX = mx + 1.0;
-      const lwristX = leftEdgeX - 4.5;
-      const lwristY = edgeY + 7.5;
-      const lArm =
-        `<path d="M-4,44 L${n(lwristX - 2.8)},${n(lwristY + 1.2)} L${n(lwristX + 2.5)},${n(lwristY - 0.6)} L7,44 Z" fill="${s.key}"/>` +
-        stroke(`M-1,42 L5,40`, s.ink.seam, 0.6) +
-        stroke(`M0.5,39 L6.5,37`, s.ink.seam, 0.6);
-      const lCuff =
-        `<g transform="translate(${n(lwristX)},${n(lwristY)}) rotate(25)">` +
-        `<rect x="-4.2" y="-1.5" width="8.4" height="3" rx="1.5" fill="${INKS.dust}"/>` +
-        `<rect x="-3" y="-0.6" width="6" height="1.2" rx="0.6" fill="${s.ink.joint}"/>` +
-        `</g>`;
-      const lGlove =
-        `<g transform="translate(${n(leftEdgeX)},${n(edgeY)})">` +
-        `<path d="M-4.2,7 L-5.2,5 Q-6.0,0 -5.0,-4.5 Q-4.5,-5.5 -2.5,-5.2 L-1.5,-4.8 L-1.5,5.5 L-2.5,6.8 Z" fill="${INKS.dust}"/>` +
-        `<path d="M-4.2,4 Q-5.0,0 -4.2,-4" stroke="${s.ink.seam}" stroke-width="0.35" fill="none"/>` +
-        `<path d="M-2.0,-4.8 C-0.2,-5.0 2.5,-4.3 2.5,-2.8 C2.5,-1.4 -0.2,-1.7 -2.0,-1.9 Z" fill="${INKS.dust}"/>` +
-        `<path d="M0.3,-4.5 C1.6,-4.0 1.6,-2.4 0.3,-2.1" stroke="${s.ink.seam}" stroke-width="0.3" fill="none"/>` +
-        `<path d="M-2.0,-1.9 C0.3,-2.1 2.9,-1.4 2.9,0.1 C2.9,1.6 0.3,1.3 -2.0,1.1 Z" fill="${INKS.dust}"/>` +
-        `<path d="M0.6,-1.7 C1.9,-1.2 1.9,0.5 0.6,0.8" stroke="${s.ink.seam}" stroke-width="0.3" fill="none"/>` +
-        `<path d="M-2.0,1.1 C0.3,0.9 2.7,1.6 2.7,3.1 C2.7,4.6 0.3,4.3 -2.0,4.1 Z" fill="${INKS.dust}"/>` +
-        `<path d="M0.6,1.3 C1.9,1.8 1.9,3.5 0.6,3.8" stroke="${s.ink.seam}" stroke-width="0.3" fill="none"/>` +
-        `<path d="M-2.0,4.1 C-0.3,3.9 2.0,4.5 2.0,5.7 C2.0,6.8 -0.3,6.6 -2.0,6.4 Z" fill="${INKS.dust}"/>` +
-        `</g>`;
+      const renderSide = (isRight: boolean) => {
+        const edgeX = isRight ? mx + mw : mx;
+        const sign = isRight ? -1 : 1;
+        const armBaseX = isRight ? 65.5 : -2.0;
 
-      // Right hand
-      const rightEdgeX = mx + mw - 1.0;
-      const rwristX = rightEdgeX + 4.5;
-      const rwristY = edgeY + 7.5;
-      const rArm =
-        `<path d="M67.5,44 L${n(rwristX + 2.8)},${n(rwristY + 1.2)} L${n(rwristX - 2.5)},${n(rwristY - 0.6)} L56.5,44 Z" fill="${s.key}"/>` +
-        stroke(`M64.5,42 L58.5,40`, s.ink.seam, 0.6) +
-        stroke(`M63,39 L57,37`, s.ink.seam, 0.6);
-      const rCuff =
-        `<g transform="translate(${n(rwristX)},${n(rwristY)}) rotate(-25)">` +
-        `<rect x="-4.2" y="-1.5" width="8.4" height="3" rx="1.5" fill="${INKS.dust}"/>` +
-        `<rect x="-3" y="-0.6" width="6" height="1.2" rx="0.6" fill="${s.ink.joint}"/>` +
-        `</g>`;
-      const rGlove =
-        `<g transform="translate(${n(rightEdgeX)},${n(edgeY)}) scale(-1, 1)">` +
-        `<path d="M-4.2,7 L-5.2,5 Q-6.0,0 -5.0,-4.5 Q-4.5,-5.5 -2.5,-5.2 L-1.5,-4.8 L-1.5,5.5 L-2.5,6.8 Z" fill="${INKS.dust}"/>` +
-        `<path d="M-4.2,4 Q-5.0,0 -4.2,-4" stroke="${s.ink.seam}" stroke-width="0.35" fill="none"/>` +
-        `<path d="M-2.0,-4.8 C-0.2,-5.0 2.5,-4.3 2.5,-2.8 C2.5,-1.4 -0.2,-1.7 -2.0,-1.9 Z" fill="${INKS.dust}"/>` +
-        `<path d="M0.3,-4.5 C1.6,-4.0 1.6,-2.4 0.3,-2.1" stroke="${s.ink.seam}" stroke-width="0.3" fill="none"/>` +
-        `<path d="M-2.0,-1.9 C0.3,-2.1 2.9,-1.4 2.9,0.1 C2.9,1.6 0.3,1.3 -2.0,1.1 Z" fill="${INKS.dust}"/>` +
-        `<path d="M0.6,-1.7 C1.9,-1.2 1.9,0.5 0.6,0.8" stroke="${s.ink.seam}" stroke-width="0.3" fill="none"/>` +
-        `<path d="M-2.0,1.1 C0.3,0.9 2.7,1.6 2.7,3.1 C2.7,4.6 0.3,4.3 -2.0,4.1 Z" fill="${INKS.dust}"/>` +
-        `<path d="M0.6,1.3 C1.9,1.8 1.9,3.5 0.6,3.8" stroke="${s.ink.seam}" stroke-width="0.3" fill="none"/>` +
-        `<path d="M-2.0,4.1 C-0.3,3.9 2.0,4.5 2.0,5.7 C2.0,6.8 -0.3,6.6 -2.0,6.4 Z" fill="${INKS.dust}"/>` +
-        `</g>`;
+        const wristX = edgeX - sign * 3.5;
+        const wristY = gripY + 4.8;
 
-      return bg + lArm + lCuff + rArm + rCuff + mapBody + lGlove + rGlove;
+        const arm =
+          `<path d="M${n(armBaseX - sign * 4.2)},44 L${n(wristX - sign * 2.5)},${n(wristY + 1.2)} L${n(wristX + sign * 1.8)},${n(wristY - 1.0)} L${n(armBaseX + sign * 5.0)},44 Z" fill="#1e1b18"/>` +
+          `<path d="M${n(armBaseX - sign * 1.8)},44 L${n(wristX - sign * 1.6)},${n(wristY + 0.8)} L${n(wristX + sign * 0.8)},${n(wristY - 0.4)} L${n(armBaseX + sign * 3.2)},44 Z" fill="${s.key}"/>` +
+          stroke(`M${n(armBaseX + sign * 0.8)},43 L${n(wristX - sign * 0.2)},${n(wristY + 0.2)}`, INKS.oxide, 0.7) +
+          stroke(`M${n(armBaseX - sign * 2.2)},43 L${n(wristX - sign * 1.6)},${n(wristY + 1.0)}`, s.ink.seam, 0.35);
+
+        const tilt = isRight ? -22 : 22;
+        const wrist =
+          `<g transform="translate(${n(wristX)},${n(wristY)}) rotate(${tilt})">` +
+          `<polygon points="-2.6,-1.8 2.6,-1.8 3.2,1.8 -3.2,1.8" fill="#26221f" stroke="${s.ink.seam}" stroke-width="0.3"/>` +
+          `<rect x="-2.2" y="-0.5" width="4.4" height="1.0" rx="0.3" fill="${INKS.dust}"/>` +
+          `</g>`;
+
+        const claw =
+          `<g transform="translate(${n(edgeX)},${n(gripY)}) scale(${sign}, 1) rotate(-10)">` +
+          `<path d="M1.5,-4.0 L4.5,-2.8 L4.5,-0.8 L2.0,-1.0 Z" fill="#080706" opacity="0.3" transform="translate(0.3, 0.5)"/>` +
+          `<path d="M1.5,4.0 L4.5,2.8 L4.5,0.8 L2.0,1.0 Z" fill="#080706" opacity="0.3" transform="translate(0.3, 0.5)"/>` +
+          `<polygon points="-4.5,-4.2 -0.8,-4.8 -0.8,4.8 -4.5,4.2 -5.0,0" fill="#221e1b" stroke="${s.ink.seam}" stroke-width="0.3"/>` +
+          `<polygon points="-4.0,-2.6 -1.6,-3.0 -1.6,3.0 -4.0,2.6" fill="${INKS.oxide}"/>` +
+          `<path d="M-1.8,-4.2 L1.8,-5.2 L4.2,-3.8 L4.2,-1.8 L2.0,-1.8 L-0.6,-2.8 Z" fill="${s.key}" stroke="${s.ink.seam}" stroke-width="0.3"/>` +
+          `<rect x="2.0" y="-3.4" width="2.2" height="1.6" rx="0.3" fill="#151311"/>` +
+          stroke(`M2.6,-3.4 V-1.8 M3.6,-3.4 V-1.8`, '#3a342f', 0.25) +
+          `<circle cx="-0.8" cy="-3.6" r="0.6" fill="${INKS.dust}" stroke="#221e1b" stroke-width="0.25"/>` +
+          `<path d="M-1.8,4.2 L1.8,5.2 L4.2,3.8 L4.2,1.8 L2.0,1.8 L-0.6,2.8 Z" fill="${s.key}" stroke="${s.ink.seam}" stroke-width="0.3"/>` +
+          `<rect x="2.0" y="1.8" width="2.2" height="1.6" rx="0.3" fill="#151311"/>` +
+          stroke(`M2.6,1.8 V3.4 M3.6,1.8 V3.4`, '#3a342f', 0.25) +
+          `<circle cx="-0.8" cy="3.6" r="0.6" fill="${INKS.dust}" stroke="#221e1b" stroke-width="0.25"/>` +
+          `<line x1="-0.8" y1="-2.6" x2="-0.8" y2="2.6" stroke="${INKS.amber}" stroke-width="0.65"/>` +
+          `<rect x="-1.5" y="-0.8" width="1.4" height="1.6" rx="0.3" fill="#2a2521" stroke="${INKS.dust}" stroke-width="0.25"/>` +
+          `</g>`;
+
+        return { arm: arm + wrist, claw };
+      };
+
+      const left = renderSide(false);
+      const right = renderSide(true);
+
+      return bg + left.arm + right.arm + mapBody + left.claw + right.claw;
     },
   },
   'r-pioneering': {
