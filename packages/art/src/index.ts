@@ -9,7 +9,6 @@ export {
   NEBULA_HUES,
   VOID_NEBULA_HUES,
   WELL,
-  HEX_EDGE,
   NUMBER_TEXT,
   PLANET_DIAMETER,
   PLANET_FAMILY,
@@ -23,22 +22,16 @@ export { starfield, type StarfieldOptions } from './starfield';
 export { planet, type PlanetOptions } from './planet';
 export {
   BLED,
-  HEX_TILE_CUT,
   OFF_CENTRE,
   TILE_SPOTS,
   cubePadCentres,
-  dieLine,
-  hexTileShape,
   numberCorner,
   numberPlacement,
   type Corner,
   type NumberPlacement,
-  type Segment,
   type Spot,
-  type TileShape,
 } from './tile/geometry';
-export { lookShape, type TileLook } from './tile/look';
-export { HATCH, hexEdges, hexEdge, voidFlask, well } from './tile/markings';
+export { HATCH, voidFlask, well } from './tile/markings';
 export { tileFlavour, tileLabel, tileLabelFits } from './tile/label';
 export { tileHasRings } from './tile/space';
 export {
@@ -46,7 +39,7 @@ export {
   RASTER_AREA,
   isRaster,
   rasterLayerSvg,
-  tileLayerNames,
+  TILE_LAYERS,
   tileLayers,
   tileSvg,
   type RasterLayer,
@@ -54,7 +47,7 @@ export {
   type TileLayerName,
   type TileOptions,
 } from './tile';
-export { BLANK, HEX_TILE_SET, SET_COUNTS, TILE_SET, assignTiles, tileSpec, type TileSpec } from './tile/set';
+export { SET_COUNTS, TILE_SET, assignTiles, tileSpec, type TileSpec } from './tile/set';
 export {
   CARD,
   cardBackSvg,

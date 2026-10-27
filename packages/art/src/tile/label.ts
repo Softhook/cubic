@@ -2,7 +2,7 @@ import { rng } from '../rng';
 import { LABEL_TEXT, PLANET_DIAMETER } from '../tokens';
 import { planetFlavour, type PlanetFlavour } from '../flavour';
 import { n, type Fragment } from '../svg';
-import { CORNER, MID, numberCorner, type Spot, type TileShape } from './geometry';
+import { CORNER, MID, numberCorner, type Spot } from './geometry';
 import { planetType, type TileSpec } from './set';
 
 /** A planet's flavour label: the made-up name and survey data printed in tiny type at its top left. */
@@ -50,12 +50,12 @@ export function label(spec: TileSpec): Fragment {
 }
 
 /**
- * Whether a planet at `at` on a tile has its flavour label, as printed: on a square tile, where the spaces
- * meet at its top left, so only with spaces up and left of it on the tile, and not where its number went.
+ * Whether a planet at `at` on a tile has its flavour label, as printed: where the spaces meet at its top
+ * left, so only with spaces up and left of it on the tile, and not where its number went.
  */
-export function tileLabelFits(shape: TileShape, at: Spot): boolean {
+export function tileLabelFits(at: Spot): boolean {
   const k = numberCorner(at);
-  return shape === 'square' && at.x >= 0 && at.y >= 0 && !(k.x === -1 && k.y === -1);
+  return at.x >= 0 && at.y >= 0 && !(k.x === -1 && k.y === -1);
 }
 
 /** A planet's flavour label as SVG, in millimetres from the planet's centre (the game draws it beside the planet). */

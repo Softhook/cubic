@@ -74,11 +74,11 @@ export function createGame(opts: NewGameOptions): GameState {
 
   const m = state.market;
   if (rules.cards) {
-    // Only cards whose effect is implemented are shuffled in, so every card drawn works; on a hex map, none about corners.
+    // Only cards whose effect is implemented are shuffled in, so every card drawn works.
     const deck = (defs: CardDef[]) =>
       shuffle(
         state,
-        defs.filter((c) => dealt(effectOf(c.id), state.board.hex)).flatMap((c) => Array.from({ length: c.count }, () => c.id)),
+        defs.filter((c) => dealt(effectOf(c.id))).flatMap((c) => Array.from({ length: c.count }, () => c.id)),
       );
     m.skillDeck = deck(rules.cards.skills);
     m.tacticDeck = deck(rules.cards.tactics);

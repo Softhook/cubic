@@ -87,7 +87,7 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
       else
         out.push(
           { type: 'attack', die: d.id, target: o.id },
-          // Next to the target or diagonal to it (a hex's diagonals don't touch it), or on a Warp Gate:
+          // Next to the target or diagonal to it, or on a Warp Gate:
           // an attack through the gate goes in from the other end.
           ...[...surrounding(s.board, cellOf(o)!), ...stepNeighbours(s, cellOf(o)!, true), ...s.gates].map((from) => ({
             type: 'attack' as const,
@@ -180,22 +180,11 @@ describe('legal actions agree with the engine', () => {
         ]
       : [[3, 22]])
       it(`${mode}, ${players} players, seed ${seed}`, () => playChecked(mode, players, seed), DEEP ? 600_000 : 60_000);
-  // Hex tiles (docs/HEX.md): another geometry, under the rules of each mode the lobby offers it with.
-  for (const { id: mode } of MODES.filter((m) => m.mapGroups.includes('hex')))
-    for (const [players, mapId] of DEEP
-      ? ([
-          [2, 'alpha-hex'],
-          [3, 'beta-hex'],
-          [4, 'gamma-hex'],
-        ] as const)
-      : ([[3, 'beta-hex']] as const))
-      it(`${mode} on ${mapId}, seed 22`, () => playChecked(mode, players, 22, mapId), DEEP ? 600_000 : 60_000);
   // Planets off the middle of their tiles: orbits that overlap, cross tiles and lose spaces at the edge.
   // Original has Nomadic and Ingenious, which read orbits and tiles their own way.
   for (const [mode, mapId] of [
     ['basic', 'offset-square'],
     ['original', 'offset-square'],
-    ['basic', 'offset-hex'],
   ] as const)
     it(`${mode} on ${mapId}, seed 22`, () => playChecked(mode, 2, 22, mapId), DEEP ? 600_000 : 60_000);
 });

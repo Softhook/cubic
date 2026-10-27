@@ -36,13 +36,6 @@ export interface WellStyle {
 const SPACE_WELL: WellStyle = { fill: 0.055, shade: 0.55, shadeWidth: 0.7, lit: 0.16, litWidth: 0.35 };
 
 /**
- * A hex space's outline (tile/markings.ts `hexEdge`): a plain line along its edge, its opacity and width (mm), the
- * same as the seams between a hex map's tiles. The lines are drawn solid and faded as a group, so a side two spaces
- * (or a space and a seam) share is no darker than the rest.
- */
-export const HEX_EDGE = { opacity: 0.35, width: 0.015 * TILE.cell } as const;
-
-/**
  * The wells printed for the spaces and the cube pads (tile/markings.ts `well`). The space wells are barely
  * filled, so the nebula shows through, and carried by their edges; the four beside a planet (where
  * dice conquer it) are a shade darker. The cube wells are gentler, so the planet's surface shows

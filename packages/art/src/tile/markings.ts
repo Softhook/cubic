@@ -1,7 +1,7 @@
-import { CUBE_PAD, FONTS, HEX_EDGE, PLANET_FAMILY, TILE, WELL, type WellStyle } from '../tokens';
+import { CUBE_PAD, FONTS, PLANET_FAMILY, TILE, WELL, type WellStyle } from '../tokens';
 import { icon } from '../icons';
 import { hex, n, type Fragment } from '../svg';
-import { MID, TILE_SPOTS, cubePadCentres, hexCorners, numberCorner, numberPlacement, type Spot, type TileShape } from './geometry';
+import { MID, TILE_SPOTS, cubePadCentres, numberCorner, numberPlacement, type Spot } from './geometry';
 import type { TileSpec } from './set';
 
 /**
@@ -53,18 +53,6 @@ export function hatch(cx: number, cy: number): string {
 }
 
 /**
- * A hex space's outline centred on (cx, cy): a solid line along its edge, a space tall. Draw a set of them
- * inside `hexEdges`, which fades them together.
- */
-export function hexEdge(cx: number, cy: number): string {
-  const pts = hexCorners(cx, cy, TILE.cell).map((p) => `${n(p.x)} ${n(p.y)}`);
-  return `<polygon points="${pts.join(' ')}" fill="none" stroke="#000" stroke-width="${HEX_EDGE.width}" stroke-linejoin="round"/>`;
-}
-
-/** Hex outlines (`hexEdge`) faded as one, so where two meet the line is no darker. */
-export const hexEdges = (outlines: string) => (outlines ? `<g opacity="${HEX_EDGE.opacity}">${outlines}</g>` : '');
-
-/**
  * A well centred on (cx, cy): a dark fill with a shaded and a lit inner edge. Plain vectors, so they
  * stay editable in Illustrator; the game draws its empty cube slots with it too.
  */
@@ -85,29 +73,27 @@ export function well(cx: number, cy: number, size: number, rx: number, style: We
  * the corner `numberCorner` picks. The planet sits at `at` (spaces from the middle). Plain SVG only (hex colours, no
  * `paint-order` or `dominant-baseline`), so they import into Illustrator as editable vectors.
  */
-export function markings(spec: TileSpec, part: 'spaces' | 'planet', shape: TileShape, at: Spot): Fragment {
+export function markings(spec: TileSpec, part: 'spaces' | 'planet', at: Spot): Fragment {
   const mm = (p: Spot) => ({ x: MID + p.x * TILE.cell, y: MID + p.y * TILE.cell });
   const hasPlanet = spec.number > 0;
   let body = '';
-  let edges = '';
-  for (const spot of part === 'spaces' ? Object.values(TILE_SPOTS[shape]) : []) {
+  for (const spot of part === 'spaces' ? Object.values(TILE_SPOTS) : []) {
     const away = Math.hypot(spot.x - at.x, spot.y - at.y);
     if (hasPlanet && away < 1e-6) continue;
     const { x, y } = mm(spot);
     const conquer = hasPlanet && Math.abs(away - 1) < 1e-6;
     const style = conquer ? WELL.conquer : WELL.space;
-    if (shape === 'hex') edges += hexEdge(x, y);
-    else body += well(x, y, TILE.pad, 4, style);
-    // The spaces beside a planet are where dice go to conquer it: on a square tile, very faint diagonal hatching marks them.
-    if (conquer && shape === 'square') body += hatch(x, y);
+    body += well(x, y, TILE.pad, 4, style);
+    // The spaces beside a planet are where dice go to conquer it: very faint diagonal hatching marks them.
+    if (conquer) body += hatch(x, y);
     // Ships on the Void gain Research: a faint flask on each space.
     if (spec.number === 0) body += voidFlask(x, y);
   }
   if (hasPlanet && part === 'planet') {
     const p = mm(at);
     for (const q of cubePadCentres(spec.number - 6, p.x, p.y)) body += well(q.x, q.y, CUBE_PAD.size, CUBE_PAD.corner, WELL.cube);
-    const num = numberPlacement(spec.number, shape);
-    const k = numberCorner(at, shape);
+    const num = numberPlacement(spec.number);
+    const k = numberCorner(at);
     const hue = PLANET_FAMILY[spec.number].hue;
     // White with a dark outline reads on any planet surface and on the space around it. The outline
     // is a second copy underneath; the baseline sits 0.4 em below the centre so the digits are centred.
@@ -116,5 +102,5 @@ export function markings(spec: TileSpec, part: 'spaces' | 'planet', shape: TileS
     body +=
       text(`fill="none" stroke="${hex(hue, 50, 7)}" stroke-width="${n(num.size * 0.13)}" stroke-linejoin="round"`) + text(`fill="#fff"`);
   }
-  return { defs: '', body: hexEdges(edges) + body };
+  return { defs: '', body };
 }

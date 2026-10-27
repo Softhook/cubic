@@ -514,7 +514,7 @@ export function tacticalOptions(state: GameState, dieId: string): TacticalOption
 /**
  * Nomadic (Original): empty orbital positions of the planets on the tiles next to the planet the
  * ship orbits (any of them, where orbits overlap). "Next to" means the 4 orthogonally adjacent tiles
- * (designer, BGG thread 1182319), or a hex flower's 6. A planet the ship already orbits isn't a
+ * (designer, BGG thread 1182319). A planet the ship already orbits isn't a
  * neighbour, even on a touching tile. Its orbit's spaces count only where a neighbour's orbit overlaps
  * it, as they are then a neighbour's orbital positions too.
  */

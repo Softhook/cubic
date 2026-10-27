@@ -3,9 +3,9 @@ import { PLANET_FAMILY, type PlanetType } from '../tokens';
 
 /** One physical tile: which planet it carries and the seed its look comes from. */
 export interface TileSpec {
-  /** `p7-01` … `p10-05`, `void`, `void-2`, `void-3`, or `blank-01` … */
+  /** `p7-01` … `p10-05`, `void`, `void-2` or `void-3`. */
   id: string;
-  /** Planet number, 0 for a Void tile, or BLANK. */
+  /** Planet number, 0 for a Void tile. */
   number: number;
   seed: number;
   type?: PlanetType;
@@ -18,15 +18,11 @@ export interface TileSpec {
 export type VoidHeart = 'blackHole' | 'rift' | 'supernova';
 const VOID_HEARTS: VoidHeart[] = ['blackHole', 'rift', 'supernova'];
 
-/** A blank tile's number: open ground, with no planet and no Void (a map's `-`). */
-export const BLANK = -1;
-
 /**
- * How many of each tile a set needs: for planets and blanks, the most any map in data/maps.yaml uses at once
+ * How many of each tile a set needs: for planets, the most any map in data/maps.yaml uses at once
  * (docs/GRAPHICS.md §2a); three Voids. Start planets use a separate token, so they need no tiles of their own.
- * Only hex maps have blanks (`HEX_TILE_SET`).
  */
-export const SET_COUNTS: Record<number, number> = { 7: 8, 8: 8, 9: 6, 10: 5, 0: 3, [BLANK]: 10 };
+export const SET_COUNTS: Record<number, number> = { 7: 8, 8: 8, 9: 6, 10: 5, 0: 3 };
 
 /** The look of one tile, from its id. Ids past the set's count (a map larger than the set) still work. */
 export function tileSpec(id: string): TileSpec {
@@ -34,7 +30,6 @@ export function tileSpec(id: string): TileSpec {
     const index = id === 'void' ? 0 : Number(id.slice(5)) - 1;
     return { id, number: 0, seed: hash(id), heart: VOID_HEARTS[index % VOID_HEARTS.length] ?? 'blackHole' };
   }
-  if (/^blank-([1-9]\d*|0[1-9]\d*)$/.test(id)) return { id, number: BLANK, seed: hash(id) };
   const m = /^p(\d+)-([1-9]\d*|0[1-9]\d*)$/.exec(id);
   const number = m ? Number(m[1]) : 0;
   const family = PLANET_FAMILY[number];
@@ -45,16 +40,13 @@ export function tileSpec(id: string): TileSpec {
 
 const tileId = (number: number, i: number) => {
   if (number === 0) return i === 0 ? 'void' : `void-${i + 1}`;
-  return `${number === BLANK ? 'blank' : `p${number}`}-${String(i + 1).padStart(2, '0')}`;
+  return `p${number}-${String(i + 1).padStart(2, '0')}`;
 };
 
 const tilesOf = (num: number) => Array.from({ length: SET_COUNTS[num] }, (_, i) => tileSpec(tileId(num, i)));
 
-/** Every tile in a full set, in order: the planets and Voids, all a square map can use. */
+/** Every tile in a full set, in order: the planets and Voids, all a map can use. */
 export const TILE_SET: TileSpec[] = [7, 8, 9, 10, 0].flatMap(tilesOf);
-
-/** The set as hex tiles: TILE_SET and the blanks the open-ground maps spread out with. */
-export const HEX_TILE_SET: TileSpec[] = [...TILE_SET, ...tilesOf(BLANK)];
 
 /**
  * Which physical tile goes where on a map: the k-th planet of a number gets that number's k-th tile.

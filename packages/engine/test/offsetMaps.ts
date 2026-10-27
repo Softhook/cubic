@@ -25,21 +25,6 @@ const OFFSET_SQUARE = def({
   ],
 });
 
-/** Alpha Sector (hex) with planets moved toward and away from their neighbours. */
-const OFFSET_HEX = def({
-  id: 'offset-hex',
-  name: 'Offset Hex (test)',
-  players: 2,
-  grid: 'hex',
-  layout: [
-    ['.', '7s*'],
-    ['7se', '7'],
-    ['7', '8n', '7sw'],
-    ['7', '7nw'],
-    ['.', '7n*'],
-  ],
-});
-
 export function registerOffsetMaps() {
-  for (const m of [OFFSET_SQUARE, OFFSET_HEX]) if (!MAPS.some((x) => x.id === m.id)) MAPS.push(m);
+  for (const m of [OFFSET_SQUARE]) if (!MAPS.some((x) => x.id === m.id)) MAPS.push(m);
 }

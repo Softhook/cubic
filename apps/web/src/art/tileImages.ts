@@ -1,22 +1,11 @@
 import { useEffect, useState } from 'react';
-import {
-  RASTER_AREA,
-  TILE,
-  TILE_SET,
-  dataUrl,
-  hash,
-  lookShape,
-  rasterLayerSvg,
-  tileSpec,
-  type RasterLayer,
-  type TileLook,
-} from '@quantum/art';
+import { RASTER_AREA, TILE, TILE_SET, dataUrl, hash, rasterLayerSvg, tileSpec, type RasterLayer } from '@quantum/art';
 import { rasterise } from '../files';
 import { COARSE } from '../game/useMediaQuery';
 import { idle, storeImage, storedImage } from './imageStore';
 
 /**
- * Tile artwork as ready-drawn images: the raster layers of a tile in its look (art `rasterLayerSvg`), which the map
+ * Tile artwork as ready-drawn images: the raster layers of a tile (art `rasterLayerSvg`), which the map
  * draws (MapTiles): its sky and its body, the planet and moons or a Void tile's heart, which the map places
  * wherever the planet sits.
  *
@@ -57,14 +46,14 @@ interface TileRef {
   id: string;
 }
 
-const nameOf = ({ id }: TileRef, look: TileLook, layer: RasterLayer) => (layer === 'body' ? `${id}:body` : `${id}:sky-${lookShape(look)}`);
+const nameOf = ({ id }: TileRef, layer: RasterLayer) => `${id}:${layer}`;
 
-/** The image URL for a layer of a tile (`p7-01`…) in a look, drawing and storing it the first time. */
-async function tileImage(tile: TileRef, look: TileLook, layer: RasterLayer): Promise<string> {
-  const name = nameOf(tile, look, layer);
+/** The image URL for a layer of a tile (`p7-01`…), drawing and storing it the first time. */
+async function tileImage(tile: TileRef, layer: RasterLayer): Promise<string> {
+  const name = nameOf(tile, layer);
   let image = images.get(name);
   if (!image) {
-    const svg = rasterLayerSvg(tileSpec(tile.id), look, layer);
+    const svg = rasterLayerSvg(tileSpec(tile.id), layer);
     // If drawing or storage fails, fall back to the SVG itself (slower to show, same look).
     image = load(name, svg, pixels(layer)).catch(() => dataUrl(svg));
     images.set(name, image);
@@ -76,11 +65,11 @@ async function tileImage(tile: TileRef, look: TileLook, layer: RasterLayer): Pro
  * A tile's image URL once the image is decoded at full size, for the map. Drawn as large as it gets
  * (zoomed in), the browser would otherwise decode each tile then, on the first zoom, and drop frames.
  */
-export function decodedTileImage(tile: TileRef, look: TileLook, layer: RasterLayer): Promise<string> {
-  const name = nameOf(tile, look, layer);
+export function decodedTileImage(tile: TileRef, layer: RasterLayer): Promise<string> {
+  const name = nameOf(tile, layer);
   let image = decoded.get(name);
   if (!image) {
-    image = tileImage(tile, look, layer).then(async (url) => {
+    image = tileImage(tile, layer).then(async (url) => {
       const img = new Image();
       img.src = url;
       await img.decode().catch(() => {});
@@ -99,23 +88,20 @@ export async function warmTileImages(): Promise<void> {
   for (const t of TILE_SET)
     for (const layer of ['body', 'sky'] as const) {
       await idle();
-      await tileImage(t, 'square', layer);
+      await tileImage(t, layer);
     }
 }
 
 const NONE: Record<string, string> = {};
 
-/**
- * A layer of each tile of the map in a look, by physical tile id, filled in as each image is ready
- * (`decodedTileImage`). Only that look's: when the look changes, none of the last one's.
- */
-export function useTileImages(tiles: readonly TileRef[], look: TileLook, layer: RasterLayer): Record<string, string> {
-  const of = `${look}:${layer}`;
+/** A layer of each tile of the map, by physical tile id, filled in as each image is ready (`decodedTileImage`). */
+export function useTileImages(tiles: readonly TileRef[], layer: RasterLayer): Record<string, string> {
+  const of = layer;
   const [shown, setShown] = useState({ of, images: NONE });
   useEffect(() => {
     let live = true;
     for (const t of tiles)
-      decodedTileImage(t, look, layer).then(
+      decodedTileImage(t, layer).then(
         (url) =>
           live &&
           setShown((s) => {
@@ -127,6 +113,6 @@ export function useTileImages(tiles: readonly TileRef[], look: TileLook, layer: 
     return () => {
       live = false;
     };
-  }, [tiles, look, layer, of]);
+  }, [tiles, layer, of]);
   return shown.of === of ? shown.images : NONE;
 }

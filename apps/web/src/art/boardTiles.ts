@@ -1,5 +1,5 @@
 import { drawing, tileCentres, type Board, type Cell } from '@quantum/engine';
-import { BLANK, assignTiles, tileFlavour, tileSpec, type Spot } from '@quantum/art';
+import { assignTiles, tileFlavour, tileSpec, type Spot } from '@quantum/art';
 
 export interface TileArt {
   /** The tile's middle space, where its sky is centred. */
@@ -7,7 +7,7 @@ export interface TileArt {
   c: number;
   /** The tile's index on the board (`BoardCell.tile`). */
   tile: number;
-  /** The physical tile whose artwork (sky, and planet or Void heart, or a blank's bare sky or ground) goes here. */
+  /** The physical tile whose artwork (sky, and planet or Void heart) goes here. */
   id: string;
   /** Where the tile's body is drawn: its planet's space, anywhere on the tile, or the middle for a Void. */
   body: Cell;
@@ -15,7 +15,7 @@ export interface TileArt {
   at: Spot;
 }
 
-/** Each tile of the map (3×3 squares, or a hex map's 7-hex flowers), with the physical tile it uses (packages/art). */
+/** Each tile of the map (3×3 squares), with the physical tile it uses (packages/art). */
 export function tileArt(board: Board): TileArt[] {
   const { tiles, ids } = tileIds(board);
   const planets = new Map(board.planets.map((p) => [board.cells[p.r][p.c].tile, p]));
@@ -31,9 +31,8 @@ export function tileArt(board: Board): TileArt[] {
 /** The map's tiles by index (`BoardCell.tile`), and the physical tile id each one uses. */
 function tileIds(board: Board) {
   const tiles = new Map<number, { r: number; c: number; number: number }>();
-  // A tile without a planet is a Void, or a blank where its spaces give no research.
-  for (const [tile, { r, c }] of [...tileCentres(board)].sort(([a], [b]) => a - b))
-    tiles.set(tile, { r, c, number: board.cells[r][c].void ? 0 : BLANK });
+  // A tile without a planet is a Void.
+  for (const [tile, { r, c }] of [...tileCentres(board)].sort(([a], [b]) => a - b)) tiles.set(tile, { r, c, number: 0 });
   for (const p of board.planets) tiles.get(board.cells[p.r][p.c].tile)!.number = p.number;
   const ids = assignTiles([...tiles].map(([index, t]) => ({ index, number: t.number })));
   return { tiles, ids };

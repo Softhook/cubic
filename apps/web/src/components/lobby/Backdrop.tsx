@@ -1,21 +1,11 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { buildBoard, drawing, spaces, type Board, type MapDef } from '@quantum/engine';
-import {
-  HEX_EDGE,
-  PLANET_DIAMETER,
-  SPACE_BASE_CSS,
-  TILE,
-  TILE_SET,
-  tileHasRings,
-  tileSpec,
-  type RasterLayer,
-  type TileLook,
-} from '@quantum/art';
+import { PLANET_DIAMETER, SPACE_BASE_CSS, TILE, TILE_SET, tileHasRings, tileSpec, type RasterLayer } from '@quantum/art';
 import { decodedTileImage } from '../../art/tileImages';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { PIPS } from '../Die3D';
 import { Boom, EXPLOSION_MS } from '../board/Explosions';
-import { SQUARE_TILE_GAP, hexCorners, hexFlower, hexSeams, placement } from '../board/geometry';
+import { SQUARE_TILE_GAP, placement } from '../board/geometry';
 import { PIP } from '../../theme';
 import { PHONE, REDUCED_MOTION, useMediaQuery } from '../../game/useMediaQuery';
 import { pick } from '../../random';
@@ -69,12 +59,12 @@ function useCell(board: Board): number {
 }
 
 /** A layer of each tile's artwork (tileImages), as a decoded image and its URL, filled in as each is ready. */
-function useTileImages(tiles: TileArt[], look: TileLook, layer: RasterLayer) {
+function useTileImages(tiles: TileArt[], layer: RasterLayer) {
   const [images, setImages] = useState<Record<string, HTMLImageElement>>({});
   useEffect(() => {
     let live = true;
     for (const t of tiles)
-      decodedTileImage(t, look, layer).then((url) => {
+      decodedTileImage(t, layer).then((url) => {
         const img = new Image();
         img.src = url;
         img.decode().then(
@@ -85,7 +75,7 @@ function useTileImages(tiles: TileArt[], look: TileLook, layer: RasterLayer) {
     return () => {
       live = false;
     };
-  }, [tiles, look, layer]);
+  }, [tiles, layer]);
   return images;
 }
 
@@ -160,8 +150,7 @@ function MapCanvas({
 
 /**
  * The tiles as the game draws them (MapTiles), more simply: each tile's sky cut to its outline (rounded
- * squares a little apart, or 7-hex flowers), a Void's heart, the seams between hex tiles, and each space a
- * faint well, or on hex tiles a faint line round it.
+ * squares a little apart), a Void's heart, and each space a faint well.
  */
 function drawTiles(
   ctx: CanvasRenderingContext2D,
@@ -172,11 +161,6 @@ function drawTiles(
   bodies: Record<string, HTMLImageElement>,
 ) {
   const { mid } = placement(board, cell);
-  const hex = (p: { r: number; c: number }, scale: number) => {
-    const { x, y } = mid(p);
-    hexCorners(x, y, cell * scale).forEach(([cx, cy], i) => (i ? ctx.lineTo(cx, cy) : ctx.moveTo(cx, cy)));
-    ctx.closePath();
-  };
   const square = (p: { r: number; c: number }, size: number, radius: number) => {
     const { x, y } = mid(p);
     // Square corners where canvas can't round them (Safari before 16).
@@ -191,9 +175,7 @@ function drawTiles(
   };
   for (const t of tiles) {
     ctx.beginPath();
-    // A touch larger, so no hairline shows between a hex tile's own hexes.
-    if (board.hex) for (const p of hexFlower(board, t)) hex(p, 1.01);
-    else square(t, size - 2 * SQUARE_TILE_GAP * cell, (size * TILE.corner) / TILE.size);
+    square(t, size - 2 * SQUARE_TILE_GAP * cell, (size * TILE.corner) / TILE.size);
     ctx.save();
     ctx.clip();
     ctx.fillStyle = SPACE_BASE_CSS;
@@ -204,23 +186,9 @@ function drawTiles(
     ctx.restore();
   }
   ctx.beginPath();
-  for (const p of spaces(board)) {
-    if (board.hex) hex(p, 1);
-    else square(p, (TILE.pad / TILE.cell) * cell, (4 / TILE.cell) * cell);
-  }
-  if (board.hex) {
-    for (const [[x0, y0], [x1, y1]] of hexSeams(board, cell, tiles)) {
-      ctx.moveTo(x0, y0);
-      ctx.lineTo(x1, y1);
-    }
-    // The seams and the spaces' outlines in one path, so where they meet the line is no darker.
-    ctx.strokeStyle = `rgba(0,0,0,${HEX_EDGE.opacity})`;
-    ctx.lineWidth = Math.max(1, (HEX_EDGE.width / TILE.cell) * cell);
-    ctx.stroke();
-  } else {
-    ctx.fillStyle = 'rgba(0,0,0,.18)';
-    ctx.fill();
-  }
+  for (const p of spaces(board)) square(p, (TILE.pad / TILE.cell) * cell, (4 / TILE.cell) * cell);
+  ctx.fillStyle = 'rgba(0,0,0,.18)';
+  ctx.fill();
 }
 
 /** The faces around a die showing `top`, as on a real die: opposite faces add up to 7. */
@@ -320,13 +288,11 @@ function Planets({ board, tiles, bodies }: { board: Board; tiles: TileArt[]; bod
 function Plane({ map, fleet, still }: { map: MapDef; fleet: number; still: boolean }) {
   const board = useMemo(() => buildBoard(map), [map]);
   const tiles = useMemo(() => ringlessTiles(board), [board]);
-  // Always in space: the planets stand up off the map as spheres.
-  const look = board.hex ? 'hex' : 'square';
-  const skies = useTileImages(tiles, look, 'sky');
-  const bodies = useTileImages(tiles, look, 'body');
+  const skies = useTileImages(tiles, 'sky');
+  const bodies = useTileImages(tiles, 'body');
   const open = useMemo(() => new Set(openSpaces(board).map(at)), [board]);
   const cell = useCell(board);
-  // Ships and blasts keep board spaces; they're drawn where the map draws them (hexes sit between rows).
+  // Ships and blasts keep board spaces; they're drawn where the map draws them.
   const drawn = drawing(board);
   const [ships, setShips] = useState(() => launch(board, map.players, fleet));
   const [blasts, setBlasts] = useState<Blast[]>([]);

@@ -1,5 +1,5 @@
 // The lobby backdrop's quiet game (Backdrop.tsx shows it): fleets around their home planets, a ship at a time
-// re-rolling, moving space to space as in the game (along rows and columns, or hex to hex), or attacking an enemy in reach.
+// re-rolling, moving space to space as in the game (along rows and columns), or attacking an enemy in reach.
 
 import { adjacent, distance, surrounding, type Board } from '@quantum/engine';
 import { PLAYER_COLORS } from '../../theme';
@@ -38,7 +38,7 @@ export interface Travel {
 
 export const roll = () => 1 + Math.floor(Math.random() * 6);
 export const at = (s: Spot) => `${s.r},${s.c}`;
-/** The open spaces touching a planet: the 8 around a square tile's, the 6 around a hex tile's. */
+/** The open spaces touching a planet: the 8 around it. */
 export const around = (board: Board, open: Set<string>, home: Spot) => surrounding(board, home).filter((s) => open.has(at(s)));
 /** The spaces taken: where each ship (not destroyed) stands, and where each moving one is headed. */
 export const taken = (ships: Ship[]) => new Set(ships.filter((s) => !s.down).flatMap((s) => (s.to ? [at(s), at(s.to)] : [at(s)])));

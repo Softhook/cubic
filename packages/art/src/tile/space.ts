@@ -3,8 +3,8 @@ import { planet, planetRings } from '../planet';
 import { starfield } from '../starfield';
 import { PLANET_DIAMETER, PLANET_FAMILY, TILE, VOID_NEBULA_HUES, type PlanetType } from '../tokens';
 import { document, hsl, join, n, type Box, type Fragment } from '../svg';
-import { CORNER, MEET, MID, TRIM, betweenSpaces, type Corner, type Spot, type TileShape } from './geometry';
-import { BLANK, planetType, type TileSpec } from './set';
+import { CORNER, MEET, MID, TRIM, betweenSpaces, type Corner, type Spot } from './geometry';
+import { planetType, type TileSpec } from './set';
 import { VOID_HEARTS } from './voids';
 
 /**
@@ -16,12 +16,11 @@ import { VOID_HEARTS } from './voids';
  * On a printed tile, bright stars go in the gutters between spaces, away from the planet (at `p`, mm),
  * its number (in corner `k`) and its label, if it has one.
  */
-export function inGutter(shape: TileShape, p: Spot, k: Corner, labelled: boolean, x: number, y: number): boolean {
+export function inGutter(p: Spot, k: Corner, labelled: boolean, x: number, y: number): boolean {
   if (Math.hypot(x - p.x, y - p.y) < 24) return false;
-  const m = MEET[shape];
-  if (Math.abs(x - (p.x + k.x * m.x * TILE.cell)) < 11 && Math.abs(y - (p.y + k.y * m.y * TILE.cell)) < 9) return false;
+  if (Math.abs(x - (p.x + k.x * MEET.x * TILE.cell)) < 11 && Math.abs(y - (p.y + k.y * MEET.y * TILE.cell)) < 9) return false;
   if (labelled && x < p.x - CORNER + 3 && Math.abs(y - (p.y - CORNER)) < 6) return false;
-  return betweenSpaces(shape, x, y);
+  return betweenSpaces(x, y);
 }
 
 /**
@@ -91,7 +90,6 @@ export function skyArt(
 
 /** A tile's body, centred on it: its planet and moons, or a Void tile's heart. */
 export function bodyArt(spec: TileSpec, id: string): Fragment {
-  if (spec.number === BLANK) return { defs: '', body: '' };
   if (spec.number === 0) return VOID_HEARTS[spec.heart ?? 'blackHole'](id);
   const art = rng(spec.seed);
   const r = PLANET_DIAMETER[spec.number] / 2;
@@ -104,15 +102,10 @@ export function bodyArt(spec: TileSpec, id: string): Fragment {
 
 /**
  * A map's layers (the game draws a map in layers, so a planet can sit anywhere): a tile's sky alone, trim
- * 96 × 96 mm, with no planet or markings. Bright stars keep to the gutters between the spaces of a
- * `shape` tile.
+ * 96 × 96 mm, with no planet or markings. Bright stars keep to the gutters between the spaces.
  */
-export function skySvg(spec: TileSpec, shape: TileShape): string {
-  return document(
-    skyArt(spec, spec.id, TRIM, (x, y) => betweenSpaces(shape, x, y)),
-    TRIM,
-    true,
-  );
+export function skySvg(spec: TileSpec): string {
+  return document(skyArt(spec, spec.id, TRIM, betweenSpaces), TRIM, true);
 }
 
 /**

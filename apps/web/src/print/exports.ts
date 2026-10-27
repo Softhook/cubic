@@ -1,7 +1,6 @@
-import { dieLine } from '@quantum/art';
 import { download, drawBands } from '../files';
 import { cmykPdf, deflate, fullPage, type PdfImage, type PdfOptions } from './pdf';
-import { cmykName, dieAt, fileName, pieceSize, setName, sheetName, sizeNote, type Format, type Piece, type Printable } from './pieces';
+import { cmykName, fileName, pieceSize, setName, sheetName, sizeNote, type Format, type Piece, type Printable } from './pieces';
 import { PRESS, encodePng, pressTag, toCmyk } from './press';
 import { A4, pressPages, printDocument, sheetsHtml, type Paper } from './sheets';
 import { zip } from './zip';
@@ -61,26 +60,11 @@ export async function exportZip(
   const readme =
     `${GAME_NAME} ${piece.plural}, ${sizeNote(piece, o.bleed)}.\n` +
     `PNG at ${piece.dpi} dpi, one file per face. RGB, tagged sRGB: please convert with your press profile.\n` +
-    cutNote(piece, 'in cut.svg (the same size as each PNG)') +
     (o.notes ?? '');
-  const cut = cutFile(piece, o.bleed);
-  if (cut) files.push(cut);
   files.push(textFile('README.txt', readme));
   progress('Packing…');
   await paint();
   download(setName(piece, { part: o.part, tag: o.bleed ? 'bleed' : undefined }), await zip(files));
-}
-
-/** For a set's README: where a piece cut other than at its trim is cut, and where its cut line is. */
-const cutNote = (piece: Piece, where: string) => (piece.die ? `Die-cut along the line ${where}, not at the trim.\n` : '');
-
-/** A piece's die-cut line as an SVG the size of its PNGs (`cut.svg`), for a set's ZIP; none when it's cut at the trim. */
-function cutFile(piece: Piece, bleed: boolean): ZipFile | null {
-  if (!piece.die) return null;
-  const b = bleed ? piece.bleed : 0;
-  const { w, h } = pieceSize(piece, bleed);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}mm" height="${h}mm" viewBox="0 0 ${w} ${h}">${dieLine(piece.die.line, b, b)}</svg>`;
-  return textFile('cut.svg', svg, 'image/svg+xml');
 }
 
 /** Opens the print dialog on sheets of these faces at trim size; each distinct face is drawn once. */
@@ -130,11 +114,10 @@ async function cmykImage(f: Format, item: Printable, deep: boolean): Promise<Pdf
 const pressPdf = (o: Omit<PdfOptions, 'condition' | 'conditionInfo'>) =>
   cmykPdf({ ...o, condition: PRESS.condition, conditionInfo: PRESS.profile });
 
-/** A CMYK PDF of these images, one per page with the format's bleed, and a piece's cut line when it isn't cut at the trim. */
+/** A CMYK PDF of these images, one per page with the format's bleed. */
 function cmykFile(f: Format, title: string, images: PdfImage[]): Blob {
   const { w, h } = pieceSize(f, true);
-  const cuts = f.die && dieAt(f.die, f.bleed, f.bleed).line;
-  const pages = images.map((_, k) => ({ ...fullPage(k, w, h), ...(cuts ? { cuts } : {}) }));
+  const pages = images.map((_, k) => fullPage(k, w, h));
   return pressPdf({ title, w, h, bleed: f.bleed, images, pages });
 }
 
@@ -195,7 +178,7 @@ export async function exportCmykFiles(
     `${GAME_NAME} ${piece.plural}, ${sizeNote(piece, true)}.\n` +
     `One CMYK PDF per ${piece.id}, converted for ${PRESS.described}${o.deep ? ' (the darkest tones as a 100 % K rich black, within 300 % total ink)' : ''}, ${piece.dpi} dpi, no crop marks` +
     (faces.some((f) => f.back) ? ': page 1 the front, page 2 the back, for double-sided printing' : '') +
-    `.\n${cutNote(piece, 'in each PDF’s CutContour spot colour')}How many of each to order: order.csv. Upload with "Do not scale".\n`;
+    `.\nHow many of each to order: order.csv. Upload with "Do not scale".\n`;
   files.push(textFile('order.csv', order.join('\n') + '\n', 'text/csv'));
   files.push(textFile('README.txt', readme));
   progress('Packing…');

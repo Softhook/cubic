@@ -1,19 +1,10 @@
-import {
-  HEX_TILE_SET,
-  TILE_SET,
-  playerAidSvg,
-  tileSvg,
-  type AidEdition,
-  type TileLook,
-  type TileOptions,
-  type TileSpec,
-} from '@quantum/art';
+import { TILE_SET, playerAidSvg, tileSvg, type AidEdition, type TileOptions, type TileSpec } from '@quantum/art';
 import type { PressSheets } from '../print/exports';
-import { PIECES, type Piece, type Printable } from '../print/pieces';
+import { PIECES, type Printable } from '../print/pieces';
 import { cardFontCss, measure, tileFontCss } from './cards';
 
-/** How a tile is shown and printed: its look, and where its planet sits (art `TileOptions`). */
-export type TileView = Pick<TileOptions, 'look' | 'planetAt'>;
+/** How a tile is shown and printed: where its planet sits (art `TileOptions`). */
+export type TileView = Pick<TileOptions, 'planetAt'>;
 
 /** A tile as a printable face, named for where its planet sits when that's not the middle: `p7-01`, `p7-01-ne` (a Void has no spot). */
 export const printableTile = (t: TileSpec, fontCss: string, markings = true, view: TileView = {}): Printable => ({
@@ -48,22 +39,4 @@ export const TILES_AND_AIDS: PressSheets = {
       { piece: PIECES.aid, faces: AIDS.map((edition) => printableAid(edition, card)) },
     ];
   },
-};
-
-/** The set as hex tiles, blanks too, planets in the middle, on press sheets of their own with each tile's die-cut line. */
-const HEX_TILES: PressSheets = {
-  name: 'hex-tiles',
-  label: 'Hex tiles',
-  contents: `all ${HEX_TILE_SET.length} tiles as hex tiles (${PIECES.hexTile.cols * PIECES.hexTile.rows} a page), each with its die-cut line in a CutContour spot colour`,
-  async groups() {
-    const tile = await tileFontCss();
-    if (!tile) throw new Error('the fonts didn’t load');
-    return [{ piece: PIECES.hexTile, faces: HEX_TILE_SET.map((t) => printableTile(t, tile, true, { look: 'hex' })) }];
-  },
-};
-
-/** How each look of tile prints: its piece, and the press sheets its set goes on. */
-export const TILE_PRINT: Record<TileLook, { piece: Piece; cmyk: PressSheets }> = {
-  square: { piece: PIECES.tile, cmyk: TILES_AND_AIDS },
-  hex: { piece: PIECES.hexTile, cmyk: HEX_TILES },
 };

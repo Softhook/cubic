@@ -1,7 +1,6 @@
 /** Print files: every piece fits its sheets with room for crop marks, backs land behind their fronts, press sheets bleed only round each block, names follow one pattern. */
 import { describe, expect, it } from 'vitest';
 import { PIECES, fileName, pieceSize, setName, sheetName, type Piece } from '../src/print/pieces';
-import type { Polygon } from '../src/print/pdf';
 import { A4, PAPER, pressPages, sheetsHtml, type Paper } from '../src/print/sheets';
 
 const pieces = Object.values(PIECES) as Piece[];
@@ -128,53 +127,6 @@ describe('press sheets', () => {
         expect(inside).toBe(false);
       }
     }
-  });
-});
-
-describe('hex tiles', () => {
-  const p = PIECES.hexTile;
-
-  it('are die-cut along their flower: 18 sides joining into one loop inside the trim', () => {
-    const cut = p.die!.line;
-    expect(cut).toHaveLength(18);
-    const key = (x: number, y: number) => `${x.toFixed(3)},${y.toFixed(3)}`;
-    const ends = cut.flatMap(([x1, y1, x2, y2]) => [key(x1, y1), key(x2, y2)]);
-    // Each corner of the loop ends two sides.
-    for (const e of new Set(ends)) expect(ends.filter((x) => x === e)).toHaveLength(2);
-    for (const [x1, y1, x2, y2] of cut) for (const v of [x1, y1, x2, y2]) expect(v > -1e-9 && v < p.w + 1e-9).toBe(true);
-  });
-
-  it('carry their cut line onto the press sheets, moved into each cell', () => {
-    const [page] = pressPages(p, [0, 1]);
-    expect(page.cuts).toHaveLength(2 * 18);
-    const x0 = (A4.w - 2 * p.w) / 2;
-    const [x1] = page.cuts![18];
-    expect(x1).toBeCloseTo(x0 + p.w + p.die!.line[0][0]);
-    expect(pressPages(PIECES.tile, [0])[0].cuts).toBeUndefined();
-  });
-
-  it('show only their flower with its bleed on the press sheets, so no neighbour covers it', () => {
-    const [page] = pressPages(p, [0, 1]);
-    const x0 = (A4.w - 2 * p.w) / 2;
-    const y0 = (A4.h - 2 * p.h) / 2;
-    for (const [k, { clip }] of page.images.entries()) {
-      expect(Array.isArray(clip)).toBe(true);
-      const xs = (clip as Polygon[]).flat().map(([x]) => x);
-      // The flower is 92.4 mm across, 1.8 mm in from its box each side; with its bleed, 1.2 mm past the box.
-      expect(Math.min(...xs)).toBeCloseTo(x0 + k * p.w + 1.81 - 3 / Math.cos(Math.PI / 6), 1);
-      expect(Math.max(...(clip as Polygon[]).flat().map(([, y]) => y))).toBeCloseTo(y0 + p.h + p.bleed, 6);
-    }
-  });
-
-  it('need no cut line on the home print sheets: their art is knocked out past it', () => {
-    expect(sheetsHtml(p, [{ front: 'a' }])).not.toMatch(/<svg|stroke/);
-  });
-
-  it('are named as hex tiles', () => {
-    expect(fileName(p, { name: 'p7-01-ne', svg: () => '' }, { bleed: true, dpi: 300, ext: 'png' })).toBe(
-      'cubic-hex-tile-p7-01-ne-bleed-300dpi.png',
-    );
-    expect(setName(p, {})).toBe('cubic-hex-tiles.zip');
   });
 });
 

@@ -1,6 +1,5 @@
 import cardsJson from './data/cards.json';
 import mapsJson from './data/maps.json';
-import type { World } from './types';
 
 export interface CardDef {
   id: string;
@@ -30,10 +29,6 @@ export interface MapDef {
   stats: { slack: number; shared: number | null; planets: number };
   /** Edges that join: leaving one edge of a row or column re-enters at its opposite edge. */
   wrap?: 'horizontal' | 'vertical' | 'both';
-  /** Hex tiles (7-hex flowers) instead of 3×3 squares: data/maps.yaml says how a hex layout reads. */
-  grid?: 'hex';
-  /** A hex map's world, Phobos, Deimos or Mars: every hex map in data/maps.yaml names one (Mars for a test's map that doesn't). */
-  world?: World;
   layout: string[][];
 }
 
