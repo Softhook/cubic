@@ -34,17 +34,7 @@ export function legalFor(game: GameState): Legal {
   return legalIndex(legalActions(game, { includeCarry: true }));
 }
 
-/**
- * What a tap on a planet does about conquering it: its one way to be conquered, `choose` when there
- * are several (an empty place, or over-conquest displacing one of several opponents' cubes: the
- * player chooses, ConquerChoice), or null when it can't be conquered.
- */
-export function conquerTap(legal: Legal, planet: number): Action | 'choose' | null {
-  const options = conquerOptions(legal, planet);
-  return options.length > 1 ? 'choose' : (options[0] ?? null);
-}
-
-/** The ways to conquer `planet`. */
-export function conquerOptions(legal: Legal, planet: number): ActionOf<'conquer'>[] {
-  return legal.of('conquer', (a) => a.planet === planet);
+/** What a tap on a planet does about conquering it: the conquest, or null when it can't be conquered. */
+export function conquerTap(legal: Legal, planet: number): Action | null {
+  return legal.of('conquer', (a) => a.planet === planet)[0] ?? null;
 }

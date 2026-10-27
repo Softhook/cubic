@@ -14,7 +14,7 @@ const def = (m: Omit<MapDef, 'stats' | 'cubes' | 'group'>): MapDef => {
  * Alpha Sector with every planet moved but the 8: the 7s beside the 8 lean in so the 8's whole orbit is
  * shared, the starts sit in a corner, and two 7s face the map's edge (3 orbital spaces).
  */
-export const OFFSET_SQUARE = def({
+const OFFSET_SQUARE = def({
   id: 'offset-square',
   name: 'Offset Square (test)',
   players: 2,
@@ -26,7 +26,7 @@ export const OFFSET_SQUARE = def({
 });
 
 /** Alpha Sector (hex) with planets moved toward and away from their neighbours. */
-export const OFFSET_HEX = def({
+const OFFSET_HEX = def({
   id: 'offset-hex',
   name: 'Offset Hex (test)',
   players: 2,

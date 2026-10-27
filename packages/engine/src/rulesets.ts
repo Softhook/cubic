@@ -1,10 +1,8 @@
 /**
- * The rule sets, by mode. Kept apart from rules.ts because building them needs the modes
- * (src/regolith), which use the whole engine: engine modules ask rulesOf (rules.ts), which never
- * imports a mode, so the engine loads the same whichever of its modules is imported first.
+ * The rule sets, by mode. Kept apart from rules.ts, which never imports a mode, so engine modules can ask
+ * rulesOf and the engine loads the same whichever of its modules is imported first.
  */
 import { CLASSIC_SHIPS, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type GameMode } from './data';
-import { regolithMode } from './regolith';
 import { defineRuleSets, type RuleSet } from './rules';
 
 /** Maps published for the boxed game: the box, the 2013 rulebook, and the add-on pack. */
@@ -68,8 +66,6 @@ export const RULESETS: Record<GameMode, RuleSet> = {
     ships: CLASSIC_SHIPS,
   },
   community: COMMUNITY,
-  /** Our own rules, a prototype: everything about it is in src/regolith (docs/regolith/PROTOTYPING.md). */
-  regolith: regolithMode(COMMUNITY),
 };
 
 defineRuleSets(RULESETS);
@@ -78,4 +74,4 @@ defineRuleSets(RULESETS);
 export const DEFAULT_MODE: GameMode = 'community';
 
 /** Rule sets in menu order. */
-export const MODES: RuleSet[] = [RULESETS.basic, RULESETS.original, RULESETS.community, RULESETS.regolith];
+export const MODES: RuleSet[] = [RULESETS.basic, RULESETS.original, RULESETS.community];

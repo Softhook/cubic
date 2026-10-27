@@ -63,10 +63,7 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
     { type: 'tyrannical' },
     { type: 'scrappy' },
   ];
-  for (const p of s.board.planets) {
-    out.push({ type: 'conquer', planet: p.id });
-    for (const pl of s.players) if (pl.id !== me) out.push({ type: 'conquer', planet: p.id, replace: pl.id });
-  }
+  for (const p of s.board.planets) out.push({ type: 'conquer', planet: p.id });
   for (const card of s.players[me].storedTactics ?? []) out.push({ type: 'playStoredTactic', card });
   for (const d of mine) {
     out.push(
@@ -84,10 +81,8 @@ function bruteForce(s: GameState, withCarry: boolean): Action[] {
         { type: 'deploy', die: d.id, to },
         { type: 'tactical', die: d.id, to },
         { type: 'nomadic', die: d.id, to },
-        { type: 'power', die: d.id, to },
       );
     for (const o of onBoard) {
-      out.push({ type: 'power', die: d.id, target: o.id });
       if (o.owner === me) out.push({ type: 'swap', die: d.id, other: o.id });
       else
         out.push(

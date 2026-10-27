@@ -1,5 +1,5 @@
 /**
- * Checks, in Chrome, the screens a unit test can't render: choosing how to conquer a planet, and the
+ * Checks, in Chrome, the screens a unit test can't render: battles resolving or waiting for OK, and the
  * crash screen (components/ErrorBoundary.tsx). Exits with 1 when one of them doesn't work.
  *
  *   npm run ui:check                         # starts its own dev server
@@ -10,7 +10,7 @@
  */
 import { mkdirSync } from 'node:fs';
 import type { Page } from 'playwright';
-import { apply, legalActions, orbitals, RULESETS, say, type GameState } from '../packages/engine/src';
+import { apply, type GameState } from '../packages/engine/src';
 import { arrange, quickStart } from '../packages/engine/test/helpers';
 import { devServer, finish, launchChrome, playUrl, succeeds } from './mobile-common';
 
@@ -18,38 +18,6 @@ const OUT = 'test-results/ui';
 mkdirSync(OUT, { recursive: true });
 
 const load = (page: Page, state: unknown) => page.evaluate((st) => window.__game.load(st as GameState), state);
-const cubesOn = (page: Page, planet: number) => page.evaluate((id) => window.__game.state().board.planets[id].cubes, planet);
-
-/** A Regolith position where the player to move can conquer a full planet by displacing either opponent's cube. */
-function overConquest() {
-  let s: GameState = quickStart(3, 1, 'regolith');
-  const me = s.turn.player;
-  const planet = s.board.planets.find((p) => !p.cubes.length && p.capacity >= 2)!;
-  const [a, b] = orbitals(s.board, planet);
-  s = arrange(s, { [`p${me}d0`]: [a.r, a.c, 6], [`p${me}d1`]: [b.r, b.c, 6] });
-  const others = [0, 1, 2].filter((p) => p !== me);
-  const target = s.board.planets[planet.id];
-  for (let i = 0; i < target.capacity; i++) {
-    target.cubes.push(others[i % 2]);
-    s.players[others[i % 2]].cubesLeft--;
-  }
-  s.players.forEach((p) => (p.ai = false));
-  s.turn.actionsLeft = 3;
-  return { s, planet: target, me, victim: others[1] };
-}
-
-/** A Regolith hex position where the player to move has a free planet's sum in orbit, but an enemy ship in it too (contested orbit). */
-function contested() {
-  // 3 players, as the page and the other positions have.
-  let s: GameState = quickStart(3, 1, 'regolith', 'beta-hex');
-  const me = s.turn.player;
-  const planet = s.board.planets.find((p) => !p.start && !p.cubes.length)!;
-  const [a, b, c] = orbitals(s.board, planet);
-  s = arrange(s, { [`p${me}d0`]: [a.r, a.c, 6], [`p${me}d1`]: [b.r, b.c, planet.number - 6], [`p${(me + 1) % 3}d0`]: [c.r, c.c, 3] });
-  s.players.forEach((p) => (p.ai = false));
-  s.turn.actionsLeft = 3;
-  return { s, planet };
-}
 
 /**
  * A Community battle in which player `attacker` (an AI) attacks `defender`. Player 0 is the only human.
@@ -78,53 +46,8 @@ const { base, close } = await devServer(5197);
 const browser = await launchChrome();
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
-  await page.goto(playUrl(base, { play: 'regolith', players: 3 }));
+  await page.goto(playUrl(base, { play: 'community', players: 3 }));
   await page.waitForFunction(() => '__game' in window);
-
-  // Over-conquest with two opponents' cubes: the player chooses whose to displace (only while Regolith plays it).
-  if (RULESETS.regolith.overConquest) {
-    const { s, planet, me, victim } = overConquest();
-    if (legalActions(s).filter((x) => x.type === 'conquer' && x.planet === planet.id).length !== 2)
-      fail('the position does not offer two over-conquests');
-    await load(page, s);
-    await page.click(`.planet-hit[data-r="${planet.r}"][data-c="${planet.c}"]`);
-    const dialog = page.getByRole('dialog', { name: `Conquer planet ${planet.number}` });
-    await dialog.waitFor({ timeout: 5000 }).catch(() => fail('tapping the planet opens no "Conquer planet" dialog'));
-    await page.waitForTimeout(400);
-    await page.screenshot({ path: `${OUT}/conquer-choice.png` });
-    const name = s.players[victim].name;
-    await dialog
-      .getByRole('button', { name: `Displace ${name}’s cube` })
-      .click({ timeout: 5000 })
-      .catch(() => fail(`no "Displace ${name}’s cube" button`));
-    await dialog.waitFor({ state: 'detached', timeout: 5000 }).catch(() => fail('the dialog stays open after choosing'));
-    const after = await cubesOn(page, planet.id);
-    const count = (cubes: number[], p: number) => cubes.filter((c) => c === p).length;
-    if (count(after, victim) !== count(planet.cubes, victim) - 1 || count(after, me) !== 1) {
-      fail(`displacing ${name}: the planet's cubes went from ${JSON.stringify(planet.cubes)} to ${JSON.stringify(after)}`);
-    } else console.log(`✓ over-conquest: chose ${name}'s cube, and it was displaced`);
-  } else console.log('- over-conquest: off in Regolith (RuleSet.overConquest), not checked');
-
-  // Contested orbit: the planet is marked blocked, and tapping it says why instead of conquering.
-  {
-    const { s, planet } = contested();
-    await load(page, s);
-    const hit = page.locator(`.planet-hit.planet-blocked[data-r="${planet.r}"][data-c="${planet.c}"]`);
-    if (!(await succeeds(hit.waitFor({ timeout: 5000 })))) fail('a blocked planet is not marked "Blocked"');
-    else {
-      await page.screenshot({ path: `${OUT}/contested-orbit.png` });
-      await hit.click();
-      // In the game's words: "Contested perimeter" in Regolith.
-      const words = say(s, 'Contested orbit');
-      const info = page.locator('.info-pop', { hasText: words });
-      if (!(await succeeds(info.waitFor({ timeout: 5000 })))) fail(`tapping a blocked planet shows no "${words}" info`);
-      else if ((await cubesOn(page, planet.id)).length) fail('tapping a blocked planet conquered it');
-      else {
-        await page.screenshot({ path: `${OUT}/contested-orbit-info.png` });
-        console.log('✓ contested orbit: the planet is marked blocked, and its info says why');
-      }
-    }
-  }
 
   // Battles: one between two AIs resolves by itself while a human watches; a human's own waits for OK.
   const overlay = page.locator('.combat-overlay');
@@ -147,7 +70,7 @@ try {
   }
 
   // A position the screen can't draw: the crash screen, not a blank page, and a way back to the lobby.
-  await load(page, { ...quickStart(3, 1, 'regolith'), dice: null }).catch(() => {});
+  await load(page, { ...quickStart(3, 1), dice: null }).catch(() => {});
   const crash = page.locator('.crash');
   if (await succeeds(crash.waitFor({ timeout: 5000 }))) {
     await page.screenshot({ path: `${OUT}/crash.png` });

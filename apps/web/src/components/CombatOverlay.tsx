@@ -1,6 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import {
-  say,
   shipOf,
   canRespondToCombat,
   card,
@@ -140,7 +139,7 @@ function Battle({
               delay={role === 'attacker' ? 0 : 0.12}
               sound={role === 'attacker'}
             />
-            <span>{s.missile ? say(game, 'Missile') : role === 'attacker' ? 'Attack die' : 'Defence die'}</span>
+            <span>{s.missile ? 'Missile' : role === 'attacker' ? 'Attack die' : 'Defence die'}</span>
           </div>
         </div>
         <ul className={`combat-parts ${revealed ? 'show' : ''}`}>
@@ -168,7 +167,7 @@ function Battle({
             <MissileButton key={sh.id} game={game} combat={combat} role={role} shooter={sh} named={humans.length > 1} dispatch={dispatch} />
           ))}
         {revealed && !s.missile && total.roll === 1 && shooters.some((sh) => sh.id === s.player) && (
-          <p className="missile-note">{say(game, 'Roll is already 1 — a missile can’t help.')}</p>
+          <p className="missile-note">{'Roll is already 1 — a missile can’t help.'}</p>
         )}
       </div>
     );
@@ -308,7 +307,7 @@ function MissileButton({
     <button className={`btn btn-missile ${flips ? 'decisive' : ''}`} onClick={() => dispatch(action)}>
       <span>
         <MissileIcon /> {named ? `${shooter.name}: ` : ''}
-        {say(game, 'Fire missile — your roll becomes 1')}
+        {'Fire missile — your roll becomes 1'}
       </span>
       <small>{verdict}</small>
     </button>

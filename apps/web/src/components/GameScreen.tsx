@@ -1,12 +1,10 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { actor, drawing, rulesOf, say, type GameState, type PlayerId } from '@quantum/engine';
+import { actor, drawing, rulesOf, type GameState, type PlayerId } from '@quantum/engine';
 import { useController } from '../game/controller';
 import { useUndoShortcut } from '../game/useGame';
-import { conquerOptions } from '../game/legal';
 import { lost, type GameView } from '../game/view';
 import { useReview, type Review } from '../game/review';
 import { logText } from '../game/logText';
-import { SayContext } from '../game/words';
 import { GAME_NAME } from '../appId';
 import { SHEET, useMediaQuery } from '../game/useMediaQuery';
 import { BottomSheet } from './BottomSheet';
@@ -16,7 +14,7 @@ import { Log } from './Log';
 import { PlayerList } from './PlayerList';
 import { TurnPanel } from './TurnPanel';
 import { CombatOverlay } from './CombatOverlay';
-import { ConquerChoice, DecisionOverlay, GameOver } from './Overlays';
+import { DecisionOverlay, GameOver } from './Overlays';
 import { ErrorToast, PlayedCard, Toasts } from './Toasts';
 import { FullscreenButton } from './FullscreenButton';
 import { WorldButton } from './WorldButton';
@@ -74,23 +72,12 @@ export function Game({
   useEffect(() => {
     if (!review && leftAt) setLeftAt(null);
   }, [review, leftAt]);
-  // The page's colours follow the rule set's look (styles.css, :root[data-look]).
-  const look = rulesOf(game).look;
-  useEffect(() => {
-    if (!look) return;
-    document.documentElement.dataset.look = look;
-    return () => {
-      delete document.documentElement.dataset.look;
-    };
-  }, [look]);
   const { error, toasts } = view;
   const ctl = useController(game, dispatch, review ? NOBODY : view.mine);
   const [hideGameOver, setHideGameOver] = useState(false);
   const head = game.pending[0];
   const sheet = useMediaQuery(SHEET);
   const cards = rulesOf(game).cards;
-  const { sel } = ctl;
-  const conquering = sel.kind === 'conquer' ? conquerOptions(ctl.legal, sel.planet) : [];
   // The same panels in both layouts, in a different order.
   const turnPanel = <TurnPanel game={game} ctl={ctl} dispatch={dispatch} undo={undo} />;
   // Changes when the screen jumps to another position rather than following a move: looking back, or skipping ahead online.
@@ -100,14 +87,14 @@ export function Game({
   const log = <Log game={live} review={{ can, pick: lookBack, picked: review?.entry.id, move: review?.move }} />;
 
   return (
-    <SayContext.Provider value={(text) => say(game, text)}>
+    <>
       <div className={`app ${review ? 'reviewing' : ''}`}>
         <header className="topbar">
           <button type="button" className="brand" title="Back to the lobby" onClick={onLobby}>
             {GAME_NAME}
           </button>
           <div className="topbar-map">
-            <span className={`mode-badge mode-${game.mode}${rulesOf(game).experimental ? ' experimental' : ''}`}>{rulesOf(game).name}</span>
+            <span className={`mode-badge mode-${game.mode}`}>{rulesOf(game).name}</span>
             {game.board.mapName}
           </div>
           <div className="topbar-actions">
@@ -182,9 +169,6 @@ export function Game({
           />
         )}
         {!review && <DecisionOverlay game={game} dispatch={dispatch} human={ctl.human} />}
-        {conquering.length > 0 && (
-          <ConquerChoice game={game} options={conquering} dispatch={dispatch} onClose={() => ctl.select({ kind: 'none' })} />
-        )}
         {!review && game.phase === 'over' && !hideGameOver && (
           <GameOver
             game={game}
@@ -196,7 +180,7 @@ export function Game({
         )}
         {overlay}
       </div>
-    </SayContext.Provider>
+    </>
   );
 }
 

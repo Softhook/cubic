@@ -1,8 +1,7 @@
 /**
  * Ship abilities (rulebook p.8): once per die per turn, on your own turn, ships on the map only.
  * They cost no action, except that Transport (2) and Manoeuvre (5) happen during a move.
- * Manoeuvre is part of the move handler (actions.ts); the other five are here, with the action of a
- * prototype power (ShipHooks.action).
+ * Manoeuvre is part of the move handler (actions.ts); the other five are here.
  */
 import { key, same } from './board';
 import { startCombat } from './combat';
@@ -25,7 +24,7 @@ import {
 import type { ShipPower } from './data';
 import { boardLoc, cellOf, die } from './lookups';
 import { canMoveDie, carryOptions, carryPassengers, freeAttackTargets } from './queries';
-import { hasPower, hooksOf, rulesOf, shipOf } from './rules';
+import { hasPower, rulesOf } from './rules';
 import type { Cell, Die, GameState } from './types';
 
 function useAbility(s: GameState, d: Die, power: ShipPower) {
@@ -102,19 +101,5 @@ export const abilityHandlers = {
     const was = shipName(s, d);
     rerollNew(s, d);
     note(s, `${name(s, d.owner)}'s ${was} reconfigures itself into ${aShip(s, d)}.`, d.owner);
-  },
-  /** A prototype power's action (ShipHooks.action): legal exactly when its hooks offer it. */
-  power(s, a) {
-    requireActionPhase(s);
-    const d = ownShip(s, a.die, 'board');
-    const action = hooksOf(s, d)?.action;
-    if (!action) fail('This ship has no such power');
-    const choice = action.options(s, d).find((c) => c.target === a.target && (c.to && a.to ? same(c.to, a.to) : c.to === a.to));
-    if (!choice) fail('This ship can’t do that now');
-    const logged = s.logCounter;
-    const ship = shipOf(s, d.value);
-    action.apply(s, d, choice);
-    // Most powers say what they did (an attack, say); one that doesn't is still logged.
-    if (s.logCounter === logged) note(s, `${name(s, d.owner)}'s ${ship.name} uses ${ship.ability.name}.`, d.owner);
   },
 } satisfies Partial<Handlers>;

@@ -10,14 +10,12 @@ import { describe, expect, it } from 'vitest';
 import { chooseAction } from '../../ai/src';
 import {
   apply as applyAction,
-  card,
   checkInvariants,
   combatOutcome,
   conquerCheck,
   deployTargets,
   deploysFree,
   die,
-  effectOf,
   EXPANSION,
   legalActions,
   nomadicTargets,
@@ -148,29 +146,6 @@ describe('tactics, gambits and expansion', () => {
       }
     }),
   );
-
-  cardCase(['r-sabotage'], 'Sabotage (Regolith)', () => {
-    let s = quickStart(2, 198, 'regolith', 'alpha-hex');
-    const foe = 1 - s.turn.player;
-    setSkills(s, s.turn.player, []);
-    const before = s.players[foe].actionPenalty;
-    s = resolveWithAi(takeTactic(s, 'r-sabotage'), seededRandom(7)).s;
-    expect(s.players[foe].actionPenalty).toBe(before + 2);
-  });
-
-  cardCase(['r-barricade'], 'Barricade (Regolith)', () => {
-    const s = quickStart(2, 197, 'regolith', 'alpha-hex');
-    const before = s.barriers?.length ?? 0;
-    const r = resolveWithAi(takeTactic(s, 'r-barricade'), seededRandom(7));
-    expect(r.seen).toContain('placeBarrier');
-    expect(r.s.barriers).toHaveLength(before + 2);
-  });
-
-  cardCase(['r-kinetic-shunt'], 'Kinetic Shunt (Regolith)', () => {
-    const s = quickStart(2, 197, 'regolith', 'alpha-hex');
-    const r = resolveWithAi(takeTactic(s, 'r-kinetic-shunt'), seededRandom(7));
-    expect(r.seen).toContain('kineticShunt');
-  });
 
   cardCase([EXPANSION.id], 'Expansion', () => {
     let s = quickStart(2, 199, 'community');
@@ -690,34 +665,6 @@ describe('passive skills and rule hooks', () => {
     }
   });
 
-  cardCase(['r-pioneering'], 'Science (Regolith)', () => {
-    const conquers = (id: string | null, ships: [number, number, number][], research: number) => {
-      const base = originalGame({ me: id ? [id] : [] });
-      const me = base.turn.player;
-      const s = arrange(base, Object.fromEntries(ships.map((p, i) => [`p${me}d${i}`, p])));
-      s.players[me].research = research;
-      const centre = s.board.planets.find((p) => p.number === 8)!.id;
-      return conquerCheck(s, me, centre).ok;
-    };
-    // Ship 6 + 2 of research 3; ships 12 − 4 of research 5; research 2 has only 1 to spend.
-    const cases: [[number, number, number][], number, boolean][] = [
-      [[[3, 4, 6]], 3, true],
-      [
-        [
-          [3, 4, 6],
-          [5, 4, 6],
-        ],
-        5,
-        true,
-      ],
-      [[[3, 4, 6]], 2, false],
-    ];
-    for (const [ships, research, ok] of cases) {
-      expect(conquers(null, ships, research)).toBe(false);
-      expect(conquers('r-pioneering', ships, research), `research ${research}`).toBe(ok);
-    }
-  });
-
   cardCase(['industrious', 'o-curious', 'o-arrogant', 'o-conformist'], 'Start-of-turn bonuses', () => {
     let s = quickStart(2, 814, 'community');
     const p = s.turn.player;
@@ -787,12 +734,6 @@ describe('passive skills and rule hooks', () => {
   });
 });
 
-// A mode's card with the rules of the card it started as (same effect) is covered by that card's scenario.
-const coveredByFrom = (id: string) => {
-  const from = card(id).from;
-  return !!from && effectOf(id) === effectOf(from) && covered.has(from);
-};
-
 it('has a scenario for every card', () => {
-  expect(CARD_IDS.filter((id) => !covered.has(id) && !coveredByFrom(id))).toEqual([]);
+  expect(CARD_IDS.filter((id) => !covered.has(id))).toEqual([]);
 });

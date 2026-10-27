@@ -8,20 +8,18 @@ import {
   linked,
   orbitals,
   orbitedPlanets,
-  otherGate,
   planetFreeSlots,
   same,
   spaces,
   stepNeighbours,
-  straightLines,
   surrounding,
   tilesTouch,
 } from './board';
 import { card, effectOf } from './data';
-import { barrierAt, cellOf, die, dieAt, isEmptySpace, reserve, shipsOnBoard } from './lookups';
-import { hasPower, hooksOf, modeHasHook, rulesOf } from './rules';
+import { cellOf, die, dieAt, isEmptySpace, reserve } from './lookups';
+import { hasPower, rulesOf } from './rules';
 import { activeSkills, anySkill, ruleOf, skillRules, type ActiveSkill, type CombatPart } from './skillRules';
-import type { Barrier, Cell, CombatPending, CombatRole, Die, GameState, OncePerTurn, Planet, PlayerId, TurnState } from './types';
+import type { Cell, CombatPending, CombatRole, Die, GameState, OncePerTurn, Planet, PlayerId, TurnState } from './types';
 
 export type { CombatPart } from './skillRules';
 
@@ -128,28 +126,9 @@ export function canScrappy(state: GameState): boolean {
 // ---------------------------------------------------------------------------
 // Movement
 
-/** The die value counts up to the mode's cap (RuleSet.maxMovement); skill bonuses add to that. */
+/** The die value, and skill bonuses on top. */
 export function movementRange(state: GameState, d: Die): number {
-  const base = Math.min(rulesOf(state).maxMovement ?? 6, d.value);
-  return base + skillRules(state, d.owner).reduce((n, r) => n + (r.movement ?? 0), 0);
-}
-
-/**
- * Spaces where `mover`'s ships must stop, by board cell index (`at` is shipsByIndex): around enemy
- * ships with `stopsEnemies` (a prototype power, ShipHooks). Undefined when nothing stops them, so plain searches stay plain.
- * Devious ignores them: it slips past enemy ships (ruling 2026-10-12).
- */
-export function stopZone(state: GameState, mover: PlayerId, at: (Die | undefined)[]): Uint8Array | undefined {
-  if (!modeHasHook(state, 'stopsEnemies') || anySkill(state, mover, (r) => r.moveThroughEnemies)) return undefined;
-  let zone: Uint8Array | undefined;
-  for (let i = 0; i < at.length; i++) {
-    const d = at[i];
-    const stops = d && d.owner !== mover ? hooksOf(state, d)?.stopsEnemies : undefined;
-    if (!stops) continue;
-    zone ??= new Uint8Array(grid(state.board).size);
-    for (const nb of stops(state, d!, i)) zone[nb] = 1;
-  }
-  return zone;
+  return d.value + skillRules(state, d.owner).reduce((n, r) => n + (r.movement ?? 0), 0);
 }
 
 export interface MoveOptions {
@@ -174,8 +153,7 @@ export interface AttackLaunch {
  * (see board.ts grid): this runs for every ship in every position the AI scores. `found` lists
  * them in the order they were first reached, the start first. `ignore` lists occupied spaces
  * treated as empty. With `through` (Devious), the ship may pass through that player's enemies'
- * ships at no cost; such spaces are marked in `passing`, as it can't stop there. The search doesn't
- * go on from a space in `zone` (stopZone), other than the start.
+ * ships at no cost; such spaces are marked in `passing`, as it can't stop there.
  */
 function reach(
   state: GameState,
@@ -185,7 +163,6 @@ function reach(
   ignore: Cell[] = [],
   through?: PlayerId,
   at = shipsByIndex(state),
-  zone?: Uint8Array,
 ) {
   const g = grid(state.board);
   const ignored = ignore.map((p) => p.r * g.cols + p.c);
@@ -196,10 +173,9 @@ function reach(
   steps[from] = 0;
   const gate = gates(state, g);
   const near = diagonal ? g.around : g.ortho;
-  const walls = barrierMask(state, g);
   /** 0 = blocked, 1 = free, 2 = passed through (Devious). */
   const entry = (i: number): number => {
-    if (!g.space[i] || walls?.[i]) return 0;
+    if (!g.space[i]) return 0;
     const d = at[i];
     if (!d || (ignored.length && ignored.includes(i))) return 1;
     return through !== undefined && d.owner !== through ? 2 : 0;
@@ -222,30 +198,12 @@ function reach(
   };
   while (head < queue.length) {
     const cur = queue[head++];
-    if (steps[cur] >= range || (zone?.[cur] && cur !== from)) continue;
+    if (steps[cur] >= range) continue;
     for (const nb of near[cur]) visit(cur, nb);
     const partner = gate(cur);
     if (partner >= 0) visit(cur, partner);
   }
   return { found, steps, passing };
-}
-
-const BARRIER_MASKS = new WeakMap<readonly Barrier[], Uint8Array>();
-
-/**
- * 1 on each space with a barrier (GameState.barriers), by board cell index; undefined when there are none.
- * Cached by the list, which a state keeps until a barrier is added: the AI asks for it for every ship it moves.
- */
-function barrierMask(state: GameState, g: Grid): Uint8Array | undefined {
-  const { barriers } = state;
-  if (!barriers?.length) return undefined;
-  let mask = BARRIER_MASKS.get(barriers);
-  if (!mask) {
-    mask = new Uint8Array(g.size);
-    for (const b of barriers) mask[b.r * g.cols + b.c] = 1;
-    BARRIER_MASKS.set(barriers, mask);
-  }
-  return mask;
 }
 
 /** The two Warp Gates' cell indexes, or -1s until both are placed (see board.ts stepNeighbours). */
@@ -324,9 +282,8 @@ export function movePath(state: GameState, dieId: string, to: Cell, diagonal = f
   if (!start) return [];
   const at = shipsByIndex(state);
   const through = anySkill(state, d.owner, (r) => r.moveThroughEnemies) ? d.owner : undefined;
-  const zone = stopZone(state, d.owner, at);
   const range = movementRange(state, d);
-  const { steps, passing } = reach(state, start, range, diagonal, [], through, at, zone);
+  const { steps, passing } = reach(state, start, range, diagonal, [], through, at);
   const g = grid(state.board);
   const gate = gates(state, g);
   const near = diagonal ? g.around : g.ortho;
@@ -338,14 +295,8 @@ export function movePath(state: GameState, dieId: string, to: Cell, diagonal = f
   const back = (cur: number, next: number): boolean => {
     if (cur === from) return true;
     const before = [...near[cur], gate(cur)].filter(
-      // A space the search went on from: reached, with movement left, and not in a zone of control.
-      (p) =>
-        p >= 0 &&
-        steps[p] >= 0 &&
-        steps[p] < range &&
-        steps[p] + (passing[cur] ? 0 : 1) === steps[cur] &&
-        (p === from || !zone?.[p]) &&
-        !path.includes(p),
+      // A space the search went on from: reached, with movement left.
+      (p) => p >= 0 && steps[p] >= 0 && steps[p] < range && steps[p] + (passing[cur] ? 0 : 1) === steps[cur] && !path.includes(p),
     );
     if (next >= 0) before.sort((a, b) => Number(b - cur === cur - next) - Number(a - cur === cur - next));
     for (const p of before) {
@@ -383,14 +334,13 @@ export function moveIndexes(state: GameState, ship: string | Die, at = shipsByIn
   const range = movementRange(state, d);
   const passes: boolean[] = [false];
   if (hasPower(state, d, 'manoeuvre') && canUseAbility(state, d)) passes.push(true);
-  const zone = stopZone(state, d.owner, at);
 
   // Devious: normal moves only, not Transport or the Tactical step (decided 2026-10-03, OPEN-QUESTIONS #65).
   const through = anySkill(state, d.owner, (r) => r.moveThroughEnemies) ? d.owner : undefined;
   const g = grid(state.board);
   const gate = gates(state, g);
   for (const diagonal of passes) {
-    const { found, steps, passing } = reach(state, start, range, diagonal, [], through, at, zone);
+    const { found, steps, passing } = reach(state, start, range, diagonal, [], through, at);
     for (const i of found) {
       if (steps[i] === 0 || passing[i] || result.moves.has(i)) continue;
       result.moves.set(i, { steps: steps[i], diagonal });
@@ -451,8 +401,6 @@ export function shipReach(state: GameState, d: Die, at: (Die | undefined)[]): Sh
   // The gates inline rather than gates(): a call per step is measurable here.
   const [gateA, gateB] = gateIndexes(state, g);
   const diagonals = hasPower(state, d, 'manoeuvre') && canUseAbility(state, d);
-  const zone = stopZone(state, d.owner, at);
-  const walls = barrierMask(state, g);
   for (let pass = 0; pass < (diagonals ? 2 : 1); pass++) {
     const near = pass ? g.around : g.ortho;
     // Plain breadth-first search: without Devious every step costs 1.
@@ -465,8 +413,6 @@ export function shipReach(state: GameState, d: Die, at: (Die | undefined)[]): Sh
       const cur = QUEUE[head++];
       const steps = STEPS[cur];
       if (steps >= range) continue;
-      // stopZone: a ship stopped there may still attack from it, but not move on.
-      const stopped = zone !== undefined && zone[cur] === 1 && cur !== from;
       const list = near[cur];
       for (let k = 0; k <= list.length; k++) {
         const nb = k < list.length ? list[k] : cur === gateA ? gateB : cur === gateB ? gateA : -1;
@@ -476,7 +422,7 @@ export function shipReach(state: GameState, d: Die, at: (Die | undefined)[]): Sh
           if (ship.owner !== d.owner && !result.attacks.includes(ship)) result.attacks.push(ship);
           continue;
         }
-        if (stopped || STEPS[nb] >= 0 || !g.space[nb] || walls?.[nb]) continue;
+        if (STEPS[nb] >= 0 || !g.space[nb]) continue;
         STEPS[nb] = steps + 1;
         QUEUE[tail++] = nb;
         if (!result.moves[nb]) {
@@ -509,7 +455,7 @@ export function carryOptions(state: GameState, flagshipId: string, passengerId: 
     if (steps[i] === 0 && (range < 2 || found.length < 2)) continue;
     const cell = cells[i];
     const drops = surrounding(state.board, cell).filter((q) => {
-      if (!space[q.r * cols + q.c] || barrierAt(state, q)) return false;
+      if (!space[q.r * cols + q.c]) return false;
       const occupant = dieAt(state, q);
       return !occupant || occupant.id === flag.id || occupant.id === passenger.id;
     });
@@ -629,25 +575,9 @@ export function deployTargets(state: GameState, player: PlayerId): Cell[] {
       if (isEmptySpace(state, p)) targets.set(key(p), p);
     }
   }
-  if (modeHasHook(state, 'deployTargets')) {
-    for (const d of state.dice) {
-      const extra = d.owner === player && d.loc.zone === 'board' ? hooksOf(state, d)?.deployTargets : undefined;
-      if (extra) for (const p of extra(state, d)) if (isEmptySpace(state, p)) targets.set(key(p), p);
-    }
-  }
   if (anySkill(state, player, (r) => r.deployIsolated)) {
     for (const p of spaces(state.board)) {
       if (isEmptySpace(state, p) && !linked(state, p).some((q) => dieAt(state, q))) targets.set(key(p), p);
-    }
-  }
-  // Every way of deploying (Expansion, Stealthy, Beacon too) stays out of a contested orbit, except a home shipyard's.
-  const rules = rulesOf(state);
-  if (rules.contestedDeploy) {
-    const home = rules.homeShipyard ? homePlanet(state, player) : undefined;
-    for (const planet of state.board.planets) {
-      if (planet !== home && orbitBlockers(state, player, planet).length)
-        for (const p of orbitals(state.board, planet))
-          if (!(home && orbitals(state.board, home).some((h) => same(h, p)))) targets.delete(key(p));
     }
   }
   return [...targets.values()];
@@ -662,36 +592,10 @@ export interface ConquerCheck {
   target: number;
   ships: Die[];
   reason?: string;
-  /** Over-conquest: owners whose cube may be displaced. */
-  replace?: PlayerId[];
-  /** Contested orbit: the ships make the sum, but opponents' ships in orbit stop the conquest. */
-  blocked?: boolean;
-  /** Research the conquest spends to move the sum onto the target (Science). */
-  research?: number;
 }
 
-/** The player's home planet (home shipyard): their starting planet, unless their cube there has moved (`cubeLeft`). */
-export function homePlanet(state: GameState, player: PlayerId): Planet | undefined {
-  const id = state.players[player].home;
-  return id === undefined ? undefined : state.board.planets[id];
-}
-
-/** Contested orbit (PROTOTYPING.md §6.8): opponents' ships in the planet's orbital positions, which stop `player` conquering it. */
-export function orbitBlockers(state: GameState, player: PlayerId, planet: Planet): Die[] {
-  if (!rulesOf(state).contestedOrbit) return [];
-  return orbitals(state.board, planet)
-    .map((p) => dieAt(state, p))
-    .filter((d): d is Die => !!d && d.owner !== player);
-}
-
-/** The orbit sum that displaces an opponent's cube, on any planet (PROTOTYPING.md §6.10). */
-const OVER_CONQUEST_TARGET = 12;
-
-/**
- * Whether `player` may conquer the planet. With `displace` (over-conquest), the check is for taking
- * the place of an opponent's cube at a sum of 12 whatever the planet; on a full planet that is the only way.
- */
-export function conquerCheck(state: GameState, player: PlayerId, planetId: number, displace = false): ConquerCheck {
+/** Whether `player` may conquer the planet. */
+export function conquerCheck(state: GameState, player: PlayerId, planetId: number): ConquerCheck {
   const planet = state.board.planets[planetId];
   const own = planet.cubes.filter((x) => x === player).length;
   let target = planet.number;
@@ -703,13 +607,8 @@ export function conquerCheck(state: GameState, player: PlayerId, planetId: numbe
     reason,
   });
 
-  let replace: PlayerId[] | undefined;
-  if (planetFreeSlots(planet) <= 0 || displace) {
-    if (!rulesOf(state).overConquest) return fail('No empty cube location');
-    replace = [...new Set(planet.cubes.filter((x) => x !== player))];
-    if (!replace.length) return fail('No opponent cube to displace');
-    target = OVER_CONQUEST_TARGET;
-  } else if (own > 0) {
+  if (planetFreeSlots(planet) <= 0) return fail('No empty cube location');
+  if (own > 0) {
     // Quantum Entanglement: only once you hold every planet that still has room.
     const blocked = state.board.planets.some((p) => planetFreeSlots(p) > 0 && !p.cubes.includes(player));
     if (blocked) return fail('You already have a cube here');
@@ -722,34 +621,21 @@ export function conquerCheck(state: GameState, player: PlayerId, planetId: numbe
   const corners = rules.some((r) => r.diagonals) ? mine(diagonals(state.board, planet)) : [];
   const all = [...orbit, ...corners];
   const total = (ships: Die[]) => ships.reduce((a, d) => a + d.value, 0);
-  // Contested orbit: named in every refusal, though the sum is checked first, so a blocked orbit still says how far it is from it.
-  const blockers = orbitBlockers(state, player, planet);
-  const blockade = blockers.length ? `; enemy ships in orbit block it too (${blockers.map((d) => d.value).join(', ')})` : '';
-  if (!all.length) return fail(`No ships in orbit${blockade}`, all, 0);
+  if (!all.length) return fail('No ships in orbit', all, 0);
 
   const p = state.players[player];
   const tolerance = Math.max(0, ...rules.map((r) => r.tolerance ?? 0));
-  // Science: Research above 1 (the die's lowest face) moves the sum up or down, as little as needed.
-  const spendable = rules.some((r) => r.spendResearch) ? Math.max(0, p.research - 1) : 0;
-  let found: { ships: Die[]; sum: number; research: number } | undefined;
   // Every orbital ship counts; Ingenious lets each diagonal ship count or not ("may be counted").
-  for (let mask = 0; mask < 1 << corners.length && found?.research !== 0; mask++) {
+  for (let mask = 0; mask < 1 << corners.length; mask++) {
     const ships = [...orbit, ...corners.filter((_, i) => mask & (1 << i))];
     if (!ships.length) continue;
     const sum = total(ships);
     const ctx = { sum, ships, dominance: p.dominance, research: p.research };
     const sums = [sum, ...rules.flatMap((r) => r.sums?.(ctx) ?? [])];
-    const research = Math.min(...sums.map((s) => Math.max(0, Math.abs(s - target) - tolerance)));
-    if (research <= spendable && research < (found?.research ?? Infinity)) found = { ships, sum, research };
-  }
-  if (found) {
-    const { ships, sum, research } = found;
-    if (blockers.length)
-      return { ...fail(`Enemy ships in orbit block it (${blockers.map((d) => d.value).join(', ')})`, ships, sum), blocked: true };
-    return { ok: true, sum, target, ships, replace, ...(research && { research }) };
+    if (sums.some((x) => Math.abs(x - target) <= tolerance)) return { ok: true, sum, target, ships };
   }
   const sum = total(all);
-  return fail(`Orbit totals ${sum}, needs ${target}${blockade}`, all, sum);
+  return fail(`Orbit totals ${sum}, needs ${target}`, all, sum);
 }
 
 /** Any planet without your cube; if none has room, Quantum Entanglement allows your own planets. */
@@ -966,72 +852,4 @@ export function attackFactors(
 /** A modifier with its sign: "+1", "−2" (a minus sign, not a hyphen). */
 export function signed(n: number): string {
   return n < 0 ? `−${-n}` : `+${n}`;
-}
-
-/** Whether a barrier can go on `p`, by Barricade or a Wisp: an empty space with no warp gate on it. */
-export function canHoldBarrier(state: GameState, p: Cell): boolean {
-  return isEmptySpace(state, p) && !state.gates.some((g) => same(g, p));
-}
-
-/** The spaces Barricade can place a barrier on. */
-export function barrierSpaces(state: GameState): Cell[] {
-  return spaces(state.board).filter((p) => canHoldBarrier(state, p));
-}
-
-/** How far Kinetic Shunt pushes a mech. */
-const SHUNT_RANGE = 4;
-
-/** A space Kinetic Shunt can push a mech to, and whether it gets there through a warp gate. */
-export interface ShuntPath {
-  to: Cell;
-  tunnel: boolean;
-}
-
-/**
- * Where Kinetic Shunt can push a mech: the empty spaces up to 4 away in a straight line, stopping before
- * anything in its way (a planet, a mech, a barrier, the void or the board's edge). A mech pushed onto a
- * warp gate (Ice Tunnel) may come out of the other one, which counts as a space, and go on in the same line;
- * one already on a gate may be pushed through it, then out of the other gate along any line.
- */
-export function shuntPaths(state: GameState, d: Die): ShuntPath[] {
-  const start = cellOf(d);
-  if (!start) return [];
-  const out: ShuntPath[] = [];
-  // A space reached both ways counts as a straight push.
-  const add = (to: Cell, tunnel: boolean) => {
-    const seen = out.find((p) => same(p.to, to));
-    if (!seen) out.push({ to, tunnel });
-    else if (!tunnel) seen.tunnel = false;
-  };
-  /** The empty spaces at the start of `line`, at most `n` of them. */
-  const clear = (line: Cell[], n: number) => {
-    const blocked = line.slice(0, n).findIndex((p) => !isEmptySpace(state, p));
-    return line.slice(0, blocked < 0 ? n : blocked);
-  };
-  const partner = otherGate(state, start);
-  if (partner && isEmptySpace(state, partner)) {
-    add(partner, true);
-    for (const line of straightLines(state.board, partner)) for (const p of clear(line, SHUNT_RANGE - 1)) add(p, true);
-  }
-  straightLines(state.board, start).forEach((line, side) => {
-    clear(line, SHUNT_RANGE).forEach((p, k) => {
-      add(p, false);
-      // Onto the gate at step k + 1, out of the other at k + 2, then on along the same line.
-      const exit = otherGate(state, p);
-      if (!exit || !isEmptySpace(state, exit) || k + 2 > SHUNT_RANGE) return;
-      add(exit, true);
-      for (const q of clear(straightLines(state.board, exit)[side], SHUNT_RANGE - k - 2)) add(q, true);
-    });
-  });
-  return out;
-}
-
-/** The spaces Kinetic Shunt can push a mech to (shuntPaths). */
-export function shuntTargets(state: GameState, d: Die): Cell[] {
-  return shuntPaths(state, d).map((p) => p.to);
-}
-
-/** Whether Kinetic Shunt has anything to push: a mech on the map with somewhere to go. */
-export function canShunt(state: GameState): boolean {
-  return shipsOnBoard(state).some((d) => shuntPaths(state, d).length > 0);
 }

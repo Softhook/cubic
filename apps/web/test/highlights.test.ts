@@ -1,9 +1,8 @@
 /** Board highlights: everything lit up is a legal action, and every legal move or attack is lit up. */
 import { describe, expect, it } from 'vitest';
-import { actor, apply, conquerCheck, createGame, key, legalActions, MODES, orbitals, type GameState } from '@quantum/engine';
+import { actor, apply, createGame, key, legalActions, MODES, type GameState } from '@quantum/engine';
 import { arrange, playAiGame, players, quickStart } from '../../../packages/engine/test/helpers';
 import { highlightsFor } from '../src/game/highlights';
-import { hintFor } from '../src/game/hints';
 import { legalFor } from '../src/game/legal';
 import type { Sel } from '../src/game/controller';
 
@@ -18,21 +17,6 @@ function myTurn(s: GameState): GameState {
 }
 
 describe('highlightsFor', () => {
-  it('marks a planet blocked when its orbit makes the sum but an enemy ship is in it (contested orbit), and says why', () => {
-    const base = quickStart(2, 1, 'regolith', 'alpha-hex');
-    const planet = base.board.planets.find((q) => !q.start && !q.cubes.length)!;
-    const [a, b, c] = orbitals(base.board, planet);
-    const sum = { p0d0: [a.r, a.c, 6], p0d1: [b.r, b.c, planet.number - 6] } as Record<string, [number, number, number]>;
-    const s = myTurn(arrange(base, { ...sum, p1d0: [c.r, c.c, 3] }));
-    expect(lit(s, { kind: 'none' }).planets.get(planet.id)).toEqual({ tone: 'blocked', label: 'Blocked' });
-    expect(legalFor(s).of('conquer')).toEqual([]);
-    // In Regolith's words (RuleSet.words).
-    expect(hintFor(s, { kind: 'none' })).toMatch(`objective ${planet.number}, but enemy mechs on the perimeter block the claim`);
-    const clear = myTurn(arrange(base, sum));
-    expect(lit(clear, { kind: 'none' }).planets.get(planet.id)?.tone).toBe('conquer');
-    expect(hintFor(clear, { kind: 'none' })).toBe('Select a mech');
-  });
-
   it('lights the starting planets during setup', () => {
     let g = createGame({ players: players(2), seed: 1, mode: 'basic' });
     while (g.pending[0]?.kind !== 'placeStart') g = apply(g, legalActions(g)[0]);
@@ -77,21 +61,6 @@ describe('highlightsFor', () => {
     );
   });
 
-  it('highlights candidate mechs and allows switching during Kinetic Shunt', () => {
-    const base = quickStart(2, 1, 'regolith', 'alpha-hex');
-    const s = arrange(base, { p0d0: [4, 4, 3], p1d0: [4, 5, 2] });
-    s.pending.unshift({ kind: 'kineticShunt', player: 0 });
-
-    const unselected = lit(s, { kind: 'none' }, false);
-    expect(unselected.dice.get('p0d0')).toBe('target');
-    expect(unselected.dice.get('p1d0')).toBe('target');
-
-    const selected = lit(s, { kind: 'kineticShunt', die: 'p1d0' }, false);
-    expect(selected.dice.get('p1d0')).toBe('target');
-    expect(selected.dice.get('p0d0')).toBe('target');
-    expect(selected.cells.size).toBeGreaterThan(0);
-  });
-
   it('matches the legal actions in every action-phase position of full AI games', () => {
     let checked = 0;
     for (const { id: mode } of MODES) {
@@ -112,8 +81,6 @@ describe('highlightsFor', () => {
             expect([...h.dice.keys()].sort()).toEqual([...new Set(attacks)].sort());
             const conquerable = [...h.planets.entries()].filter(([, v]) => v.tone === 'conquer').map(([k]) => k);
             expect(conquerable.sort()).toEqual([...new Set(legal.of('conquer').map((a) => a.planet))].sort());
-            const blocked = [...h.planets.entries()].filter(([, v]) => v.tone === 'blocked').map(([k]) => k);
-            for (const p of blocked) expect(conquerCheck(s, s.turn.player, p).blocked).toBe(true);
             checked++;
           }
         },

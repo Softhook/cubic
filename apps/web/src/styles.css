@@ -56,60 +56,6 @@
   --body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme: dark;
 }
-/* On the ground (RuleSet.look, the Regolith mood board's Main palette): printed matter, not a lit screen. Basalt,
-   dust and paper inks, flat fills and hard edges instead of gradients and glows, stencil type for titles. The
-   chrome takes no hue of its own (paper is its accent), so colour on screen means a player, or good and bad.
-   GameScreen sets data-look on <html> while such a game is on screen. */
-:root[data-look='ground'] {
-  --bg: #141311;
-  --bg-2: #1e1c1a;
-  --panel: #1e1c1a;
-  --panel-solid: #1e1c1a;
-  --shade: 12 11 10;
-  --shade-2: 30 28 26;
-  --accent-rgb: 237 231 219;
-  --line-rgb: 214 196 168;
-  --text: #ede7db;
-  --text-2: #cfc8bc;
-  --muted: #a69e91;
-  --accent: #ede7db;
-  --on-accent: #1e1c1a;
-  /* One colour each: the gradients they fill are flat. */
-  --primary-1: #ede7db;
-  --primary-2: #ede7db;
-  --brand: #ede7db;
-  --sheet-1: #1e1c1a;
-  --sheet-2: #1e1c1a;
-  /* Work-order paper, then rust and teal inks. */
-  --card-skill-1: #ede7db;
-  --card-skill-2: #ede7db;
-  --card-skill-ink: #1e1c1a;
-  --card-tactic-1: #3a2219;
-  --card-tactic-2: #3a2219;
-  --card-tactic-ink: #f3e3d6;
-  --card-expansion-1: #163a3f;
-  --card-expansion-2: #163a3f;
-  --card-expansion-ink: #dcf1f3;
-  --radius: 6px;
-  --display: 'Saira Stencil One', 'Barlow Condensed', 'Inter', system-ui, sans-serif;
-  --display-small: 'Barlow Condensed', 'Inter', system-ui, sans-serif;
-  /* The stencil face has one weight; a faked bold fills in its gaps. */
-  font-synthesis-weight: none;
-}
-:root[data-look='ground'] body { background: var(--bg); }
-/* Dust, not stars. */
-:root[data-look='ground'] body::before { opacity: 0.12; }
-/* Ink on paper casts no light: panels sit on hard shadows, and a player's colour is a border, not a glow. */
-:root[data-look='ground'] .turn-panel { background: var(--panel-solid); box-shadow: 4px 4px 0 rgb(var(--shade) / .8); }
-:root[data-look='ground'] .modal { box-shadow: 6px 6px 0 rgb(var(--shade) / .8); border-radius: var(--radius); }
-:root[data-look='ground'] .combat-card { box-shadow: 6px 6px 0 rgb(var(--shade) / .8); border-radius: var(--radius); }
-:root[data-look='ground'] .combat-side.winning { box-shadow: inset 0 0 0 1px var(--pc); }
-:root[data-look='ground'] .combat-side.winning .combat-total { text-shadow: none; }
-:root[data-look='ground'] .market { background: rgb(var(--shade) / .6); }
-:root[data-look='ground'] .market.picking { background: rgb(var(--shade) / .6); }
-:root[data-look='ground'] .track-cells span.on { box-shadow: none; }
-:root[data-look='ground'] .track-dom .track-cells span.on { background: var(--dom-2); }
-:root[data-look='ground'] .track-res .track-cells span.on { background: var(--res-2); }
 /* Full screen hides the status bar, but Android still reports its height as the inset, which left an
    empty strip at the top. Separate rules: an unknown prefixed pseudo-class would void a shared list. */
 :root:fullscreen { --safe-top: 0px; }
@@ -505,23 +451,6 @@ input { font: inherit; }
   pointer-events: auto;
 }
 .board.hex .ship.struck::before { pointer-events: none; }
-/* Enemy zones of control, with a ship selected (Regolith): a faint amber tint, under the highlights. */
-.zones { position: absolute; inset: 0; pointer-events: none; }
-.zones > span {
-  position: absolute;
-  background: repeating-linear-gradient(135deg, rgba(255, 200, 87, .14) 0 4px, transparent 4px 9px);
-  box-shadow: inset 0 0 0 1px rgba(255, 200, 87, .22);
-  animation: route-in .2s ease-out both;
-}
-/* On a hex map, hexes: the same hatching as an SVG pattern, and the edge as a stroke. */
-svg.zones { overflow: visible; }
-svg.zones pattern rect { fill: rgba(255, 200, 87, .14); }
-svg.zones polygon {
-  fill: url(#zone-hatch);
-  stroke: rgba(255, 200, 87, .22);
-  stroke-width: 1px;
-  animation: route-in .2s ease-out both;
-}
 /* Where another player's ship could move: shown only, in its owner's colour, under the ships. */
 .reach { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
 .reach > span { position: absolute; display: grid; place-items: center; }
@@ -580,18 +509,6 @@ svg.zones polygon {
 }
 .planet-infamy .planet-label { background: var(--gold); color: #1c1300; }
 .planet-start .planet-label { background: #fff; color: #0a0f1e; }
-/* Contested orbit: the sum is made, but enemy ships in orbit block the conquest. A still ring: nothing to do here yet. */
-.planet-blocked { cursor: help; z-index: 2; }
-.planet-blocked::before {
-  content: '';
-  position: absolute;
-  inset: 2%;
-  border-radius: 50%;
-  border: calc(var(--bw) * 1.5) dashed var(--bad);
-  box-shadow: 0 0 12px rgba(255,93,115,.6);
-}
-.planet-blocked .planet-label { background: var(--bad); color: #2a0008; }
-
 .ship {
   position: absolute;
   left: 0; top: 0;
@@ -1856,8 +1773,6 @@ svg.zones polygon {
 }
 .mode-badge.mode-basic { background: rgba(94,240,176,.13); color: var(--good); }
 .mode-badge.mode-original { background: rgba(255,200,87,.13); color: var(--gold); }
-.mode-badge.experimental { background: rgba(185,140,255,.15); color: var(--violet); }
-[data-look='ground'] .mode-badge.experimental { background: rgb(var(--accent-rgb) / .12); color: var(--accent); }
 .field { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 13px; }
 .segmented { display: inline-flex; padding: 3px; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid var(--line); }
 .segmented button { border: 0; background: transparent; padding: 6px 14px; border-radius: 7px; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 13px; }

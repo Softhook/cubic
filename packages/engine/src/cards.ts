@@ -7,7 +7,6 @@
  */
 import { same } from './board';
 import {
-  addBarrier,
   destroyedEnemyShip,
   destroyShip,
   fail,
@@ -22,17 +21,13 @@ import {
   aShip,
   shipName,
   tally,
-  cubeLeft,
   type Handlers,
   type PendingOf,
 } from './core';
 import { card, cardKind, effectOf } from './data';
 import type { TacticEffect } from './effects';
-import { barrierAt, boardLoc, die, reserve, shipsOnBoard } from './lookups';
+import { boardLoc, die, reserve, shipsOnBoard } from './lookups';
 import {
-  barrierSpaces,
-  canHoldBarrier,
-  canShunt,
   canPlayStoredTactic,
   canProfiteer,
   canRefreshMarket,
@@ -40,7 +35,6 @@ import {
   canTakeCard,
   deployTargets,
   relocationOptions,
-  shuntPaths,
   skillLimit,
 } from './queries';
 import { shuffle } from './rng';
@@ -85,10 +79,6 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
   sabotage: (s, p) => {
     for (const o of s.players) if (o.id !== p) o.actionPenalty++;
   },
-  // Regolith's Sabotage: two actions instead of one.
-  'sabotage-double': (s, p) => {
-    for (const o of s.players) if (o.id !== p) o.actionPenalty += 2;
-  },
   'show-of-force': (s, p) => {
     if (shipsOnBoard(s).length) s.pending.unshift({ kind: 'showOfForce', player: p });
   },
@@ -98,12 +88,6 @@ const TACTIC_EFFECTS: Record<TacticEffect, TacticEffectFn> = {
   },
   'warp-gate': (s, p) => {
     s.pending.unshift({ kind: 'warpGate', player: p, placed: [] });
-  },
-  barrier: (s, p) => {
-    if (barrierSpaces(s).length > 0) s.pending.unshift({ kind: 'placeBarrier', player: p, placed: [] });
-  },
-  'kinetic-shunt': (s, p) => {
-    if (canShunt(s)) s.pending.unshift({ kind: 'kineticShunt', player: p });
   },
   expansion: (s, p) => {
     const res = reserve(s, p);
@@ -320,7 +304,6 @@ export const cardHandlers = {
     const head = headOf(s, 'warpGate', 'No Warp Gate to place');
     const cell = s.board.cells[a.cell.r]?.[a.cell.c];
     if (!cell || cell.kind !== 'space') fail('Gates go on spaces, not planets');
-    if (barrierAt(s, a.cell)) fail('Gates don’t go on barriers');
     if (head.placed.some((p) => same(p, a.cell))) fail('Choose a different space');
     head.placed.push({ r: a.cell.r, c: a.cell.c });
     if (head.placed.length === 2) {
@@ -328,28 +311,6 @@ export const cardHandlers = {
       s.pending.shift();
       note(s, `${name(s, head.player)} opens a pair of warp gates.`, head.player);
     }
-  },
-  placeBarrier(s, a) {
-    const head = headOf(s, 'placeBarrier', 'No barrier to place');
-    const cell = s.board.cells[a.cell.r]?.[a.cell.c];
-    if (!cell || cell.kind !== 'space') fail('Barriers go on spaces, not planets');
-    if (!canHoldBarrier(s, a.cell)) fail('Barriers go on empty spaces');
-    head.placed.push({ r: a.cell.r, c: a.cell.c });
-    addBarrier(s, a.cell, head.player);
-    logTo(s, head.player, `${name(s, head.player)} places a barrier`, a.cell);
-    if (head.placed.length === 2 || !barrierSpaces(s).length) s.pending.shift();
-  },
-  kineticShunt(s, a) {
-    const head = headOf(s, 'kineticShunt', 'No Kinetic Shunt to resolve');
-    const d = die(s, a.die);
-    if (d.loc.zone !== 'board') fail('Choose a mech on the map');
-    // Before the push: once there, the mech blocks the line it came along.
-    const path = shuntPaths(s, d).find((p) => same(p.to, a.to));
-    if (!path) fail('Not a valid push destination');
-    s.pending.shift();
-    d.loc = boardLoc(a.to);
-    const targetName = head.player === d.owner ? `their ${shipName(s, d)}` : `${name(s, d.owner)}'s ${shipName(s, d)}`;
-    logTo(s, head.player, `${name(s, head.player)} pushes ${targetName}${path.tunnel ? ' through a warp gate' : ''}`, a.to);
   },
   /** Patient: "When you take this Skill, you may take and store a Tactic." */
   patientTactic(s, a) {
@@ -380,7 +341,6 @@ export const cardHandlers = {
     const to = s.board.planets[a.to];
     from.cubes.splice(from.cubes.lastIndexOf(a.owner), 1);
     to.cubes.push(a.owner);
-    cubeLeft(s, a.owner, from.id, to.id);
     log(
       s,
       `${name(s, head.player)} relocates ${name(s, a.owner)}'s cube from planet ${from.number} to planet ${to.number}.`,

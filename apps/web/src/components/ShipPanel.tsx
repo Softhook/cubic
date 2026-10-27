@@ -1,4 +1,4 @@
-import { canMoveDie, canUseAbility, card, die, hasSkill, movementRange, say, shipOf, skillCard, type GameState } from '@quantum/engine';
+import { canMoveDie, canUseAbility, card, die, hasSkill, movementRange, shipOf, skillCard, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
 import { Die3D } from './Die3D';
@@ -18,8 +18,7 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
   const tacticalId = skillCard(game, me, 'tactical') ?? skillCard(game, me, 'tactical-original');
   const mine = (a: { die: string }) => a.die === d.id;
   const ship = shipOf(game, d.value);
-  const words = (text: string) => say(game, text);
-  const ability = { name: words(ship.ability.name), text: words(ship.ability.text) };
+  const ability = { name: ship.ability.name, text: ship.ability.text };
   // A prototype power (hooks, no built-in power) is never "used this turn".
   const passive = !ship.power;
   const cancel = () => ctl.select({ kind: 'none' });
@@ -36,18 +35,6 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
 
   const abilityButton = () => {
     if (!onBoard) return null;
-    if (ship.hooks?.action) {
-      return (
-        <button
-          className="btn"
-          disabled={!legal.can('power', mine)}
-          onClick={() => ctl.select({ kind: 'power', die: d.id })}
-          title={legal.can('power', mine) ? ability.text : `${ability.name} unavailable now. ${ability.text}`}
-        >
-          {ability.name}
-        </button>
-      );
-    }
     if (used) return null;
     switch (ship.power) {
       case 'strike':
@@ -97,9 +84,9 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
             className="btn"
             disabled={!legal.can('freeReconfigure', mine)}
             onClick={() => dispatch({ type: 'freeReconfigure', die: d.id })}
-            aria-label={words('Free Reconfigure')}
+            aria-label={'Free Reconfigure'}
           >
-            <Label long={words('Free Reconfigure')} short={words('Reconfigure')} />
+            <Label long={'Free Reconfigure'} short={'Reconfigure'} />
           </button>
         );
     }
@@ -122,9 +109,7 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
           }
         >
           <strong>{ship.name}</strong>
-          <small>
-            {onBoard ? `Moves ${movementRange(game, d)} · ${canMoveDie(game, d) ? 'ready' : 'already moved'}` : words('In scrapyard')}
-          </small>
+          <small>{onBoard ? `Moves ${movementRange(game, d)} · ${canMoveDie(game, d) ? 'ready' : 'already moved'}` : 'In scrapyard'}</small>
         </Tip>
         <button className="icon-btn" onClick={cancel} aria-label="Deselect">
           ×
@@ -141,15 +126,15 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
           className="btn"
           disabled={!legal.can('reconfigure', mine)}
           onClick={() => dispatch({ type: 'reconfigure', die: d.id })}
-          title={words('Spend 1 action to re-roll this ship to a new number.')}
+          title={'Spend 1 action to re-roll this ship to a new number.'}
         >
-          {words('Reconfigure')}
+          {'Reconfigure'}
         </button>
         {tacticalId && legal.can('tactical', (a) => mine(a) && !a.passenger) && (
           <button
             className="btn"
             onClick={() => ctl.select({ kind: 'tactical', die: d.id })}
-            title={words(card(tacticalId).text)}
+            title={card(tacticalId).text}
             aria-label="Tactical step"
           >
             <Label long="Tactical step" short="Tactical" />
@@ -159,7 +144,7 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
           <button
             className="btn"
             onClick={() => ctl.select({ kind: 'carryPassenger', die: d.id, tactical: true })}
-            title={words(`${card(tacticalId).text} The ${ship.name} may transport a ship over that 1 space.`)}
+            title={`${card(tacticalId).text} The ${ship.name} may transport a ship over that 1 space.`}
             aria-label="Tactical carry"
           >
             <Label long="Tactical carry" short="Tac. carry" />
@@ -187,7 +172,7 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
           <button
             className="btn"
             onClick={() => ctl.select({ kind: 'nomadic', die: d.id })}
-            title={words(card(skillCard(game, me, 'nomadic')!).text)}
+            title={card(skillCard(game, me, 'nomadic')!).text}
           >
             Nomadic
           </button>
@@ -196,7 +181,7 @@ export function ShipPanel({ game, ctl, dispatch }: { game: GameState; ctl: Contr
           <button
             className="btn"
             onClick={() => dispatch({ type: 'resourceful', die: d.id })}
-            title={words(card('resourceful').text)}
+            title={card('resourceful').text}
             aria-label="Sacrifice +1 action"
           >
             <Label long="Sacrifice +1 action" short="Sacrifice" />

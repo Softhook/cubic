@@ -14,8 +14,6 @@ import {
   mulberry32,
   orbitals,
   planetFreeSlots,
-  rulesOf,
-  shipOf,
   shipsOnBoard,
   tryApply,
   type Action,
@@ -40,7 +38,6 @@ import { storedTactics } from './patient';
 
 const RANDOM_ACTIONS = new Set<Action['type']>([
   'attack',
-  'power',
   'freeAttack',
   'reconfigure',
   'freeReconfigure',
@@ -135,7 +132,7 @@ function best(state: GameState, me: PlayerId, candidates: Action[], opts: Greedy
       const sim = withRandomSeed(state, rand);
       total += scoreAfter(sim, me, a);
     }
-    const v = total / n + (opts.noise ? (rand() - 0.5) * opts.noise : 0) + tieBreak(state, a);
+    const v = total / n + (opts.noise ? (rand() - 0.5) * opts.noise : 0) + tieBreak(a);
     if (v > top) {
       top = v;
       pick = a;
@@ -145,12 +142,10 @@ function best(state: GameState, me: PlayerId, candidates: Action[], opts: Greedy
 }
 
 /** Small preferences so equal-scoring actions resolve sensibly. */
-function tieBreak(s: GameState, a: Action): number {
+function tieBreak(a: Action): number {
   if (a.type === 'endTurn') return -0.5;
   // Free abilities must actually improve the position, not just shuffle ships around.
   if (a.type === 'swap' || a.type === 'change' || a.type === 'flexible' || a.type === 'freeReconfigure') return -2;
-  // Regolith's Barrier is there for good: only where it clearly helps.
-  if (a.type === 'power' && shipOf(s, die(s, a.die).value).ability?.name === 'Barrier') return -8;
   if (a.type === 'advance' && a.move) return 0.2;
   if (a.type === 'ruthless' && a.skill) return 0.5;
   if (a.type === 'prideful' && a.take) return 0.5;
@@ -185,7 +180,6 @@ function playOutDecisions(state: GameState, me: PlayerId): GameState {
 /** The follow-up option `quickPolicy` prefers for each kind of decision; otherwise the first legal one. */
 const PREFERRED: { [K in Pending['kind']]?: (a: Action, s: GameState, me: PlayerId) => boolean } = {
   showOfForce: (a, s, me) => a.type === 'showOfForce' && die(s, a.die).owner !== me,
-  kineticShunt: (a, s, me) => a.type === 'kineticShunt' && die(s, a.die).owner !== me,
   takeCard: (a) => a.type === 'takeCard' && a.deck === 'expansion',
   patientTactic: (a) => a.type === 'patientTactic' && a.index !== undefined,
   unveil: (a) => a.type === 'unveilDeploy',
@@ -241,18 +235,14 @@ function conquerPotential(s: GameState, p: PlayerId): number {
   const values: number[] = [];
   const myShips = shipsOnBoard(s, p);
   for (const planet of s.board.planets) {
-    const full = planetFreeSlots(planet) <= 0;
-    if (full ? !rulesOf(s).overConquest || !planet.cubes.some((x) => x !== p) : planet.cubes.includes(p)) continue;
+    if (planetFreeSlots(planet) <= 0 || planet.cubes.includes(p)) continue;
     const slots = orbitals(s.board, planet);
     const inOrbit = slots.map((c) => dieAt(s, c)).filter((d) => d && d.owner === p);
     const sum = inOrbit.reduce((a, d) => a + d!.value, 0);
     const empty = slots.filter((c) => isEmptySpace(s, c)).length;
-    const target = full ? 12 : planet.number;
+    const target = planet.number;
     let v: number;
-    const check = conquerCheck(s, p, planet.id);
-    if (check.ok || (!full && conquerCheck(s, p, planet.id, true).ok)) v = 320;
-    // Contested orbit: the sum is made, but enemy ships in orbit have to be destroyed first.
-    else if (check.blocked) v = 100;
+    if (conquerCheck(s, p, planet.id).ok) v = 320;
     else if (sum < target && empty > 0 && target - sum <= 6) v = 40 + 30 * inOrbit.length;
     else if (sum < target) v = 12 * inOrbit.length;
     else v = Math.max(0, 8 * inOrbit.length - (sum - target) * 6);

@@ -57,14 +57,6 @@ export function checkInvariants(s: GameState): string[] {
     occupied.add(k);
     check(s.board.cells[d.loc.r]?.[d.loc.c]?.kind === 'space', `die ${d.id} is on ${k}, which is not a space`);
   }
-  for (const b of s.barriers ?? []) {
-    const k = key(b);
-    check(!occupied.has(k), `a barrier on ${k}, which is taken`);
-    occupied.add(k);
-    check(s.board.cells[b.r]?.[b.c]?.kind === 'space', `a barrier on ${k}, which is not a space`);
-    check(isPlayer(b.owner), `barrier on ${k}: unknown owner ${b.owner}`);
-    check(!s.gates.some((g) => key(g) === k), `a barrier on ${k}, which has a warp gate`);
-  }
   for (const p of s.players) {
     check(s.dice.filter((d) => d.owner === p.id).length === DICE_PER_PLAYER, `player ${p.id} does not have ${DICE_PER_PLAYER} dice`);
   }

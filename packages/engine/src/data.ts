@@ -1,6 +1,5 @@
 import cardsJson from './data/cards.json';
 import mapsJson from './data/maps.json';
-import type { ShipHooks } from './prototype';
 import type { World } from './types';
 
 export interface CardDef {
@@ -18,14 +17,9 @@ export interface CardDef {
   effect?: string;
   /** Community cards: the 2013 card this one redesigns (data/cards.yaml). */
   classic?: string;
-  /** A mode's own card: the Community card it started as, and how far it has moved (community, renamed, reworked, new). */
-  from?: string;
-  status?: string;
-  /** A mode's own card: the brief its art is drawn from (data/regolith.yaml). */
-  art?: { title: string; brief: string };
 }
 
-export type GameMode = 'basic' | 'original' | 'community' | 'regolith';
+export type GameMode = 'basic' | 'original' | 'community';
 
 export interface MapDef {
   id: string;
@@ -56,24 +50,13 @@ export function defaultMap(players: number): MapDef | undefined {
   return MAPS.find((m) => m.players === players && m.group === 'basic') ?? MAPS.find((m) => m.players === players);
 }
 
-/** Every card of every deck: the two editions' here, and a mode's own decks once its rule set is defined (addCards). */
+/** Every card of every deck, both editions'. */
 export const ALL_CARDS: CardDef[] = [...SKILLS, ...TACTICS, EXPANSION, ...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT];
 
 const byId = new Map(ALL_CARDS.map((c) => [c.id, c]));
 const skillIds = new Set([...SKILLS, ...ORIGINAL_COMMAND].map((c) => c.id));
 const expansionIds = new Set([EXPANSION.id]);
 const originalIds = new Set([...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT].map((c) => c.id));
-
-/** Adds a mode's own cards to the ones `card` knows (rules.ts, as the rule sets are defined); cards already known are skipped. */
-export function addCards(defs: readonly CardDef[], kind: 'skill' | 'tactic' | 'expansion') {
-  for (const c of defs) {
-    if (byId.has(c.id)) continue;
-    byId.set(c.id, c);
-    ALL_CARDS.push(c);
-    if (kind === 'skill') skillIds.add(c.id);
-    if (kind === 'expansion') expansionIds.add(c.id);
-  }
-}
 
 export function card(id: string): CardDef {
   const c = byId.get(id);
@@ -108,10 +91,8 @@ export type ShipPower = 'strike' | 'transport' | 'warp' | 'modify' | 'manoeuvre'
 
 export interface ShipDef {
   name: string;
-  /** A built-in power (the official ships). */
+  /** Its built-in power. */
   power?: ShipPower;
-  /** A prototype power, as hooks (prototype.ts). A ship with hooks and no `power` has no once-per-turn ability. */
-  hooks?: ShipHooks;
   /** The power's name and rules text for the UI; `hint` guides a player using its action. */
   ability: { name: string; text: string; hint?: string };
 }

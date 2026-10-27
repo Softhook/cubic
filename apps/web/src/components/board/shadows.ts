@@ -11,7 +11,7 @@ export const PIECE_SHADOW_LENGTH = 0.55;
 export const PIECE_SHADOW_OPACITY = 0.7;
 
 /** A shadow's colour, for a piece of colour `color`: nearly black. */
-export const pieceShadowTint = (color: string) => `color-mix(in srgb, ${color} 14%, #000)`;
+const pieceShadowTint = (color: string) => `color-mix(in srgb, ${color} 14%, #000)`;
 
 /**
  * A rounded square's cast shadow, as SVG polygon points: the sweep of its corners' centres (the inner square, `w`

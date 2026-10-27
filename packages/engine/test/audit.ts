@@ -27,10 +27,8 @@ import {
   combatTotal,
   createGame,
   effectOf,
-  expansionCard,
   EXPANSION,
   infamyTargets,
-  isEmptySpace,
   legalActions,
   ORIGINAL_COMMAND,
   ORIGINAL_GAMBIT,
@@ -38,11 +36,8 @@ import {
   reserve,
   RuleError,
   RULESETS,
-  same,
   shipsOnBoard,
-  shuntTargets,
   SKILLS,
-  spaces,
   TACTICS,
   type Action,
   type CardDef,
@@ -107,7 +102,6 @@ export const CHECKED_EFFECTS = new Set([
   'plan-ahead',
   'sabotage',
   'sabotage-original',
-  'sabotage-double',
   'show-of-force',
   'warp-gate',
   'change-of-heart',
@@ -147,7 +141,7 @@ export const CHECKED_EFFECTS = new Set([
 export function modeCards(mode: GameMode): CardDef[] {
   if (mode === 'original') return [...ORIGINAL_COMMAND, ...ORIGINAL_GAMBIT];
   const cards = RULESETS[mode].cards;
-  return cards ? [...cards.skills, ...cards.tactics, cards.expansion ?? EXPANSION] : [...SKILLS, ...TACTICS, EXPANSION];
+  return cards ? [...cards.skills, ...cards.tactics, EXPANSION] : [...SKILLS, ...TACTICS, EXPANSION];
 }
 
 /** The skills a game deals from, in a fixed order. */
@@ -325,8 +319,7 @@ function destroyed(c: Step, w: PlayerId, v: PlayerId, inCombat: boolean) {
 export function cardTaken(before: GameState, action: Action, after: GameState): { id: string; p: PlayerId; played: boolean } | undefined {
   const head = before.pending[0];
   if (action.type === 'takeCard' && head?.kind === 'takeCard') {
-    if (action.deck === 'expansion')
-      return { id: before.mode === 'original' ? 'o-expansion' : expansionCard(before).id, p: head.player, played: true };
+    if (action.deck === 'expansion') return { id: before.mode === 'original' ? 'o-expansion' : EXPANSION.id, p: head.player, played: true };
     // Taking the oldest card may only open a peek at the deck; the card is taken by the peekChoice.
     if (after.pending[0]?.kind === 'peek' && after.pending[0].player === head.player) return;
     const row = action.deck === 'skill' ? before.market.skillRow : before.market.tacticRow;
@@ -420,7 +413,7 @@ const ORACLES: ((c: Step) => void)[] = [
     const p = after.turn.player;
     // A Sabotage played in this same step, by another player, already applies to this turn.
     const played = playedCard(c);
-    const sabotage = played && played.p !== p ? ({ sabotage: 1, 'sabotage-double': 2 } as Record<string, number>)[effectOf(played.id)] : 0;
+    const sabotage = played && played.p !== p ? ({ sabotage: 1 } as Record<string, number>)[effectOf(played.id)] : 0;
     const penalty = before.players[p].actionPenalty + (sabotage ?? 0);
     const base = after.turn.bonus ? 2 : Math.max(0, 3 - penalty);
     const mine = shipsOnBoard(after, p);
@@ -496,7 +489,6 @@ const ORACLES: ((c: Step) => void)[] = [
         if (now.planAhead < 1) bad('Plan Ahead not in effect');
         break;
       case 'sabotage':
-      case 'sabotage-double':
         for (const o of after.players) {
           if (o.id === p) continue;
           const started = turnChanged(c) && after.turn.player === o.id;
@@ -515,13 +507,6 @@ const ORACLES: ((c: Step) => void)[] = [
         break;
       case 'warp-gate':
         if (!pending('warpGate')) bad('no gates to place');
-        break;
-      case 'barrier':
-        if (spaces(before.board).some((c) => isEmptySpace(before, c) && !before.gates?.some((g) => same(g, c))) && !pending('placeBarrier'))
-          bad('no barrier to place');
-        break;
-      case 'kinetic-shunt':
-        if (shipsOnBoard(before).some((d) => shuntTargets(before, d).length > 0) && !pending('kineticShunt')) bad('no mech to shunt');
         break;
       case 'change-of-heart':
         if ((before.market.skillDeck.length || before.market.skillDiscard.length) && !pending('changeOfHeart')) bad('no skill to choose');
@@ -666,7 +651,7 @@ const PASSIVE: Partial<Record<Action['type'], string[]>> = {
   move: ['agile', 'devious', 'steadfast'],
   carry: ['agile', 'steadfast'],
   deploy: ['stealthy', 'eager'],
-  conquer: ['ingenious', 'intelligent', 'pioneering', 'science', 'tyrannical'],
+  conquer: ['ingenious', 'intelligent', 'pioneering', 'tyrannical'],
 };
 /** Re-roll skills: each re-roll counts as firing. */
 const REROLL = ['cruel', 'relentless', 'scrappy'];

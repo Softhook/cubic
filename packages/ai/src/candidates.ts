@@ -1,4 +1,4 @@
-import { cellOf, die, distance, legalActions, type Action, type GameState } from '@quantum/engine';
+import { legalActions, type Action, type GameState } from '@quantum/engine';
 
 /** Calculating: the scrapyard numbers to take first (see candidates). */
 const CALCULATING_ORDER = [4, 3, 5, 2, 6, 1];
@@ -17,12 +17,6 @@ export function candidates(s: GameState, opts?: { includeCarry?: boolean }): Act
   if (head?.kind === 'clever' && head.source === 'calculating') {
     const rank = (a: Action) => (a.type === 'clever' ? CALCULATING_ORDER.indexOf(a.value) : 99);
     all.sort((a, b) => rank(a) - rank(b));
-  }
-  // Kinetic Shunt: enemy mechs first, pushed furthest first.
-  if (head?.kind === 'kineticShunt') {
-    const rank = (a: Action) =>
-      a.type === 'kineticShunt' ? (die(s, a.die).owner !== head.player ? 100 : 0) + distance(cellOf(die(s, a.die))!, a.to, s.board) : 0;
-    all.sort((a, b) => rank(b) - rank(a));
   }
   const options = nearestAttacks(all);
   return s.turn.actionsLeft > 0 ? options.filter((a) => a.type !== 'playStoredTactic') : options;

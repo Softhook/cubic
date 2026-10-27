@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { say } from '@quantum/engine';
 import { unclaimedSeats, type AskMode, type Replay } from '@quantum/online';
 import { Dialog, Modal } from '../components/Dialog';
 import { Game } from '../components/GameScreen';
@@ -153,7 +152,7 @@ function OnlinePanel({ g, secret, onJoin }: { g: OnlineGame; secret: string; onJ
   const open = unclaimedSeats(r).length;
   const ask = g.mySeats.length ? r.seats[g.mySeats[0]].ask : null;
   const askTipText = "When to wait for you to fire a missile or re-roll in a battle. Battles you're not asked about resolve without you.";
-  const askTip = g.view ? say(g.view.game, askTipText) : askTipText;
+  const askTip = askTipText;
   const copy = async () => {
     const url = inviteLink(secret);
     try {

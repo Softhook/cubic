@@ -1,13 +1,13 @@
 /**
  * Power-usage measurement: plays AI games in each mode and counts how often each ship's power is
- * used against how often it was on offer. Shared by powerUsage.test.ts and scripts/power-usage.ts,
- * so a new dice action (a RuleSet.ships entry) shows up here without any extra wiring.
+ * used against how often it was on offer, for powerUsage.test.ts, so a new dice action (a RuleSet.ships
+ * entry) shows up here without any extra wiring.
  */
 import { apply, createGame, legalActions, rulesOf, type Action, type GameMode, type GameState } from '../src';
 import { aiAction, players, seededRandom } from './helpers';
 
 /** The actions that spend a ship's once-per-turn power (carry and strike have tactical twins we don't count). */
-const POWER_ACTIONS = new Set<Action['type']>(['freeAttack', 'carry', 'swap', 'change', 'freeReconfigure', 'power']);
+const POWER_ACTIONS = new Set<Action['type']>(['freeAttack', 'carry', 'swap', 'change', 'freeReconfigure']);
 
 interface PowerRow {
   /** Die value of the ship (1 to 6). */
@@ -54,7 +54,7 @@ export function measurePowerUsage(mode: GameMode, opts: UsageOptions): ModeUsage
     used: 0,
     offeredTurns: 0,
     usedTurns: 0,
-    hasAction: !!def.hooks?.action || (!!def.power && def.power !== 'manoeuvre'),
+    hasAction: !!def.power && def.power !== 'manoeuvre',
   }));
   const row = (value: number) => rows.find((r) => r.value === value)!;
   const out: ModeUsage = { mode, games: opts.games, finished: 0, playerTurns: 0, rows };

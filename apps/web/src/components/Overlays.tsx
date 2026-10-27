@@ -1,10 +1,10 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { CARD_CATEGORIES } from '@quantum/art';
-import { say, shipOf, card, die, rulesOf, scrapyard, type Action, type ActionOf, type GameState } from '@quantum/engine';
+import { shipOf, card, die, rulesOf, scrapyard, type GameState } from '@quantum/engine';
 import { SHORT, useMediaQuery } from '../game/useMediaQuery';
 import type { Dispatch } from '../game/useGame';
 import { CardView, CategoryIcon, categoryStyle } from './Card';
-import { Dialog, Modal } from './Dialog';
+import { Modal } from './Dialog';
 import { Die3D } from './Die3D';
 import { cubeCount } from './board/EffectBox';
 import { AiTag } from './PlayerList';
@@ -91,7 +91,7 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
               Fight
             </button>
             <button className="btn btn-primary" onClick={() => dispatch({ type: 'dangerous', destroy: true })}>
-              {say(game, 'Destroy both ships')}
+              {'Destroy both ships'}
             </button>
           </div>
         </Modal>
@@ -134,7 +134,7 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
                 key={value}
                 className="fleet-die clever-choice"
                 disabled={value === head.avoid}
-                title={value === head.avoid ? say(game, 'A reconfigured ship must change its number') : undefined}
+                title={value === head.avoid ? 'A reconfigured ship must change its number' : undefined}
                 onClick={() => dispatch({ type: 'clever', value })}
               >
                 <Die3D value={value} size={54} color={p.color} sound={false} />
@@ -142,7 +142,7 @@ export function DecisionOverlay({ game, dispatch, human }: { game: GameState; di
               </button>
             ))}
           </div>
-          {d.loc.zone === 'scrapyard' && <p className="modal-sub">{say(game, 'The ship goes to your scrapyard.')}</p>}
+          {d.loc.zone === 'scrapyard' && <p className="modal-sub">{'The ship goes to your scrapyard.'}</p>}
         </Modal>
       );
     }
@@ -273,49 +273,6 @@ function SetupRoll({ game, dispatch, player, rerolled }: { game: GameState; disp
 }
 
 /**
- * How to conquer a planet that offers more than one way: an empty place, or over-conquest displacing
- * one opponent's cube (the conqueror chooses whose). `options` are the legal `conquer` actions for it.
- */
-export function ConquerChoice({
-  game,
-  options,
-  dispatch,
-  onClose,
-}: {
-  game: GameState;
-  options: ActionOf<'conquer'>[];
-  dispatch: Dispatch;
-  onClose: () => void;
-}) {
-  const planet = game.board.planets[options[0].planet];
-  const plain = options.some((a) => a.replace === undefined);
-  const pick = (a: Action) => {
-    if (dispatch(a)) onClose();
-  };
-  return (
-    <Dialog
-      title={`Conquer planet ${planet.number}`}
-      subtitle={plain ? 'Take an empty place, or displace an opponent’s cube.' : 'The planet is full: choose whose cube to displace.'}
-      onClose={onClose}
-    >
-      <div className="modal-actions">
-        {options.map((a) =>
-          a.replace === undefined ? (
-            <button key="plain" className="btn btn-primary" onClick={() => pick(a)}>
-              Take an empty place
-            </button>
-          ) : (
-            <button key={a.replace} className="btn" style={{ borderColor: game.players[a.replace].color }} onClick={() => pick(a)}>
-              Displace {game.players[a.replace].name}’s cube
-            </button>
-          ),
-        )}
-      </div>
-    </Dialog>
-  );
-}
-
-/**
  * `newLabel`: what leaving the finished game is called ("New game", or "Back to lobby" online). A winner (or
  * an onlooker) gets fireworks; a player who `lost` sees the board drain of colour instead.
  */
@@ -385,12 +342,12 @@ function GameStats({ game }: { game: GameState }) {
       <thead>
         <tr>
           <th />
-          <th title={say(game, 'Cubes on planets')}>Cubes</th>
+          <th title={'Cubes on planets'}>Cubes</th>
           {kept && (
             <>
-              <th title={say(game, 'Planets conquered')}>{say(game, 'Planets')}</th>
+              <th title={'Planets conquered'}>{'Planets'}</th>
               <th title="Battles won – lost">Battles</th>
-              <th title={say(game, 'Enemy ships destroyed – own ships lost')}>{say(game, 'Ships')}</th>
+              <th title={'Enemy ships destroyed – own ships lost'}>{'Ships'}</th>
             </>
           )}
           {cards && <th title="Cards gained">Cards</th>}

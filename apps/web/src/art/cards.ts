@@ -1,5 +1,5 @@
-import { FONTS, SP_FONTS, type CardDeck, type CardFace, type CardLook, type Measure } from '@quantum/art';
-import { EXPANSION, MODES, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef } from '@quantum/engine';
+import { FONTS, SP_FONTS, type CardDeck, type CardFace, type Measure } from '@quantum/art';
+import { EXPANSION, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef } from '@quantum/engine';
 import { blobToDataUrl } from '../files';
 
 /** Every printed card, by deck, from the game's card data, and the fonts cards and tiles are set in. */
@@ -19,17 +19,14 @@ export interface Edition {
   title: string;
 }
 
-const faces = (deck: CardDeck, defs: CardDef[], look?: CardLook): CardFace[] =>
+const faces = (deck: CardDeck, defs: CardDef[]): CardFace[] =>
   defs.map((c, i) => ({
     id: c.id,
     name: c.name,
     subtitle: c.subtitle,
     text: c.text,
     category: c.category,
-    // A mode's card shows the card it started as until it has art of its own.
-    scene: c.from,
     deck,
-    look,
     copies: c.count,
     index: i + 1,
     deckSize: defs.length,
@@ -41,31 +38,11 @@ export const DECKS: Deck[] = [
   { id: 'expansion', name: 'Expansion', edition: 'community', cards: faces('expansion', [EXPANSION]) },
   { id: 'command', name: 'Command', edition: 'original', cards: faces('command', ORIGINAL_COMMAND) },
   { id: 'gambit', name: 'Gambit', edition: 'original', cards: faces('gambit', ORIGINAL_GAMBIT) },
-  // Modes that deal decks of their own, read from their rule sets.
-  ...MODES.flatMap((m): Deck[] => {
-    const c = m.cards;
-    if (!c || [SKILLS, ORIGINAL_COMMAND].includes(c.skills)) return [];
-    return [
-      { id: 'skill', name: `${m.name} ${c.terms.skillDeck}`, edition: m.id, cards: faces('skill', c.skills, c.look) },
-      { id: 'tactic', name: `${m.name} ${c.terms.tacticDeck}`, edition: m.id, cards: faces('tactic', c.tactics, c.look) },
-      ...(c.expansion
-        ? [
-            {
-              id: 'expansion' as const,
-              name: `${m.name} ${c.expansion.name}`,
-              edition: m.id,
-              cards: faces('expansion', [c.expansion], c.look),
-            },
-          ]
-        : []),
-    ];
-  }),
 ];
 
 export const EDITIONS: Edition[] = [
   { id: 'community', label: 'Community', title: 'Community Edition' },
   { id: 'original', label: 'Classic', title: 'Classic' },
-  ...MODES.filter((m) => DECKS.some((d) => d.edition === m.id)).map((m) => ({ id: m.id, label: m.name, title: m.title })),
 ];
 
 const byId = new Map(DECKS.flatMap((d) => d.cards.map((c) => [c.id, c])));

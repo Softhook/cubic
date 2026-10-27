@@ -41,8 +41,6 @@ const SKILL_WIN_RATE: Record<string, number> = {
   devious: 53,
   curious: 52,
   ruthless: 51,
-  // Regolith's Science, measured the same way on Regolith (2026-10-24)
-  science: 54.5,
   precocious: 50.5,
   profiteering: 47.5,
   calculating: 44.5,
@@ -67,8 +65,6 @@ const TACTIC_VALUE: Record<string, number> = {
   'change-of-heart': 55,
   sabotage: 50,
   'warp-gate': 45,
-  barrier: 45,
-  'kinetic-shunt': 50,
   'plan-ahead': 45,
   'unveil-the-fleet': 40,
 };

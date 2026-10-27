@@ -2,11 +2,10 @@
 import { same, spaces } from './board';
 import { actor, tryApply } from './engine';
 import type { PendingOf } from './core';
-import { barrierAt, reserve, scrapyard, shipsOnBoard } from './lookups';
+import { reserve, scrapyard, shipsOnBoard } from './lookups';
 import {
   actionsClosed,
   attackLaunches,
-  barrierSpaces,
   canCurious,
   canGainResearch,
   canMoveDie,
@@ -26,12 +25,11 @@ import {
   moveOptions,
   nomadicTargets,
   relocationOptions,
-  shuntTargets,
   startSlots,
   tacticalOptions,
   usedThisTurn,
 } from './queries';
-import { hasPower, hooksOf, rulesOf } from './rules';
+import { hasPower, rulesOf } from './rules';
 import { anySkill, hasSkill } from './skillRules';
 import type { Action, Die, GameState, Pending } from './types';
 
@@ -98,10 +96,8 @@ const DECISION_CANDIDATES: { [K in Pending['kind']]: (s: GameState, head: Pendin
   showOfForce: (s) => shipsOnBoard(s).map((d) => ({ type: 'showOfForce', die: d.id })),
   warpGate: (s, head) =>
     spaces(s.board)
-      .filter((cell) => !head.placed.some((p) => same(p, cell)) && !barrierAt(s, cell))
+      .filter((cell) => !head.placed.some((p) => same(p, cell)))
       .map((cell) => ({ type: 'warpGate', cell })),
-  placeBarrier: (s) => barrierSpaces(s).map((cell) => ({ type: 'placeBarrier', cell })),
-  kineticShunt: (s) => shipsOnBoard(s).flatMap((d) => shuntTargets(s, d).map((to) => ({ type: 'kineticShunt', die: d.id, to }) as const)),
   changeOfHeart: (s) => [...new Set(s.market.skillDeck)].map((skill) => ({ type: 'changeOfHeart', skill })),
   patientTactic: (s) => [
     { type: 'patientTactic' } as const,
@@ -170,8 +166,6 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
         }
       }
     }
-    const action = hooksOf(s, d)?.action;
-    if (action) for (const c of action.options(s, d)) out.push({ type: 'power', die: d.id, ...c });
     if (actions > 0 && canReconfigure(s, d)) out.push({ type: 'reconfigure', die: d.id });
     if ((hasSkill(s, me, 'tactical') || (hasSkill(s, me, 'tactical-original') && canMoveDie(s, d))) && !usedThisTurn(s, 'tactical')) {
       const tac = tacticalOptions(s, d.id);
@@ -212,11 +206,7 @@ function actionPhaseOptions(s: GameState, opts: { includeCarry?: boolean }): Act
   if (hasSkill(s, me, 'tyrannical-original') && !usedThisTurn(s, 'tyrannical') && pl.research > 1) out.push({ type: 'tyrannical' });
   if (actions >= 2)
     for (const p of s.board.planets) {
-      const c = conquerCheck(s, me, p.id);
-      if (c.ok && !c.replace) out.push({ type: 'conquer', planet: p.id });
-      // Over-conquest: on a full planet it is the only way, on one with room it is a choice.
-      const o = c.replace ? c : rulesOf(s).overConquest ? conquerCheck(s, me, p.id, true) : c;
-      if (o.ok && o.replace) for (const replace of o.replace) out.push({ type: 'conquer', planet: p.id, replace });
+      if (conquerCheck(s, me, p.id).ok) out.push({ type: 'conquer', planet: p.id });
     }
   if (hasSkill(s, me, 'composed') && !usedThisTurn(s, 'composed') && pl.dominance > 1 && canGainResearch(s, me))
     out.push({ type: 'composed' });

@@ -1,7 +1,7 @@
 /** Turn structure: start of turn, the end-of-turn card phase, and passing the turn on. */
 import { checkInfamy, emptyTurn, gainResearch, log, logBonus, name, type PendingOf } from './core';
 import { cellOf, scrapyard, shipsOnBoard } from './lookups';
-import { breakthroughAt, canProfiteer, canShunt, canTakeAnyCard, infamyTargets, startSlots } from './queries';
+import { breakthroughAt, canProfiteer, canTakeAnyCard, infamyTargets, startSlots } from './queries';
 import { rulesOf } from './rules';
 import { activeSkills, askBrilliant, ruleOf, stealableSkill, type TurnBonus } from './skillRules';
 import type { GameState, OwnedSkill, Pending, PlayerId } from './types';
@@ -54,7 +54,7 @@ function startTurn(s: GameState, player: PlayerId, actions: number, bonus: boole
 }
 
 /** Setup is complete: the first player starts. */
-export function beginPlay(s: GameState) {
+function beginPlay(s: GameState) {
   s.phase = 'play';
   s.turn.number = 0;
   startTurn(s, s.turn.player, rulesOf(s).actionsPerTurn, false);
@@ -154,11 +154,6 @@ const AUTO_RESOLVE: { [K in Pending['kind']]?: (s: GameState, head: PendingOf<K>
   },
   showOfForce(s) {
     if (shipsOnBoard(s).length) return false;
-    s.pending.shift();
-    return true;
-  },
-  kineticShunt(s) {
-    if (canShunt(s)) return false;
     s.pending.shift();
     return true;
   },

@@ -1,7 +1,6 @@
 import { memo, type CSSProperties } from 'react';
 import { drawing, type Board, type GameState } from '@quantum/engine';
 import { PLANET_DIAMETER, TILE, lookWorld } from '@quantum/art';
-import { BarrierBubble } from './BarrierBubble';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { GATE_COLOR } from '../../theme';
 import { placement, wrapMarks, type WrapMark } from './geometry';
@@ -94,11 +93,6 @@ export const BoardArt = memo(function BoardArt({
           <g key={i} transform={`translate(${mid(g).x} ${mid(g).y})`} opacity={g.open ? 1 : 0.5}>
             <circle r={cell * 0.4} fill="none" stroke={GATE_COLOR} strokeWidth={cell * 0.05} filter="url(#glow)" />
           </g>
-        ))}
-
-        {/* Barriers (a prototype power): soft glass bubbles on the planet's surface (BarrierBubble). */}
-        {(game.barriers ?? []).map((b) => (
-          <BarrierBubble key={`b${b.r},${b.c}`} r={b.r} c={b.c} x={mid(b).x} y={mid(b).y} cell={cell} mm={mm} cast={ground} world={world} />
         ))}
 
         {planets.map((p) => {

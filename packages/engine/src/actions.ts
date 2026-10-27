@@ -20,7 +20,6 @@ import {
   spendMove,
   spendPeaceful,
   tally,
-  cubeLeft,
   type Handlers,
 } from './core';
 import { boardLoc, die } from './lookups';
@@ -96,23 +95,11 @@ export const actionHandlers = {
   },
   conquer(s, a) {
     const t = requireActionPhase(s);
-    const check = conquerCheck(s, t.player, a.planet, a.replace !== undefined);
+    const check = conquerCheck(s, t.player, a.planet);
     if (!check.ok) fail(check.reason ?? 'Cannot conquer');
-    if (check.replace) {
-      const owner = a.replace;
-      if (owner === undefined || !check.replace.includes(owner)) fail('Choose which opponent cube to displace');
-      const planet = s.board.planets[a.planet];
-      planet.cubes.splice(planet.cubes.lastIndexOf(owner), 1);
-      s.players[owner].cubesLeft++;
-      cubeLeft(s, owner, a.planet);
-      log(s, `${name(s, t.player)} displaces ${name(s, owner)}'s cube.`, t.player, 'conquer', [a.planet]);
-    }
     spend(s, 2);
     t.conquered = (t.conquered ?? 0) + 1;
-    // Science: the research that moved the sum onto the target.
-    if (check.research) s.players[t.player].research -= check.research;
-    const spent = check.research ? `, spending ${check.research} research` : '';
-    log(s, `${name(s, t.player)} conquers planet ${s.board.planets[a.planet].number}${spent}.`, t.player, 'conquer', [a.planet]);
+    log(s, `${name(s, t.player)} conquers planet ${s.board.planets[a.planet].number}.`, t.player, 'conquer', [a.planet]);
     tally(s, t.player, 'planetsTaken');
     placeCube(s, t.player, a.planet);
   },

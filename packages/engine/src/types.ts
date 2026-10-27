@@ -79,11 +79,6 @@ export interface PlayerState extends PlayerConfig {
   research: number;
   missiles: number;
   cubesLeft: number;
-  /**
-   * Home shipyard (Regolith): the planet this player may always deploy to. Their starting planet; when
-   * their last cube there leaves, it goes with the cube (Relocation) or to another of their planets.
-   */
-  home?: number;
   skills: OwnedSkill[];
   ambitionTokens: number;
   /** Actions lost on the next turn (Sabotage). */
@@ -228,8 +223,6 @@ export type Pending =
   | { kind: 'placeExpansion'; player: PlayerId; die: string }
   | { kind: 'showOfForce'; player: PlayerId }
   | { kind: 'warpGate'; player: PlayerId; placed: Cell[] }
-  | { kind: 'placeBarrier'; player: PlayerId; placed: Cell[] }
-  | { kind: 'kineticShunt'; player: PlayerId }
   | { kind: 'changeOfHeart'; player: PlayerId }
   /** CE Brilliant, at the start of the turn: gain 2 research or not (asked only with Pioneering). */
   | { kind: 'brilliant'; player: PlayerId }
@@ -281,11 +274,6 @@ export interface LogEntry {
   turn?: true;
 }
 
-/** A barrier on the map, and the player whose ship placed it. */
-export interface Barrier extends Cell {
-  owner: PlayerId;
-}
-
 export interface GameState {
   version: 1;
   mode: GameMode;
@@ -296,11 +284,6 @@ export interface GameState {
   dice: Die[];
   market: Market;
   gates: Cell[];
-  /**
-   * Barriers on the map (a prototype power places them), for good: nothing moves into, is deployed on or
-   * shoots through their spaces. Absent in a game that never had one.
-   */
-  barriers?: Barrier[];
   turn: TurnState;
   /** Decisions waiting to be made; the head is the current one. */
   pending: Pending[];
@@ -324,12 +307,10 @@ export type Action =
   | { type: 'move'; die: string; to: Cell }
   /** `from`: the space to attack from (moveOptions launches); the nearest when left out. */
   | { type: 'attack'; die: string; target: string; from?: Cell }
-  /** A prototype ship power's action (ShipHooks.action), aimed at a ship, a space or both. */
-  | { type: 'power'; die: string; target?: string; to?: Cell }
   | { type: 'deploy'; die: string; to: Cell }
   | { type: 'reconfigure'; die: string }
   | { type: 'research' }
-  | { type: 'conquer'; planet: number; replace?: PlayerId }
+  | { type: 'conquer'; planet: number }
   | { type: 'endTurn' }
   // ship abilities
   | { type: 'freeAttack'; die: string; target: string }
@@ -369,8 +350,6 @@ export type Action =
   | { type: 'placeExpansion'; to: Cell | null }
   | { type: 'showOfForce'; die: string }
   | { type: 'warpGate'; cell: Cell }
-  | { type: 'placeBarrier'; cell: Cell }
-  | { type: 'kineticShunt'; die: string; to: Cell }
   | { type: 'changeOfHeart'; skill: string }
   | { type: 'prideful'; take: boolean }
   | { type: 'ruthless'; skill?: string }

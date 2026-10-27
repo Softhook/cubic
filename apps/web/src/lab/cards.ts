@@ -43,13 +43,6 @@ export function lineageNote(face: CardFace): string {
   const how = (r: Redesign) => `${r.renamed ? 'renamed, ' : ''}${r.sameRules ? 'same rules' : 'rules changed'}`;
   const from = LINEAGE.redesigns.find((r) => r.community.id === face.id);
   if (from) return `Redesign of classic ${from.classic.name} (${how(from)})`;
-  const def = card(face.id);
-  if (def.from) {
-    const was = faceOf(def.from).name;
-    return def.status === 'community'
-      ? `Copy of Community ${was}`
-      : `From Community ${was} (${def.status})${def.art ? ` · art: ${def.art.title}` : ''}`;
-  }
   const heirs = LINEAGE.redesigns.filter((r) => r.classic.id === face.id);
   if (heirs.length) return `Redesigned as ${heirs.map((r) => `${r.community.name} (${how(r)})`).join(' and ')}`;
   return isOriginalCard(face.id) ? 'Classic only: not in the Community Edition' : 'Community original: new in the Community Edition';
