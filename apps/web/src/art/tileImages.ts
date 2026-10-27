@@ -1,14 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { buildBoard, type MapDef } from '@quantum/engine';
 import {
   RASTER_AREA,
   TILE,
   TILE_SET,
   dataUrl,
   hash,
+  isRaster,
   lookShape,
   lookWorld,
   rasterLayerSvg,
   standingMaskSvg,
+  tileLayerNames,
   tileSpec,
   type RasterLayer,
   type Spot,
@@ -18,6 +21,8 @@ import {
 import { rasterise, rasteriseWithCutout } from '../files';
 import { COARSE } from '../game/useMediaQuery';
 import { idle, storeImage, storedImage } from './imageStore';
+import { tileArt } from './boardTiles';
+import { useMapLook } from './mapLook';
 
 /**
  * Tile artwork as ready-drawn images: the raster layers of a tile in its look (art `rasterLayerSvg`), which the map
@@ -148,6 +153,32 @@ export async function warmTileImages(): Promise<void> {
       await idle();
       await tileImage(t, 'square', layer);
     }
+}
+
+/**
+ * Prepares the chosen map's tiles in the look the game will draw them in, in the background while the player is in
+ * the lobby. A ground map's tiles each carry their building where that map puts its planet, so `warmTileImages`
+ * can't have them ready, and drawing them all as the game opens would stall its opening roll. Stops when the
+ * map or look changes.
+ */
+export function useWarmMapImages(map: MapDef): void {
+  const board = useMemo(() => buildBoard(map), [map]);
+  const look = useMapLook(board);
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      const layers = tileLayerNames(look).filter(isRaster);
+      for (const t of tileArt(board))
+        for (const layer of layers) {
+          await idle();
+          if (!live) return;
+          await decodedTileImage(t, look, layer).catch(() => {});
+        }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [board, look]);
 }
 
 const NONE: Record<string, string> = {};
