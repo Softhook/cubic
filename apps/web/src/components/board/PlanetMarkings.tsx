@@ -1,16 +1,4 @@
-import {
-  CUBE_PAD,
-  PLANET_FAMILY,
-  REGOLITH_SHADOW,
-  WELL,
-  cubePadCentres,
-  numberPlacement,
-  well,
-  type Corner,
-  type TileShape,
-} from '@quantum/art';
-import type { CSSProperties } from 'react';
-import { PIECE_SHADOW_LENGTH, PIECE_SHADOW_OPACITY, castShadow } from './shadows';
+import { CUBE_PAD, PLANET_FAMILY, WELL, cubePadCentres, numberPlacement, well, type Corner, type TileShape } from '@quantum/art';
 
 /** A planet's number as the tile prints it: white, outlined in a dark shade of the planet's hue. `y` is the baseline. */
 export function PlanetNumber({ n, x, y, size, className }: { n: number; x: number; y: number; size: number; className?: string }) {
@@ -37,8 +25,7 @@ export function PlanetNumber({ n, x, y, size, className }: { n: number; x: numbe
 /**
  * A planet's live markings over its tile art, placed and sized as on the printed tile: its number and
  * cube spaces. `cubes[i]` is the colour of the cube in space i. Used by the board and the manual alike.
- * `cast`: on a world's ground, each cube casts a hard shadow with a hint of its colour, as the dice do (shadows.ts),
- * its glow gone. `corner` moves the number from the printed bottom right to another corner, as on a tile whose planet is off its middle (art `numberCorner`). `shape` places it for a hex map.
+ * `corner` moves the number from the printed bottom right to another corner, as on a tile whose planet is off its middle (art `numberCorner`). `shape` places it for a hex map.
  */
 export function PlanetMarkings({
   cx,
@@ -49,7 +36,6 @@ export function PlanetMarkings({
   cubes,
   numberClass,
   cubeClass,
-  cast,
   corner = { x: 1, y: 1 },
   shape = 'square',
 }: {
@@ -62,8 +48,6 @@ export function PlanetMarkings({
   cubes: readonly (string | undefined)[];
   numberClass?: string;
   cubeClass?: string;
-  /** Cast the cubes' shadows, each with this class (it drops in with its cube). */
-  cast?: string;
   corner?: Corner;
   /** Where the number sits on a hex map: at the vertex three hexes share (art `numberPlacement`). */
   shape?: TileShape;
@@ -83,15 +67,6 @@ export function PlanetMarkings({
         className={numberClass}
       />
       {wells && <g transform={`translate(${cx} ${cy}) scale(${mm})`} dangerouslySetInnerHTML={{ __html: wells }} />}
-      {/* All under the cubes: one falls by the next, whose top stands as high, so lit. */}
-      {cast && (
-        <g opacity={PIECE_SHADOW_OPACITY}>
-          {pads.map((q, i) => {
-            const colour = cubes[i];
-            return colour && <CubeShadow key={i} x={cx + q.x * mm} y={cy + q.y * mm} mm={mm} colour={colour} className={cast} />;
-          })}
-        </g>
-      )}
       {pads.map((q, i) => {
         const colour = cubes[i];
         return (
@@ -107,29 +82,11 @@ export function PlanetMarkings({
               stroke="#fff"
               strokeWidth={0.5 * mm}
               className={cubeClass}
-              style={cast ? undefined : { filter: `drop-shadow(0 0 ${1.2 * mm}px rgba(255,255,255,.6))` }}
+              style={{ filter: `drop-shadow(0 0 ${1.2 * mm}px rgba(255,255,255,.6))` }}
             />
           )
         );
       })}
     </>
-  );
-}
-
-/**
- * The shadow a cube of `colour` centred on (x, y) casts on the ground (shadows.ts): its rounded footprint swept down
- * and to the right for its height (a cube, so its width). It falls in with its cube, from as far away as the cube
- * falls from (`--away`, the cube's 320%).
- */
-function CubeShadow({ x, y, mm, colour, className }: { x: number; y: number; mm: number; colour: string; className: string }) {
-  const size = CUBE_PAD.size * mm;
-  const far = size * PIECE_SHADOW_LENGTH;
-  const { style, ...shape } = castShadow(x - size / 2, y - size / 2, size, CUBE_PAD.corner * mm, far, colour);
-  return (
-    <polygon
-      {...shape}
-      className={className}
-      style={{ ...style, filter: `blur(${REGOLITH_SHADOW.blur * mm}px)`, '--away': `${3.2 * far}px` } as CSSProperties}
-    />
   );
 }

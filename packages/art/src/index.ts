@@ -20,7 +20,6 @@ export {
 } from './tokens';
 export { ICONS, icon } from './icons';
 export { starfield, type StarfieldOptions } from './starfield';
-export { REGOLITH_GROUND_PX, REGOLITH_SHADOW } from './regolith';
 export { planet, type PlanetOptions } from './planet';
 export {
   BLED,
@@ -38,7 +37,7 @@ export {
   type Spot,
   type TileShape,
 } from './tile/geometry';
-export { OBJECTIVE_NAMES, WORLD_NAMES, lookShape, lookWorld, type TileLook, type World } from './tile/look';
+export { lookShape, type TileLook } from './tile/look';
 export { HATCH, hexEdges, hexEdge, voidFlask, well } from './tile/markings';
 export { tileFlavour, tileLabel, tileLabelFits } from './tile/label';
 export { tileHasRings } from './tile/space';
@@ -47,8 +46,6 @@ export {
   RASTER_AREA,
   isRaster,
   rasterLayerSvg,
-  standingMaskSvg,
-  tileGroundSvg,
   tileLayerNames,
   tileLayers,
   tileSvg,
@@ -68,13 +65,11 @@ export {
   estimateWidth,
   type CardDeck,
   type CardFace,
-  type CardLook,
   type CardOptions,
   type CardPalette,
   type Measure,
   type MeasuredFont,
 } from './card';
-export { SP_FONTS } from './screenprint/kit';
 export { AID, MIN_TEXT, playerAidSvg, type AidEdition, type AidOptions } from './aid';
 export { PRESS_TEST, pressTestSvg } from './proof';
 export { missile } from './kit/effects';

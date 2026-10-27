@@ -1,14 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  CARD_CATEGORIES,
-  cardBackSvg,
-  cardIllustration,
-  cardSvg,
-  deckInfo,
-  type CardDeck,
-  type CardFace,
-  type CardLook,
-} from '@quantum/art';
+import { CARD_CATEGORIES, cardBackSvg, cardIllustration, cardSvg, deckInfo, type CardDeck, type CardFace } from '@quantum/art';
 import {
   DECKS,
   EDITIONS as ALL_EDITIONS,
@@ -60,15 +51,11 @@ const SORTS: [Sort, string][] = [
 interface Item {
   key: string;
   deck: CardDeck;
-  look?: CardLook;
   face?: CardFace;
 }
 
-const itemOf = (c: CardFace): Item => ({ key: `${c.deck}:${c.id}`, deck: c.deck, look: c.look, face: c });
-const backOf = (d: Deck): Item => {
-  const look = d.cards[0]?.look;
-  return { key: `${d.id}:${look ?? 'holo'}:back`, deck: d.id, look };
-};
+const itemOf = (c: CardFace): Item => ({ key: `${c.deck}:${c.id}`, deck: c.deck, face: c });
+const backOf = (d: Deck): Item => ({ key: `${d.id}:back`, deck: d.id });
 const itemsOf = (d: Deck): Item[] => [backOf(d), ...d.cards.map(itemOf)];
 /** Items once each: decks of different editions share a back. */
 const unique = (items: Item[]) => [...new Map(items.map((i) => [i.key, i])).values()];
@@ -110,7 +97,7 @@ export function CardLab() {
 
   const svgOf = useCallback(
     (i: Item, o: { bleed?: boolean; rounded?: boolean } = {}) =>
-      i.face ? cardSvg(i.face, { ...o, measure, fontCss: fonts ?? '' }) : cardBackSvg(i.deck, { ...o, look: i.look, fontCss: fonts ?? '' }),
+      i.face ? cardSvg(i.face, { ...o, measure, fontCss: fonts ?? '' }) : cardBackSvg(i.deck, { ...o, fontCss: fonts ?? '' }),
     [fonts],
   );
 
@@ -125,9 +112,8 @@ export function CardLab() {
 
   // Named as the card reads, not by its id: `07-tune-up`, not `07-r-agile`.
   const fileName = (i: Item) => (i.face ? `${String(i.face.index).padStart(2, '0')}-${slugOf(i.face.name)}` : 'back');
-  // Screenprint cards in their own folders, so a set of both looks keeps both decks' backs.
   const printable = (i: Item): Printable => ({
-    name: `${i.look === 'screenprint' ? 'screenprint-' : ''}${i.deck}/${fileName(i)}`,
+    name: `${i.deck}/${fileName(i)}`,
     svg: (b) => svgOf(i, { bleed: b }),
   });
   const sheets = (copies: boolean) =>

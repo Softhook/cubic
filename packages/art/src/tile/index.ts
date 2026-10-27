@@ -1,8 +1,7 @@
 import { TILE } from '../tokens';
 import { document, dieCut, join, n, type Box, type Fragment } from '../svg';
-import { groundArt, regolithGroundSvg, regolithMaskSvg, regolithSvg } from '../regolith';
-import { BLED, HEX_TILE_CUT, MID, TRIM, betweenSpaces, dieLine, flowerPath, numberCorner, planetSpot, type Spot } from './geometry';
-import { lookShape, lookWorld, type TileLook } from './look';
+import { BLED, HEX_TILE_CUT, MID, TRIM, betweenSpaces, dieLine, flowerPath, numberCorner, planetSpot } from './geometry';
+import { lookShape, type TileLook } from './look';
 import { markings } from './markings';
 import { inLabel, label, tileLabelFits } from './label';
 import { bodyArt, bodySvg, inGutter, skyArt, skySvg } from './space';
@@ -10,8 +9,7 @@ import { BLANK, type TileSpec } from './set';
 
 /**
  * One map tile, trim 96 × 96 mm, in any look (look.ts), as layers (`tileLayers`): in space, its sky and planet
- * (space.ts) or a Void's heart (voids.ts), or its world's ground (regolith/); its flavour label (label.ts) and
- * print markings (markings.ts), all laid out by its shape and where its planet sits (geometry.ts). Print draws
+ * (space.ts) or a Void's heart (voids.ts); its flavour label (label.ts) and print markings (markings.ts), all laid out by its shape and where its planet sits (geometry.ts). Print draws
  * them in one piece (`tileSvg`), an editor as a bitmap and vectors (`editableTileSvg`), and the map in the same
  * order, some as images (the game's MapTiles). The tile set is set.ts.
  */
@@ -36,38 +34,25 @@ export interface TileOptions {
   /** `@font-face` rules to embed, so print files set the number and label in their own fonts, not the system's. */
   fontCss?: string;
   /**
-   * How the tile looks (look.ts): 3 × 3 squares (the default) or a 7-hex flower in space, or a hex tile on a
-   * world's ground. A hex tile's art is knocked out past its flower (at its outline when `rounded`, otherwise
+   * How the tile looks (look.ts): 3 × 3 squares (the default) or a 7-hex flower. A hex tile's art is knocked out past its flower (at its outline when `rounded`, otherwise
    * past it by the bleed, if any).
    */
   look?: TileLook;
   /** Where the planet sits, as a map's layout token says it (`TILE_SPOTS`): the middle when absent. */
   planetAt?: string;
-  /**
-   * On a world's ground, a bitmap of its lit ground (a data URL of `tileGroundSvg`, drawn at
-   * `REGOLITH_GROUND_PX`) in place of its lighting filter: print draws it so, as its light falls into contour
-   * lines at a print's resolution (regolith/core.ts `LIT`).
-   */
-  ground?: string;
 }
 
 /** A tile's layers: what each look draws, one on another (`tileLayerNames`). */
-export type TileLayerName = 'sky' | 'body' | 'ground' | 'label' | 'spaces' | 'standing' | 'planet';
+export type TileLayerName = 'sky' | 'body' | 'label' | 'spaces' | 'planet';
 
 /**
  * Each look's layers, bottom first, as print, the Art Lab and the map all draw them. In space: the sky, the
  * body (the planet and its moons, or a Void's heart, on the planet's space), the planet's label (only a square
- * tile has room), the spaces' wells, and the planet's cube pads and number. On a world's ground: the ground,
- * with the planet's building standing on its space, the spaces' wells, what stands on the ground again over
- * them (so the wells are etched into the ground, not across the buildings), and the planet's cube pads and number.
+ * tile has room), the spaces' wells, and the planet's cube pads and number.
  */
-const ON_GROUND: readonly TileLayerName[] = ['ground', 'spaces', 'standing', 'planet'];
 const LAYERS: Record<TileLook, readonly TileLayerName[]> = {
   square: ['sky', 'body', 'label', 'spaces', 'planet'],
   hex: ['sky', 'body', 'spaces', 'planet'],
-  phobos: ON_GROUND,
-  deimos: ON_GROUND,
-  mars: ON_GROUND,
 };
 
 /** A look's layers, bottom first (`LAYERS`). */
@@ -75,10 +60,9 @@ export const tileLayerNames = (look: TileLook = 'square'): readonly TileLayerNam
 
 /**
  * The layers drawn with filters, and the area each covers in trim mm when drawn alone for the map
- * (`rasterLayerSvg`): the tile, or for the ground and what stands on it, the tile and its bleed. An editor that
- * can't render filters takes them as a bitmap (`editableTileSvg`); the others are plain vectors.
+ * (`rasterLayerSvg`): the tile. An editor that can't render filters takes them as a bitmap (`editableTileSvg`); the others are plain vectors.
  */
-export const RASTER_AREA = { sky: TRIM, body: TRIM, ground: BLED, standing: BLED } as const;
+export const RASTER_AREA = { sky: TRIM, body: TRIM } as const;
 
 export type RasterLayer = keyof typeof RASTER_AREA;
 
@@ -105,7 +89,6 @@ function tileLayout(spec: TileSpec, o: Pick<TileOptions, 'look' | 'planetAt'>) {
   const p = { x: MID + at.x * TILE.cell, y: MID + at.y * TILE.cell };
   return {
     shape,
-    world: lookWorld(o.look),
     at,
     p,
     labelled: spec.number > 0 && tileLabelFits(shape, at),
@@ -116,12 +99,11 @@ function tileLayout(spec: TileSpec, o: Pick<TileOptions, 'look' | 'planetAt'>) {
 
 /**
  * A tile's layers in its look, bottom first (`tileLayerNames`): those it has, so a label only where it fits,
- * markings only when asked for, and what stands on the ground again only over the spaces' wells.
+ * and markings only when asked for.
  */
 export function tileLayers(spec: TileSpec, o: TileOptions = {}): TileLayer[] {
   const id = o.idPrefix ?? spec.id;
   const t = tileLayout(spec, o);
-  const ground = t.world && groundArt(spec, t.at, t.world, o.ground);
   const art: Record<TileLayerName, () => Fragment | undefined> = {
     sky: () =>
       skyArt(
@@ -136,10 +118,8 @@ export function tileLayers(spec: TileSpec, o: TileOptions = {}): TileLayer[] {
         t.labelled ? (x: number, y: number) => !inLabel(t.p, x, y) : undefined,
       ),
     body: () => t.shift(bodyArt(spec, id)),
-    ground: () => ground || undefined,
     label: () => (t.labelled ? t.shift(label(spec)) : undefined),
     spaces: () => (o.markings ? t.marks('spaces') : undefined),
-    standing: () => (o.markings ? ground?.standing : undefined),
     planet: () => (o.markings === true ? t.marks('planet') : undefined),
   };
   return tileLayerNames(o.look).flatMap((name) => {
@@ -181,38 +161,16 @@ export function tileSvg(spec: TileSpec, o: TileOptions = {}): string {
  * One of a tile's raster layers in a look alone, over its `RASTER_AREA`, as the map draws it to an image and keeps
  * it. Unlike a printed tile's, each does for its tile wherever the map puts its planet: the `sky` keeps its bright
  * stars in the gutters between all the spaces, and the `body` is centred on the tile, for the map to move onto
- * the planet's space. The `ground` has its building `at` the planet's space (spaces from the middle). What's
- * standing on it isn't drawn again but cut out of the ground's image (`standingMaskSvg`). Throws for a layer the
- * look hasn't got.
+ * the planet's space.
  */
-export function rasterLayerSvg(spec: TileSpec, look: TileLook, layer: Exclude<RasterLayer, 'standing'>, at: Spot = { x: 0, y: 0 }): string {
-  const world = lookWorld(look);
-  if (!tileLayerNames(look).includes(layer)) throw new Error(`A ${look} tile has no ${layer} layer`);
-  if (layer === 'sky') return skySvg(spec, lookShape(look));
-  return layer === 'body' ? bodySvg(spec) : regolithSvg(spec, world!, at);
-}
-
-/**
- * What stands on a tile's ground (`rasterLayerSvg` `ground`, its building `at` the planet's space), as a mask over
- * the same area: white where it stands, clear elsewhere. Cheap to draw, with no lighting, so the map cuts what
- * stands out of the ground's image with it, to lay over the spaces' wells, and the two match to the pixel.
- */
-export const standingMaskSvg = (spec: TileSpec, at: Spot = { x: 0, y: 0 }): string => regolithMaskSvg(spec, at);
-
-/**
- * On a world's ground, the tile's lit ground alone, to draw as a bitmap at `REGOLITH_GROUND_PX` and pass back
- * to `tileSvg` as its `ground`; nothing in space, where there's no ground to light.
- */
-export function tileGroundSvg(spec: TileSpec, o: Pick<TileOptions, 'look' | 'planetAt'>): string | undefined {
-  const world = lookWorld(o.look);
-  return world && regolithGroundSvg(spec, world, planetSpot('hex', o.planetAt));
+export function rasterLayerSvg(spec: TileSpec, look: TileLook, layer: RasterLayer): string {
+  return layer === 'sky' ? skySvg(spec, lookShape(look)) : bodySvg(spec);
 }
 
 /**
  * A tile for Illustrator and other editors that can't render SVG filters: its raster layers as an embedded
- * bitmap (pass a PNG data URL of `tileSvg(spec, { raster: true, … })`), with the layers over them as vectors:
- * in space the label and all the markings, on a world's ground, whose buildings stand over the spaces' wells,
- * only the planet's cube pads and number. Each sits in its own named group, which Illustrator opens as layers.
+ * bitmap (pass a PNG data URL of `tileSvg(spec, { raster: true, … })`), with the label and the markings over
+ * it as vectors. Each sits in its own named group, which Illustrator opens as layers.
  */
 export function editableTileSvg(
   spec: TileSpec,

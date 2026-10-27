@@ -38,23 +38,6 @@ export const hexCorners = (x: number, y: number, size: number) =>
 export const hexFlower = (board: Board, t: Cell) => [t, ...adjacent(board, t)];
 
 /**
- * A hex map's tiles, in pixels, as an SVG path (for a CSS `clip-path: path()`): each of their hexes, a touch larger
- * as MapTiles clips them, so no hairline shows between them.
- */
-export function hexMapPath(board: Board, cell: number, tiles: readonly Cell[]): string {
-  const { mid } = placement(board, cell);
-  return tiles
-    .flatMap((t) => hexFlower(board, t))
-    .map((p) => {
-      const { x, y } = mid(p);
-      return `M${hexCorners(x, y, cell * 1.01)
-        .map(([cx, cy]) => `${cx.toFixed(1)},${cy.toFixed(1)}`)
-        .join('L')}Z`;
-    })
-    .join('');
-}
-
-/**
  * The seams of a hex map, in pixels: each hex side where the next hex is another tile's, or off the map, as its
  * two ends. A seam between two tiles comes twice, once from each side.
  */

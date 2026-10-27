@@ -139,8 +139,6 @@ describe('the map stacks a look’s tile layers', () => {
   it('as printed, each run of images in one group per tile, under and over what it draws from the board', () => {
     expect(mapStack(tileLayerNames('square'))).toEqual([['sky', 'body'], 'label', 'spaces', 'planet']);
     expect(mapStack(tileLayerNames('hex'))).toEqual([['sky', 'body'], 'spaces', 'planet']);
-    // On the ground what stands goes again over the wells.
-    expect(mapStack(tileLayerNames('phobos'))).toEqual([['ground'], 'spaces', ['standing'], 'planet']);
   });
 });
 

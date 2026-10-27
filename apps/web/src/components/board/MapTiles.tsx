@@ -15,7 +15,6 @@ import {
   well,
   type RasterLayer,
 } from '@quantum/art';
-import { useMapLook } from '../../art/mapLook';
 import { useTileImages } from '../../art/tileImages';
 import type { TileArt } from '../../art/boardTiles';
 import { SQUARE_TILE_GAP, hexCorners, hexFlower, hexSeams, placement } from './geometry';
@@ -101,27 +100,19 @@ function marksOf(board: Board, tiles: readonly TileArt[]) {
   return marks;
 }
 
-const NO_TILES: TileArt[] = [];
-
 /**
  * A map's tiles in SVG, square or hex, in its look's layers (art `tileLayerNames`), as a printed tile has them:
  * in space each tile's sky, then its body (planet and moons, or a Void's heart) wherever the planet sits, cut off
- * at the tile's edge; on its world's ground (mapLook) each tile's ground with its building on the planet's space,
- * and what stands on it drawn again over the spaces, so the wells are etched into the ground and not across the
- * buildings. The images are the layers drawn with filters (tileImages); the spaces and labels are drawn live,
+ * at the tile's edge. The images are the layers drawn with filters (tileImages); the spaces and labels are drawn live,
  * from the board, the seams between hex tiles under the spaces. The planets' numbers and cubes, their layer,
  * go on top, with the gates and ships (BoardArt).
  */
 export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: Board; tiles: TileArt[]; cell: number }) {
-  const look = useMapLook(board);
+  const look = board.hex ? 'hex' : 'square';
   const layers = tileLayerNames(look);
-  // Hooks for every raster layer, each loading only if the look has it.
-  const of = (layer: RasterLayer) => (layers.includes(layer) ? tiles : NO_TILES);
   const images: Record<RasterLayer, Record<string, string>> = {
-    sky: useTileImages(of('sky'), look, 'sky'),
-    body: useTileImages(of('body'), look, 'body'),
-    ground: useTileImages(of('ground'), look, 'ground'),
-    standing: useTileImages(of('standing'), look, 'standing'),
+    sky: useTileImages(tiles, look, 'sky'),
+    body: useTileImages(tiles, look, 'body'),
   };
   const { mid } = placement(board, cell);
   const mm = cell / TILE.cell;
@@ -149,7 +140,7 @@ export const MapTiles = memo(function MapTiles({ board, tiles, cell }: { board: 
   };
   /**
    * A tile's image of a layer over its area (art `RASTER_AREA`), the tile's middle on the tile's or, for its body,
-   * on its planet. The ground reaches past its tile by the bleed, so the clip a touch past the hexes is on ground.
+   * on its planet.
    */
   const image = (t: TileArt, layer: RasterLayer) => {
     const url = images[layer][t.id];

@@ -1,20 +1,17 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { cellAtPoint, die, drawing, key, moveOptions, same, shipOf, type GameState } from '@quantum/engine';
 import type { Controller } from '../game/controller';
-import { BoardArt, tileArtOf } from './board/BoardArt';
+import { BoardArt } from './board/BoardArt';
 import { ActionEffects } from './board/ActionEffects';
 import { CardEffects } from './board/CardEffects';
 import { Explosions } from './board/Explosions';
 import { Routes } from './board/Routes';
 import { Shots } from './board/Shots';
-import { hexMapPath, placement, shipSpots, spotBox, type ShipSpots } from './board/geometry';
+import { placement, shipSpots, spotBox, type ShipSpots } from './board/geometry';
 import { useStaging, type Staging } from './board/staging';
 import { useBoardZoom } from './board/useBoardZoom';
 import { OffscreenHints, ZoomControls, useFollowMoves, useZoomIntro } from './board/ZoomUi';
-import { Die3D, DieShadow } from './Die3D';
-import { PIECE_SHADOW_OPACITY } from './board/shadows';
-import { REGOLITH_SHADOW, TILE } from '@quantum/art';
-import { useOnGround } from '../art/mapLook';
+import { Die3D } from './Die3D';
 import { planetNames } from '../art/boardTiles';
 import { InfoPop, useAnchorName } from './InfoPop';
 
@@ -51,8 +48,6 @@ export function Board({
   const zoom = useBoardZoom(wrap, boardRef, rows, cols);
   const { cell } = zoom;
   const { box } = placement(game.board, cell);
-  // On a world's ground the dice cast hard shadows, as its buildings do: blurred as much, in pixels.
-  const cast = useOnGround(game.board) ? REGOLITH_SHADOW.blur * (cell / TILE.cell) : undefined;
   const spots = shipSpots(game);
   const staging = useStaging(game, scene);
   const tip = useZoomIntro(game, ctl, zoom, !!introduce);
@@ -142,7 +137,6 @@ export function Board({
 
           {reachOf && <Reach game={game} id={reachOf} cell={cell} spots={spots} />}
 
-          {cast !== undefined && <ShipShadows game={game} scene={scene} staging={staging} spots={spots} cell={cell} blur={cast} />}
           {/* Mouse users also get `title=` on ships and planets; touch screens get the tap. */}
           <Ships
             game={game}
@@ -152,7 +146,6 @@ export function Board({
             zoomed={zoom.zoomed}
             spots={spots}
             cell={cell}
-            shadowless={cast !== undefined}
             onInfo={(id) => show({ ship: id })}
             onPress={(id, touch) => {
               viaMouse.current = !touch;
@@ -216,61 +209,11 @@ function Reach({ game, id, cell, spots }: { game: GameState; id: string; cell: n
   );
 }
 
-/** A ship's die, as a part of its space: the shadows it casts (ShipShadows) are made for the same size. */
+/** A ship's die, as a part of its space. */
 const DIE_SIZE = 0.56;
 
 /** A piece on space (r, c), `cell` px: placed in percent of its own size (one space), so a zoom or resize doesn't count as a move and glide. */
 const placeAt = (r: number, c: number, cell: number) => ({ transform: `translate(${c * 100}%, ${r * 100}%)`, width: cell, height: cell });
-
-/**
- * On a world's ground, the hard shadows every ship's die casts (DieShadow), blurred `blur` px with a hint of its colour: all in one layer
- * under the dice, as a die's top stands as high as the die beside it, so is lit, and as dark where they meet as
- * apart. Each is placed, glides, comes and goes as its ship does (`staging`, Ships). Cut to the map's tiles, so
- * none falls off its edge.
- */
-function ShipShadows({
-  game,
-  scene,
-  staging,
-  spots,
-  cell,
-  blur,
-}: {
-  game: GameState;
-  scene?: string;
-  staging: Staging;
-  spots: ShipSpots;
-  cell: number;
-  blur: number;
-}) {
-  // Only a hex map is ever on the ground.
-  const edge = game.board.hex ? hexMapPath(game.board, cell, tileArtOf(game.board)) : undefined;
-  const struck = staging.struck.map(({ die: d, r, c, ms }) => (
-    <div key={`struck:${d.id}`} className="ship-shadow struck" style={{ ...placeAt(r, c, cell), '--late': `${ms}ms` } as CSSProperties}>
-      <DieShadow size={cell * DIE_SIZE} blur={blur} color={game.players[d.owner].color} />
-    </div>
-  ));
-  const shadows = game.dice.map((d) => {
-    const at = spots.get(d.id);
-    if (!at) return null;
-    const late = staging.late.get(d.id);
-    return (
-      <div
-        key={d.id}
-        className={late === undefined ? 'ship-shadow' : 'ship-shadow late'}
-        style={{ ...placeAt(at.r, at.c, cell), '--late': `${late ?? 0}ms` } as CSSProperties}
-      >
-        <DieShadow size={cell * DIE_SIZE} blur={blur} color={game.players[d.owner].color} rolls={d.rolls} scene={scene} />
-      </div>
-    );
-  });
-  return (
-    <div className="ship-shadows" style={{ opacity: PIECE_SHADOW_OPACITY, clipPath: edge && `path('${edge}')` }} aria-hidden>
-      {shadows}
-      {struck}
-    </div>
-  );
-}
 
 /**
  * Every ship on the map, as a die; selected, highlighted, spent or in combat. `onPress`: a pointer went down on another player's ship.
@@ -283,7 +226,6 @@ function Ships({
   zoomed,
   spots,
   cell,
-  shadowless,
   onInfo,
   onPress,
   scene,
@@ -295,8 +237,6 @@ function Ships({
   zoomed: boolean;
   spots: ShipSpots;
   cell: number;
-  /** The dice's shadows are drawn under them all (ShipShadows), not each under its own. */
-  shadowless: boolean;
   onInfo: (id: string) => void;
   onPress: (id: string, touch: boolean) => void;
 }) {
@@ -317,14 +257,7 @@ function Ships({
       }
       aria-hidden
     >
-      <Die3D
-        value={d.value}
-        rolls={d.rolls}
-        scene={scene}
-        size={cell * DIE_SIZE}
-        color={game.players[d.owner].color}
-        shadowless={shadowless}
-      />
+      <Die3D value={d.value} rolls={d.rolls} scene={scene} size={cell * DIE_SIZE} color={game.players[d.owner].color} />
     </div>
   ));
   const ships = game.dice.map((d) => {
@@ -377,14 +310,7 @@ function Ships({
           }
         >
           <div className="ship-ring" />
-          <Die3D
-            value={d.value}
-            rolls={d.rolls}
-            scene={scene}
-            size={cell * DIE_SIZE}
-            color={game.players[d.owner].color}
-            shadowless={shadowless}
-          />
+          <Die3D value={d.value} rolls={d.rolls} scene={scene} size={cell * DIE_SIZE} color={game.players[d.owner].color} />
           {abilityUsed && (
             <span className="ship-badge" aria-label="Ability used this turn">
               ✦
