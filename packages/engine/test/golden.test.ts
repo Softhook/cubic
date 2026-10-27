@@ -6,7 +6,7 @@
  */
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { checkInvariants, type GameMode } from '../src';
+import { checkInvariants, MODES, type GameMode } from '../src';
 import { playAiGame } from './helpers';
 
 const hash = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex').slice(0, 16);
@@ -23,7 +23,7 @@ function play(mode: GameMode, players: number, seed: number) {
 }
 
 describe('golden master', () => {
-  for (const mode of ['basic', 'original', 'community', 'regolith'] as const)
+  for (const { id: mode } of MODES)
     for (const [players, seed] of [
       [2, 11],
       [3, 12],

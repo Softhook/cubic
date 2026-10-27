@@ -11,7 +11,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { SHAPES } from '../src/actionShape';
-import { createGame, legalActions, RuleError, rulesOf, spaces, tryApply, type Action, type GameMode, type GameState } from '../src';
+import { createGame, legalActions, MODES, RuleError, rulesOf, spaces, tryApply, type Action, type GameMode, type GameState } from '../src';
 import { CARD_IDS } from './decisions';
 import { playAiGame, players, seededRandom } from './helpers';
 
@@ -117,7 +117,7 @@ function fuzz(mode: GameMode, seed: number) {
 }
 
 describe('malformed actions are refused, never crash the engine', () => {
-  for (const mode of ['basic', 'original', 'community', 'regolith'] as const) {
+  for (const { id: mode } of MODES) {
     it(mode, () => fuzz(mode, 41), 120_000);
   }
 });

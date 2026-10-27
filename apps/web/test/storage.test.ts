@@ -52,7 +52,7 @@ describe('online games in storage', () => {
       { name: 'A', color: '#fff', ai: false, aiLevel: 1 },
       { name: 'B', color: '#000', ai: true, aiLevel: 1 },
     ];
-    const state = createGame({ players, mapId: 'alpha-hex', mode: 'regolith', seed: 1 });
+    const state = createGame({ players, mode: 'basic', seed: 1 });
     store.setItem(appKey('savedGame'), JSON.stringify({ ...state, mode: 'prototyping' }));
 
     expect(loadSavedGame()).toBeNull();

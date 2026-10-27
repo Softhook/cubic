@@ -1,6 +1,6 @@
 /** Board highlights: everything lit up is a legal action, and every legal move or attack is lit up. */
 import { describe, expect, it } from 'vitest';
-import { actor, apply, conquerCheck, createGame, key, legalActions, orbitals, type GameState } from '@quantum/engine';
+import { actor, apply, conquerCheck, createGame, key, legalActions, MODES, orbitals, type GameState } from '@quantum/engine';
 import { arrange, playAiGame, players, quickStart } from '../../../packages/engine/test/helpers';
 import { highlightsFor } from '../src/game/highlights';
 import { hintFor } from '../src/game/hints';
@@ -94,7 +94,7 @@ describe('highlightsFor', () => {
 
   it('matches the legal actions in every action-phase position of full AI games', () => {
     let checked = 0;
-    for (const mode of ['basic', 'original', 'community', 'regolith'] as const) {
+    for (const { id: mode } of MODES) {
       playAiGame({
         mode,
         players: 2,

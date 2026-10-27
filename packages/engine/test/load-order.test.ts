@@ -6,6 +6,7 @@
 import { readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { DEFAULT_MODE } from '../src/rulesets';
 
 const SRC = join(__dirname, '../src');
 
@@ -15,11 +16,11 @@ function modules(dir: string): string[] {
   );
 }
 
-/** A Regolith game a few moves in, as JSON (a saved game), and a legal action in it. */
+/** A game of the default mode (the one that loads the most of the engine) a few moves in, as JSON (a saved game), and a legal action in it. */
 async function savedGame() {
   vi.resetModules();
   const engine = await import('../src');
-  let s = engine.createGame({ players: [0, 1].map((i) => ({ name: `P${i}`, color: '#fff', ai: true })), mode: 'regolith', seed: 1 });
+  let s = engine.createGame({ players: [0, 1].map((i) => ({ name: `P${i}`, color: '#fff', ai: true })), mode: DEFAULT_MODE, seed: 1 });
   for (let i = 0; i < 10; i++) s = engine.apply(s, engine.legalActions(s)[0]);
   return { state: JSON.parse(JSON.stringify(s)), action: engine.legalActions(s)[0] };
 }
@@ -30,8 +31,8 @@ describe('each entry point works without src/index.ts', () => {
   it('createGame (setup.ts)', async () => {
     vi.resetModules();
     const { createGame } = await import('../src/setup');
-    expect(createGame({ players: [0, 1].map((i) => ({ name: `P${i}`, color: '#fff', ai: true })), mode: 'regolith', seed: 1 }).mode).toBe(
-      'regolith',
+    expect(createGame({ players: [0, 1].map((i) => ({ name: `P${i}`, color: '#fff', ai: true })), mode: DEFAULT_MODE, seed: 1 }).mode).toBe(
+      DEFAULT_MODE,
     );
   });
   it('apply (engine.ts)', async () => {
@@ -60,7 +61,7 @@ describe('the engine loads whichever module comes first', () => {
       vi.resetModules();
       await import(file);
       const engine = await import('../src');
-      let s = engine.createGame({ players: [0, 1].map((i) => ({ name: `P${i}`, color: '#fff', ai: true })), mode: 'regolith', seed: 1 });
+      let s = engine.createGame({ players: [0, 1].map((i) => ({ name: `P${i}`, color: '#fff', ai: true })), mode: DEFAULT_MODE, seed: 1 });
       for (let i = 0; i < 20; i++) s = engine.apply(s, engine.legalActions(s)[0]);
       expect(engine.checkInvariants(s)).toEqual([]);
     });

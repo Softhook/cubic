@@ -98,7 +98,7 @@ describe('online timeline', () => {
   it('says when the game was made by another version (a mode this one does not have)', () => {
     const t = new Timeline();
     expect(t.unreadable()).toBe(false);
-    const g = create('alice', [seat('Alice'), seat('Bob')], [1], 7, 'regolith');
+    const g = create('alice', [seat('Alice'), seat('Bob')], [1]);
     if (g.body.t !== 'create') throw new Error('expected create post');
     t.add({ ...g, body: { ...g.body, config: { ...g.body.config, mode: 'prototyping' as never } } });
     expect(t.replay()).toBeNull();

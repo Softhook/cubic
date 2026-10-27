@@ -55,7 +55,7 @@ export function newSecret(): string {
 
 /**
  * Whose games these are: a game's relay tag and key are derived under it, so another app on the same relays
- * (a fork such as Regolith's, docs/regolith/SPLIT.md) never sees this one's games, even from the same invite secret.
+ * (another game built from this code) never sees this one's games, even from the same invite secret.
  */
 const NAMESPACE = 'cubic';
 

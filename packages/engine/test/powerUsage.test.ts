@@ -7,15 +7,14 @@
  * POWER_USAGE_GAMES=4 POWER_USAGE_LEVEL=4 npx vitest run powerUsage  (or `npm run power:usage`).
  */
 import { describe, expect, it } from 'vitest';
-import type { GameMode } from '../src';
+import { MODES } from '../src';
 import { formatUsage, measurePowerUsage } from './powerUsage';
 
 const GAMES = Number(process.env.POWER_USAGE_GAMES ?? 1);
 const LEVEL = Number(process.env.POWER_USAGE_LEVEL ?? 2) as 1 | 2 | 3 | 4 | 5;
-const MODES: GameMode[] = ['basic', 'original', 'community', 'regolith'];
 
 describe('power usage by mode', () => {
-  for (const mode of MODES) {
+  for (const { id: mode } of MODES) {
     it(`${mode}`, () => {
       const u = measurePowerUsage(mode, { games: GAMES, level: LEVEL });
       console.log(`\n${formatUsage(u)}`);

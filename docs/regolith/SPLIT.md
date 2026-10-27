@@ -45,6 +45,14 @@ The app's identity is now set in one place each, so each repo changes one line:
 Nothing else names the app: console messages are tagged `[game]`, the dev hooks are `window.__game` and
 `window.__gameOnline`, and the browser scripts build storage keys with `appKey` (as `replay-check.ts` does).
 
+Tests that run every mode (golden games, legal-action consistency, malformed-action fuzzing, power usage,
+board highlights) loop over `MODES`, and the hex consistency games over the modes whose `mapGroups` have
+`hex`, so deleting a rule set drops its cases in either repo without editing the tests. Tests that need just
+some game use `basic` or `DEFAULT_MODE`, not Regolith. The AI's Regolith positions are in their own file,
+`packages/ai/test/regolith.test.ts`. Regolith cases still inside shared files: four card scenarios
+(`card-scenarios.test.ts`, kept there for its coverage check), two in `highlights.test.ts`, the
+over-conquest ones in `conquerTap.test.ts`.
+
 Both apps are served from `softhook.github.io`, **one origin**, so with the same storage names they would
 read each other's saved game, lobby choices and online identity. Cache Storage is per origin too: Workbox
 names its precache after the service worker's scope, and the font cache is named after `APP_ID`, so the
@@ -162,7 +170,7 @@ games for Basic, Classic and Community unchanged**, which proves Cubic still pla
 
 | Area | Goes |
 |---|---|
-| Mode | `src/regolith/`, `RULESETS.regolith`, `'regolith'` in `GameMode`, `data/regolith.yaml` and its `build-data.mjs` step, `regolith.test.ts` and the Regolith cases in other tests |
+| Mode | `src/regolith/`, `RULESETS.regolith`, `'regolith'` in `GameMode`, `data/regolith.yaml` and its `build-data.mjs` step, `regolith.test.ts` in the engine and the AI, and the Regolith cases left in other tests (see *Prepared already*) |
 | Ship powers | `prototype.ts`, `ShipHooks`, `hooksOf`, `modeHasHook`, the `power` action, zones of control (`stopZone`); `ShipDef.hooks` |
 | Engine state | `GameState.barriers`, `addBarrier`, `barrierAt`, `barrierSpaces`, the `placeBarrier` and `kineticShunt` pendings and actions, their invariants; `homeShipyard` on players |
 | Rule switches | `maxMovement`, `overConquest`, `contestedOrbit`, `contestedDeploy`, `homeShipyard`, `words`, `look: 'ground'`, `cards.look`, `cards.expansion`, `experimental` |

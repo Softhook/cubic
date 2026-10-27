@@ -22,6 +22,7 @@ import {
   legalActions,
   moveIndexes,
   moveOptions,
+  MODES,
   movePath,
   shipReach,
   shipsByIndex,
@@ -175,7 +176,7 @@ function playChecked(mode: GameMode, players: number, seed: number, mapId?: stri
 }
 
 describe('legal actions agree with the engine', () => {
-  for (const mode of ['basic', 'original', 'community', 'regolith'] as const)
+  for (const { id: mode } of MODES)
     for (const [players, seed] of DEEP
       ? [
           [2, 21],
@@ -184,15 +185,16 @@ describe('legal actions agree with the engine', () => {
         ]
       : [[3, 22]])
       it(`${mode}, ${players} players, seed ${seed}`, () => playChecked(mode, players, seed), DEEP ? 600_000 : 60_000);
-  // Hex tiles (docs/HEX.md): another geometry, under the rules the lobby offers it with.
-  for (const [players, mapId] of DEEP
-    ? ([
-        [2, 'alpha-hex'],
-        [3, 'beta-hex'],
-        [4, 'gamma-hex'],
-      ] as const)
-    : ([[3, 'beta-hex']] as const))
-    it(`regolith on ${mapId}, seed 22`, () => playChecked('regolith', players, 22, mapId), DEEP ? 600_000 : 60_000);
+  // Hex tiles (docs/HEX.md): another geometry, under the rules of each mode the lobby offers it with.
+  for (const { id: mode } of MODES.filter((m) => m.mapGroups.includes('hex')))
+    for (const [players, mapId] of DEEP
+      ? ([
+          [2, 'alpha-hex'],
+          [3, 'beta-hex'],
+          [4, 'gamma-hex'],
+        ] as const)
+      : ([[3, 'beta-hex']] as const))
+      it(`${mode} on ${mapId}, seed 22`, () => playChecked(mode, players, 22, mapId), DEEP ? 600_000 : 60_000);
   // Planets off the middle of their tiles: orbits that overlap, cross tiles and lose spaces at the edge.
   // Original has Nomadic and Ingenious, which read orbits and tiles their own way.
   for (const [mode, mapId] of [
