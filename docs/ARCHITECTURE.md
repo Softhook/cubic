@@ -2,6 +2,8 @@
 
 How the code is organised, and where to make the common changes.
 
+Regolith, which grew out of this code, now lives in [its own repository](https://github.com/Softhook/regolith).
+
 ## Packages
 
 | Package | Role | Depends on |
@@ -19,7 +21,7 @@ How the code is organised, and where to make the common changes.
 |---|---|
 | `engine.ts` | Public API (`apply`, `tryApply`, `actor`) and the handler registry |
 | `rules.ts` | `RuleSet`: everything that differs between Basic, Original and Community; `rulesOf()` |
-| `rulesets.ts` | `RULESETS`, the rule set of each mode (the one module that imports `regolith/`). It hands the table to `rules.ts` when it loads, so each module that takes a state from outside (`setup`, `engine`, `invariants`) imports it |
+| `rulesets.ts` | `RULESETS`, the rule set of each mode. It hands the table to `rules.ts` when it loads, so each module that takes a state from outside (`setup`, `engine`, `invariants`) imports it |
 | `actionShape.ts` | `isWellFormed()`: the shape of every action, checked by `apply` before any handler (actions from other browsers are untrusted) |
 | `setup.ts` | `createGame` and the setup decisions |
 | `actions.ts` | Move/Attack, Deploy, Reconfigure, Research, Conquer, end turn |

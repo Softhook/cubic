@@ -132,11 +132,11 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
 - Print adds a tile back and corners matched to the die-cut.
 - On screen, the whole map renders in a single SVG, with the interactive HTML layer above, drawn in
   layers ([`MapTiles.tsx`](../apps/web/src/components/board/MapTiles.tsx)) so a planet can sit anywhere
-  on its tile (docs/HEX.md, *Off-centre planets*), on square and hex maps alike:
-  1. **Sky:** each tile's starfield and nebula (`rasterLayerSvg` `sky`), bright stars in the gutters between that
-     shape's spaces, cut to the tile's outline (rounded squares a little apart, or 7-hex flowers).
+  on its tile (data/maps.yaml, a layout token such as `7ne`):
+  1. **Sky:** each tile's starfield and nebula (`rasterLayerSvg` `sky`), bright stars in the gutters between
+     its spaces, cut to the tile's outline (rounded squares a little apart).
   2. **Body:** the planet and moons, or a Void's heart (`body`), placed on the planet's space and cut
-     off at its own tile's edge. Then the dark seams between hex tiles.
+     off at its own tile's edge.
   3. **Spaces:** a well per space, as printed (`well`, `WELL`), from the board rather than the tile:
      hatched where it orbits a planet, cross-hatched where two orbits overlap, a faint flask on a Void's
      ([`layers.ts`](../apps/web/src/components/board/layers.ts) `spaceRoles`).
@@ -146,17 +146,8 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
      `CUBE_PAD`). Then gates, ships and highlights.
 
   A printed tile (`tileSvg`) is the same layers in one piece, so the screen and the table look alike.
-  The Art Lab shows the set as hex tiles too, and with each planet on any space (`look`, `planetAt`).
-- **Looks.** A tile has one of five looks (`TileLook`, [`tile/look.ts`](../packages/art/src/tile/look.ts)):
-  `square` or `hex` in space, or a hex tile on a world's ground, `phobos`, `deimos` or `mars` (the Regolith look,
-  [`regolith/`](../packages/art/src/regolith/)), with a building on its planet's space in place of the
-  sky and body. Print, the Art Lab and the map all take the same look: a hex map is on its world's ground
-  unless the top bar switches it to space ([`mapLook.ts`](../apps/web/src/art/mapLook.ts) `useMapLook`).
-  Print draws the lit ground as a bitmap first (`tileGroundSvg`), since its light falls into contour lines
-  at a print's resolution.
-- **Layers.** Each look stacks its tile in one order (`tileLayerNames`): in space `sky`, `body`, `label`,
-  `spaces`, `planet`; on the ground `ground` (with the building), `spaces`, `standing` (what stands on the
-  ground again, so the wells are etched into the ground and not across the buildings), `planet`. A tile's
+  The Art Lab shows the set with each planet on any space (`planetAt`).
+- **Layers.** A tile stacks in one order (`TILE_LAYERS`): `sky`, `body`, `label`, `spaces`, `planet`. A tile's
   `tileLayers` are what it has of those. Everything draws from that one order: print joins them (`tileSvg`);
   the Illustrator export (`editableTileSvg`) puts the layers up to the last one drawn with filters
   (`isRaster`) in its bitmap (`tileSvg` with `raster`) and the rest over it as vectors; and the map
@@ -164,19 +155,17 @@ a map's planets to tile ids, so the planet on screen is the same one as on the t
   order (`mapStack`), each run of filtered ones as one clipped group of images per tile.
 
   The map shares the order, not the drawings. Its images are each raster layer drawn alone
-  (`rasterLayerSvg`, over its `RASTER_AREA`; what stands is cut out of the ground's image with `standingMaskSvg`),
+  (`rasterLayerSvg`, over its `RASTER_AREA`),
   made to serve wherever the map puts the planet: the sky keeps its bright stars
   between all the spaces (print keeps them off the planet, its number and label), and the body is drawn
   centred for the map to move. Its spaces and labels come from the board, not the tile, since an orbit can
   reach onto the next tile, and its numbers and cubes are live (BoardArt).
 - **Where the code is.** [`tile/`](../packages/art/src/tile/): `geometry` (spaces, planet spots, number
-  and cube pads, the hex flower and its cut), `look`, `set` (the 30 tiles and the hex set's 10 blanks, and their seeds), `markings`
-  (wells, hatching), `label`, `space` (sky, planet, moons), `voids` (the Void hearts) and `index`, which
-  puts a tile together in its look. The ground's own parts are in `regolith/` (its `index.ts` lists them).
-- **Loading.** Drawing a tile's noise filters takes ~45 ms, so the game draws each tile's sky (one per
-  shape) and body once to images 768 px across (576 px on touch screens, to save memory) and keeps them
+  and cube pads), `set` (the 30 tiles and their seeds), `markings` (wells, hatching), `label`, `space` (sky,
+  planet, moons), `voids` (the Void hearts) and `index`, which puts a tile together.
+- **Loading.** Drawing a tile's noise filters takes ~45 ms, so the game draws each tile's sky and body once to images 768 px across (576 px on touch screens, to save memory) and keeps them
   in the browser's IndexedDB ([`tileImages.ts`](../apps/web/src/art/tileImages.ts)), whatever the map and wherever its planet sits.
-  Bodies and square skies are drawn in the background while the lobby is open; later games and window
+  Bodies and skies are drawn in the background while the lobby is open; later games and window
   resizes reuse the stored images. Each stored image carries a hash of its SVG, so changing the artwork
   redraws only what changed.
 
@@ -239,11 +228,9 @@ planet. The number is centred on the **corner where the four spaces meet at the 
 right** (16 mm right and down from the centre), white with a dark outline so it reads on any surface.
 Dice never reach that corner, so it is the one place a big numeral is always visible. The 10's four
 pads reach into it, so its number moves 1.2 mm further out along the same diagonal
-(`numberPlacement()`; a test keeps every number on the diagonal). On a hex tile the number goes where
-three hexes meet instead, the vertex a third of a space right of the planet's centre and half a space
-down, moved out the same way when the pads reach it.
+(`numberPlacement()`; a test keeps every number on the diagonal).
 
-A planet off the middle of its tile (docs/HEX.md, *Off-centre planets*) takes its number to the corner
+A planet off the middle of its tile (a layout token such as `7ne`) takes its number to the corner
 nearest the tile's middle (`numberCorner`): the bottom left for a planet on the right edge, the top left
 for one in the bottom right corner, and so on; where two corners are as near, the bottom right. The
 number then always stays on its own tile, away from the tile's edge and from any planet on the next
@@ -253,8 +240,7 @@ tile, wherever the tile lies on a map, so the printed tile and the screen agree.
 made-up name, catalogue number, class and orbit, and a few measurements to suit the kind of world
 (`planetFlavour()`), with a thin leader line to the planet. It stays inside the strip between the
 space pads above and below, and no stars are drawn under it. A planet off the middle keeps its label
-only where that strip is on its tile and its number isn't there (`tileLabelFits`); hex tiles have no
-such strip, so no label. On the 10, whose planet reaches into
+only where that strip is on its tile and its number isn't there (`tileLabelFits`). On the 10, whose planet reaches into
 that strip, the label moves left to clear it. It is seeded like the art, so each tile
 always gets the same text. On the Illustrator export it is baked into the 600 dpi `art` layer while the planet number and cube pads stay editable vectors in `markings`.
 
@@ -294,11 +280,6 @@ setup. This keeps the set at 30 tiles.
 The 2–4 player maps need only four 9s and four 10s; Anecdotal (six 9s) and False Dilemma (five 10s)
 need the rest; the "Everything" map uses 25. Empty tile slots (`.` in the layouts) are gaps in the map, not
 tiles.
-
-The hex set (`HEX_TILE_SET`) adds 10 **blank** tiles, `blank-01` … `blank-10`: open ground, with no planet
-and no Void, which only the open-ground hex maps use (Arcadia Planitia and Valles Marineris have 10 each).
-No square map has one, so the square set stays at 30. On a world's ground a blank is bare ground with nothing
-built on it; in space, sky alone.
 
 **Sheets.** A 102 mm tile with bleed fits **2 × 2 per A4 page** (204 mm of 210 mm
 width), so print-and-play is 8 pages of faces. Print-on-demand vendors get one 102 × 102 mm file per
@@ -385,10 +366,6 @@ Art image requirements: at least **300 dpi at final size including bleed**, bett
 headroom. For a card art window filling the whole card with bleed (69.5 × 94.9 mm) that's
 **≥ 821 × 1121 px**, ideally ~1650 × 2250 px. Keep originals in RGB, 16-bit PNG/TIFF where possible.
 
-Regolith's cards have a renderer of their own, the screenprint cards (`packages/art/src/screenprint`,
-[REGOLITH.md](regolith/REGOLITH.md) §5): flat inks and halftone, the six mechs rigged from the mood board's
-Silhouettes board, and the map tiles' buildings drawn side on. A card face's `look` picks the renderer.
-
 ### Iconography
 
 Replace text and pips with one icon set drawn on a 24-unit grid with mm-based stroke widths:
@@ -443,15 +420,7 @@ same way:
 
 - `pieces.ts` holds each piece's print spec (trim, bleed, sheet grid) and the file-name pattern:
   `cubic-<piece>-<name>[-bleed][-<dpi>dpi].<ext>` for one face, `cubic-<pieces>[-<part>][-bleed|-fogra39[-deep]].zip`
-  for a set. A piece die-cut other than at its trim has a `cut` line: the **hex tile** (`hex-tile`, 96 ×
-  96 mm trim round its flower, `HEX_TILE_CUT`, 18 sides). Its art is **knocked out** past the flower:
-  at the cut at trim size, so the home print sheets show the shape to cut along with scissors, and past
-  it by the bleed in files with bleed (`hexTileShape`), so a die cut that wanders still has art under
-  it. The press sheets clip each tile to that shape (`outline`), so no neighbour's knocked-out corner
-  covers its bleed. Every export for a press carries the cut line too: `cut.svg` in the PNG ZIP (the
-  size of each PNG), a `CutContour` spot colour in the CMYK PDFs (overprinting, so it takes nothing out
-  of the art; a print service cuts along it and doesn't print it), and a `cut` layer in the Illustrator
-  SVG. The crop marks still frame each tile's box.
+  for a set.
 - `PrintPanel.tsx` is the export panel on every lab page: this face as a PNG (plus page extras such
   as SVG for Illustrator), the whole set as a ZIP of PNGs with a README, the CMYK export for the press
   (below), and print sheets. Everything uses the piece's `dpi`: 600 for cards and the aid (small text),
@@ -492,11 +461,7 @@ same way:
     each cut at its left and top where a piece is there, so it covers the bleed of the piece before it
     and no seam can show between two. Crop marks start clear of the bleed. Single-sided, the set as it
     ships (not seeds being explored), with print markings.
-  - **Hex tiles: press sheets** ("CMYK Hex tiles · PDF", on the tile page with Shape: Hex):
-    `cubic-hex-tiles-a4-fogra39.pdf`, the 30 tiles as hex tiles with their planets in the middle, laid
-    out as the square tiles are, with each flower's cut line.
-
-  The tile page exports as shown otherwise (shape, planet spot, seeds and markings): a tile with its
+  The tile page exports as shown otherwise (planet spot, seeds and markings): a tile with its
   planet off the middle is named for its spot, `p7-01-ne`.
 
   The press test exports as a single CMYK PDF.
@@ -528,7 +493,7 @@ Because the print route is a normal page, it can be opened in a browser to check
 |---|---|---|
 | `cards-pod` | One PDF page (or PNG) per card face and back, with 3 mm bleed, no marks | 69.5 × 94.9 mm |
 | `cards-pnp` | Print-and-play sheets, 3×3 cards, crop marks, duplex backs mirrored | A4 |
-| `tiles` | Tiles and player aids on A4 press sheets, butted, crop marks (built as the CMYK PDF); hex tiles likewise, with their cut line | A4 |
+| `tiles` | Tiles and player aids on A4 press sheets, butted, crop marks (built as the CMYK PDF) | A4 |
 | `tiles-pnp` | Tiles 2 × 2 per page with crop marks | A4 |
 | `player-board` | Player board / reference sheet (the A6 player aid is built, §2 Player aid) | A4 or A5 |
 | `proof` | Contact sheet of everything at reduced size, for review | A4 |

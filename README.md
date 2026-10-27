@@ -21,9 +21,7 @@ browser, installs to a phone or tablet home screen and plays offline.
 - **Every card**: all 35 CE Skills, 9 Tactics and Expansion, and all 37 Original Command and
   Gambit cards.
 - **84 maps for 2–5 players**: 3 basic, 37 advanced from the print booklet, 6 from the 2014
-  add-on pack, 24 from Board Game Arena and the CE booklet's 14 five-player maps. The Basic game also
-  plays on **hex tiles**, with hex versions of the 3 basic maps, and on two maps with **planets off the
-  middle of their tiles** ([HEX.md](docs/HEX.md)).
+  add-on pack, 24 from Board Game Arena and the CE booklet's 14 five-player maps.
 - **AI opponents in five levels**, Cadet to Fleet Admiral, picked per seat and run in a Web
   Worker ([AI.md](docs/AI.md)).
 - **Hot-seat or online with friends**, live or one move at a time over days, with no server: the
@@ -35,6 +33,9 @@ browser, installs to a phone or tablet home screen and plays offline.
 - **Print**: the Art Lab (`#lab` tiles, `#lab/cards` cards, `#lab/aid` player aid) exports PNG,
   SVG and ZIP sets with or without bleed, and A4/US Letter sheets with crop marks
   ([GRAPHICS.md](docs/GRAPHICS.md)).
+
+**Regolith**, our own game grown from this one (mechs on hex maps of Mars and its moons), has its own
+repository: [Softhook/regolith](https://github.com/Softhook/regolith).
 
 Where the published rules are unclear, the engine follows the rulings in
 [OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md); each lives in one place in the engine.
@@ -98,10 +99,6 @@ More tools, all headless:
 | [MULTIPLAYER.md](docs/MULTIPLAYER.md) | How serverless online play works, its limits, and the server options |
 | [MOBILE.md](docs/MOBILE.md) | Phone and tablet support: plan, progress and device checks |
 | [GRAPHICS.md](docs/GRAPHICS.md) | The art package, Art Lab and print pipeline |
-| [REGOLITH.md](docs/regolith/REGOLITH.md) | Regolith, our own hex-only game: its structure and order of work |
-| [PROTOTYPING.md](docs/regolith/PROTOTYPING.md) | Regolith's rules: the design log, playtests and experiments |
-| [REGOLITH-WORLD.md](docs/regolith/REGOLITH-WORLD.md) | Regolith's names, words and story |
-| [HEX.md](docs/HEX.md) | The Basic game on hex tiles: how the rules read on hexes, the maps, the code |
 | [ROADMAP.md](docs/ROADMAP.md) | Milestones, what's done and the backlog |
 | [VISUAL-IDEAS.md](docs/VISUAL-IDEAS.md) | Ideas for making the game look better and appeal to new players: card art in play, battles, game over, lobby |
 | [card-benchmark.md](docs/card-benchmark.md) | Card balance from AI self-play: each Community skill's value against no skill, and card pick and win rates |
