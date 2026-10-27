@@ -1,4 +1,4 @@
-import { cellOf, delta, drawing, onBoard, type Board, type Cell, type GameState } from '@quantum/engine';
+import { cellOf, delta, drawing, onBoard, type Board, type Cell, type GameState } from '@cubic/engine';
 
 /** Where each ship on the map is drawn, by id, in cell units from the map's top left (engine drawing). */
 export type ShipSpots = Map<string, { r: number; c: number }>;

@@ -1,4 +1,4 @@
-import { encodePost, gameKeys, newSecret, PROTOCOL } from '@quantum/online';
+import { encodePost, gameKeys, newSecret, PROTOCOL } from '@cubic/online';
 import type { LobbyResult } from '../components/lobby/Lobby';
 import { identity, keepStorage, rememberGame, saveEvents } from './storage';
 

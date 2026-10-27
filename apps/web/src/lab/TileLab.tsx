@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { OFF_CENTRE, TILE_SET, TILE_SPOTS, dataUrl, editableTileSvg, tileSvg, type PlanetType, type TileSpec } from '@quantum/art';
+import { OFF_CENTRE, TILE_SET, TILE_SPOTS, dataUrl, editableTileSvg, tileSvg, type PlanetType, type TileSpec } from '@cubic/art';
 import { blobToDataUrl, download } from '../files';
 import { svgToPng } from '../print/exports';
 import { PIECES, fileName, pieceSize } from '../print/pieces';

@@ -1,4 +1,4 @@
-import { legalActions, type Action, type GameState } from '@quantum/engine';
+import { legalActions, type Action, type GameState } from '@cubic/engine';
 
 /** Calculating: the scrapyard numbers to take first (see candidates). */
 const CALCULATING_ORDER = [4, 3, 5, 2, 6, 1];

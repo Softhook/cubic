@@ -1,4 +1,4 @@
-import { CUBE_PAD, PLANET_FAMILY, WELL, cubePadCentres, numberPlacement, well, type Corner } from '@quantum/art';
+import { CUBE_PAD, PLANET_FAMILY, WELL, cubePadCentres, numberPlacement, well, type Corner } from '@cubic/art';
 
 /** A planet's number as the tile prints it: white, outlined in a dark shade of the planet's hue. `y` is the baseline. */
 export function PlanetNumber({ n, x, y, size, className }: { n: number; x: number; y: number; size: number; className?: string }) {

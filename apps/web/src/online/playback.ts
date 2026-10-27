@@ -1,5 +1,5 @@
-import type { CombatPending, GameState } from '@quantum/engine';
-import { combatStage, type Post, type Step } from '@quantum/online';
+import type { CombatPending, GameState } from '@cubic/engine';
+import { combatStage, type Post, type Step } from '@cubic/online';
 import { shotWait } from '../game/strike';
 
 /** How long a move by someone else stays on screen before the next one is shown. */

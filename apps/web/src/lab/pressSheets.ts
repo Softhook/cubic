@@ -1,4 +1,4 @@
-import { TILE_SET, playerAidSvg, tileSvg, type AidEdition, type TileOptions, type TileSpec } from '@quantum/art';
+import { TILE_SET, playerAidSvg, tileSvg, type AidEdition, type TileOptions, type TileSpec } from '@cubic/art';
 import type { PressSheets } from '../print/exports';
 import { PIECES, type Printable } from '../print/pieces';
 import { cardFontCss, measure, tileFontCss } from './cards';

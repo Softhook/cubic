@@ -1,4 +1,4 @@
-import { die as getDie, key, moveOptions, same, scrapyard, tacticalOptions, type Cell, type GameState } from '@quantum/engine';
+import { die as getDie, key, moveOptions, same, scrapyard, tacticalOptions, type Cell, type GameState } from '@cubic/engine';
 import type { Sel } from './controller';
 import type { Legal } from './legal';
 

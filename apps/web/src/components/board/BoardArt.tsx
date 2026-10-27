@@ -1,6 +1,6 @@
 import { memo, type CSSProperties } from 'react';
-import { drawing, type Board, type GameState } from '@quantum/engine';
-import { PLANET_DIAMETER, TILE } from '@quantum/art';
+import { drawing, type Board, type GameState } from '@cubic/engine';
+import { PLANET_DIAMETER, TILE } from '@cubic/art';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { GATE_COLOR } from '../../theme';
 import { placement, wrapMarks, type WrapMark } from './geometry';

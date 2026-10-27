@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { card } from '@quantum/engine';
+import { card } from '@cubic/engine';
 import { useCardImage } from '../art/useCardImages';
 import { Dialog } from './Dialog';
 

@@ -1,8 +1,8 @@
 /** Catching up with an online game: the screen walks forward through the steps, never back. */
 import { describe, expect, it } from 'vitest';
-import type { Post, Step } from '@quantum/online';
+import type { Post, Step } from '@cubic/online';
 import { quickStart } from '../../../packages/engine/test/helpers';
-import type { CombatPending } from '@quantum/engine';
+import type { CombatPending } from '@cubic/engine';
 import { COMBAT_MS, MAX_BEHIND, nextStep, resumeAt, seenPost, STEP_MS } from '../src/online/playback';
 
 const base = quickStart(2, 1);

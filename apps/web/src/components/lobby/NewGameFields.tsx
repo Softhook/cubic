@@ -1,8 +1,8 @@
 // The parts of the lobby's new-game form.
 
 import { type CSSProperties, type ReactNode } from 'react';
-import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
-import { parseToken, type MapDef, type PlayerConfig } from '@quantum/engine';
+import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@cubic/ai';
+import { parseToken, type MapDef, type PlayerConfig } from '@cubic/engine';
 import { Segmented } from '../Segmented';
 import { remember } from '../../storage';
 import { pick } from '../../random';

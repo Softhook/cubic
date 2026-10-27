@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
-import { CARD_CATEGORIES, ICONS, cardPalette, missile } from '@quantum/art';
-import { card, cardKind, effectOf, isOriginalCard } from '@quantum/engine';
+import { CARD_CATEGORIES, ICONS, cardPalette, missile } from '@cubic/art';
+import { card, cardKind, effectOf, isOriginalCard } from '@cubic/engine';
 import { useCardImage } from '../art/useCardImages';
 
 /** A card category's icon (the same drawing as on the printed cards). */

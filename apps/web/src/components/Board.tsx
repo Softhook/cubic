@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-import { cellAtPoint, die, drawing, key, moveOptions, same, shipOf, type GameState } from '@quantum/engine';
+import { cellAtPoint, die, drawing, key, moveOptions, same, shipOf, type GameState } from '@cubic/engine';
 import type { Controller } from '../game/controller';
 import { BoardArt } from './board/BoardArt';
 import { ActionEffects } from './board/ActionEffects';

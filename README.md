@@ -2,7 +2,7 @@
 
 A new edition of [Quantum](https://boardgamegeek.com/boardgame/143519/quantum)
 (Eric Zimmerman, 2013), the out-of-print dice-as-starships 4X game, built on the
-fan-made **Community Edition**. "Cubic" is the working title.
+fan-made **Community Edition**.
 
 Goals:
 

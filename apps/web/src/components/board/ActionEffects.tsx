@@ -1,4 +1,4 @@
-import { cellOf, same, type Cell, type GameState } from '@quantum/engine';
+import { cellOf, same, type Cell, type GameState } from '@cubic/engine';
 import { lastLogId, useStepEffects } from '../../game/useTransient';
 import { cardEffectsOf } from './CardEffects';
 import { EffectBox, cubeCount, type MapEffect } from './EffectBox';

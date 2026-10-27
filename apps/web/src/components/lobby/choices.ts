@@ -1,5 +1,5 @@
-import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@quantum/ai';
-import { DEFAULT_MODE, defaultMap, MAPS, MODES, type GameMode, type PlayerConfig } from '@quantum/engine';
+import { AI_LEVELS, DEFAULT_AI_LEVEL } from '@cubic/ai';
+import { DEFAULT_MODE, defaultMap, MAPS, MODES, type GameMode, type PlayerConfig } from '@cubic/engine';
 import { stored } from '../../storage';
 import { appKey } from '../../appId';
 

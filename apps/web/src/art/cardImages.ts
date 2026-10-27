@@ -1,4 +1,4 @@
-import { CARD, cardBackSvg, cardSvg, dataUrl, hash, type CardDeck } from '@quantum/art';
+import { CARD, cardBackSvg, cardSvg, dataUrl, hash, type CardDeck } from '@cubic/art';
 import { rasterise } from '../files';
 import { cardFontCss, cardFontsReady, faceOf, measure } from './cards';
 import { idle, storeImage, storedImage } from './imageStore';

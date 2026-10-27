@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
-import { actor, apply, checkInvariants, legalActions, defaultMap, type Action, type GameState, type PlayerId } from '@quantum/engine';
-import { chooseAction, chooseCombatResponse } from '@quantum/ai';
+import { actor, apply, checkInvariants, legalActions, defaultMap, type Action, type GameState, type PlayerId } from '@cubic/engine';
+import { chooseAction, chooseCombatResponse } from '@cubic/ai';
 import {
   actBody,
   decodeEvent,

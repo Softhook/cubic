@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { checkInvariants, RuleError, type Action, type GameState, type PlayerId } from '@quantum/engine';
+import { checkInvariants, RuleError, type Action, type GameState, type PlayerId } from '@cubic/engine';
 import { sfx } from '../sound';
 import { begin, current, play, restore, saved, takeBack, type Past } from './past';
 import { useErrorToast, useToasts } from './toasts';

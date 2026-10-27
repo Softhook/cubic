@@ -1,6 +1,6 @@
 import { Component, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import { EXPANSION, type GameState } from '@quantum/engine';
+import { EXPANSION, type GameState } from '@cubic/engine';
 import { reducedMotion } from '../game/useMediaQuery';
 import { lastLogId, useTransient } from '../game/useTransient';
 import { leftRow } from '../game/marketRow';

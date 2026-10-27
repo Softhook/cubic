@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RASTER_AREA, TILE, TILE_SET, dataUrl, hash, rasterLayerSvg, tileSpec, type RasterLayer } from '@quantum/art';
+import { RASTER_AREA, TILE, TILE_SET, dataUrl, hash, rasterLayerSvg, tileSpec, type RasterLayer } from '@cubic/art';
 import { rasterise } from '../files';
 import { COARSE } from '../game/useMediaQuery';
 import { idle, storeImage, storedImage } from './imageStore';

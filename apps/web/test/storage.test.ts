@@ -1,11 +1,11 @@
 /** Online games share storage with the game on this device; finished ones make way for it. */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createGame, defaultMap } from '@quantum/engine';
+import { createGame, defaultMap } from '@cubic/engine';
 import { forget, remember, stored } from '../src/storage';
 import { loadSavedGame } from '../src/game/savedGame';
 import { forgetFinishedGames, onlineGames } from '../src/online/games';
 import { generateSecretKey } from 'nostr-tools/pure';
-import { encodePost, gameKeys, newSecret, PROTOCOL } from '@quantum/online';
+import { encodePost, gameKeys, newSecret, PROTOCOL } from '@cubic/online';
 import { openGameLog, rememberGame, saveEvents } from '../src/online/storage';
 import { appKey } from '../src/appId';
 

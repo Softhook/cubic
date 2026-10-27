@@ -1,6 +1,6 @@
 import type { CSSProperties, MouseEvent, ReactNode } from 'react';
-import type { CardDeck } from '@quantum/art';
-import { CLASSIC_SHIPS, MODES } from '@quantum/engine';
+import type { CardDeck } from '@cubic/art';
+import { CLASSIC_SHIPS, MODES } from '@cubic/engine';
 import { ActionHex, MissileIcon } from '../components/Card';
 import { PLAYER_COLORS } from '../theme';
 import {

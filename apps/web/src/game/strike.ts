@@ -1,4 +1,4 @@
-import type { CombatPending, Die, GameState } from '@quantum/engine';
+import type { CombatPending, Die, GameState } from '@cubic/engine';
 import { ARC, LANCE, SHOT } from '../beats';
 import { lastLogId } from './useTransient';
 

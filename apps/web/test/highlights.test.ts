@@ -1,6 +1,6 @@
 /** Board highlights: everything lit up is a legal action, and every legal move or attack is lit up. */
 import { describe, expect, it } from 'vitest';
-import { actor, apply, createGame, key, legalActions, MODES, type GameState } from '@quantum/engine';
+import { actor, apply, createGame, key, legalActions, MODES, type GameState } from '@cubic/engine';
 import { arrange, playAiGame, players, quickStart } from '../../../packages/engine/test/helpers';
 import { highlightsFor } from '../src/game/highlights';
 import { legalFor } from '../src/game/legal';

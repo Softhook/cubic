@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { CARD_CATEGORIES } from '@quantum/art';
-import { shipOf, card, die, rulesOf, scrapyard, type GameState } from '@quantum/engine';
+import { CARD_CATEGORIES } from '@cubic/art';
+import { shipOf, card, die, rulesOf, scrapyard, type GameState } from '@cubic/engine';
 import { SHORT, useMediaQuery } from '../game/useMediaQuery';
 import type { Dispatch } from '../game/useGame';
 import { CardView, CategoryIcon, categoryStyle } from './Card';

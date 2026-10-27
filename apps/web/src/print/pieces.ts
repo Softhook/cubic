@@ -1,4 +1,4 @@
-import { AID, CARD, TILE } from '@quantum/art';
+import { AID, CARD, TILE } from '@cubic/art';
 import { pressTag } from './press';
 import { gameFile } from '../appId';
 

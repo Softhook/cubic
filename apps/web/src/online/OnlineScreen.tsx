@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { unclaimedSeats, type AskMode, type Replay } from '@quantum/online';
+import { unclaimedSeats, type AskMode, type Replay } from '@cubic/online';
 import { Dialog, Modal } from '../components/Dialog';
 import { Game } from '../components/GameScreen';
 import { resumeFullscreen } from '../fullscreen';

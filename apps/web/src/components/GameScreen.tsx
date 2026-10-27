@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { actor, drawing, rulesOf, type GameState, type PlayerId } from '@quantum/engine';
+import { actor, drawing, rulesOf, type GameState, type PlayerId } from '@cubic/engine';
 import { useController } from '../game/controller';
 import { useUndoShortcut } from '../game/useGame';
 import { lost, type GameView } from '../game/view';

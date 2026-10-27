@@ -1,5 +1,5 @@
 import { Fragment, memo, type ReactNode } from 'react';
-import { cellAt, type Board } from '@quantum/engine';
+import { cellAt, type Board } from '@cubic/engine';
 import {
   HATCH,
   RASTER_AREA,
@@ -12,7 +12,7 @@ import {
   voidFlask,
   well,
   type RasterLayer,
-} from '@quantum/art';
+} from '@cubic/art';
 import { useTileImages } from '../../art/tileImages';
 import type { TileArt } from '../../art/boardTiles';
 import { SQUARE_TILE_GAP, placement } from './geometry';

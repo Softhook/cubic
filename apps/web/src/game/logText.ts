@@ -1,4 +1,4 @@
-import { type GameState, type LogEntry } from '@quantum/engine';
+import { type GameState, type LogEntry } from '@cubic/engine';
 import { planetNames } from '../art/boardTiles';
 
 /**

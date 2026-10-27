@@ -1,4 +1,4 @@
-import { canMoveDie, canUseAbility, card, die, hasSkill, movementRange, shipOf, skillCard, type GameState } from '@quantum/engine';
+import { canMoveDie, canUseAbility, card, die, hasSkill, movementRange, shipOf, skillCard, type GameState } from '@cubic/engine';
 import type { Controller } from '../game/controller';
 import type { Dispatch } from '../game/useGame';
 import { Die3D } from './Die3D';

@@ -1,5 +1,5 @@
 import { useRef, useState, type CSSProperties } from 'react';
-import { defaultMapFor, MAPS, MODES, playerCounts, RULESETS, type GameMode, type GameState, type PlayerConfig } from '@quantum/engine';
+import { defaultMapFor, MAPS, MODES, playerCounts, RULESETS, type GameMode, type GameState, type PlayerConfig } from '@cubic/engine';
 import { Segmented } from '../Segmented';
 import { Confirm } from '../Dialog';
 import { FullscreenButton } from '../FullscreenButton';

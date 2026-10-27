@@ -1,4 +1,4 @@
-import { canProfiteer, die, rulesOf, shipOf, type GameState } from '@quantum/engine';
+import { canProfiteer, die, rulesOf, shipOf, type GameState } from '@cubic/engine';
 import type { Sel } from './controller';
 
 /** The carrying ship's name in this game's rules, as a common noun: "flagship". */

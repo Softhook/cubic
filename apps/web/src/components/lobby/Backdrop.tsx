@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { buildBoard, drawing, spaces, type Board, type MapDef } from '@quantum/engine';
-import { PLANET_DIAMETER, SPACE_BASE_CSS, TILE, TILE_SET, tileHasRings, tileSpec, type RasterLayer } from '@quantum/art';
+import { buildBoard, drawing, spaces, type Board, type MapDef } from '@cubic/engine';
+import { PLANET_DIAMETER, SPACE_BASE_CSS, TILE, TILE_SET, tileHasRings, tileSpec, type RasterLayer } from '@cubic/art';
 import { decodedTileImage } from '../../art/tileImages';
 import { tileArt, type TileArt } from '../../art/boardTiles';
 import { PIPS } from '../Die3D';

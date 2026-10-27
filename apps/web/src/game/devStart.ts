@@ -12,8 +12,8 @@ import {
   tryApply,
   type GameState,
   type PlayerId,
-} from '@quantum/engine';
-import { DEFAULT_AI_LEVEL } from '@quantum/ai';
+} from '@cubic/engine';
+import { DEFAULT_AI_LEVEL } from '@cubic/ai';
 import { defaultSeat } from './seats';
 
 /**

@@ -1,5 +1,5 @@
-import { FONTS, type CardDeck, type CardFace, type Measure } from '@quantum/art';
-import { EXPANSION, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef } from '@quantum/engine';
+import { FONTS, type CardDeck, type CardFace, type Measure } from '@cubic/art';
+import { EXPANSION, ORIGINAL_COMMAND, ORIGINAL_GAMBIT, SKILLS, TACTICS, type CardDef } from '@cubic/engine';
 import { blobToDataUrl } from '../files';
 
 /** Every printed card, by deck, from the game's card data, and the fonts cards and tiles are set in. */
