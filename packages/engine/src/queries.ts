@@ -771,6 +771,8 @@ export function missileRefusal(state: GameState, combat: CombatPending, by: Play
   if (by !== combat.attacker.player && by !== combat.defender.player) return 'Only the attacker and defender may fire a missile';
   if (combat[side].player !== by || combatOutcome(state, combat).attackerWins === (side === 'attacker'))
     return 'You may only fire a missile on your own roll, while losing';
+  const fired = { ...combat, [side]: { ...combat[side], missile: true } };
+  if (combatOutcome(state, fired).attackerWins !== (side === 'attacker')) return 'A missile would not win this battle';
   return null;
 }
 
